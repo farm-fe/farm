@@ -5,6 +5,7 @@ export default defineConfig({
     presetEnv: false,
     sourcemap: false,
     persistentCache: false,
+    concatenateModules: false,
     minify: false
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']

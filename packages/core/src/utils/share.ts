@@ -1,11 +1,10 @@
 import fs from 'node:fs';
-/* eslint-disable no-prototype-builtins */
 import os from 'node:os';
 import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { Config, OutputConfig } from '../types/binding.js';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+import { cleanUrl } from './url.js';
 // @ts-ignore import packageJson from '../../package.json';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,12 +26,11 @@ export const FARM_TARGET_BROWSER_ENVS = [
 ];
 
 export const FARM_TARGET_LIBRARY_ENVS = [
-  'library',
-  'library-node',
-  'library-browser'
+  'library'
+  // 'library-node',
+  // 'library-browser'
 ];
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -76,14 +74,23 @@ export const version = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()
 ).version;
 
+export const VOLUME_RE = /^[A-Z]:/i;
+
+export const FS_PREFIX = `/@fs/`;
+
 export function normalizePath(id: string): string {
-  return path.posix.normalize(id);
+  return path.posix.normalize(isWindows ? id.replace(/\\/g, '/') : id);
 }
 
-export function normalizeBasePath(basePath: string): string {
-  return path.posix.normalize(
-    isWindows ? basePath.replace(/\\/g, '/') : basePath
+export function fsPathFromId(id: string): string {
+  const fsPath = normalizePath(
+    id.startsWith(FS_PREFIX) ? id.slice(FS_PREFIX.length) : id
   );
+  return fsPath[0] === '/' || VOLUME_RE.test(fsPath) ? fsPath : `/${fsPath}`;
+}
+
+export function fsPathFromUrl(url: string): string {
+  return fsPathFromId(cleanUrl(url));
 }
 
 export function arraify<T>(target: T | T[]): T[] {
@@ -168,7 +175,7 @@ export function mapTargetEnvValue(config: Config['config']) {
       return;
     }
 
-    config.output.targetEnv = 'library-browser';
+    config.output.targetEnv = 'library';
   }
 }
 
@@ -178,6 +185,37 @@ export function tryStatSync(file: string): fs.Stats | undefined {
   } catch {}
 }
 
+export function formatTime(time: number, format: 'ms' | 's' = 'ms'): string {
+  switch (format) {
+    case 's':
+      return `${Math.floor(time) / 1000}s`;
+    case 'ms':
+    default:
+      return `${Math.floor(time)}ms`;
+  }
+}
+
+export function arrayEqual(a: any[], b: any[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 export function isNodeEnv(env: OutputConfig['targetEnv']): boolean {
   return /^(node|library)(?!-browser)/.test(env);
+}
+
+export function getValidPublicPath(publicPath = '/'): string {
+  let validPublicPath = '';
+
+  if (publicPath.startsWith('/')) {
+    validPublicPath = publicPath;
+  } else if (publicPath.startsWith('.')) {
+    validPublicPath = normalizePath(path.join('/', publicPath));
+  }
+
+  return validPublicPath;
 }

@@ -7,8 +7,72 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
+  check-changeset-status:
+    name: Check changeset status and set env
+    runs-on: ubuntu-latest
+    outputs:
+      SKIP_RUST_BUILD: ${{ env.SKIP_RUST_BUILD }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Check changeset status and set env
+        run: |
+          if node scripts/check-changeset-status.mjs; then
+            echo "SKIP_RUST_BUILD=true" >> $GITHUB_ENV
+            echo "Changesets exist, skipping Rust build."
+          else
+            echo "Changesets don't exist, proceeding with Rust build."
+          fi
+        if: github.ref == 'refs/heads/main'
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
+    needs: [check-changeset-status]
+    if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD != 'true'
+
+  changeset-version:
+    name: Call changeset version
+    runs-on: ubuntu-latest
+    needs: [check-changeset-status]
+    if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD == 'true'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: pnpm i --frozen-lockfile
+
+      - name: Create Release Pull Request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm run bump
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   release:
     name: Release
@@ -18,10 +82,17 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 18.x
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+
+      - name: Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
+          cache: "pnpm"
 
       # batch download artifacts
       - uses: actions/download-artifact@v4
@@ -35,12 +106,14 @@ jobs:
           do
             mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm
+            test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
           for abi in android-arm-eabi linux-arm-gnueabihf android-arm64 freebsd-x64
@@ -50,16 +123,26 @@ jobs:
           done
 
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: pnpm i --frozen-lockfile
+
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
-      - name: Create Release Pull Request or Publish to npm
+      - name: Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
-          version: pnpm bump
-          publish: pnpm release
+          version: pnpm run bump
+          publish: pnpm run release
+          branch: main
+          # version: ${{ github.ref_name == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
+          # publish: ${{ github.ref_name == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
+          # branch: ${{ github.ref_name == 'v2-dev' && 'v2-dev' || 'main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

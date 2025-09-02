@@ -1,0 +1,166 @@
+---
+source: crates/plugin_partial_bundling/src/analyze_module_graph.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+ModuleGroupGraph {
+    g: StableGraph {
+        Ty: "Directed",
+        node_count: 5,
+        edge_count: 4,
+        edges: (0, 1), (1, 1), (2, 1), (2, 3),
+        node weights: {
+            0: ModuleGroup {
+                id: ModuleGroupId(
+                    "A_Entry",
+                ),
+                entry_module_id: ModuleId {
+                    relative_path: "A",
+                    query_string: "",
+                },
+                module_group_type: Entry,
+                modules: {
+                    ModuleId {
+                        relative_path: "A",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "C",
+                        query_string: "",
+                    },
+                },
+                resource_pots: {},
+            },
+            1: ModuleGroup {
+                id: ModuleGroupId(
+                    "F_DynamicImport",
+                ),
+                entry_module_id: ModuleId {
+                    relative_path: "F",
+                    query_string: "",
+                },
+                module_group_type: DynamicImport,
+                modules: {
+                    ModuleId {
+                        relative_path: "F",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "A",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "C",
+                        query_string: "",
+                    },
+                },
+                resource_pots: {},
+            },
+            2: ModuleGroup {
+                id: ModuleGroupId(
+                    "B_Entry",
+                ),
+                entry_module_id: ModuleId {
+                    relative_path: "B",
+                    query_string: "",
+                },
+                module_group_type: Entry,
+                modules: {
+                    ModuleId {
+                        relative_path: "D",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "B",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "E",
+                        query_string: "",
+                    },
+                },
+                resource_pots: {},
+            },
+            3: ModuleGroup {
+                id: ModuleGroupId(
+                    "G_DynamicImport",
+                ),
+                entry_module_id: ModuleId {
+                    relative_path: "G",
+                    query_string: "",
+                },
+                module_group_type: DynamicImport,
+                modules: {
+                    ModuleId {
+                        relative_path: "G",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "H",
+                        query_string: "",
+                    },
+                },
+                resource_pots: {},
+            },
+            4: ModuleGroup {
+                id: ModuleGroupId(
+                    "D_DynamicEntry",
+                ),
+                entry_module_id: ModuleId {
+                    relative_path: "D",
+                    query_string: "",
+                },
+                module_group_type: DynamicEntry,
+                modules: {
+                    ModuleId {
+                        relative_path: "D",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "F",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "A",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "C",
+                        query_string: "",
+                    },
+                },
+                resource_pots: {},
+            },
+        },
+        free_node: NodeIndex(4294967295),
+        free_edge: EdgeIndex(4294967295),
+    },
+    id_index_map: {
+        ModuleGroupId(
+            "D_DynamicEntry",
+        ): NodeIndex(4),
+        ModuleGroupId(
+            "F_DynamicImport",
+        ): NodeIndex(1),
+        ModuleGroupId(
+            "B_Entry",
+        ): NodeIndex(2),
+        ModuleGroupId(
+            "A_Entry",
+        ): NodeIndex(0),
+        ModuleGroupId(
+            "G_DynamicImport",
+        ): NodeIndex(3),
+    },
+}

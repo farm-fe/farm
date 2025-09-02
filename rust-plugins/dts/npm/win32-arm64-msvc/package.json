@@ -1,0 +1,18 @@
+{
+  "name": "@farmfe/plugin-dts-win32-arm64-msvc",
+  "version": "0.0.0",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "index.farm",
+  "files": [
+    "index.farm"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}

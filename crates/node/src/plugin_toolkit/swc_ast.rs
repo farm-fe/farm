@@ -1,17 +1,19 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  context::create_swc_source_map,
   error::Result,
-  swc_common::{SourceFile, SourceMap},
+  module::ModuleId,
+  swc_common::{Globals, SourceFile, SourceMap},
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
 };
-use farmfe_toolkit::script::{parse_module, ParseScriptModuleResult};
+use farmfe_toolkit::script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult};
 
 #[no_mangle]
 pub fn farm_swc_parse_module(
-  id: &str,
-  content: &str,
+  id: &ModuleId,
+  content: Arc<String>,
   syntax: Syntax,
   target: EsVersion,
 ) -> Result<ParseScriptModuleResult> {
@@ -20,13 +22,18 @@ pub fn farm_swc_parse_module(
 
 #[no_mangle]
 pub fn farm_create_swc_source_map(
-  id: &str,
+  id: &ModuleId,
   content: Arc<String>,
 ) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
-  let (cm, source_file) =
-    farmfe_toolkit::common::create_swc_source_map(farmfe_toolkit::common::Source {
-      path: std::path::PathBuf::from(id),
-      content,
-    });
+  let (cm, source_file) = create_swc_source_map(id, content);
   Ok((cm, source_file))
+}
+
+#[no_mangle]
+pub fn farm_swc_try_with(
+  cm: Arc<SourceMap>,
+  globals: &Globals,
+  op: Box<dyn FnOnce()>,
+) -> Result<()> {
+  try_with(cm, globals, op)
 }

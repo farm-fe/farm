@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Mode,
   error::Result,
-  swc_common::{Globals, SourceMap},
+  swc_common::{comments::SingleThreadedComments, Globals, SourceMap},
   swc_ecma_ast,
 };
 
@@ -13,6 +13,7 @@ pub struct FarmSwcTransformReactOptions<'a> {
   pub inject_helpers: bool,
   pub mode: Mode,
   pub cm: Arc<SourceMap>,
+  pub comments: SingleThreadedComments,
   pub globals: &'a Globals,
   pub options: String,
 }

@@ -1,15 +1,48 @@
-import http from 'http';
-import { SecureServerOptions } from 'node:http2';
+import http from 'node:http';
+
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
+import { Logger } from '../utils/logger.js';
+
+import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import type { UserConfig } from './types.js';
 
-const stringRewriteSchema = z.record(z.string(), z.string());
+enum TargetEnv {
+  BROWSER = 'browser',
+  NODE = 'node',
+  NODE_LEGACY = 'node-legacy',
+  NODE_NEXT = 'node-next',
+  NODE16 = 'node16',
+  BROWSER_LEGACY = 'browser-legacy',
+  BROWSER_ESNEXT = 'browser-esnext',
+  BROWSER_ES2015 = 'browser-es2015',
+  BROWSER_ES2017 = 'browser-es2017',
+  LIBRARY = 'library'
+  // LIBRARY_BROWSER = 'library-browser',
+  // LIBRARY_NODE = 'library-node'
+}
 
-const functionRewriteSchema = z.union([
-  z.function().args(z.string(), z.any()).returns(z.string()),
-  z.function().args(z.string(), z.any()).returns(z.promise(z.string()))
+enum ECMAVersion {
+  ES3 = 'es3',
+  ES5 = 'es5',
+  ES2015 = 'es2015',
+  ES2016 = 'es2016',
+  ES2017 = 'es2017',
+  ES2018 = 'es2018',
+  ES2019 = 'es2019',
+  ES2020 = 'es2020',
+  ES2021 = 'es2021',
+  ES2022 = 'es2022',
+  ESNext = 'esnext'
+}
+
+const baseRewriteSchema = z.union([
+  z.record(z.string(), z.string()),
+  z
+    .function()
+    .args(z.string(), z.any())
+    .returns(z.union([z.string(), z.promise(z.string())]))
 ]);
 
 const pathFilterSchema = z.union([
@@ -21,44 +54,169 @@ const pathFilterSchema = z.union([
     .returns(z.boolean())
 ]);
 
-const pathRewriteSchema = z.union([stringRewriteSchema, functionRewriteSchema]);
+const outputSchema = z
+  .object({
+    entryFilename: z.string().optional(),
+    filename: z.string().optional(),
+    path: z.string().optional(),
+    publicPath: z.string().optional(),
+    assetsFilename: z.string().optional(),
+    targetEnv: z.nativeEnum(TargetEnv).optional(),
+    format: z
+      .union([z.enum(['cjs', 'esm']), z.array(z.enum(['cjs', 'esm']))])
+      .optional(),
+    showFileSize: z.boolean().optional(),
+    asciiOnly: z.boolean().optional()
+  })
+  .strict()
+  .optional();
+
+const proxySchema = z
+  .record(
+    z
+      .object({
+        target: z.string(),
+        changeOrigin: z.boolean().optional(),
+        agent: z.any().optional(),
+        secure: z.boolean().optional(),
+        logs: z.any().optional(),
+        pathRewrite: baseRewriteSchema.optional(),
+        pathFilter: pathFilterSchema.optional(),
+        headers: z.record(z.string()).optional(),
+        on: z
+          .object({
+            proxyReq: z
+              .function()
+              .args(z.any(), z.any(), z.any())
+              .returns(z.void())
+              .optional(),
+            proxyRes: z
+              .function()
+              .args(z.any(), z.any(), z.any())
+              .returns(z.void())
+              .optional(),
+            error: z
+              .function()
+              .args(z.instanceof(Error), z.any(), z.any())
+              .returns(z.void())
+              .optional()
+          })
+          .optional()
+      })
+      .passthrough()
+  )
+  .optional();
+
+const previewServerSchema = z
+  .object({
+    headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
+    host: z
+      .union([
+        z.string().regex(/^\d{1,3}\.\d{1,3}$/),
+        z.literal('localhost'),
+        z.boolean()
+      ])
+      .optional(),
+    port: z.number().positive().int().optional(),
+    strictPort: z.boolean().optional(),
+    https: z.custom<SecureServerOptions>(),
+    distDir: z.string().optional(),
+    open: z.boolean().optional(),
+    proxy: proxySchema,
+    cors: z.union([z.boolean(), z.any()]).optional()
+  })
+  .strict();
+
+const WatchOptionsSchema = z.object({
+  persistent: z.boolean().optional(),
+  ignored: z
+    .union([
+      z.string(),
+      z.array(z.string()),
+      z.instanceof(RegExp),
+      z.array(z.instanceof(RegExp)),
+      z.function(z.tuple([z.string()]), z.boolean())
+    ])
+    .optional(),
+  ignoreInitial: z.boolean().optional(),
+  followSymlinks: z.boolean().optional(),
+  cwd: z.string().optional(),
+  useFsEvents: z.boolean().optional(),
+  disableGlobbing: z.boolean().optional(),
+  usePolling: z.boolean().optional(),
+  interval: z.number().positive().int().optional(),
+  binaryInterval: z.number().positive().int().optional(),
+  alwaysStat: z.boolean().optional(),
+  depth: z.number().positive().int().optional(),
+  awaitWriteFinish: z
+    .object({
+      stabilityThreshold: z.number().positive().int().optional(),
+      pollInterval: z.number().positive().int().optional()
+    })
+    .optional(),
+  atomic: z.union([z.boolean(), z.number().positive().int()]).optional(),
+  ignorePermissionErrors: z.boolean().optional()
+});
+
+const serverSchema = z
+  .object({
+    headers: z.record(z.string()).optional(),
+    port: z.number().positive().int().optional(),
+    https: z.custom<SecureServerOptions>(),
+    origin: z.string().optional(),
+    hmr: z
+      .union([
+        z.boolean(),
+        z
+          .object({
+            protocol: z.string().optional(),
+            host: z.union([z.string().min(1), z.boolean()]).optional(),
+            port: z.number().positive().int().optional(),
+            path: z.string().optional(),
+            overlay: z.boolean().optional()
+          })
+          .strict()
+      ])
+      .optional(),
+    proxy: proxySchema,
+    strictPort: z.boolean().optional(),
+    open: z.boolean().optional(),
+    host: z
+      .union([
+        z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
+        z.literal('localhost'),
+        z.boolean()
+      ])
+      .optional(),
+    cors: z.boolean().optional(),
+    appType: z.enum(['spa', 'mpa', 'custom']).optional(),
+    middlewares: z.array(z.any()).optional(),
+    middlewareMode: z.boolean().optional(),
+    writeToDisk: z.boolean().optional(),
+    preview: previewServerSchema.optional()
+  })
+  .strict();
+
+const aliasItemSchema = z.object({
+  find: z.union([z.string(), z.instanceof(RegExp)]),
+  replacement: z.string(),
+  // TODO add customResolver schema
+  customResolver: z
+    .union([z.function(), z.object({ resolve: z.function() })])
+    .optional()
+});
+
+const aliasSchema = z.union([z.record(z.string()), z.array(aliasItemSchema)]);
 
 const compilationConfigSchema = z
   .object({
     root: z.string().optional(),
     input: z.record(z.string()).optional(),
-    output: z
-      .object({
-        entryFilename: z.string().optional(),
-        filename: z.string().optional(),
-        path: z.string().optional(),
-        publicPath: z.string().optional(),
-        assetsFilename: z.string().optional(),
-        targetEnv: z
-          .enum([
-            'browser',
-            'node',
-            'node-legacy',
-            'node-next',
-            'node16',
-            'browser-legacy',
-            'browser-esnext',
-            'browser-es2015',
-            'browser-es2017',
-            'library',
-            'library-browser',
-            'library-node'
-          ])
-          .optional(),
-        format: z.enum(['cjs', 'esm']).optional(),
-        clean: z.boolean().optional()
-      })
-      .strict()
-      .optional(),
+    output: outputSchema,
     resolve: z
       .object({
         extensions: z.array(z.string()).optional(),
-        alias: z.record(z.string()).optional(),
+        alias: aliasSchema.optional(),
         mainFields: z.array(z.string()).optional(),
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),
@@ -76,20 +234,7 @@ const compilationConfigSchema = z
       .union([z.boolean(), z.array(z.string())])
       .optional(),
     mode: z.string().optional(),
-    watch: z
-      .union([
-        z.boolean(),
-        z.object({
-          // TODO watcher config schema
-          ignored: z.array(z.string()).optional(),
-          watchOptions: z
-            .object({
-              awaitWriteFinish: z.number().positive().int().optional()
-            })
-            .optional()
-        })
-      ])
-      .optional(),
+
     coreLibPath: z.string().optional(),
     runtime: z
       .object({
@@ -110,21 +255,7 @@ const compilationConfigSchema = z
       .optional(),
     script: z
       .object({
-        target: z
-          .enum([
-            'es3',
-            'es5',
-            'es2015',
-            'es2016',
-            'es2017',
-            'es2018',
-            'es2019',
-            'es2020',
-            'es2021',
-            'es2022',
-            'esnext'
-          ])
-          .optional(),
+        target: z.nativeEnum(ECMAVersion).optional(),
         parser: z
           .object({
             esConfig: z
@@ -213,7 +344,8 @@ const compilationConfigSchema = z
         enforceTargetConcurrentRequests: z.boolean().optional(),
         enforceTargetMinSize: z.boolean().optional(),
         immutableModules: z.array(z.string()).optional(),
-        immutableModulesWeight: z.number().optional()
+        immutableModulesWeight: z.number().optional(),
+        enforce: z.boolean().optional()
       })
       .strict()
       .optional(),
@@ -227,13 +359,7 @@ const compilationConfigSchema = z
           mangle: z.union([z.any(), z.boolean()]).optional(),
           exclude: z.array(z.string()).optional(),
           include: z.array(z.string()).optional(),
-          mode: z
-            .union([
-              z.literal('minify-module'),
-              z.literal('minify-resource-pot')
-            ])
-            .optional(),
-          moduleDecls: z.boolean().optional()
+          mangleExports: z.boolean().optional()
         })
       ])
       .optional(),
@@ -305,109 +431,26 @@ const compilationConfigSchema = z
         .optional()
     ]),
     comments: z.union([z.boolean(), z.literal('license')]).optional(),
-    custom: z.record(z.string(), z.string()).optional()
+    custom: z.record(z.string(), z.string()).optional(),
+    concatenateModules: z.boolean().optional()
   })
   .strict();
 
 const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
-    clearScreen: z.boolean().optional(),
+    mode: z.string().optional(),
     configPath: z.string().optional(),
+    clearScreen: z.boolean().optional(),
+    customLogger: z.instanceof(Logger).optional(),
     envDir: z.string().optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
-    plugins: z.array(z.any()).optional(),
-    vitePlugins: z.array(z.any()).optional(),
+    watch: z.union([z.boolean(), WatchOptionsSchema]).optional(),
     compilation: compilationConfigSchema.optional(),
-    mode: z.string().optional(),
-    server: z
-      .object({
-        headers: z.record(z.string()).optional(),
-        port: z.number().positive().int().optional(),
-        host: z
-          .union([
-            z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
-            z.literal('localhost'),
-            z.boolean()
-          ])
-          .optional(),
-        open: z.boolean().optional(),
-        https: z.custom<SecureServerOptions>(),
-        cors: z.boolean().optional(),
-        spa: z.boolean().optional(),
-        proxy: z
-          .record(
-            z
-              .object({
-                target: z.string(),
-                changeOrigin: z.boolean().optional(),
-                agent: z.any().optional(),
-                secure: z.boolean().optional(),
-                logs: z.any().optional(),
-                pathRewrite: pathRewriteSchema.optional(),
-                pathFilter: pathFilterSchema.optional(),
-                headers: z.record(z.string()).optional(),
-                on: z
-                  .object({
-                    proxyReq: z
-                      .function()
-                      .args(
-                        z.instanceof(Object),
-                        z.instanceof(Object),
-                        z.instanceof(Object)
-                      )
-                      .returns(z.void())
-                      .optional(),
-                    proxyRes: z
-                      .function()
-                      .args(
-                        z.instanceof(Object),
-                        z.instanceof(Object),
-                        z.instanceof(Object)
-                      )
-                      .returns(z.void())
-                      .optional(),
-                    error: z
-                      .function()
-                      .args(
-                        z.instanceof(Error),
-                        z.instanceof(Object),
-                        z.instanceof(Object)
-                      )
-                      .returns(z.void())
-                      .optional()
-                  })
-                  .optional()
-              })
-              .passthrough()
-          )
-          .optional(),
-        strictPort: z.boolean().optional(),
-        hmr: z
-          .union([
-            z.boolean(),
-            z
-              .object({
-                protocol: z.string().optional(),
-                host: z.union([z.string().min(1), z.boolean()]).optional(),
-                port: z.number().positive().int().optional(),
-                path: z.string().optional(),
-                watchOptions: z
-                  .object({
-                    awaitWriteFinish: z.number().positive().int().optional()
-                  })
-                  .optional(),
-                overlay: z.boolean().optional()
-              })
-              .strict()
-          ])
-          .optional(),
-        middlewares: z.array(z.any()).optional(),
-        writeToDisk: z.boolean().optional()
-      })
-      .strict()
-      .optional()
+    server: serverSchema.optional(),
+    plugins: z.array(z.any()).optional(),
+    vitePlugins: z.array(z.any()).optional()
   })
   .strict();
 
@@ -415,10 +458,8 @@ export function parseUserConfig(config: UserConfig): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
     return parsed as UserConfig;
-    // return config as UserConfig;
   } catch (err) {
     const validationError = fromZodError(err);
-    // the error now is readable by the user
     throw new Error(
       `${validationError.toString()}. \n Please check your configuration file or command line configuration.`
     );

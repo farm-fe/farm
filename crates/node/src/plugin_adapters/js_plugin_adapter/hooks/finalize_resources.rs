@@ -1,12 +1,14 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
   error::Result,
-  plugin::PluginFinalizeResourcesHookParams,
+  plugin::PluginFinalizeResourcesHookParam,
   resource::Resource,
   serde::{Deserialize, Serialize},
+  HashMap,
 };
+use napi::bindgen_prelude::{Function, JsObjectValue, Object};
 
 use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
 
@@ -21,8 +23,8 @@ pub struct JsPluginFinalizeResourcesHookParams {
   pub config: farmfe_core::config::Config,
 }
 
-impl<'a> From<&mut PluginFinalizeResourcesHookParams<'a>> for JsPluginFinalizeResourcesHookParams {
-  fn from(value: &mut PluginFinalizeResourcesHookParams) -> Self {
+impl From<&mut PluginFinalizeResourcesHookParam<'_>> for JsPluginFinalizeResourcesHookParams {
+  fn from(value: &mut PluginFinalizeResourcesHookParam) -> Self {
     Self {
       resources_map: value.resources_map.clone(),
       config: value.config.clone(),
@@ -31,9 +33,9 @@ impl<'a> From<&mut PluginFinalizeResourcesHookParams<'a>> for JsPluginFinalizeRe
 }
 
 impl JsPluginFinalizeResourcesHook {
-  pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
+  pub fn new(env: &napi::Env, obj: Object) -> Self {
     let func = obj
-      .get_named_property::<napi::JsFunction>("executor")
+      .get_named_property::<Function>("executor")
       .expect("executor should be checked in js side");
 
     Self {

@@ -8,17 +8,18 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.15.2", default-features = false, features = [
+napi = { version = "3.1.3", default-features = false, features = [
   "napi4",
   "serde-json",
 ] }
-napi-derive = "2.15.2"
+napi-derive = "3.1.1"
 farmfe_compiler = { path = "../compiler" }
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
-regex = "1"
-libloading = "0.7"
 farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
+farmfe_plugin_resolve = { path = "../plugin_resolve" }
+regex = "1"
+libloading = "0.8.6"
 eframe = { version = "0.24.1", default-features = false, features = [
   "persistence",
   "glow",
@@ -39,4 +40,4 @@ swc_plugin = ["farmfe_compiler/swc_plugin"]
 file_watcher = ["notify"]
 
 [build-dependencies]
-napi-build = "2.0.1"
+napi-build = "2.2.3"

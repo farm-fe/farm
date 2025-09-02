@@ -1,7 +1,7 @@
 use farmfe_core::{
   module::module_graph::ModuleGraph,
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{EmptyStmt, Expr, Ident, MemberExpr, MemberProp, Stmt},
+  swc_ecma_ast::{EmptyStmt, Expr, Ident, IdentName, MemberExpr, MemberProp, Stmt},
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
@@ -30,10 +30,10 @@ impl VisitMut for UselessHotUpdateStmtRemover {
           obj:
             box Expr::Member(MemberExpr {
               obj: box Expr::Ident(Ident { sym: module, .. }),
-              prop: MemberProp::Ident(Ident { sym: meta, .. }),
+              prop: MemberProp::Ident(IdentName { sym: meta, .. }),
               ..
             }),
-          prop: MemberProp::Ident(Ident { sym: hot, .. }),
+          prop: MemberProp::Ident(IdentName { sym: hot, .. }),
           ..
         }) = &*if_stmt.test
         {

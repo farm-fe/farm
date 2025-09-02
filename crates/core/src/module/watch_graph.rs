@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 use std::hash::Hash;
 
 use petgraph::{
@@ -8,6 +8,7 @@ use petgraph::{
 };
 
 use crate::error::{CompilationError, Result};
+use crate::{HashMap, HashSet};
 
 use super::ModuleId;
 
@@ -44,7 +45,7 @@ impl WatchGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: HashMap::new(),
+      id_index_map: HashMap::default(),
     }
   }
 
@@ -108,13 +109,13 @@ impl WatchGraph {
   }
 
   pub fn modules(&self) -> Vec<&ModuleId> {
-    let mut res = HashSet::new();
+    let mut res = HashSet::default();
 
     for node in self.g.edge_indices() {
-      if matches!(self.g.edge_weight(node), Some(EdgeMode::WatchImport)) {
-        if let Some((_root, to)) = self.g.edge_endpoints(node) {
-          res.insert(self.g.node_weight(to).unwrap());
-        }
+      if matches!(self.g.edge_weight(node), Some(EdgeMode::WatchImport))
+        && let Some((_root, to)) = self.g.edge_endpoints(node)
+      {
+        res.insert(self.g.node_weight(to).unwrap());
       }
     }
 
@@ -122,7 +123,7 @@ impl WatchGraph {
   }
 
   pub fn relation_roots(&self, dep: &ModuleId) -> Vec<&ModuleId> {
-    let mut result = HashSet::new();
+    let mut result = HashSet::default();
 
     if let Some(index) = self.id_index_map.get(dep) {
       let mut edges = self
@@ -169,7 +170,7 @@ impl WatchGraph {
 
   pub fn relation_dependencies(&self, root: &ModuleId) -> Vec<&ModuleId> {
     let mut queue = self.dependencies(root).into_iter().collect::<VecDeque<_>>();
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut result = vec![];
 
     while !queue.is_empty() {

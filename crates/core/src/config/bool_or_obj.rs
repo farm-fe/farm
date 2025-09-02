@@ -15,6 +15,13 @@ impl<T> BoolOrObj<T> {
     }
   }
 
+  pub fn as_obj(&self) -> Option<&T> {
+    match self {
+      BoolOrObj::Obj(v) => Some(v),
+      BoolOrObj::Bool(_) => None,
+    }
+  }
+
   pub fn unwrap_as_option<F>(self, default: F) -> Option<T>
   where
     F: FnOnce(Option<bool>) -> Option<T>,

@@ -1,5 +1,41 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+## 4.0.0-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
+## 4.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- 60f40f0: bump nightly version
+
+## 4.0.0-nightly-20250410022118
+
+### Major Changes
+
+- ce93432: optimize runtime-hmr size
+
+## 4.0.0-nightly-20241029095811
+
+### Major Changes
+
+- 669e2b8: use prismjs instead of highlightjs improve performance
+
+## 4.0.0-nightly-20241023020505
+
+### Major Changes
+
+- cab79e8: bump major version with runtime
+
 ## 3.5.10
 
 ### Patch Changes

@@ -1,5 +1,134 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- Updated dependencies [23b6fc9]
+  - @farmfe/core@2.0.0-beta.2
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/core@2.0.0-beta.1
+
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- Updated dependencies [5a9ff6b]
+- Updated dependencies [f5ce9ea]
+  - @farmfe/core@2.0.0-beta.0
+
+## 0.0.12-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+- Updated dependencies [63908eb]
+  - @farmfe/core@2.0.0-nightly-20250827162746
+
+## 0.0.12-nightly-20250729025629
+
+### Patch Changes
+
+- Updated dependencies [b730530]
+  - @farmfe/core@2.0.0-nightly-20250729025629
+
+## 0.0.12-nightly-20250411141103
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20250411141103
+
+## 0.0.12-nightly-20250411100807
+
+### Patch Changes
+
+- Updated dependencies [60f40f0]
+  - @farmfe/core@2.0.0-nightly-20250411100807
+
+## 0.0.12-nightly-20250410022118
+
+### Patch Changes
+
+- Updated dependencies [21ac2ac]
+- Updated dependencies [b8f7fc5]
+- Updated dependencies [ad09476]
+  - @farmfe/core@2.0.0-nightly-20250410022118
+
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies [cebded5f]
+- Updated dependencies [cebded5f]
+  - @farmfe/core@1.7.11
+
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies [606bf87a]
+  - @farmfe/core@1.7.10
+
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies [6aa67812]
+  - @farmfe/core@1.7.9
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [27d30d79]
+  - @farmfe/core@1.7.8
+
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [d0f572df]
+- Updated dependencies [f19be2ef]
+  - @farmfe/core@1.7.7
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [83342ef0]
+- Updated dependencies [c7bcfa0f]
+  - @farmfe/core@1.7.6
+
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [722a1d53]
+  - @farmfe/core@1.7.5
+
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies [2fceb540]
+  - @farmfe/core@1.7.4
+
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies [6a6ad094]
+  - @farmfe/core@1.7.3
+
 ## 0.0.11
 
 ### Patch Changes

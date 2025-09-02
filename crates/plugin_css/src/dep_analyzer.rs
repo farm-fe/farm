@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
+  config::AliasItem,
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_css_ast::{ImportHref, Url},
 };
@@ -8,11 +7,11 @@ use farmfe_toolkit::{resolve::path_start_with_alias::is_start_with_alias, swc_cs
 
 pub struct DepAnalyzer {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
-  alias: HashMap<String, String>,
+  alias: Vec<AliasItem>,
 }
 
 impl DepAnalyzer {
-  pub fn new(alias: HashMap<String, String>) -> Self {
+  pub fn new(alias: Vec<AliasItem>) -> Self {
     Self {
       deps: vec![],
       alias,

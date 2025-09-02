@@ -2,9 +2,9 @@ import { defineConfig } from "@farmfe/core";
 import less from '@farmfe/js-plugin-less';
 import postcss from "@farmfe/js-plugin-postcss";
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
-export default defineConfig({
+export default defineConfig(env => {
+  const isDevelopment = env.mode === 'development';
+  return {
   compilation: {
     sourcemap: isDevelopment ? 'all' : false,
     input: {
@@ -21,9 +21,6 @@ export default defineConfig({
     persistentCache: false,
     presetEnv: {
       include: isDevelopment ? [] : ['node_modules/*'],
-      options: {
-        targets: 'Chrome >= 49',
-      },
     },
     css: {
       prefixer: {
@@ -38,8 +35,14 @@ export default defineConfig({
   plugins: [
     "@farmfe/plugin-react",
     "@farmfe/plugin-sass",
+    {
+      name: 'update-modules',
+      updateModules: { executor: async (param) => {
+        console.log(param)
+      }}
+    },
     less({/* options */}),
     postcss({/* options */}),
     // svgr({/* options */}),
   ],
-});
+}});

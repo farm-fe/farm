@@ -1,12 +1,11 @@
-use std::collections::{HashMap, HashSet};
-
+use farmfe_macro_cache_item::cache_item;
 use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
 };
-use serde::{Deserialize, Serialize};
 
 use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
+use crate::{HashMap, HashSet};
 
 use super::{module_graph::ModuleGraph, ModuleId};
 
@@ -16,14 +15,14 @@ pub struct ModuleGroupGraph {
   /// internal graph
   g: StableDiGraph<ModuleGroup, ()>,
   /// to index module in the graph using [ModuleId]
-  id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
+  id_index_map: HashMap<ModuleGroupId, NodeIndex<DefaultIx>>,
 }
 
 impl ModuleGroupGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: HashMap::new(),
+      id_index_map: HashMap::default(),
     }
   }
 
@@ -43,14 +42,14 @@ impl ModuleGroupGraph {
     self.id_index_map.insert(module_group_id, node_index);
   }
 
-  pub fn add_edge(&mut self, from: &ModuleId, to: &ModuleId) {
+  pub fn add_edge(&mut self, from: &ModuleGroupId, to: &ModuleGroupId) {
     let from_node_index = self.id_index_map.get(from).unwrap();
     let to_node_index = self.id_index_map.get(to).unwrap();
 
     self.g.add_edge(*from_node_index, *to_node_index, ());
   }
 
-  pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) {
+  pub fn remove_edge(&mut self, from: &ModuleGroupId, to: &ModuleGroupId) {
     let from_node_index = self.id_index_map.get(from).unwrap_or_else(|| {
       panic!(
         "ModuleGroupGraph::remove_edge: from {} to {}. Not found: {}",
@@ -114,7 +113,7 @@ impl ModuleGroupGraph {
     self.id_index_map.contains_key(id)
   }
 
-  pub fn has_edge(&self, from: &ModuleId, to: &ModuleId) -> bool {
+  pub fn has_edge(&self, from: &ModuleGroupId, to: &ModuleGroupId) -> bool {
     let from_node_index = self.id_index_map.get(from);
     let to_node_index = self.id_index_map.get(to);
 
@@ -160,7 +159,7 @@ impl ModuleGroupGraph {
     }
   }
 
-  pub fn dependencies(&self, module_id: &ModuleId) -> Vec<&ModuleGroup> {
+  pub fn dependencies(&self, module_id: &ModuleGroupId) -> Vec<&ModuleGroup> {
     let node_index = self.id_index_map.get(module_id).unwrap();
     let mut dependencies = Vec::new();
 
@@ -171,7 +170,7 @@ impl ModuleGroupGraph {
     dependencies
   }
 
-  pub fn dependencies_ids(&self, module_id: &ModuleId) -> Vec<ModuleId> {
+  pub fn dependencies_ids(&self, module_id: &ModuleGroupId) -> Vec<ModuleGroupId> {
     let node_index = self.id_index_map.get(module_id).unwrap();
     let mut dependencies = Vec::new();
 
@@ -182,7 +181,7 @@ impl ModuleGroupGraph {
     dependencies
   }
 
-  pub fn dependents(&self, module_id: &ModuleId) -> Vec<&ModuleGroup> {
+  pub fn dependents(&self, module_id: &ModuleGroupId) -> Vec<&ModuleGroup> {
     let node_index = self.id_index_map.get(module_id).unwrap();
     let mut dependents = Vec::new();
 
@@ -198,7 +197,7 @@ impl ModuleGroupGraph {
 
   pub fn toposort(&self, entries: Vec<ModuleGroupId>) -> Vec<ModuleGroupId> {
     let mut sorted = Vec::new();
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for entry in entries {
       self.dfs_post_order(&entry, &mut |id| {
@@ -233,7 +232,7 @@ impl ModuleGroupGraph {
   }
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PrintedModuleGroupGraph {
   pub module_groups: Vec<ModuleGroup>,
   pub edges: Vec<(String, String)>,
@@ -277,18 +276,47 @@ impl PartialEq for ModuleGroupGraph {
       .collect::<Vec<_>>();
     other_edges.sort();
 
+    // println!("self_module_groups: {:#?}", self_module_groups);
+    // println!("other_module_groups: {:#?}", other_module_groups);
+    // println!("self_edges: {:#?}", self_edges);
+    // println!("other_edges: {:#?}", other_edges);
+    // println!(
+    //   "self_module_groups == other_module_groups: {}",
+    //   self_module_groups == other_module_groups
+    // );
+    // println!("self_edges == other_edges: {}", self_edges == other_edges);
+
     self_module_groups == other_module_groups && self_edges == other_edges
   }
 }
 
 impl Eq for ModuleGroupGraph {}
 
-pub type ModuleGroupId = ModuleId;
+#[cache_item]
+#[derive(
+  Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, serde::Serialize, serde::Deserialize,
+)]
+#[rkyv(derive(Hash, Eq, PartialEq))]
+pub struct ModuleGroupId(String);
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+impl ModuleGroupId {
+  pub fn new(id: &ModuleId, ty: &ModuleGroupType) -> Self {
+    Self(format!("{}_{:?}", id.to_string(), ty))
+  }
+}
+
+impl ToString for ModuleGroupId {
+  fn to_string(&self) -> String {
+    self.0.clone()
+  }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ModuleGroup {
-  /// the module group's id is the same as its entry module's id.
   pub id: ModuleGroupId,
+  /// the module group's id is the same as its entry module's id.
+  pub entry_module_id: ModuleId,
+  pub module_group_type: ModuleGroupType,
   /// the modules that this group has
   modules: HashSet<ModuleId>,
   /// the [ResourcePot]s this group merged to
@@ -296,11 +324,13 @@ pub struct ModuleGroup {
 }
 
 impl ModuleGroup {
-  pub fn new(id: ModuleGroupId) -> Self {
+  pub fn new(module_id: ModuleId, ty: ModuleGroupType) -> Self {
     Self {
-      modules: HashSet::from([id.clone()]),
-      id,
-      resource_pots: HashSet::new(),
+      id: ModuleGroupId::new(&module_id, &ty),
+      modules: HashSet::from_iter([module_id.clone()]),
+      entry_module_id: module_id,
+      module_group_type: ty,
+      resource_pots: HashSet::default(),
     }
   }
 
@@ -333,7 +363,7 @@ impl ModuleGroup {
     module_graph: &ModuleGraph,
     resource_pot_map: &ResourcePotMap,
   ) -> Vec<ResourcePotId> {
-    let mut resource_pots_order_map = HashMap::<String, usize>::new();
+    let mut resource_pots_order_map = HashMap::<String, usize>::default();
     let mut sorted_resource_pots = self.resource_pots().iter().cloned().collect::<Vec<_>>();
 
     sorted_resource_pots.iter().for_each(|rp| {
@@ -368,4 +398,14 @@ impl ModuleGroup {
   pub fn has_resource_pot(&self, resource_pot_id: &ResourcePotId) -> bool {
     self.resource_pots.contains(resource_pot_id)
   }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
+pub enum ModuleGroupType {
+  /// module group created from config.input
+  Entry,
+  /// module group created from dynamic input return by analyze_deps or finalize_module hook. e.g. ResolveKind::DynamicEntry { name: "a", output_filename: None }
+  DynamicEntry,
+  /// module group created from dynamic import. e.g. `import('./a').then(module => console.log(module))`
+  DynamicImport,
 }

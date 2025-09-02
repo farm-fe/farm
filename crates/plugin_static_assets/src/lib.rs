@@ -1,7 +1,6 @@
 #![feature(path_file_prefix)]
 
 use std::{
-  collections::HashMap,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -9,19 +8,19 @@ use std::{
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   cache_item,
-  config::{asset::AssetFormatMode, custom::get_config_assets_mode, Config},
+  config::{asset::AssetFormatMode, Config},
   context::{CompilationContext, EmitFileParams},
   deserialize,
   module::ModuleType,
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
-  rkyv::Deserialize,
   serialize,
   swc_common::sync::OnceCell,
+  HashMap,
 };
 use farmfe_toolkit::{
-  fs::{read_file_raw, read_file_utf8, transform_output_filename},
+  fs::{read_file_raw, read_file_utf8, transform_output_filename, TransformOutputFileNameParams},
   lazy_static::lazy_static,
 };
 use farmfe_utils::{hash::sha256, stringify_query, FARM_IGNORE_ACTION_COMMENT};
@@ -213,12 +212,14 @@ impl Plugin for FarmPluginStaticAssets {
           .file_prefix()
           .and_then(|s| s.to_str())
           .unwrap();
-        let resource_name = transform_output_filename(
-          context.config.output.assets_filename.clone(),
-          filename,
-          &bytes,
+        let resource_name = transform_output_filename(TransformOutputFileNameParams {
+          filename_config: context.config.output.assets_filename.clone(),
+          name: filename,
+          name_hash: "",
+          bytes: &bytes,
           ext,
-        ) + stringify_query(&param.query).as_str();
+          special_placeholders: &Default::default(),
+        }) + stringify_query(&param.query).as_str();
 
         let resource_name = Self::get_resource_name(&resource_name, &param.module_id);
 
@@ -231,17 +232,17 @@ impl Plugin for FarmPluginStaticAssets {
         };
 
         let mode = self.asset_format_mode.get_or_init(|| {
-          get_config_assets_mode(&context.config)
+          context
+            .config
+            .assets
+            .mode
             .unwrap_or_else(|| (context.config.output.target_env.clone().into()))
         });
 
         let content = match mode {
           AssetFormatMode::Node => {
             format!(
-              r#"
-    import {{ fileURLToPath }} from "node:url";
-    export default fileURLToPath(new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url))
-                "#
+              r#"export default new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url)"#
             )
           }
           AssetFormatMode::Browser => {
@@ -273,7 +274,7 @@ impl Plugin for FarmPluginStaticAssets {
     cache: &Vec<u8>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_static_assets = deserialize!(cache, CachedStaticAssets);
+    let cached_static_assets = deserialize!(cache, CachedStaticAssets, ArchivedCachedStaticAssets);
 
     for asset in cached_static_assets.list {
       if let ResourceOrigin::Module(m) = asset.origin {
@@ -314,7 +315,7 @@ impl Plugin for FarmPluginStaticAssets {
   }
 }
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 struct CachedStaticAssets {
   list: Vec<Resource>,
 }

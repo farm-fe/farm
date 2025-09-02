@@ -1,0 +1,186 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-sass
+支持 `sass` 编译
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-sass sass</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-sass sass</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-sass sass</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+```ts {2,6}
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSass from '@farmfe/js-plugin-sass';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSass({ /* options */ })
+  ]
+}
+```
+
+## Options
+```ts
+export type SassPluginOptions = {
+  sassOptions?: StringOptions<'async'>;
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
+
+  /**
+   * - relative or absolute path
+   * - globals file will be added to the top of the sass file
+   * - when file changed, the file can't be hot-reloaded
+   *
+   * relative to project root or cwd
+   */
+  implementation?: string | undefined;
+  globals?: string[];
+  additionalData?:
+    | string
+    | ((content?: string, resolvePath?: string) => string | Promise<string>);
+};
+```
+
+### sassOptions
+请参阅 [sass 选项](https://sass-lang.com/documentation/js-api/interfaces/options/)。
+
+Example:
+```ts
+import path from 'node:path';
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSass from '@farmfe/js-plugin-sass';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSass({
+      sassOptions: {
+        loadPaths: [path.resolve(process.cwd(), 'styles')]
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### filters
+哪些文件应该由 `sass` 处理。 对于 load 钩子默认为 `{resolvedPaths: ['\\.(s[ac]ss)$'] }`, 对于 transform 钩子默认为 `{ moduleTypes: ['sass'] }`。
+
+* `resolvedPaths`: 仅处理这些路径下的文件。 支持正则表达式。
+* `moduleTypes`：仅处理具有这些模块类型的文件。
+
+`resolvedPaths` 和 `moduleTypes` 取并集。
+
+示例:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSass from '@farmfe/js-plugin-sass';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSass({
+      filters: {
+        // all files end with .custom-css will be processed
+        resolvedPaths: ['\\.custom-sass$'],
+        moduleTypes: ['sass']
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### implementation
+`sass` 的 `implementation` 包名称。 默认为 `sass`。 如果你想使用`sass-embedded`，可以将其设置为`sass-embedded`。
+
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSass from '@farmfe/js-plugin-sass';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSass({
+      implementation: 'sass-embedded'
+    })
+  ]
+}
+```
+:::note
+您应该手动安装 `sass-embedded`。
+:::
+
+### additionalData
+```ts
+type AdditionalDataOption = string | ((content?: string, resolvePath?: string) => string | Promise<string>);
+```
+要添加到每个 sass 文件的附加数据。 例子：
+
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSass from '@farmfe/js-plugin-sass';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSass({
+      // add variables.sass to every sass file
+      additionalData: `
+        @import "./src/styles/variables.scss";
+      `
+    })
+  ]
+}
+```
+Sass 文件
+```sass title="index.scss"
+.foo {
+  color: @primary-color;
+}
+```
+`additionalData` 将会被添加到这个文件的头部：
+```sass title="index.scss"
+@import "./src/styles/variables.scss";
+
+.foo {
+  color: @primary-color;
+}
+```
+
+函数形式用法:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSass from '@farmfe/js-plugin-sass';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSass({
+      // add variables.sass to every sass file
+      additionalData: (content, resolvePath) => {
+        if (resolvePath === '/path/to/index.sass') {
+          return `
+            @import "./src/styles/variables.sass";
+          `;
+        }
+      }
+    })
+  ]
+}
+```
+
+### globals
+全局 sass 文件。 这些文件将添加到每个 sass 文件的顶部。 它与 `additionalData` 相同，但更方便。
+

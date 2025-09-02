@@ -1,12 +1,14 @@
+use std::sync::Arc;
+
 use farmfe_core::{
   config::FARM_MODULE,
-  swc_ecma_ast::{Module as SwcModule, ModuleDecl, ModuleItem},
+  swc_ecma_ast::{EsVersion, Module as SwcModule, ModuleDecl, ModuleItem},
   swc_ecma_parser::Syntax,
 };
 
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
-  swc_ast::{parse_module, ParseScriptModuleResult},
+  swc_ast::{farm_swc_parse_module, ParseScriptModuleResult},
 };
 use lazy_static::lazy_static;
 
@@ -32,10 +34,62 @@ lazy_static! {
   };
 }
 
+pub fn parse_module(
+  lib: &Library,
+  file_name: &str,
+  src: &str,
+  syntax: Syntax,
+  target: EsVersion,
+) -> farmfe_core::error::Result<ParseScriptModuleResult> {
+  farm_swc_parse_module(
+    lib,
+    &file_name.into(),
+    Arc::new(src.to_string()),
+    syntax,
+    target,
+  )
+}
+
+// polyfill like https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/src/refreshUtils.js
+//
+//
+//
+// ```js
+// Object.defineProperty(exports, "Foo", {
+//  get() {
+//    return Foo
+//  }
+// });
+//
+// Object.defineProperty(exports, "Bar", {
+//  get() {
+//    return Bar
+//  }
+// });
+//
+//
+//
+// // moduleA
+// const Foo = () => {}
+//
+// // ...
+// ReactRefreshUtil.registerExportsForReactRefresh(module.exports, module.id);
+// // Until here, `Bar` is still not initialized
+// // ...
+//
+// // moduleB
+// const Bar = () => {}
+// ```
+//
+
+// When merging multiple modules, the exports will be promoted and contain side effects
+// so the getter cannot be triggered immediately when `registerExportsForReactRefresh`.
+// maybe there are other better ways.
 const POST_CODE: &str = r#"
 window.$RefreshReg$ = prevRefreshReg;
 window.$RefreshSig$ = prevRefreshSig;
 if (import.meta.hot) {
+  setTimeout(() => {
     ReactRefreshUtil.registerExportsForReactRefresh(module.exports, module.id);
 
     import.meta.hot.accept(nextExport => {
@@ -47,6 +101,7 @@ if (import.meta.hot) {
     });
 
     ReactRefreshUtil.enqueueUpdate();
+  })
 }
 "#;
 
@@ -75,8 +130,7 @@ fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
   // inject react boundary detection
   let react_boundary_import =
     format!("import * as ReactRefreshUtil from '{IS_REACT_REFRESH_BOUNDARY}'");
-  let react_boundary_import_decl =
-    parse_import_decl("ReactRefreshUtil", &react_boundary_import);
+  let react_boundary_import_decl = parse_import_decl("ReactRefreshUtil", &react_boundary_import);
 
   ast.body.insert(
     0,

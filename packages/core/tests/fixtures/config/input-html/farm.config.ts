@@ -5,6 +5,9 @@ export default {
     input: {
       index: 'index.html'
     },
+    output: {
+      targetEnv: 'browser-legacy'
+    },
     external: builtinModules
   }
 };

@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 // TODO: submit a PR to farm(export default farm)
 import {
-  type FarmCLIOptions,
+  type FarmCliOptions,
   type JsPlugin,
   type Server,
   type UserConfig,
@@ -46,10 +46,10 @@ export default function farmElectronPlugin(
       // config.compilation.assets.publicDir ??= ''
       return config;
     },
-    configureDevServer(server) {
+    configureServer(server) {
       isDev = true;
 
-      server.server?.once('listening', () => {
+      server.httpServer?.once('listening', () => {
         // Used in electron/main.ts for during dev
         process.env.FARM_DEV_SERVER_URL = resolveServerUrl(server);
 
@@ -112,13 +112,14 @@ function resolveFarmConfig(
   opts.farm.compilation.input = input;
   opts.farm.compilation.output ??= {};
   opts.farm.compilation.output.path ??= 'dist-electron';
-  opts.farm.compilation.output.targetEnv ??= 'node16';
+  opts.farm.compilation.output.targetEnv ??= 'library';
   opts.farm.compilation.external ??= [];
   opts.farm.compilation.external.push('^electron$');
   opts.farm.compilation.watch ??= isDev;
   opts.farm.compilation.partialBundling ??= {};
   opts.farm.compilation.partialBundling.enforceResources ??= [];
   opts.farm.plugins ??= [];
+  opts.farm.compilation.persistentCache = false;
 
   if (!opts.farm.compilation.output.format) {
     opts.farm.compilation.output.format =
@@ -145,34 +146,17 @@ function resolveFarmConfig(
       test: ['.+'],
       name: 'preload'
     });
-
-    if (isEsm) {
-      opts.farm.plugins.push({
-        name: 'farm-plugin-electron:preload-scripts-runtime',
-        renderResourcePot: {
-          filters: {
-            resourcePotTypes: ['js'],
-            moduleIds: []
-          },
-          async executor(param) {
-            return {
-              ...param,
-              // Fix runtime code error `__filename is not defined`
-              // TODO: `import.meta.url` of `__filename` will be converted to filename(absolute path) when targetEnv=node`.
-              content: `var electron_preload_scripts_filename='';globalThis['__' + 'filename']=electron_preload_scripts_filename;${param.content}`
-            };
-          }
-        }
-      });
-    }
   }
 
-  // TODO: submit a PR to farm(Omit<FarmCLIOptions, 'server'> & UserConfig)
-  return opts.farm as FarmCLIOptions;
+  // TODO: submit a PR to farm(Omit<FarmCliOptions, 'server'> & UserConfig)
+  return {
+    ...opts.farm,
+    configFile: false
+  } as FarmCliOptions;
 }
 
 function resolveServerUrl(server: Server) {
-  const addressInfo = server.server?.address();
+  const addressInfo = server.httpServer?.address();
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
 
   if (isAddressInfo(addressInfo)) {

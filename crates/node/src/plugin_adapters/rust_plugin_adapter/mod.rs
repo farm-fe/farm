@@ -6,12 +6,12 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   plugin::{
-    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
-    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
+    Plugin, PluginFinalizeResourcesHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
     PluginTransformHookResult,
   },
-  resource::resource_pot::ResourcePot,
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
 };
 
 use libloading::Library;
@@ -112,6 +112,22 @@ impl Plugin for RustPluginAdapter {
     self.plugin.analyze_deps(param, context)
   }
 
+  fn freeze_module(
+    &self,
+    param: &mut farmfe_core::plugin::hooks::freeze_module::PluginFreezeModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.freeze_module(param, context)
+  }
+
+  fn module_graph_build_end(
+    &self,
+    module_graph: &mut ModuleGraph,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.module_graph_build_end(module_graph, context)
+  }
+
   fn build_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
     self.plugin.build_end(context)
   }
@@ -126,6 +142,14 @@ impl Plugin for RustPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.optimize_module_graph(module_graph, context)
+  }
+
+  fn freeze_module_graph_meta(
+    &self,
+    module_graph: &mut ModuleGraph,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.freeze_module_graph_meta(module_graph, context)
   }
 
   fn analyze_module_graph(
@@ -160,31 +184,33 @@ impl Plugin for RustPluginAdapter {
     self.plugin.render_start(config, context)
   }
 
-  fn render_resource_pot_modules(
+  fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>> {
+  ) -> Result<Option<ResourcePotMetaData>> {
     self
       .plugin
-      .render_resource_pot_modules(resource_pot, context, hook_context)
+      .render_resource_pot(resource_pot, context, hook_context)
   }
 
-  fn render_resource_pot(
+  fn process_rendered_resource_pot(
     &self,
-    resource_pot: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
-  ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
-    self.plugin.render_resource_pot(resource_pot, context)
+  ) -> Result<Option<()>> {
+    self
+      .plugin
+      .process_rendered_resource_pot(resource_pot, context)
   }
 
-  fn augment_resource_hash(
+  fn augment_resource_pot_hash(
     &self,
-    render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
+    render_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
-    self.plugin.augment_resource_hash(render_pot_info, context)
+    self.plugin.augment_resource_pot_hash(render_pot, context)
   }
 
   fn optimize_resource_pot(
@@ -216,7 +242,7 @@ impl Plugin for RustPluginAdapter {
 
   fn handle_entry_resource(
     &self,
-    resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParams,
+    resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.handle_entry_resource(resource, context)
@@ -224,7 +250,7 @@ impl Plugin for RustPluginAdapter {
 
   fn finalize_resources(
     &self,
-    param: &mut PluginFinalizeResourcesHookParams,
+    param: &mut PluginFinalizeResourcesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.finalize_resources(param, context)
@@ -260,7 +286,7 @@ impl Plugin for RustPluginAdapter {
 
   fn update_modules(
     &self,
-    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.update_modules(params, context)
@@ -268,7 +294,7 @@ impl Plugin for RustPluginAdapter {
 
   fn module_graph_updated(
     &self,
-    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.module_graph_updated(param, context)

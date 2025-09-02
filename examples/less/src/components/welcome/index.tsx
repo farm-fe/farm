@@ -12,13 +12,13 @@ export function Welcome() {
     <div className="farm-container">
       <img className="logo" src={logo} alt="" />
       <FarmCard>
-        <div className="main-desc">
+        <div className="main-desc description">
           <h2 className="main-sub-title">
             Get started With
             <span className="main-content"> React + Farm + Less</span>
           </h2>
-          <span className="main-content">
-            Super fast web building tool written in Rust.
+          <span className="main-content description">
+            Super fast web building tool written in Rust. 基于 Rust 的极速 Web 构建工具。
           </span>
         </div>
       </FarmCard>

@@ -1,10 +1,20 @@
 import deepmerge, { Options } from 'deepmerge';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
 import { isPlainObject } from 'is-plain-object';
 import { isArray } from './share.js';
 
+function filterUndefinedValueForArray(arr: any) {
+  if (!isArray(arr)) {
+    return arr;
+  }
+
+  return arr.filter((item) => item !== undefined);
+}
+
 function isValueSameDeep(target: any, source: any): boolean {
+  target = filterUndefinedValueForArray(target);
+  source = filterUndefinedValueForArray(source);
+
   if (target === source) {
     return true;
   }

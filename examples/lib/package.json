@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe-examples/lib",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "farm build",
+    "clean": "farm clean"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "typescript": "^5.4.3",
+    "@farmfe/js-plugin-dts": "workspace:*",
+    "@farmfe/plugin-dts": "workspace:*"
+  }
+}

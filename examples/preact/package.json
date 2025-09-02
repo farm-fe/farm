@@ -1,0 +1,26 @@
+{
+  "name": "@farmfe-examples/preact",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@patternfly/react-core": "^6.3.0",
+    "@preact/compat": "^18.3.1",
+    "preact": "^10.20.1"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
+    "@preact/preset-vite": "^2.8.1",
+    "react-refresh": "^0.17.0",
+    "typescript": "^5.4.3"
+  }
+}

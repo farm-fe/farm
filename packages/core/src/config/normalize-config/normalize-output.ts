@@ -1,13 +1,11 @@
-import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
-
 import path, { isAbsolute } from 'node:path';
+
 import { Config } from '../../types/binding.js';
 import { urlRegex } from '../../utils/http.js';
 import { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
-  mapTargetEnvValue,
-  normalizeBasePath
+  mapTargetEnvValue
 } from '../../utils/share.js';
 import { ResolvedCompilation } from '../types.js';
 
@@ -21,7 +19,14 @@ export function normalizeOutput(
   }
 
   if (!config.output.targetEnv) {
-    config.output.targetEnv = 'browser';
+    // set target env to library if all inputs are script
+    const scriptSuffixes = ['.js', '.ts', '.jsx', '.tsx'];
+    const isScript =
+      config?.input &&
+      Object.values(config?.input).every(([_, value]) =>
+        scriptSuffixes.some((suffix) => value.endsWith(suffix))
+      );
+    config.output.targetEnv = isScript ? 'library' : 'browser';
   }
 
   if (isProduction) {
@@ -65,9 +70,34 @@ type TargetsForTargetEnv = Record<
 >;
 type TargetsMap = Omit<TargetsForTargetEnv, 'node' | 'browser'>;
 
-const es2015Browsers = browsersWithSupportForFeatures('es6');
-const es2017Browsers = browsersWithSupportForFeatures('async-functions');
-const LEGACY_BROWSERS = ['ie >= 9'];
+// browsers that fully support Promise
+const es2015Browsers = [
+  'chrome >= 33',
+  'edge >= 12',
+  'firefox >= 29',
+  'ios >= 8',
+  'opera >= 20',
+  'safari >= 7.1'
+];
+// browsers that fully support async functions
+const es2017Browsers = [
+  'chrome >= 55',
+  'edge >= 15',
+  'firefox >= 52',
+  'ios >= 11',
+  'opera >= 42',
+  'safari >= 11'
+];
+
+const LEGACY_BROWSERS = [
+  'chrome >= 5',
+  'edge >= 12',
+  'firefox >= 4',
+  'ie >= 9',
+  'ios >= 6',
+  'opera >= 12.1',
+  'safari >= 5'
+];
 
 const targetsMap: TargetsMap = {
   node16: {
@@ -95,9 +125,7 @@ const targetsMap: TargetsMap = {
     scriptGenTarget: 'es2017'
   },
   'browser-esnext': null,
-  library: null,
-  'library-browser': null,
-  'library-node': null
+  library: null
 };
 
 /**
@@ -106,8 +134,8 @@ const targetsMap: TargetsMap = {
  */
 function normalizeTargetEnv(config: Config['config']) {
   const aliasMap: Record<string, keyof TargetsMap> = {
-    node: 'node16',
-    browser: 'browser-es2017'
+    node: 'node-next',
+    browser: 'browser-esnext'
   };
 
   const targetEnv = (aliasMap[config.output.targetEnv] ??
@@ -258,16 +286,4 @@ export function normalizePublicPath(
     );
 
   return defaultPublicPath;
-}
-
-export function getValidPublicPath(publicPath = '/'): string {
-  let validPublicPath = '';
-
-  if (publicPath.startsWith('/')) {
-    validPublicPath = publicPath;
-  } else if (publicPath.startsWith('.')) {
-    validPublicPath = normalizeBasePath(path.join('/', publicPath));
-  }
-
-  return validPublicPath;
 }

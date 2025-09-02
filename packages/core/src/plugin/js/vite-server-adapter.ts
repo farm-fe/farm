@@ -1,85 +1,67 @@
-// import { watch } from 'chokidar';
-import { FSWatcher } from 'chokidar';
-import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/type.js';
-import WsServer from '../../server/ws.js';
+import { Logger } from '../../utils/logger.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
 export class ViteDevServerAdapter {
-  moduleGraph: ViteModuleGraphAdapter;
-  config: any;
-  pluginName: string;
-  watcher: FSWatcher;
-  middlewares: any;
-  middlewareCallbacks: any[];
-  ws: WsServer;
-  httpServer: httpServer;
+  private _server: any;
+  private _config: any;
+  private _moduleGraphAdapter: any;
+  [key: string]: any;
+  [key: symbol]: any;
+  constructor(pluginName: string, config: any, server: any, logger: Logger) {
+    this._server = server;
+    this._config = config;
+    this._moduleGraphAdapter = createViteModuleGraphAdapter(pluginName, logger);
 
-  constructor(pluginName: string, config: any, server: Server) {
-    this.moduleGraph = createViteModuleGraphAdapter(pluginName);
-    this.config = config;
-    this.pluginName = pluginName;
-    // watcher is not used in Farm vite plugin for now
-    // it's only for compatibility
-    // this.watcher = watch(config.root);
-    this.watcher = server.watcher.getInternalWatcher();
-    this.middlewareCallbacks = [];
-    this.middlewares = new Proxy(
-      {
-        use: (...args: any[]) => {
-          if (
-            args.length === 2 &&
-            typeof args[0] === 'string' &&
-            typeof args[1] === 'function'
-          ) {
-            this.middlewareCallbacks.push((req: any, res: any, next: any) => {
-              const [url, cb] = args;
-              if (req.url.startsWith(url)) {
-                cb(req, res, next);
-              }
-            });
-          } else if (args.length === 1 && typeof args[0] === 'function') {
-            this.middlewareCallbacks.push(args[0]);
+    return new Proxy(this, {
+      get: (_target, prop) => {
+        switch (prop) {
+          case 'moduleGraph':
+            return this._moduleGraphAdapter;
+          case 'watcher':
+            return this._server.watcher.getInternalWatcher();
+          case 'middlewares':
+            return this._server.middlewares;
+          case 'config':
+            return this._config;
+          default: {
+            const value = this._server[prop];
+            return typeof value === 'function'
+              ? value.bind(this._server)
+              : value;
           }
         }
       },
-      {
-        get(target, key) {
-          if (key === 'use') {
-            return target[key as keyof typeof target];
-          }
-
-          throwIncompatibleError(
-            pluginName,
-            'viteDevServer.middlewares',
-            ['use'],
-            key
-          );
-        }
+      set: (_target, prop, value) => {
+        this._server[prop] = value;
+        return true;
       }
-    );
-
-    this.ws = server.ws;
-    this.httpServer = server.server;
+    });
   }
 }
 
 export class ViteModuleGraphAdapter {
   context: CompilationContext;
   pluginName: string;
+  logger: Logger;
 
-  constructor(pluginName: string) {
+  constructor(pluginName: string, logger: Logger) {
     // context will be set in buildStart hook
     this.context = undefined;
     this.pluginName = pluginName;
+    this.logger = logger;
   }
 
   getModulesByFile(file: string): ViteModule[] {
     const raw = this.context.viteGetModulesByFile(file);
 
     return raw.map((item) => {
-      return proxyViteModuleNode(item, this.pluginName, this.context);
+      return proxyViteModuleNode(
+        item,
+        this.pluginName,
+        this.context,
+        this.logger
+      );
     });
   }
 
@@ -87,7 +69,12 @@ export class ViteModuleGraphAdapter {
     const raw = this.context.viteGetModuleById(id);
 
     if (raw) {
-      return proxyViteModuleNode(raw, this.pluginName, this.context);
+      return proxyViteModuleNode(
+        raw,
+        this.pluginName,
+        this.context,
+        this.logger
+      );
     }
   }
 
@@ -97,7 +84,12 @@ export class ViteModuleGraphAdapter {
       const raw = this.context.viteGetModuleById(url);
 
       if (raw) {
-        return proxyViteModuleNode(raw, this.pluginName, this.context);
+        return proxyViteModuleNode(
+          raw,
+          this.pluginName,
+          this.context,
+          this.logger
+        );
       }
     }
   }
@@ -107,10 +99,15 @@ export class ViteModuleGraphAdapter {
   }
 }
 
-function proxyViteModuleNode(
+export function createModuleGraph(pluginName: string, logger: Logger) {
+  return new ViteModuleGraphAdapter(pluginName, logger);
+}
+
+export function proxyViteModuleNode(
   node: ViteModule,
   pluginName: string,
-  context: CompilationContext
+  context: CompilationContext,
+  logger: Logger
 ) {
   const proxy = new Proxy(node, {
     get(target, key) {
@@ -124,7 +121,13 @@ function proxyViteModuleNode(
         return target[key as keyof typeof target];
       }
 
-      throwIncompatibleError(pluginName, 'viteModuleNode', allowedKeys, key);
+      throwIncompatibleError(
+        logger,
+        pluginName,
+        'viteModuleNode',
+        allowedKeys,
+        key
+      );
     }
   });
 
@@ -134,10 +137,11 @@ function proxyViteModuleNode(
 export function createViteDevServerAdapter(
   pluginName: string,
   config: any,
-  server: Server
+  server: any,
+  logger: Logger
 ) {
   const proxy = new Proxy(
-    new ViteDevServerAdapter(pluginName, config, server),
+    new ViteDevServerAdapter(pluginName, config, server, logger),
     {
       get(target, key) {
         const objectKeys = [
@@ -146,6 +150,9 @@ export function createViteDevServerAdapter(
           'prototype'
         ];
         const allowedKeys = [
+          'serverOptions',
+          'resolvedUrls',
+          'printUrls',
           'moduleGraph',
           'config',
           'watcher',
@@ -161,7 +168,13 @@ export function createViteDevServerAdapter(
           return target[key as keyof typeof target];
         }
 
-        throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
+        throwIncompatibleError(
+          logger,
+          pluginName,
+          'viteDevServer',
+          allowedKeys,
+          key
+        );
       }
     }
   );
@@ -169,8 +182,11 @@ export function createViteDevServerAdapter(
   return proxy;
 }
 
-export function createViteModuleGraphAdapter(pluginName: string) {
-  const proxy = new Proxy(new ViteModuleGraphAdapter(pluginName), {
+export function createViteModuleGraphAdapter(
+  pluginName: string,
+  logger: Logger
+) {
+  const proxy = new Proxy(new ViteModuleGraphAdapter(pluginName, logger), {
     get(target, key) {
       const allowedKeys = [
         'getModulesByFile',
@@ -184,7 +200,13 @@ export function createViteModuleGraphAdapter(pluginName: string) {
         return target[key as keyof typeof target];
       }
 
-      throwIncompatibleError(pluginName, 'viteModuleGraph', allowedKeys, key);
+      throwIncompatibleError(
+        logger,
+        pluginName,
+        'viteModuleGraph',
+        allowedKeys,
+        key
+      );
     },
     set(target, p, newValue, _receiver) {
       if (p === 'context') {
@@ -192,7 +214,13 @@ export function createViteModuleGraphAdapter(pluginName: string) {
         return true;
       }
 
-      throwIncompatibleError(pluginName, 'viteModuleGraph', ['context'], p);
+      throwIncompatibleError(
+        logger,
+        pluginName,
+        'viteModuleGraph',
+        ['context'],
+        p
+      );
     }
   });
 
