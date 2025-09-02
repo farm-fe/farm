@@ -27,6 +27,7 @@ export default function farmLessPlugin(
 ): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   let compiler: Compiler;
+  // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   const implementation: LessStatic = getLessImplementation(
     options?.implementation
   );
