@@ -9,7 +9,7 @@
     "preview": "farm preview"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:^"
+    "farm": "workspace:^"
   },
   "dependencies": {
     "qrcode": "^1.5.3"

@@ -17,7 +17,7 @@
     "@tauri-apps/plugin-opener": "^2"
   },
   "devDependencies": {
-    "@farmfe/core": "^1.6.7",
+    "farm": "^1.6.7",
     "core-js": "^3.39.0",
     "typescript": "~5.6.2",
     "vite-plugin-solid": "^2.11.0",

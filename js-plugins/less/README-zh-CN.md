@@ -36,7 +36,7 @@ pnpm add -D less @farmfe/js-plugin-less
 然后在`farm.config.ts`中配置插件：
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 //引入该插件
 import Less from '@farmfe/js-plugin-less'; 
 

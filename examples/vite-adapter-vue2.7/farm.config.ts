@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import path from 'node:path';
 import vue from '@vitejs/plugin-vue2'
 import { createSvgPlugin } from 'vite-plugin-vue2-svg';

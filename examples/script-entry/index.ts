@@ -1,5 +1,5 @@
 import module from 'module';
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import lodashMerge from 'lodash/merge';
 
 function defineConfig(config: UserConfig) {

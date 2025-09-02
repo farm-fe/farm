@@ -17,7 +17,7 @@
     "vue": "2.6.14"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "axios": "^1.7.2",
     "core-js": "^3.30.1",
     "vite-plugin-vue2": "^2.0.3",

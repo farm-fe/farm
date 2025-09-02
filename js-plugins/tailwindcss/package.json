@@ -19,7 +19,7 @@
   },
   "keywords": [
     "farm",
-    "@farmfe/core",
+    "farm",
     "farmfe",
     "tailwindcss",
     "css",
@@ -28,7 +28,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@farmfe/core": "workspace:^",
+    "farm": "workspace:^",
     "@tailwindcss/node": "4.1.12",
     "@tailwindcss/oxide": "4.1.12",
     "tailwindcss": "4.1.12"

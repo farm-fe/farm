@@ -12,9 +12,9 @@ export default (<UserConfig>{
       entryFilename: 'index.cjs'
     },
     external: [
-      '@farmfe/core',
+      'farm',
       'chokidar',
-      '@farmfe/core-.*',
+      'farm-.*',
       './farm.*.node$',
       './farm.*.cjs',
       '@farmfe/plugin-.*'

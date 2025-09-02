@@ -16,7 +16,7 @@
     "preact": "^10.20.1"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",
     "@preact/preset-vite": "^2.8.1",
     "react-refresh": "^0.17.0",

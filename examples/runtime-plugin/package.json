@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/runtime": "workspace:*"
   },
   "scripts": {

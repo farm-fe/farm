@@ -14,7 +14,7 @@
     "react-redux": "^7.2.6"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-sass": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",
     "@farmfe/plugin-sass": "workspace:*",

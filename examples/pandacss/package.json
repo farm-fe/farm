@@ -15,7 +15,7 @@
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",
     "@pandacss/dev": "^0.42.0",

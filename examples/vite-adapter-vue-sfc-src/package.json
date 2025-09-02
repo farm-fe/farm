@@ -6,7 +6,7 @@
   },
   "private": true,
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@vitejs/plugin-vue": "^5.0.3",
     "core-js": "^3.35.1"
   },

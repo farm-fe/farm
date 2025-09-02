@@ -4,7 +4,7 @@ import path from 'path';
 import { pathToFileURL, fileURLToPath } from 'url';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {

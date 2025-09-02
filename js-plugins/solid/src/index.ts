@@ -9,7 +9,7 @@ import { mergeAndConcat } from 'merge-anything';
 import solidRefresh from 'solid-refresh/babel';
 
 import type { TransformOptions } from '@babel/core';
-import { isObject, type JsPlugin } from '@farmfe/core';
+import { isObject, type JsPlugin } from 'farm';
 import type { Options } from './types.js';
 
 // TODO: HMR

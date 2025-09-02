@@ -10,7 +10,7 @@
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",
     "@swc/plugin-emotion": "11.0.2",
     "@types/react": "18",

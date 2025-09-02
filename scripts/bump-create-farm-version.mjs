@@ -10,7 +10,7 @@ const packageReactPluginJson = JSON.parse(
   fs.readFileSync(packageReactPluginPath, "utf8"),
 );
 const dependenciesToUpdate = {
-  "@farmfe/core": `^${packageCoreJson.version}`,
+  "farm": `^${packageCoreJson.version}`,
   "@farmfe/plugin-react": `^${packageReactPluginJson.version}`,
 };
 

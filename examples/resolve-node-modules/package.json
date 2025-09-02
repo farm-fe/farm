@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@farmfe/core": "workspace:*"
+    "farm": "workspace:*"
   },
   "scripts": {
     "build": "farm build"

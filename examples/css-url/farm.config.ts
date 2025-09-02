@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import postcss from '@farmfe/js-plugin-postcss';
 
 console.log(__dirname);

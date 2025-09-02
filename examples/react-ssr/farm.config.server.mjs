@@ -1,7 +1,7 @@
 import { builtinModules } from 'node:module';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {

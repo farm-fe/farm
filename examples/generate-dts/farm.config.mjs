@@ -3,7 +3,7 @@ import { builtinModules } from 'module';
 import path from 'path';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {

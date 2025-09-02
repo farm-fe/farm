@@ -1,4 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import less from '@farmfe/js-plugin-less';
 
 function defineConfig(config: UserConfig) {

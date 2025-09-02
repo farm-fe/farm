@@ -12,7 +12,7 @@
     "vue": "^3.4.0"
   },
   "devDependencies": {
-    "@farmfe/core": "^1.6.7",
+    "farm": "^1.6.7",
     "@vitejs/plugin-vue": "5.0.4",
     "@vue/tsconfig": "^0.7.0",
     "core-js": "^3.30.1"

@@ -13,7 +13,7 @@ npm i @farmfe/js-plugin-vue --save-dev # or pnpm/yarn add @farmfe/js-plugin-vue 
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 import farmJsPluginVue from '@farmfe/js-plugin-vue'; //  import the plugin
 
 export default defineFarmConfig({

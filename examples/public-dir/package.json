@@ -8,7 +8,7 @@
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:^",
+    "farm": "workspace:^",
     "@farmfe/plugin-react": "workspace:*",
     "@types/react": "18",
     "core-js": "^3.30.1",

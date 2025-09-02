@@ -14,7 +14,7 @@
   "keywords": [],
   "devDependencies": {
     "@clack/prompts": "^0.7.0",
-    "@farmfe/core": "workspace:*"
+    "farm": "workspace:*"
   },
   "author": "",
   "license": "ISC"

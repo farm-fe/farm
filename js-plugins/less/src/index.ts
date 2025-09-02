@@ -1,11 +1,6 @@
 import { existsSync } from 'fs';
 import path from 'path';
-import {
-  Compiler,
-  JsPlugin,
-  UserConfig,
-  getAdditionContext
-} from '@farmfe/core';
+import { Compiler, JsPlugin, UserConfig, getAdditionContext } from 'farm';
 import { createLessResolvePlugin } from './plugin-resolve.js';
 import {
   getLessImplementation,

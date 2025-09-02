@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
-    "@farmfe/core": "workspace:*"
+    "farm": "workspace:*"
   },
   "scripts": {
     "start": "farm watch",

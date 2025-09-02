@@ -27,7 +27,7 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         ...(process.env.FARM_CONFIG_FULL_BUNDLE
           ? []
           : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']),
-        '^@farmfe/core$'
+        '^farm$'
       ],
       sourcemap: false,
       treeShaking: false,

@@ -248,7 +248,7 @@ cli
 
 cli.help();
 
-cli.version(`@farmfe/core ${VERSION ?? 'unknown'}`);
+cli.version(`farm ${VERSION ?? 'unknown'}`);
 
 export function runCli() {
   cli.parse();

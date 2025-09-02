@@ -13,6 +13,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@farmfe/core": "workspace:*"
+    "farm": "workspace:*"
   }
 }

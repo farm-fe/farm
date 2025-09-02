@@ -15,7 +15,7 @@
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/core": "^1.0.22",
+    "farm": "^1.0.22",
     "@farmfe/plugin-react": "^1.0.1",
     "@types/react": "18",
     "core-js": "^3.36.1",

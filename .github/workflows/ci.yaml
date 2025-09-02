@@ -136,8 +136,8 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
-      - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
+      - name: Build Core
+        run: pnpm --filter farm run build
       - name: Build Runtime
         run: pnpm --filter @farmfe/runtime run build
       - name: Type Check With Tsc
@@ -186,8 +186,8 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
-      - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
+      - name: Build Core
+        run: pnpm --filter farm run build
       - uses: actions/download-artifact@v4
         id: download
         with:

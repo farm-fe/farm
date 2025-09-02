@@ -18,7 +18,7 @@
     "typescript": "^5.0.2",
     "vue-tsc": "^1.8.5",
     "@tauri-apps/cli": "^1",
-    "@farmfe/core": "^1.6.7",
+    "farm": "^1.6.7",
     "core-js": "^3.30.1"
   }
 }

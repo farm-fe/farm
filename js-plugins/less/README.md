@@ -36,7 +36,7 @@ pnpm add -D less @farmfe/js-plugin-less
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 import Less from '@farmfe/js-plugin-less'; //  import the plugin
 
 export default defineFarmConfig({

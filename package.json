@@ -6,12 +6,12 @@
     "node": ">=20",
     "pnpm": ">=9"
   },
-    "scripts": {
+  "scripts": {
     "preinstall": "npx only-allow pnpm",
     "bootstrap": "node scripts/bootstrap.mjs -v",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
-    "start": "pnpm --filter @farmfe/core start",
-    "build:core": "pnpm --filter @farmfe/core build",
+    "start": "pnpm --filter farm start",
+    "build:core": "pnpm --filter farm build",
     "doc": "pnpm --filter farm-docs dev",
     "release": "node scripts/release.mjs",
     "release:nightly": "node scripts/release-nightly.mjs",
@@ -33,7 +33,7 @@
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@types/node": "^18.19.67",
     "@vitest/coverage-v8": "2.0.4",
     "cross-env": "^7.0.3",
@@ -58,7 +58,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@farmfe/core": "workspace:*"
+      "farm": "workspace:*"
     }
   },
   "packageManager": "pnpm@9.4.0"

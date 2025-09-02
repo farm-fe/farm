@@ -36,10 +36,10 @@ pnpm add -D @farmfe/js-plugin-electron
 在 `farm.config.ts` 中配置插件：
 
 ```ts
-import { defineConfig } from '@farmfe/core'
+import { defineConfig } from 'farm'
 import electron from '@farmfe/js-plugin-electron'
 
-import { defineConfig } from '@farmfe/core'
+import { defineConfig } from 'farm'
 import electron from './farm-plugin-electron'
 
 export default defineConfig({
@@ -59,7 +59,7 @@ export default defineConfig({
 ## 选项
 
 ```ts
-import type { UserConfig } from '@farmfe/core'
+import type { UserConfig } from 'farm'
 
 export interface BuildOptions {
   /**

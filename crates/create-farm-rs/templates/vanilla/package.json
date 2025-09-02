@@ -10,7 +10,7 @@
     "clean": "farm clean"
   },
   "devDependencies": {
-    "@farmfe/core": "^1.6.7",
+    "farm": "^1.6.7",
     "typescript": "^5.4.3"
   }
 }

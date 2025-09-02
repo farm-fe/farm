@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 import { intro, outro } from '@clack/prompts';
-// import { red } from '@farmfe/core';
+// import { red } from 'farm';
 
 intro(`create-my-app`);

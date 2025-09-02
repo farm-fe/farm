@@ -1,6 +1,6 @@
-import { defineConfig } from '@farmfe/core';
 import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
 import vitejsPluginVue from '@vitejs/plugin-vue';
+import { defineConfig } from 'farm';
 import record from '../dev';
 
 export default defineConfig((env) => ({
@@ -15,6 +15,6 @@ export default defineConfig((env) => ({
     output: {
       path: '../../build/client'
     },
-    external: ['@farmfe/core']
+    external: ['^farm$']
   }
 }));
