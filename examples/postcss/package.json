@@ -7,7 +7,6 @@
     "normalize.css": "^8.0.1"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",
     "postcss": "^8",

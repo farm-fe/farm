@@ -36,7 +36,6 @@
     "regenerator-runtime": "0.13.9"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:*",
     "@farmfe/js-plugin-svgr": "workspace:^",

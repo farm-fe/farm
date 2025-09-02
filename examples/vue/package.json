@@ -9,7 +9,6 @@
     "vue": "^3.3.0"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-sass": "workspace:^",
     "@farmfe/js-plugin-vue": "workspace:*",

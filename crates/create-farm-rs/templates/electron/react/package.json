@@ -21,7 +21,6 @@
     "@electron-forge/maker-zip": "^7.4.0",
     "@electron-forge/shared-types": "^7.4.0",
     "@farmfe/core": "^1.6.7",
-    "@farmfe/cli": "^1.0.4",
     "@farmfe/js-plugin-electron": "^1.0.0",
     "@farmfe/plugin-react": "^1.2.0",
     "@types/react": "18",

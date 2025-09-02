@@ -13,7 +13,6 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",

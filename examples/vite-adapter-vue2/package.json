@@ -17,7 +17,6 @@
     "vue": "2.6.14"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "axios": "^1.7.2",
     "core-js": "^3.30.1",

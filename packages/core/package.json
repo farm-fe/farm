@@ -18,6 +18,9 @@
     },
     "./package.json": "./package.json"
   },
+  "bin": {
+    "farm": "./bin/farm.mjs"
+  },
   "napi": {
     "binaryName": "farm",
     "targets": [
@@ -89,6 +92,7 @@
     "@farmfe/utils": "workspace:*",
     "@polka/compression": "1.0.0-next.25",
     "@swc/helpers": "0.5.17",
+    "cac": "^6.7.14",
     "chokidar": "^3.5.3",
     "connect": "^3.7.0",
     "cors": "^2.8.5",

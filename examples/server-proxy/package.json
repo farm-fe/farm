@@ -8,7 +8,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@types/express": "^4.17.21",
     "express": "^4.18.2"

@@ -17,7 +17,6 @@
     "@tauri-apps/plugin-opener": "^2"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.4",
     "@farmfe/core": "^1.6.7",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",

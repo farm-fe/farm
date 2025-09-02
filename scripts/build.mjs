@@ -92,7 +92,6 @@ export const buildExamples = async () => {
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
-  await runTask("Cli", buildCli);
   await runTask("Runtime", buildRuntime);
   await runTask("PluginTools", buildPluginTools);
   await runTask("Core", buildCore);
@@ -167,12 +166,18 @@ export const installLinuxProtobuf = async (spinner) => {
   }
 };
 
+export const buildCorePkg = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+    cwd: PKG_CORE,
+  });
+
 // build core command
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
     stdio: isVerbose ? "inherit" : "ignore",
   })
+    .then(buildCorePkg)
     .then(buildReplaceDirnamePlugin)
     .then(buildCoreCjs);
 

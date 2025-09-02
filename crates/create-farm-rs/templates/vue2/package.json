@@ -12,7 +12,6 @@
     "vue": "^2.7.16"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.4",
     "@farmfe/core": "^1.6.7",
     "@vitejs/plugin-vue2": "^2.3.1",
     "core-js": "^3.30.1",

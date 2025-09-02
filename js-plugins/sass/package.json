@@ -45,7 +45,6 @@
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "sass": "^1.74.1",

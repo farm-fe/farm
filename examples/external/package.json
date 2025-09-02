@@ -11,7 +11,6 @@
     "clean": "farm clean"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@types/jquery": "^3.5.29",
     "jquery": "^3.7.1",

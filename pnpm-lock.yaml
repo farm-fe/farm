@@ -28,9 +28,6 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^17.0.3
         version: 17.8.1
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:packages/core
@@ -246,9 +243,6 @@ importers:
         specifier: ^3.34.0
         version: 3.37.1
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:^
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -331,9 +325,6 @@ importers:
         specifier: 0.13.9
         version: 0.13.9
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -364,9 +355,6 @@ importers:
       '@clack/prompts':
         specifier: ^0.7.0
         version: 0.7.0
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -377,9 +365,6 @@ importers:
         specifier: ^1.2.6
         version: 1.2.6
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -399,9 +384,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -445,9 +427,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -482,9 +461,6 @@ importers:
         specifier: ^0.1.13
         version: 0.1.13
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -509,9 +485,6 @@ importers:
       '@electron-forge/shared-types':
         specifier: ^7.4.0
         version: 7.4.0
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -549,9 +522,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -573,18 +543,12 @@ importers:
 
   examples/env:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
 
   examples/external:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -600,9 +564,6 @@ importers:
 
   examples/generate-dts:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -619,18 +580,12 @@ importers:
         specifier: ^3.34.0
         version: 3.34.0
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:^
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
 
   examples/import-meta:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -653,9 +608,6 @@ importers:
         specifier: ^0.20.0
         version: 0.20.0(react@17.0.2)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -684,18 +636,12 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
 
   examples/js-plugin-cache:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -709,9 +655,6 @@ importers:
         specifier: ^3.34.0
         version: 3.36.1
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:^
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -731,9 +674,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -758,9 +698,6 @@ importers:
 
   examples/lib:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
         version: link:../../js-plugins/dts
@@ -777,9 +714,6 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -795,9 +729,6 @@ importers:
 
   examples/lib-watch:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -814,9 +745,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -848,9 +776,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -967,9 +892,6 @@ importers:
         specifier: ^3.35.1
         version: 3.35.1
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -983,9 +905,6 @@ importers:
         specifier: ^4.18.2
         version: 4.18.2
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1002,9 +921,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1042,9 +958,6 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1073,9 +986,6 @@ importers:
         specifier: ^10.20.1
         version: 10.27.0
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1104,9 +1014,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:^
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1141,9 +1048,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1172,9 +1076,6 @@ importers:
         specifier: ^1.5.3
         version: 1.5.3
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:^
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1206,9 +1107,6 @@ importers:
         specifier: ^7.2.6
         version: 7.2.9(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1267,9 +1165,6 @@ importers:
         specifier: ^6.13.0
         version: 6.18.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1341,9 +1236,6 @@ importers:
         specifier: ~4
         version: 4.9.5
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1393,9 +1285,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1436,9 +1325,6 @@ importers:
         specifier: ^6.22.3
         version: 6.22.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1476,9 +1362,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1522,9 +1405,6 @@ importers:
         specifier: ^6.13.0
         version: 6.18.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1559,9 +1439,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1583,9 +1460,6 @@ importers:
 
   examples/resolve-module-graph:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1596,18 +1470,12 @@ importers:
         specifier: ^18.0.0
         version: 18.0.0
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
 
   examples/runtime-plugin:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1630,9 +1498,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1670,9 +1535,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1701,9 +1563,6 @@ importers:
         specifier: ^3.35.1
         version: 3.35.1
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1716,9 +1575,6 @@ importers:
 
   examples/server-proxy:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1738,9 +1594,6 @@ importers:
         specifier: ^1.7.8
         version: 1.8.5
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1772,9 +1625,6 @@ importers:
         specifier: ^1.7.8
         version: 1.8.5
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1791,9 +1641,6 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1816,9 +1663,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1874,9 +1718,6 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.0.0-alpha.26)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1917,9 +1758,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1942,9 +1780,6 @@ importers:
         specifier: ^3.35.1
         version: 3.36.1
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1961,9 +1796,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1992,9 +1824,6 @@ importers:
         specifier: ^4.0.13
         version: 4.0.13(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.31.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.31.1))
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2014,9 +1843,6 @@ importers:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2060,9 +1886,6 @@ importers:
         specifier: ^6.22.3
         version: 6.22.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2094,9 +1917,6 @@ importers:
         specifier: ^1.7.8
         version: 1.8.5
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2112,9 +1932,6 @@ importers:
 
   examples/vite-adapter-svelte:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2143,9 +1960,6 @@ importers:
         specifier: ^4.3.1
         version: 4.3.1(typescript@5.6.3)(vite@5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.31.1))
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2268,9 +2082,6 @@ importers:
         specifier: ^4.3.2
         version: 4.3.2(vue@3.4.27(typescript@5.6.3))
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2299,9 +2110,6 @@ importers:
         specifier: ^3.4.15
         version: 3.4.15(typescript@5.6.3)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2327,9 +2135,6 @@ importers:
         specifier: 2.6.14
         version: 2.6.14
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2361,9 +2166,6 @@ importers:
         specifier: ~2.7.16
         version: 2.7.16
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2392,9 +2194,6 @@ importers:
         specifier: ^3.3.0
         version: 3.3.7(typescript@5.6.3)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2432,9 +2231,6 @@ importers:
         specifier: ^0.18.5
         version: 0.18.5
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2454,9 +2250,6 @@ importers:
         specifier: ^3.3.0
         version: 3.3.7(typescript@5.6.3)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2473,9 +2266,6 @@ importers:
         specifier: ^3.4.34
         version: 3.4.35(typescript@5.6.3)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2513,9 +2303,6 @@ importers:
         specifier: ^4.2.1
         version: 4.2.5(vue@3.3.12(typescript@5.6.3))
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2578,9 +2365,6 @@ importers:
         specifier: ^1.1.9
         version: 1.1.9
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2624,9 +2408,6 @@ importers:
 
   js-plugins/less:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2642,9 +2423,6 @@ importers:
 
   js-plugins/postcss:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2675,9 +2453,6 @@ importers:
 
   js-plugins/sass:
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2731,9 +2506,6 @@ importers:
         specifier: ^8.1.0
         version: 8.1.0(@svgr/core@8.1.0(typescript@5.6.3))
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -2878,12 +2650,6 @@ importers:
         specifier: ^0.7.4
         version: 0.7.4
 
-  packages/cli:
-    dependencies:
-      cac:
-        specifier: ^6.7.14
-        version: 6.7.14
-
   packages/core:
     dependencies:
       '@farmfe/plugin-replace-dirname':
@@ -2907,6 +2673,9 @@ importers:
       '@swc/helpers':
         specifier: 0.5.17
         version: 0.5.17
+      cac:
+        specifier: ^6.7.14
+        version: 6.7.14
       chokidar:
         specifier: ^3.5.3
         version: 3.5.3

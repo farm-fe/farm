@@ -7,7 +7,6 @@
     "solid-js": "^1.7.8"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-solid": "workspace:*",
     "solid-refresh": "^0.5.3",
