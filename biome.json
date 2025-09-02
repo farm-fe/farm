@@ -37,21 +37,12 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "include": [
-      "**/*.ts"
-    ],
-    "ignore": [
-      "node_modules",
-      "dist"
-    ]
+    "include": ["**/*.ts"],
+    "ignore": ["node_modules", "dist"]
   },
   "organizeImports": {
     "enabled": true,
-    "include": [
-      "./**/*.js",
-      "./**/*.ts",
-      "./**/*.mjs"
-    ]
+    "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
   },
   "linter": {
     "enabled": true,
