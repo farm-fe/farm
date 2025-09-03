@@ -52,22 +52,24 @@ jobs:
       - name: Install headless chrome
         run: node node_modules/playwright-chromium/install.js
 
-      - name: Debug Check Directory Before Download
-        run: |
-          mkdir -p ./packages/core/binding
-          echo "Downloading artifact for ${{ matrix.settings.abi }}"
-      
       - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
-          
-      - name: Debug Check Downloaded Files
+
+      - name: Debug Core Binding
         run: |
-          echo "Checking downloaded files"
+          echo "Downloaded artifact to ./packages/core/binding"
           ls -la ./packages/core/binding/
-          echo "Github SHA: ${{ github.sha }}"
+
+          if [ -f "./packages/core/binding/farm.${{ matrix.settings.abi }}.node" ]; then
+            echo "✅ Found farm.${{ matrix.settings.abi }}.node"
+          else
+            echo "❌ Missing farm.${{ matrix.settings.abi }}.node"
+            echo "Searching for any .node files:"
+            find ./packages/core/binding/ -name "*.node" -type f || echo "No .node files found!"
+          fi
 
       - uses: actions/download-artifact@v4
         id: download-plugin-sass
@@ -209,23 +211,26 @@ jobs:
           pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core
         run: pnpm --filter farm run build
-        
-      - name: Debug Check Directory Before Download
-        run: |
-          mkdir -p ./packages/core/binding
-          echo "Downloading artifact for ${{ matrix.settings.abi }}"
-      
+
       - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
-          
-      - name: Debug Check Downloaded Files
+
+      - name: Debug Core Binding (ts-test job)
         run: |
-          echo "Checking downloaded files"
+          echo "Downloaded artifact to ./packages/core/binding"
           ls -la ./packages/core/binding/
-          echo "Github SHA: ${{ github.sha }}"
+
+          if [ -f "./packages/core/binding/farm.${{ matrix.settings.abi }}.node" ]; then
+            echo "✅ Found farm.${{ matrix.settings.abi }}.node"
+          else
+            echo "❌ Missing farm.${{ matrix.settings.abi }}.node"
+            echo "Searching for any .node files:"
+            find ./packages/core/binding/ -name "*.node" -type f || echo "No .node files found!"
+          fi
+
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Test - ${{ matrix.settings.abi }}
@@ -244,15 +249,24 @@ jobs:
           path: /tmp/artifacts
       - name: Check
         run: |
-          echo "Available artifacts:"
-          find /tmp/artifacts -type f | sort
-          echo "Checking specific artifacts:"
+          echo "Available artifacts directories:"
+          ls -la /tmp/artifacts/
+
+          echo "Checking for expected files:"
           for abi in linux-x64-gnu darwin-x64 darwin-arm64
           do
-            echo "Looking for /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node"
-            test -f /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node && echo "Found!" || echo "NOT FOUND!"
+            echo "Looking for farm.${abi}.node in ${{ github.sha }}-${abi} directory:"
+            find /tmp/artifacts/${{ github.sha }}-${abi}/ -type f || echo "Directory not found!"
+            
+            if [ -f "/tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node" ]; then
+              echo "✅ Found /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node"
+            else
+              echo "❌ Missing /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node"
+              # Continue without failing
+            fi
           done
-          # Continue even if tests fail
+
+          # Always succeed this step for debugging purposes
           true
 
   check-create-farm-rust-artifacts:
