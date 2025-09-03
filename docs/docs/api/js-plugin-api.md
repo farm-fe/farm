@@ -8,7 +8,7 @@ Farm Js Plugin has designed a similar rollup style design plugin system and easy
 Adding JS plugins by `plugins` option:
 
 ```ts title="farm.config.ts" {3,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 // import a js plugin
 import farmPluginFoo from "farm-plugin-foo";
 
@@ -23,7 +23,7 @@ A Farm Js Plugin is a plain javascript object which exposes a set of `hook`s. fo
 
 ```ts title="my-farm-plugin.ts"
 // Create a plugin file that exports a plugin function which returns a `JsPlugin` Object:
-import type { JsPlugin } from '@farmfe/core';
+import type { JsPlugin } from 'farm';
 
 // Plugin Options
 export interface PluginOptions {

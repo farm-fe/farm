@@ -5,7 +5,7 @@
 Configure the behavior of Farm Dev Server. Example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // All dev server options are under server
@@ -59,7 +59,7 @@ Note that a **valid certificate** is needed if `https` enabled.
 Setup global http response headers for the DevServer.
 
 ```ts
-import { defineConfig } from '@farmfe/core'
+import { defineConfig } from 'farm'
 
 export default defineConfig({
   server: {
@@ -93,7 +93,7 @@ Enable fallback to `index.html` or not.
 Enable HMR. After enabling the HMR capability, it will monitor the changes of the modules involved in the compilation process. When the modules change, it will automatically trigger recompilation and push the results to Farm Runtime for update. HMR can also be configured through an object, for example:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
    // All dev server options are under server
@@ -130,7 +130,7 @@ Host on which the Web Socket server listens.
 Configure server proxy. farm uses `http-proxy` as a proxy for the development server. Based on [http-proxy](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options) implementation, specific options refer to its documentation, example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   server: {
@@ -164,7 +164,7 @@ The host that the Dev Server listens on.
 Configuring middlewares for the dev server.
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import compression from 'koa-compress';
 
 export default defineConfig({

@@ -36,10 +36,10 @@ pnpm add -D @farmfe/js-plugin-electron
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineConfig } from '@farmfe/core'
+import { defineConfig } from 'farm'
 import electron from '@farmfe/js-plugin-electron'
 
-import { defineConfig } from '@farmfe/core'
+import { defineConfig } from 'farm'
 import electron from './farm-plugin-electron'
 
 export default defineConfig({
@@ -61,7 +61,7 @@ export default defineConfig({
 Type:
 
 ```ts
-import type { UserConfig } from '@farmfe/core'
+import type { UserConfig } from 'farm'
 
 export interface BuildOptions {
   /**

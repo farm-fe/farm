@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import tailwind from "@farmfe/js-plugin-tailwindcss";
 
 export default defineConfig({

@@ -2,7 +2,7 @@ import vue from '@vitejs/plugin-vue';
 import jsx from '@vitejs/plugin-vue-jsx';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {

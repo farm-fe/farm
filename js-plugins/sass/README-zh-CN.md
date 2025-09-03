@@ -25,7 +25,7 @@ npm i @farmfe/js-plugin-sass --save-dev # or pnpm/yarn add @farmfe/js-plugin-sas
 在`farm.config.ts`中配置插件：
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 import Sass from '@farmfe/js-plugin-sass'; //  import the plugin
 
 export default defineFarmConfig({

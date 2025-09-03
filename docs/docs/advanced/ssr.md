@@ -52,7 +52,7 @@ For above example, `farm.config.ts` is used to **build the project for browser**
 
 ```ts title="farm.config.ts"
 import path from 'path';
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -120,7 +120,7 @@ In this example, we are building a `SPA` SSR application with `if (ctx.path === 
 `farm.config.server.ts` is used to **build the project for Node.js**, producing the compiled server entry which can be used to rendering the application to markup on the server side.
 
 ```ts title="farm.config.server.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

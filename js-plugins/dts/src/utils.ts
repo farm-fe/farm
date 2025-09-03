@@ -373,8 +373,12 @@ export async function tryToReadFileSync(path: string) {
 export function normalizeGlob(path: string) {
   if (/[\\/]$/.test(path)) {
     return path + '**';
-  } else if (!globSuffixRE.test(path.split(/[\\/]/).pop()!)) {
-    return path + '/**';
+  } else {
+    const parts = path.split(/[\\/]/);
+    const lastPart = parts.pop();
+    if (lastPart && !globSuffixRE.test(lastPart)) {
+      return path + '/**';
+    }
   }
 
   return path;

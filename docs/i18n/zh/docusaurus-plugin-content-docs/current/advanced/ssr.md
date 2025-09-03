@@ -53,7 +53,7 @@ Farm为流行的框架提供了 SSR [示例](https://github.com/farm-fe/farm/tre
 
 ```ts title="farm.config.ts"
 import path from 'path';
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -121,7 +121,7 @@ export default defineConfig({
 `farm.config.server.ts` 用于**构建 Node.js 端产物**，生成编译后的服务端入口，可用于在服务端将应用渲染为标记（`markup`）。
 
 ```ts title="farm.config.server.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

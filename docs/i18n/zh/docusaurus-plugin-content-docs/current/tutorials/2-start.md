@@ -283,7 +283,7 @@ export default defineConfig({
 ### 常用配置
 配置示例：
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
    // 所有开发服务器选项都在 server 下
@@ -311,7 +311,7 @@ export default defineConfig({
 配置服务器代理。基于 [http-proxy](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options) 实现，具体选项参考其文档，示例：
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
     server: {
@@ -331,7 +331,7 @@ export default defineConfig({
 
 ```ts title="farm.config.ts"
 import path from 'node:path';
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   root: path.join(process.cwd(), 'client'),

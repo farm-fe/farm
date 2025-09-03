@@ -318,7 +318,7 @@ You can find server configuration in [Farm Dev Server Options](/docs/config/dev-
 Example configuration:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
    // All dev server options are under server
@@ -349,7 +349,7 @@ For above examples, we used following options:
 Configure server proxy. farm uses `http-proxy` as a proxy for the development server. Based on [http-proxy](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options) implementation, specific options refer to its documentation, example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   server: {
@@ -370,7 +370,7 @@ Use `root` and `envDir` to specify your project root and the directory to load e
 
 ```ts title="farm.config.ts"
 import path from "node:path";
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   root: path.join(process.cwd(), "client"),

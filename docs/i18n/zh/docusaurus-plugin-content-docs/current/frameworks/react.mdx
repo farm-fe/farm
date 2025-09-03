@@ -17,7 +17,7 @@ import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs"
 `Farm` 需要通过注册 `@farmfe/plugin-react` 插件来对 `React` 项目进行支持。
 
 ```javascript title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   plugins: ['@farmfe/plugin-react'],
@@ -30,7 +30,7 @@ export default defineConfig({
 你可以通过注册 `@swc/plugin-emotion` 插件来对 `emotion` 进行支持。
 
 ```javascript title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -81,7 +81,7 @@ export function Main() {
 SVGR 是一个用于将 SVG 转换为 React 组件的工具，Farm 提供了 Js 插件来支持 SVGR。
 
 ```javascript title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig(async (env) => {

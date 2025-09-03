@@ -3,7 +3,7 @@
 Configure shared options for Both Farm's DevServer and Compiler. Example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // All dev server options are under server
@@ -48,7 +48,7 @@ Whether to clear the screen when start to compile the project.
 Configuring the directory to load `.env`, `.env.development`, `.env.production` files. By default it's the same as root.
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import { resolve } from 'path';
 export default defineConfig({
   envPrefix: ['FARM_', 'CUSTOM_PREFIX_', 'NEW_'],

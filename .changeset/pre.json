@@ -85,7 +85,7 @@
     "@farmfe/js-plugin-visualizer": "2.0.0-nightly-20250827162746",
     "@farmfe/js-plugin-vue": "4.0.0-nightly-20250827162746",
     "@farmfe/cli": "2.0.0-nightly-20250827162746",
-    "@farmfe/core": "2.0.0-nightly-20250827162746",
+    "farm": "2.0.0-nightly-20250827162746",
     "create-farm": "2.0.0-nightly-20250827162746",
     "create-farm-plugin": "2.0.0-nightly-20250827162746",
     "@farmfe/plugin-tools": "2.0.0-nightly-20250827162746",

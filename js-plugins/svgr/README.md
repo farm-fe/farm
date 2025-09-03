@@ -36,7 +36,7 @@ pnpm add -D @farmfe/js-plugin-svgr
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import svgr from '@farmfe/js-plugin-svgr'; //  import the plugin
 
 function defineConfig(config: UserConfig) {

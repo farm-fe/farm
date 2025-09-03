@@ -1,22 +1,13 @@
 <template>
   <div class="p-3 border box-border rounded-lg w-full h-full overflow-y-scroll">
     <template v-if="records.length > 0">
-      <div
-        v-for="item in records"
-        class="text-gray-800 px-3 py-4 border-b text-base font-semibold"
-      >
+      <div v-for="item in records" class="text-gray-800 px-3 py-4 border-b text-base font-semibold">
         <div class="flex">
           <div>{{ item.plugin }}</div>
-          <div
-            v-if="item.hook === 'parse'"
-            class="ml-2 border text-purple-500 border-purple-500 px-2 rounded-md"
-          >
+          <div v-if="item.hook === 'parse'" class="ml-2 border text-purple-500 border-purple-500 px-2 rounded-md">
             parse
           </div>
-          <div
-            v-if="item.isHmr"
-            class="ml-2 border text-purple-500 border-purple-500 px-2 rounded-md"
-          >
+          <div v-if="item.isHmr" class="ml-2 border text-purple-500 border-purple-500 px-2 rounded-md">
             hmr
           </div>
         </div>
@@ -30,7 +21,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ModuleRecord } from '@farmfe/core/binding';
+import { ModuleRecord } from 'farm/binding';
 import { getProcessRecordsById } from '../api';
 import { ref, watch } from 'vue';
 const props = defineProps({

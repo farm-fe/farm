@@ -9,7 +9,7 @@ Farm 采用完全插件化的形式，提供了多种类型的插件来干预 Fa
 To use a Rust plugin, configuring `plugins` in `farm.config.ts`.
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 
 defineFarmConfig({
   // ...

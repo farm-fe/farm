@@ -14,13 +14,13 @@
     <a href="https://twitter.com/FarmFe71928" > 
       <img src="https://img.shields.io/twitter/url.svg?label=@fe_farm&style=social&url=https://twitter.com/FarmFe71928"/> 
     </a>
-    <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
-    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
-  <a href="https://npmcharts.com/compare/@farmfe/core?minimal=true">
-    <img src="https://img.shields.io/npm/dm/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="downloads" />
+    <a href="https://npmjs.com/package/farm"><img src="https://img.shields.io/npm/v/farm.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
+    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/farm.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
+  <a href="https://npmcharts.com/compare/farm?minimal=true">
+    <img src="https://img.shields.io/npm/dm/farm.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="downloads" />
   </a>
   <a href="https://github.com/farm-fe/farm/blob/main/LICENSE">
-    <img src="https://img.shields.io/npm/l/@farmfe/core?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
+    <img src="https://img.shields.io/npm/l/farm?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
   </a>
   <a href="https://gurubase.io/g/farm">
     <img src="https://img.shields.io/badge/Gurubase-Ask%20Farm%20Guru-711a5f?style=flat-square&labelColor=ffe3f5" alt="Gurubase" />

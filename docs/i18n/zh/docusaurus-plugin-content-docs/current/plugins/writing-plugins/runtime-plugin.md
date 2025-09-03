@@ -57,7 +57,7 @@ Farm 运行时插件名称应以 `farm-runtime-plugin` 为前缀，例如 `farm-
 使用 `compilation.runtime.plugins` 为您的项目配置运行时插件：
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

@@ -3,7 +3,7 @@
 To use a Rust plugin, configuring `plugins` in `farm.config.ts`.
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core';
+import { defineFarmConfig } from 'farm';
 
 defineFarmConfig({
   // ...

@@ -1,13 +1,13 @@
 import {
-  buildCli,
   buildCoreCjs,
+  buildCorePkg,
   buildExamples,
   buildJsPlugins,
   buildRuntime,
 } from "./build.mjs";
 
-console.log("Building CLI...");
-await buildCli();
+console.log("Building core package...");
+await buildCorePkg();
 console.log("Building runtime...");
 await buildRuntime();
 console.log("Building core CJS...");

@@ -21,7 +21,7 @@ Support `less` for Farm.
 
 ## Usage
 ```ts {2,6}
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 
 const config: UserConfig = {
@@ -52,7 +52,7 @@ Less options. See [less options](https://lesscss.org/usage/#less-options).
 Example:
 ```ts
 import path from 'node:path';
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 
 const config: UserConfig = {
@@ -78,7 +78,7 @@ Which files should be processed by `less`. default to `{ resolvedPaths: ['\\.les
 
 Example:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 
 const config: UserConfig = {
@@ -105,7 +105,7 @@ type AdditionalDataOption = string | ((content?: string, resolvePath?: string) =
 ```
 Additional data to be added to every less file. Example:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 
 const config: UserConfig = {
@@ -136,7 +136,7 @@ For less file:
 
 Function form:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 
 const config: UserConfig = {

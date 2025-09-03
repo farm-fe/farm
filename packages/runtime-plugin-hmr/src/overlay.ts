@@ -609,7 +609,9 @@ export class ErrorOverlay extends HTMLElement {
   }
 
   renderMessages(messages: any[], _link: any) {
-    const messageContainer = this.root.querySelector('.message-container')!;
+    const messageContainer = this.root.querySelector('.message-container');
+    if (!messageContainer) return;
+
     messageContainer.innerHTML = '';
     if (typeof messages === 'string') {
       const messageElement = document.createElement('div');

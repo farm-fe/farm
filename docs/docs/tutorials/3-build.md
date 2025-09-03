@@ -44,7 +44,7 @@ If you want to custom the path that the resources emitted to, you can use:
 * [`output.assetsFilename`](/docs/config/compilation-options#outputassetsfilename)
 
 ```ts title="farm.config.ts"
-import defineConfig from '@farmfe/core';
+import defineConfig from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -90,7 +90,7 @@ By default, Farm build projects to Modern Browsers that natively support `async/
 You can use [output.targetEnv](/docs/config/compilation-options#output-targetenv) to configuring your target browsers:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

@@ -29,7 +29,7 @@ export interface FarmEnvInfo {
     Safari?: EnvInfo;
   };
   npmPackages: {
-    '@farmfe/core': PackageInfo | string;
+    farm: PackageInfo | string;
   };
 }
 
@@ -39,7 +39,7 @@ export function getFarmEnvInfo() {
       System: ['OS', 'CPU', 'Memory', 'Shell'],
       Binaries: ['Node', 'Yarn', 'npm', 'pnpm'],
       Browsers: ['Chrome', 'Firefox', 'Safari'],
-      npmPackages: ['@farmfe/core', 'react']
+      npmPackages: ['farm', 'react']
     },
     { json: true, showNotFound: true }
   );

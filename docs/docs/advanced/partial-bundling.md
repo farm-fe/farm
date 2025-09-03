@@ -129,7 +129,7 @@ If you need to enforce modules in the same output files, you can use `enforceRes
 ### Using `enforceResources`
 To group all modules together and ignore all other conditions, you can use `enforceResources`, for example:
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -181,7 +181,7 @@ Normally you don't need to configure bundling manually, if you want to configure
 Grouping `modules` under `src/components` and output them in the same bundle **as possible**. 
 
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -201,7 +201,7 @@ export default defineConfig({
 
 ### Configuring Bundle Numbers and Size
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -219,7 +219,7 @@ In above example, Farm will try to bundle your project into `15` files **as poss
 
 ### Bundle All Modules Together
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -239,7 +239,7 @@ export default defineConfig({
 In above example, we enforce to bundle all modules together and ignore all other constraints(for example, request numbers, file size). You can also enforce to bundle some modules together using `enforceResources`:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

@@ -4,7 +4,7 @@
 默认情况下，Farm 从项目根目录下的“farm.config.ts|js|mjs”文件中读取配置，示例配置文件：
 
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   root: process.cwd(), // // 编译的根目录
@@ -38,7 +38,7 @@ Farm 支持开箱即用加载 ts 配置文件，如“farm.config.ts”。 Farm 
 
 ```js title="farm.config.mjs"
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   // ...
@@ -48,7 +48,7 @@ export default {
 ## 示例
 ### 输入和输出
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // compile options
@@ -70,7 +70,7 @@ In above example, we configured `./src/index.html` and `./src/about.html` as inp
 ### 开发服务器端口
 
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   server: {
@@ -81,7 +81,7 @@ export default defineConfig({
 
 ### 仅用默认优化策略
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // compile options

@@ -8,7 +8,7 @@ This document only covers the details of the plugin hooks. For how to create, bu
 Adding Rust plugins by `plugins` option:
 
 ```ts title="farm.config.ts" {3,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // configuring it in plugins

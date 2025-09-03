@@ -6,8 +6,8 @@ import type {
   JsPlugin,
   PluginTransformHookParam,
   UserConfig
-} from '@farmfe/core';
-import { getAdditionContext, rebaseUrls } from '@farmfe/core';
+} from 'farm';
+import { getAdditionContext, rebaseUrls } from 'farm';
 import { readFile } from 'fs/promises';
 import type { CompileResult, LegacyOptions, StringOptions } from 'sass';
 import * as Sass from 'sass';

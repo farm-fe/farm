@@ -1,11 +1,6 @@
 import { existsSync } from 'fs';
 import path from 'path';
-import {
-  Compiler,
-  JsPlugin,
-  UserConfig,
-  getAdditionContext
-} from '@farmfe/core';
+import { Compiler, JsPlugin, UserConfig, getAdditionContext } from 'farm';
 import { createLessResolvePlugin } from './plugin-resolve.js';
 import {
   getLessImplementation,
@@ -15,6 +10,7 @@ import {
 } from './utils.js';
 
 export type LessPluginOptions = {
+  // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   lessOptions?: Less.Options;
   implementation?: string;
   filters?: {
@@ -31,6 +27,7 @@ export default function farmLessPlugin(
 ): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   let compiler: Compiler;
+  // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   const implementation: LessStatic = getLessImplementation(
     options?.implementation
   );
@@ -125,6 +122,7 @@ export default function farmLessPlugin(
             sourceMap:
               (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
             paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
+            // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
           } as Less.Options);
 
           if (compiler && imports && !isProd) {

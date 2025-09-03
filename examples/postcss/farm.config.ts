@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
 import path from 'path';
 

@@ -1,4 +1,3 @@
-import { VERSION as CORE_VERSION } from '@farmfe/core';
 import { cac } from 'cac';
 
 import {
@@ -7,16 +6,16 @@ import {
   resolveCliConfig,
   resolveCommandOptions,
   resolveCore
-} from './utils.js';
+} from './cli/utils.js';
 
-import { FarmCliOptions, UserConfig } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,
   CliPreviewOptions,
   CliServerOptions,
   GlobalCliOptions
-} from './types.js';
+} from './cli/types.js';
+import { FarmCliOptions, UserConfig } from './index.js';
 
 const cli = cac('farm');
 
@@ -249,8 +248,8 @@ cli
 
 cli.help();
 
-cli.version(
-  `@farmfe/cli ${VERSION ?? 'unknown'} @farmfe/core ${CORE_VERSION ?? 'unknown'}`
-);
+cli.version(`farm ${VERSION ?? 'unknown'}`);
 
-cli.parse();
+export function runCli() {
+  cli.parse();
+}

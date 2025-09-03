@@ -39,7 +39,7 @@ pnpm add -D @farmfe/plugin-sass
 
 2. Configure the plugin
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   // ...
@@ -61,7 +61,7 @@ To use sass with css modules, change the file name from `index.scss` to `index.m
 `@farmfe/plugin-sass` supports a lot of options, use the array syntax of `plugins` to specify options for plugin sass:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   // if you want to specify options for plugin-sass, use
@@ -96,7 +96,7 @@ pnpm add -D @farmfe/js-plugin-less
 
 2. Configure the plugin
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import less from '@farmfe/js-plugin-less';
 
 export default defineConfig({
@@ -123,7 +123,7 @@ pnpm add -D @farmfe/js-plugin-postcss
 
 2. Configure the plugin
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import postcss from '@farmfe/js-plugin-postcss';
 
 export default defineConfig({
@@ -154,7 +154,7 @@ Farm supports css prefixer out of box, you can configure it using `compilation.c
 :::
 
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
    compilation: {

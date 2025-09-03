@@ -143,8 +143,8 @@ export function proxyMiddleware(
           }
         }
 
-        if (opts.rewrite) {
-          req.url = opts.rewrite(req.url!);
+        if (opts.rewrite && req.url) {
+          req.url = opts.rewrite(req.url);
         }
 
         proxy.web(req, res, opts);

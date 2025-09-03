@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import solid from "vite-plugin-solid";
 
 // @ts-ignore process is a nodejs global

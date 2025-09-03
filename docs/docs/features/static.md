@@ -44,7 +44,7 @@ export default 'MIT xxxx';
 * using [`compilation.assets.include`](/docs/config/compilation-options#assetsinclude) to treat more kind of files as asset modules.
 
 ```js
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

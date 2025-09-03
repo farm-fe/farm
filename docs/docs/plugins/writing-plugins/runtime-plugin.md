@@ -57,7 +57,7 @@ Both `plugin.name` and `package name`(Only if you publish your plugin as a packa
 Use `compilation.runtime.plugins` to configure runtime plugins for your project:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

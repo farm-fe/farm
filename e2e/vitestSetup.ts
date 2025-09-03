@@ -115,7 +115,7 @@ export const startProjectAndTest = async (
   // const cliBinPath = getFarmCLIBinPath(examplePath);
 
   // if (!cliBinPath) {
-  //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
+  //   throw new Error(`example ${examplePath} does not install farm`);
   // }
   const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);

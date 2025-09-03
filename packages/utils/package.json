@@ -38,5 +38,9 @@
   ],
   "files": [
     "dist"
-  ]
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit"
+  }
 }

@@ -31,7 +31,7 @@ pnpm add -D @farmfe/visualizer
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 import visualizer from '@farmfe/visualizer'; //  import the plugin
 
 export default defineFarmConfig({

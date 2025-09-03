@@ -18,7 +18,7 @@ Farm 从`v0.14.0`开始支持通过持久缓存的增量构建
 使用[`compilation.persistentCache`](/zh/docs/config/compilation-options#persistentcache) 来`启用/禁用`缓存：
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -39,7 +39,7 @@ export default defineConfig({
     namespace: 'farm-cache',
     buildDependencies: [
       'farm.config.ts',
-      '@farmfe/core',
+      'farm',
       '@farmfe/plugin-react',
       // ... all other dependencies
     ],
@@ -77,7 +77,7 @@ export default defineConfig({
 构建依赖项可以是包名的文件路径，例如:
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import path from 'node:path';
 
 export default defineConfig({

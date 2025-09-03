@@ -31,7 +31,7 @@ pnpm add -D postcss @farmfe/js-plugin-postcss
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineFarmConfig } from 'farm/dist/config';
 import postcss from '@farmfe/js-plugin-postcss'; //  import the plugin
 
 export default defineFarmConfig({

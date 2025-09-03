@@ -8,8 +8,7 @@
     "preview": "farm preview"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:^",
-    "@farmfe/core": "workspace:^",
+    "farm": "workspace:^",
     "@farmfe/js-plugin-visualizer": "workspace:^"
   },
   "dependencies": {

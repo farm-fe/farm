@@ -1,24 +1,13 @@
 <template>
-  <Card
-    title="Resource Pots"
-    class="overflow-hidden"
-    :bodyStyle="{ overflow: 'scroll', maxHeight: '500px', padding: '10px 0px' }"
-  >
+  <Card title="Resource Pots" class="overflow-hidden"
+    :bodyStyle="{ overflow: 'scroll', maxHeight: '500px', padding: '10px 0px' }">
     <div class="flex flex-col">
-      <div
-        v-for="item in pots"
-        :key="item.name"
-        class="flex items-center mb-2 pl-6 py-2 border-b border-gray-200"
-        @click="selectResourcePot(item)"
-      >
+      <div v-for="item in pots" :key="item.name" class="flex items-center mb-2 pl-6 py-2 border-b border-gray-200"
+        @click="selectResourcePot(item)">
         <span class="mr-2">{{ item.name }}</span>
         <Tag color="green">{{ formatSize(item.bytes.length) }}</Tag>
         <Tag v-if="item.info?.data.isEntry" color="blue">entry</Tag>
-        <Button
-          size="small"
-          class="flex justify-center items-center"
-          @click="viewSourceCode(item)"
-        >
+        <Button size="small" class="flex justify-center items-center" @click="viewSourceCode(item)">
           <CodepenCircleFilled />
         </Button>
       </div>
@@ -27,7 +16,7 @@
 </template>
 
 <script lang="ts">
-import { Resource } from '@farmfe/core';
+import { Resource } from 'farm';
 import { PropType, defineComponent } from 'vue';
 import { Card, Tag, Button } from 'ant-design-vue';
 import { CodepenCircleFilled } from '@ant-design/icons-vue';

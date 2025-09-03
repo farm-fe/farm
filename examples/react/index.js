@@ -4,7 +4,7 @@ import {
   createFileWatcher,
   resolveConfig,
   start,
-} from "@farmfe/core";
+} from "farm";
 
 const resolvedUserConfig = await resolveConfig({
   compilation: {

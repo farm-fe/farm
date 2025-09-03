@@ -20,7 +20,7 @@ Performance compare between cold start(without cache) and hot start(with cache) 
 Using [`compilation.persistentCache`](/docs/config/compilation-options#persistentcache) to `enable/disable` Cache:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -41,7 +41,7 @@ export default defineConfig({
     namespace: "farm-cache",
     buildDependencies: [
       "farm.config.ts",
-      "@farmfe/core",
+      "farm",
       "@farmfe/plugin-react",
       // ... all other dependencies
     ],
@@ -76,7 +76,7 @@ Build dependencies is dependencies that can affect the compilation process or co
 Build dependencies can be a file path for a package name, for example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import path from "node:path";
 
 export default defineConfig({

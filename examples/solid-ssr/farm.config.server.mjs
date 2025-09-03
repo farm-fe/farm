@@ -2,7 +2,7 @@ import { builtinModules } from 'node:module';
 import solid from 'vite-plugin-solid';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {

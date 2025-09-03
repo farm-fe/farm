@@ -1,7 +1,7 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default defineConfig({
   compilation: {

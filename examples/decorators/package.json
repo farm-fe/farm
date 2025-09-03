@@ -3,8 +3,7 @@
   "version": "1.0.1",
   "private": true,
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*"
+    "farm": "workspace:*"
   },
   "scripts": {
     "build": "farm build && node test.mjs"

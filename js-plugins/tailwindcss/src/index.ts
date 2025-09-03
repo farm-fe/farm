@@ -1,11 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-/**
- * MIT License Copied and modified by BrightWu
- * Copyright Farm and All Contributors
- * Copyright (c) Tailwind Labs, Inc.
- */
-import { JsPlugin, ResolvedUserConfig, Resolver, logger } from '@farmfe/core';
 import {
   Features,
   Instrumentation,
@@ -16,6 +10,12 @@ import {
 } from '@tailwindcss/node';
 import { clearRequireCache } from '@tailwindcss/node/require-cache';
 import { Scanner } from '@tailwindcss/oxide';
+/**
+ * MIT License Copied and modified by BrightWu
+ * Copyright Farm and All Contributors
+ * Copyright (c) Tailwind Labs, Inc.
+ */
+import { JsPlugin, ResolvedUserConfig, Resolver, logger } from 'farm';
 
 const DEBUG = env.DEBUG;
 const SPECIAL_QUERY_RE = /[?&](?:worker|sharedworker|raw|url)\b/;

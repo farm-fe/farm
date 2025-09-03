@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import AutoImport from 'unplugin-auto-import/vite';

@@ -1,4 +1,4 @@
-import { RenderedModule, Resource } from '@farmfe/core';
+import { RenderedModule, Resource } from 'farm';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { getResourcesMap } from '../api';

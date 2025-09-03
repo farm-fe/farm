@@ -27,6 +27,7 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "farm": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",

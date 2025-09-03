@@ -9,7 +9,7 @@ A JavaScript plugin is simply a pure JavaScript object that defines a set of pro
 
 ```js
 // farm.config.ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // ...
@@ -58,7 +58,7 @@ export function myResolvePlugin(options: Options) {
 }
 
 // farm.config.ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import { myResolvePlugin } from "./myResolvePlugin.ts";
 
 export default defineConfig({
@@ -163,7 +163,7 @@ After creating the plugin, you can start to develop your plugin. The plugin is a
 
 ```ts
 // import { readFileSync } from 'node:fs';
-import type { JsPlugin } from '@farmfe/core';
+import type { JsPlugin } from 'farm';
 
 interface Options {
   /* Your options here */
