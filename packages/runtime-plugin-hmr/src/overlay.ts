@@ -673,7 +673,7 @@ export class ErrorOverlay extends HTMLElement {
 
       const splitMessage = splitErrorMessage(msg);
 
-      console.error(splitMessage.errorInfo);
+      console.error(`[Farm HMR] ${splitMessage.errorInfo}`);
 
       if (splitMessage.codeBlocks && splitMessage.codeBlocks.length > 0) {
         splitMessage.codeBlocks.forEach((codeBlock, blockIndex) => {
