@@ -141,8 +141,6 @@ jobs:
         with:
           name: ${{ github.sha }}-linux-x64-gnu
           path: ./packages/core/binding
-      - name: Check Binding Files
-        run: ls -la ./packages/core/binding
       - name: Build Dependencies
         run: |
           pnpm --filter "@farmfe/utils" build
@@ -202,8 +200,6 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
-      - name: Check Binding Files
-        run: ls -la ./packages/core/binding
       - name: Build Dependencies
         run: |
           pnpm --filter "@farmfe/utils" build
@@ -212,6 +208,8 @@ jobs:
           pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core
         run: pnpm --filter farm run build
+      - name: Build Core CJS
+        run: cd packages/core && pnpm run build:cjs
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
       # - name: Setup tmate session
