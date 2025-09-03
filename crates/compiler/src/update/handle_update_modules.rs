@@ -230,13 +230,20 @@ fn resolve_watch_graph_paths(
 
 fn resolve_last_failed_module_paths(
   mut paths: Vec<(String, UpdateType)>,
-  last_fail_module_ids: &[ModuleId],
+  last_failed_module_ids: &[ModuleId],
   context: &Arc<CompilationContext>,
 ) -> Vec<(String, UpdateType)> {
+  let paths_ids = paths
+    .iter()
+    .map(|(p, _)| ModuleId::new(p, "", &context.config.root))
+    .collect::<Vec<_>>();
+
+  let last_failed_module_ids = last_failed_module_ids
+    .iter()
+    .filter(|id| !paths_ids.contains(id));
+
   paths.extend(
-    last_fail_module_ids
-      .iter()
-      .map(|id| (id.resolved_path(&context.config.root), UpdateType::Updated)),
+    last_failed_module_ids.map(|id| (id.resolved_path(&context.config.root), UpdateType::Updated)),
   );
 
   paths
