@@ -179,21 +179,12 @@ jobs:
       - name: LS Create Farm Rust
         if: ${{ matrix.settings.cli_only }}
         run: ls -la ./packages/create-farm/
-      - name: Check Core Binding Before Upload
-        if: ${{ !matrix.settings.cli_only }}
-        run: |
-          echo "Checking files in ./packages/core/binding/ before upload:"
-          ls -la ./packages/core/binding/
-          echo "Farm binary files:"
-          find ./packages/core/binding/ -name "*.node" -type f
-
       - name: Upload Core
         if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/core/binding/
-          if-no-files-found: error
+          path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
       - name: Upload Create Farm Rust
         uses: actions/upload-artifact@v4
         with:
