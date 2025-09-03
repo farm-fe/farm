@@ -49,7 +49,7 @@ const visitPage = async (
     page?.on('console', (msg) => {
       const lowerCaseMsg = msg.text().toLocaleLowerCase();
 
-      if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning')) {
+      if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning') && !/Parse `.+` failed/.test(msg.text())) {
         logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
           color: 'red'
         });
