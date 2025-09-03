@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0-beta.1
+
+### Patch Changes
+
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+
 ## 4.0.0-beta.0
 
 ### Major Changes
