@@ -1,5 +1,75 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- Updated dependencies [61aae5b]
+  - @farmfe/core@2.0.0-beta.3
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- Updated dependencies [23b6fc9]
+  - @farmfe/core@2.0.0-beta.2
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/core@2.0.0-beta.1
+
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- Updated dependencies [5a9ff6b]
+- Updated dependencies [f5ce9ea]
+  - @farmfe/core@2.0.0-beta.0
+
+## 0.0.12-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+- Updated dependencies [63908eb]
+  - @farmfe/core@2.0.0-nightly-20250827162746
+
+## 0.0.12-nightly-20250729025629
+
+### Patch Changes
+
+- Updated dependencies [b730530]
+  - @farmfe/core@2.0.0-nightly-20250729025629
+
+## 0.0.12-nightly-20250411141103
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20250411141103
+
+## 0.0.12-nightly-20250411100807
+
+### Patch Changes
+
+- Updated dependencies [60f40f0]
+  - @farmfe/core@2.0.0-nightly-20250411100807
+
+## 0.0.12-nightly-20250410022118
+
+### Patch Changes
+
+- Updated dependencies [21ac2ac]
+- Updated dependencies [b8f7fc5]
+- Updated dependencies [ad09476]
+  - @farmfe/core@2.0.0-nightly-20250410022118
+
 ## 0.0.20
 
 ### Patch Changes

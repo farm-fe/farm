@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/cli",
-  "version": "1.0.5",
+  "version": "2.0.0-beta.0",
   "description": "CLI of Farm",
   "type": "module",
   "author": {
@@ -28,28 +28,17 @@
   },
   "files": [
     "dist",
-    "bin",
-    "templates"
+    "bin"
   ],
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
     "build": "tsc -b",
-    "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">= 16"
   },
   "dependencies": {
-    "cac": "^6.7.14",
-    "cross-spawn": "^7.0.3",
-    "inquirer": "9.2.12",
-    "walkdir": "^0.4.1"
-  },
-  "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
-    "@types/cross-spawn": "^6.0.2",
-    "@types/inquirer": "^9.0.3"
+    "cac": "^6.7.14"
   }
 }

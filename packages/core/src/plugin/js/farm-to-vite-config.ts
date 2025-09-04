@@ -1,6 +1,9 @@
+import path from 'path';
+import { WatchOptions } from 'chokidar';
 import type { UserConfig as ViteUserConfig } from 'vite';
+import { normalizeResolveAlias } from '../../config/normalize-config/normalize-resolve.js';
 import type { UserConfig } from '../../config/types.js';
-import { Logger } from '../../index.js';
+import { Logger, isObject, logger, normalizePath } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
 import {
@@ -24,13 +27,11 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   }
 
   const viteConfig: ViteUserConfig = {
-    root: config.root,
+    root: normalizePath(config.root),
     base: config.compilation?.output?.publicPath ?? '/',
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
     define: config.compilation?.define,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
     command: config.compilation?.mode === 'production' ? 'build' : 'serve',
     resolve: {
       alias: config.compilation?.resolve?.alias,
@@ -42,7 +43,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     plugins: vitePlugins,
     server: {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore ignore error
       hmr: config.server?.hmr,
       port: config.server?.port,
@@ -51,13 +51,9 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       https: config.server?.https,
       proxy: config.server?.proxy as any,
       open: config.server?.open,
-      watch:
-        typeof config.server?.hmr === 'object'
-          ? config.server.hmr?.watchOptions ?? {}
-          : {}
+      watch: typeof config.watch === 'object' ? config.watch : {}
       // other options are not supported in farm
     },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore ignore this error
     isProduction: config.compilation?.mode === 'production',
     css: config.compilation?.css?._viteCssOptions ?? {},
@@ -82,9 +78,10 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       }
       // other options are not supported in farm
     },
-    // TODO make it configurable
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
+    // @ts-ignore
+    env: config.env,
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
@@ -103,6 +100,7 @@ function getTargetField(
     pluginName: string;
     keyName: string;
   },
+  logger: Logger,
   getter?: (target: any, key: string) => any
 ): any {
   if (typeof key !== 'string') {
@@ -121,7 +119,8 @@ function getTargetField(
     }
   }
 
-  throw throwIncompatibleError(
+  throwIncompatibleError(
+    logger,
     contextInfo.pluginName,
     contextInfo.keyName,
     allowedKeys,
@@ -137,10 +136,16 @@ function createProxyObj(
 ) {
   return new Proxy(obj || {}, {
     get(target, key) {
-      return getTargetField(target, key, allowedKeys, {
-        pluginName,
-        keyName
-      });
+      return getTargetField(
+        target,
+        key,
+        allowedKeys,
+        {
+          pluginName,
+          keyName
+        },
+        logger
+      );
     }
   });
 }
@@ -233,9 +238,11 @@ export function proxyViteConfig(
         'css',
         'build',
         'logger',
+        'env',
         'cacheDir',
         'envDir',
         'assetsInclude',
+        'createResolver',
         // these fields are always undefined in farm
         // they are only used for compatibility
         'legacy',
@@ -260,6 +267,7 @@ export function proxyViteConfig(
           pluginName,
           keyName: 'viteConfig'
         },
+        logger,
         (target, key) => {
           const keyMapper: Record<
             string,
@@ -311,14 +319,16 @@ export function proxyViteConfig(
 export function viteConfigToFarmConfig(
   config: ViteUserConfig,
   origFarmConfig: UserConfig,
-  _pluginName: string
+  pluginName: string
 ): UserConfig {
   const farmConfig: UserConfig = {
     compilation: {}
   };
 
   if (config.root) {
-    farmConfig.root = config.root;
+    farmConfig.root = path.isAbsolute(config.root)
+      ? path.resolve(config.root)
+      : config.root;
   }
   if (config?.css) {
     farmConfig.compilation.css ??= {};
@@ -350,17 +360,34 @@ export function viteConfigToFarmConfig(
         >;
       } else {
         if (!farmConfig.compilation.resolve.alias) {
-          farmConfig.compilation.resolve.alias = {};
+          farmConfig.compilation.resolve.alias = [];
         }
 
+        const normalizedAlias = normalizeResolveAlias(farmConfig);
         const farmRegexPrefix = '$__farm_regex:';
 
-        for (const { find, replacement } of config.resolve.alias) {
-          if (find instanceof RegExp) {
-            const key = farmRegexPrefix + find.source;
-            farmConfig.compilation.resolve.alias[key] = replacement;
-          } else {
-            farmConfig.compilation.resolve.alias[find] = replacement;
+        if (isObject(config.resolve.alias)) {
+          for (const [key, value] of Object.entries(config.resolve.alias)) {
+            normalizedAlias.push({
+              find: key,
+              replacement: value
+            });
+          }
+        } else if (Array.isArray(config.resolve.alias)) {
+          if (config.resolve.alias.some((alias) => alias.customResolver)) {
+            logger.warnOnce(
+              `[vite-plugin] ${pluginName}: config "resolve.alias" with customResolver is not supported in Farm, customResolver will be ignored.`
+            );
+          }
+
+          for (const alias of config.resolve.alias) {
+            normalizedAlias.push({
+              find:
+                alias.find instanceof RegExp
+                  ? `${farmRegexPrefix}${alias.find}`
+                  : alias.find,
+              replacement: alias.replacement
+            });
           }
         }
       }
@@ -375,6 +402,7 @@ export function viteConfigToFarmConfig(
 
   if (config.server) {
     farmConfig.server ??= {};
+    // @ts-ignore
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
 
@@ -386,9 +414,12 @@ export function viteConfigToFarmConfig(
         farmConfig.server.hmr = {
           ...(typeof origFarmConfig?.server?.hmr === 'object'
             ? origFarmConfig.server.hmr
-            : {}),
-          watchOptions: config.server.watch
+            : {})
         };
+      }
+      // TODO think about vite has two watch options `server.watch` | `build.watch`
+      if (config.mode === 'development') {
+        farmConfig.watch = config.server.watch;
       }
     }
 
@@ -406,6 +437,9 @@ export function viteConfigToFarmConfig(
   }
 
   if (config.build) {
+    if (config.mode === 'production') {
+      farmConfig.watch = config.build.watch as WatchOptions;
+    }
     farmConfig.compilation.output ??= {};
     farmConfig.compilation.output.path = config.build.outDir;
 
@@ -428,7 +462,6 @@ export function viteConfigToFarmConfig(
         const keys = ['assetFileNames', 'entryFilename', 'filename'];
 
         for (const k of keys) {
-          /* eslint-disable @typescript-eslint/ban-ts-comment */
           // @ts-ignore type is correct
           farmConfig.compilation.output[k] =
             // @ts-ignore type is correct

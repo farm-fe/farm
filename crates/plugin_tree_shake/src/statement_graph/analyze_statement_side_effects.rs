@@ -1,21 +1,17 @@
-use std::{
-  collections::{HashMap, HashSet},
-  mem,
-};
+use std::mem;
 
 use farmfe_core::{
+  module::meta_data::script::statement::{ReadTopLevelVar, SwcId, WriteTopLevelVar},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     Mark, Spanned,
   },
-  swc_ecma_ast::{Expr, Id, ModuleItem},
+  swc_ecma_ast::{Expr, ModuleItem},
+  HashMap, HashSet,
 };
-use farmfe_toolkit::{
-  swc_ecma_utils::ident::IdentLike,
-  swc_ecma_visit::{Visit, VisitWith},
-};
+use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
-use super::{ReadTopLevelVar, StatementSideEffects, WriteTopLevelVar};
+use super::StatementSideEffects;
 
 /// Analyze the side effects of a statement. See [StatementSideEffects] for more details.
 /// If there are more side effects detection rules, add them here.
@@ -69,7 +65,7 @@ struct LeftIdentReference {
   ///              ^^^^^^^  ^^^^^^^  ^^^^^^^
   /// ```
   ///
-  idents: HashSet<Id>,
+  idents: HashSet<SwcId>,
   ///
   /// mark write operation
   ///
@@ -81,12 +77,12 @@ struct LeftIdentReference {
 }
 
 impl LeftIdentReference {
-  fn insert(&mut self, id: Id) {
+  fn insert(&mut self, id: SwcId) {
     self.idents.insert(id);
   }
 }
 
-impl From<LeftIdentReference> for HashSet<Id> {
+impl From<LeftIdentReference> for HashSet<SwcId> {
   fn from(value: LeftIdentReference) -> Self {
     value.idents
   }
@@ -111,8 +107,8 @@ struct SideEffectsAnalyzer<'a> {
   side_effects: StatementSideEffects,
   comments: &'a SingleThreadedComments,
 
-  in_assign_left: Option<HashSet<Id>>,
-  in_assign_right: Option<Option<HashSet<Id>>>,
+  in_assign_left: Option<HashSet<SwcId>>,
+  in_assign_right: Option<Option<HashSet<SwcId>>>,
   in_top_level: bool,
   in_call: bool,
 
@@ -128,7 +124,7 @@ struct SideEffectsAnalyzer<'a> {
   /// }
   /// ```
   ///
-  assign_left_reference: HashMap<Id, LeftIdentReference>,
+  assign_left_reference: HashMap<SwcId, LeftIdentReference>,
 }
 
 impl<'a> SideEffectsAnalyzer<'a> {
@@ -146,7 +142,7 @@ impl<'a> SideEffectsAnalyzer<'a> {
       in_top_level: false,
       in_call: false,
       in_assign_right: None,
-      assign_left_reference: HashMap::new(),
+      assign_left_reference: HashMap::default(),
     }
   }
 
@@ -158,7 +154,7 @@ impl<'a> SideEffectsAnalyzer<'a> {
     self.in_top_level
   }
 
-  pub fn with_assign_right<F: FnOnce(&mut Self)>(&mut self, id: Option<HashSet<Id>>, f: F) {
+  pub fn with_assign_right<F: FnOnce(&mut Self)>(&mut self, id: Option<HashSet<SwcId>>, f: F) {
     let prev = self.in_assign_right.take();
     self.in_assign_right = Some(id);
     f(self);
@@ -265,15 +261,15 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       farmfe_core::swc_ecma_ast::PropOrSpread::Prop(prop) => match &**prop {
         farmfe_core::swc_ecma_ast::Prop::Shorthand(ident) => {
           if self.in_top_level
-            || ident.span.ctxt.outer() == self.top_level_mark
-            || ident.span.ctxt.outer() == self.unresolved_mark
+            || ident.ctxt.outer() == self.top_level_mark
+            || ident.ctxt.outer() == self.unresolved_mark
           {
             self
               .side_effects
-              .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from([
+              .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([
                 ReadTopLevelVar {
-                  ident: ident.to_id(),
-                  is_global_var: ident.span.ctxt.outer() == self.unresolved_mark,
+                  ident: ident.to_id().into(),
+                  is_global_var: ident.ctxt.outer() == self.unresolved_mark,
                 },
               ])));
           }
@@ -299,7 +295,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
 
   fn visit_ident(&mut self, ident: &farmfe_core::swc_ecma_ast::Ident) {
     if let Some(ref mut left) = self.in_assign_left {
-      left.insert(ident.to_id());
+      left.insert(ident.to_id().into());
     }
   }
 
@@ -329,8 +325,8 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       }
       Expr::Ident(ident) => {
         if let Some(ref mut left) = self.in_assign_left {
-          left.insert(ident.to_id());
-          if let Some(v) = self.assign_left_reference.get_mut(&ident.to_id()) {
+          left.insert(ident.to_id().into());
+          if let Some(v) = self.assign_left_reference.get_mut(&ident.to_id().into()) {
             v.mark_write = true;
           }
         }
@@ -338,59 +334,58 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
         self
           .side_effects
           .merge_side_effects(if self.in_assign_left.is_some() {
-            if ident.span.ctxt().outer() == self.unresolved_mark {
+            if ident.ctxt.outer() == self.unresolved_mark {
               StatementSideEffects::WriteOrCallGlobalVar
-            } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
-              StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id().into()]))
+            } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
+              StatementSideEffects::WriteTopLevelVar(HashSet::from_iter([ident.to_id().into()]))
             } else {
               StatementSideEffects::NoSideEffects
             }
-          } else if self.in_call && ident.span.ctxt().outer() == self.unresolved_mark {
+          } else if self.in_call && ident.ctxt.outer() == self.unresolved_mark {
             StatementSideEffects::WriteOrCallGlobalVar
           } else if self.in_top_level
-            || ident.span.ctxt().outer() == self.top_level_mark
-            || ident.span.ctxt.outer() == self.unresolved_mark
+            || ident.ctxt.outer() == self.top_level_mark
+            || ident.ctxt.outer() == self.unresolved_mark
           {
-            StatementSideEffects::ReadTopLevelVar(HashSet::from([ReadTopLevelVar {
-              ident: ident.to_id(),
-              is_global_var: ident.span.ctxt.outer() == self.unresolved_mark,
+            StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([ReadTopLevelVar {
+              ident: ident.to_id().into(),
+              is_global_var: ident.ctxt.outer() == self.unresolved_mark,
             }]))
           } else {
             StatementSideEffects::NoSideEffects
           });
 
         if let Some(Some(ref lefts)) = self.in_assign_right
-          && (self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark)
+          && (self.in_top_level || ident.ctxt.outer() == self.top_level_mark)
         {
           for left in lefts {
             self
               .assign_left_reference
-              .entry(left.to_id())
+              .entry(left.clone())
               .or_default()
-              .insert(ident.to_id());
+              .insert(ident.to_id().into());
           }
         }
       }
       Expr::Assign(assign_expr) => {
-        self.in_assign_left = Some(HashSet::new());
+        self.in_assign_left = Some(HashSet::default());
 
         match &assign_expr.left {
           farmfe_core::swc_ecma_ast::AssignTarget::Simple(st) => match st {
             farmfe_core::swc_ecma_ast::SimpleAssignTarget::Ident(i) => {
               self
                 .in_assign_left
-                .get_or_insert_with(HashSet::new)
-                .insert(i.id.to_id());
+                .get_or_insert_with(HashSet::default)
+                .insert(i.id.to_id().into());
               // for idents that are added by ast transform, the mark may not be top_level_mark
               // in this case, we treat it as top level as long as current assign expr is in top level
-              if self.in_top_level || i.id.span.ctxt.outer() == self.top_level_mark {
+              if self.in_top_level || i.id.ctxt.outer() == self.top_level_mark {
                 self
                   .side_effects
-                  .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from([i
-                    .id
-                    .to_id()
-                    .into()])));
-              } else if i.id.span.ctxt.outer() == self.unresolved_mark {
+                  .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from_iter(
+                    [i.id.to_id().into()],
+                  )));
+              } else if i.id.ctxt.outer() == self.unresolved_mark {
                 self
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteOrCallGlobalVar);

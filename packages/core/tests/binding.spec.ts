@@ -3,17 +3,16 @@ import { fileURLToPath } from 'url';
 import { test } from 'vitest';
 import {
   Compiler,
-  Logger,
   UserConfig,
   normalizeDevServerConfig,
   normalizeUserCompilationConfig,
-  resolveMergedUserConfig
+  resolveUserConfig
 } from '../src/index.js';
 
 // just make sure the binding works
 test('Binding - should parse config to rust correctly', async () => {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  const serverConfig = normalizeDevServerConfig({}, 'production');
+  const serverConfig = normalizeDevServerConfig({});
 
   const config: UserConfig = {
     root: path.resolve(currentDir, 'fixtures', 'binding'),
@@ -22,18 +21,13 @@ test('Binding - should parse config to rust correctly', async () => {
     },
     server: serverConfig
   };
-  const resolvedUserConfig = await resolveMergedUserConfig(
-    config,
-    undefined,
-    'production'
-  );
-  const compilationConfig = await normalizeUserCompilationConfig(
-    resolvedUserConfig,
-    config,
-    new Logger()
-  );
+  const resolvedUserConfig = await resolveUserConfig(config, undefined);
+  const compilationConfig =
+    await normalizeUserCompilationConfig(resolvedUserConfig);
+  compilationConfig.persistentCache = false;
+  console.log(compilationConfig);
   const compiler = new Compiler({
-    config: compilationConfig,
+    compilation: compilationConfig,
     jsPlugins: [],
     rustPlugins: []
   });

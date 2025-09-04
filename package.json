@@ -3,29 +3,34 @@
   "version": "0.0.0",
   "description": "Farm is modern web building tool written in rust",
   "engines": {
-    "node": ">=18",
+    "node": ">=20",
     "pnpm": ">=9"
   },
-  "scripts": {
+    "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "bootstrap": "pnpm install && node scripts/clean.mjs && node scripts/bootstrap.mjs && pnpm start",
-    "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
+    "bootstrap": "node scripts/bootstrap.mjs -v",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
     "start": "pnpm --filter @farmfe/cli start",
+    "build:cli": "pnpm --filter @farmfe/cli build",
+    "build:core": "pnpm --filter @farmfe/core build",
+    "doc": "pnpm --filter farm-docs dev",
     "release": "node scripts/release.mjs",
+    "release:nightly": "node scripts/release-nightly.mjs",
     "check": "biome check . --diagnostic-level=warn --apply",
-    "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "bump": "node scripts/bump.mjs",
+    "bump:nightly": "node scripts/bump-nightly.mjs",
     "bump:create-farm": "node scripts/bump-create-farm-version.mjs",
-    "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler",
+    "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 INSTA_UPDATE=always cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
     "test-e2e": "vitest run -c vitest.config.e2e.ts",
     "prepare": "husky",
+    "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
+    "test": "cross-env NODE_OPTIONS=--trace-exit vitest run -c vitest.config.ts --passWithNoTests",
     "spell-check": "cspell \"**\" --gitignore"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.8.3",
-    "@changesets/cli": "^2.26.0",
+    "@biomejs/biome": "1.9.4",
+    "@changesets/cli": "2.27.9",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
@@ -34,30 +39,29 @@
     "@types/node": "^18.19.67",
     "@vitest/coverage-v8": "2.0.4",
     "cross-env": "^7.0.3",
-    "cspell": "^6.2.2",
+    "cspell": "8.14.2",
     "execa": "^7.1.1",
     "get-port": "^7.1.0",
     "husky": "^9.0.11",
     "lint-staged": "^13.0.3",
     "nanospinner": "^1.1.0",
-    "playwright-chromium": "^1.42.1",
-    "rimraf": "^3.0.2",
+    "node-emoji": "^2.1.3",
+    "playwright-chromium": "^1.55.0",
+    "rimraf": "6.0.1",
     "rollup": "^3.29.4",
-    "typescript": "^4.9.4",
+    "typescript": "5.6.3",
     "vite": "^5.2.6",
     "vitest": "2.0.4"
   },
   "lint-staged": {
-    "packages/**/*.ts": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
-    ],
-    "js-plugins/**/*.ts": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
+    "{packages,js-plugins,docs,scripts}/**/*.{ts,json,yaml,yml}": [
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },
   "pnpm": {
     "overrides": {
       "@farmfe/core": "workspace:*"
     }
-  }
+  },
+  "packageManager": "pnpm@9.4.0"
 }

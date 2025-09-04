@@ -5,12 +5,12 @@ use std::{
 };
 
 use napi::{
-  bindgen_prelude::FromNapiValue,
+  bindgen_prelude::{FromNapiValue, JsObjectValue, Object, ObjectRef, ToNapiValue},
   sys::{
     napi_callback, napi_callback_info, napi_create_function, napi_create_object, napi_env,
     napi_get_cb_info, napi_value,
   },
-  Env, Error, JsFunction, JsObject, JsUnknown, NapiRaw, Status,
+  Env, Error, JsValue, Status, Unknown,
 };
 
 use farmfe_core::{
@@ -45,11 +45,11 @@ pub struct GetModulesByFileResultItem {
 /// create a js object context that wraps [Arc<CompilationContext>]
 /// # Safety
 /// calling [napi_create_object]
-pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>) -> JsObject {
+pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>) -> ObjectRef {
   let mut js_context_ptr = ptr::null_mut();
   let mut js_context = {
     napi_create_object(raw_env, &mut js_context_ptr);
-    JsObject::from_napi_value(raw_env, js_context_ptr).unwrap()
+    Object::from_napi_value(raw_env, js_context_ptr).unwrap()
   };
 
   let methods = vec![
@@ -73,18 +73,18 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     js_context = attach_context_method(raw_env, js_context, name, Some(cb), ctx.clone());
   }
 
-  js_context
+  js_context.create_ref().unwrap()
 }
 
 /// Create a js resolve function based on [farmfe_core::context::CompilationContext]
 /// and attach it to the js context object
-fn attach_context_method(
+fn attach_context_method<'a>(
   env: napi_env,
-  mut context: JsObject,
+  mut context: Object<'a>,
   name: &str,
   cb: napi_callback,
   ctx: Arc<CompilationContext>,
-) -> JsObject {
+) -> Object<'a> {
   let len = name.len();
   let s = CString::new(name).unwrap();
 
@@ -93,14 +93,14 @@ fn attach_context_method(
     napi_create_function(
       env,
       s.as_ptr(),
-      len,
+      len as isize,
       cb,
       Box::into_raw(Box::new(ctx)) as *mut c_void,
       &mut func,
     );
 
     context
-      .set_named_property(name, JsFunction::from_napi_value(env, func).unwrap())
+      .set_named_property(name, Unknown::from_napi_value(env, func).unwrap())
       .unwrap();
   }
 
@@ -142,7 +142,7 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let param: PluginResolveHookParam = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).expect(
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).expect(
       "Argument should be a PluginResolveHookParam { source, importer, kind } when calling resolve",
     ))
     .expect(
@@ -150,11 +150,12 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
     );
 
   let hook_context: PluginHookContext = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[1]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[1]).unwrap())
     .unwrap();
 
-  let (promise, result) = Env::from_raw(env)
-    .create_deferred::<JsUnknown, Box<dyn FnOnce(Env) -> napi::Result<JsUnknown>>>()
+  let binding = Env::from_raw(env);
+  let (promise, result) = binding
+    .create_deferred::<Unknown, Box<dyn FnOnce(Env) -> napi::Result<Unknown<'static>>>>()
     .unwrap();
 
   std::thread::spawn(move || {
@@ -179,29 +180,29 @@ unsafe extern "C" fn add_watch_file(env: napi_env, info: napi_callback_info) -> 
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let from: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling addWatchFile");
   let to: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[1]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[1]).unwrap())
     .expect("Argument 1 should be a string when calling addWatchFile");
 
   let from = ModuleId::new(&from, "", &ctx.config.root);
   let to = ModuleId::new(&to, "", &ctx.config.root);
 
   ctx.add_watch_files(from, vec![to]).unwrap();
-  Env::from_raw(env).get_undefined().unwrap().raw()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn emit_file(env: napi_env, info: napi_callback_info) -> napi_value {
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let params: EmitFileParams = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a EmitFileParams { name, content, resolvedPath, resourceType } when calling emitFile");
 
   ctx.emit_file(params);
 
-  Env::from_raw(env).get_undefined().unwrap().raw()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn get_watch_files(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -229,34 +230,34 @@ unsafe extern "C" fn warn(env: napi_env, info: napi_callback_info) -> napi_value
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let message: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling warn");
 
   ctx.log_store.lock().add_warning(message);
 
-  Env::from_raw(env).get_undefined().unwrap().raw()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn error(env: napi_env, info: napi_callback_info) -> napi_value {
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let message: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling error");
 
   ctx.log_store.lock().add_error(message);
 
-  Env::from_raw(env).get_undefined().unwrap().raw()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn source_map_enabled(env: napi_env, info: napi_callback_info) -> napi_value {
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let id: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling get_modules_by_file");
 
   let enabled = ctx.sourcemap_enabled(&id);
 
-  Env::from_raw(env).to_js_value(&enabled).unwrap().raw()
+  ToNapiValue::to_napi_value(env, enabled).unwrap()
 }

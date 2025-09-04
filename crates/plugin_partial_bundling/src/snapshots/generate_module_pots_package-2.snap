@@ -1,0 +1,25 @@
+---
+source: crates/plugin_partial_bundling/src/generate_module_pots.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+(
+    ModulePot {
+        name: "test-package@1.0.0",
+        source_type: ImmutablePackage,
+        size: 15360,
+        module_type: Js,
+        immutable: true,
+        execution_order: 2,
+        modules: {},
+    },
+    [
+        ModuleId {
+            relative_path: "tests/fixtures/generate_module_pots/basic/index.ts",
+            query_string: "",
+        },
+        ModuleId {
+            relative_path: "tests/fixtures/generate_module_pots/basic/utils.ts",
+            query_string: "",
+        },
+    ],
+)

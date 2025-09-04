@@ -1,21 +1,34 @@
-use std::{
-  cmp::Ordering,
-  collections::{HashMap, HashSet},
-};
+use std::cmp::Ordering;
 
-use farmfe_core::swc_common::{
-  comments::SingleThreadedComments, Globals, Mark, SyntaxContext, GLOBALS,
-};
+use farmfe_core::module::meta_data::script::ScriptModuleMetaData;
+use farmfe_core::module::{Module, ModuleMetaData};
+use farmfe_core::swc_common::{Globals, SyntaxContext, GLOBALS};
+use farmfe_core::{HashMap, HashSet};
 
 mod common;
 
-use common::parse_module;
+use common::parse_module_with_comments;
 use farmfe_plugin_tree_shake::{
   module::UsedExportsIdent,
   statement_graph::{StatementGraph, UsedStatementIdent},
 };
+use farmfe_toolkit::script::analyze_statement::analyze_statements;
 
-use crate::common::{parse_module_with_comments, print_id};
+use crate::common::print_id;
+
+fn create_test_statement_graph(code: &str) -> StatementGraph {
+  let (ast, comment, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
+  let mut module = Module::new("test".into());
+  let statements = analyze_statements(&ast);
+
+  module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
+    statements,
+    unresolved_mark: unresolved_mark.as_u32(),
+    top_level_mark: top_level_mark.as_u32(),
+    ..Default::default()
+  })));
+  StatementGraph::new(&module, &ast, &comment)
+}
 
 #[test]
 fn construct_statement_graph_basic() {
@@ -39,14 +52,7 @@ export default class f {
 export { a, b, c as d };"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, _) = parse_module(code);
-
-    let stmt_graph = StatementGraph::new(
-      &ast,
-      Mark::new(),
-      Mark::new(),
-      &SingleThreadedComments::default(),
-    );
+    let stmt_graph = create_test_statement_graph(code);
     assert_eq!(stmt_graph.stmts().len(), 7);
     let mut edges = stmt_graph.edges();
     edges.sort_by(|a, b| {
@@ -241,7 +247,7 @@ fn construct_statement_graph_complex_1() {
   function getRequiredChunkKey(namespace) {
     return "" + namespace + LOADABLE_REQUIRED_CHUNKS_KEY;
   }
-  
+
   var sharedInternals = /*#__PURE__*/Object.freeze({
     __proto__: null,
     getRequiredChunkKey: getRequiredChunkKey,
@@ -250,14 +256,7 @@ fn construct_statement_graph_complex_1() {
   });"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, _) = parse_module(code);
-
-    let stmt_graph = StatementGraph::new(
-      &ast,
-      Mark::new(),
-      Mark::new(),
-      &SingleThreadedComments::default(),
-    );
+    let stmt_graph = create_test_statement_graph(code);
     assert_eq!(stmt_graph.stmts().len(), 3);
 
     let mut edges = stmt_graph.edges();
@@ -341,24 +340,16 @@ export default class f {
 export { a, b, c as d };"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, _) = parse_module(code);
-
-    let mut stmt_graph = StatementGraph::new(
-      &ast,
-      Mark::new(),
-      Mark::new(),
-      &SingleThreadedComments::default(),
-    );
+    let mut stmt_graph = create_test_statement_graph(code);
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
-      HashMap::from([
-        (5, HashSet::from([UsedStatementIdent::Default])),
+      HashMap::from_iter([
+        (5, HashSet::from_iter([UsedStatementIdent::Default])),
         (
           4,
-          HashSet::from([UsedStatementIdent::SwcIdent((
-            "e".into(),
-            SyntaxContext::from_u32(2),
-          ))]),
+          HashSet::from_iter([UsedStatementIdent::SwcIdent(
+            ("e".into(), SyntaxContext::from_u32(2)).into(),
+          )]),
         ),
       ]),
       None,
@@ -429,22 +420,14 @@ export default class f {
 export { a, b, c as d };"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, _) = parse_module(code);
-
-    let mut stmt_graph = StatementGraph::new(
-      &ast,
-      Mark::new(),
-      Mark::new(),
-      &SingleThreadedComments::default(),
-    );
+    let mut stmt_graph = create_test_statement_graph(code);
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
-      HashMap::from([(
+      HashMap::from_iter([(
         6,
-        HashSet::from([UsedStatementIdent::SwcIdent((
-          "c".into(),
-          SyntaxContext::from_u32(2),
-        ))]),
+        HashSet::from_iter([UsedStatementIdent::SwcIdent(
+          ("c".into(), SyntaxContext::from_u32(2)).into(),
+        )]),
       )]),
       None,
     );
@@ -499,9 +482,7 @@ fn trace_and_mark_used_statements_commonjs_exports() {
   }"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, comments, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
-
-    let mut stmt_graph = StatementGraph::new(&ast, unresolved_mark, top_level_mark, &comments);
+    let mut stmt_graph = create_test_statement_graph(code);
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default(), None);
 
@@ -539,22 +520,14 @@ export const {
 "#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, _) = parse_module(code);
-
-    let mut stmt_graph = StatementGraph::new(
-      &ast,
-      Mark::new(),
-      Mark::new(),
-      &SingleThreadedComments::default(),
-    );
+    let mut stmt_graph = create_test_statement_graph(code);
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
-      HashMap::from([(
+      HashMap::from_iter([(
         1,
-        HashSet::from([UsedStatementIdent::SwcIdent((
-          "program".into(),
-          SyntaxContext::from_u32(2),
-        ))]),
+        HashSet::from_iter([UsedStatementIdent::SwcIdent(
+          ("program".into(), SyntaxContext::from_u32(2)).into(),
+        )]),
       )]),
       None,
     );

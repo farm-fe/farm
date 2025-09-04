@@ -1,7 +1,6 @@
 #![allow(clippy::needless_update)]
 
 use std::{
-  collections::HashMap,
   fs,
   path::{Path, PathBuf},
   sync::Arc,
@@ -11,16 +10,17 @@ use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
     bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
-    preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
+    preset_env::PresetEnvConfig, Config, CssConfig, Mode, OutputConfig, RuntimeConfig,
+    SourcemapConfig,
   },
   plugin::Plugin,
-  serde::de::DeserializeOwned,
   serde_json::{self, Value},
+  HashMap,
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
 
-pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
+pub fn generate_runtime(crate_path: PathBuf, is_real_runtime: bool) -> Box<RuntimeConfig> {
   let swc_helpers_path = crate_path
     .join("tests")
     .join("fixtures")
@@ -28,14 +28,25 @@ pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
     .join("swc_helpers")
     .to_string_lossy()
     .to_string();
-  let runtime_path = crate_path
-    .join("tests")
-    .join("fixtures")
-    .join("_internal")
-    .join("runtime")
-    .join("index.js")
-    .to_string_lossy()
-    .to_string();
+  let runtime_path = if is_real_runtime {
+    crate_path
+      .parent()
+      .unwrap()
+      .parent()
+      .unwrap()
+      .join("packages")
+      .join("runtime")
+      .to_string_lossy()
+      .to_string()
+  } else {
+    crate_path
+      .join("tests")
+      .join("fixtures")
+      .join("_internal")
+      .join("runtime")
+      .to_string_lossy()
+      .to_string()
+  };
 
   Box::new(RuntimeConfig {
     path: runtime_path,
@@ -56,7 +67,7 @@ pub fn create_css_compiler(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: generate_runtime(crate_path),
+      runtime: generate_runtime(crate_path, false),
       output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
@@ -127,10 +138,13 @@ pub fn try_merge_config_file(origin: Config, file: PathBuf) -> Config {
 #[allow(dead_code)]
 pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
   Config {
-    input: HashMap::new(),
+    input: HashMap::default(),
     root: cwd.to_string_lossy().to_string(),
-    runtime: generate_runtime(crate_path),
-    output: Default::default(),
+    runtime: generate_runtime(crate_path, false),
+    output: Box::new(OutputConfig {
+      show_file_size: false,
+      ..Default::default()
+    }),
     mode: Mode::Production,
     external: Default::default(),
     sourcemap: Box::new(SourcemapConfig::Bool(false)),
@@ -180,9 +194,10 @@ pub fn create_compiler(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: generate_runtime(crate_path),
+      runtime: generate_runtime(crate_path, false),
       output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
+        show_file_size: false,
         ..Default::default()
       }),
       mode: Mode::Production,
@@ -226,7 +241,6 @@ pub fn create_compiler_with_plugins(
     .join("fixtures")
     .join("_internal")
     .join("runtime")
-    .join("index.js")
     .to_string_lossy()
     .to_string();
 
@@ -343,7 +357,13 @@ pub fn assert_compiler_result_with_config(compiler: &Compiler, config: AssertCom
       assert_eq!(expected.trim(), result.trim()); // ignore whitespace
     }
 
-    assert_eq!(expected_lines.len(), result_lines.len());
+    assert_eq!(
+      expected_lines.len(),
+      result_lines.len(),
+      "expect: \n{} result: \n{}",
+      expected_result,
+      result
+    );
   }
 }
 
@@ -356,21 +376,6 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
       ..Default::default()
     },
   );
-}
-
-#[allow(dead_code)]
-#[deprecated]
-pub fn get_config_field<T: DeserializeOwned>(value: &Value, keys: &[&str]) -> Option<T> {
-  let mut v: &Value = value;
-
-  for key in keys.iter() {
-    v = v.get(key)?;
-  }
-
-  Some(
-    serde_json::from_value(v.clone())
-      .unwrap_or_else(|_| panic!("{} type is not correct", keys.join("."))),
-  )
 }
 
 #[allow(dead_code)]
@@ -478,7 +483,7 @@ pub fn test_builder(options: TestBuilderOptions) {
       cwd.clone(),
       crate_path.clone(),
       |mut config, mut plugins| {
-        config.input = HashMap::from([(entry_name.clone(), file.clone())]);
+        config.input = HashMap::from_iter([(entry_name.clone(), file.clone())]);
 
         if let Some(_config) = _config.clone() {
           let v1 = serde_json::to_value(config).expect("cannot convert config to value");
@@ -490,6 +495,10 @@ pub fn test_builder(options: TestBuilderOptions) {
         }
 
         config = try_merge_config_file(config, config_entry);
+
+        if config.output.target_env.is_library() {
+          config.runtime = generate_runtime(crate_path.clone(), true);
+        }
 
         for plugin in _plugins.clone() {
           plugins.push(plugin);

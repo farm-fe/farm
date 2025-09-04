@@ -1,15 +1,7 @@
-import { ModuleSystem } from './module-system.js';
-import { FarmRuntimePlugin } from './plugin.js';
-import { __farm_global_this__ } from './resource-loader.js';
-
-__farm_global_this__.__farm_module_system__ = (function () {
-  const moduleSystem = new ModuleSystem();
-
-  return function () {
-    return moduleSystem;
-  };
-})()();
-
-export * from './resource-loader.js'
-
-export { ModuleSystem, FarmRuntimePlugin as Plugin };
+/** 
+ * This module only exports runtime types and does not export any runtime code.
+ * The runtime code is injected in need during compile time. See crates/plugin_runtime and crates/plugin_library
+ */
+export type { Module, ModuleSystem } from './module-system.js';
+export type { Resource } from './modules/dynamic-import.js';
+export type { FarmRuntimePlugin, FarmRuntimePluginContainer } from './modules/plugin.js';

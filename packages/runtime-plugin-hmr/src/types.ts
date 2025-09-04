@@ -3,15 +3,15 @@ import type { Resource } from '@farmfe/runtime';
 // export interface HmrUpdatePacket {
 //   id: string;
 // }
-type ModuleMap = Record<
-  string,
-  (
-    module: any,
-    exports: any,
-    require: (id: string) => any,
-    dynamicRequire: (id: string) => Promise<any>
-  ) => void
->;
+// type ModuleMap = Record<
+//   string,
+//   (
+//     module: any,
+//     exports: any,
+//     require: (id: string) => any,
+//     dynamicRequire: (id: string) => Promise<any>
+//   ) => void
+// >;
 export interface HmrUpdateResult {
   added: string[];
   changed: string[];
@@ -19,8 +19,8 @@ export interface HmrUpdateResult {
 
   // closest boundary modules which are related to added or changed
   boundaries: Record<string, string[][]>;
-  // modules which are added or changed
-  modules: ModuleMap;
+  // // modules which are added or changed
+  // modules: ModuleMap;
   dynamicResources: Resource[] | null;
   dynamicModuleResourcesMap: Record<string, number[]> | null;
 }

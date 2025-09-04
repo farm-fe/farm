@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_core"
-version = "0.7.3"
+version = "2.0.0"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -14,47 +14,47 @@ readme = "README.md"
 no-default-features = true
 
 [dependencies]
-farmfe_macro_cache_item = { version = "0.1.3", path = "../macro_cache_item" }
-farmfe_utils = { version = "0.1.6", path = "../utils" }
+farmfe_macro_cache_item = { version = "2.0.0", path = "../macro_cache_item" }
+farmfe_utils = { version = "2.0.0", path = "../utils" }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_regex = "1.1.0"
 parking_lot = { version = "0.12", features = ["deadlock_detection"] }
-relative-path = "1.7"
-dashmap = "5.0"
+relative-path = "2.0.1"
+dashmap = "6.1.0"
 blake2 = "0.10"
 hex = "0.4"
-rkyv = { version = "0.7.42" }
-rkyv_dyn = "0.7.42"
-rkyv_typename = "0.7.42"
-ptr_meta = "0.1.4"
-thiserror = "1.0"
+rkyv = { workspace = true }
+thiserror = "2.0.12"
 rayon = "1.5"
-petgraph = "0.6"
-bytecheck = "0.7.0"
-downcast-rs = "1.2"
+petgraph = "0.8.2"
+downcast-rs = "2.0.1"
 wax = { version = "0.6", default-features = false, features = [
   "miette",
   "walk",
 ] }
 globset = { version = "0.4.14" }
-swc_ecma_ast = { version = "0.115.1", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "0.146.12" }
-swc_common = { version = "0.34.4", features = [
+swc_ecma_ast = { version = "15.0.0", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "23.0.0" }
+swc_common = { version = "14.0.2", features = [
   "concurrent",
   "sourcemap",
   "rkyv-impl",
 ] }
-swc_css_ast = { version = "0.141.0", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "0.155.0" }
-swc_html_ast = { version = "0.34.0", features = ["rkyv-impl"] }
-heck = "0.4.1"
-puffin = { version = "0.18.0", features = [
+swc_css_ast = { version = "14.0.0", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "17.0.0" }
+swc_html_ast = { version = "14.0.0", features = ["rkyv-impl"] }
+swc_atoms = { version = "7.0.0" }
+heck = "0.5.0"
+puffin = { version = "0.19.1", features = [
   "packing",
   "lz4",
   "serialization",
 ], optional = true }
 regex = "1.7.3"
-enhanced-magic-string = { version = "0.0.16" }
+rustc-hash = "2.0.0"
+num_cpus = "1.16.0"
+lazy_static = "1.4.0"
 
 [features]
 profile = ["dep:puffin"]

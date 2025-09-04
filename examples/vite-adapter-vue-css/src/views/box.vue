@@ -1,7 +1,11 @@
 <template>
   <div class="box"></div>
+
+  <TailwindComponent />
 </template>
 <script setup lang="ts">
+import TailwindComponent from './tailwind';
+
 import "./box.css";
 </script>
 <style>

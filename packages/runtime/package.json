@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime",
-  "version": "0.12.10",
+  "version": "2.0.0-beta.0",
   "description": "Runtime of Farm",
   "author": {
     "name": "bright wu",
@@ -26,13 +26,14 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^18.19.67",
-    "typescript": "^4.7.4"
+    "typescript": "5.5.4",
+    "@types/node": "^18.19.67"
   },
   "dependencies": {
     "core-js": "^3.30.1"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ]
 }

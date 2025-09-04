@@ -1,6 +1,5 @@
-use std::borrow::Cow;
-use std::collections::HashMap;
 use std::{
+  borrow::Cow,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -16,6 +15,7 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
+use farmfe_core::{config::StringOrRegex, HashMap};
 
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
@@ -72,7 +72,7 @@ lazy_static! {
 impl Resolver {
   pub fn new() -> Self {
     Self {
-      resolve_cache: Mutex::new(HashMap::new()),
+      resolve_cache: Mutex::new(HashMap::default()),
     }
   }
 
@@ -428,44 +428,53 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("try_alias".to_string());
-    // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = context.config.resolve.alias.keys().collect();
-    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
 
-    for alias in alias_list {
-      let replaced = context.config.resolve.alias.get(alias).unwrap();
+    for alias_item in &context.config.resolve.alias {
       let mut result = None;
+      let replacement = &alias_item.replacement;
 
-      // try regex alias first
-      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
-        let regex = regex::Regex::new(alias).unwrap();
-        if regex.is_match(source) {
-          let replaced = regex.replace(source, replaced.as_str()).to_string();
-          result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
+      match &alias_item.find {
+        StringOrRegex::Regex(regex) => {
+          if regex.is_match(source) {
+            let replaced = regex.replace(source, replacement.as_str()).to_string();
+            result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
+          }
         }
-      } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
-        result = self.resolve(replaced, base_dir.clone(), kind, options, context);
-      } else if !alias.ends_with('$') && source.starts_with(alias) {
-        // Add absolute path and values in node_modules package
+        StringOrRegex::String(alias) => {
+          if let Some(regex_str) = alias.strip_prefix(REGEX_PREFIX) {
+            if let Ok(regex) = regex::Regex::new(regex_str) {
+              if regex.is_match(source) {
+                let replaced = regex.replace(source, replacement.as_str()).to_string();
+                result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
+              }
+            }
+          } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+            result = self.resolve(replacement, base_dir.clone(), kind, options, context);
+          } else if !alias.ends_with('$') && source.starts_with(alias) {
+            let source_left = RelativePath::new(source.trim_start_matches(alias));
+            let new_source = source_left
+              .to_logical_path(replacement)
+              .to_string_lossy()
+              .to_string();
 
-        let source_left = RelativePath::new(source.trim_start_matches(alias));
-        let new_source = source_left
-          .to_logical_path(replaced)
-          .to_string_lossy()
-          .to_string();
-        if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
-          result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
-        }
-        let (res, _) = self._try_node_modules_internal(
-          new_source.as_str(),
-          base_dir.clone(),
-          kind,
-          options,
-          context,
-        );
-        if let Some(resolve_result) = res {
-          let resolved_path = resolve_result.resolved_path;
-          result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
+            if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
+              result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
+            }
+
+            if result.is_none() {
+              let (res, _) = self._try_node_modules_internal(
+                new_source.as_str(),
+                base_dir.clone(),
+                kind,
+                options,
+                context,
+              );
+              if let Some(resolve_result) = res {
+                let resolved_path = resolve_result.resolved_path;
+                result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
+              }
+            }
+          }
         }
       }
 
@@ -745,7 +754,7 @@ impl Resolver {
         }
         .unwrap_or_else(|| Cow::Borrowed(&DEFAULT_MAIN_FIELDS));
 
-        main_fields.iter().find_map(|main_field| {
+        let resolve_main_field = |main_field: &str| {
           if main_field == "browser" && !is_browser {
             return None;
           }
@@ -773,8 +782,19 @@ impl Resolver {
               Value::String(str) => Some(str.to_string()),
               _ => None,
             })
-        })
+        };
+
+        main_fields
+          .iter()
+          .find_map(|main_field| resolve_main_field(main_field))
+          .or_else(|| {
+            DEFAULT_MAIN_FIELDS
+              .iter()
+              .filter(|main_field| !main_fields.contains(main_field))
+              .find_map(|main_field| resolve_main_field(main_field))
+          })
       });
+
     if let Some(entry_point) = entry_point {
       let dir = package_json_info.dir();
       let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {

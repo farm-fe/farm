@@ -1,16 +1,19 @@
-use std::collections::HashMap;
-
+use minify::MinifyOptions;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use swc_css_prefixer::options::Targets;
 
 use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
+use tree_shaking::TreeShakingConfig;
 
 use self::{
   bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
   partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
 
-pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+use crate::HashMap;
+
+pub const FARM_MODULE_SYSTEM: &str = "m";
 // transformed from dynamic import, e.g `import('./xxx')`
 pub const FARM_DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
 // transformed from static import, e.g `import xxx from './xxx'`
@@ -39,6 +42,20 @@ use asset::AssetsConfig;
 pub use output::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AliasItem {
+  pub find: StringOrRegex,
+  pub replacement: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum StringOrRegex {
+  String(String),
+  #[serde(with = "serde_regex")]
+  Regex(Regex),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
   pub input: HashMap<String, String>,
@@ -57,8 +74,8 @@ pub struct Config {
   pub partial_bundling: Box<PartialBundlingConfig>,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
-  pub tree_shaking: Box<BoolOrObj<serde_json::Value>>,
-  pub minify: Box<BoolOrObj<serde_json::Value>>,
+  pub tree_shaking: Box<BoolOrObj<TreeShakingConfig>>,
+  pub minify: Box<BoolOrObj<MinifyOptions>>,
   pub preset_env: Box<PresetEnvConfig>,
   /// whether to record the compilation flow stats, default is false.
   pub record: bool,
@@ -81,12 +98,12 @@ impl Default for Config {
       .to_string();
 
     Self {
-      input: HashMap::from([("index".to_string(), "./index.html".to_string())]),
+      input: HashMap::from_iter([("index".to_string(), "./index.html".to_string())]),
       root: root.clone(),
       output: Default::default(),
       mode: Mode::Development,
       resolve: Default::default(),
-      define: HashMap::new(),
+      define: HashMap::default(),
       external: Default::default(),
       runtime: Default::default(),
       script: Default::default(),
@@ -113,52 +130,22 @@ impl Default for Config {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
-pub enum TargetEnv {
-  #[serde(rename = "browser")]
-  #[default]
-  Browser,
-  #[serde(rename = "node")]
-  Node,
-  /// [TargetEnv::Library] is alias of [TargetEnv::Custom("library-browser")]
-  #[serde(rename = "library")]
-  Library,
-  #[serde(untagged)]
-  Custom(String),
-}
-
-impl TargetEnv {
-  pub fn is_browser(&self) -> bool {
-    matches!(self, TargetEnv::Browser | TargetEnv::Library)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser")
-  }
-
-  pub fn is_node(&self) -> bool {
-    matches!(self, TargetEnv::Node)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-node")
-  }
-
-  pub fn is_library(&self) -> bool {
-    matches!(self, TargetEnv::Library)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser" || custom == "library-node")
-  }
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
-pub enum ModuleFormat {
-  #[serde(rename = "esm")]
-  #[default]
-  EsModule,
-  #[serde(rename = "cjs")]
-  CommonJs,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Mode {
   #[serde(rename = "development")]
   Development,
   #[serde(rename = "production")]
   Production,
+}
+
+impl Mode {
+  pub fn is_dev(&self) -> bool {
+    matches!(self, Mode::Development)
+  }
+
+  pub fn is_prod(&self) -> bool {
+    matches!(self, Mode::Production)
+  }
 }
 
 impl Default for Mode {
@@ -226,7 +213,7 @@ pub struct ScriptParserConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ResolveConfig {
-  pub alias: HashMap<String, String>,
+  pub alias: Vec<AliasItem>,
   pub main_fields: Vec<String>,
   pub main_files: Vec<String>,
   pub extensions: Vec<String>,
@@ -239,7 +226,7 @@ pub struct ResolveConfig {
 impl Default for ResolveConfig {
   fn default() -> Self {
     Self {
-      alias: HashMap::new(),
+      alias: vec![],
       main_fields: vec![],
       main_files: vec![String::from("index")],
       extensions: vec![
@@ -278,6 +265,8 @@ pub struct RuntimeConfig {
   pub swc_helpers_path: String,
   /// namespace for the runtime
   pub namespace: String,
+  /// emit isolate runtime resource
+  pub isolate: bool,
 }
 
 impl Default for RuntimeConfig {
@@ -287,6 +276,7 @@ impl Default for RuntimeConfig {
       plugins: vec![],
       swc_helpers_path: String::from(""),
       namespace: String::from("__farm_default_namespace__"),
+      isolate: false,
     }
   }
 }
@@ -338,6 +328,13 @@ impl SourcemapConfig {
       Self::AllInline => true,
     }
   }
+
+  pub fn is_false(&self) -> bool {
+    match self {
+      Self::Bool(b) => !*b,
+      _ => false,
+    }
+  }
 }
 
 mod tests {
@@ -382,21 +379,6 @@ mod tests {
     let env = TargetEnv::Library;
     assert!(env.is_library());
     assert!(!env.is_node());
-    assert!(env.is_browser());
-
-    let env = TargetEnv::Custom("library-browser".to_string());
-    assert!(env.is_library());
-    assert!(!env.is_node());
-    assert!(env.is_browser());
-
-    let env = TargetEnv::Custom("library-node".to_string());
-    assert!(env.is_library());
-    assert!(env.is_node());
     assert!(!env.is_browser());
-
-    let env: TargetEnv = serde_json::from_str("\"library-browser\"").expect("failed to parse");
-    assert!(env.is_library());
-    assert!(!env.is_node());
-    assert!(env.is_browser());
   }
 }

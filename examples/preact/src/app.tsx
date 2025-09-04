@@ -1,13 +1,13 @@
-import { useState } from 'preact/hooks'
-import preactLogo from './assets/preact.svg'
-import FarmLogo from './assets/logo.png'
-import './app.css'
+import { useState } from "preact/hooks";
+import preactLogo from "./assets/preact.svg";
+import FarmLogo from "./assets/logo.png";
+import "./app.css";
 
-import { Page } from '@patternfly/react-core'
+import { Page } from "@patternfly/react-core";
 
 export function App() {
-  const [count, setCount] = useState(0)
-
+  const [count, setCount] = useState(0);
+  console.log("hello, patternfly!");
   return (
     <>
       <Page>
@@ -20,7 +20,7 @@ export function App() {
             <img src={preactLogo} class="logo preact" alt="Preact logo" />
           </a>
         </div>
-        <h1>Farm + Preact</h1>
+        <h1>Farm + Preact 123</h1>
         <div class="card">
           <button onClick={() => setCount((count) => count + 1)}>
             count is {count}
@@ -33,7 +33,6 @@ export function App() {
           Click on the Farm and Preact logos to learn more
         </p>
       </Page>
-
     </>
-  )
+  );
 }

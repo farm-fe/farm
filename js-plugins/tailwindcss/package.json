@@ -1,13 +1,21 @@
 {
   "name": "@farmfe/js-plugin-tailwindcss",
-  "version": "0.0.20",
+  "version": "2.0.0-beta.3",
   "description": "support tailwindcss for farm.",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.mjs",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
   "scripts": {
-    "build": "npx farm build",
-    "dev": "npx farm watch"
+    "build": "farm build",
+    "type-check": "tsc -p ./tsconfig.build.json --noEmit",
+    "dev": "farm watch"
   },
   "keywords": [
     "farm",
@@ -21,15 +29,12 @@
   "license": "MIT",
   "dependencies": {
     "@farmfe/core": "workspace:^",
-    "@tailwindcss/node": "4.0.0-beta.8",
-    "@tailwindcss/oxide": "4.0.0-beta.8",
-    "lightningcss": "^1.27.0",
-    "postcss": "^8.4.47",
-    "postcss-import": "^16.0.1",
-    "tailwindcss": "4.0.0-beta.8"
+    "@tailwindcss/node": "4.1.12",
+    "@tailwindcss/oxide": "4.1.12",
+    "tailwindcss": "4.1.12"
   },
   "devDependencies": {
     "@farmfe/js-plugin-dts": "workspace:^",
-    "@types/postcss-import": "^14.0.3"
+    "@farmfe/plugin-dts": "workspace:^"
   }
 }

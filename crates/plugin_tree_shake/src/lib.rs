@@ -9,7 +9,6 @@ use farmfe_core::{
 
 use crate::remove_hot_update::remove_useless_hot_update_stmts;
 
-pub mod fill_module_mark;
 pub mod init_tree_shake_module_map;
 pub mod mark_initial_side_effects;
 pub mod module;
@@ -43,27 +42,24 @@ impl Plugin for FarmPluginTreeShake {
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    // 1. fill module mark
-    fill_module_mark::fill_module_mark(module_graph, context);
-
-    // 2. init tree_shake_modules_map
+    // 1. init tree_shake_modules_map
     let mut tree_shake_modules_map =
       init_tree_shake_module_map::init_tree_shake_module_map(module_graph, context);
 
-    // 3. handle default side effects
+    // 2. handle default side effects
     let entry_module_ids = mark_initial_side_effects::mark_initial_side_effects(
       module_graph,
       &mut tree_shake_modules_map,
     );
 
-    // 4. traverse the tree_shake_modules, and remove the unused statements
+    // 3. traverse the tree_shake_modules, and remove the unused statements
     let modules_to_remove = tree_shake_modules::tree_shake_modules(
       entry_module_ids,
       module_graph,
       &mut tree_shake_modules_map,
     );
 
-    // 5. update used_exports in module_graph
+    // 4. update used_exports in module_graph
     for module in module_graph.modules_mut() {
       if let Some(tree_shake_module) = tree_shake_modules_map.get(&module.id) {
         let mut used_exports = tree_shake_module.handled_used_exports.to_string_vec();
@@ -73,15 +69,18 @@ impl Plugin for FarmPluginTreeShake {
       }
     }
 
-    // 6. remove the unused modules
+    // 5. remove the unused modules
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
 
-    // 7. remove useless hot update statements if production
+    // 6. remove useless hot update statements if production
     if matches!(context.config.mode, Mode::Production) {
       remove_useless_hot_update_stmts(module_graph);
     }
+
+    // 7. remove export idents
+    tree_shake_modules::remove_export_idents::remove_export_idents(module_graph);
 
     Ok(Some(()))
   }

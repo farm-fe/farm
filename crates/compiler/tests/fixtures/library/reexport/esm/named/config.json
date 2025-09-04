@@ -1,0 +1,6 @@
+{
+  "output": {
+    "targetEnv": "library",
+    "format": "esm"
+  }
+}

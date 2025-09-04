@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -8,6 +8,7 @@ use farmfe_core::{
     PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
     PluginProcessModuleHookParam,
   },
+  HashMap,
 };
 
 pub fn build_module_deps(
@@ -17,10 +18,12 @@ pub fn build_module_deps(
   let config = Default::default();
   let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
   let script_plugin = farmfe_plugin_script::FarmPluginScript::new(&context.config);
+  let script_meta_features =
+    farmfe_plugin_script_meta::FarmPluginScriptMetaFeatures::new(&context.config);
 
   let hook_context = PluginHookContext {
     caller: None,
-    meta: HashMap::new(),
+    meta: HashMap::default(),
   };
 
   let load_result = script_plugin
@@ -28,7 +31,7 @@ pub fn build_module_deps(
       &PluginLoadHookParam {
         resolved_path: &path.to_string_lossy(),
         query: vec![],
-        meta: HashMap::new(),
+        meta: HashMap::default(),
         module_id: path.to_string_lossy().to_string(),
       },
       &context,
@@ -64,7 +67,8 @@ pub fn build_module_deps(
     module_id: &module.id,
     module_type: &module.module_type,
     meta: &mut parse_result,
-    content: Arc::new(load_result.content),
+    content: &mut Arc::new(load_result.content),
+    source_map_chain: &mut vec![],
   };
   script_plugin
     .process_module(&mut process_module_param, &context)
@@ -81,13 +85,22 @@ pub fn build_module_deps(
     .analyze_deps(&mut analyze_deps_param, &context)
     .unwrap();
 
-  let deps = analyze_deps_param.deps;
+  let mut deps = analyze_deps_param.deps;
 
   script_plugin
     .finalize_module(
       &mut PluginFinalizeModuleHookParam {
         module: &mut module,
-        deps: &deps,
+        deps: &mut deps,
+      },
+      &context,
+    )
+    .unwrap();
+  script_meta_features
+    .finalize_module(
+      &mut PluginFinalizeModuleHookParam {
+        module: &mut module,
+        deps: &mut deps,
       },
       &context,
     )

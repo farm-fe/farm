@@ -1,13 +1,14 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
-  config::{Config, ResolveConfig},
+  config::{AliasItem, Config, ResolveConfig, StringOrRegex},
   context::CompilationContext,
   module::{ModuleId, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
+  HashMap,
 };
 use farmfe_plugin_css::FarmPluginCss;
 use farmfe_testing_helpers::fixture;
@@ -18,10 +19,16 @@ fn analyze_deps() {
   fixture!("tests/fixtures/analyze_deps/basic.css", |file, cwd| {
     let config = Config {
       resolve: Box::new(ResolveConfig {
-        alias: HashMap::from([
-          ("/@".to_string(), cwd.to_string_lossy().to_string()),
-          ("@".to_string(), cwd.to_string_lossy().to_string()),
-        ]),
+        alias: vec![
+          AliasItem {
+            find: StringOrRegex::String("/@".to_string()),
+            replacement: cwd.to_string_lossy().to_string(),
+          },
+          AliasItem {
+            find: StringOrRegex::String("@".to_string()),
+            replacement: cwd.to_string_lossy().to_string(),
+          },
+        ],
         ..Default::default()
       }),
       ..Default::default()
@@ -33,7 +40,7 @@ fn analyze_deps() {
         &PluginLoadHookParam {
           resolved_path: &file.to_string_lossy(),
           query: vec![],
-          meta: HashMap::new(),
+          meta: HashMap::default(),
           module_id: file.to_string_lossy().to_string(),
         },
         &context,
@@ -114,7 +121,7 @@ fn analyze_deps() {
     );
 
     let stylesheet = &css_module.meta.as_css().ast;
-    let (css_code, _) = codegen_css_stylesheet(stylesheet, None, false, false);
+    let (css_code, _) = codegen_css_stylesheet(stylesheet, false, None, false);
 
     println!("{}", css_code);
 

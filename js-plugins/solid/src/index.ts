@@ -9,7 +9,7 @@ import { mergeAndConcat } from 'merge-anything';
 import solidRefresh from 'solid-refresh/babel';
 
 import type { TransformOptions } from '@babel/core';
-import type { JsPlugin } from '@farmfe/core';
+import { isObject, type JsPlugin } from '@farmfe/core';
 import type { Options } from './types.js';
 
 // TODO: HMR
@@ -72,10 +72,16 @@ export default function farmPluginSolid(
         'solid',
         ...(replaceDev ? ['development'] : [])
       ];
-      config.compilation.resolve.alias = {
-        ...(config.compilation.resolve.alias ?? {}),
-        'solid-refresh': runtimePublicPath
-      };
+
+      if (Array.isArray(config.compilation?.resolve?.alias)) {
+        config.compilation.resolve.alias.push({ find: 'solid-refresh', replacement: runtimePublicPath })
+      } else if (isObject(config.compilation?.resolve?.alias)) {
+        config.compilation.resolve.alias['solid-refresh'] = runtimePublicPath;
+      } else {
+        config.compilation.resolve.alias = [
+          { find: 'solid-refresh', replacement: runtimePublicPath }
+        ]
+      }
     },
     load: {
       filters: {

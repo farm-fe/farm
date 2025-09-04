@@ -3,8 +3,6 @@ import Refresh from 'react-refresh';
 
 type ModExport = Record<string, any>;
 
-// from: https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/src/refreshUtils.js
-
 // @ts-ignore
 export function validateRefreshBoundaryAndEnqueueUpdate(prevExports: ModExport, nextExports: ModExport) {
   const ignoredExports = []

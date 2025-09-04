@@ -1,239 +1,31 @@
 use std::collections::VecDeque;
-use std::collections::{HashMap, HashSet};
 
+pub use farmfe_core::module::meta_data::script::statement::{
+  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId,
+  StatementSideEffects,
+};
+use farmfe_core::module::meta_data::script::statement::{Statement, SwcId, WriteTopLevelVar};
+use farmfe_core::module::Module;
 use farmfe_core::petgraph::Direction;
 use farmfe_core::swc_common::comments::SingleThreadedComments;
 use farmfe_core::swc_common::Mark;
-use farmfe_core::swc_ecma_ast::{Id, ImportSpecifier, ModuleDecl, ModuleExportName};
+use farmfe_core::swc_ecma_ast::ModuleDecl;
 use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
 };
+use farmfe_core::{HashMap, HashSet};
 
 pub(crate) mod analyze_deps_by_used_idents;
-pub(crate) mod analyze_statement_info;
 pub(crate) mod analyze_statement_side_effects;
 pub(crate) mod analyze_used_import_all_fields;
 pub(crate) mod analyze_written_imported_idents;
-pub(crate) mod defined_idents_collector;
 pub(crate) mod traced_used_import;
 
-use analyze_statement_info::analyze_statement_info;
 use analyze_used_import_all_fields::{update_used_import_all_fields_of_edges, UsedImportAllFields};
 
 use self::analyze_deps_by_used_idents::AnalyzeUsedIdentsParams;
-use self::analyze_statement_info::AnalyzedStatementInfo;
 use self::traced_used_import::TracedUsedImportStatement;
-
-pub type StatementId = usize;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ImportSpecifierInfo {
-  Namespace(Id),
-  Named { local: Id, imported: Option<Id> },
-  Default(Id),
-}
-
-impl From<&ImportSpecifier> for ImportSpecifierInfo {
-  fn from(value: &ImportSpecifier) -> Self {
-    match value {
-      ImportSpecifier::Named(named) => ImportSpecifierInfo::Named {
-        local: named.local.to_id(),
-        imported: named.imported.as_ref().map(|i| match i {
-          ModuleExportName::Ident(i) => i.to_id(),
-          _ => panic!("non-ident imported is not supported when tree shaking"),
-        }),
-      },
-      ImportSpecifier::Default(default) => ImportSpecifierInfo::Default(default.local.to_id()),
-      ImportSpecifier::Namespace(ns) => ImportSpecifierInfo::Namespace(ns.local.to_id()),
-    }
-  }
-}
-
-#[derive(Debug, Clone)]
-pub struct ImportInfo {
-  pub source: String,
-  pub specifiers: Vec<ImportSpecifierInfo>,
-  pub stmt_id: StatementId,
-}
-
-/// collect all exports and gathering them into a simpler structure
-#[derive(Debug, Clone)]
-pub enum ExportSpecifierInfo {
-  /// export * from 'foo';
-  All,
-  /// export { foo, bar, default as zoo } from 'foo';
-  Named { local: Id, exported: Option<Id> },
-  /// export default xxx;
-  Default,
-  /// export * as foo from 'foo';
-  Namespace(Id),
-}
-
-#[derive(Debug, Clone)]
-pub struct ExportInfo {
-  pub source: Option<String>,
-  pub specifiers: Vec<ExportSpecifierInfo>,
-  pub stmt_id: StatementId,
-}
-
-impl ExportInfo {
-  pub fn contains_default_export(&self) -> bool {
-    self
-      .specifiers
-      .iter()
-      .any(|s| matches!(s, ExportSpecifierInfo::Default))
-  }
-}
-
-/// ```js
-/// import * as ns from './xxx';
-///
-/// ns.a = 2; // Id = ns and field = a
-/// ```
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct WriteTopLevelVar {
-  pub ident: Id,
-  pub fields: Option<Vec<UsedImportAllFields>>,
-}
-
-impl From<Id> for WriteTopLevelVar {
-  fn from(value: Id) -> Self {
-    Self {
-      ident: value,
-      fields: None,
-    }
-  }
-}
-
-/// ```js
-/// const a = {};
-/// const p = a.prototype; // p is read top level value
-/// const p1 = window; // Id = window and is_global = true
-/// ```
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ReadTopLevelVar {
-  pub ident: Id,
-  pub is_global_var: bool,
-}
-
-impl From<Id> for ReadTopLevelVar {
-  fn from(value: Id) -> Self {
-    Self {
-      ident: value,
-      is_global_var: false,
-    }
-  }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum StatementSideEffects {
-  /// If the statement is a write operation, it will be considered as a side effect, when the written value is used, the statement will be preserved, otherwise it will be removed
-  /// Example:
-  /// ```js
-  /// a = 2, b = 3;
-  /// a.prototype.b = 3;
-  ///
-  /// import * as ns from './xxx';
-  ///
-  /// ns.a = 2; // Id = ns and field = a
-  /// ```
-  WriteTopLevelVar(HashSet<WriteTopLevelVar>),
-
-  /// Example:
-  /// ```js
-  /// const a = {};
-  /// const p = a.prototype; // p is read top level value
-  /// const p1 = window; // Id = window and is_global = true
-  /// ```
-  ReadTopLevelVar(HashSet<ReadTopLevelVar>),
-
-  /// Maybe modify global variable, it's always preserved, for example:
-  /// ```js
-  /// console.log('123');
-  /// window.b = 3;
-  /// document.body.addEventListener('click', () =/*  */> {});
-  /// ```
-  WriteOrCallGlobalVar,
-
-  /// Unclassified default self executed statements are always treated as side effects. For example:
-  /// ```js
-  /// for (let i = 0; i < 10; i++) {
-  ///  a[i] = i;
-  ///  b[i] = a[i] + i;
-  /// }
-  /// (function() {
-  ///   a = 2;
-  /// })()
-  /// function foo() {
-  ///  console.log('123');
-  /// }
-  /// foo();
-  /// ```
-  /// They may be classified in the future to improve the accuracy of tree shaking
-  UnclassifiedSelfExecuted,
-
-  /// The statement does not have side effects, for example:
-  /// ```js
-  /// const a = 2;
-  /// function foo() {}
-  /// ```
-  NoSideEffects,
-}
-
-impl StatementSideEffects {
-  pub fn is_preserved(&self) -> bool {
-    matches!(
-      self,
-      Self::WriteOrCallGlobalVar | Self::UnclassifiedSelfExecuted
-    )
-  }
-
-  pub fn merge_side_effects(&mut self, other: Self) {
-    let mut original_self_value = std::mem::replace(self, Self::NoSideEffects);
-
-    match (&mut original_self_value, &other) {
-      (StatementSideEffects::WriteTopLevelVar(a), StatementSideEffects::WriteTopLevelVar(b)) => {
-        a.extend(b.iter().cloned())
-      }
-      (StatementSideEffects::WriteTopLevelVar(_), StatementSideEffects::ReadTopLevelVar(_)) => {}
-      (StatementSideEffects::WriteTopLevelVar(_), StatementSideEffects::WriteOrCallGlobalVar) => {
-        original_self_value = other;
-      }
-      (
-        StatementSideEffects::WriteTopLevelVar(_),
-        StatementSideEffects::UnclassifiedSelfExecuted,
-      ) => {
-        original_self_value = other;
-      }
-      (StatementSideEffects::WriteTopLevelVar(_), StatementSideEffects::NoSideEffects) => {}
-      (StatementSideEffects::ReadTopLevelVar(_), StatementSideEffects::WriteTopLevelVar(_)) => {
-        original_self_value = other;
-      }
-      (StatementSideEffects::ReadTopLevelVar(a), StatementSideEffects::ReadTopLevelVar(b)) => {
-        a.extend(b.iter().cloned());
-      }
-      (StatementSideEffects::ReadTopLevelVar(_), StatementSideEffects::WriteOrCallGlobalVar) => {
-        original_self_value = other;
-      }
-      (
-        StatementSideEffects::ReadTopLevelVar(_),
-        StatementSideEffects::UnclassifiedSelfExecuted,
-      ) => {
-        original_self_value = other;
-      }
-      (StatementSideEffects::ReadTopLevelVar(_), StatementSideEffects::NoSideEffects) => {}
-      (
-        StatementSideEffects::WriteOrCallGlobalVar | StatementSideEffects::UnclassifiedSelfExecuted,
-        _,
-      ) => {}
-      (StatementSideEffects::NoSideEffects, _) => original_self_value = other,
-    }
-
-    *self = original_self_value;
-  }
-}
 
 /// UsedStatementIdent is used to represent the used idents of a statement, including import/export and normal statement
 /// For normal statement and import statement, it should always be SwcIdent
@@ -243,7 +35,7 @@ pub enum UsedStatementIdent {
   // Means the default export of the statement is used
   Default,
   // Means the ident defined in the statement is used
-  SwcIdent(Id),
+  SwcIdent(SwcId),
   /// All idents exported by `export * from 'xxx'` are used.
   /// Only used in `export * from 'xxx'` statement
   ExportAll,
@@ -253,7 +45,7 @@ pub enum UsedStatementIdent {
 }
 
 impl UsedStatementIdent {
-  pub fn is_ident_matched(&self, ident: &Id) -> bool {
+  pub fn is_ident_matched(&self, ident: &SwcId) -> bool {
     matches!(self, Self::SwcIdent(id) if id == ident)
   }
 }
@@ -262,56 +54,9 @@ impl ToString for UsedStatementIdent {
   fn to_string(&self) -> String {
     match self {
       UsedStatementIdent::Default => "default".to_string(),
-      UsedStatementIdent::SwcIdent(id) => format!("{}{:?}", id.0, id.1),
+      UsedStatementIdent::SwcIdent(id) => format!("{}{:?}", id.sym, id.ctxt()),
       UsedStatementIdent::ExportAll => "*".to_string(),
       UsedStatementIdent::InExportAll(id) => format!("*({id})"),
-    }
-  }
-}
-
-#[derive(Debug)]
-pub struct Statement {
-  pub id: StatementId,
-  pub import_info: Option<ImportInfo>,
-  pub export_info: Option<ExportInfo>,
-  pub defined_idents: HashSet<Id>,
-  /// whether the statement has side effects, the side effect statement will be preserved
-  pub side_effects: StatementSideEffects,
-
-  /// used idents of defined idents, updated when trace the statement graph
-  pub used_defined_idents: HashSet<Id>,
-}
-
-impl Statement {
-  pub fn new(
-    id: StatementId,
-    stmt: &ModuleItem,
-    unresolved_mark: Mark,
-    top_level_mark: Mark,
-    comments: &SingleThreadedComments,
-  ) -> Self {
-    // 1. analyze all import, export and defined idents of the ModuleItem
-    let AnalyzedStatementInfo {
-      import_info,
-      export_info,
-      defined_idents,
-    } = analyze_statement_info(&id, stmt);
-
-    // 2. analyze side effects of the ModuleItem
-    let side_effects = analyze_statement_side_effects::analyze_statement_side_effects(
-      stmt,
-      unresolved_mark,
-      top_level_mark,
-      comments,
-    );
-
-    Self {
-      id,
-      import_info,
-      export_info,
-      defined_idents,
-      used_defined_idents: HashSet::new(), // updated when trace the statement graph while tree shaking
-      side_effects,
     }
   }
 }
@@ -329,19 +74,19 @@ pub struct StatementGraphEdge {
   ///  c: [d],
   /// }
   /// ```
-  pub used_idents_map: HashMap<Id, HashSet<Id>>,
+  pub used_idents_map: HashMap<SwcId, HashSet<SwcId>>,
   /// The same as used_idents_map, it's not defined in the statement, but used in the statement
   /// For example:
   /// ```js
   /// for (let i = 0; i < len; i++) {
   ///  console.log(a + i);
   /// }
-  /// ```ignore
-  /// The result should be:
   /// ```
+  /// The result should be:
+  /// ```ignore
   /// [a, len]
   /// ```
-  pub used_idents: HashSet<Id>,
+  pub used_idents: HashSet<SwcId>,
   /// used fields of import star statement of the dependency statement, for example:
   /// ```js
   /// import * as a from 'a';
@@ -353,7 +98,7 @@ pub struct StatementGraphEdge {
   /// ```ignore
   /// [(a, [foo, bar, All])]
   /// ```
-  pub used_import_all_fields: HashMap<Id, HashSet<UsedImportAllFields>>,
+  pub used_import_all_fields: HashMap<SwcId, HashSet<UsedImportAllFields>>,
 }
 
 pub struct StatementGraph {
@@ -362,25 +107,31 @@ pub struct StatementGraph {
   used_stmts: HashSet<StatementId>,
 
   /// reverse_defined_idents_map is used to find the statement that defined the ident
-  pub reverse_defined_idents_map: HashMap<Id, usize>,
+  pub reverse_defined_idents_map: HashMap<SwcId, usize>,
   /// written_imported_idents is the idents that are defined in import statement, and are written at the top level of the module
   pub written_imported_idents: HashSet<WriteTopLevelVar>,
 }
 
 impl StatementGraph {
-  pub fn new(
-    module: &SwcModule,
-    unresolved_mark: Mark,
-    top_level_mark: Mark,
-    comments: &SingleThreadedComments,
-  ) -> Self {
+  pub fn new(module: &Module, ast: &SwcModule, comments: &SingleThreadedComments) -> Self {
     let mut g = petgraph::graph::Graph::new();
-    let mut id_index_map = HashMap::new();
+    let mut id_index_map = HashMap::default();
 
-    let mut reverse_defined_idents_map = HashMap::new();
+    let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+    let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+
+    let mut reverse_defined_idents_map = HashMap::default();
     // 1. analyze all defined idents of each statement
-    for (index, item) in module.body.iter().enumerate() {
-      let stmt = Statement::new(index, item, unresolved_mark, top_level_mark, comments);
+    for (index, item) in ast.body.iter().enumerate() {
+      let mut stmt = module.meta.as_script().statements[index].clone();
+
+      let side_effects = analyze_statement_side_effects::analyze_statement_side_effects(
+        item,
+        unresolved_mark,
+        top_level_mark,
+        comments,
+      );
+      stmt.side_effects = side_effects;
 
       // export named does not define any idents
       if !matches!(item, ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(_))) {
@@ -396,12 +147,12 @@ impl StatementGraph {
     let mut graph = Self {
       g,
       id_index_map,
-      used_stmts: HashSet::new(),
+      used_stmts: HashSet::default(),
       reverse_defined_idents_map: HashMap::default(),
       written_imported_idents: HashSet::default(),
     };
 
-    for (index, item) in module.body.iter().enumerate() {
+    for (index, item) in ast.body.iter().enumerate() {
       // 2.1 find usage of defined idents and add edges
       let deps =
         analyze_deps_by_used_idents::analyze_deps_by_used_idents(AnalyzeUsedIdentsParams {
@@ -429,8 +180,8 @@ impl StatementGraph {
   pub fn empty() -> Self {
     Self {
       g: petgraph::graph::Graph::new(),
-      id_index_map: HashMap::new(),
-      used_stmts: HashSet::new(),
+      id_index_map: HashMap::default(),
+      used_stmts: HashSet::default(),
       reverse_defined_idents_map: HashMap::default(),
       written_imported_idents: HashSet::default(),
     }
@@ -441,12 +192,50 @@ impl StatementGraph {
   }
 
   pub fn preserved_side_effects_stmts(&self) -> Vec<StatementId> {
-    self
+    let mut preserved_statements = self
       .g
       .node_indices()
       .filter(|i| self.g[*i].side_effects.is_preserved())
       .map(|i| self.g[i].id)
-      .collect()
+      .collect::<Vec<_>>();
+
+    // preset statement that is marked as read global ident and write by other statement
+    let read_global_ident_stmts = self
+      .stmt_ids()
+      .into_iter()
+      .filter(|stmt_id| {
+        let stmt = self.stmt(stmt_id);
+
+        let is_read_global_ident =
+          if let StatementSideEffects::ReadTopLevelVar(read_top_level_var) = &stmt.side_effects {
+            read_top_level_var.iter().any(|i| i.is_global_var)
+          } else {
+            false
+          };
+
+        if is_read_global_ident {
+          // find the statement that write the ident defined in this statement
+          return self.stmt_ids().iter().any(|stmt_id| {
+            let parent_stmt = self.stmt(stmt_id);
+            if let StatementSideEffects::WriteTopLevelVar(write_top_level_var) =
+              &parent_stmt.side_effects
+            {
+              write_top_level_var
+                .iter()
+                .any(|i| stmt.defined_idents.contains(&i.ident))
+            } else {
+              false
+            }
+          });
+        }
+
+        false
+      })
+      .collect::<HashSet<_>>();
+
+    preserved_statements.extend(read_global_ident_stmts);
+
+    preserved_statements
   }
 
   pub fn contains_bare_import_stmt(&self) -> bool {
@@ -574,7 +363,7 @@ impl StatementGraph {
     dep_stmt: &Statement,
     used_defined_idents: &HashSet<UsedStatementIdent>,
     edge: &StatementGraphEdge,
-  ) -> HashSet<Id> {
+  ) -> HashSet<SwcId> {
     let mut all_used_dep_defined_idents = edge.used_idents.clone();
 
     for used_defined_ident in used_defined_idents {
@@ -600,7 +389,7 @@ impl StatementGraph {
   pub fn trace_and_mark_used_statements(
     &mut self,
     used_stmts_exports: HashMap<StatementId, HashSet<UsedStatementIdent>>,
-    all_used_import_all_fields: Option<HashMap<Id, HashSet<UsedImportAllFields>>>,
+    all_used_import_all_fields: Option<HashMap<SwcId, HashSet<UsedImportAllFields>>>,
   ) -> Vec<TracedUsedImportStatement> {
     farmfe_core::farm_profile_function!("trace_and_mark_used_statements".to_string());
 
@@ -635,7 +424,7 @@ impl StatementGraph {
     used_statements.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut stmts = VecDeque::from(used_statements);
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut result: Vec<TracedUsedImportStatement> = vec![];
 
     // 3. traverse the used statements in the statement graph
@@ -746,18 +535,18 @@ impl StatementGraph {
   fn traverse_dependents_dfs(
     &self,
     stmt_id: StatementId,
-    stmt_used_import_all_fields: &Option<HashMap<Id, HashSet<UsedImportAllFields>>>,
+    stmt_used_import_all_fields: &Option<HashMap<SwcId, HashSet<UsedImportAllFields>>>,
     visited: &mut HashSet<StatementId>,
     stack: &mut Vec<(
       StatementId,
-      HashSet<Id>,
-      HashMap<Id, HashSet<UsedImportAllFields>>,
+      HashSet<SwcId>,
+      HashMap<SwcId, HashSet<UsedImportAllFields>>,
     )>,
     result: &mut Vec<
       Vec<(
         StatementId,
-        HashSet<Id>,
-        HashMap<Id, HashSet<UsedImportAllFields>>,
+        HashSet<SwcId>,
+        HashMap<SwcId, HashSet<UsedImportAllFields>>,
       )>,
     >,
   ) {
@@ -771,8 +560,8 @@ impl StatementGraph {
       match &dept_stmt.side_effects {
         StatementSideEffects::WriteTopLevelVar(written_top_level_vars) => {
           let has_intersection =
-            |used_defined_idents: &HashSet<Id>,
-             used_import_all_fields: &HashMap<Id, HashSet<UsedImportAllFields>>| {
+            |used_defined_idents: &HashSet<SwcId>,
+             used_import_all_fields: &HashMap<SwcId, HashSet<UsedImportAllFields>>| {
               written_top_level_vars.iter().any(|v| {
                 let is_ident_used = used_defined_idents.contains(&v.ident);
 
@@ -832,9 +621,9 @@ impl StatementGraph {
           }
         }
         StatementSideEffects::ReadTopLevelVar(read_top_level_vars) => {
-          let mut used_dept_defined_idents = HashSet::new();
+          let mut used_dept_defined_idents = HashSet::default();
 
-          let has_intersection = |used_defined_idents: &HashSet<Id>| {
+          let has_intersection = |used_defined_idents: &HashSet<SwcId>| {
             read_top_level_vars
               .iter()
               .any(|v| used_defined_idents.contains(&v.ident))
@@ -876,11 +665,11 @@ impl StatementGraph {
   pub fn trace_dependents_side_effects(
     &self,
     stmt_id: StatementId,
-    used_import_all_fields: &Option<HashMap<Id, HashSet<UsedImportAllFields>>>,
+    used_import_all_fields: &Option<HashMap<SwcId, HashSet<UsedImportAllFields>>>,
   ) -> Vec<(
     StatementId,
-    HashSet<Id>,
-    HashMap<Id, HashSet<UsedImportAllFields>>,
+    HashSet<SwcId>,
+    HashMap<SwcId, HashSet<UsedImportAllFields>>,
   )> {
     // we only trace the dependents side effects of the statement that has defined idents
     if self.stmt(&stmt_id).defined_idents.is_empty() {
@@ -888,7 +677,7 @@ impl StatementGraph {
     }
 
     let mut result = vec![];
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut stack = vec![];
 
     self.traverse_dependents_dfs(
@@ -906,11 +695,11 @@ impl StatementGraph {
     &self,
     stmt_id: &StatementId,
     used_defined_idents: &HashSet<UsedStatementIdent>,
-  ) -> HashSet<Id> {
+  ) -> HashSet<SwcId> {
     used_defined_idents
       .iter()
       .filter_map(|i| match i {
-        UsedStatementIdent::SwcIdent(id) => Some(HashSet::from([id.clone()])),
+        UsedStatementIdent::SwcIdent(id) => Some(HashSet::from_iter([id.clone()])),
         UsedStatementIdent::Default => {
           let stmt = self.stmt(stmt_id);
           // add all defined idents to used defined idents if it's a default export

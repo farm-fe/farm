@@ -14,16 +14,16 @@
 //! ````
 #![feature(box_patterns)]
 
-use std::collections::HashMap;
 use std::path::Component;
-use std::path::Path;
 use std::path::PathBuf;
 
+use farmfe_core::config::AliasItem;
 use farmfe_core::module::ModuleId;
-use farmfe_core::module::VIRTUAL_MODULE_PREFIX;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
+use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_ecma_ast::IdentName;
 use farmfe_core::swc_ecma_ast::Tpl;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
@@ -31,6 +31,7 @@ use farmfe_core::swc_ecma_ast::{
   Module as SwcModule, ModuleItem, ObjectLit, Pat, Prop, PropOrSpread,
 };
 use farmfe_core::wax::Glob;
+use farmfe_core::HashMap;
 
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
@@ -46,14 +47,12 @@ pub trait ImportMetaGlobResolver {
   fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String>;
 }
 
-type AliasMap = HashMap<String, String>;
-
 pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   ast: &mut SwcModule,
   root: String,
   importer: &ModuleId,
   cur_dir: String,
-  alias: &AliasMap,
+  alias: &Vec<AliasItem>,
   resolver: R,
 ) -> farmfe_core::error::Result<()> {
   let mut visitor: ImportGlobVisitor<'_, _> =
@@ -93,6 +92,7 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
                       local: farmfe_core::swc_ecma_ast::Ident::new(
                         format!("__glob__{index}_{glob_index}").into(),
                         DUMMY_SP,
+                        SyntaxContext::empty(),
                       ),
                     },
                   )],
@@ -156,9 +156,10 @@ fn create_eager_named_import(
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
           imported: Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-            Ident::new(import.into(), DUMMY_SP),
+            Ident::new(import.into(), DUMMY_SP, SyntaxContext::empty()),
           )),
           is_type_only: false,
         },
@@ -189,6 +190,7 @@ fn create_eager_namespace_import(
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
         },
       )],
@@ -214,6 +216,7 @@ fn create_eager_default_import(index: usize, glob_index: usize, globed_source: &
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
         },
       )],
@@ -249,7 +252,7 @@ pub struct ImportGlobVisitor<'a, R> {
   cur_dir: String,
   importer: &'a ModuleId,
   root: String,
-  alias: &'a HashMap<String, String>,
+  alias: &'a Vec<AliasItem>,
   pub errors: Vec<String>,
   resolved_cache: HashMap<String, String>,
   resolver: R,
@@ -260,7 +263,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     importer: &'a ModuleId,
     root: String,
     cur_dir: String,
-    alias: &'a AliasMap,
+    alias: &'a Vec<AliasItem>,
     resolver: R,
   ) -> Self {
     Self {
@@ -271,7 +274,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       errors: vec![],
       alias,
       resolver,
-      resolved_cache: HashMap::new(),
+      resolved_cache: HashMap::default(),
     }
   }
 
@@ -310,8 +313,6 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
   }
 
   fn try_alias(&mut self, source: &str) -> String {
-    let alias_map = &self.alias;
-
     let (source, negative) = source
       .strip_prefix('!')
       .map(|suffix| (suffix.to_string(), true))
@@ -327,14 +328,35 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
 
     let mut result = source.to_string();
     // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = alias_map.keys().collect();
+    let mut alias_list: Vec<_> = self.alias.iter().map(|a| a).collect();
 
-    alias_list.sort_by_key(|b| std::cmp::Reverse(b.len()));
+    alias_list.sort_by_key(|item| {
+      let key = match &item.find {
+        farmfe_core::config::StringOrRegex::String(s) => s,
+        farmfe_core::config::StringOrRegex::Regex(regex) => regex.as_str(),
+      };
+      std::cmp::Reverse(key.len())
+    });
 
-    for alias in alias_list {
-      let replaced = alias_map.get(alias).unwrap();
+    for alias_item in alias_list {
+      let (alias, replaced) = (
+        match &alias_item.find {
+          farmfe_core::config::StringOrRegex::String(s) => s,
+          farmfe_core::config::StringOrRegex::Regex(regex) => {
+            if regex.is_match(&source) {
+              let replaced = regex
+                .replace(&source, alias_item.replacement.as_str())
+                .to_string();
+              result = replaced;
+              break;
+            }
+            regex.as_str()
+          }
+        },
+        &alias_item.replacement,
+      );
 
-      // try regex alias first
+      // try regex alias first. Note that this is only for compatibility, use StringOrRegex::Regex
       if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
         let regex = regex::Regex::new(alias).unwrap();
         if regex.is_match(&source) {
@@ -461,12 +483,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
                 p.as_ref().is_ok_and(|f| !f.path().is_dir())
               }
             })
-            .map(|p| {
-              (
-                source.clone(),
-                p.map(|p| p.path().to_string_lossy().to_string()),
-              )
-            })
+            .map(|p| (source, p.map(|p| p.path().to_string_lossy().to_string())))
             .collect::<Vec<_>>();
           paths.push((negative, p));
         }
@@ -478,7 +495,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       }
     }
 
-    let mut filtered_paths = HashMap::new();
+    let mut filtered_paths = HashMap::default();
 
     for (negative, path) in paths {
       for (source, entry) in path {
@@ -554,6 +571,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
         Box::new(Expr::Ident(Ident::new(
           format!("__glob__{cur_index}_{entry_index}").into(),
           DUMMY_SP,
+          SyntaxContext::empty(),
         ))),
       ))
     } else {
@@ -586,6 +604,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
         }))),
       }],
       type_args: None,
+      ctxt: SyntaxContext::empty(),
     }));
 
     if let Some(import) = import.as_ref() {
@@ -600,33 +619,40 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
             callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
               span: DUMMY_SP,
               obj: import_call_expr,
-              prop: MemberProp::Ident(Ident::new("then".into(), DUMMY_SP)),
+              prop: MemberProp::Ident(IdentName::new("then".into(), DUMMY_SP)),
             }))),
             args: vec![ExprOrSpread {
               spread: None,
               expr: Box::new(Expr::Arrow(ArrowExpr {
                 span: DUMMY_SP,
                 params: vec![Pat::Ident(BindingIdent {
-                  id: Ident::new("m".into(), DUMMY_SP),
+                  id: Ident::new("m".into(), DUMMY_SP, SyntaxContext::empty()),
                   type_ann: None,
                 })],
                 body: Box::new(BlockStmtOrExpr::Expr(Box::new(Expr::Member(MemberExpr {
                   span: DUMMY_SP,
-                  obj: Box::new(Expr::Ident(Ident::new("m".into(), DUMMY_SP))),
-                  prop: MemberProp::Ident(Ident::new(import.as_str().into(), DUMMY_SP)),
+                  obj: Box::new(Expr::Ident(Ident::new(
+                    "m".into(),
+                    DUMMY_SP,
+                    SyntaxContext::empty(),
+                  ))),
+                  prop: MemberProp::Ident(IdentName::new(import.as_str().into(), DUMMY_SP)),
                 })))),
                 is_async: false,
                 is_generator: false,
                 type_params: None,
                 return_type: None,
+                ctxt: SyntaxContext::empty(),
               })),
             }],
             type_args: None,
+            ctxt: SyntaxContext::empty(),
           })))),
           is_async: false,
           is_generator: false,
           type_params: None,
           return_type: None,
+          ctxt: SyntaxContext::empty(),
         })),
       )
     } else {
@@ -640,6 +666,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
           is_generator: false,
           type_params: None,
           return_type: None,
+          ctxt: SyntaxContext::empty(),
         })),
       )
     }
@@ -657,7 +684,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
                 kind: MetaPropKind::ImportMeta,
                 ..
               }),
-            prop: MemberProp::Ident(Ident { sym, .. }),
+            prop: MemberProp::Ident(IdentName { sym, .. }),
             ..
           })),
         args,
@@ -707,6 +734,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
               Box::new(Expr::Ident(Ident::new(
                 format!("__glob__{cur_index}_{entry_index}").into(),
                 DUMMY_SP,
+                SyntaxContext::empty(),
               ))),
             ));
           } else {
@@ -793,7 +821,7 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
 fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
   match &expr.expr {
     box Expr::Object(ObjectLit { props, .. }) => {
-      let mut result = HashMap::new();
+      let mut result = HashMap::default();
 
       for prop in props {
         match prop {

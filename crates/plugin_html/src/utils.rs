@@ -6,7 +6,7 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin, ResourceType},
   swc_html_ast::Element,
 };
-use farmfe_toolkit::fs::transform_output_filename;
+use farmfe_toolkit::fs::{transform_output_filename, TransformOutputFileNameParams};
 
 use crate::deps_analyzer::{
   get_href_link_value, get_link_css_code, get_script_src_value, get_script_type_module_code,
@@ -71,32 +71,33 @@ pub fn create_farm_runtime_output_resource(
   bytes: Cow<[u8]>,
   resource_name: &str,
   context: &Arc<CompilationContext>,
-  already_inject_resources: &Vec<String>,
-) -> (String, Option<Resource>) {
-  let name = transform_output_filename(
-    context.config.output.filename.clone(),
-    resource_name,
-    &bytes,
-    "js", // todo: support configuring extension
-          // match context.config.output.format {
-          //   ModuleFormat::EsModule => "mjs",
-          //   ModuleFormat::CommonJs => "cjs",
-          // },
-  );
+) -> Resource {
+  let name = if context.config.output.filename.contains("[hash]")
+    || context.config.output.filename.contains("[contentHash]")
+  {
+    "farm"
+  } else {
+    resource_name
+  };
 
-  if already_inject_resources.contains(&name) {
-    return (name, None);
+  let name = transform_output_filename(TransformOutputFileNameParams {
+    filename_config: context.config.output.filename.clone(),
+    name,
+    name_hash: "",
+    bytes: &bytes,
+    ext: "js",
+    special_placeholders: &Default::default(),
+  });
+
+  Resource {
+    name: name.clone(),
+    name_hash: Default::default(),
+    bytes: bytes.into_owned().into(),
+    emitted: false,
+    resource_type: ResourceType::Js,
+    origin: ResourceOrigin::ResourcePot(name),
+    should_transform_output_filename: true,
+    meta: Default::default(),
+    special_placeholders: Default::default(),
   }
-
-  (
-    name.clone(),
-    Some(Resource {
-      name: name.clone(),
-      bytes: bytes.to_owned().into(),
-      emitted: false,
-      resource_type: ResourceType::Js,
-      origin: ResourceOrigin::ResourcePot(name),
-      info: None,
-    }),
-  )
 }

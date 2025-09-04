@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use farmfe_core::HashMap;
 use farmfe_core::{error::Result, plugin::PluginHookContext};
 
 use crate::{
@@ -19,10 +18,9 @@ impl Compiler {
   /// the generate stage
   pub(crate) fn generate(&self) -> Result<()> {
     self.context.plugin_driver.generate_start(&self.context)?;
-
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
 
     self.optimize_module_graph()?;
@@ -48,6 +46,11 @@ impl Compiler {
       .context
       .plugin_driver
       .optimize_module_graph(&mut module_graph, &self.context)?;
+
+    self
+      .context
+      .plugin_driver
+      .freeze_module_graph_meta(&mut module_graph, &self.context)?;
 
     Ok(())
   }

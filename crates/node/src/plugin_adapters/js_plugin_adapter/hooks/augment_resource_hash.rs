@@ -2,15 +2,16 @@ use std::sync::Arc;
 
 use crate::{
   new_js_plugin_hook,
-  plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
+  plugin_adapters::js_plugin_adapter::{
+    hooks::process_rendered_resource_pot::JsResourcePot,
+    thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
+  },
 };
 use farmfe_core::{
-  config::config_regex::ConfigRegex,
-  context::CompilationContext,
-  error::Result,
-  resource::resource_pot::{ResourcePotInfo, ResourcePotType},
+  config::config_regex::ConfigRegex, context::CompilationContext, error::Result,
+  resource::resource_pot::ResourcePotType,
 };
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 
 pub struct JsPluginAugmentResourceHashHook {
   tsfn: ThreadSafeJsPluginHook,
@@ -21,15 +22,11 @@ impl JsPluginAugmentResourceHashHook {
   new_js_plugin_hook!(
     PluginAugmentResourceHashHookFilters,
     JsPluginAugmentResourceHashHookFilters,
-    ResourcePotInfo,
+    JsResourcePot,
     String
   );
 
-  pub fn call(
-    &self,
-    param: ResourcePotInfo,
-    ctx: Arc<CompilationContext>,
-  ) -> Result<Option<String>> {
+  pub fn call(&self, param: JsResourcePot, ctx: Arc<CompilationContext>) -> Result<Option<String>> {
     if self
       .filters
       .resource_pot_types
