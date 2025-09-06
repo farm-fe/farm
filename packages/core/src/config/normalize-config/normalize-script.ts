@@ -1,5 +1,5 @@
-import { colors, Logger } from '../../utils/index.js';
-import { ResolvedCompilation } from '../types.js';
+import { colors, type Logger } from '../../utils/index.js';
+import type { ResolvedCompilation } from '../types.js';
 
 export function normalizeScript(
   resolvedCompilation: ResolvedCompilation,
