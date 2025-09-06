@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_plugin_minify"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -10,6 +10,6 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_minify"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "2.0.0" }
-farmfe_toolkit = { path = "../toolkit", version = "2.0.0" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.0" }
+farmfe_core = { path = "../core", version = "3.0.0" }
+farmfe_toolkit = { path = "../toolkit", version = "2.0.1" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
