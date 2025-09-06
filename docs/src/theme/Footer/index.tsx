@@ -1,8 +1,8 @@
-import React from 'react';
-import type FooterType from '@theme/Footer';
-import { FaXTwitter } from "react-icons/fa6";
 import type { WrapperProps } from '@docusaurus/types';
-import { GitHubLogoIcon, DiscordLogoIcon } from '@radix-ui/react-icons';
+import { DiscordLogoIcon, GitHubLogoIcon } from '@radix-ui/react-icons';
+import type FooterType from '@theme/Footer';
+import React from 'react';
+import { FaXTwitter } from "react-icons/fa6";
 
 
 type Props = WrapperProps<typeof FooterType>;

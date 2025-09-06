@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useSpring, animated } from "@react-spring/web";
+import { animated, useSpring } from "@react-spring/web";
+import React, { useEffect, useState } from "react";
 import styles from "./index.module.css";
 
 export function formatTime(time: number, totalTime: number) {

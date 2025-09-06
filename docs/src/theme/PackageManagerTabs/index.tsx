@@ -1,13 +1,12 @@
-import { Tabs, Tab } from '../ManagerTabs';
-import React from 'react';
-import { Npm } from './icons/Npm';
-import { Yarn } from './icons/Yarn';
-import { Pnpm } from './icons/Pnpm';
-import { Bun } from './icons/Bun';
-import { codeToHtml } from 'shiki';
-import { useEffect, useState } from 'react';
-import useIsBrowser from '@docusaurus/useIsBrowser';
 import { useColorMode } from '@docusaurus/theme-common';
+import useIsBrowser from '@docusaurus/useIsBrowser';
+import React, { useEffect, useState } from 'react';
+import { codeToHtml } from 'shiki';
+import { Tab, Tabs } from '../ManagerTabs';
+import { Bun } from './icons/Bun';
+import { Npm } from './icons/Npm';
+import { Pnpm } from './icons/Pnpm';
+import { Yarn } from './icons/Yarn';
 export interface PackageManagerTabProps {
   skip?: boolean;
   command:

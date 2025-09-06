@@ -1,27 +1,38 @@
 export * from './preview.js';
 
 import fs, { PathLike } from 'node:fs';
+import type {
+  Server as HttpBaseServer,
+  ServerOptions as HttpsServerOptions
+} from 'node:http';
+import type { Http2SecureServer } from 'node:http2';
+import type * as net from 'node:net';
 import connect from 'connect';
 import corsMiddleware from 'cors';
-
-import { Compiler } from '../compiler/index.js';
-import { colors, handleLazyCompilation, resolveConfig } from '../index.js';
-import Watcher from '../watcher/index.js';
-import { HmrEngine } from './hmr-engine.js';
-import { httpServer } from './http.js';
-import { openBrowser } from './open.js';
-import { WsServer } from './ws.js';
-
+import { Compiler, createCompiler } from '../compiler/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
+import type {
+  FarmCliOptions,
+  NormalizedServerConfig,
+  ResolvedUserConfig,
+  UserConfig
+} from '../config/types.js';
+import { colors, handleLazyCompilation, resolveConfig } from '../index.js';
 import { getSortedPluginHooksBindThis } from '../plugin/index.js';
+import type {
+  CompilerUpdateItem,
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 import { isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
+import { convertErrorMessage } from '../utils/error.js';
 import {
   resolveServerUrls,
   setupSIGTERMListener,
   teardownSIGTERMListener
 } from '../utils/http.js';
-import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
+import { bootstrap, Logger, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import {
   arrayEqual,
@@ -29,7 +40,10 @@ import {
   isObject,
   normalizePath
 } from '../utils/share.js';
-
+import Watcher from '../watcher/index.js';
+import { HmrEngine } from './hmr-engine.js';
+import type { CommonServerOptions, ResolvedServerUrls } from './http.js';
+import { httpServer } from './http.js';
 import {
   hmrPingMiddleware,
   htmlFallbackMiddleware,
@@ -43,28 +57,8 @@ import {
   resourceMiddleware,
   staticMiddleware
 } from './middlewares/index.js';
-
-import type {
-  Server as HttpBaseServer,
-  ServerOptions as HttpsServerOptions
-} from 'node:http';
-import type { Http2SecureServer } from 'node:http2';
-import type * as net from 'node:net';
-
-import { createCompiler } from '../compiler/index.js';
-import type {
-  FarmCliOptions,
-  NormalizedServerConfig,
-  ResolvedUserConfig,
-  UserConfig
-} from '../config/types.js';
-import type {
-  CompilerUpdateItem,
-  JsUpdateResult,
-  PersistentCacheConfig
-} from '../types/binding.js';
-import { convertErrorMessage } from '../utils/error.js';
-import type { CommonServerOptions, ResolvedServerUrls } from './http.js';
+import { openBrowser } from './open.js';
+import { WsServer } from './ws.js';
 
 export type HttpServer = HttpBaseServer | Http2SecureServer;
 

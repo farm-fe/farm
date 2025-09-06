@@ -1,33 +1,13 @@
-import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
-import {
-  CompilationContext,
-  CompilationContextEmitFileParams,
-  JsPlugin,
-  JsResourcePot,
-  PluginFinalizeResourcesHookParams,
-  Resource
-} from '../type.js';
-import {
-  FARM_CSS_MODULES_SUFFIX,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
-  convertEnforceToPriority,
-  customParseQueryString,
-  decodeStr,
-  encodeStr,
-  formatId,
-  formatLoadModuleType,
-  formatTransformModuleType,
-  getContentValue,
-  isStartsWithSlash,
-  logCompatibilityWarning,
-  normalizeAdapterVirtualModule,
-  removeQuery,
-  revertNormalizePath,
-  transformFarmConfigToRollupNormalizedOutputOptions,
-  transformResourceInfo2RollupRenderedChunk,
-  transformRollupResource2FarmResource
-} from './utils.js';
-
+import deepmerge from 'deepmerge';
+import { readFile } from 'fs/promises';
+import fse from 'fs-extra';
+import path from 'path';
+import type {
+  FunctionPluginHooks,
+  OutputBundle,
+  RenderChunkHook,
+  ResolveIdResult
+} from 'rollup';
 // only use types from vite and we do not install vite as a dependency
 import type {
   ConfigEnv,
@@ -38,29 +18,19 @@ import type {
   ViteDevServer,
   UserConfig as ViteUserConfig
 } from 'vite';
-
-import path from 'path';
-import deepmerge from 'deepmerge';
-import fse from 'fs-extra';
-import { readFile } from 'fs/promises';
-import type {
-  FunctionPluginHooks,
-  OutputBundle,
-  RenderChunkHook,
-  ResolveIdResult
-} from 'rollup';
 import { Resolver } from '../../../binding/index.js';
 import {
   Compiler,
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX
 } from '../../compiler/index.js';
 import { CompilationMode } from '../../config/env.js';
+import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import {
-  Logger,
-  Server,
   isObject,
   isString,
-  normalizePath
+  Logger,
+  normalizePath,
+  Server
 } from '../../index.js';
 import {
   Config,
@@ -73,6 +43,14 @@ import {
   UpdateType
 } from '../../types/binding.js';
 import merge from '../../utils/merge.js';
+import {
+  CompilationContext,
+  CompilationContextEmitFileParams,
+  JsPlugin,
+  JsResourcePot,
+  PluginFinalizeResourcesHookParams,
+  Resource
+} from '../type.js';
 import { applyHtmlTransform } from './apply-html-transform.js';
 import {
   farmUserConfigToViteConfig,
@@ -81,13 +59,31 @@ import {
 } from './farm-to-vite-config.js';
 import { farmContextToViteContext } from './farm-to-vite-context.js';
 import {
+  convertEnforceToPriority,
+  customParseQueryString,
+  decodeStr,
+  encodeStr,
+  FARM_CSS_MODULES_SUFFIX,
+  formatId,
+  formatLoadModuleType,
+  formatTransformModuleType,
+  getContentValue,
+  isStartsWithSlash,
+  logCompatibilityWarning,
+  normalizeAdapterVirtualModule,
+  removeQuery,
+  revertNormalizePath,
   transformFarmConfigToRollupNormalizedInputOptions,
-  transformResourceInfo2RollupResource
+  transformFarmConfigToRollupNormalizedOutputOptions,
+  transformResourceInfo2RollupRenderedChunk,
+  transformResourceInfo2RollupResource,
+  transformRollupResource2FarmResource,
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE
 } from './utils.js';
 import {
+  createViteDevServerAdapter,
   ViteDevServerAdapter,
-  ViteModuleGraphAdapter,
-  createViteDevServerAdapter
+  ViteModuleGraphAdapter
 } from './vite-server-adapter.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (

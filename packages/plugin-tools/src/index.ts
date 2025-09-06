@@ -1,10 +1,8 @@
 import { createSpawnCmd } from '@farmfe/utils';
 import { cac } from 'cac';
-
-import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
-
 import { copyArtifacts } from './copy-artifacts.js';
 import { prepublish } from './prepublish.js';
+import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
 
 const getArg = (argsObj: any, args: string[], name: string) => {
   const index = args.indexOf(name);

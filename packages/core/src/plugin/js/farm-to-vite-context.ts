@@ -1,7 +1,6 @@
-import { Logger } from '../../utils/logger.js';
-
 import type { PluginContext } from 'rollup';
 import type { UserConfig } from '../../config/types.js';
+import { Logger } from '../../utils/logger.js';
 import { normalizePath } from '../../utils/share.js';
 import type { CompilationContext } from '../type.js';
 import { revertNormalizePath } from './utils.js';

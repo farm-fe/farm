@@ -1,18 +1,16 @@
-import path, {
-  posix,
-  isAbsolute,
-  dirname,
-  normalize,
-  sep,
-  resolve
-} from 'node:path';
-
-import extra from 'fs-extra';
-import typescript from 'typescript';
-
-import crypto from 'crypto';
 import fs from 'node:fs';
+import path, {
+  dirname,
+  isAbsolute,
+  normalize,
+  posix,
+  resolve,
+  sep
+} from 'node:path';
+import crypto from 'crypto';
+import extra from 'fs-extra';
 import { CompilerOptions } from 'ts-morph';
+import typescript from 'typescript';
 import { throwError } from './options.js';
 
 const windowsSlashRE = /\\+/g;
@@ -191,7 +189,7 @@ export function mergeObjects<
   ];
 
   while (loop.length) {
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: wont be null
     const { source, target } = loop.pop()!;
 
     Object.keys(target).forEach((key) => {
@@ -373,6 +371,7 @@ export async function tryToReadFileSync(path: string) {
 export function normalizeGlob(path: string) {
   if (/[\\/]$/.test(path)) {
     return path + '**';
+    // biome-ignore lint/style/noNonNullAssertion: wont be null
   } else if (!globSuffixRE.test(path.split(/[\\/]/).pop()!)) {
     return path + '/**';
   }

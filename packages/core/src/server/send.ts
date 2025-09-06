@@ -1,5 +1,5 @@
-import { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
 import getEtag from 'etag';
+import { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
 import mime from 'mime';
 import { extname } from 'path/posix';
 

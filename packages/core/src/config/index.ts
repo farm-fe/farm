@@ -1,7 +1,7 @@
 import { JsPlugin } from '../index.js';
 import {
-  type RustPlugin,
   getSortedPlugins,
+  type RustPlugin,
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
@@ -13,25 +13,22 @@ import { externalAdapter } from '../plugin/js/external-adapter.js';
 import { resolveHostname } from '../utils/http.js';
 import { Logger } from '../utils/index.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { CompilationMode, setProcessEnv } from './env.js';
-
 import { ENV_PRODUCTION } from './constants.js';
+import { CompilationMode, setProcessEnv } from './env.js';
+import { loadConfigFile } from './load-config-file.js';
 import { mergeConfig, mergeFarmCliConfig } from './merge-config.js';
-
+import { normalizeUserCompilationConfig } from './normalize-config/index.js';
+import { resolveUserConfig } from './resolve-config.js';
+import { normalizeDevServerConfig } from './resolve-server.js';
 import type {
   ConfigEnv,
+  commandType,
   FarmCliOptions,
   ResolvedUserConfig,
   UserConfig,
   UserConfigExport,
-  UserConfigFnObject,
-  commandType
+  UserConfigFnObject
 } from './types.js';
-
-import { loadConfigFile } from './load-config-file.js';
-import { normalizeUserCompilationConfig } from './normalize-config/index.js';
-import { resolveUserConfig } from './resolve-config.js';
-import { normalizeDevServerConfig } from './resolve-server.js';
 
 export {
   normalizeUserCompilationConfig,
@@ -39,9 +36,9 @@ export {
   normalizeDevServerConfig
 };
 
-export * from './types.js';
 export * from './constants.js';
 export * from './env.js';
+export * from './types.js';
 
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(

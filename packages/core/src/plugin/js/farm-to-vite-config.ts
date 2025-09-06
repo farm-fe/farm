@@ -1,9 +1,9 @@
-import path from 'path';
 import { WatchOptions } from 'chokidar';
+import path from 'path';
 import type { UserConfig as ViteUserConfig } from 'vite';
 import { normalizeResolveAlias } from '../../config/normalize-config/normalize-resolve.js';
 import type { UserConfig } from '../../config/types.js';
-import { Logger, isObject, logger, normalizePath } from '../../index.js';
+import { isObject, Logger, logger, normalizePath } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
 import {

@@ -6,8 +6,10 @@
  */
 
 import { existsSync, statSync } from 'node:fs';
+import { OutgoingHttpHeaders } from 'node:http';
 import path from 'node:path';
-
+import type Connect from 'connect';
+import sirv, { Options } from 'sirv';
 import {
   cleanUrl,
   fsPathFromUrl,
@@ -16,10 +18,6 @@ import {
   removeLeadingSlash
 } from '../../utils/index.js';
 import { stripQueryAndHash, withTrailingSlash } from '../../utils/path.js';
-
-import { OutgoingHttpHeaders } from 'node:http';
-import type Connect from 'connect';
-import sirv, { Options } from 'sirv';
 import type { Server } from '../index.js';
 
 export function staticMiddleware(app: Server): Connect.NextHandleFunction {
@@ -83,8 +81,8 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
     next: () => void
   ) {
     if (
-      (publicFiles && !publicFiles.has(toFilePath(req.url!))) ||
-      isImportRequest(req.url!)
+      (publicFiles && !publicFiles.has(toFilePath(req.url as string))) ||
+      isImportRequest(req.url as string)
     ) {
       return next();
     }
@@ -115,7 +113,7 @@ export const sirvOptions = ({
       const headers = getHeaders();
       if (headers) {
         for (const name in headers) {
-          res.setHeader(name, headers[name]!);
+          res.setHeader(name, headers[name] as string);
         }
       }
     }

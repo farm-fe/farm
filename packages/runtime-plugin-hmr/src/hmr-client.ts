@@ -1,8 +1,12 @@
 import type { ModuleSystem } from '@farmfe/runtime';
-import { HotModuleState } from './hot-module-state.js';
+import type { HotModuleState } from './hot-module-state.js';
 import { logger } from './logger.js';
 import { ErrorOverlay, overlayId } from './overlay.js';
-import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types.js';
+import type {
+  HMRPayload,
+  HmrUpdateResult,
+  RawHmrUpdateResult
+} from './types.js';
 
 // Inject during compile time
 const usingClientHost = typeof FARM_HMR_HOST === 'boolean'; // using client host/port by default

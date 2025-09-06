@@ -1,6 +1,3 @@
-import { existsSync, statSync } from 'fs';
-import path, { isAbsolute } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
 import type {
   CompilationContext,
   JsPlugin,
@@ -8,9 +5,12 @@ import type {
   UserConfig
 } from '@farmfe/core';
 import { getAdditionContext, rebaseUrls } from '@farmfe/core';
+import { existsSync, statSync } from 'fs';
 import { readFile } from 'fs/promises';
+import path, { isAbsolute } from 'path';
 import type { CompileResult, LegacyOptions, StringOptions } from 'sass';
 import * as Sass from 'sass';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { pluginName, throwError, tryRead } from './options.js';
 import { getSassImplementation } from './utils.js';
 

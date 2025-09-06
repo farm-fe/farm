@@ -6,7 +6,7 @@
     "node": ">=20",
     "pnpm": ">=9"
   },
-    "scripts": {
+  "scripts": {
     "preinstall": "npx only-allow pnpm",
     "bootstrap": "node scripts/bootstrap.mjs -v",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
@@ -29,7 +29,7 @@
     "spell-check": "cspell \"**\" --gitignore"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.2.2",
     "@changesets/cli": "2.27.9",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
@@ -55,7 +55,7 @@
   },
   "lint-staged": {
     "{packages,js-plugins,docs,scripts}/**/*.{ts,json,yaml,yml}": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
+      "pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },
   "pnpm": {

@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
-import { useSpring, animated } from "@react-spring/web";
+import { animated, useSpring } from "@react-spring/web";
 import { useControls } from "leva";
+import React, { useRef, useState } from "react";
 import styled from "./index.module.css";
 
 export default function Card(props) {

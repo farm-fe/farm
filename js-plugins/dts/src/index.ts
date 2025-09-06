@@ -3,9 +3,8 @@ import type { JsPlugin } from '@farmfe/core';
 
 import Context from './context.js';
 import { pluginName } from './options.js';
-import { tryToReadFileSync } from './utils.js';
-
 import type { DtsPluginOptions } from './types.js';
+import { tryToReadFileSync } from './utils.js';
 
 const extension = ['.ts', '.tsx'].map((ext) => `${ext}$`);
 

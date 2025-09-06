@@ -1,6 +1,6 @@
-import path from 'path';
-import { JsPlugin, ResolvedUserConfig, checkPublicFile } from '@farmfe/core';
+import { checkPublicFile, JsPlugin, ResolvedUserConfig } from '@farmfe/core';
 import glob from 'fast-glob';
+import path from 'path';
 import { ProcessOptions, Processor } from 'postcss';
 import postcssLoadConfig from 'postcss-load-config';
 import { getPostcssImplementation, pluginName, tryRead } from './utils.js';

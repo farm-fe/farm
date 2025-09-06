@@ -1,6 +1,6 @@
-import { execSync } from 'child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execSync } from 'child_process';
 
 /**
  * Farm plugin prepublish command, publish all packages under npm directory

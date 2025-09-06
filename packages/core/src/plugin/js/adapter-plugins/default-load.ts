@@ -3,7 +3,7 @@ import { isAbsolute } from 'node:path';
 import { UserConfig } from '../../../config/types.js';
 import { Logger } from '../../../utils/logger.js';
 import { JsPlugin } from '../../type.js';
-import { VITE_PLUGIN_DEFAULT_MODULE_TYPE, getCssModuleType } from '../utils.js';
+import { getCssModuleType, VITE_PLUGIN_DEFAULT_MODULE_TYPE } from '../utils.js';
 import { VitePluginAdapter } from '../vite-plugin-adapter.js';
 
 export function defaultLoadPlugin(options: {
