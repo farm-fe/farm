@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_plugin_file_size"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 license = "MIT"
 description = "file size plugin of farm."
@@ -9,9 +9,9 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_file_size"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "2.0.0" }
-farmfe_toolkit = { path = "../toolkit", version = "2.0.0" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.0" }
+farmfe_core = { path = "../core", version = "3.0.0" }
+farmfe_toolkit = { path = "../toolkit", version = "2.0.1" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
 farmfe_utils = { path = "../utils", version = "2.0.0" }
 once_cell = "1.19.0"
 farmfe_macro_plugin = { version = "2.0.0", path = "../macro_plugin" }

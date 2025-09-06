@@ -1803,7 +1803,7 @@ checksum = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649"
 
 [[package]]
 name = "farmfe_compiler"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "enhanced-magic-string",
  "farmfe_core",
@@ -1834,7 +1834,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_core"
-version = "2.0.0"
+version = "3.0.0"
 dependencies = [
  "blake2",
  "dashmap 6.1.0",
@@ -1907,7 +1907,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
@@ -1919,7 +1919,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_define"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1944,7 +1944,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_file_size"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "colored",
  "farmfe_core",
@@ -1959,7 +1959,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_html"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1969,7 +1969,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_json"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1978,7 +1978,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1988,7 +1988,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_library"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1998,7 +1998,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_mangle_exports"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_minify"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2017,7 +2017,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_partial_bundling"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2026,7 +2026,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_polyfill"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2035,7 +2035,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_progress"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "console",
  "farmfe_core",
@@ -2071,7 +2071,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2082,7 +2082,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "enhanced-magic-string",
  "farmfe_core",
@@ -2109,7 +2109,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_script"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_script_meta",
@@ -2127,7 +2127,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_script_meta"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2137,7 +2137,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_static_assets"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "base64 0.21.7",
  "farmfe_core",
@@ -2150,7 +2150,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_tree_shake"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2160,7 +2160,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_swc_transformer_import_glob"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2183,7 +2183,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing_helpers"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "insta",
@@ -2191,7 +2191,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "anyhow",
  "bytes-str",
@@ -2227,7 +2227,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "farmfe_core",
  "lazy_static",

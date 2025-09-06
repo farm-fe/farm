@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_compiler"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -10,28 +10,28 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_compiler"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "2.0.0" }
-farmfe_plugin_partial_bundling = { path = "../plugin_partial_bundling", version = "2.0.0" }
-farmfe_plugin_resolve = { path = "../plugin_resolve", version = "2.0.0" }
-farmfe_plugin_script = { path = "../plugin_script", version = "2.0.0" }
-farmfe_plugin_script_meta = { path = "../plugin_script_meta", version = "2.0.0" }
-farmfe_plugin_runtime = { path = "../plugin_runtime", version = "2.0.0" }
-farmfe_plugin_html = { path = "../plugin_html", version = "2.0.0" }
-farmfe_plugin_tree_shake = { path = "../plugin_tree_shake", version = "2.0.0" }
-farmfe_plugin_css = { path = "../plugin_css", version = "2.0.0" }
-farmfe_plugin_lazy_compilation = { path = "../plugin_lazy_compilation", version = "2.0.0" }
-farmfe_plugin_static_assets = { path = "../plugin_static_assets", version = "2.0.0" }
-farmfe_plugin_minify = { path = "../plugin_minify", version = "2.0.0" }
-farmfe_toolkit = { path = "../toolkit", version = "2.0.0" }
+farmfe_core = { path = "../core", version = "3.0.0" }
+farmfe_plugin_partial_bundling = { path = "../plugin_partial_bundling", version = "2.0.1" }
+farmfe_plugin_resolve = { path = "../plugin_resolve", version = "2.0.1" }
+farmfe_plugin_script = { path = "../plugin_script", version = "2.0.1" }
+farmfe_plugin_script_meta = { path = "../plugin_script_meta", version = "2.0.1" }
+farmfe_plugin_runtime = { path = "../plugin_runtime", version = "2.0.1" }
+farmfe_plugin_html = { path = "../plugin_html", version = "2.0.1" }
+farmfe_plugin_tree_shake = { path = "../plugin_tree_shake", version = "2.0.1" }
+farmfe_plugin_css = { path = "../plugin_css", version = "2.0.1" }
+farmfe_plugin_lazy_compilation = { path = "../plugin_lazy_compilation", version = "2.0.1" }
+farmfe_plugin_static_assets = { path = "../plugin_static_assets", version = "2.0.1" }
+farmfe_plugin_minify = { path = "../plugin_minify", version = "2.0.1" }
+farmfe_toolkit = { path = "../toolkit", version = "2.0.1" }
 farmfe_utils = { path = "../utils", version = "2.0.0" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.0" }
-farmfe_plugin_json = { path = "../plugin_json", version = "2.0.0" }
-farmfe_plugin_polyfill = { path = "../plugin_polyfill", version = "2.0.0" }
-farmfe_plugin_progress = { path = "../plugin_progress", version = "2.0.0" }
-farmfe_plugin_define = { path = "../plugin_define", version = "2.0.0" }
-farmfe_plugin_mangle_exports = { path = "../plugin_mangle_exports", version = "2.0.0" }
-farmfe_plugin_library = { path = "../plugin_library", version = "2.0.0" }
-farmfe_plugin_file_size = { path = "../plugin_file_size", version = "2.0.0" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
+farmfe_plugin_json = { path = "../plugin_json", version = "2.0.1" }
+farmfe_plugin_polyfill = { path = "../plugin_polyfill", version = "2.0.1" }
+farmfe_plugin_progress = { path = "../plugin_progress", version = "2.0.1" }
+farmfe_plugin_define = { path = "../plugin_define", version = "2.0.1" }
+farmfe_plugin_mangle_exports = { path = "../plugin_mangle_exports", version = "2.0.1" }
+farmfe_plugin_library = { path = "../plugin_library", version = "2.0.1" }
+farmfe_plugin_file_size = { path = "../plugin_file_size", version = "2.0.1" }
 farmfe_testing = { path = "../macro_testing", version = "2.0.0" }
 enhanced-magic-string = { workspace = true }
 sourcemap = { workspace = true }
