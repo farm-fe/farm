@@ -1,18 +1,14 @@
-import { Logger } from '../../utils/index.js';
-import { ResolvedCompilation } from '../index.js';
+import type { Logger } from '../../utils/index.js';
+import type { ResolvedCompilation } from '../index.js';
 
 export function normalizeProdDefaults(
   resolvedCompilation: ResolvedCompilation,
   isProduction: boolean,
   logger: Logger
 ) {
-  if (resolvedCompilation.treeShaking === undefined) {
-    resolvedCompilation.treeShaking ??= isProduction;
-  }
+  resolvedCompilation.treeShaking ??= isProduction;
 
-  if (resolvedCompilation.concatenateModules === undefined) {
-    resolvedCompilation.concatenateModules ??= isProduction;
-  }
+  resolvedCompilation.concatenateModules ??= isProduction;
 
   if (resolvedCompilation.concatenateModules && !isProduction) {
     logger.warn(
@@ -21,16 +17,10 @@ export function normalizeProdDefaults(
     resolvedCompilation.concatenateModules = false;
   }
 
-  if (resolvedCompilation.minify === undefined) {
-    resolvedCompilation.minify ??= isProduction;
-  }
+  resolvedCompilation.minify ??= isProduction;
 
-  if (resolvedCompilation.presetEnv === undefined) {
-    resolvedCompilation.presetEnv ??= isProduction;
-  }
+  resolvedCompilation.presetEnv ??= isProduction;
 
-  if (resolvedCompilation.sourcemap === undefined) {
-    // disable sourcemap in production mode
-    resolvedCompilation.sourcemap ??= !isProduction;
-  }
+  // disable sourcemap in production mode
+  resolvedCompilation.sourcemap ??= !isProduction;
 }
