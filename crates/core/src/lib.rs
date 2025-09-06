@@ -1,4 +1,5 @@
 #![feature(let_chains)]
+#![feature(box_patterns)]
 #![deny(clippy::all)]
 #![allow(clippy::ptr_arg)]
 #![feature(trivial_bounds)]
@@ -96,7 +97,7 @@ macro_rules! deserialize {
     deserialized
   }};
 
-  ($bytes:expr, $ty:ty) => {
+  ($bytes:expr, $ty:ty) => {{
     deserialize!($bytes, $ty, rkyv::Archived::<$ty>)
-  };
+  }};
 }

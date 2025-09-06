@@ -21,6 +21,10 @@ export declare class Compiler {
   resource(name: string): Buffer | null
   stats(): string
   invalidateModule(moduleId: string): void
+  /** Write cache with name and data */
+  writeCache(name: string, data: string, options?: JsApiMetadata | undefined | null): void
+  /** Read cache with name, return `undefined` if not exists */
+  readCache(name: string, options?: JsApiMetadata | undefined | null): string | null
 }
 export type JsCompiler = Compiler
 
@@ -29,6 +33,13 @@ export declare class Resolver {
   resolve(source: string, baseDir: string, dynamicExtensions?: Array<string> | undefined | null): string
 }
 export type JsResolver = Resolver
+
+export interface JsApiMetadata {
+  /** Scope of the cache, used different name, same scope will hit the same cache */
+  scope?: Array<string>
+  /** reference ModuleId of the cache, when the module is invalidated, the cache will be invalidated too */
+  refer?: Array<string>
+}
 
 export interface JsModuleHookFilters {
   moduleTypes?: Array<string>

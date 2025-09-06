@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       input: {
         index: './index.html'
       },
-      persistentCache: false,
+      persistentCache: true,
       output: {
         path: 'dist',
         publicPath: '/',

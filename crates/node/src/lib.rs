@@ -15,6 +15,7 @@ pub mod plugin_adapters;
 pub mod profile_gui;
 
 use farmfe_core::{
+  cache::module_cache::MetadataOption,
   config::{Config, Mode},
   context::CompilationContext,
   module::ModuleId,
@@ -480,6 +481,54 @@ impl JsCompiler {
   pub fn invalidate_module(&self, module_id: String) {
     invalidate_module(self, module_id);
   }
+
+  /// Write cache with name and data
+  #[napi]
+  pub fn write_cache(&self, name: String, data: String, options: Option<JsApiMetadata>) {
+    write_cache(self, name, data, options.map(|v| v.into()));
+  }
+
+  /// Read cache with name, return `undefined` if not exists
+  #[napi]
+  pub fn read_cache(&self, name: String, options: Option<JsApiMetadata>) -> Option<String> {
+    read_cache(self, name, options.map(|v| v.into()))
+  }
+}
+
+#[napi(object)]
+pub struct JsApiMetadata {
+  /// Scope of the cache, used different name, same scope will hit the same cache
+  pub scope: Option<Vec<String>>,
+  /// reference ModuleId of the cache, when the module is invalidated, the cache will be invalidated too
+  pub refer: Option<Vec<String>>,
+}
+
+impl Into<MetadataOption> for JsApiMetadata {
+  fn into(self) -> MetadataOption {
+    MetadataOption {
+      scope: self.scope,
+      refer: self.refer,
+    }
+  }
+}
+
+fn read_cache(
+  js_compiler: &JsCompiler,
+  name: String,
+  options: Option<MetadataOption>,
+) -> Option<String> {
+  let context = js_compiler.compiler.context();
+  context.read_cache(&name, options).map(|v| *v)
+}
+
+fn write_cache(
+  js_compiler: &JsCompiler,
+  name: String,
+  data: String,
+  options: Option<MetadataOption>,
+) {
+  let context = js_compiler.compiler.context();
+  context.write_cache(&name, data, options);
 }
 
 fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {
