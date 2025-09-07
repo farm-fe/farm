@@ -144,24 +144,32 @@ impl CompilationContext {
   }
 
   pub fn emit_file(&self, params: EmitFileParams) {
-    let mut resources_map = self.resources_map.lock();
-
     let module_id = self.str_to_module_id(&params.resolved_path);
 
-    resources_map.insert(
-      params.name.clone(),
-      Resource {
-        name: params.name,
-        name_hash: "".to_string(),
-        bytes: params.content,
-        emitted: false,
-        should_transform_output_filename: true,
-        resource_type: params.resource_type,
-        origin: ResourceOrigin::Module(module_id),
-        meta: Default::default(),
-        special_placeholders: Default::default(),
-      },
-    );
+    let resource = Resource {
+      name: params.name.clone(),
+      name_hash: "".to_string(),
+      bytes: params.content,
+      emitted: false,
+      should_transform_output_filename: true,
+      resource_type: params.resource_type,
+      origin: ResourceOrigin::Module(module_id.clone()),
+      meta: Default::default(),
+      special_placeholders: Default::default(),
+    };
+
+    if self.cache_manager.enable() {
+      self.write_cache(
+        "builtin:emit_file",
+        resource.clone(),
+        Some(MetadataOption::default().refer(vec![module_id])),
+      );
+    }
+
+    self
+      .resources_map
+      .lock()
+      .insert(params.name.clone(), resource);
   }
 
   pub fn sourcemap_enabled(&self, id: &str) -> bool {

@@ -66,11 +66,8 @@ impl CacheScopeStore {
       name_map: DashMap::default(),
     };
 
-    println!("farm scope restore manifest");
-
     scope.restore_manifest();
 
-    println!("farm scope initialized");
     scope
   }
 
@@ -78,7 +75,6 @@ impl CacheScopeStore {
     let reference_id: String = nanoid!();
 
     let mut is_write_only_name = false;
-    println!("insert scope cache: {}, id: {:#?}", name, id);
     if let Some(id_list) = id {
       for id in id_list {
         let mut composite_name = None;
@@ -113,7 +109,6 @@ impl CacheScopeStore {
     if is_write_only_name {
       self.name_map.insert(name.clone(), reference_id.clone());
     }
-    println!("inserted scope cache done: {}", name);
 
     self.data.insert(reference_id, Box::new(data));
   }
@@ -208,7 +203,6 @@ impl CacheScopeStore {
   }
 
   fn restore_manifest(&self) {
-    println!("restore scope manifest name_keys");
     if let Some(manifest) = self.store.read_cache("scopeManifest") {
       let Ok(box ScopeManifest {
         name_keys,
@@ -217,7 +211,6 @@ impl CacheScopeStore {
         .unwrap()
         .downcast::<ScopeManifest>()
       else {
-        println!("downcast failed");
         return;
       };
 
@@ -240,16 +233,12 @@ impl CacheScopeStore {
     let scope_keys = self
       .scope_map
       .iter()
-      .map(|v| {
-        let m = (v.key().clone(), v.value().clone());
-
-        m
-      })
+      .map(|v| (v.key().clone(), v.value().clone()))
       .collect::<HashMap<IdType, HashSet<String>>>();
 
     let manifest = ScopeManifest {
-      name_keys: name_keys,
-      scope_keys: scope_keys,
+      name_keys,
+      scope_keys,
     };
     let manifest_scopes = serialize!(&manifest);
     self
@@ -259,7 +248,7 @@ impl CacheScopeStore {
           name: "scopeManifest".to_string(),
           key: hash::sha256(&manifest_scopes, 32),
         },
-        serialize!(&manifest_scopes),
+        manifest_scopes,
       )
       .expect("write name map cache failed");
 

@@ -7,14 +7,13 @@ use std::{
 
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
-  cache::module_cache::MetadataOption,
   cache_item,
   config::{asset::AssetFormatMode, Config},
   context::{CompilationContext, EmitFileParams},
   module::ModuleType,
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
-  resource::{Resource, ResourceOrigin, ResourceType},
+  resource::{Resource, ResourceType},
   swc_common::sync::OnceCell,
   HashMap,
 };
@@ -117,26 +116,6 @@ impl Plugin for FarmPluginStaticAssets {
       }
       // TODO make css imported asset only handled by static assets to avoid issue: background: url(xx.svg),
       // and xx.svg are transformed to js module by plugin like svgr. which would lead to a error for css.
-    }
-
-    Ok(None)
-  }
-
-  fn handle_persistent_cached_module(
-    &self,
-    module: &farmfe_core::module::Module,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<bool>> {
-    if let Some(resource) = context.read_cache::<Resource>(
-      "asset-resource",
-      Some(MetadataOption::default().refer(vec![module.id.clone()])),
-    ) {
-      context.emit_file(EmitFileParams {
-        resolved_path: module.id.to_string().clone(),
-        name: resource.name,
-        content: resource.bytes,
-        resource_type: resource.resource_type,
-      });
     }
 
     Ok(None)
@@ -283,30 +262,6 @@ impl Plugin for FarmPluginStaticAssets {
           source_map: None,
           ignore_previous_source_map: false,
         }));
-      }
-    }
-
-    Ok(None)
-  }
-
-  fn finish(
-    &self,
-    _stat: &farmfe_core::stats::Stats,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if !context.cache_manager.enable() {
-      return Ok(None);
-    }
-
-    let resources_map = context.resources_map.lock();
-
-    for (_, resource) in resources_map.iter() {
-      if let ResourceOrigin::Module(m) = &resource.origin {
-        context.write_cache(
-          "asset-resource",
-          resource.clone(),
-          Some(MetadataOption::default().refer(vec![m.to_string()])),
-        );
       }
     }
 

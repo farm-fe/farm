@@ -1,12 +1,15 @@
 use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
-  cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
+  cache::module_cache::{
+    CachedModule, CachedModuleDependency, CachedWatchDependency, MetadataOption,
+  },
   context::{create_swc_source_map, CompilationContext},
   dashmap::DashMap,
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
+  resource::{Resource, ResourceOrigin},
   swc_common::Globals,
   HashMap, HashSet,
 };
@@ -296,6 +299,17 @@ pub fn handle_cached_modules(
   cached_module.module.module_groups.clear();
   cached_module.module.resource_pots = Default::default();
   cached_module.module.used_exports.clear();
+
+  if let Some(resource) = context.read_cache::<Resource>(
+    "builtin:emit_file",
+    Some(MetadataOption::default().refer(vec![cached_module.module.id.clone()])),
+  ) {
+    let origin = resource.origin.clone();
+    let name = resource.name.clone();
+    if matches!(origin, ResourceOrigin::Module(_)) {
+      context.resources_map.lock().insert(name, *resource);
+    }
+  }
 
   // TODO: return of resolve hook should be treated as part of the cache key
   Ok(())
