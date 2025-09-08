@@ -61,9 +61,9 @@ impl CacheScopeStore {
   pub fn new(context: Arc<CacheContext>) -> Self {
     let scope = Self {
       store: context.store_factory.create_cache_store("farm:scope"),
-      data: Default::default(),
-      scope_map: DashMap::default(),
+      data: DashMap::default(),
       name_map: DashMap::default(),
+      scope_map: DashMap::default(),
     };
 
     scope.restore_manifest();
@@ -113,7 +113,10 @@ impl CacheScopeStore {
     self.data.insert(reference_id, Box::new(data));
   }
 
-  fn get_data<V: Cacheable>(&self, reference_id: &str) -> Option<Ref<String, Box<dyn Cacheable>>> {
+  fn get_data_ref<V: Cacheable>(
+    &self,
+    reference_id: &str,
+  ) -> Option<Ref<String, Box<dyn Cacheable>>> {
     if let Some(data) = self.data.get(reference_id) {
       return Some(data);
     }
@@ -130,6 +133,14 @@ impl CacheScopeStore {
     self.data.get(reference_id)
   }
 
+  fn get_data<V: Cacheable>(&self, reference_id: &str) -> Option<Box<V>> {
+    let data = self.get_data_ref::<V>(reference_id)?;
+
+    let bytes = data.serialize_bytes().ok()?;
+
+    V::deserialize_bytes(bytes).unwrap().downcast::<V>().ok()
+  }
+
   pub fn set<V: Cacheable>(&self, name: impl ToString, data: V, id: Option<Vec<IdType>>) {
     self.insert_combined(
       CacheItemId {
@@ -140,13 +151,13 @@ impl CacheScopeStore {
     );
   }
 
-  pub fn get_scope_ref<V: Cacheable>(&self, scope: &str) -> Vec<ScopeRef<V>> {
+  pub fn get_scope<V: Cacheable>(&self, scope: &str) -> Vec<V> {
     let mut result = vec![];
 
     if let Some(references) = self.scope_map.get(&IdType::Scope(scope.to_string())) {
       for reference in references.value() {
         if let Some(data) = self.get_data::<V>(reference) {
-          result.push(data.map(|v| v.downcast_ref::<V>().unwrap()));
+          result.push(*data);
         };
       }
     }
@@ -178,7 +189,7 @@ impl CacheScopeStore {
 
     reference_id
       .map(|v| {
-        let Some(v) = self.get_data::<V>(v.value()) else {
+        let Some(v) = self.get_data_ref::<V>(v.value()) else {
           return None;
         };
 
@@ -315,10 +326,10 @@ mod tests {
       Some(vec![IdType::Scope("s2".to_string())]),
     );
 
-    let s1_data = c1.get_scope_ref::<Module>(&"s1".to_string());
+    let s1_data = c1.get_scope::<Module>(&"s1".to_string());
     assert_eq!(s1_data.len(), 2);
 
-    let s2_data = c1.get_scope_ref::<Module>(&"s2".to_string());
+    let s2_data = c1.get_scope::<Module>(&"s2".to_string());
     assert_eq!(s2_data.len(), 1);
 
     let m1_data = c1.get::<Module>("module1", None);
@@ -357,30 +368,25 @@ mod tests {
       ]),
     );
 
-    let tw_scope_values = c1.get_scope_ref::<TwToken>(&"tailwind-token".to_string());
+    let tw_scope_values = c1.get_scope::<TwToken>(&"tailwind-token".to_string());
 
-    println!(
-      "{:#?}",
-      tw_scope_values
-        .iter()
-        .map(|v| v.value())
-        .collect::<Vec<_>>()
-    );
+    assert_eq!(tw_scope_values.len(), 2);
 
     let i_v = c1.get::<TwToken>(
       "tw-token",
       Some(&vec![IdType::Reference("index.tsx".to_string())]),
     );
 
-    println!("{:#?}", i_v);
+    assert!(i_v.is_some());
+    assert!(i_v.unwrap().value.contains(&"mt-1".to_string()));
 
     let i2_v = c1.get::<TwToken>(
       "tw-token",
       Some(&vec![IdType::Reference("index2.tsx".to_string())]),
     );
 
-    println!("{:#?}", i2_v);
-    // c1.
+    assert!(i2_v.is_some());
+    assert!(i2_v.as_ref().unwrap().value.contains(&"mb-1".to_string()));
   }
 
   #[test]

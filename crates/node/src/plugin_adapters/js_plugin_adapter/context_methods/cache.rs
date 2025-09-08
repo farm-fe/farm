@@ -61,11 +61,6 @@ pub unsafe extern "C" fn context_read_cache_by_scope(
     .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0:name should be a string when calling writeCache");
 
-  let data = ctx
-    .read_cache_by_scope::<String>(&name)
-    .into_iter()
-    .map(|v| v.value().clone())
-    .collect::<Vec<_>>();
-
-  Env::from_raw(env).to_js_value(&data).unwrap().raw()
+  let cache = ctx.read_cache_by_scope::<String>(&name);
+  Env::from_raw(env).to_js_value(&cache).unwrap().raw()
 }

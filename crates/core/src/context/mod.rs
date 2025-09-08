@@ -220,8 +220,8 @@ impl CompilationContext {
     self.cache_manager.module_cache.read_metadata(name, options)
   }
 
-  pub fn read_cache_by_scope<V: Cacheable>(&self, scope: &str) -> Vec<ScopeRef<V>> {
-    self.cache_manager.module_cache.read_scope_ref(scope)
+  pub fn read_cache_by_scope<V: Cacheable>(&self, scope: &str) -> Vec<V> {
+    self.cache_manager.module_cache.read_scope(scope)
   }
 }
 

@@ -201,8 +201,8 @@ impl ModuleCacheManager {
     self.scope.get(name, options.map(|o| o.into()).as_ref())
   }
 
-  pub fn read_scope_ref<V: Cacheable>(&self, name: &str) -> Vec<ScopeRef<V>> {
-    self.scope.get_scope_ref(name)
+  pub fn read_scope<V: Cacheable>(&self, name: &str) -> Vec<V> {
+    self.scope.get_scope(name)
   }
 
   pub fn write_metadata<V: Cacheable>(

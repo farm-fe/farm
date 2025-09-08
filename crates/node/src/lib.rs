@@ -538,11 +538,7 @@ fn write_cache(
 
 fn read_cache_by_scope(js_compiler: &JsCompiler, scope: String) -> Vec<String> {
   let context = js_compiler.compiler.context();
-  context
-    .read_cache_by_scope::<String>(&scope)
-    .into_iter()
-    .map(|v| v.value().clone())
-    .collect::<Vec<_>>()
+  context.read_cache_by_scope::<String>(&scope)
 }
 
 fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {
