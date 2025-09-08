@@ -2,6 +2,7 @@ use std::{
   ffi::{c_void, CString},
   ptr,
   sync::Arc,
+  usize,
 };
 
 use napi::{
@@ -16,7 +17,6 @@ use napi::{
 use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
   module::ModuleId,
-  // swc_ecma_ast::EsVersion,
   plugin::{PluginHookContext, PluginResolveHookParam},
 };
 
@@ -27,6 +27,11 @@ const GET_WATCH_FILES: &str = "getWatchFiles";
 const WARN: &str = "warn";
 const ERROR: &str = "error";
 const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
+
+use crate::plugin_adapters::js_plugin_adapter::context_methods::cache::{
+  context_read_cache, context_read_cache_by_scope, context_write_cache, CONTEXT_READ_CACHE,
+  CONTEXT_READ_CACHE_BY_SCOPE, CONTEXT_WRITE_CACHE,
+};
 
 /// These functions are used to make farm js plugin compatible with Vite plugin
 use super::context_methods::vite_get_importers::{vite_get_importers, VITE_GET_IMPORTERS};
@@ -67,6 +72,9 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     (VITE_GET_IMPORTERS, vite_get_importers),
     (VITE_GET_MODULES_BY_FILE, vite_get_modules_by_file),
     (VITE_GET_MODULE_BY_ID, vite_get_module_by_id),
+    (CONTEXT_WRITE_CACHE, context_write_cache),
+    (CONTEXT_READ_CACHE, context_read_cache),
+    (CONTEXT_READ_CACHE_BY_SCOPE, context_read_cache_by_scope),
   ];
 
   for (name, cb) in methods {
@@ -113,6 +121,12 @@ pub struct ArgvAndContext {
   pub ctx: Box<Arc<CompilationContext>>,
 }
 
+#[repr(C)]
+pub struct DynamicArgvAndContext {
+  pub argv: Vec<napi_value>,
+  pub ctx: Box<Arc<CompilationContext>>,
+}
+
 /// # Safety
 pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   env: napi_env,
@@ -133,6 +147,33 @@ pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   let ctx = data.cast::<Arc<CompilationContext>>();
 
   ArgvAndContext {
+    argv,
+    ctx: Box::new((*ctx).clone()),
+  }
+}
+
+pub unsafe extern "C" fn get_argv_and_context_from_cb_info_dynamic_arg_len(
+  env: napi_env,
+  info: napi_callback_info,
+  mut len: usize,
+) -> DynamicArgvAndContext {
+  // accept 2 arguments at most
+  let mut argv = Vec::with_capacity(len);
+  (0..len).for_each(|_| argv.push(ptr::null_mut()));
+  let mut data = ptr::null_mut();
+
+  napi_get_cb_info(
+    env,
+    info,
+    &mut len,
+    argv.as_mut_ptr(),
+    ptr::null_mut(),
+    &mut data,
+  );
+
+  let ctx = data.cast::<Arc<CompilationContext>>();
+
+  DynamicArgvAndContext {
     argv,
     ctx: Box::new((*ctx).clone()),
   }

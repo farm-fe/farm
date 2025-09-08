@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::{module_cache::MetadataOption, CacheManager, CacheOption, CacheType},
+  cache::{module_cache::MetadataOption, CacheManager, CacheOption, CacheType, ScopeRef},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
@@ -218,6 +218,10 @@ impl CompilationContext {
     options: Option<MetadataOption>,
   ) -> Option<Box<V>> {
     self.cache_manager.module_cache.read_metadata(name, options)
+  }
+
+  pub fn read_cache_by_scope<V: Cacheable>(&self, scope: &str) -> Vec<ScopeRef<V>> {
+    self.cache_manager.module_cache.read_scope_ref(scope)
   }
 }
 

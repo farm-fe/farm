@@ -493,6 +493,11 @@ impl JsCompiler {
   pub fn read_cache(&self, name: String, options: Option<JsApiMetadata>) -> Option<String> {
     read_cache(self, name, options.map(|v| v.into()))
   }
+
+  #[napi]
+  pub fn read_cache_by_scope(&self, scope: String) -> Vec<String> {
+    read_cache_by_scope(self, scope)
+  }
 }
 
 #[napi(object)]
@@ -529,6 +534,15 @@ fn write_cache(
 ) {
   let context = js_compiler.compiler.context();
   context.write_cache(&name, data, options);
+}
+
+fn read_cache_by_scope(js_compiler: &JsCompiler, scope: String) -> Vec<String> {
+  let context = js_compiler.compiler.context();
+  context
+    .read_cache_by_scope::<String>(&scope)
+    .into_iter()
+    .map(|v| v.value().clone())
+    .collect::<Vec<_>>()
 }
 
 fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {

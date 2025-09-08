@@ -296,6 +296,12 @@ export class Compiler {
     const data = this._bindingCompiler.readCache(name, options);
     return data ? JSON.parse(data) : undefined;
   }
+
+  readCacheByScope<V>(scope: string): V[] {
+    return this._bindingCompiler
+      .readCacheByScope(scope)
+      .map((item) => JSON.parse(item));
+  }
 }
 
 export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {

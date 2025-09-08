@@ -51,7 +51,8 @@ export type FreeModuleParam = PluginProcessModuleParams & {
   ][];
 };
 
-export interface CompilationContext {
+export interface CompilationContext
+  extends Pick<Compiler, 'writeCache' | 'readCache' | 'readCacheByScope'> {
   resolve(
     param: PluginResolveHookParam,
     hookContext: { meta: Record<string, unknown>; caller: string }

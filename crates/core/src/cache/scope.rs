@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use dashmap::mapref::one::Ref;
-use farmfe_macro_cache_item::{cache_item, cache_item_options};
+use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::{hash, nanoid::nanoid};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 

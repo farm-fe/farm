@@ -19,6 +19,7 @@ pub mod store;
 pub mod utils;
 pub use module_cache::ModuleMetadataStore;
 mod scope;
+pub use scope::ScopeRef;
 
 /// All cache related operation are charged by [CacheManager]
 /// Note: that you should use CacheManager::new to create a new instance so that the cache can be read from disk.

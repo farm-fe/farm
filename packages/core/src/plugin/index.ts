@@ -121,6 +121,12 @@ export async function resolveConfigHook(
   return conf;
 }
 
+const ExcludeContextHookName = new Set([
+  'config',
+  'configResolved',
+  'configureServer',
+  'configureCompiler'
+]);
 export async function resolveConfigResolvedHook(
   config: ResolvedUserConfig,
   plugins: JsPlugin[]
@@ -154,6 +160,120 @@ export async function resolveConfigResolvedHook(
   }
 }
 
+const processedPlugin: WeakSet<any> = new WeakSet<any>();
+
+function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
+  for (const plugin of plugins) {
+    for (const key of Object.keys(plugin)) {
+      const hook = plugin[key as keyof JsPlugin];
+      if (!ExcludeContextHookName.has(key)) {
+        const [callback, set] =
+          typeof hook === 'object'
+            ? ([
+                hook.executor,
+                (callback: any) => (hook.executor = callback)
+              ] as const)
+            : // @ts-ignore
+              ([hook, (callback: any) => (plugin[key] = callback)] as const);
+
+        if (typeof callback === 'function') {
+          function proxyHookCallback(...args: any) {
+            let context = args[1];
+
+            if (context) {
+              const proxyKeys = [
+                'readCache',
+                'writeCache',
+                'readCacheByScope'
+              ] as const;
+              const nativeFunction = proxyKeys.reduce(
+                (res, k) => ({
+                  [k]: context[k],
+                  ...res
+                }),
+                {} as Record<(typeof proxyKeys)[number], Function>
+              );
+              function tryProxyMethod(
+                name: keyof typeof nativeFunction,
+                fn: any
+              ) {
+                if (
+                  nativeFunction[name] != null &&
+                  processedPlugin.has(nativeFunction[name])
+                ) {
+                  return;
+                }
+
+                context[name] = fn;
+              }
+
+              tryProxyMethod('readCache', function (...args: any[]) {
+                const result = nativeFunction['readCache'].apply(this, args);
+
+                const returnValue = (value: any) => {
+                  return value && typeof value === 'string'
+                    ? JSON.parse(value)
+                    : value;
+                };
+
+                if (result && typeof result.then === 'function') {
+                  return result.then(returnValue);
+                }
+
+                if (result && typeof result === 'string') {
+                  return returnValue(result);
+                }
+
+                return result;
+              });
+
+              tryProxyMethod('writeCache', function (...args: any[]) {
+                if (args[1] && typeof args[1] !== 'string') {
+                  args[1] = JSON.stringify(args[1]);
+                }
+                return nativeFunction['writeCache'].apply(this, args);
+              });
+
+              tryProxyMethod('readCacheByScope', function (...args: any[]) {
+                const result = nativeFunction['readCacheByScope'].apply(
+                  this,
+                  args
+                );
+                const returnValue = (result: any) => {
+                  if (!Array.isArray(result)) {
+                    return result;
+                  }
+
+                  return result.map((item) =>
+                    item && typeof item === 'string' ? JSON.parse(item) : item
+                  );
+                };
+
+                if (result && typeof result.then === 'function') {
+                  return result.then(returnValue);
+                }
+
+                if (result) {
+                  return returnValue(result);
+                }
+
+                return result;
+              });
+            }
+
+            // @ts-ignore
+            return callback.apply(this, args);
+          }
+
+          set(proxyHookCallback);
+        }
+      }
+    }
+  }
+
+  return plugins;
+}
+
 export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   // TODO The priority needs to be redefined.
   const DEFAULT_PRIORITY = 100;
@@ -179,7 +299,7 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
       plugin?.priority === DEFAULT_PRIORITY
   );
 
-  return [...prePlugins, ...normalPlugins, ...postPlugins];
+  return proxyContext([...prePlugins, ...normalPlugins, ...postPlugins]);
 }
 
 export function getSortedPluginHooksBindThis(

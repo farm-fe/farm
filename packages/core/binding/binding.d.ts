@@ -25,6 +25,7 @@ export declare class Compiler {
   writeCache(name: string, data: string, options?: JsApiMetadata | undefined | null): void
   /** Read cache with name, return `undefined` if not exists */
   readCache(name: string, options?: JsApiMetadata | undefined | null): string | null
+  readCacheByScope(scope: string): Array<string>
 }
 export type JsCompiler = Compiler
 
