@@ -16,8 +16,6 @@ use crate::{
 use std::collections::{HashMap, HashSet};
 
 type CacheReferenceId = String;
-type ScopeId = String;
-type CustomId = String;
 type Name = String;
 type QueryScope = String;
 
@@ -32,12 +30,6 @@ pub enum IdType {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct CacheItemId {
   id: Option<Vec<IdType>>,
-  name: Name,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct ReversedCacheItemId {
-  id: IdType,
   name: Name,
 }
 
@@ -175,7 +167,7 @@ impl CacheScopeStore {
       let mut reference_id = None;
       for id_type in v {
         if let IdType::Reference(composite) = id_type {
-          reference_id = self.name_map.get(&format!("{}+{}", name, composite));
+          reference_id = self.name_map.get(&format!("{name}+{composite}"));
         }
 
         if reference_id.is_some() {
@@ -187,17 +179,13 @@ impl CacheScopeStore {
       self.name_map.get(name)
     };
 
-    reference_id
-      .map(|v| {
-        let Some(v) = self.get_data_ref::<V>(v.value()) else {
-          return None;
-        };
+    reference_id.and_then(|v| {
+      let v = self.get_data_ref::<V>(v.value())?;
 
-        let bytes = v.serialize_bytes().ok()?;
+      let bytes = v.serialize_bytes().ok()?;
 
-        V::deserialize_bytes(bytes).unwrap().downcast::<V>().ok()
-      })
-      .flatten()
+      V::deserialize_bytes(bytes).unwrap().downcast::<V>().ok()
+    })
   }
 
   pub fn remove_by_reference(&self, reference: &str) {
@@ -268,7 +256,7 @@ impl CacheScopeStore {
       .iter()
       .par_bridge()
       .fold(
-        || HashMap::<CacheStoreKey, Vec<u8>>::default(),
+        HashMap::<CacheStoreKey, Vec<u8>>::default,
         |mut res, item| {
           let v = item.serialize_bytes().unwrap();
 

@@ -2,7 +2,6 @@ use std::{
   ffi::{c_void, CString},
   ptr,
   sync::Arc,
-  usize,
 };
 
 use napi::{
@@ -115,15 +114,11 @@ fn attach_context_method<'a>(
   context
 }
 
-#[repr(C)]
-pub struct ArgvAndContext {
-  pub argv: [napi_value; 2],
-  pub ctx: Box<Arc<CompilationContext>>,
-}
+const SUPPORT_RECEIVE_ARGC: usize = 3;
 
 #[repr(C)]
-pub struct DynamicArgvAndContext {
-  pub argv: Vec<napi_value>,
+pub struct ArgvAndContext {
+  pub argv: [napi_value; SUPPORT_RECEIVE_ARGC],
   pub ctx: Box<Arc<CompilationContext>>,
 }
 
@@ -133,12 +128,12 @@ pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   info: napi_callback_info,
 ) -> ArgvAndContext {
   // accept 2 arguments at most
-  let mut argv: [napi_value; 2] = [ptr::null_mut(); 2];
+  let mut argv: [napi_value; SUPPORT_RECEIVE_ARGC] = [ptr::null_mut(); SUPPORT_RECEIVE_ARGC];
   let mut data = ptr::null_mut();
   napi_get_cb_info(
     env,
     info,
-    &mut 2,
+    &mut SUPPORT_RECEIVE_ARGC.clone(),
     argv.as_mut_ptr(),
     ptr::null_mut(),
     &mut data,
@@ -147,33 +142,6 @@ pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   let ctx = data.cast::<Arc<CompilationContext>>();
 
   ArgvAndContext {
-    argv,
-    ctx: Box::new((*ctx).clone()),
-  }
-}
-
-pub unsafe extern "C" fn get_argv_and_context_from_cb_info_dynamic_arg_len(
-  env: napi_env,
-  info: napi_callback_info,
-  mut len: usize,
-) -> DynamicArgvAndContext {
-  // accept 2 arguments at most
-  let mut argv = Vec::with_capacity(len);
-  (0..len).for_each(|_| argv.push(ptr::null_mut()));
-  let mut data = ptr::null_mut();
-
-  napi_get_cb_info(
-    env,
-    info,
-    &mut len,
-    argv.as_mut_ptr(),
-    ptr::null_mut(),
-    &mut data,
-  );
-
-  let ctx = data.cast::<Arc<CompilationContext>>();
-
-  DynamicArgvAndContext {
     argv,
     ctx: Box::new((*ctx).clone()),
   }

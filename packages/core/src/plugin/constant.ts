@@ -1,0 +1,20 @@
+export const JS_PLUGIN_BRIDGE_HOOKS = new Set([
+  'buildStart',
+  'resolve',
+  'load',
+  'transform',
+  'processModule',
+  'freezeModule',
+  'buildEnd',
+  'renderStart',
+  'processRenderedResourcePot',
+  'augmentResourceHash',
+  'finalizeResources',
+  'transformHtml',
+  'writeResources',
+  'pluginCacheLoaded',
+  'writePluginCache',
+  'finish',
+  'updateFinished',
+  'updateModules'
+]);

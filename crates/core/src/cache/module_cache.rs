@@ -4,11 +4,10 @@ use dashmap::mapref::one::{Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
 pub use module_metadata::ModuleMetadataStore;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::cache::scope::{CacheScopeStore, IdType, ScopeRef};
+use crate::cache::scope::{CacheScopeStore, IdType};
 use crate::module::module_graph::ModuleGraphEdge;
-use crate::module::{CustomMetaDataMap, Module, ModuleId};
+use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 use crate::Cacheable;
 
@@ -240,19 +239,18 @@ impl MetadataOption {
   }
 }
 
-impl Into<Vec<IdType>> for MetadataOption {
-  fn into(self) -> Vec<IdType> {
-    let mut ids = vec![];
-    if let Some(scope) = self.scope {
-      for s in scope {
-        ids.push(IdType::Scope(s));
-      }
+impl From<MetadataOption> for Vec<IdType> {
+  fn from(value: MetadataOption) -> Self {
+    let mut id_types = vec![];
+
+    if let Some(scopes) = value.scope {
+      id_types.extend(scopes.into_iter().map(IdType::Scope));
     }
-    if let Some(refer) = self.refer {
-      for r in refer {
-        ids.push(IdType::Reference(r));
-      }
+
+    if let Some(refers) = value.refer {
+      id_types.extend(refers.into_iter().map(IdType::Reference));
     }
-    ids
+
+    id_types
   }
 }

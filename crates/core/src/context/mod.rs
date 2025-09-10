@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::{module_cache::MetadataOption, CacheManager, CacheOption, CacheType, ScopeRef},
+  cache::{module_cache::MetadataOption, CacheManager, CacheOption, CacheType},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{

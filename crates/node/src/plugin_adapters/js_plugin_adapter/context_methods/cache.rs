@@ -1,18 +1,12 @@
-use farmfe_core::{
-  cache::module_cache::MetadataOption,
-  module::{ModuleId, ModuleType},
-  relative_path::RelativePath,
-  HashMap,
-};
+use farmfe_core::cache::module_cache::MetadataOption;
 use napi::{
-  bindgen_prelude::{FromNapiValue, Undefined},
+  bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
   Env, JsValue, Unknown,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::context::{
-  get_argv_and_context_from_cb_info, get_argv_and_context_from_cb_info_dynamic_arg_len,
-  ArgvAndContext, DynamicArgvAndContext,
+  get_argv_and_context_from_cb_info, ArgvAndContext,
 };
 
 pub const CONTEXT_WRITE_CACHE: &str = "writeCache";
@@ -23,8 +17,7 @@ pub unsafe extern "C" fn context_write_cache(
   env: napi_env,
   info: napi_callback_info,
 ) -> napi_value {
-  let DynamicArgvAndContext { argv, ctx } =
-    get_argv_and_context_from_cb_info_dynamic_arg_len(env, info, 3);
+  let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
   let name: String = Env::from_raw(env)
     .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0:name should be a string when calling writeCache");

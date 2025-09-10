@@ -1,3 +1,4 @@
+#![feature(box_patterns)]
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
 #![allow(clippy::blocks_in_conditions)]
@@ -494,6 +495,7 @@ impl JsCompiler {
     read_cache(self, name, options.map(|v| v.into()))
   }
 
+  /// Read cache by scope, return Array of cache data, if not exists, return empty array
   #[napi]
   pub fn read_cache_by_scope(&self, scope: String) -> Vec<String> {
     read_cache_by_scope(self, scope)
@@ -508,11 +510,11 @@ pub struct JsApiMetadata {
   pub refer: Option<Vec<String>>,
 }
 
-impl Into<MetadataOption> for JsApiMetadata {
-  fn into(self) -> MetadataOption {
+impl From<JsApiMetadata> for MetadataOption {
+  fn from(value: JsApiMetadata) -> Self {
     MetadataOption {
-      scope: self.scope,
-      refer: self.refer,
+      scope: value.scope,
+      refer: value.refer,
     }
   }
 }

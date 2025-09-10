@@ -10,9 +10,9 @@ import {
 } from '../config/index.js';
 import { isArray, isObject } from '../utils/index.js';
 import merge from '../utils/merge.js';
+import { JS_PLUGIN_BRIDGE_HOOKS } from './constant.js';
 import { convertPlugin, handleVitePlugins } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
-
 import type { JsPlugin } from './type.js';
 
 export async function resolveVitePlugins(
@@ -121,12 +121,6 @@ export async function resolveConfigHook(
   return conf;
 }
 
-const ExcludeContextHookName = new Set([
-  'config',
-  'configResolved',
-  'configureServer',
-  'configureCompiler'
-]);
 export async function resolveConfigResolvedHook(
   config: ResolvedUserConfig,
   plugins: JsPlugin[]
@@ -166,7 +160,7 @@ function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
   for (const plugin of plugins) {
     for (const key of Object.keys(plugin)) {
       const hook = plugin[key as keyof JsPlugin];
-      if (!ExcludeContextHookName.has(key)) {
+      if (JS_PLUGIN_BRIDGE_HOOKS.has(key)) {
         const [callback, set] =
           typeof hook === 'object'
             ? ([

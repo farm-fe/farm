@@ -195,9 +195,7 @@ impl CacheStore {
   }
 
   fn _remove_cache(&self, name: &str) -> Option<Vec<u8>> {
-    let Some((_, cache_key)) = self.manifest.remove(name) else {
-      return None;
-    };
+    let (_, cache_key) = self.manifest.remove(name)?;
 
     if !self.data.contains_key(&cache_key) {
       self.restore_cache(name);
