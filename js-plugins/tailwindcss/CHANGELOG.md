@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- 38b9673: Fix(v2-beta): tailwindcss next bugs
+- Updated dependencies [38b9673]
+  - @farmfe/core@2.0.0-beta.4
+
 ## 2.0.0-beta.3
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- 38b9673: Fix(v2-beta): tailwindcss next bugs
+
 ## 2.0.0-beta.3
 
 ### Patch Changes
