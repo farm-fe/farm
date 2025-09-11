@@ -402,15 +402,6 @@ export interface GlobalCliOptions {
   mode?: string;
 }
 
-export interface FarmCLIServerOptions {
-  port?: number;
-  open?: boolean;
-  https?: SecureServerOptions;
-  hmr?: boolean;
-  host?: boolean | string;
-  strictPort?: boolean;
-}
-
 export interface FarmCLIBuildOptions {
   outDir?: string;
   sourcemap?: boolean;
@@ -431,7 +422,7 @@ export interface FarmCliOptions
   compilation?: Config['config'];
   mode?: string;
   root?: string;
-  server?: FarmCLIServerOptions;
+  server?: UserConfig['server'];
   clearScreen?: boolean;
 }
 
