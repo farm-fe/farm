@@ -122,7 +122,7 @@ export default function tailwindcss(options: Options): JsPlugin[] {
 
     {
       // Step 2 (serve mode): Generate CSS
-      name: '@farmfe/js-plugin-tailwindcss:generate:generate',
+      name: '@farmfe/js-plugin-tailwindcss:generate',
       priority: 101,
 
       freezeModule: {
@@ -154,14 +154,12 @@ export default function tailwindcss(options: Options): JsPlugin[] {
           }
           DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Generate CSS');
 
-          if (config?.mode !== 'development') {
-            DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
-            result = optimize(result.code, {
-              minify,
-              map: result.map
-            });
-            DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
-          }
+          DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
+          result = optimize(result.code, {
+            minify,
+            map: result.map
+          });
+          DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
 
           return typeof result === 'string'
             ? {
@@ -260,7 +258,10 @@ class Root {
       }
     | false
   > {
-    let inputPath = idToPath(this.id);
+    // handle virtual id
+    let inputPath = path.isAbsolute(this.id)
+      ? idToPath(this.id)
+      : idToPath(path.join(this.base, this.id));
 
     function addWatchFile(file: string) {
       // Don't watch the input file since it's already a dependency anc causes
