@@ -85,7 +85,7 @@ impl ImmutableModulesMemoryStore {
   }
 
   fn read_cached_package(&self, package_key: &str) -> Option<CachedPackage> {
-    let cache = self.store.remove_cache(package_key)?;
+    let cache = self.store.read_cache(package_key)?;
 
     Some(deserialize!(&cache, CachedPackage))
   }
@@ -116,24 +116,20 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn get_cache(&self, key: &crate::module::ModuleId) -> Option<super::CachedModule> {
-    if let Some(module) = self.cached_modules.remove(key).map(|item| item.1) {
-      return Some(module);
-    }
-
-    self.read_package(key);
-
-    self.cached_modules.remove(key).map(|(_, m)| m)
+    self.get_cache_ref(key).map(|v| v.value().clone())
   }
 
   fn get_cache_ref(
     &self,
     key: &crate::module::ModuleId,
   ) -> Option<dashmap::mapref::one::Ref<'_, crate::module::ModuleId, super::CachedModule>> {
-    if let Some(module) = self.cached_modules.get(key) {
-      return Some(module);
+    if !self.manifest.contains_key(key) {
+      return None;
     }
 
-    self.read_package(key);
+    if !self.cached_modules.contains_key(key) {
+      self.read_package(key);
+    }
 
     self.cached_modules.get(key)
   }
@@ -154,15 +150,16 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   fn write_cache(&self) {
     let mut packages = HashMap::default();
     let mut pending_remove_modules = HashSet::default();
+    let mut maybe_remove_package = HashSet::default();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
-
       let package_key =
         CachedPackage::gen_key(&module.module.package_name, &module.module.package_version);
 
       if module.is_expired {
         pending_remove_modules.insert(item.key().clone());
+        maybe_remove_package.insert(package_key);
         continue;
       }
 
@@ -176,11 +173,18 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       self.cached_modules.remove(&key);
       self.manifest.remove(&key);
       self.manifest_reversed.iter_mut().for_each(|mut item| {
-        let package_modules = item.value_mut();
-        if package_modules.contains(&key) {
-          package_modules.remove(&key);
+        if item.value_mut().contains(&key) {
+          item.value_mut().remove(&key);
         }
       })
+    }
+
+    for package in maybe_remove_package {
+      if packages.contains_key(&package) {
+        return;
+      }
+
+      self.store.remove_cache(&package);
     }
 
     let manifest = self
@@ -205,7 +209,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         };
 
         // the package is already cached, we only need to update it
-        if let Some(modules_in_package) = self.manifest_reversed.get(&key) {
+        if self.manifest_reversed.contains_key(&key) {
+          let modules_in_package = self.manifest_reversed.get(&key).unwrap();
           let mut added_modules = vec![];
 
           for module_id in modules {
@@ -217,7 +222,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
           // add the new modules to the package
           if !added_modules.is_empty() {
-            let mut package = self.read_cached_package(&key)?;
+            let mut package = self.read_cached_package(&key).unwrap();
             package.list.extend(
               added_modules
                 .into_par_iter()
@@ -245,8 +250,14 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         let package = CachedPackage {
           list: modules
             .into_par_iter()
-            .map(|module_id| self.cached_modules.remove(&module_id).unwrap().1)
-            .collect::<Vec<_>>(),
+            .map(|module_id| {
+              self
+                .cached_modules
+                .get(&module_id)
+                .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir))
+                .clone()
+            })
+            .collect(),
           name: key.split('@').next().unwrap().to_string(),
           version: key.split('@').next_back().unwrap().to_string(),
         };

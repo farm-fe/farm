@@ -72,8 +72,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    if let Some(cache) = self.store.remove_cache(&key.to_string()) {
-      let module = deserialize!(&cache, CachedModule);
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(cache.value(), CachedModule);
       return Some(module);
     }
 
