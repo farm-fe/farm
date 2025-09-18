@@ -485,20 +485,20 @@ impl JsCompiler {
 
   /// Write cache with name and data
   #[napi]
-  pub fn write_cache(&self, name: String, data: String, options: Option<JsApiMetadata>) {
+  pub fn write_metadata(&self, name: String, data: String, options: Option<JsApiMetadata>) {
     write_cache(self, name, data, options.map(|v| v.into()));
   }
 
   /// Read cache with name, return `undefined` if not exists
   #[napi]
-  pub fn read_cache(&self, name: String, options: Option<JsApiMetadata>) -> Option<String> {
+  pub fn read_metadata(&self, name: String, options: Option<JsApiMetadata>) -> Option<String> {
     read_cache(self, name, options.map(|v| v.into()))
   }
 
   /// Read cache by scope, return Array of cache data, if not exists, return empty array
   #[napi]
-  pub fn read_cache_by_scope(&self, scope: String) -> Vec<String> {
-    read_cache_by_scope(self, scope)
+  pub fn read_metadata_by_scope(&self, scope: String) -> Vec<String> {
+    read_metadata_by_scope(self, scope)
   }
 }
 
@@ -525,7 +525,7 @@ fn read_cache(
   options: Option<MetadataOption>,
 ) -> Option<String> {
   let context = js_compiler.compiler.context();
-  context.read_cache(&name, options).map(|v| *v)
+  context.read_metadata(&name, options).map(|v| *v)
 }
 
 fn write_cache(
@@ -535,12 +535,12 @@ fn write_cache(
   options: Option<MetadataOption>,
 ) {
   let context = js_compiler.compiler.context();
-  context.write_cache(&name, data, options);
+  context.write_metadata(&name, data, options);
 }
 
-fn read_cache_by_scope(js_compiler: &JsCompiler, scope: String) -> Vec<String> {
+fn read_metadata_by_scope(js_compiler: &JsCompiler, scope: String) -> Vec<String> {
   let context = js_compiler.compiler.context();
-  context.read_cache_by_scope::<String>(&scope)
+  context.read_metadata_by_scope::<String>(&scope)
 }
 
 fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {

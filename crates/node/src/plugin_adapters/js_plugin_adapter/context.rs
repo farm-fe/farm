@@ -28,8 +28,8 @@ const ERROR: &str = "error";
 const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
 
 use crate::plugin_adapters::js_plugin_adapter::context_methods::cache::{
-  context_read_cache, context_read_cache_by_scope, context_write_cache, CONTEXT_READ_CACHE,
-  CONTEXT_READ_CACHE_BY_SCOPE, CONTEXT_WRITE_CACHE,
+  context_read_metadata, context_read_metadata_by_scope, context_write_metadata,
+  CONTEXT_READ_METADATA, CONTEXT_READ_METADATA_BY_SCOPE, CONTEXT_WRITE_METADATA,
 };
 
 /// These functions are used to make farm js plugin compatible with Vite plugin
@@ -71,9 +71,12 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     (VITE_GET_IMPORTERS, vite_get_importers),
     (VITE_GET_MODULES_BY_FILE, vite_get_modules_by_file),
     (VITE_GET_MODULE_BY_ID, vite_get_module_by_id),
-    (CONTEXT_WRITE_CACHE, context_write_cache),
-    (CONTEXT_READ_CACHE, context_read_cache),
-    (CONTEXT_READ_CACHE_BY_SCOPE, context_read_cache_by_scope),
+    (CONTEXT_WRITE_METADATA, context_write_metadata),
+    (CONTEXT_READ_METADATA, context_read_metadata),
+    (
+      CONTEXT_READ_METADATA_BY_SCOPE,
+      context_read_metadata_by_scope,
+    ),
   ];
 
   for (name, cb) in methods {

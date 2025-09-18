@@ -22,10 +22,11 @@ export declare class Compiler {
   stats(): string
   invalidateModule(moduleId: string): void
   /** Write cache with name and data */
-  writeCache(name: string, data: string, options?: JsApiMetadata | undefined | null): void
+  writeMetadata(name: string, data: string, options?: JsApiMetadata | undefined | null): void
   /** Read cache with name, return `undefined` if not exists */
-  readCache(name: string, options?: JsApiMetadata | undefined | null): string | null
-  readCacheByScope(scope: string): Array<string>
+  readMetadata(name: string, options?: JsApiMetadata | undefined | null): string | null
+  /** Read cache by scope, return Array of cache data, if not exists, return empty array */
+  readMetadataByScope(scope: string): Array<string>
 }
 export type JsCompiler = Compiler
 

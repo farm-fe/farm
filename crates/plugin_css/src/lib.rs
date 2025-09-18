@@ -199,7 +199,7 @@ impl Plugin for FarmPluginCss {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
         content: context
-          .read_cache::<String>(
+          .read_metadata::<String>(
             "builtin:css-content",
             Some(MetadataOption::default().refer(vec![param.module_id.to_string()])),
           )
@@ -240,7 +240,7 @@ impl Plugin for FarmPluginCss {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
         source_map: context
-          .read_cache::<String>(
+          .read_metadata::<String>(
             "builtin:css-map",
             Some(MetadataOption::default().refer(vec![&param.module_id])),
           )
@@ -300,7 +300,7 @@ impl Plugin for FarmPluginCss {
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
 
-        context.write_cache::<String>(
+        context.write_metadata::<String>(
           "builtin:css-content",
           param.content.clone(),
           Some(MetadataOption::default().refer(vec![css_modules_module_id.to_string()])),
@@ -377,7 +377,7 @@ impl Plugin for FarmPluginCss {
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
 
-          context.write_cache::<String>(
+          context.write_metadata::<String>(
             "builtin:css-map",
             String::from_utf8(buf).unwrap(),
             Some(MetadataOption::default().refer(vec![css_modules_module_id.to_string()])),

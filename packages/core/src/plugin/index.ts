@@ -10,7 +10,7 @@ import {
 } from '../config/index.js';
 import { isArray, isObject } from '../utils/index.js';
 import merge from '../utils/merge.js';
-import { JS_PLUGIN_BRIDGE_HOOKS } from './constant.js';
+import { JS_PLUGIN_BRIDGE_HOOKS, MetadataApiName } from './constant.js';
 import { convertPlugin, handleVitePlugins } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
 import type { JsPlugin } from './type.js';
@@ -176,9 +176,9 @@ function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
 
             if (context) {
               const proxyKeys = [
-                'readCache',
-                'writeCache',
-                'readCacheByScope'
+                MetadataApiName.ReadMetadata,
+                MetadataApiName.WriteMetadata,
+                MetadataApiName.ReadMetadataByScope
               ] as const;
               const nativeFunction = proxyKeys.reduce(
                 (res, k) => ({
@@ -201,58 +201,71 @@ function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
                 context[name] = fn;
               }
 
-              tryProxyMethod('readCache', function (...args: any[]) {
-                const result = nativeFunction['readCache'].apply(this, args);
+              tryProxyMethod(
+                MetadataApiName.ReadMetadata,
+                function (...args: any[]) {
+                  const result = nativeFunction[
+                    MetadataApiName.ReadMetadata
+                  ].apply(this, args);
 
-                const returnValue = (value: any) => {
-                  return value && typeof value === 'string'
-                    ? JSON.parse(value)
-                    : value;
-                };
+                  const returnValue = (value: any) => {
+                    return value && typeof value === 'string'
+                      ? JSON.parse(value)
+                      : value;
+                  };
 
-                if (result && typeof result.then === 'function') {
-                  return result.then(returnValue);
-                }
-
-                if (result && typeof result === 'string') {
-                  return returnValue(result);
-                }
-
-                return result;
-              });
-
-              tryProxyMethod('writeCache', function (...args: any[]) {
-                if (args[1] && typeof args[1] !== 'string') {
-                  args[1] = JSON.stringify(args[1]);
-                }
-                return nativeFunction['writeCache'].apply(this, args);
-              });
-
-              tryProxyMethod('readCacheByScope', function (...args: any[]) {
-                const result = nativeFunction['readCacheByScope'].apply(
-                  this,
-                  args
-                );
-                const returnValue = (result: any) => {
-                  if (!Array.isArray(result)) {
-                    return result;
+                  if (result && typeof result.then === 'function') {
+                    return result.then(returnValue);
                   }
 
-                  return result.map((item) =>
-                    item && typeof item === 'string' ? JSON.parse(item) : item
+                  if (result && typeof result === 'string') {
+                    return returnValue(result);
+                  }
+
+                  return result;
+                }
+              );
+
+              tryProxyMethod(
+                MetadataApiName.WriteMetadata,
+                function (...args: any[]) {
+                  if (args[1] && typeof args[1] !== 'string') {
+                    args[1] = JSON.stringify(args[1]);
+                  }
+                  return nativeFunction[MetadataApiName.WriteMetadata].apply(
+                    this,
+                    args
                   );
-                };
-
-                if (result && typeof result.then === 'function') {
-                  return result.then(returnValue);
                 }
+              );
 
-                if (result) {
-                  return returnValue(result);
+              tryProxyMethod(
+                MetadataApiName.ReadMetadataByScope,
+                function (...args: any[]) {
+                  const result = nativeFunction[
+                    MetadataApiName.ReadMetadataByScope
+                  ].apply(this, args);
+                  const returnValue = (result: any) => {
+                    if (!Array.isArray(result)) {
+                      return result;
+                    }
+
+                    return result.map((item) =>
+                      item && typeof item === 'string' ? JSON.parse(item) : item
+                    );
+                  };
+
+                  if (result && typeof result.then === 'function') {
+                    return result.then(returnValue);
+                  }
+
+                  if (result) {
+                    return returnValue(result);
+                  }
+
+                  return result;
                 }
-
-                return result;
-              });
+              );
             }
 
             // @ts-ignore

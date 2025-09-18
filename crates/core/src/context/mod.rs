@@ -159,7 +159,7 @@ impl CompilationContext {
     };
 
     if self.cache_manager.enable() {
-      self.write_cache(
+      self.write_metadata(
         "builtin:emit_file",
         resource.clone(),
         Some(MetadataOption::default().refer(vec![module_id])),
@@ -205,14 +205,14 @@ impl CompilationContext {
     log_store.clear();
   }
 
-  pub fn write_cache<V: Cacheable>(&self, name: &str, data: V, options: Option<MetadataOption>) {
+  pub fn write_metadata<V: Cacheable>(&self, name: &str, data: V, options: Option<MetadataOption>) {
     self
       .cache_manager
       .module_cache
       .write_metadata(name, data, options);
   }
 
-  pub fn read_cache<V: Cacheable>(
+  pub fn read_metadata<V: Cacheable>(
     &self,
     name: &str,
     options: Option<MetadataOption>,
@@ -220,7 +220,7 @@ impl CompilationContext {
     self.cache_manager.module_cache.read_metadata(name, options)
   }
 
-  pub fn read_cache_by_scope<V: Cacheable>(&self, scope: &str) -> Vec<V> {
+  pub fn read_metadata_by_scope<V: Cacheable>(&self, scope: &str) -> Vec<V> {
     self.cache_manager.module_cache.read_scope(scope)
   }
 }

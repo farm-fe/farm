@@ -100,12 +100,12 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
           ];
 
           const candidate =
-            context?.readCache<string[]>(CANDIDATE_NAME, {
+            context?.readMetadata<string[]>(CANDIDATE_NAME, {
               refer: [param.resolvedPath],
               scope: [CANDIDATE_SCOPE]
             }) ?? [];
 
-          context?.writeCache(
+          context?.writeMetadata(
             param.resolvedPath,
             [...new Set(candidateList.concat(candidate))],
             {
@@ -143,7 +143,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
             context?.addWatchFile(param.moduleId, resolvedPath);
           }
           const candidateList = (
-            context?.readCacheByScope<string[]>(CANDIDATE_SCOPE) ?? []
+            context?.readMetadataByScope<string[]>(CANDIDATE_SCOPE) ?? []
           ).flatMap((v) => v);
 
           let result = await root.generate(

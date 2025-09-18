@@ -114,7 +114,7 @@ impl Plugin for FarmPluginHtml {
     if param.resolved_path.starts_with(HTML_INLINE_ID_PREFIX) {
       if let Some(box HtmlInlineModule {
         code, module_type, ..
-      }) = context.read_cache::<HtmlInlineModule>(
+      }) = context.read_metadata::<HtmlInlineModule>(
         "inline_deps",
         Some(MetadataOption::default().refer(vec![param.resolved_path.to_string()])),
       ) {
@@ -225,7 +225,7 @@ impl Plugin for FarmPluginHtml {
       param.deps.extend(deps_analyzer.analyze_deps(document));
 
       for (module_id, module) in deps_analyzer.inline_deps_map {
-        context.write_cache(
+        context.write_metadata(
           "inline_deps",
           module,
           Some(MetadataOption::default().refer(vec![module_id])),

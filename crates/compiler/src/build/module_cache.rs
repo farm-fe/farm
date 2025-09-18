@@ -300,7 +300,7 @@ pub fn handle_cached_modules(
   cached_module.module.resource_pots = Default::default();
   cached_module.module.used_exports.clear();
 
-  if let Some(resource) = context.read_cache::<Resource>(
+  if let Some(resource) = context.read_metadata::<Resource>(
     "builtin:emit_file",
     Some(MetadataOption::default().refer(vec![cached_module.module.id.clone()])),
   ) {

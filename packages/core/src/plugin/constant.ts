@@ -18,3 +18,9 @@ export const JS_PLUGIN_BRIDGE_HOOKS = new Set([
   'updateFinished',
   'updateModules'
 ]);
+
+export enum MetadataApiName {
+  WriteMetadata = 'writeMetadata',
+  ReadMetadata = 'readMetadata',
+  ReadMetadataByScope = 'readMetadataByScope'
+}

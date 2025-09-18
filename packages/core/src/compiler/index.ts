@@ -282,8 +282,12 @@ export class Compiler {
    * @param data data to be cached
    * @param options cache options
    */
-  writeCache<V>(name: string, data: V, options?: JsApiMetadata | null): void {
-    this._bindingCompiler.writeCache(name, JSON.stringify(data), options);
+  writeMetadata<V>(
+    name: string,
+    data: V,
+    options?: JsApiMetadata | null
+  ): void {
+    this._bindingCompiler.writeMetadata(name, JSON.stringify(data), options);
   }
 
   /**
@@ -292,14 +296,14 @@ export class Compiler {
    * @param options cache options
    * @returns cached data, `undefined` if not exists
    */
-  readCache<V>(name: string, options?: JsApiMetadata | null): V | undefined {
-    const data = this._bindingCompiler.readCache(name, options);
+  readMetadata<V>(name: string, options?: JsApiMetadata | null): V | undefined {
+    const data = this._bindingCompiler.readMetadata(name, options);
     return data ? JSON.parse(data) : undefined;
   }
 
-  readCacheByScope<V>(scope: string): V[] {
+  readMetadataByScope<V>(scope: string): V[] {
     return this._bindingCompiler
-      .readCacheByScope(scope)
+      .readMetadataByScope(scope)
       .map((item) => JSON.parse(item));
   }
 }
