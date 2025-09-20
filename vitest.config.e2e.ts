@@ -11,6 +11,7 @@ export default defineConfig({
     sequence: {
       concurrent: false
     },
+    maxConcurrency: 2,
     poolOptions: {
       threads: {
         singleThread: true

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::CacheManager,
+  cache::{module_cache::MetadataOption, CacheManager, CacheOption, CacheType},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
@@ -23,7 +23,7 @@ use crate::{
     ResourceType,
   },
   stats::Stats,
-  HashMap,
+  Cacheable, HashMap,
 };
 
 use self::log_store::LogStore;
@@ -56,7 +56,7 @@ pub struct CompilationContext {
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
-    let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
+    let cache_type = Self::create_persistent_cache_type(&mut config);
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -65,7 +65,10 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
-      cache_manager: Box::new(CacheManager::new(&cache_dir, &namespace, config.mode)),
+      cache_manager: Box::new(CacheManager::new(CacheOption {
+        cache_enable: config.persistent_cache.enabled(),
+        option: cache_type,
+      })),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()
           .num_threads(num_cpus::get())
@@ -85,21 +88,30 @@ impl CompilationContext {
     PluginDriver::new(plugins, record)
   }
 
-  pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {
+  pub fn create_persistent_cache_type(config: &mut Config) -> CacheType {
     if config.persistent_cache.enabled() {
       let cache_config_obj = config.persistent_cache.as_obj(&config.root);
+
+      if cache_config_obj.memory {
+        return CacheType::Memory {};
+      }
+
       let (cache_dir, namespace) = (
-        cache_config_obj.cache_dir.clone(),
+        cache_config_obj
+          .cache_dir
+          .clone()
+          .expect("FarmDiskCache should have cache_dir filed, please check your config"),
         cache_config_obj.namespace.clone(),
       );
       config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
 
-      (
-        cache_dir.unwrap_or("node_modules/.farm/cache".to_string()),
+      CacheType::Disk {
+        cache_dir,
         namespace,
-      )
+        mode: config.mode,
+      }
     } else {
-      (EMPTY_STR.to_string(), EMPTY_STR.to_string())
+      CacheType::Memory {}
     }
   }
 
@@ -132,24 +144,32 @@ impl CompilationContext {
   }
 
   pub fn emit_file(&self, params: EmitFileParams) {
-    let mut resources_map = self.resources_map.lock();
-
     let module_id = self.str_to_module_id(&params.resolved_path);
 
-    resources_map.insert(
-      params.name.clone(),
-      Resource {
-        name: params.name,
-        name_hash: "".to_string(),
-        bytes: params.content,
-        emitted: false,
-        should_transform_output_filename: true,
-        resource_type: params.resource_type,
-        origin: ResourceOrigin::Module(module_id),
-        meta: Default::default(),
-        special_placeholders: Default::default(),
-      },
-    );
+    let resource = Resource {
+      name: params.name.clone(),
+      name_hash: "".to_string(),
+      bytes: params.content,
+      emitted: false,
+      should_transform_output_filename: true,
+      resource_type: params.resource_type,
+      origin: ResourceOrigin::Module(module_id.clone()),
+      meta: Default::default(),
+      special_placeholders: Default::default(),
+    };
+
+    if self.cache_manager.enable() {
+      self.write_metadata(
+        "builtin:emit_file",
+        resource.clone(),
+        Some(MetadataOption::default().refer(vec![module_id])),
+      );
+    }
+
+    self
+      .resources_map
+      .lock()
+      .insert(params.name.clone(), resource);
   }
 
   pub fn sourcemap_enabled(&self, id: &str) -> bool {
@@ -183,6 +203,25 @@ impl CompilationContext {
   pub fn clear_log_store(&self) {
     let mut log_store = self.log_store.lock();
     log_store.clear();
+  }
+
+  pub fn write_metadata<V: Cacheable>(&self, name: &str, data: V, options: Option<MetadataOption>) {
+    self
+      .cache_manager
+      .module_cache
+      .write_metadata(name, data, options);
+  }
+
+  pub fn read_metadata<V: Cacheable>(
+    &self,
+    name: &str,
+    options: Option<MetadataOption>,
+  ) -> Option<Box<V>> {
+    self.cache_manager.module_cache.read_metadata(name, options)
+  }
+
+  pub fn read_metadata_by_scope<V: Cacheable>(&self, scope: &str) -> Vec<V> {
+    self.cache_manager.module_cache.read_scope(scope)
   }
 }
 

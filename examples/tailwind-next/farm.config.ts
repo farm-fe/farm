@@ -3,7 +3,7 @@ import tailwind from "@farmfe/js-plugin-tailwindcss";
 
 export default defineConfig({
   compilation: {
-    persistentCache: false,
+    persistentCache: true,
   },
   server: {
     writeToDisk: true,

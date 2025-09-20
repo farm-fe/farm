@@ -1,3 +1,4 @@
+#![feature(box_patterns)]
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
 #![allow(clippy::blocks_in_conditions)]
@@ -15,6 +16,7 @@ pub mod plugin_adapters;
 pub mod profile_gui;
 
 use farmfe_core::{
+  cache::module_cache::MetadataOption,
   config::{Config, Mode},
   context::CompilationContext,
   module::ModuleId,
@@ -480,6 +482,65 @@ impl JsCompiler {
   pub fn invalidate_module(&self, module_id: String) {
     invalidate_module(self, module_id);
   }
+
+  /// Write cache with name and data
+  #[napi]
+  pub fn write_metadata(&self, name: String, data: String, options: Option<JsApiMetadata>) {
+    write_cache(self, name, data, options.map(|v| v.into()));
+  }
+
+  /// Read cache with name, return `undefined` if not exists
+  #[napi]
+  pub fn read_metadata(&self, name: String, options: Option<JsApiMetadata>) -> Option<String> {
+    read_cache(self, name, options.map(|v| v.into()))
+  }
+
+  /// Read cache by scope, return Array of cache data, if not exists, return empty array
+  #[napi]
+  pub fn read_metadata_by_scope(&self, scope: String) -> Vec<String> {
+    read_metadata_by_scope(self, scope)
+  }
+}
+
+#[napi(object)]
+pub struct JsApiMetadata {
+  /// Scope of the cache, used different name, same scope will hit the same cache
+  pub scope: Option<Vec<String>>,
+  /// reference ModuleId of the cache, when the module is invalidated, the cache will be invalidated too
+  pub refer: Option<Vec<String>>,
+}
+
+impl From<JsApiMetadata> for MetadataOption {
+  fn from(value: JsApiMetadata) -> Self {
+    MetadataOption {
+      scope: value.scope,
+      refer: value.refer,
+    }
+  }
+}
+
+fn read_cache(
+  js_compiler: &JsCompiler,
+  name: String,
+  options: Option<MetadataOption>,
+) -> Option<String> {
+  let context = js_compiler.compiler.context();
+  context.read_metadata(&name, options).map(|v| *v)
+}
+
+fn write_cache(
+  js_compiler: &JsCompiler,
+  name: String,
+  data: String,
+  options: Option<MetadataOption>,
+) {
+  let context = js_compiler.compiler.context();
+  context.write_metadata(&name, data, options);
+}
+
+fn read_metadata_by_scope(js_compiler: &JsCompiler, scope: String) -> Vec<String> {
+  let context = js_compiler.compiler.context();
+  context.read_metadata_by_scope::<String>(&scope)
 }
 
 fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {

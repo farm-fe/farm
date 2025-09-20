@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::cache_store::CacheStoreKey,
+  cache::store::CacheStoreKey,
   context::CompilationContext,
   deserialize,
   module::{

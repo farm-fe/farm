@@ -8,7 +8,11 @@ import type {
   ResolvedUserConfig,
   Resource
 } from '../index.js';
-import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
+import type {
+  CompilerUpdateItem,
+  JsApiMetadata,
+  JsUpdateResult
+} from '../types/binding.js';
 import { cleanUrl } from '../utils/index.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
@@ -270,6 +274,37 @@ export class Compiler {
 
   invalidateModule(moduleId: string) {
     this._bindingCompiler.invalidateModule(moduleId);
+  }
+
+  /**
+   * write cache
+   * @param name cache name
+   * @param data data to be cached
+   * @param options cache options
+   */
+  writeMetadata<V>(
+    name: string,
+    data: V,
+    options?: JsApiMetadata | null
+  ): void {
+    this._bindingCompiler.writeMetadata(name, JSON.stringify(data), options);
+  }
+
+  /**
+   * read cache
+   * @param name cache name
+   * @param options cache options
+   * @returns cached data, `undefined` if not exists
+   */
+  readMetadata<V>(name: string, options?: JsApiMetadata | null): V | undefined {
+    const data = this._bindingCompiler.readMetadata(name, options);
+    return data ? JSON.parse(data) : undefined;
+  }
+
+  readMetadataByScope<V>(scope: string): V[] {
+    return this._bindingCompiler
+      .readMetadataByScope(scope)
+      .map((item) => JSON.parse(item));
   }
 }
 

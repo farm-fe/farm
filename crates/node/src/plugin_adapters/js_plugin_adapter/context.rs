@@ -16,7 +16,6 @@ use napi::{
 use farmfe_core::{
   context::{CompilationContext, EmitFileParams},
   module::ModuleId,
-  // swc_ecma_ast::EsVersion,
   plugin::{PluginHookContext, PluginResolveHookParam},
 };
 
@@ -27,6 +26,11 @@ const GET_WATCH_FILES: &str = "getWatchFiles";
 const WARN: &str = "warn";
 const ERROR: &str = "error";
 const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
+
+use crate::plugin_adapters::js_plugin_adapter::context_methods::cache::{
+  context_read_metadata, context_read_metadata_by_scope, context_write_metadata,
+  CONTEXT_READ_METADATA, CONTEXT_READ_METADATA_BY_SCOPE, CONTEXT_WRITE_METADATA,
+};
 
 /// These functions are used to make farm js plugin compatible with Vite plugin
 use super::context_methods::vite_get_importers::{vite_get_importers, VITE_GET_IMPORTERS};
@@ -67,6 +71,12 @@ pub unsafe fn create_js_context(raw_env: napi_env, ctx: Arc<CompilationContext>)
     (VITE_GET_IMPORTERS, vite_get_importers),
     (VITE_GET_MODULES_BY_FILE, vite_get_modules_by_file),
     (VITE_GET_MODULE_BY_ID, vite_get_module_by_id),
+    (CONTEXT_WRITE_METADATA, context_write_metadata),
+    (CONTEXT_READ_METADATA, context_read_metadata),
+    (
+      CONTEXT_READ_METADATA_BY_SCOPE,
+      context_read_metadata_by_scope,
+    ),
   ];
 
   for (name, cb) in methods {
@@ -107,9 +117,11 @@ fn attach_context_method<'a>(
   context
 }
 
+const SUPPORT_RECEIVE_ARGC: usize = 3;
+
 #[repr(C)]
 pub struct ArgvAndContext {
-  pub argv: [napi_value; 2],
+  pub argv: [napi_value; SUPPORT_RECEIVE_ARGC],
   pub ctx: Box<Arc<CompilationContext>>,
 }
 
@@ -119,12 +131,12 @@ pub unsafe extern "C" fn get_argv_and_context_from_cb_info(
   info: napi_callback_info,
 ) -> ArgvAndContext {
   // accept 2 arguments at most
-  let mut argv: [napi_value; 2] = [ptr::null_mut(); 2];
+  let mut argv: [napi_value; SUPPORT_RECEIVE_ARGC] = [ptr::null_mut(); SUPPORT_RECEIVE_ARGC];
   let mut data = ptr::null_mut();
   napi_get_cb_info(
     env,
     info,
-    &mut 2,
+    &mut SUPPORT_RECEIVE_ARGC.clone(),
     argv.as_mut_ptr(),
     ptr::null_mut(),
     &mut data,

@@ -1,3 +1,6 @@
+#![feature(box_patterns)]
+#![feature(let_chains)]
+
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
