@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_tree_shake-v2.0.0...farmfe_plugin_tree_shake-v2.0.1) - 2025-09-21
+
+### Other
+
+- updated the following local packages: farmfe_utils, farmfe_core, farmfe_toolkit, farmfe_testing_helpers
+
 ## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_plugin_tree_shake-v0.0.13...farmfe_plugin_tree_shake-v0.0.14) - 2025-01-09
 
 ### Other

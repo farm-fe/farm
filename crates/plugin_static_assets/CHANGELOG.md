@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v2.0.0...farmfe_plugin_static_assets-v2.1.0) - 2025-09-21
+
+### Added
+
+- cache store ([#2243](https://github.com/farm-fe/farm/pull/2243))
+
+### Other
+
+- upgrade all templates of create-farm to v2 beta ([#2242](https://github.com/farm-fe/farm/pull/2242))
+
 ## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.14...farmfe_plugin_static_assets-v0.0.15) - 2025-01-09
 
 ### Other

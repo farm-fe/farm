@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_testing_helpers-v2.0.0...farmfe_testing_helpers-v2.0.1) - 2025-09-21
+
+### Other
+
+- updated the following local packages: farmfe_core
+
 ## [0.0.17](https://github.com/farm-fe/farm/compare/farmfe_testing_helpers-v0.0.16...farmfe_testing_helpers-v0.0.17) - 2025-01-09
 
 ### Other

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1](https://github.com/farm-fe/farm/compare/create-farm-v2.0.0...create-farm-v2.0.1) - 2025-09-21
+
+### Other
+
+- upgrade all templates of create-farm to v2 beta ([#2242](https://github.com/farm-fe/farm/pull/2242))
+
 ## [0.1.5](https://github.com/farm-fe/farm/compare/create-farm-v0.1.4...create-farm-v0.1.5) - 2025-01-09
 
 ### Other
