@@ -46,6 +46,7 @@ test('resolveUserConfig', async () => {
   expect(config.compilation.output).toEqual({
     clean: true,
     path: './dist',
+    externalGlobals: {},
     publicPath: '/',
     targetEnv: 'browser'
   });
@@ -88,6 +89,7 @@ test('resolveUserConfig-prod', async () => {
     filename: '[resourceName].[contentHash].[ext]',
     path: './dist',
     publicPath: '/',
+    externalGlobals: {},
     targetEnv: 'browser'
   });
   expect(config.compilation.lazyCompilation).toEqual(false);
@@ -137,6 +139,7 @@ test('resolveUserConfig-input-html-prod', async () => {
     filename: '[resourceName].[contentHash].[ext]',
     path: './dist',
     publicPath: '/',
+    externalGlobals: {},
     targetEnv: 'browser'
   });
 

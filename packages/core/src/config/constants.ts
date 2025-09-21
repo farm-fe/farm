@@ -17,9 +17,7 @@ export const DEFAULT_CONFIG_NAMES = [
 export const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
 
 export const CUSTOM_KEYS = {
-  external_record: 'external.record',
-  resolve_dedupe: 'resolve.dedupe',
-  css_locals_conversion: 'css.modules.locals_conversion'
+  /** add new config option here for compatibility, e.g. `resolve.dedupe` */
 };
 
 export const FARM_RUST_PLUGIN_FUNCTION_ENTRY = 'func.js';

@@ -13,7 +13,6 @@ if (existsSync(prePath)) {
   changesetFilesExist = changesetFilesExist.filter(file => !preRelease.changesets.includes(file));
 }
 
-
 if (changesetFilesExist.length === 0) {
   console.log("No changeset files found, try publish");
   process.exit(1);

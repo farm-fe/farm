@@ -76,6 +76,20 @@ impl FarmPluginStaticAssets {
       )
     }
   }
+
+  fn normalize_query_string(query: &Vec<(String, String)>) -> String {
+    // remove internal inline, raw, url query
+    let query = query
+      .iter()
+      .filter(|(k, _)| {
+        !k.eq_ignore_ascii_case("inline")
+          && !k.eq_ignore_ascii_case("raw")
+          && !k.eq_ignore_ascii_case("url")
+      })
+      .cloned()
+      .collect::<Vec<(String, String)>>();
+    stringify_query(&query)
+  }
 }
 
 impl Plugin for FarmPluginStaticAssets {
@@ -218,7 +232,7 @@ impl Plugin for FarmPluginStaticAssets {
           bytes: &bytes,
           ext,
           special_placeholders: &Default::default(),
-        }) + stringify_query(&param.query).as_str();
+        }) + Self::normalize_query_string(&param.query).as_str();
 
         let resource_name = Self::get_resource_name(&resource_name, &param.module_id);
 
@@ -248,6 +262,11 @@ impl Plugin for FarmPluginStaticAssets {
             format!("export default {assets_path:?};")
           }
         };
+
+        println!(
+          "transform asset: {} {resource_name} {assets_path}",
+          param.module_id
+        );
 
         context.emit_file(EmitFileParams {
           resolved_path: param.module_id.clone(),

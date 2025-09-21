@@ -343,6 +343,7 @@
     "**/CHANGELOG.md",
     "**/gitignore",
     "**/test_**",
-    "packages/core/binding/binding.cjs"
+    "packages/core/binding/binding.cjs",
+    "packages/create-farm/index.js"
   ]
 }

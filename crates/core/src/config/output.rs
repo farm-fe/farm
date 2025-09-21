@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::HashMap;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
 pub enum TargetEnv {
   #[serde(rename = "browser")]
@@ -122,6 +124,10 @@ pub struct OutputConfig {
   pub show_file_size: bool,
   pub library_bundle_type: LibraryBundleType,
   pub ascii_only: bool,
+  /// external globals name, for example, if you set `external_globals: {"react": "React"}`,
+  /// if you use `import * as React from 'react'`, you can access `React` from `window.React`
+  /// NOTE: only works when `target_env` is `browser`, or `library` with format `iife` or `umd`
+  pub external_globals: HashMap<String, String>,
 }
 
 impl Default for OutputConfig {
@@ -139,6 +145,7 @@ impl Default for OutputConfig {
       show_file_size: true,
       library_bundle_type: Default::default(),
       ascii_only: false,
+      external_globals: HashMap::default(),
     }
   }
 }
