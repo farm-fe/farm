@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_macro_cache_item-v2.0.0...farmfe_macro_cache_item-v2.1.0) - 2025-09-21
+
+### Added
+
+- cache store ([#2243](https://github.com/farm-fe/farm/pull/2243))
+
 ## [0.1.3](https://github.com/farm-fe/farm/compare/farmfe_macro_cache_item-v0.1.2...farmfe_macro_cache_item-v0.1.3) - 2024-03-24
 
 ### Other

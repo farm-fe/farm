@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v2.0.0...farmfe_plugin_resolve-v2.0.1) - 2025-09-21
+
+### Other
+
+- upgrade all templates of create-farm to v2 beta ([#2242](https://github.com/farm-fe/farm/pull/2242))
+
 ## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.14...farmfe_plugin_resolve-v0.0.15) - 2025-01-09
 
 ### Other

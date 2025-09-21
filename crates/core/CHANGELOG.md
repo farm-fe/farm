@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_core-v2.0.0...farmfe_core-v2.1.0) - 2025-09-21
+
+### Added
+
+- cache store ([#2243](https://github.com/farm-fe/farm/pull/2243))
+
+### Fixed
+
+- ci issues ([#2230](https://github.com/farm-fe/farm/pull/2230))
+
+### Other
+
+- upgrade all templates of create-farm to v2 beta ([#2242](https://github.com/farm-fe/farm/pull/2242))
+
 ## [0.7.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.2...farmfe_core-v0.7.3) - 2025-01-09
 
 ### Fixed
