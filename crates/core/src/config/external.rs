@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{config_regex::ConfigRegex, custom::get_config_external_record, Config};
+use super::{config_regex::ConfigRegex, Config};
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -57,7 +57,18 @@ impl ExternalConfigItem {
 
 impl From<&Config> for ExternalConfig {
   fn from(config: &Config) -> Self {
-    let mut external_config = get_config_external_record(config);
+    let mut external_config = ExternalConfig::new();
+
+    for (regex, name) in config.output.external_globals.clone() {
+      external_config
+        .0
+        .push(super::external::ExternalConfigItem::Object(
+          ExternalObject {
+            pattern: ConfigRegex::new(&regex),
+            global_name: name,
+          },
+        ));
+    }
 
     for external in &config.external {
       external_config

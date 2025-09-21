@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
-  config::{custom::get_config_resolve_dedupe, external::ExternalConfig, Config},
+  config::{external::ExternalConfig, Config},
   context::CompilationContext,
   error::Result,
   farm_profile_function, farm_profile_scope,
@@ -28,7 +28,7 @@ pub struct FarmPluginResolve {
 impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
-      dedupe: get_config_resolve_dedupe(&config).into_iter().collect(),
+      dedupe: config.resolve.dedupe.clone().into_iter().collect(),
       root: config.root.clone(),
       resolver: Resolver::new(),
       external_config: OnceCell::new(),

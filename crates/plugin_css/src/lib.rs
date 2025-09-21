@@ -5,7 +5,6 @@ use std::sync::Arc;
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::cache::module_cache::MetadataOption;
 use farmfe_core::config::css::NameConversion;
-use farmfe_core::config::custom::get_config_css_modules_local_conversion;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
@@ -706,7 +705,12 @@ impl FarmPluginCss {
         })
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
-      locals_conversion: get_config_css_modules_local_conversion(config),
+      locals_conversion: config
+        .css
+        .modules
+        .as_ref()
+        .map(|item| item.locals_conversion.clone())
+        .unwrap_or_default(),
     }
   }
 

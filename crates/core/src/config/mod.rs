@@ -1,7 +1,6 @@
 use minify::MinifyOptions;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use swc_css_prefixer::options::Targets;
 
 use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
 use tree_shaking::TreeShakingConfig;
@@ -39,6 +38,7 @@ pub mod tree_shaking;
 
 use asset::AssetsConfig;
 
+pub use css::*;
 pub use output::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -163,46 +163,6 @@ impl ToString for Mode {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", default)]
-pub struct CssModulesConfig {
-  /// The paths regex to match css modules
-  pub paths: Vec<String>,
-  pub indent_name: String,
-}
-
-impl Default for CssModulesConfig {
-  fn default() -> Self {
-    Self {
-      paths: vec![String::from("\\.module\\.(css|less|sass|scss)$")],
-      indent_name: String::from("[name]-[hash]"),
-    }
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase", default)]
-pub struct CssPrefixerConfig {
-  #[serde(skip_serializing)]
-  pub targets: Option<Targets>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", default)]
-pub struct CssConfig {
-  pub modules: Option<CssModulesConfig>,
-  pub prefixer: Option<CssPrefixerConfig>,
-}
-
-impl Default for CssConfig {
-  fn default() -> Self {
-    Self {
-      modules: Some(Default::default()),
-      prefixer: Some(Default::default()),
-    }
-  }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptParserConfig {
@@ -221,6 +181,7 @@ pub struct ResolveConfig {
   pub symlinks: bool,
   pub strict_exports: bool,
   pub auto_external_failed_resolve: bool,
+  pub dedupe: Vec<String>,
 }
 
 impl Default for ResolveConfig {
@@ -250,6 +211,7 @@ impl Default for ResolveConfig {
       symlinks: true,
       strict_exports: false,
       auto_external_failed_resolve: false,
+      dedupe: vec![],
     }
   }
 }

@@ -38,7 +38,10 @@ impl Plugin for FarmPluginScriptMeta {
 
     for async_module in async_modules {
       let module = module_graph.module_mut(&async_module).unwrap();
-      module.meta.as_script_mut().is_async = true;
+
+      if module.module_type.is_script() {
+        module.meta.as_script_mut().is_async = true;
+      }
     }
 
     Ok(Some(()))

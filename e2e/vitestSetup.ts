@@ -47,6 +47,10 @@ const visitPage = async (
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
+      if (page.isClosed()) {
+        return;
+      }
+
       const lowerCaseMsg = msg.text().toLocaleLowerCase();
 
       if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning') && !/Parse `.+` failed/.test(msg.text())) {
@@ -65,6 +69,10 @@ const visitPage = async (
     });
 
     page?.on('pageerror', (error) => {
+      if (page.isClosed()) {
+        return;
+      }
+
       logger(`command ${command} ${examplePath} -> ${path}: ${error}`, {
         color: 'red'
       });
@@ -106,17 +114,36 @@ const visitPage = async (
   }
 };
 
-export const startProjectAndTest = async (
+// retry 3 times
+export async function startProjectAndTest(
+  examplePath: string,
+  cb: (page: Page) => Promise<void>,
+  command = 'start'
+) {
+  let retryCount = 0;
+
+  while (retryCount < 3) {
+    try {
+      return await startProjectAndTestInternal(examplePath, cb, command);
+    } catch (e) {
+      logger(
+        `Current retry time ${retryCount}. Command ${command} ${examplePath} start failed with error ${e}`,
+        {
+          color: 'red'
+        }
+      );
+      retryCount++;
+      // wait 10s
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+    }
+  }
+}
+
+const startProjectAndTestInternal = async (
   examplePath: string,
   cb: (page: Page) => Promise<void>,
   command = 'start'
 ) => {
-  // // using bin path to spawn child process to avoid port conflicts issue
-  // const cliBinPath = getFarmCLIBinPath(examplePath);
-
-  // if (!cliBinPath) {
-  //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
-  // }
   const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
   const child = execa('npm', ['run', command], {

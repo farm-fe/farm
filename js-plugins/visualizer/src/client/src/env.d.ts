@@ -3,3 +3,10 @@ declare module '*.vue' {
   export default component;
 }
 declare module '*.svg';
+
+declare module '*.worker?worker' {
+  const worker: typeof Worker & {
+    new (): Worker;
+  };
+  export default worker;
+}

@@ -181,6 +181,14 @@ export interface OutputConfig {
    * @default false
    */
   asciiOnly?: boolean;
+
+  /**
+   * external globals name, for example, if you set `external_globals: {"react": "React"}`,
+   * if you use `import * as React from 'react'`, you can access `React` from `window.React`
+   * NOTE: only works when `target_env` is `browser`, or `library` with format `iife` or `umd`
+   * @default {}
+   */
+  externalGlobals?: Record<string, string>;
 }
 
 export interface ResolveConfig {
