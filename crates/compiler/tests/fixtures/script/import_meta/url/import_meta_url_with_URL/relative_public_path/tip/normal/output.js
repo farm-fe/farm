@@ -1,7 +1,7 @@
-//bar-a57e94.txt?url:
+//bar-a57e94.txt:
  bar
 
-//foo-8bdf4c.txt?url:
+//foo-8bdf4c.txt:
  foo
 
 //index.js:
@@ -19,11 +19,11 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "27eb6d1d": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        exports.default = "./foo-8bdf4c.txt?url";
+        exports.default = "./foo-8bdf4c.txt";
     },
     "8b8d3d28": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        exports.default = "./bar-a57e94.txt?url";
+        exports.default = "./bar-a57e94.txt";
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
