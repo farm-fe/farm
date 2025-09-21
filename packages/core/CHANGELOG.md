@@ -1,5 +1,16 @@
 # @farmfe/core
 
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- 9021edf: improve cache perf, support js cache api
+- e560875: Fix issues:
+
+  1. Move all custom config from `config.custom` to the corresponding config field. For example, move `config.custom.external` to `config.external`.
+  2. Fix visualizer plugin not working issue.
+  3. `?url` does not be removed in plugin static asset
+
 ## 2.0.0-beta.4
 
 ### Patch Changes
