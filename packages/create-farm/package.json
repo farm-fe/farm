@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0-beta.1",
   "description": "Rapidly create a new farm project.",
   "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
   "bugs": {
