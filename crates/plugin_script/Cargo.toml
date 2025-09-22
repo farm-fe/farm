@@ -35,8 +35,6 @@ tokio = { features = [
   "rt",
   "rt-multi-thread",
 ], version = "1", default-features = false, optional = true }
-
-[dev-dependencies]
 farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
 farmfe_plugin_script_meta = { path = "../plugin_script_meta", version = "2.0.1" }
 
