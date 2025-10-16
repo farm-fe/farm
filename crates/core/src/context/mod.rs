@@ -35,6 +35,20 @@ lazy_static::lazy_static! {
   pub static ref REPLACE_FILENAME_REGEX: Regex = Regex::new(r"[^a-zA-Z0-9._/\\]").unwrap();
 }
 
+pub fn farm_thread_nums_from_env() -> Option<usize> {
+  std::env::var("FARM_THREAD_NUMS")
+    .ok()
+    .and_then(|v| v.parse().ok())
+}
+
+pub fn farm_thread_nums() -> usize {
+  let cpus = num_cpus::get();
+  farm_thread_nums_from_env()
+    .unwrap_or(cpus)
+    // if cpus < 2, maybe cannot work well, so we set a min value 2
+    .clamp(2.min(cpus), cpus)
+}
+
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
   pub config: Box<Config>,
@@ -57,6 +71,12 @@ pub struct CompilationContext {
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let cache_type = Self::create_persistent_cache_type(&mut config);
+    let thread_pool = Arc::new(
+      ThreadPoolBuilder::new()
+        .num_threads(farm_thread_nums())
+        .build()
+        .unwrap(),
+    );
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -68,13 +88,9 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new(CacheOption {
         cache_enable: config.persistent_cache.enabled(),
         option: cache_type,
+        thread_pool: thread_pool.clone(),
       })),
-      thread_pool: Arc::new(
-        ThreadPoolBuilder::new()
-          .num_threads(num_cpus::get())
-          .build()
-          .unwrap(),
-      ),
+      thread_pool,
       config: Box::new(config),
       meta: Box::new(ContextMetaData::new()),
       stats: Box::new(Stats::new()),
