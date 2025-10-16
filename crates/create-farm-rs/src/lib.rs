@@ -1,6 +1,6 @@
 use anyhow::Context;
 use clap::Parser;
-use std::{ffi::OsString, fs, process::exit};
+use std::{ffi::OsString, fmt::Debug, fs, process::exit};
 use utils::prompts;
 
 use crate::{
@@ -36,6 +36,7 @@ where
   A: Into<OsString> + Clone,
 {
   let detected_manager = detected_manager.and_then(|p| p.parse::<PackageManager>().ok());
+
   // Clap will auto parse the `bin_name` as the first argument, so we need to add it to the args
   let args = args::Args::parse_from(
     std::iter::once(OsString::from(bin_name.unwrap_or_default()))
@@ -49,7 +50,12 @@ where
     project_name,
     template,
     force,
+    dry_run,
   } = args;
+
+  if dry_run {
+    println!("{YELLOW}⚠️  Dry run mode, no changes were made to the filesystem.{RESET}");
+  }
 
   let cwd = std::env::current_dir()?;
   let mut default_project_name = "farm-project";
@@ -174,13 +180,33 @@ where
       }
       Ok(())
     }
-    clean_dir(&target_dir)?;
+    if dry_run {
+      println!(
+        "{YELLOW}⚠️  Dry run mode, skipping cleaning directory: {}{RESET}",
+        target_dir.display()
+      );
+    } else {
+      clean_dir(&target_dir)?;
+    }
   } else {
-    fs::create_dir_all(&target_dir)?;
+    if dry_run {
+      println!(
+        "{YELLOW}⚠️  Dry run mode, skipping creating directory: {}{RESET}",
+        target_dir.display()
+      );
+    } else {
+      fs::create_dir_all(&target_dir)?;
+    }
   }
 
   // Render the template
-  template.render(&target_dir, pkg_manager, &project_name, &project_name)?;
+  template.render(
+    &target_dir,
+    pkg_manager,
+    &project_name,
+    &project_name,
+    dry_run,
+  )?;
 
   handle_brand_text("\n >  Initial Farm Project created successfully ✨ ✨ \n");
 
@@ -198,6 +224,10 @@ where
     handle_brand_text(&format!("    {cmd} \n"));
   }
   handle_brand_text(&format!("    {} \n", get_run_cmd(&pkg_manager, &template)));
+
+  if dry_run {
+    println!("\n{YELLOW}⚠️  Dry run mode, no changes were made to the filesystem.{RESET}\n");
+  }
 
   Ok(())
 }
@@ -237,5 +267,20 @@ fn get_run_cmd(pkg_manager: &PackageManager, template: &Template) -> &'static st
       PackageManager::Bun => "bun tauri dev",
     },
     _ => pkg_manager.default_cmd(),
+  }
+}
+
+#[cfg(test)]
+mod test {
+  use crate::run_cli;
+
+  #[test]
+  fn deno_args() {
+    run_cli(
+      vec!["--dry-run", "--template", "vue2", "deno-vue2"],
+      Some("create-farm".to_string()),
+      Some("deno".to_string()),
+    )
+    .unwrap();
   }
 }

@@ -17,6 +17,8 @@ pub struct Args {
   pub template: Option<Template>,
   #[arg(short, long, help = "Force overwrite of existing files", action = ArgAction::SetTrue)]
   pub force: bool,
+  #[arg(long = "dry-run", help = "Run without making any changes")]
+  pub dry_run: bool,
 }
 
 impl Default for Args {
@@ -26,6 +28,7 @@ impl Default for Args {
       manager: Some(PackageManager::Npm),
       template: Some(Template::Vanilla),
       force: false,
+      dry_run: false,
     }
   }
 }

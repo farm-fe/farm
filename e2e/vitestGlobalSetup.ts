@@ -1,8 +1,8 @@
-import type { GlobalSetupContext } from 'vitest/node';
-import { chromium } from 'playwright-chromium';
-import type { BrowserServer } from 'playwright-chromium';
-import { createServer, Server } from 'http';
 import getPort from 'get-port';
+import { createServer, Server } from 'http';
+import type { BrowserServer } from 'playwright-chromium';
+import { chromium } from 'playwright-chromium';
+import type { GlobalSetupContext } from 'vitest/node';
 
 let browserServer: BrowserServer | undefined;
 let client: Server | undefined;

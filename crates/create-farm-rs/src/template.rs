@@ -300,6 +300,7 @@ impl<'a> Template {
     _pkg_manager: PackageManager,
     project_name: &str,
     package_name: &str,
+    dry_run: bool,
   ) -> anyhow::Result<()> {
     let lib_name = format!("{}_lib", package_name.replace('-', "_"));
     let project_name_pascal_case = Self::transform_to_pascal_case(project_name.to_string());
@@ -383,14 +384,21 @@ impl<'a> Template {
     };
 
     let skip_count = current_template_name.matches('/').count() + 1;
-    for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
-      let path = path::PathBuf::from(e.to_string());
-      let _components: Vec<_> = path.components().collect();
-      let path_str = path.to_string_lossy();
-      // let template_name = components.first().unwrap().as_os_str().to_str().unwrap();
-      path_str.starts_with(&current_template_name)
-    }) {
-      write_file(&file, template_data.clone(), skip_count)?;
+    if dry_run {
+      println!(
+        "{YELLOW}⚠️  Dry run mode, skipping copying template files from: {}{RESET}",
+        current_template_name
+      );
+    } else {
+      for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
+        let path = path::PathBuf::from(e.to_string());
+        let _components: Vec<_> = path.components().collect();
+        let path_str = path.to_string_lossy();
+        // let template_name = components.first().unwrap().as_os_str().to_str().unwrap();
+        path_str.starts_with(&current_template_name)
+      }) {
+        write_file(&file, template_data.clone(), skip_count)?;
+      }
     }
 
     handle_brand_text("\n ✔️ Template copied Successfully! \n");

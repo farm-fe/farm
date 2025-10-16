@@ -22,7 +22,10 @@
       "!**/js-plugins/vue/**",
       "!**/js-plugins/solid/**",
       "!**/examples/**",
-      "!**/*.{js,mjs,cjs}"
+      "!**/*.{js,mjs,cjs}",
+      "!cspell.json",
+      "!packages/runtime",
+      "!packages/runtime-plugin-import-meta"
     ],
     "ignoreUnknown": true
   },
