@@ -150,7 +150,7 @@ impl CacheStore {
       .map(|v| v.key().clone())
       .collect::<Vec<_>>();
 
-    manifest_keys.into_iter().for_each(|item| {
+    manifest_keys.into_par_iter().for_each(|item| {
       if !self.data.contains_key(&item) {
         self.restore_cache(&item);
       };

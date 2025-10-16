@@ -64,20 +64,29 @@ impl CacheType {
 pub struct CacheOption {
   pub cache_enable: bool,
   pub option: CacheType,
+  pub thread_pool: Arc<rayon::ThreadPool>,
 }
 
 pub struct CacheContext {
   pub cache_enable: bool,
   pub option: CacheType,
   pub store_factory: Box<dyn CacheStoreFactory>,
+  pub thread_pool: Arc<rayon::ThreadPool>,
 }
 
 impl Default for CacheContext {
   fn default() -> Self {
+    let cache_type = CacheType::default();
     Self {
       cache_enable: Default::default(),
-      option: CacheType::Memory,
-      store_factory: CacheType::Memory.create_store_factory(),
+      store_factory: cache_type.create_store_factory(),
+      option: cache_type,
+      thread_pool: Arc::new(
+        rayon::ThreadPoolBuilder::new()
+          .num_threads(num_cpus::get())
+          .build()
+          .unwrap(),
+      ),
     }
   }
 }
@@ -89,6 +98,7 @@ impl CacheManager {
       cache_enable: option.cache_enable,
       option: option.option,
       store_factory,
+      thread_pool: option.thread_pool,
     });
 
     let module_cache = module_cache::ModuleCacheManager::new(context.clone());
@@ -132,8 +142,8 @@ impl CacheManager {
     let mut lock = self.lock.lock();
     *lock = true;
     // write cache in parallel
-    let thread_pool = rayon::ThreadPoolBuilder::new().build().unwrap();
-    thread_pool.install(|| {
+
+    self.context.thread_pool.install(|| {
       rayon::join(
         || self.module_cache.write_cache(),
         || {
@@ -143,8 +153,9 @@ impl CacheManager {
           )
         },
       );
+
+      self.showdown();
     });
-    self.showdown();
     *lock = false;
   }
 }
