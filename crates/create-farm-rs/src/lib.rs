@@ -16,7 +16,7 @@ pub mod utils;
 
 pub fn run<I, A>(args: I, bin_name: Option<String>, detected_manager: Option<String>)
 where
-  I: IntoIterator<Item = A> + Debug,
+  I: IntoIterator<Item = A>,
   A: Into<OsString> + Clone,
 {
   if let Err(e) = run_cli(args, bin_name, detected_manager) {
@@ -277,14 +277,8 @@ mod test {
   #[test]
   fn deno_args() {
     run_cli(
-      vec![
-        "create-farm",
-        "--dry-run",
-        "--template",
-        "vue2",
-        "deno-vue2",
-      ],
-      None,
+      vec!["--dry-run", "--template", "vue2", "deno-vue2"],
+      Some("create-farm".to_string()),
       Some("deno".to_string()),
     )
     .unwrap();

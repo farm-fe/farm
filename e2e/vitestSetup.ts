@@ -1,7 +1,7 @@
-import { chromium, type Page } from "playwright-chromium";
-import { logger } from "./utils.js";
-import { inject, onTestFinished } from "vitest";
-import { execa } from "execa";
+import { execa } from 'execa';
+import { chromium, type Page } from 'playwright-chromium';
+import { inject, onTestFinished } from 'vitest';
+import { logger } from './utils.js';
 
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
@@ -11,7 +11,7 @@ function getServerPort(): Promise<number> {
   // retry 3 times
   let retryCount = 0;
 
-  return fetch("http://127.0.0.1:12306/port")
+  return fetch('http://127.0.0.1:12306/port')
     .then((r) => r.text())
     .then(Number)
     .catch(async () => {
@@ -20,7 +20,7 @@ function getServerPort(): Promise<number> {
         retryCount++;
         return getServerPort();
       }
-      throw new Error("get server port failed");
+      throw new Error('get server port failed');
     });
 }
 
@@ -28,28 +28,28 @@ const visitPage = async (
   path: string,
   examplePath: string,
   cb: (page: Page) => Promise<void>,
-  command: string,
+  command: string
 ) => {
   if (!path) return;
   // @ts-ignore
-  const wsEndpoint = inject("wsEndpoint");
+  const wsEndpoint = inject('wsEndpoint');
   if (!wsEndpoint) {
-    throw new Error("wsEndpoint not found");
+    throw new Error('wsEndpoint not found');
   }
 
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
-  page.on("requestfailed", (req) => {
+  page.on('requestfailed', (req) => {
     logger(
       `request failed ${path} ${examplePath}: ${req.url()} ${req.failure()?.errorText} ${req}`,
       {
-        color: "red",
-      },
+        color: 'red'
+      }
     );
   });
   logger(`open the page: ${path} ${examplePath}`);
   try {
-    page?.on("console", (msg) => {
+    page?.on('console', (msg) => {
       if (page.isClosed()) {
         return;
       }
@@ -57,13 +57,13 @@ const visitPage = async (
       const lowerCaseMsg = msg.text().toLocaleLowerCase();
 
       if (
-        msg.type() === "error" &&
-        !lowerCaseMsg.includes("warn") &&
-        !lowerCaseMsg.includes("warning") &&
+        msg.type() === 'error' &&
+        !lowerCaseMsg.includes('warn') &&
+        !lowerCaseMsg.includes('warning') &&
         !/Parse `.+` failed/.test(msg.text())
       ) {
         logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
-          color: "red",
+          color: 'red'
         });
         reject(new Error(msg.text()));
       } else {
@@ -76,42 +76,42 @@ const visitPage = async (
       reject = re;
     });
 
-    page?.on("pageerror", (error) => {
+    page?.on('pageerror', (error) => {
       if (page.isClosed()) {
         return;
       }
 
       logger(`command ${command} ${examplePath} -> ${path}: ${error}`, {
-        color: "red",
+        color: 'red'
       });
       reject(error);
     });
 
-    page?.on("load", async () => {
-      console.log(command, "page load");
+    page?.on('load', async () => {
+      console.log(command, 'page load');
     });
 
     await page?.goto(path);
-    console.log("test page", examplePath);
+    console.log('test page', examplePath);
     cb(page)
       .then(() => {
-        console.log("test page success", examplePath);
+        console.log('test page success', examplePath);
         resolve(null);
       })
       .catch((e) => {
         logger(
           `command ${command} test error: ${examplePath} start failed with error ${e}`,
           {
-            color: "red",
-          },
+            color: 'red'
+          }
         );
         reject(e);
       })
       .finally(() => {
-        console.log("test page finish", examplePath, "close page");
+        console.log('test page finish', examplePath, 'close page');
         page?.close({
-          reason: "test finished",
-          runBeforeUnload: false,
+          reason: 'test finished',
+          runBeforeUnload: false
         });
       });
 
@@ -126,7 +126,7 @@ const visitPage = async (
 export async function startProjectAndTest(
   examplePath: string,
   cb: (page: Page) => Promise<void>,
-  command = "start",
+  command = 'start'
 ) {
   let retryCount = 0;
   let lastError: unknown;
@@ -138,8 +138,8 @@ export async function startProjectAndTest(
       logger(
         `Attempt ${retryCount + 1}/3 failed. Command ${command} ${examplePath}: ${e}`,
         {
-          color: "red",
-        },
+          color: 'red'
+        }
       );
       retryCount++;
       // wait 10s
@@ -148,36 +148,36 @@ export async function startProjectAndTest(
   }
   throw lastError instanceof Error
     ? lastError
-    : new Error(String(lastError ?? "Unknown error"));
+    : new Error(String(lastError ?? 'Unknown error'));
 }
 
 const startProjectAndTestInternal = async (
   examplePath: string,
   cb: (page: Page) => Promise<void>,
-  command = "start",
+  command = 'start'
 ) => {
   const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
-  const child = execa("npm", ["run", command], {
+  const child = execa('npm', ['run', command], {
     cwd: examplePath,
-    stdin: "pipe",
-    encoding: "utf8",
+    stdin: 'pipe',
+    encoding: 'utf8',
     env: {
-      BROWSER: "none",
-      NO_COLOR: "true",
+      BROWSER: 'none',
+      NO_COLOR: 'true',
       FARM_DEFAULT_SERVER_PORT: String(port),
-      FARM_DEFAULT_HMR_PORT: String(port),
-    },
+      FARM_DEFAULT_HMR_PORT: String(port)
+    }
   });
 
   const pagePath = await new Promise<string>((resolve, reject) => {
     let result = Buffer.alloc(0);
     const urlRegex =
       /((http|https):\/\/(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?/g;
-    child.stdout?.on("data", async (chunk) => {
+    child.stdout?.on('data', async (chunk) => {
       result = Buffer.concat([result, chunk]);
       const res = result.toString();
-      const replacer = res.replace(/\n/g, " ");
+      const replacer = res.replace(/\n/g, ' ');
 
       const matches = replacer.match(urlRegex);
       const pagePath = matches?.[0]; // use localhost for test
@@ -187,39 +187,39 @@ const startProjectAndTestInternal = async (
       }
     });
 
-    child.stderr.on("data", (chunk) => {
-      logger(chunk.toString(), { color: "red" });
+    child.stderr.on('data', (chunk) => {
+      logger(chunk.toString(), { color: 'red' });
     });
 
-    child.on("error", (error) => {
+    child.on('error', (error) => {
       logger(
         `child process error: ${examplePath} ${command} failed with error ${error}`,
         {
-          color: "red",
-        },
+          color: 'red'
+        }
       );
       reject(
-        `child process error: ${examplePath} ${command} failed with error ${error}`,
+        `child process error: ${examplePath} ${command} failed with error ${error}`
       );
     });
 
-    child.on("exit", (code) => {
+    child.on('exit', (code) => {
       if (code) {
         logger(
           `${examplePath} ${command} failed with code ${code}. ${result.toString(
-            "utf-8",
+            'utf-8'
           )}`,
           {
-            color: "red",
-          },
+            color: 'red'
+          }
         );
         reject(new Error(`${examplePath} ${command} failed with code ${code}`));
       }
     });
 
     onTestFinished(() => {
-      logger("try kill child process: " + child.pid);
-      logger("current process id: " + process.pid);
+      logger('try kill child process: ' + child.pid);
+      logger('current process id: ' + process.pid);
       if (!child.killed) {
         child.kill(0);
       }
@@ -229,7 +229,7 @@ const startProjectAndTestInternal = async (
   try {
     await visitPage(pagePath, examplePath, cb, command);
   } catch (e) {
-    console.log("visit page error: ", e);
+    console.log('visit page error: ', e);
     throw e;
   } finally {
     if (!child.killed) {
@@ -241,62 +241,62 @@ const startProjectAndTestInternal = async (
 export const watchProjectAndTest = async (
   examplePath: string,
   cb: (log: string, done: () => void) => Promise<void>,
-  command = "start",
+  command = 'start'
 ) => {
   const port = getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
-  const child = execa("npm", ["run", command], {
+  const child = execa('npm', ['run', command], {
     cwd: examplePath,
-    stdin: "pipe",
-    encoding: "utf8",
+    stdin: 'pipe',
+    encoding: 'utf8',
     env: {
-      BROWSER: "none",
-      NO_COLOR: "true",
+      BROWSER: 'none',
+      NO_COLOR: 'true',
       FARM_DEFAULT_SERVER_PORT: String(port),
-      FARM_DEFAULT_HMR_PORT: String(port),
-    },
+      FARM_DEFAULT_HMR_PORT: String(port)
+    }
   });
 
   return new Promise((resolve, reject) => {
     let result = Buffer.alloc(0);
-    child.stdout?.on("data", async (chunk) => {
+    child.stdout?.on('data', async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
       const res = result.toString();
       setTimeout(() => {
-        reject(new Error("timeout"));
+        reject(new Error('timeout'));
       }, 60000);
       cb(res, () => resolve(null));
     });
 
-    child.on("error", (error) => {
+    child.on('error', (error) => {
       logger(
         `child process error: ${examplePath} ${command} failed with error ${error}`,
         {
-          color: "red",
-        },
+          color: 'red'
+        }
       );
       reject(
-        `child process error: ${examplePath} ${command} failed with error ${error}`,
+        `child process error: ${examplePath} ${command} failed with error ${error}`
       );
     });
 
-    child.on("exit", (code) => {
+    child.on('exit', (code) => {
       if (code) {
         logger(
           `${examplePath} ${command} failed with code ${code}. ${result.toString(
-            "utf-8",
+            'utf-8'
           )}`,
           {
-            color: "red",
-          },
+            color: 'red'
+          }
         );
         reject(new Error(`${examplePath} ${command} failed with code ${code}`));
       }
     });
 
     onTestFinished(() => {
-      logger("try kill child process: " + child.pid);
-      logger("current process id: " + process.pid);
+      logger('try kill child process: ' + child.pid);
+      logger('current process id: ' + process.pid);
       if (!child.killed) {
         child.kill();
       }

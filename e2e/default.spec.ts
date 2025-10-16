@@ -1,15 +1,16 @@
-import { expect, test } from 'vitest';
+import { describe } from 'node:test';
 import { existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { startProjectAndTest } from './vitestSetup.js';
+import { expect, test } from 'vitest';
 import { logger } from './utils.js';
-import { describe } from 'node:test';
+import { startProjectAndTest } from './vitestSetup.js';
+
 // import { ssrExamples } from './test-utils.js';
 
 const excludeExamples: string[] = ['issues1433', 'nestjs'];
 
 describe('Default E2E Tests', async () => {
-  const examples = readdirSync('./examples')
+  const examples = readdirSync('./examples');
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   // const examples = ['module-concatenation', 'tailwind-next'];
   logger(`Running E2E tests for ${examples.length} examples`);
@@ -49,7 +50,7 @@ describe('Default E2E Tests', async () => {
             // wait 1s for the dynamic import to be loaded
             await page.waitForTimeout(1000);
           }
-          
+
           // id root should be in the page
           await page.waitForSelector('#root > *', { timeout: 10000 });
           const child = await page.$('#root > *');
