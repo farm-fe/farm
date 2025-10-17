@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-beta.6
+
+### Patch Changes
+
+- 874f034: feat: add env manual control thread max nums
+
 ## 2.0.0-beta.5
 
 ### Patch Changes

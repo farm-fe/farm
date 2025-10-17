@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 338262c: 1. fix deno create 2. add dry-run flag
+
 ## 2.0.0-beta.1
 
 ### Patch Changes
