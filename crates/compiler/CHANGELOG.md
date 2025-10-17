@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1](https://github.com/farm-fe/farm/compare/farmfe_compiler-v2.1.0...farmfe_compiler-v2.1.1) - 2025-10-17
+
+### Other
+
+- updated the following local packages: farmfe_core, farmfe_testing_helpers, farmfe_toolkit, farmfe_plugin_css, farmfe_plugin_define, farmfe_plugin_file_size, farmfe_plugin_html, farmfe_plugin_json, farmfe_plugin_lazy_compilation, farmfe_plugin_library, farmfe_plugin_mangle_exports, farmfe_plugin_minify, farmfe_plugin_partial_bundling, farmfe_plugin_polyfill, farmfe_plugin_progress, farmfe_plugin_resolve, farmfe_plugin_runtime, farmfe_plugin_script_meta, farmfe_plugin_script, farmfe_plugin_static_assets, farmfe_plugin_tree_shake
+
 ## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_compiler-v2.0.0...farmfe_compiler-v2.1.0) - 2025-09-21
 
 ### Added
