@@ -33,6 +33,29 @@ pub struct CssPrefixerConfig {
 pub struct CssConfig {
   pub modules: Option<CssModulesConfig>,
   pub prefixer: Option<CssPrefixerConfig>,
+  /// transform css module to script module, for example:
+  ///
+  /// ```css
+  /// .foo {
+  ///   color: red;
+  /// }
+  /// ```
+  ///
+  /// will be transformed to:
+  ///
+  /// ```js
+  /// const cssCode = '.foo { color: red; }';
+  /// const farmId = 'foo.module.css';
+  /// const previousStyle = document.querySelector('style[data-farm-id="' + farmId + '"]');
+  /// const style = document.createElement('style');
+  /// style.setAttribute('data-farm-id', farmId);
+  /// style.innerHTML = cssCode;
+  /// if (previousStyle) {
+  ///   previousStyle.remove();
+  /// }
+  /// document.head.appendChild(style);
+  /// ```
+  pub transform_to_script: Option<bool>,
 }
 
 impl Default for CssConfig {
@@ -40,6 +63,7 @@ impl Default for CssConfig {
     Self {
       modules: Some(Default::default()),
       prefixer: Some(Default::default()),
+      transform_to_script: None,
     }
   }
 }

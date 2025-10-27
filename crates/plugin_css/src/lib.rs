@@ -482,8 +482,21 @@ impl Plugin for FarmPluginCss {
   }
 
   fn build_end(&self, context: &Arc<CompilationContext>) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(context.config.mode, farmfe_core::config::Mode::Development)
-      || !matches!(context.config.output.target_env, TargetEnv::Browser)
+    let default_transform_to_script = if context.config.output.target_env.is_browser() {
+      context.config.mode.is_dev()
+    } else {
+      false
+    };
+
+    if !context
+      .config
+      .css
+      .transform_to_script
+      .unwrap_or(default_transform_to_script)
+      || !matches!(
+        context.config.output.target_env,
+        TargetEnv::Browser | TargetEnv::Library
+      )
     {
       return Ok(None);
     }

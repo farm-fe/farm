@@ -349,6 +349,14 @@ export interface CssConfig {
   prefixer?: {
     targets?: string[] | string | BrowserTargetsRecord;
   } | null;
+
+  /**
+   * Whether to transform css to script, default is true in development mode and false in production mode.
+   * If set to true, every css module will be transformed to script individually, and the css will be inserted into the head of the document
+   * using document.createElement('style').
+   */
+  transformToScript?: boolean;
+
   /**
    * You SHOULD NOT use this option. It's preserved vite css options for compatibility of vite plugins
    */
