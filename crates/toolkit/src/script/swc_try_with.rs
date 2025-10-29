@@ -14,10 +14,22 @@ pub fn try_with<F>(cm: Arc<SourceMap>, globals: &Globals, op: F) -> Result<()>
 where
   F: FnOnce(),
 {
+  try_with_custom_helper(cm, globals, true, op)
+}
+
+pub fn try_with_custom_helper<F>(
+  cm: Arc<SourceMap>,
+  globals: &Globals,
+  external_helper: bool,
+  op: F,
+) -> Result<()>
+where
+  F: FnOnce(),
+{
   GLOBALS
     .set(globals, || {
       try_with_handler(cm, Default::default(), |handler| {
-        HELPERS.set(&Helpers::new(true), || HANDLER.set(handler, op));
+        HELPERS.set(&Helpers::new(external_helper), || HANDLER.set(handler, op));
         Ok(())
       })
     })

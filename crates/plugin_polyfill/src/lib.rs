@@ -11,7 +11,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   constant::RUNTIME_SUFFIX,
-  script::swc_try_with::{resolve_module_mark, try_with},
+  script::swc_try_with::{resolve_module_mark, try_with_custom_helper},
   swc_ecma_preset_env::{self, transform_from_env, transform_from_es_version, EnvConfig, Mode},
   swc_ecma_transforms::{
     fixer,
@@ -140,12 +140,14 @@ impl Plugin for FarmPluginPolyfill {
 
     let cm = context.meta.get_module_source_map(param.module_id);
     let globals = context.meta.get_globals(&param.module_id);
-    try_with(cm, globals.value(), || {
+    let is_runtime_module = self.farm_runtime_regex.is_match(relative_path);
+
+    // inline helpers for farm runtime module
+    try_with_custom_helper(cm.clone(), globals.value(), !is_runtime_module, || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
       let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
 
       let ast = param.meta.as_script_mut().take_ast();
-      let is_runtime_module = self.farm_runtime_regex.is_match(relative_path);
 
       // fix #2103, transform the ast from Module to Script if the module does not have module declaration
       // to make swc polyfill prepend require('core-js/xxx') instead of import 'core-js/xxx'

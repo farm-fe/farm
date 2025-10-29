@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
+  config::minify::MinifyOptions,
   context::CompilationContext,
   module::meta_data::script::{
     statement::{Statement, StatementId, SwcId},
@@ -8,14 +9,20 @@ use farmfe_core::{
   },
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
+  swc_common::{Globals, Mark, GLOBALS},
   swc_ecma_ast::{ImportSpecifier, Module, ModuleDecl, ModuleItem, Stmt},
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::EXT,
   resolve::load_package_json,
-  script::analyze_statement::analyze_statements,
-  swc_ecma_visit::{Visit, VisitWith},
+  script::{
+    analyze_statement::analyze_statements,
+    minify::minify_js_resource_pot,
+    swc_try_with::{resolve_module_mark, ResetSyntaxContextVisitMut},
+  },
+  swc_ecma_transforms::resolver,
+  swc_ecma_visit::{Visit, VisitMutWith, VisitWith},
 };
 
 pub fn emit_resource_pot(
@@ -23,6 +30,25 @@ pub fn emit_resource_pot(
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<Vec<GeneratedResource>> {
+  // For library bundle, if minify is enabled, we should minify resource pot here before emit
+  let minify_options = context
+    .config
+    .minify
+    .clone()
+    .map(|val| MinifyOptions::from(val))
+    .unwrap_or_default();
+
+  if context.config.minify.enabled() {
+    let meta = resource_pot.meta.as_js_mut();
+    let globals = context.meta.get_resource_pot_globals(&resource_pot.id);
+    let (unresolved_mark, top_level_mark) =
+      resolve_module_mark(&mut meta.ast, false, globals.value());
+    meta.unresolved_mark = unresolved_mark.as_u32();
+    meta.top_level_mark = top_level_mark.as_u32();
+
+    minify_js_resource_pot(resource_pot, &minify_options, context)?;
+  }
+
   context
     .plugin_driver
     .generate_resources(resource_pot, context, hook_context).map(|v| v.unwrap_or_else(|| {
@@ -33,16 +59,31 @@ pub fn emit_resource_pot(
 pub fn inject_farm_runtime_helpers(
   runtime_module_helper_ast: &Module,
   used_helper_idents: &HashSet<String>,
+  unresolved_mark: Mark,
+  top_level_mark: Mark,
+  globals: &Globals,
 ) -> Vec<ModuleItem> {
-  let statements = analyze_statements(runtime_module_helper_ast);
+  let mut cloned_runtime_module_helper_ast = runtime_module_helper_ast.clone();
+
+  GLOBALS.set(globals, || {
+    // clear ctxt
+    cloned_runtime_module_helper_ast.visit_mut_with(&mut ResetSyntaxContextVisitMut);
+
+    cloned_runtime_module_helper_ast.visit_mut_with(&mut resolver(
+      unresolved_mark,
+      top_level_mark,
+      false,
+    ));
+  });
+
+  let statements = analyze_statements(&cloned_runtime_module_helper_ast);
   let preserved_statements = find_used_statements(
     statements,
-    &runtime_module_helper_ast.body,
+    &cloned_runtime_module_helper_ast.body,
     used_helper_idents,
   );
 
-  runtime_module_helper_ast
-    .clone()
+  cloned_runtime_module_helper_ast
     .body
     .into_iter()
     .enumerate()
@@ -53,7 +94,7 @@ pub fn inject_farm_runtime_helpers(
             farmfe_core::swc_ecma_ast::ModuleDecl::ExportDecl(export_decl) => {
               ModuleItem::Stmt(Stmt::Decl(export_decl.decl))
             }
-            _ => unreachable!(),
+            _ => unreachable!("unexpected module decl {:?}", module_decl),
           },
           ModuleItem::Stmt(stmt) => ModuleItem::Stmt(stmt),
         })

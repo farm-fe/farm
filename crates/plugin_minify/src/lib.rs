@@ -42,10 +42,13 @@ impl Plugin for FarmPluginMinify {
       return Ok(None);
     }
 
+    // For library, minify will be handled specially after the module format transformation, see [emit_resource_pot] in plugin_library
     if matches!(
       resource_pot.resource_pot_type,
-      ResourcePotType::Js | ResourcePotType::DynamicEntryJs
-    ) {
+      ResourcePotType::DynamicEntryJs
+    ) || (!context.config.output.target_env.is_library()
+      && matches!(resource_pot.resource_pot_type, ResourcePotType::Js))
+    {
       minify_js(resource_pot, &self.minify_options, context)?;
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       minify_css(resource_pot, context)?;

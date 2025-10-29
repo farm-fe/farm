@@ -121,7 +121,7 @@ type BrowserTargetsRecord = Partial<
   >
 > & { [key: string]: string };
 
-export type ModuleFormat = 'cjs' | 'esm';
+export type ModuleFormat = 'cjs' | 'esm' | 'umd' | 'iife' | 'system' | 'amd';
 
 export interface OutputConfig {
   /**
@@ -189,6 +189,11 @@ export interface OutputConfig {
    * @default {}
    */
   externalGlobals?: Record<string, string>;
+
+  /**
+   * necessary for umd/iife format, if not set, default name '__farm_global__' will be used
+   */
+  name?: string;
 }
 
 export interface ResolveConfig {

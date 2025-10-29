@@ -115,7 +115,11 @@ export async function loadConfigFile(
 
 const FORMAT_TO_EXT: Record<ModuleFormat, string> = {
   cjs: 'cjs',
-  esm: 'mjs'
+  esm: 'mjs',
+  umd: 'js',
+  iife: 'js',
+  system: 'js',
+  amd: 'js'
 };
 
 const FORMAT_FROM_EXT: Record<string, ModuleFormat> = {
