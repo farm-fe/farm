@@ -45,12 +45,18 @@ pub fn emit_umd_resources(
   try_with(cm, globals.value(), || {
     // 2. find all require('xxx') expr and replace it with identifier
     let meta = resource_pot.meta.as_js_mut();
-    let external_identifiers = transform_require_expr_to_identifier(
+    let external_identifier_map = transform_require_expr_to_identifier(
       &mut meta.ast,
       Mark::from_u32(meta.unresolved_mark),
       Mark::from_u32(meta.top_level_mark),
       context,
     );
+    // make external identifiers ordered by name
+    let mut external_identifiers = external_identifier_map
+      .into_iter()
+      .map(|(k, (v, mark))| (k, (v, mark)))
+      .collect::<Vec<_>>();
+    external_identifiers.sort_by(|a, b| a.0.cmp(&b.0));
 
     let ast = std::mem::take(&mut meta.ast);
 
@@ -183,7 +189,7 @@ impl VisitMut for RequireExprTransformer {
 /// }
 /// ```
 fn create_umd_function_expr(
-  external_identifiers: &HashMap<String, (String, Mark)>,
+  external_identifiers: &Vec<(String, (String, Mark))>,
   ast: Module,
   unresolved_mark: Mark,
 ) -> Expr {
@@ -198,7 +204,7 @@ fn create_umd_function_expr(
 
   params.append(
     &mut external_identifiers
-      .iter()
+      .into_iter()
       .map(|(k, (_, mark))| Param {
         span: DUMMY_SP,
         decorators: vec![],
@@ -242,12 +248,12 @@ fn create_umd_function_expr(
 /// ```
 fn create_umd_wrapper_stmt(
   factory_expr: Expr,
-  external_identifiers: &HashMap<String, (String, Mark)>,
+  external_identifiers: &Vec<(String, (String, Mark))>,
   name: &str,
 ) -> Stmt {
   let raw_external_identifiers = external_identifiers
-    .values()
-    .map(|(raw, _)| raw)
+    .iter()
+    .map(|(_, (raw, _))| raw)
     .collect::<Vec<_>>();
   let cjs_require_deps = raw_external_identifiers
     .iter()
