@@ -1,0 +1,6 @@
+{
+  "output": {
+    "format": "umd",
+    "targetEnv": "library"
+  }
+}

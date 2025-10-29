@@ -45,7 +45,10 @@ swc_html_codegen = { version = "15.0.0" }
 swc_html_minifier = { version = "30.0.0" }
 swc_error_reporters = { version = "16.0.1" }
 swc_atoms = { version = "7.0.0" }
-swc_ecma_transforms_base = { version = "25.0.0", features = ["concurrent"] }
+swc_ecma_transforms_base = { version = "25.0.0", features = [
+  "concurrent",
+  "inline-helpers",
+] }
 swc_ecma_minifier = { version = "30.0.0", features = ["concurrent"] }
 swc_ecma_utils = { version = "21.0.0", features = ["concurrent"] }
 swc_sourcemap = "9.3.4"

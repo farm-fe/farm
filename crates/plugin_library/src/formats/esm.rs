@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     Expr, ExprOrSpread, Ident, IdentName, ImportNamedSpecifier, ImportSpecifier, MemberExpr,
     MetaPropExpr, MetaPropKind, ModuleItem, VarDeclarator,
@@ -13,6 +13,7 @@ use farmfe_core::{
 use farmfe_toolkit::{
   script::{
     create_call_expr, create_var_decl_item,
+    swc_try_with::try_with,
     transform_to_esm::transform_cjs::{create_import_decl_item, FARM_NODE_REQUIRE},
   },
   swc_ecma_utils::StmtLikeInjector,
@@ -44,14 +45,20 @@ pub fn emit_esm_resources(
       })],
       "module",
     );
-    let require_decl = create_farm_node_require_item(create_node_create_require_call_expr(local));
 
-    resource_pot
-      .meta
-      .as_js_mut()
-      .ast
-      .body
-      .prepend_stmts(vec![import_decl, require_decl]);
+    let cm = context.meta.get_resource_pot_source_map(&resource_pot.id);
+    let globals = context.meta.get_resource_pot_globals(&resource_pot.id);
+
+    try_with(cm, globals.value(), || {
+      let meta = resource_pot.meta.as_js_mut();
+      let require_decl = create_farm_node_require_item(
+        create_node_create_require_call_expr(local),
+        Mark::from_u32(meta.top_level_mark),
+      );
+
+      meta.ast.body.prepend_stmts(vec![import_decl, require_decl]);
+    })
+    .unwrap();
   }
 
   let mut resources = emit_resource_pot(resource_pot, context, hook_context)?;
@@ -96,11 +103,16 @@ fn create_node_create_require_call_expr(local: Ident) -> Expr {
   )
 }
 
-pub fn create_farm_node_require_item(expr: Expr) -> ModuleItem {
+pub fn create_farm_node_require_item(expr: Expr, top_level_mark: Mark) -> ModuleItem {
   create_var_decl_item(vec![VarDeclarator {
     span: DUMMY_SP,
     name: farmfe_core::swc_ecma_ast::Pat::Ident(
-      Ident::new(FARM_NODE_REQUIRE.into(), DUMMY_SP, SyntaxContext::empty()).into(),
+      Ident::new(
+        FARM_NODE_REQUIRE.into(),
+        DUMMY_SP,
+        SyntaxContext::empty().apply_mark(top_level_mark),
+      )
+      .into(),
     ),
     init: Some(Box::new(expr)),
     definite: false,

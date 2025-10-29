@@ -80,22 +80,42 @@ impl ModuleFormatConfig {
     }
   }
 
-  pub fn contains_esm(&self) -> bool {
+  pub fn as_multiple(&self) -> Vec<ModuleFormat> {
     match self {
-      ModuleFormatConfig::Single(module_format) => *module_format == ModuleFormat::EsModule,
-      ModuleFormatConfig::Multiple(module_formats) => {
-        module_formats.contains(&ModuleFormat::EsModule)
-      }
+      ModuleFormatConfig::Single(_) => vec![self.as_single()],
+      ModuleFormatConfig::Multiple(module_formats) => module_formats.to_vec(),
     }
   }
 
-  pub fn contains_cjs(&self) -> bool {
+  pub fn contains(&self, module_format: &ModuleFormat) -> bool {
     match self {
-      ModuleFormatConfig::Single(module_format) => *module_format == ModuleFormat::CommonJs,
-      ModuleFormatConfig::Multiple(module_formats) => {
-        module_formats.contains(&ModuleFormat::CommonJs)
-      }
+      ModuleFormatConfig::Single(format) => *format == *module_format,
+      ModuleFormatConfig::Multiple(formats) => formats.contains(module_format),
     }
+  }
+
+  pub fn contains_esm(&self) -> bool {
+    self.contains(&ModuleFormat::EsModule)
+  }
+
+  pub fn contains_cjs(&self) -> bool {
+    self.contains(&ModuleFormat::CommonJs)
+  }
+
+  pub fn contains_umd(&self) -> bool {
+    self.contains(&ModuleFormat::UMD)
+  }
+
+  pub fn contains_iife(&self) -> bool {
+    self.contains(&ModuleFormat::IIFE)
+  }
+
+  pub fn contains_system(&self) -> bool {
+    self.contains(&ModuleFormat::System)
+  }
+
+  pub fn contains_amd(&self) -> bool {
+    self.contains(&ModuleFormat::AMD)
   }
 }
 
@@ -128,6 +148,8 @@ pub struct OutputConfig {
   /// if you use `import * as React from 'react'`, you can access `React` from `window.React`
   /// NOTE: only works when `target_env` is `browser`, or `library` with format `iife` or `umd`
   pub external_globals: HashMap<String, String>,
+  /// necessary for umd/iife format, if not set, default name '__farm_global__' will be used
+  pub name: String,
 }
 
 impl Default for OutputConfig {
@@ -146,6 +168,7 @@ impl Default for OutputConfig {
       library_bundle_type: Default::default(),
       ascii_only: false,
       external_globals: HashMap::default(),
+      name: "__farm_global__".to_string(),
     }
   }
 }

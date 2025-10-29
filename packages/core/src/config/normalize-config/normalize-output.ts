@@ -192,13 +192,21 @@ function normalizeTargetEnv(config: Config['config']) {
       }
   } else {
     // disable presetEnv and prefixer
-    config.presetEnv = false;
+    if (config.presetEnv === undefined) {
+      config.presetEnv = false;
+    }
 
     config.script ??= { plugins: [] };
-    config.script.target = 'esnext';
+
+    if (config.script.target === undefined) {
+      config.script.target = 'esnext';
+    }
 
     config.css ??= {};
-    config.css.prefixer = null;
+
+    if (config.css.prefixer === undefined) {
+      config.css.prefixer = null;
+    }
   }
 }
 
