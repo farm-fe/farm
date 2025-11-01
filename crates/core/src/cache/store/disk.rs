@@ -1,10 +1,14 @@
 use std::{
+  fmt::Debug,
+  hash::Hash,
   path::{Path, PathBuf},
   sync::Arc,
 };
 
 use dashmap::{DashMap, DashSet};
 use farmfe_utils::hash::sha256;
+use itertools::Itertools;
+use parking_lot::{lock_api::ArcMutexGuard, Mutex};
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 use super::{
@@ -17,6 +21,21 @@ use crate::{
   cache::store::constant::CacheStoreItemRef, config::Mode, deserialize, serialize, HashMap,
 };
 
+#[derive(Debug, Default)]
+pub struct ResourceLock<T: Debug + Eq + Hash + PartialEq> {
+  locks: DashMap<T, Arc<Mutex<bool>>>,
+}
+
+impl<T: Eq + Hash + PartialEq + Clone + Debug> ResourceLock<T> {
+  pub fn lock(&self, key: T) -> ArcMutexGuard<parking_lot::RawMutex, bool> {
+    self
+      .locks
+      .entry(key.clone())
+      .or_insert_with(|| Arc::new(Mutex::new(true)))
+      .lock_arc()
+  }
+}
+
 // #[cache_item]
 type CombineCacheData = HashMap<CacheStoreKey, Vec<u8>>;
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
@@ -27,7 +46,8 @@ pub struct CacheStore {
   /// it will be stored in a separate file
   manifest: DashMap<String, String>,
   data: DashMap<String, Vec<u8>>,
-  lock: DashSet<u8>,
+  restored: DashSet<u8>,
+  resource_lock: ResourceLock<String>,
 }
 
 impl CacheStore {
@@ -87,16 +107,19 @@ impl CacheStore {
     (index, self.join_hash(index))
   }
 
-  fn restore_cache(&self, name: &str) {
-    let (hash, cache_path) = self.real_cache_path(name);
-
-    if self.lock.contains(&hash) {
+  fn restore_cache_by_hash(&self, hash: u8, cache_path: PathBuf) {
+    if self.restored.contains(&hash) {
       return;
     }
 
-    if !(cache_path.exists() && cache_path.is_file()) {
-      self.lock.insert(hash);
+    let lock = self.resource_lock.lock(hash.to_string());
+
+    if self.restored.contains(&hash) {
       return;
+    }
+
+    if !cache_path.metadata().ok().is_some_and(|v| v.is_file()) {
+      self.restored.insert(hash);
     }
 
     let data = std::fs::read(cache_path.clone()).unwrap();
@@ -104,22 +127,28 @@ impl CacheStore {
     let value = deserialize!(&data, CombineCacheData);
 
     value.into_par_iter().for_each(|(item_key, value)| {
-      if self.data.contains_key(&item_key.key) {
+      if !self.manifest.contains_key(&item_key.name) || self.data.contains_key(&item_key.key) {
         return;
       }
       self.data.insert(item_key.key, value);
     });
 
     // should drop when restore done, because same hash should wait restore done
-    self.lock.insert(hash);
+    self.restored.insert(hash);
+
+    drop(lock);
+  }
+
+  fn restore_cache(&self, name: &str) {
+    let (hash, cache_path) = self.real_cache_path(name);
+    self.restore_cache_by_hash(hash, cache_path);
   }
 
   fn try_read_content_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
-    let has_data = self
-      .manifest
-      .get(name)
-      .map(|v| self.data.contains_key(v.value()))?;
+    let key = self.manifest.get(name)?;
+    let has_data = self.data.contains_key(key.value());
 
+    drop(key);
     if !has_data {
       self.restore_cache(name);
     }
@@ -150,11 +179,15 @@ impl CacheStore {
       .map(|v| v.key().clone())
       .collect::<Vec<_>>();
 
-    manifest_keys.into_par_iter().for_each(|item| {
-      if !self.data.contains_key(&item) {
-        self.restore_cache(&item);
-      };
-    });
+    manifest_keys
+      .into_iter()
+      .filter(|v| !self.data.contains_key(v))
+      .map(|v| self.real_cache_path(&v))
+      .unique()
+      .par_bridge()
+      .for_each(|(hash, real_cache_path)| {
+        self.restore_cache_by_hash(hash, real_cache_path);
+      });
 
     self
       .manifest
@@ -194,14 +227,26 @@ impl CacheStore {
       });
   }
 
-  fn _remove_cache(&self, name: &str) -> Option<Vec<u8>> {
-    let (_, cache_key) = self.manifest.remove(name)?;
+  fn _remove_cache(&self, name: &str, should_restore: bool) -> Option<Vec<u8>> {
+    let lock = self.resource_lock.lock(name.to_string());
+    let item = self.manifest.get(name)?;
+    let key = item.value().clone();
+    drop(item);
 
-    if !self.data.contains_key(&cache_key) {
+    if !self.data.contains_key(&key) {
+      if !should_restore {
+        return None;
+      }
+
       self.restore_cache(name);
     }
 
-    self.data.remove(&cache_key).map(|(_, v)| v)
+    let (_, item) = self.manifest.remove(name)?;
+    let v = self.data.remove(&item).map(|(_, v)| v);
+
+    drop(lock);
+
+    v
   }
 
   fn insert_cache(&self, name: &str, key: &str, data: Vec<u8>) {
@@ -259,7 +304,11 @@ impl CacheStoreTrait for CacheStore {
   }
 
   fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
-    self._remove_cache(name)
+    self._remove_cache(name, true)
+  }
+
+  fn remove_cache_only(&self, name: &str) {
+    let _ = self._remove_cache(name, false);
   }
 
   fn shutdown(&self) {

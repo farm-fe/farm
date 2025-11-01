@@ -67,6 +67,12 @@ impl CacheStoreTrait for NamespaceStore {
     self.store.remove_cache(self.format_name(name).as_str())
   }
 
+  fn remove_cache_only(&self, name: &str) {
+    self
+      .store
+      .remove_cache_only(self.format_name(name).as_str());
+  }
+
   fn shutdown(&self) {
     self.store.shutdown();
   }

@@ -5,10 +5,8 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   cache::{
-    store::{constant::CacheStoreTrait, CacheStoreKey},
+    store::{constant::CacheStoreTrait, CacheStoreKey}, // cache_store::{CacheStore, CacheStoreKey},
     CacheContext,
-    // cache_store::{CacheStore, CacheStoreKey},
-    // resource_cache::resource_memory_store::ArchivedCachedResourcePot,
   },
   deserialize, serialize, HashMap,
 };
@@ -38,6 +36,13 @@ impl ResourcePotMemoryStore {
       .store
       .is_cache_changed(&CacheStoreKey { name, key: hash })
   }
+
+  fn read_cache_internal(&self, name: &str) -> Option<()> {
+    let cache = self.store.remove_cache(name)?;
+    let resource = deserialize!(&cache, CachedResourcePot);
+    self.cached_resources.insert(name.to_string(), resource);
+    Some(())
+  }
 }
 
 impl ResourceMemoryStore for ResourcePotMemoryStore {
@@ -51,19 +56,12 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
 
   fn set_cache(&self, name: &str, resource: CachedResourcePot) {
     self.cached_resources.insert(name.to_string(), resource);
+    self.store.remove_cache_only(name);
   }
 
   fn get_cache(&self, name: &str) -> Option<CachedResourcePot> {
-    if let Some((_, resource)) = self.cached_resources.remove(name) {
-      return Some(resource);
-    }
-
-    if let Some(cache) = self.store.read_cache_ref(name) {
-      let resource = deserialize!(&cache.value(), CachedResourcePot);
-      return Some(resource);
-    }
-
-    None
+    let _ = self.read_cache_internal(name);
+    self.cached_resources.get(name).map(|v| v.value().clone())
   }
 
   fn write_cache(&self) {
