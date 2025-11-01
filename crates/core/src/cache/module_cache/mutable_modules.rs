@@ -55,6 +55,15 @@ impl MutableModulesMemoryStore {
       key: hash_key,
     }
   }
+
+  fn read_cache(&self, name: String) -> Option<()> {
+    let v = self.store.remove_cache(&name)?;
+    let module = deserialize!(&v, CachedModule);
+
+    self.cached_modules.insert(ModuleId::from(name), module);
+
+    Some(())
+  }
 }
 
 impl ModuleMemoryStore for MutableModulesMemoryStore {
@@ -63,38 +72,21 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn set_cache(&self, key: ModuleId, module: CachedModule) {
-    self.store.remove_cache(&key.to_string());
-    self.cached_modules.insert(key, module);
+    self.cached_modules.insert(key.clone(), module);
+    self.store.remove_cache_only(&key.to_string());
   }
 
   fn get_cache(&self, key: &ModuleId) -> Option<CachedModule> {
-    if let Some((_, module)) = self.cached_modules.remove(key) {
-      return Some(module);
-    }
-
-    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
-      let module = deserialize!(cache.value(), CachedModule);
-      return Some(module);
-    }
-
-    None
+    self.get_cache_ref(key).map(|v| v.value().clone())
   }
 
   fn get_cache_ref(
     &self,
     key: &ModuleId,
   ) -> Option<dashmap::mapref::one::Ref<'_, ModuleId, CachedModule>> {
-    if let Some(module) = self.cached_modules.get(key) {
-      return Some(module);
-    }
+    let _ = self.read_cache(key.to_string());
 
-    if let Some(cache) = self.store.remove_cache(&key.to_string()) {
-      let module = deserialize!(&cache, CachedModule);
-      self.cached_modules.insert(key.clone(), module);
-      return self.cached_modules.get(key);
-    }
-
-    None
+    self.cached_modules.get(key)
   }
 
   fn get_cache_mut_ref(
@@ -105,13 +97,9 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    if let Some(cache) = self.store.remove_cache(&key.to_string()) {
-      let module = deserialize!(&cache, CachedModule);
-      self.cached_modules.insert(key.clone(), module);
-      return self.cached_modules.get_mut(key);
-    }
+    let _ = self.read_cache(key.to_string());
 
-    None
+    self.cached_modules.get_mut(key)
   }
 
   fn write_cache(&self) {
@@ -141,7 +129,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
 
     for module_id in pending_removed_modules {
       self.cached_modules.remove(&module_id);
-      self.store.remove_cache(&module_id.to_string());
+      self.store.remove_cache_only(&module_id.to_string());
     }
   }
 

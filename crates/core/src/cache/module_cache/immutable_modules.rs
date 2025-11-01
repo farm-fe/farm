@@ -111,7 +111,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
-    self.store.remove_cache(&key.to_string());
+    self.store.remove_cache_only(&key.to_string());
     self.cached_modules.insert(key, module);
   }
 
@@ -184,7 +184,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         return;
       }
 
-      self.store.remove_cache(&package);
+      self.store.remove_cache_only(&package);
     }
 
     let manifest = self

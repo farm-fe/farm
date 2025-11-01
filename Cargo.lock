@@ -1844,6 +1844,7 @@ dependencies = [
  "globset",
  "heck 0.5.0",
  "hex",
+ "itertools 0.14.0",
  "lazy_static",
  "num_cpus",
  "parking_lot",

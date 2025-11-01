@@ -32,18 +32,11 @@ impl PluginCacheManager {
   pub fn read_cache(&self, plugin_name: &str) -> Option<Ref<'_, String, Vec<u8>>> {
     let plugin_name = self.normalize_plugin_name(plugin_name);
 
-    if self.cache.contains_key(&plugin_name) {
-      return self.cache.get(&plugin_name);
-    }
-
-    let cache = self.store.read_cache(&plugin_name);
-
-    if let Some(cache) = cache {
+    if let Some(cache) = self.store.remove_cache(&plugin_name) {
       self.cache.insert(plugin_name.clone(), cache);
-      return self.cache.get(&plugin_name);
     }
 
-    None
+    self.cache.get(&plugin_name)
   }
 
   pub fn set_cache(&self, plugin_name: &str, cache: Vec<u8>) {
