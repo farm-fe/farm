@@ -108,10 +108,6 @@ impl CacheStore {
   }
 
   fn restore_cache_by_hash(&self, hash: u8, cache_path: PathBuf) {
-    if self.restored.contains(&hash) {
-      return;
-    }
-
     let lock = self.resource_lock.lock(hash.to_string());
 
     if self.restored.contains(&hash) {
@@ -120,6 +116,7 @@ impl CacheStore {
 
     if !cache_path.metadata().ok().is_some_and(|v| v.is_file()) {
       self.restored.insert(hash);
+      return;
     }
 
     let data = std::fs::read(cache_path.clone()).unwrap();
