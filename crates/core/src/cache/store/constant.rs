@@ -13,6 +13,7 @@ pub trait CacheStoreTrait: Send + Sync {
   fn read_cache(&self, name: &str) -> Option<Vec<u8>>;
   fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>>;
   fn remove_cache(&self, name: &str) -> Option<Vec<u8>>;
+  fn remove_cache_only(&self, name: &str);
   fn shutdown(&self) {}
 }
 

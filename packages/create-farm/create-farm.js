@@ -4,6 +4,13 @@ const cli = require("./index");
 const path = require("path");
 
 const [bin, script, ...args] = process.argv;
+
+function pkgManagerFromUserAgent(userAgent) {
+  if (!userAgent) return undefined;
+  return userAgent.split(" ")[0]?.split("/")[0];
+}
+
+const pkgManager = pkgManagerFromUserAgent(process.env.npm_config_user_agent);
 const binStem = path.parse(bin).name.toLowerCase();
 
 let binName;
@@ -33,14 +40,10 @@ if (binStem.match(/(nodejs|node|bun)-*([0-9]*)*$/g)) {
     const scriptNormal = path.normalize(path.relative(process.cwd(), script));
     binName = `${binStem} ${scriptNormal}`;
   }
+} else if(pkgManager === "deno") {
+  binName = pkgManager;
 } else {
   args.unshift(bin);
 }
 
-function pkgManagerFromUserAgent(userAgent) {
-  if (!userAgent) return undefined;
-  return userAgent.split(" ")[0]?.split("/")[0];
-}
-
-const pkgManager = pkgManagerFromUserAgent(process.env.npm_config_user_agent);
 cli.run(args, binName, pkgManager);

@@ -59,6 +59,10 @@ impl CacheStoreTrait for MemoryCacheStore {
     None
   }
 
+  fn remove_cache_only(&self, name: &str) {
+    self.manifest.remove(name);
+  }
+
   fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
     self.manifest.remove(name);
     self.cache.remove(name).map(|(_, v)| v)
