@@ -1,5 +1,12 @@
 # @farmfe/plugin-tools
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- Updated dependencies [47d569d]
+  - @farmfe/utils@2.0.0-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes

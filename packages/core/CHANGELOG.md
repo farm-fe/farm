@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 7266d47: Fix: cjs require doesn't be handled correctly when targetEnv is library
+- Updated dependencies [47d569d]
+  - @farmfe/utils@2.0.0-beta.1
+  - @farmfe/plugin-replace-dirname@2.0.0-beta.0
+
 ## 2.0.0-beta.7
 
 ### Patch Changes
