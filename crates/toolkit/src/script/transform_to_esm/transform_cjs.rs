@@ -331,11 +331,18 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
               // require cjs
               if *module_system != ModuleSystem::EsModule {
                 // import { require } from 'source';
-                let ident = self.create_require_ident();
-                self
-                  .extra_import_require_sources
-                  .insert(source, ident.clone());
-                *expr = create_call_expr(Expr::Ident(ident), vec![]);
+                let ident = if let Some(ident) = self.extra_import_require_sources.get(&source) {
+                  ident.clone()
+                } else {
+                  let ident = self.create_require_ident();
+                  self
+                    .extra_import_require_sources
+                    .insert(source, ident.clone());
+
+                  ident
+                };
+
+                *expr = create_call_expr(Expr::Ident(ident.clone()), vec![]);
               } else {
                 // require esm
                 let ident = self.create_export_namespace_ident();
