@@ -1,5 +1,11 @@
 # @farmfe/utils
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- 47d569d: fix createFormatter error
+
 ## 2.0.0-beta.0
 
 ### Major Changes

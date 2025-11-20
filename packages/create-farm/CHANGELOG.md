@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- e0db4b0: discern deno
+- e0db4b0: node args parse
+
 ## 2.0.0-beta.2
 
 ### Patch Changes
