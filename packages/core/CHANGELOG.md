@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- c4e6901: Fix: incorrect html fallback and hmr port doesn't work as expected
+
 ## 2.0.0-beta.8
 
 ### Patch Changes
