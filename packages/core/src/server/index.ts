@@ -312,12 +312,12 @@ export class Server extends httpServer {
   }
 
   #updateServerPort(serverPort: number, command: 'START' | 'WATCH') {
-    this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
-
     if (this.config.server.hmr?.port === this.config.server?.port) {
       this.config.server.hmr ??= {};
       this.config.server.hmr.port = serverPort;
+      this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
     }
+
     this.config.server.port = serverPort;
 
     this.serverOptions.port = serverPort;
