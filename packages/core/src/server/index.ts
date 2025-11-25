@@ -748,7 +748,7 @@ export class Server extends httpServer {
 
     await Promise.allSettled([
       this.watcher.close(),
-      this.ws.wss.close(),
+      this.ws.close(),
       this.closeHttpServerFn()
     ]);
     this.resolvedUrls = null;

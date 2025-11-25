@@ -256,8 +256,9 @@ export class HmrClient {
   handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
 
-    new Function(`${result.immutableModules}`)();
-    new Function(`${result.mutableModules}`)();
+    // #fix 2262, using eval instead of new Function to avoid the context issue in micro frontend
+    eval(`${result.immutableModules}`);
+    eval(`${result.mutableModules}`);
 
     this.applyHotUpdates(
       {
