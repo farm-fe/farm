@@ -1,5 +1,7 @@
 use farmfe_macro_cache_item::cache_item;
 
+use crate::HashSet;
+
 pub const FARM_ENABLE_TOP_LEVEL_AWAIT: &str = "__FARM_ENABLE_TOP_LEVEL_AWAIT__";
 pub const FARM_ENABLE_EXPORT_HELPER: &str = "__FARM_ENABLE_EXPORT_HELPER__";
 pub const FARM_ENABLE_EXPORT_ALL_HELPER: &str = "__FARM_ENABLE_EXPORT_ALL_HELPER__";
@@ -42,5 +44,19 @@ impl FeatureFlag {
       FeatureFlag::ImportStatement => "ImportStatement",
       FeatureFlag::ImportNamed => "ImportStatement",
     }
+  }
+
+  pub fn all() -> HashSet<Self> {
+    HashSet::from_iter([
+      Self::DynamicImport,
+      Self::TopLevelAwait,
+      Self::ImportDefault,
+      Self::ImportNamespace,
+      Self::ExportAll,
+      Self::ExportFrom,
+      Self::ExportStatement,
+      Self::ImportStatement,
+      Self::ImportNamed,
+    ])
   }
 }

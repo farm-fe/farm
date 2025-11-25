@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  config::{Mode, TargetEnv},
   context::CompilationContext,
   module::{
     meta_data::script::feature_flag::FeatureFlag,
@@ -299,7 +300,17 @@ pub fn transform_normal_runtime_inputs_to_dynamic_entries(
   }
 }
 
-pub fn get_all_feature_flags(module_graph: &ModuleGraph) -> HashSet<FeatureFlag> {
+pub fn get_all_feature_flags(
+  module_graph: &ModuleGraph,
+  context: &CompilationContext,
+) -> HashSet<FeatureFlag> {
+  // enable all features in development mode
+  if matches!(context.config.mode, Mode::Development)
+    && context.config.output.target_env != TargetEnv::Library
+  {
+    return FeatureFlag::all();
+  }
+
   let mut all_features_flags = HashSet::default();
 
   for module in module_graph.modules() {

@@ -261,7 +261,7 @@ impl Plugin for FarmPluginRuntime {
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let all_feature_flags = get_all_feature_flags(module_graph);
+    let all_feature_flags = get_all_feature_flags(module_graph, context);
     transform_normal_runtime_inputs_to_dynamic_entries(module_graph, &all_feature_flags, context);
     // remove unused runtime features that controlled by feature guard like `if (__FARM_TARGET_ENV__)`
     // note that this must be called before insert_runtime_modules cause insert_runtime_modules will remove dynamic entries
