@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 2.0.0-beta.10
+
+### Patch Changes
+
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+- Updated dependencies [6fafa25]
+  - @farmfe/runtime-plugin-hmr@4.0.0-beta.2
+
 ## 2.0.0-beta.9
 
 ### Patch Changes
