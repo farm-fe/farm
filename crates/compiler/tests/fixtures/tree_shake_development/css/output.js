@@ -1,13 +1,17 @@
 //index.js:
  (function(){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
-    console.log('module-system-helper.ts');
+    console.log('dynamic-import.ts');
 }
 function initModuleSystem$1() {
+    console.log('module-system-helper.ts');
+}
+function initModuleSystem$2() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
 initModuleSystem$1(__farm_internal_module_system__);
+initModuleSystem$2(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
