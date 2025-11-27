@@ -268,12 +268,12 @@ impl Plugin for FarmPluginStaticAssets {
           param.module_id
         );
 
-        context.emit_file(EmitFileParams {
-          resolved_path: param.module_id.clone(),
-          name: resource_name,
-          content: bytes,
-          resource_type: ResourceType::Asset(ext.to_string()),
-        });
+        context.emit_file(EmitFileParams::new(
+          param.module_id.clone(),
+          resource_name,
+          bytes,
+          ResourceType::Asset(ext.to_string()),
+        ));
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,

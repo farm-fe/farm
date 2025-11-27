@@ -20,7 +20,7 @@ use crate::{
   plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
   resource::{
     resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap, Resource, ResourceOrigin,
-    ResourceType,
+    ResourceType, RESOURCE_META_PRIMARY_KEY,
   },
   stats::Stats,
   Cacheable, HashMap,
@@ -162,6 +162,24 @@ impl CompilationContext {
   pub fn emit_file(&self, params: EmitFileParams) {
     let module_id = self.str_to_module_id(&params.resolved_path);
 
+    // Determine if this resource should be marked as primary (defaults to true)
+    let should_mark_primary = params.is_primary.unwrap_or(true);
+
+    // If user marks this resource as primary, clear previous primary markers for this module
+    if should_mark_primary {
+      let mut resources = self.resources_map.lock();
+      for resource in resources.values_mut() {
+        if matches!(&resource.origin, ResourceOrigin::Module(m_id) if m_id == &module_id) {
+          resource.meta.remove(RESOURCE_META_PRIMARY_KEY);
+        }
+      }
+    }
+
+    let mut meta = HashMap::default();
+    if should_mark_primary {
+      meta.insert(RESOURCE_META_PRIMARY_KEY.to_string(), "true".to_string());
+    }
+
     let resource = Resource {
       name: params.name.clone(),
       name_hash: "".to_string(),
@@ -170,7 +188,7 @@ impl CompilationContext {
       should_transform_output_filename: true,
       resource_type: params.resource_type,
       origin: ResourceOrigin::Module(module_id.clone()),
-      meta: Default::default(),
+      meta,
       special_placeholders: Default::default(),
     };
 
@@ -451,6 +469,10 @@ impl Default for HtmlContextMetaData {
   }
 }
 
+fn default_is_primary() -> Option<bool> {
+  Some(true)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmitFileParams {
@@ -458,6 +480,33 @@ pub struct EmitFileParams {
   pub name: String,
   pub content: Vec<u8>,
   pub resource_type: ResourceType,
+  /// Mark this resource as the primary one when multiple resources exist for the same module.
+  /// Defaults to true if not specified.
+  /// When a module generates multiple resources, the primary one is used for URL resolution.
+  #[serde(default = "default_is_primary", skip_serializing_if = "Option::is_none")]
+  pub is_primary: Option<bool>,
+}
+
+impl EmitFileParams {
+  pub fn new(
+    resolved_path: String,
+    name: String,
+    content: Vec<u8>,
+    resource_type: ResourceType,
+  ) -> Self {
+    Self {
+      resolved_path,
+      name,
+      content,
+      resource_type,
+      is_primary: Some(true),
+    }
+  }
+
+  pub fn with_primary(mut self, is_primary: bool) -> Self {
+    self.is_primary = Some(is_primary);
+    self
+  }
 }
 
 #[cfg(test)]
