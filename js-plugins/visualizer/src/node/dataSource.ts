@@ -6,7 +6,7 @@ export function createDateSourceMiddleware(compiler: Compiler) {
   return async (
     req: http.IncomingMessage,
     res: http.ServerResponse,
-    next: () => Promise<any>
+    next: () => void
   ) => {
     const url = req.url as string;
     const { pathname, searchParams } = new URL(
@@ -40,10 +40,10 @@ export function createDateSourceMiddleware(compiler: Compiler) {
         const stats = compiler.stats();
         handleRecordRequest(stats);
       } else {
-        await next();
+        next();
       }
     } else {
-      await next();
+      next();
     }
   };
 }

@@ -1,15 +1,17 @@
+#![feature(box_patterns)]
+
 use std::{mem, sync::Arc};
 
 use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
+use farmfe_core::cache::module_cache::MetadataOption;
 use farmfe_core::module::meta_data::html::HtmlModuleMetaData;
 
-use farmfe_core::parking_lot::Mutex;
 use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
 use farmfe_core::swc_common::Globals;
-use farmfe_core::{cache_item, deserialize, serialize, HashMap};
+use farmfe_core::{cache_item, HashMap};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
@@ -50,9 +52,7 @@ struct CachedHtmlInlineModuleMap {
   map: HashMap<String, HtmlInlineModule>,
 }
 
-pub struct FarmPluginHtml {
-  inline_module_map: Mutex<HashMap<String, HtmlInlineModule>>,
-}
+pub struct FarmPluginHtml {}
 
 impl Plugin for FarmPluginHtml {
   fn name(&self) -> &str {
@@ -108,15 +108,19 @@ impl Plugin for FarmPluginHtml {
   fn load(
     &self,
     param: &PluginLoadHookParam,
-    _context: &std::sync::Arc<CompilationContext>,
+    context: &std::sync::Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if param.resolved_path.starts_with(HTML_INLINE_ID_PREFIX) {
-      let inline_module_map = self.inline_module_map.lock();
-      if let Some(inline_module) = inline_module_map.get(param.resolved_path) {
+      if let Some(box HtmlInlineModule {
+        code, module_type, ..
+      }) = context.read_metadata::<HtmlInlineModule>(
+        "inline_deps",
+        Some(MetadataOption::default().refer(vec![param.resolved_path.to_string()])),
+      ) {
         return Ok(Some(PluginLoadHookResult {
-          content: inline_module.code.clone(),
-          module_type: inline_module.module_type.clone(),
+          content: code,
+          module_type,
           source_map: None,
         }));
       }
@@ -212,17 +216,21 @@ impl Plugin for FarmPluginHtml {
   fn analyze_deps(
     &self,
     param: &mut PluginAnalyzeDepsHookParam,
-    _context: &std::sync::Arc<CompilationContext>,
+    context: &std::sync::Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if matches!(param.module.module_type, ModuleType::Html) {
       let document = &param.module.meta.as_html().ast;
       let mut deps_analyzer = DepsAnalyzer::new(param.module.id.clone());
 
       param.deps.extend(deps_analyzer.analyze_deps(document));
-      self
-        .inline_module_map
-        .lock()
-        .extend(deps_analyzer.inline_deps_map);
+
+      for (module_id, module) in deps_analyzer.inline_deps_map {
+        context.write_metadata(
+          "inline_deps",
+          module,
+          Some(MetadataOption::default().refer(vec![module_id])),
+        );
+      }
 
       Ok(Some(()))
     } else {
@@ -292,51 +300,11 @@ impl Plugin for FarmPluginHtml {
       Ok(None)
     }
   }
-
-  fn plugin_cache_loaded(
-    &self,
-    cache: &Vec<u8>,
-    _context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_inline_module_map = deserialize!(
-      cache,
-      CachedHtmlInlineModuleMap,
-      ArchivedCachedHtmlInlineModuleMap
-    )
-    .map;
-    let mut inline_module_map = self.inline_module_map.lock();
-    inline_module_map.extend(cached_inline_module_map);
-
-    Ok(Some(()))
-  }
-
-  fn write_plugin_cache(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
-    let inline_module_map = self.inline_module_map.lock();
-    let cached_inline_module_map = CachedHtmlInlineModuleMap {
-      map: inline_module_map
-        .iter()
-        .filter(|(k, v)| {
-          let module_graph = context.module_graph.read();
-          module_graph.has_module(&k.as_str().into()) && module_graph.has_module(&v.html_id)
-        })
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect(),
-    };
-
-    let bytes = serialize!(&cached_inline_module_map);
-
-    Ok(Some(bytes))
-  }
 }
 
 impl FarmPluginHtml {
   pub fn new(_: &Config) -> Self {
-    Self {
-      inline_module_map: Mutex::new(HashMap::default()),
-    }
+    Self {}
   }
 }
 

@@ -3,9 +3,7 @@ use crate::common::{assert_compiler_result, create_compiler_with_args};
 use std::path::PathBuf;
 
 use farmfe_core::config::ModuleFormatConfig;
-use farmfe_core::config::{
-  config_regex::ConfigRegex, custom::CUSTOM_CONFIG_EXTERNAL_RECORD, ModuleFormat, TargetEnv,
-};
+use farmfe_core::config::{config_regex::ConfigRegex, ModuleFormat, TargetEnv};
 use farmfe_core::HashMap;
 
 fn test(file: String, crate_path: String) {
@@ -28,16 +26,9 @@ fn test(file: String, crate_path: String) {
 
       if normolized_file.contains("/object") {
         config
-          .custom
-          .entry(CUSTOM_CONFIG_EXTERNAL_RECORD.to_string())
-          .or_insert(
-            r#"
-{
-  "jquery": "$"
-}
-"#
-            .to_string(),
-          );
+          .output
+          .external_globals
+          .insert("jquery".to_string(), "$".to_string());
       } else {
         config.external = vec![ConfigRegex::new("^jquery$")];
       }

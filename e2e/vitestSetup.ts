@@ -1,7 +1,7 @@
-import { chromium, type Page } from 'playwright-chromium';
-import { logger } from './utils.js';
-import { inject, onTestFinished } from 'vitest';
 import { execa } from 'execa';
+import { chromium, type Page } from 'playwright-chromium';
+import { inject, onTestFinished } from 'vitest';
+import { logger } from './utils.js';
 
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
@@ -40,16 +40,28 @@ const visitPage = async (
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
   page.on('requestfailed', (req) => {
-    logger(`request failed ${path} ${examplePath}: ${req.url()} ${req.failure()?.errorText} ${req}`, {
-      color: 'red'
-    });
+    logger(
+      `request failed ${path} ${examplePath}: ${req.url()} ${req.failure()?.errorText} ${req}`,
+      {
+        color: 'red'
+      }
+    );
   });
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
+      if (page.isClosed()) {
+        return;
+      }
+
       const lowerCaseMsg = msg.text().toLocaleLowerCase();
 
-      if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning') && !/Parse `.+` failed/.test(msg.text())) {
+      if (
+        msg.type() === 'error' &&
+        !lowerCaseMsg.includes('warn') &&
+        !lowerCaseMsg.includes('warning') &&
+        !/Parse `.+` failed/.test(msg.text())
+      ) {
         logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
           color: 'red'
         });
@@ -65,6 +77,10 @@ const visitPage = async (
     });
 
     page?.on('pageerror', (error) => {
+      if (page.isClosed()) {
+        return;
+      }
+
       logger(`command ${command} ${examplePath} -> ${path}: ${error}`, {
         color: 'red'
       });
@@ -106,17 +122,40 @@ const visitPage = async (
   }
 };
 
-export const startProjectAndTest = async (
+// retry 3 times
+export async function startProjectAndTest(
+  examplePath: string,
+  cb: (page: Page) => Promise<void>,
+  command = 'start'
+) {
+  let retryCount = 0;
+  let lastError: unknown;
+  while (retryCount < 3) {
+    try {
+      return await startProjectAndTestInternal(examplePath, cb, command);
+    } catch (e) {
+      lastError = e;
+      logger(
+        `Attempt ${retryCount + 1}/3 failed. Command ${command} ${examplePath}: ${e}`,
+        {
+          color: 'red'
+        }
+      );
+      retryCount++;
+      // wait 10s
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(String(lastError ?? 'Unknown error'));
+}
+
+const startProjectAndTestInternal = async (
   examplePath: string,
   cb: (page: Page) => Promise<void>,
   command = 'start'
 ) => {
-  // // using bin path to spawn child process to avoid port conflicts issue
-  // const cliBinPath = getFarmCLIBinPath(examplePath);
-
-  // if (!cliBinPath) {
-  //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
-  // }
   const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
   const child = execa('npm', ['run', command], {

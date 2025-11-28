@@ -121,7 +121,7 @@ type BrowserTargetsRecord = Partial<
   >
 > & { [key: string]: string };
 
-export type ModuleFormat = 'cjs' | 'esm';
+export type ModuleFormat = 'cjs' | 'esm' | 'umd' | 'iife' | 'system' | 'amd';
 
 export interface OutputConfig {
   /**
@@ -181,6 +181,19 @@ export interface OutputConfig {
    * @default false
    */
   asciiOnly?: boolean;
+
+  /**
+   * external globals name, for example, if you set `external_globals: {"react": "React"}`,
+   * if you use `import * as React from 'react'`, you can access `React` from `window.React`
+   * NOTE: only works when `target_env` is `browser`, or `library` with format `iife` or `umd`
+   * @default {}
+   */
+  externalGlobals?: Record<string, string>;
+
+  /**
+   * necessary for umd/iife format, if not set, default name '__farm_global__' will be used
+   */
+  name?: string;
 }
 
 export interface ResolveConfig {
@@ -341,6 +354,14 @@ export interface CssConfig {
   prefixer?: {
     targets?: string[] | string | BrowserTargetsRecord;
   } | null;
+
+  /**
+   * Whether to transform css to script, default is true in development mode and false in production mode.
+   * If set to true, every css module will be transformed to script individually, and the css will be inserted into the head of the document
+   * using document.createElement('style').
+   */
+  transformToScript?: boolean;
+
   /**
    * You SHOULD NOT use this option. It's preserved vite css options for compatibility of vite plugins
    */

@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_utils"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm utils"
@@ -15,3 +15,4 @@ sha2 = "0.10.6"
 base64 = "0.22.1"
 rkyv = { workspace = true }
 bytes = { workspace = true }
+nanoid = "0.4.0"

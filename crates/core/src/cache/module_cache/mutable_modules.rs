@@ -1,16 +1,17 @@
-use std::collections::HashMap;
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rkyv::Deserialize;
 
 use crate::{
-  cache::cache_store::{CacheStore, CacheStoreKey},
-  config::Mode,
+  cache::{
+    store::{constant::CacheStoreTrait, CacheStoreKey},
+    CacheContext,
+  },
   deserialize,
   module::ModuleId,
-  serialize,
+  serialize, HashMap,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -18,15 +19,15 @@ use super::{module_memory_store::ModuleMemoryStore, CachedModule};
 /// In memory store for mutable modules
 pub struct MutableModulesMemoryStore {
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
 }
 // TODO: cache unit test
 impl MutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      store: CacheStore::new(cache_dir_str, namespace, mode, "mutable-modules"),
+      store: context.store_factory.create_cache_store("mutable-module"),
       cached_modules: DashMap::new(),
     }
   }
@@ -54,6 +55,15 @@ impl MutableModulesMemoryStore {
       key: hash_key,
     }
   }
+
+  fn read_cache(&self, name: String) -> Option<()> {
+    let v = self.store.remove_cache(&name)?;
+    let module = deserialize!(&v, CachedModule);
+
+    self.cached_modules.insert(ModuleId::from(name), module);
+
+    Some(())
+  }
 }
 
 impl ModuleMemoryStore for MutableModulesMemoryStore {
@@ -62,42 +72,21 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn set_cache(&self, key: ModuleId, module: CachedModule) {
-    self.cached_modules.insert(key, module);
+    self.cached_modules.insert(key.clone(), module);
+    self.store.remove_cache_only(&key.to_string());
   }
 
   fn get_cache(&self, key: &ModuleId) -> Option<CachedModule> {
-    if let Some((_, module)) = self.cached_modules.remove(key) {
-      return Some(module);
-    }
-
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
-      // self.cached_modules.insert(key.clone(), module.clone());
-      return Some(module);
-    }
-
-    None
+    self.get_cache_ref(key).map(|v| v.value().clone())
   }
 
   fn get_cache_ref(
     &self,
     key: &ModuleId,
   ) -> Option<dashmap::mapref::one::Ref<'_, ModuleId, CachedModule>> {
-    if let Some(module) = self.cached_modules.get(key) {
-      return Some(module);
-    }
+    let _ = self.read_cache(key.to_string());
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
-      self.cached_modules.insert(key.clone(), module);
-      return Some(self.cached_modules.get(key).unwrap());
-    }
-
-    None
+    self.cached_modules.get(key)
   }
 
   fn get_cache_mut_ref(
@@ -108,20 +97,15 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
+    let _ = self.read_cache(key.to_string());
 
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
-      self.cached_modules.insert(key.clone(), module);
-      return Some(self.cached_modules.get_mut(key).unwrap());
-    }
-
-    None
+    self.cached_modules.get_mut(key)
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let mut cache_map = HashMap::default();
     let mut pending_removed_modules = vec![];
+
     for entry in self.cached_modules.iter() {
       let module = entry.value();
       if module.is_expired {
@@ -132,20 +116,20 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       let store_key = self.gen_cache_store_key(&module.module);
 
       if self.store.is_cache_changed(&store_key) {
-        cache_map.insert(store_key, module.clone());
+        cache_map.insert(store_key, entry);
       }
     }
 
     let cache_map = cache_map
       .into_par_iter()
-      .map(|(store_key, module)| (store_key, serialize!(&module)))
+      .map(|(store_key, module)| (store_key, serialize!(module.value())))
       .collect::<HashMap<_, _>>();
 
     self.store.write_cache(cache_map);
 
     for module_id in pending_removed_modules {
       self.cached_modules.remove(&module_id);
-      self.store.remove_cache(&module_id.to_string());
+      self.store.remove_cache_only(&module_id.to_string());
     }
   }
 
@@ -156,8 +140,9 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {
-    let store_key = self.gen_cache_store_key(module);
-    self.store.is_cache_changed(&store_key)
+    self
+      .store
+      .is_cache_changed(&self.gen_cache_store_key(module))
   }
 
   fn cache_outdated(&self, key: &ModuleId) -> bool {

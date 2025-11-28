@@ -1,11 +1,11 @@
-import React from "react";
-import clsx from "clsx";
 import Link from "@docusaurus/Link";
 import Translate from "@docusaurus/Translate";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
-import styles from "./index.module.css";
+import clsx from "clsx";
+import React from "react";
 import FarmCard from "../card";
 import TeamMembersItem from "../TeamMembersItem";
+import styles from "./index.module.css";
 
 export function TeamMembers(props) {
   const { members, size } = props;

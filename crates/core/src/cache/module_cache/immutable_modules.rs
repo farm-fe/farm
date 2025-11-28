@@ -1,18 +1,19 @@
-use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::deserialize;
 use crate::{
   cache::{
-    cache_store::{CacheStore, CacheStoreKey},
+    store::{constant::CacheStoreTrait, CacheStoreKey},
     utils::cache_panic,
+    CacheContext, CacheType,
   },
-  config::Mode,
+  deserialize,
   module::ModuleId,
+  HashMap, HashSet,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -40,7 +41,7 @@ impl CachedPackage {
 pub struct ImmutableModulesMemoryStore {
   cache_dir: String,
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
   /// moduleId -> PackageKey
@@ -49,12 +50,11 @@ pub struct ImmutableModulesMemoryStore {
 }
 
 impl ImmutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let store = CacheStore::new(cache_dir_str, namespace, mode, "immutable-modules");
-
-    let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
+  pub fn new(context: Arc<CacheContext>) -> Self {
+    let store = context.store_factory.create_cache_store("immutable-module");
     let manifest: HashMap<String, String> =
-      serde_json::from_slice(&manifest_bytes).unwrap_or_default();
+      serde_json::from_slice(&store.read_cache(MANIFEST_KEY).unwrap_or_default())
+        .unwrap_or_default();
     let manifest = manifest
       .into_iter()
       .map(|(key, value)| (ModuleId::from(key), value))
@@ -65,9 +65,15 @@ impl ImmutableModulesMemoryStore {
     for (key, value) in manifest.iter() {
       let mut set = manifest_reversed
         .entry(value.clone())
-        .or_insert_with(HashSet::new);
+        .or_insert_with(HashSet::default);
       set.insert(key.clone());
     }
+
+    let cache_dir_str = if let CacheType::Disk { cache_dir, .. } = &context.option {
+      cache_dir.clone()
+    } else {
+      "VIRTUAL_CACHE_DIR".to_string()
+    };
 
     Self {
       store,
@@ -78,18 +84,15 @@ impl ImmutableModulesMemoryStore {
     }
   }
 
-  fn read_cached_package(&self, package_key: &str) -> CachedPackage {
-    let cache = self
-      .store
-      .read_cache(package_key)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+  fn read_cached_package(&self, package_key: &str) -> Option<CachedPackage> {
+    let cache = self.store.read_cache(package_key)?;
 
-    crate::deserialize!(&cache, CachedPackage)
+    Some(deserialize!(&cache, CachedPackage))
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {
     if let Some(package_key) = self.manifest.get(module_id) {
-      let package = self.read_cached_package(package_key.value());
+      let package = self.read_cached_package(package_key.value())?;
 
       for module in package.list {
         self.cached_modules.insert(module.module.id.clone(), module);
@@ -108,45 +111,27 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
+    self.store.remove_cache_only(&key.to_string());
     self.cached_modules.insert(key, module);
   }
 
   fn get_cache(&self, key: &crate::module::ModuleId) -> Option<super::CachedModule> {
-    if let Some(module) = self.cached_modules.remove(key).map(|item| item.1) {
-      return Some(module);
-    }
-
-    if self.read_package(key).is_some() {
-      return Some(
-        self
-          .cached_modules
-          .remove(key)
-          .map(|item| item.1)
-          .expect("Cache broken, please remove node_modules/.farm and retry."),
-      );
-    }
-
-    None
+    self.get_cache_ref(key).map(|v| v.value().clone())
   }
 
   fn get_cache_ref(
     &self,
     key: &crate::module::ModuleId,
   ) -> Option<dashmap::mapref::one::Ref<'_, crate::module::ModuleId, super::CachedModule>> {
-    if let Some(module) = self.cached_modules.get(key) {
-      return Some(module);
+    if !self.manifest.contains_key(key) {
+      return None;
     }
 
-    if self.read_package(key).is_some() {
-      return Some(
-        self
-          .cached_modules
-          .get(key)
-          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
-      );
+    if !self.cached_modules.contains_key(key) {
+      self.read_package(key);
     }
 
-    None
+    self.cached_modules.get(key)
   }
 
   fn get_cache_mut_ref(
@@ -157,26 +142,18 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
 
-    if self.read_package(key).is_some() {
-      return Some(
-        self
-          .cached_modules
-          .get_mut(key)
-          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
-      );
-    }
+    self.read_package(key);
 
-    None
+    self.cached_modules.get_mut(key)
   }
 
   fn write_cache(&self) {
-    let mut packages = HashMap::new();
-    let mut pending_remove_modules = HashSet::new();
-    let mut maybe_remove_package = HashSet::new();
+    let mut packages = HashMap::default();
+    let mut pending_remove_modules = HashSet::default();
+    let mut maybe_remove_package = HashSet::default();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
-
       let package_key =
         CachedPackage::gen_key(&module.module.package_name, &module.module.package_version);
 
@@ -207,7 +184,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         return;
       }
 
-      self.store.remove_cache(&package);
+      self.store.remove_cache_only(&package);
     }
 
     let manifest = self
@@ -245,7 +222,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
           // add the new modules to the package
           if !added_modules.is_empty() {
-            let mut package = self.read_cached_package(&key);
+            let mut package = self.read_cached_package(&key).unwrap();
             package.list.extend(
               added_modules
                 .into_par_iter()

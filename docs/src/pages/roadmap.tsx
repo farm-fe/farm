@@ -1,5 +1,5 @@
-import React from 'react';
 import Layout from '@theme/Layout';
+import React from 'react';
 import { Timeline } from "../components/ui/timeline";
 
 export default function Roadmap() {

@@ -35,6 +35,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
     "library/external/",
     "dynamic/require",
     "reexport/use_external_reexport",
+    "formats/umd",
   ];
   let is_cjs = test_cases_that_need_real_runtime
     .iter()
@@ -96,6 +97,7 @@ fn library_test() {
   use farmfe_testing_helpers::fixture;
 
   fixture!("tests/fixtures/library/**/index.ts", test);
+
   // fixture!("tests/fixtures/library/cjs/basic/**/index.ts", test);
   // fixture!(
   //   "tests/fixtures/library/cjs/require/external/**/index.ts",
@@ -119,6 +121,11 @@ fn library_test() {
   //   test
   // );
   // fixture!("tests/fixtures/library/cyclic/**/index.ts", test);
+
+  // fixture!(
+  //   "tests/fixtures/library/formats/umd/rollup_repl/**/index.ts",
+  //   test
+  // );
 }
 
 // farmfe_testing::testing! {

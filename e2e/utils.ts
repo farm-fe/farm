@@ -2,7 +2,10 @@ import fs from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 export type SimpleUnwrapArray<T> = T extends ReadonlyArray<infer P> ? P : T;
 
-export function logger(msg: any, { title = 'FARM INFO', color = 'green' } = {}) {
+export function logger(
+  msg: any,
+  { title = 'FARM INFO', color = 'green' } = {}
+) {
   const COLOR_CODE = [
     'black',
     'red',
@@ -11,7 +14,7 @@ export function logger(msg: any, { title = 'FARM INFO', color = 'green' } = {}) 
     'blue',
     'magenta',
     'cyan',
-    'white',
+    'white'
   ].indexOf(color);
   if (COLOR_CODE >= 0) {
     const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : '';
@@ -42,8 +45,10 @@ export const createDeferred = <T = any>(silent?: boolean) => {
   return deferred;
 };
 
-
-export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcurrent: number, fn: F) => {
+export const concurrentify = <F extends (...args: any) => Promise<any>>(
+  maxConcurrent: number,
+  fn: F
+) => {
   const queue = [] as {
     deferred: Deferred;
     args: any;
@@ -54,8 +59,9 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
 
   function next() {
     concurrent -= 1;
-    if (queue.length > 0) {
-      const { ctx, deferred, args } = queue.shift()!;
+    let task: (typeof queue)[number];
+    if ((task = queue.shift())) {
+      const { ctx, deferred, args } = task;
       try {
         newFn.apply(ctx, args).then(deferred.resolve, deferred.reject);
       } catch (e) {
@@ -73,7 +79,7 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
       queue.push({
         deferred,
         ctx,
-        args,
+        args
       });
       return deferred.promise;
     }
@@ -88,23 +94,34 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
 
 export const concurrentMap = <
   Arr extends readonly unknown[],
-  F extends (item: SimpleUnwrapArray<Arr>, index: number, arr: Arr) => Promise<any>,
->(arr: Arr, maxConcurrent: number, cb: F) => arr.map(
-  concurrentify(maxConcurrent, cb) as any,
-) as ReturnType<F>[];
+  F extends (
+    item: SimpleUnwrapArray<Arr>,
+    index: number,
+    arr: Arr
+  ) => Promise<any>
+>(
+  arr: Arr,
+  maxConcurrent: number,
+  cb: F
+) => arr.map(concurrentify(maxConcurrent, cb) as any) as ReturnType<F>[];
 
-
-export async function editFile(_filename: string, matched: string | RegExp, to: string): Promise<undefined | (() => Promise<void>)> {
-  const filename = isAbsolute(_filename) ? _filename : join(process.cwd(), _filename);
-  const content = await fs.readFile(filename, 'utf-8')
+export async function editFile(
+  _filename: string,
+  matched: string | RegExp,
+  to: string
+): Promise<undefined | (() => Promise<void>)> {
+  const filename = isAbsolute(_filename)
+    ? _filename
+    : join(process.cwd(), _filename);
+  const content = await fs.readFile(filename, 'utf-8');
 
   let newContent = content.replaceAll(matched, to);
 
-  if(content.length !== newContent.length || content !== newContent) {
+  if (content.length !== newContent.length || content !== newContent) {
     await fs.writeFile(filename, newContent);
 
     return async () => {
-      await fs.writeFile(filename, content)
-    }
+      await fs.writeFile(filename, content);
+    };
   }
 }

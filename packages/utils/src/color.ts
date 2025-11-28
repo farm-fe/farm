@@ -40,9 +40,12 @@ const enabled =
     (require != null && require('tty').isatty(1) && env.TERM !== 'dumb') ||
     'CI' in env);
 
-const createFormatter =
+export const createFormatter =
   (open: string, close: string, replace = open) =>
   (input: string) => {
+    if (open === '' || close === '') {
+      return input;
+    }
     const string = '' + input;
     const index = string.indexOf(close, open.length);
     return ~index

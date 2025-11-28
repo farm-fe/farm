@@ -108,7 +108,7 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
 
 function load(resource: Resource, query?: string): Promise<void> {
   if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
-    return loadResourceNode(resource); 
+    return loadResourceNode(resource);
   } else {
     if (loadedResources[resource.path] && !query) {
       // Skip inject Promise polyfill for runtime
@@ -120,13 +120,13 @@ function load(resource: Resource, query?: string): Promise<void> {
 
       return loadingResources[resource.path];
     }
-  
+
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
       const result = moduleSystem.p.b(
         'loadResource',
         resource
       );
-    
+
       if (result) {
         return result.then((res: ResourceLoadResult) => {
           if (res.success) {
@@ -141,7 +141,7 @@ function load(resource: Resource, query?: string): Promise<void> {
         });
       }
     }
-    
+
     return loadResource(resource, 0, query);
   }
 }
@@ -152,7 +152,7 @@ function loadResourceNode(resource: Resource) {
       'loadResource',
       resource
     );
-  
+
     if (result) {
       return result.then((res: ResourceLoadResult) => {
         if (!res.success && res.retryWithDefaultResourceLoader) {

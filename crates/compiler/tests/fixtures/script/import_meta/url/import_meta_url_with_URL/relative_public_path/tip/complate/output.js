@@ -1,4 +1,4 @@
-//foo_bar-47689c.txt?url:
+//foo_bar-47689c.txt:
  foo_bar
 
 //index.js:
@@ -16,7 +16,7 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "b334ec2f": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        exports.default = "/foo_bar-47689c.txt?url";
+        exports.default = "/foo_bar-47689c.txt";
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);

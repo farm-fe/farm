@@ -26,6 +26,7 @@ describe('resolveUserConfig', () => {
       clean: true,
       path: './dist',
       publicPath: '/',
+      externalGlobals: {},
       targetEnv: 'browser'
     });
     expect(config.compilation.lazyCompilation).toEqual(true);

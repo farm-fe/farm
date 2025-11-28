@@ -1,5 +1,56 @@
 # @farmfe/js-plugin-solid
 
+## 3.0.0-beta.10
+
+### Patch Changes
+
+- Updated dependencies [6fafa25]
+  - @farmfe/core@2.0.0-beta.10
+
+## 3.0.0-beta.9
+
+### Patch Changes
+
+- Updated dependencies [c4e6901]
+  - @farmfe/core@2.0.0-beta.9
+
+## 3.0.0-beta.8
+
+### Patch Changes
+
+- Updated dependencies [7266d47]
+  - @farmfe/core@2.0.0-beta.8
+
+## 3.0.0-beta.7
+
+### Patch Changes
+
+- Updated dependencies [4ef38cd]
+- Updated dependencies [4ef38cd]
+  - @farmfe/core@2.0.0-beta.7
+
+## 3.0.0-beta.6
+
+### Patch Changes
+
+- Updated dependencies [874f034]
+  - @farmfe/core@2.0.0-beta.6
+
+## 3.0.0-beta.5
+
+### Patch Changes
+
+- Updated dependencies [9021edf]
+- Updated dependencies [e560875]
+  - @farmfe/core@2.0.0-beta.5
+
+## 3.0.0-beta.4
+
+### Patch Changes
+
+- Updated dependencies [38b9673]
+  - @farmfe/core@2.0.0-beta.4
+
 ## 3.0.0-beta.3
 
 ### Patch Changes

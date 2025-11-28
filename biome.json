@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
   "vcs": {
     "clientKind": "git",
     "enabled": true,
@@ -7,25 +7,25 @@
     "defaultBranch": "main"
   },
   "files": {
-    "ignore": [
-      "**/node_modules/**",
-      "crates/**",
-      "*.vue",
-      "tsconfig.base.json",
-      "tsconfig.json",
-      "cspell.json",
-      "*.d.ts",
-      "packages/core/cjs/**",
-      "packages/runtime/**",
-      "packages/runtime-plugin-import-meta/**",
-      "packages/create-farm/templates/**",
-      "packages/create-farm-plugin/templates/**",
-      "rust-plugins/**",
-      "js-plugins/vue/**",
-      "e2e/**",
-      "js-plugins/solid/**",
-      "examples/**",
-      "**/*.{js,mjs,cjs}"
+    "includes": [
+      "**",
+      "!**/node_modules/**",
+      "!**/crates/**",
+      "!**/*.vue",
+      "!**/tsconfig.base.json",
+      "!**/tsconfig.json",
+      "!**/*.d.ts",
+      "!**/packages/core/cjs/**",
+      "!**/packages/create-farm/templates/**",
+      "!**/packages/create-farm-plugin/templates/**",
+      "!**/rust-plugins/**",
+      "!**/js-plugins/vue/**",
+      "!**/js-plugins/solid/**",
+      "!**/examples/**",
+      "!**/*.{js,mjs,cjs}",
+      "!cspell.json",
+      "!packages/runtime",
+      "!packages/runtime-plugin-import-meta"
     ],
     "ignoreUnknown": true
   },
@@ -37,13 +37,9 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "include": ["**/*.ts"],
-    "ignore": ["node_modules", "dist"]
+    "includes": ["**/*.ts", "!**/node_modules", "!**/dist"]
   },
-  "organizeImports": {
-    "enabled": true,
-    "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
@@ -51,10 +47,9 @@
       "complexity": {
         "noBannedTypes": "off",
         "noExtraBooleanCast": "error",
-        "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessTypeConstraint": "error",
-        "noWith": "error",
-        "noUselessCatch": "off"
+        "noUselessCatch": "off",
+        "noAdjacentSpacesInRegex": "error"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -64,7 +59,6 @@
         "noGlobalObjectCalls": "error",
         "noInnerDeclarations": "error",
         "noInvalidConstructorSuper": "error",
-        "noNewSymbol": "error",
         "noNonoctalDecimalEscape": "error",
         "noPrecisionLoss": "error",
         "noSelfAssign": "error",
@@ -79,7 +73,9 @@
         "noUnusedVariables": "off",
         "useIsNan": "error",
         "useValidForDirection": "error",
-        "useYield": "error"
+        "useYield": "error",
+        "noInvalidBuiltinInstantiation": "error",
+        "useValidTypeof": "error"
       },
       "style": {
         "noInferrableTypes": "error",
@@ -113,17 +109,18 @@
         "noUnsafeNegation": "error",
         "useGetterReturn": "error",
         "useNamespaceKeyword": "error",
-        "useValidTypeof": "error"
+        "noWith": "error"
       }
     },
-    "ignore": [
-      "**/binding/**",
-      "**/templates/**",
-      "**/dist/**",
-      "**/docs/**",
-      "**/node_modules/**",
-      "**/*.config.js",
-      "**/*.config.ts"
+    "includes": [
+      "**",
+      "!**/binding/**",
+      "!**/templates/**",
+      "!**/dist/**",
+      "!**/docs/**",
+      "!**/node_modules/**",
+      "!**/*.config.js",
+      "!**/*.config.ts"
     ]
   },
   "javascript": {

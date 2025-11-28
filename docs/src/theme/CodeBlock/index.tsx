@@ -1,10 +1,11 @@
-import type CodeBlockType from '@theme/CodeBlock';
-import type { WrapperProps } from '@docusaurus/types';
-import React, { useEffect, useState } from 'react';
-import styles from './index.module.css'
-import { codeToHtml } from 'shiki';
 import { useColorMode } from '@docusaurus/theme-common';
+import type { WrapperProps } from '@docusaurus/types';
+import type CodeBlockType from '@theme/CodeBlock';
+import React, { useEffect, useState } from 'react';
+import { codeToHtml } from 'shiki';
+import styles from './index.module.css'
 import { svgs } from './svg';
+
 type Props = WrapperProps<typeof CodeBlockType>;
 
 export default function CodeBlockWrapper(props: Props): JSX.Element {

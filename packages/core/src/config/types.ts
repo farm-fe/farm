@@ -1,11 +1,9 @@
 import { SecureServerOptions } from 'node:http2';
-import type Connect from 'connect';
-
-import { CompilationMode, PreviewServer, Server } from '../index.js';
-
-import type { OutgoingHttpHeaders } from 'http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type { WatchOptions } from 'chokidar';
+import type Connect from 'connect';
+import type { OutgoingHttpHeaders } from 'http';
+import { CompilationMode, PreviewServer, Server } from '../index.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import { ProxyOptions } from '../server/middlewares/proxy.js';
@@ -404,15 +402,6 @@ export interface GlobalCliOptions {
   mode?: string;
 }
 
-export interface FarmCLIServerOptions {
-  port?: number;
-  open?: boolean;
-  https?: SecureServerOptions;
-  hmr?: boolean;
-  host?: boolean | string;
-  strictPort?: boolean;
-}
-
 export interface FarmCLIBuildOptions {
   outDir?: string;
   sourcemap?: boolean;
@@ -433,7 +422,7 @@ export interface FarmCliOptions
   compilation?: Config['config'];
   mode?: string;
   root?: string;
-  server?: FarmCLIServerOptions;
+  server?: UserConfig['server'];
   clearScreen?: boolean;
 }
 

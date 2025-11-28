@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync } from 'child_process';
 import { execa } from 'execa';
 import open from 'open';
-import { Logger, cyan, red } from '../utils/index.js';
+import { cyan, Logger, red } from '../utils/index.js';
 
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';

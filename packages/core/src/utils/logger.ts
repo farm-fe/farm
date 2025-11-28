@@ -1,11 +1,11 @@
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { ResolvedUserConfig } from '../config/types.js';
 import {
-  ColorFunction,
-  PersistentCacheBrand,
   bold,
+  ColorFunction,
   colors,
-  green
+  green,
+  PersistentCacheBrand
 } from './color.js';
 import { ResolvedServerUrls } from './http.js';
 import { getShortName } from './path.js';

@@ -1,12 +1,13 @@
-import { ProgressBar } from "./ProgressBar";
-import farmCard from "../Card";
-import { useInView } from "react-intersection-observer";
-import styles from "./index.module.css";
-import Translate from "@docusaurus/Translate";
 import Link from "@docusaurus/Link";
-import React, { useState, useMemo } from "react";
+import Translate from "@docusaurus/Translate";
 import clsx from "clsx";
+import React, { useMemo, useState } from "react";
+import { useInView } from "react-intersection-observer";
+import farmCard from "../Card";
 import ShinyTextEx from "../MagicUi/shiny-text";
+import styles from "./index.module.css";
+import { ProgressBar } from "./ProgressBar";
+
 const BENCHMARK_DATA = {
   ColdStart: [
     {

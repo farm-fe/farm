@@ -3,10 +3,10 @@ import { fileURLToPath } from 'url';
 import { test } from 'vitest';
 import {
   Compiler,
-  UserConfig,
   normalizeDevServerConfig,
   normalizeUserCompilationConfig,
-  resolveUserConfig
+  resolveUserConfig,
+  UserConfig
 } from '../src/index.js';
 
 // just make sure the binding works

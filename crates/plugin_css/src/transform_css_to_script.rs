@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::cache_store::CacheStoreKey,
+  cache::store::CacheStoreKey,
   context::CompilationContext,
   deserialize,
   module::{
@@ -11,7 +11,7 @@ use farmfe_core::{
     },
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
-  plugin::{PluginFinalizeModuleHookParam, ResolveKind},
+  plugin::{PluginFinalizeModuleHookParam, PluginProcessModuleHookParam, ResolveKind},
   rayon::prelude::*,
   serialize,
   swc_common::{Globals, Mark},
@@ -147,7 +147,12 @@ pub fn transform_css_to_script_modules(
           .source_map_chain = vec![];
       }
 
-      let css_code = wrapper_style_load(&css_code, module_id.to_string(), &css_deps, src_map);
+      let css_code = wrapper_style_load(
+        &css_code,
+        module_id.id(context.config.mode),
+        &css_deps,
+        src_map,
+      );
       let css_code = Arc::new(css_code);
 
       {
@@ -200,6 +205,21 @@ pub fn transform_css_to_script_modules(
           })));
 
           module.module_type = ModuleType::Js;
+
+          // call process_module hook
+          context
+            .plugin_driver
+            .process_module(
+              &mut PluginProcessModuleHookParam {
+                module_id: &module_id,
+                module_type: &module.module_type.clone(),
+                content: &mut module.content,
+                meta: &mut module.meta,
+                source_map_chain: &mut module.source_map_chain,
+              },
+              context,
+            )
+            .unwrap();
 
           // call finalize_module to update meta
           context

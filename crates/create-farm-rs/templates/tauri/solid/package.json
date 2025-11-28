@@ -16,8 +16,8 @@
   },
   "devDependencies": {
     "typescript": "^5.0.2",
-    "@farmfe/cli": "^1.0.4",
-    "@farmfe/core": "^1.6.7",
+    "@farmfe/cli": "beta",
+    "@farmfe/core": "beta",
     "solid-refresh": "^0.7.5",
     "vite-plugin-solid": "^2.8.0",
     "@tauri-apps/cli": "^1"

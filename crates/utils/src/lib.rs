@@ -9,6 +9,7 @@ pub use pathdiff::diff_paths;
 
 pub mod bytes_str;
 pub mod hash;
+pub use nanoid;
 
 pub const PARSE_QUERY_TRUE: &str = "";
 

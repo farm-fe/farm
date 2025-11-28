@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- e560875: Upgrade all templates of create-farm to v2 beta
+
 ## 2.0.0-beta.0
 
 ### Major Changes

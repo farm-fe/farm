@@ -69,6 +69,7 @@
     "csspart",
     "cssvars",
     "ctxt",
+    "ctypes",
     "Cuph",
     "dashmap",
     "dedupe",
@@ -291,6 +292,7 @@
     "typedotenv",
     "typeofs",
     "Ujanq",
+    "ultracite",
     "unioned",
     "unocss",
     "unplugin",
@@ -341,6 +343,7 @@
     "**/CHANGELOG.md",
     "**/gitignore",
     "**/test_**",
-    "packages/core/binding/binding.cjs"
+    "packages/core/binding/binding.cjs",
+    "packages/create-farm/index.js"
   ]
 }

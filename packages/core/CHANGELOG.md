@@ -1,5 +1,58 @@
 # @farmfe/core
 
+## 2.0.0-beta.10
+
+### Patch Changes
+
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+- Updated dependencies [6fafa25]
+  - @farmfe/runtime-plugin-hmr@4.0.0-beta.2
+
+## 2.0.0-beta.9
+
+### Patch Changes
+
+- c4e6901: Fix: incorrect html fallback and hmr port doesn't work as expected
+
+## 2.0.0-beta.8
+
+### Patch Changes
+
+- 7266d47: Fix: cjs require doesn't be handled correctly when targetEnv is library
+- Updated dependencies [47d569d]
+  - @farmfe/utils@2.0.0-beta.1
+  - @farmfe/plugin-replace-dirname@2.0.0-beta.0
+
+## 2.0.0-beta.7
+
+### Patch Changes
+
+- 4ef38cd: Feat(core): Support output.format=umd
+- 4ef38cd: Feat(core): support css.transformToScript
+
+## 2.0.0-beta.6
+
+### Patch Changes
+
+- 874f034: feat: add env manual control thread max nums
+
+## 2.0.0-beta.5
+
+### Patch Changes
+
+- 9021edf: improve cache perf, support js cache api
+- e560875: Fix issues:
+
+  1. Move all custom config from `config.custom` to the corresponding config field. For example, move `config.custom.external` to `config.external`.
+  2. Fix visualizer plugin not working issue.
+  3. `?url` does not be removed in plugin static asset
+
+## 2.0.0-beta.4
+
+### Patch Changes
+
+- 38b9673: Fix(v2-beta): tailwindcss next bugs
+
 ## 2.0.0-beta.3
 
 ### Patch Changes

@@ -1,21 +1,17 @@
 import path from 'node:path/posix';
-
-import mime from 'mime';
+import type Connect from 'connect';
+import type { IncomingMessage } from 'http';
 import sirv from 'sirv';
-
 import { Compiler } from '../../compiler/index.js';
 import {
   cleanUrl,
   generateFileTree,
   generateFileTreeHtml
 } from '../../utils/index.js';
+import type { Server } from '../index.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
 import { sirvOptions } from './static.js';
-
-import type { IncomingMessage } from 'http';
-import type Connect from 'connect';
-import type { Server } from '../index.js';
 
 type RealResourcePath = {
   resourcePath: string;
@@ -66,34 +62,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       // need judge if resource is a deps node_modules set cache-control to 1 year
       const headers = config.server.headers;
       send(req, res, resourceResult.resource, url, { headers });
-      return;
-    }
-
-    // publicPath
-    const { resourceWithoutPublicPath } = normalizePathByPublicPath(
-      publicPath,
-      url
-    );
-
-    const extension = path.extname(resourceWithoutPublicPath).toLowerCase();
-    const mimeType = mime.getType(extension) || 'application/octet-stream';
-
-    const isHtmlRequest =
-      mimeType === 'text/html' ||
-      (!extension && req.headers.accept?.includes('text/html'));
-
-    if (!isHtmlRequest) {
-      const rootResource = compiler.resource(
-        path.basename(resourceWithoutPublicPath)
-      );
-      if (rootResource) {
-        send(req, res, rootResource, url, {
-          headers: config.server.headers
-        });
-        return;
-      }
-      res.statusCode = 404;
-      res.end('Not found');
       return;
     }
 

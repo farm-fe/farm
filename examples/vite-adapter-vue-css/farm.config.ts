@@ -6,13 +6,18 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(({ mode }) => {
   return {
     server: {
-      port: 3001
+      port: 3001,
+      hmr: {
+        port: 3002,
+        host: 'localhost',
+        protocol: 'ws'
+      }
     },
     compilation: {
       input: {
         index: './index.html'
       },
-      persistentCache: false,
+      persistentCache: true,
       output: {
         path: 'dist',
         publicPath: '/',

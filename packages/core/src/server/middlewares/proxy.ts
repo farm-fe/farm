@@ -1,12 +1,9 @@
-import httpProxy from 'http-proxy';
-
-import { ResolvedUserConfig } from '../../config/types.js';
-
 import type * as http from 'node:http';
 import type * as net from 'node:net';
-import type Server from 'http-proxy';
-
 import type Connect from 'connect';
+import type Server from 'http-proxy';
+import httpProxy from 'http-proxy';
+import { ResolvedUserConfig } from '../../config/types.js';
 import { CommonServerOptions } from '../http.js';
 import type { Server as DevServer, HttpServer } from '../index.js';
 import { PreviewServer } from '../preview.js';
@@ -144,7 +141,7 @@ export function proxyMiddleware(
         }
 
         if (opts.rewrite) {
-          req.url = opts.rewrite(req.url!);
+          req.url = opts.rewrite(req.url as string);
         }
 
         proxy.web(req, res, opts);

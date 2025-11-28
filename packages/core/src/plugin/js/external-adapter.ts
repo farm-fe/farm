@@ -1,4 +1,3 @@
-import { CUSTOM_KEYS } from '../../config/constants.js';
 import {
   mergeCustomExternal,
   partialExternal
@@ -22,15 +21,14 @@ export function externalAdapter(): JsPlugin {
         isArray(config.compilation.external)
       ) {
         let [stringExternal, recordExternal] = mergeCustomExternal(
-          config?.compilation,
           partialExternal(config.compilation.external)
         );
 
         return {
           compilation: {
             external: stringExternal,
-            custom: {
-              [CUSTOM_KEYS.external_record]: JSON.stringify(recordExternal)
+            output: {
+              externalGlobals: recordExternal
             }
           }
         };

@@ -1,24 +1,33 @@
+use std::sync::Arc;
+
 use dashmap::mapref::one::{Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
+pub use module_metadata::ModuleMetadataStore;
 
-use crate::config::Mode;
+use crate::cache::scope::{CacheScopeStore, IdType};
 use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
+use crate::Cacheable;
 
 use immutable_modules::ImmutableModulesMemoryStore;
 use module_memory_store::ModuleMemoryStore;
 use mutable_modules::MutableModulesMemoryStore;
 
+use super::CacheContext;
+
 pub mod immutable_modules;
 pub mod module_memory_store;
+mod module_metadata;
 pub mod mutable_modules;
 
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
+  context: Arc<CacheContext>,
+  scope: CacheScopeStore,
 }
 
 #[cache_item]
@@ -84,10 +93,12 @@ impl CachedModule {
 }
 
 impl ModuleCacheManager {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
-      immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
+      mutable_modules_store: MutableModulesMemoryStore::new(context.clone()),
+      immutable_modules_store: ImmutableModulesMemoryStore::new(context.clone()),
+      scope: CacheScopeStore::new(context.clone()),
+      context,
     }
   }
 
@@ -122,50 +133,124 @@ impl ModuleCacheManager {
       .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
-  pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
-    if let Some(module) = self.mutable_modules_store.get_cache_ref(key) {
-      return module;
-    }
-
+  fn get_cache_option_ref(&self, key: &ModuleId) -> Option<Ref<'_, ModuleId, CachedModule>> {
     self
-      .immutable_modules_store
+      .mutable_modules_store
       .get_cache_ref(key)
+      .or_else(|| self.immutable_modules_store.get_cache_ref(key))
+  }
+
+  pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
+    self
+      .get_cache_option_ref(key)
       .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
-  pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
-    if let Some(module) = self.mutable_modules_store.get_cache_mut_ref(key) {
-      return module;
+  pub fn get_cache_mut_option_ref(
+    &self,
+    key: &ModuleId,
+  ) -> Option<RefMut<'_, ModuleId, CachedModule>> {
+    if !self.context.cache_enable {
+      return None;
     }
 
     self
-      .immutable_modules_store
+      .mutable_modules_store
       .get_cache_mut_ref(key)
+      .or_else(|| self.immutable_modules_store.get_cache_mut_ref(key))
+  }
+
+  pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
+    self
+      .get_cache_mut_option_ref(key)
       .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
   /// Write the cache map to the disk.
   pub fn write_cache(&self) {
-    let thread_pool = rayon::ThreadPoolBuilder::new()
-      .num_threads(2)
-      .build()
-      .unwrap();
-
-    thread_pool.install(|| {
-      rayon::join(
-        || self.mutable_modules_store.write_cache(),
-        || self.immutable_modules_store.write_cache(),
-      );
-    });
+    rayon::join(
+      || self.mutable_modules_store.write_cache(),
+      || {
+        rayon::join(
+          || self.immutable_modules_store.write_cache(),
+          || {
+            self.scope.write_cache();
+          },
+        )
+      },
+    );
   }
 
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
+    self.scope.remove_by_reference(&key.to_string());
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
     self.mutable_modules_store.cache_outdated(key)
       || self.immutable_modules_store.cache_outdated(key)
+  }
+
+  pub fn read_metadata<V: Cacheable>(
+    &self,
+    name: &str,
+    options: Option<MetadataOption>,
+  ) -> Option<Box<V>> {
+    self.scope.get(name, options.map(|o| o.into()).as_ref())
+  }
+
+  pub fn read_scope<V: Cacheable>(&self, name: &str) -> Vec<V> {
+    self.scope.get_scope(name)
+  }
+
+  pub fn write_metadata<V: Cacheable>(
+    &self,
+    name: &str,
+    value: V,
+    options: Option<MetadataOption>,
+  ) {
+    self.scope.set(name, value, options.map(|o| o.into()));
+  }
+}
+
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct MetadataOption {
+  pub scope: Option<Vec<String>>,
+  pub refer: Option<Vec<String>>,
+}
+
+impl MetadataOption {
+  pub fn new() -> Self {
+    Default::default()
+  }
+
+  pub fn scope(mut self, scope: Vec<String>) -> Self {
+    self.scope = Some(scope);
+    self
+  }
+
+  pub fn refer<T>(mut self, refer: Vec<T>) -> Self
+  where
+    T: ToString,
+  {
+    self.refer = Some(refer.into_iter().map(|v| v.to_string()).collect());
+    self
+  }
+}
+
+impl From<MetadataOption> for Vec<IdType> {
+  fn from(value: MetadataOption) -> Self {
+    let mut id_types = vec![];
+
+    if let Some(scopes) = value.scope {
+      id_types.extend(scopes.into_iter().map(IdType::Scope));
+    }
+
+    if let Some(refers) = value.refer {
+      id_types.extend(refers.into_iter().map(IdType::Reference));
+    }
+
+    id_types
   }
 }

@@ -1,11 +1,8 @@
 import http from 'node:http';
-
+import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
-
 import { Logger } from '../utils/logger.js';
-
-import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import type { UserConfig } from './types.js';
 
 enum TargetEnv {
@@ -53,6 +50,14 @@ const pathFilterSchema = z.union([
     .args(z.string(), z.instanceof(http.IncomingMessage))
     .returns(z.boolean())
 ]);
+const moduleFormatSchema = z.enum([
+  'cjs',
+  'esm',
+  'umd',
+  'iife',
+  'system',
+  'amd'
+]);
 
 const outputSchema = z
   .object({
@@ -63,10 +68,12 @@ const outputSchema = z
     assetsFilename: z.string().optional(),
     targetEnv: z.nativeEnum(TargetEnv).optional(),
     format: z
-      .union([z.enum(['cjs', 'esm']), z.array(z.enum(['cjs', 'esm']))])
+      .union([moduleFormatSchema, z.array(moduleFormatSchema)])
       .optional(),
     showFileSize: z.boolean().optional(),
-    asciiOnly: z.boolean().optional()
+    asciiOnly: z.boolean().optional(),
+    externalGlobals: z.record(z.string()).optional(),
+    name: z.string().optional()
   })
   .strict()
   .optional();

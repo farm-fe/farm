@@ -10,9 +10,9 @@ import {
 } from '../config/index.js';
 import { isArray, isObject } from '../utils/index.js';
 import merge from '../utils/merge.js';
+import { JS_PLUGIN_BRIDGE_HOOKS, MetadataApiName } from './constant.js';
 import { convertPlugin, handleVitePlugins } from './js/index.js';
 import { rustPluginResolver } from './rust/index.js';
-
 import type { JsPlugin } from './type.js';
 
 export async function resolveVitePlugins(
@@ -154,6 +154,133 @@ export async function resolveConfigResolvedHook(
   }
 }
 
+const processedPlugin: WeakSet<any> = new WeakSet<any>();
+
+function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
+  for (const plugin of plugins) {
+    for (const key of Object.keys(plugin)) {
+      const hook = plugin[key as keyof JsPlugin];
+      if (JS_PLUGIN_BRIDGE_HOOKS.has(key)) {
+        const [callback, set] =
+          typeof hook === 'object'
+            ? ([
+                hook.executor,
+                (callback: any) => (hook.executor = callback)
+              ] as const)
+            : // @ts-ignore
+              ([hook, (callback: any) => (plugin[key] = callback)] as const);
+
+        if (typeof callback === 'function') {
+          function proxyHookCallback(...args: any) {
+            let context = args[1];
+
+            if (context) {
+              const proxyKeys = [
+                MetadataApiName.ReadMetadata,
+                MetadataApiName.WriteMetadata,
+                MetadataApiName.ReadMetadataByScope
+              ] as const;
+              const nativeFunction = proxyKeys.reduce(
+                (res, k) => ({
+                  [k]: context[k],
+                  ...res
+                }),
+                {} as Record<(typeof proxyKeys)[number], Function>
+              );
+              function tryProxyMethod(
+                name: keyof typeof nativeFunction,
+                fn: any
+              ) {
+                if (
+                  nativeFunction[name] != null &&
+                  processedPlugin.has(nativeFunction[name])
+                ) {
+                  return;
+                }
+
+                context[name] = fn;
+              }
+
+              tryProxyMethod(
+                MetadataApiName.ReadMetadata,
+                function (...args: any[]) {
+                  const result = nativeFunction[
+                    MetadataApiName.ReadMetadata
+                  ].apply(this, args);
+
+                  const returnValue = (value: any) => {
+                    return value && typeof value === 'string'
+                      ? JSON.parse(value)
+                      : value;
+                  };
+
+                  if (result && typeof result.then === 'function') {
+                    return result.then(returnValue);
+                  }
+
+                  if (result && typeof result === 'string') {
+                    return returnValue(result);
+                  }
+
+                  return result;
+                }
+              );
+
+              tryProxyMethod(
+                MetadataApiName.WriteMetadata,
+                function (...args: any[]) {
+                  if (args[1] && typeof args[1] !== 'string') {
+                    args[1] = JSON.stringify(args[1]);
+                  }
+                  return nativeFunction[MetadataApiName.WriteMetadata].apply(
+                    this,
+                    args
+                  );
+                }
+              );
+
+              tryProxyMethod(
+                MetadataApiName.ReadMetadataByScope,
+                function (...args: any[]) {
+                  const result = nativeFunction[
+                    MetadataApiName.ReadMetadataByScope
+                  ].apply(this, args);
+                  const returnValue = (result: any) => {
+                    if (!Array.isArray(result)) {
+                      return result;
+                    }
+
+                    return result.map((item) =>
+                      item && typeof item === 'string' ? JSON.parse(item) : item
+                    );
+                  };
+
+                  if (result && typeof result.then === 'function') {
+                    return result.then(returnValue);
+                  }
+
+                  if (result) {
+                    return returnValue(result);
+                  }
+
+                  return result;
+                }
+              );
+            }
+
+            // @ts-ignore
+            return callback.apply(this, args);
+          }
+
+          set(proxyHookCallback);
+        }
+      }
+    }
+  }
+
+  return plugins;
+}
+
 export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   // TODO The priority needs to be redefined.
   const DEFAULT_PRIORITY = 100;
@@ -179,7 +306,7 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
       plugin?.priority === DEFAULT_PRIORITY
   );
 
-  return [...prePlugins, ...normalPlugins, ...postPlugins];
+  return proxyContext([...prePlugins, ...normalPlugins, ...postPlugins]);
 }
 
 export function getSortedPluginHooksBindThis(

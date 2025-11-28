@@ -5,12 +5,12 @@ import path from 'node:path';
  * Copyright Farm and All Contributors
  * Copyright (c) Tailwind Labs, Inc.
  */
-import { JsPlugin, ResolvedUserConfig, Resolver, logger } from '@farmfe/core';
+import { JsPlugin, logger, ResolvedUserConfig, Resolver } from '@farmfe/core';
 import {
-  Features,
-  Instrumentation,
   compile,
   env,
+  Features,
+  Instrumentation,
   optimize,
   toSourceMap
 } from '@tailwindcss/node';
@@ -23,13 +23,16 @@ const COMMON_JS_PROXY_RE = /\?commonjs-proxy/;
 const INLINE_STYLE_ID_RE = /[?&]index\=\d+\.css$/;
 
 export interface Options {
-  filters: {
+  filters?: {
     resolvedPaths?: string[];
     moduleTypes?: string[];
   };
 }
 
-export default function tailwindcss(options: Options): JsPlugin[] {
+const CANDIDATE_NAME = 'tailwindcss:candidate';
+const CANDIDATE_SCOPE = 'tailwindcss:candidateScope';
+
+export default function tailwindcss(options: Options = {}): JsPlugin[] {
   let config: ResolvedUserConfig | null = null;
   let minify = false;
 
@@ -70,27 +73,14 @@ export default function tailwindcss(options: Options): JsPlugin[] {
   const scanner = new Scanner({});
   // List of all candidates that were being returned by the root scanner during
   // the lifetime of the root.
-  const candidatesMap: Map<string, Set<string>> = new Map();
+  // const candidatesMap: Map<string, Set<string>> = new Map();
+  const candidatesModuleList: Set<string> = new Set();
 
   return [
     {
       // Step 1: Scan source files for candidates
       name: '@farmfe/js-plugin-tailwindcss:scan',
       priority: 101,
-
-      async config(config) {
-        config.compilation ??= {};
-
-        if (config.compilation.persistentCache !== false) {
-          config.compilation.persistentCache = false;
-
-          logger.warn(
-            'persistentCache is disabled cause tailwindcss plugin is not compatible with persistentCache for now'
-          );
-        }
-
-        return config;
-      },
 
       async configResolved(_config) {
         config = _config;
@@ -99,19 +89,32 @@ export default function tailwindcss(options: Options): JsPlugin[] {
 
       transform: {
         filters: options?.filters ?? { resolvedPaths: ['!node_modules/'] },
-        async executor(param) {
-          for (let candidate of scanner.scanFiles([
-            {
-              content: param.content,
-              extension: getExtension(param.resolvedPath)
-            }
-          ])) {
-            if (!candidatesMap.has(param.resolvedPath)) {
-              candidatesMap.set(param.resolvedPath, new Set());
-            }
+        async executor(param, context) {
+          const candidateList = [
+            ...scanner.scanFiles([
+              {
+                content: param.content,
+                extension: getExtension(param.resolvedPath)
+              }
+            ])
+          ];
 
-            candidatesMap.get(param.resolvedPath)?.add(candidate);
-          }
+          const candidate =
+            context?.readMetadata<string[]>(CANDIDATE_NAME, {
+              refer: [param.resolvedPath],
+              scope: [CANDIDATE_SCOPE]
+            }) ?? [];
+
+          context?.writeMetadata(
+            param.resolvedPath,
+            [...new Set(candidateList.concat(candidate))],
+            {
+              refer: [param.resolvedPath],
+              scope: [CANDIDATE_SCOPE]
+            }
+          );
+
+          candidatesModuleList.add(param.resolvedPath);
 
           return {
             content: param.content
@@ -122,7 +125,7 @@ export default function tailwindcss(options: Options): JsPlugin[] {
 
     {
       // Step 2 (serve mode): Generate CSS
-      name: '@farmfe/js-plugin-tailwindcss:generate:generate',
+      name: '@farmfe/js-plugin-tailwindcss:generate',
       priority: 101,
 
       freezeModule: {
@@ -136,16 +139,20 @@ export default function tailwindcss(options: Options): JsPlugin[] {
           let root = roots.get(param.moduleId);
 
           // add watch file for scanned files
-          for (const resolvedPath of candidatesMap.keys()) {
+          for (const resolvedPath of candidatesModuleList) {
             context?.addWatchFile(param.moduleId, resolvedPath);
           }
+          const candidateList = (
+            context?.readMetadataByScope<string[]>(CANDIDATE_SCOPE) ?? []
+          ).flatMap((v) => v);
 
           let result = await root.generate(
             param.content,
             (file) => context?.addWatchFile?.(param.moduleId, file),
             I,
-            new Set([...candidatesMap.values()].flatMap((v) => [...v]))
+            new Set(candidateList)
           );
+
           if (!result) {
             roots.delete(param.moduleId);
             return {
@@ -154,14 +161,12 @@ export default function tailwindcss(options: Options): JsPlugin[] {
           }
           DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Generate CSS');
 
-          if (config?.mode !== 'development') {
-            DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
-            result = optimize(result.code, {
-              minify,
-              map: result.map
-            });
-            DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
-          }
+          DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
+          result = optimize(result.code, {
+            minify,
+            map: result.map
+          });
+          DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
 
           return typeof result === 'string'
             ? {
@@ -260,7 +265,10 @@ class Root {
       }
     | false
   > {
-    let inputPath = idToPath(this.id);
+    // handle virtual id
+    let inputPath = path.isAbsolute(this.id)
+      ? idToPath(this.id)
+      : idToPath(path.join(this.base, this.id));
 
     function addWatchFile(file: string) {
       // Don't watch the input file since it's already a dependency anc causes

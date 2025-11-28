@@ -51,7 +51,11 @@ export type FreeModuleParam = PluginProcessModuleParams & {
   ][];
 };
 
-export interface CompilationContext {
+export interface CompilationContext
+  extends Pick<
+    Compiler,
+    'writeMetadata' | 'readMetadata' | 'readMetadataByScope'
+  > {
   resolve(
     param: PluginResolveHookParam,
     hookContext: { meta: Record<string, unknown>; caller: string }
@@ -256,12 +260,12 @@ export interface JsPlugin {
   };
 }
 
-export { rustPluginResolver } from './rust/rustPluginResolver.js';
 export type {
-  PluginResolveHookParam,
-  PluginResolveHookResult,
   PluginLoadHookParam,
   PluginLoadHookResult,
+  PluginResolveHookParam,
+  PluginResolveHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../types/binding.js';
+export { rustPluginResolver } from './rust/rustPluginResolver.js';

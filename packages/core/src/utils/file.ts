@@ -1,5 +1,5 @@
-import fs from 'fs';
 import fsp from 'node:fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { normalizePath } from './share.js';
 

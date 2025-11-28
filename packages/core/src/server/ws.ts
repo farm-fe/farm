@@ -1,19 +1,17 @@
-import { STATUS_CODES, createServer as createHttpServer } from 'node:http';
-import { createServer as createHttpsServer } from 'node:https';
-import path from 'node:path';
-import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
-
-import { ILogger, Logger } from '../utils/logger.js';
-import { isObject } from '../utils/share.js';
-
 import type { IncomingMessage, Server } from 'node:http';
+import { createServer as createHttpServer, STATUS_CODES } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import type { Socket } from 'node:net';
+import path from 'node:path';
 import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRaw } from 'ws';
-import type { WebSocket as WebSocketTypes } from '../types/ws.js';
-
+import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
+import { DEFAULT_HMR_OPTIONS } from '../config/constants.js';
 import { ResolvedUserConfig } from '../config/types.js';
+import type { WebSocket as WebSocketTypes } from '../types/ws.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
+import { ILogger, Logger } from '../utils/logger.js';
+import { isObject } from '../utils/share.js';
 import type { Server as FarmDevServer, ServerConfig } from './index.js';
 import {
   CustomPayload,
@@ -174,7 +172,7 @@ export class WsServer {
     this.httpServer =
       hmrServer || (portsAreCompatible && this.devServer.httpServer);
 
-    this.port = (hmrPort as number) || 9000;
+    this.port = (hmrPort as number) || DEFAULT_HMR_OPTIONS.port;
     this.host = ((hmr && hmr.host) as string) || undefined;
 
     if (this.httpServer) {
@@ -207,6 +205,7 @@ export class WsServer {
           });
         }
       };
+
       this.httpServer.on('upgrade', this.hmrServerWsListener);
     } else {
       // http server request handler keeps the same with
@@ -234,6 +233,9 @@ export class WsServer {
       } else {
         this.wsHttpServer = createHttpServer(route);
       }
+
+      this.wsHttpServer.listen(this.port, this.host);
+
       // vite dev server in middleware mode
       // need to call ws listen manually
       this.wss = new WebSocketServerRaw({ server: this.wsHttpServer });
@@ -242,24 +244,32 @@ export class WsServer {
     this.wss.on('connection', (socket) => {
       socket.on('message', (raw) => {
         if (!this.customListeners.size) return;
+
         let parsed: any;
+
         try {
           parsed = JSON.parse(String(raw));
         } catch {
           this.logger.error('Failed to parse WebSocket message: ' + raw);
         }
+
         // transform vite js-update to farm update
         if (parsed?.type === 'js-update' && parsed?.path) {
           this.devServer.hmrEngine.hmrUpdate(parsed.path, true);
           return;
         }
+
         if (!parsed || parsed.type !== WS_CUSTOM_EVENT_TYPE || !parsed.event)
           return;
+
         const listeners = this.customListeners.get(parsed.event);
+
         if (!listeners?.size) return;
+
         const client = this.#getSocketClient(socket);
         listeners.forEach((listener) => listener(parsed.data, client));
       });
+
       socket.on('error', (err) => {
         throw new Error(`WebSocket error: \n${err.stack}`);
       });
@@ -274,7 +284,9 @@ export class WsServer {
 
     this.wss.on('error', (e: Error & { code: string }) => {
       if (e.code === 'EADDRINUSE') {
-        throw new Error('WebSocket server error: Port is already in use');
+        throw new Error(
+          'WebSocket server error: Port is already in use. Please set a different port using the `server.hmr.port` option.'
+        );
       } else {
         throw new Error(`WebSocket server error ${e.stack || e.message}`);
       }

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- e0db4b0: discern deno
+- e0db4b0: node args parse
+
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 338262c: 1. fix deno create 2. add dry-run flag
+
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- e560875: Upgrade all templates of create-farm to v2 beta
+
 ## 2.0.0-beta.0
 
 ### Major Changes

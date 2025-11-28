@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-tailwindcss",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.10",
   "description": "support tailwindcss for farm.",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
@@ -9,7 +9,8 @@
   "exports": {
     ".": {
       "import": "./dist/esm/index.mjs",
-      "require": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.cjs",
+      "types": "./dist/index.d.ts"
     }
   },
   "scripts": {

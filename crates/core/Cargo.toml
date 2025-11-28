@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_core"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -14,12 +14,16 @@ readme = "README.md"
 no-default-features = true
 
 [dependencies]
-farmfe_macro_cache_item = { version = "2.0.0", path = "../macro_cache_item" }
-farmfe_utils = { version = "2.0.0", path = "../utils" }
+farmfe_macro_cache_item = { version = "2.1.0", path = "../macro_cache_item" }
+farmfe_utils = { version = "2.1.0", path = "../utils" }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_regex = "1.1.0"
-parking_lot = { version = "0.12", features = ["deadlock_detection"] }
+parking_lot = { version = "0.12", features = [
+  "deadlock_detection",
+  "arc_lock",
+] }
+itertools = "0.14.0"
 relative-path = "2.0.1"
 dashmap = "6.1.0"
 blake2 = "0.10"

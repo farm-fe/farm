@@ -4,10 +4,10 @@ import path from 'node:path';
 // TODO: submit a PR to farm(export default farm)
 import {
   type FarmCliOptions,
+  build as farmBuild,
   type JsPlugin,
   type Server,
-  type UserConfig,
-  build as farmBuild
+  type UserConfig
 } from '@farmfe/core';
 
 export interface BuildOptions {

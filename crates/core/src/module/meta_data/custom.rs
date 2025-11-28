@@ -36,6 +36,55 @@ struct InternalCustomMetaDataMap {
   bytes_map: HashMap<String, Vec<u8>>,
 }
 
+impl InternalCustomMetaDataMap {
+  #[inline]
+  fn remove_cache(&mut self, key: &str) {
+    self.map.remove(key);
+    self.bytes_map.remove(key);
+  }
+
+  #[inline]
+  fn get_mut<T: Cacheable>(&mut self, key: &str) -> Option<&mut T> {
+    if let Some(bytes) = self.bytes_map.remove(key) {
+      let value = T::deserialize_bytes(bytes).unwrap();
+      self.map.insert(key.to_string(), value);
+    }
+
+    self.map.get_mut(key).and_then(|v| v.downcast_mut::<T>())
+  }
+
+  #[inline]
+  fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
+    if let Some(v) = self.map.get(key) {
+      let bytes = v.serialize_bytes().ok()?;
+      return T::deserialize_bytes(bytes).ok()?.downcast::<T>().ok();
+    }
+
+    if let Some(bytes) = self.bytes_map.get(key) {
+      let value = T::deserialize_bytes(bytes.clone()).unwrap();
+      return value.downcast::<T>().ok();
+    }
+
+    None
+  }
+
+  #[inline]
+  fn get_ref<T: Cacheable>(&mut self, key: &str) -> Option<&T> {
+    if let Some(v) = self.bytes_map.remove(key) {
+      let value = T::deserialize_bytes(v).unwrap();
+      self.map.insert(key.to_string(), value);
+    }
+
+    self.map.get(key).and_then(|v| v.downcast_ref::<T>())
+  }
+
+  #[inline]
+  fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
+    self.bytes_map.remove(&key);
+    self.map.insert(key, value);
+  }
+}
+
 #[derive(Default)]
 #[cache_item]
 pub struct CustomMetaDataMap {
@@ -75,49 +124,23 @@ impl CustomMetaDataMap {
   }
 
   pub fn get_mut<T: Cacheable>(&mut self, key: &str) -> Option<&mut T> {
-    if let Some(bytes) = self.internal.bytes_map.remove(key) {
-      let value = T::deserialize_bytes(bytes).unwrap();
-      self.internal.map.insert(key.to_string(), value);
-    }
-
-    self
-      .internal
-      .map
-      .get_mut(key)
-      .and_then(|v| v.downcast_mut::<T>())
+    self.internal.get_mut::<T>(key)
   }
 
   pub fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
-    if let Some(v) = self.internal.map.get(key) {
-      let bytes = v.serialize_bytes().ok()?;
-
-      return T::deserialize_bytes(bytes).ok()?.downcast::<T>().ok();
-    }
-
-    if let Some(bytes) = self.internal.bytes_map.get(key) {
-      let value = T::deserialize_bytes(bytes.clone()).unwrap();
-      return value.downcast::<T>().ok();
-    }
-
-    None
+    self.internal.get_cache(key)
   }
 
-  pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {
-    self
-      .internal
-      .map
-      .get(key)
-      .and_then(|v| v.downcast_ref::<T>())
+  pub fn get_ref<T: Cacheable>(&mut self, key: &str) -> Option<&T> {
+    self.internal.get_ref(key)
   }
 
   pub fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
-    self.internal.map.insert(key, value);
-    // pub fn insert<T: Cacheable>(&mut self, key: String, value: Box<T>) {
-    //   self.internal.map.insert(key, value);
+    self.internal.insert(key, value);
   }
 
   pub fn remove(&mut self, key: &str) {
-    self.internal.map.remove(key);
+    self.internal.remove_cache(key);
   }
 }
 

@@ -1,13 +1,17 @@
 import EventEmitter from 'node:events';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-
-import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
+import chokidar from 'chokidar';
 import glob from 'fast-glob';
-
-import { Compiler } from '../compiler/index.js';
-import { createInlineCompiler } from '../compiler/index.js';
+import { Compiler, createInlineCompiler } from '../compiler/index.js';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
+import type { ResolvedUserConfig } from '../config/index.js';
+import type {
+  CompilerUpdateItem,
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 import { createDebugger } from '../utils/debug.js';
 import { convertErrorMessage } from '../utils/error.js';
 import {
@@ -18,14 +22,6 @@ import {
   green,
   normalizePath
 } from '../utils/index.js';
-
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import type { ResolvedUserConfig } from '../config/index.js';
-import type {
-  CompilerUpdateItem,
-  JsUpdateResult,
-  PersistentCacheConfig
-} from '../types/binding.js';
 
 export const debugWatcher = createDebugger('farm:watcher');
 

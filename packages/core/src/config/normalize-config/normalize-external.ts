@@ -2,9 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import module from 'node:module';
 import path from 'node:path';
 
-import { Config } from '../../types/binding.js';
-import { isObject, safeJsonParse } from '../../utils/index.js';
-import { CUSTOM_KEYS } from '../constants.js';
+import { isObject } from '../../utils/index.js';
 
 import type { ResolvedCompilation, UserConfig } from '../types.js';
 
@@ -81,15 +79,11 @@ export function normalizeExternal(
   }
 
   const [stringExternal, recordExternal] = mergeCustomExternal(
-    config.compilation,
-    mergeCustomExternal(
-      resolvedCompilation,
-      partialExternal(config.compilation.external)
-    )
+    partialExternal(config.compilation.external)
   );
 
-  resolvedCompilation.custom[CUSTOM_KEYS.external_record] =
-    JSON.stringify(recordExternal);
+  resolvedCompilation.output ??= {};
+  resolvedCompilation.output.externalGlobals = recordExternal;
 
   resolvedCompilation.external = [
     ...stringExternal,
@@ -98,27 +92,10 @@ export function normalizeExternal(
   ];
 }
 
-export function mergeCustomExternal<
-  T extends Partial<Pick<Config['config'], 'custom'>>
->(
-  compilation: T,
+export function mergeCustomExternal(
   external: ReturnType<typeof partialExternal>
 ): PartialExternal {
   const [stringExternal, recordExternal] = external;
-  if (!compilation?.custom) {
-    compilation.custom = {};
-  }
 
-  const oldRecordExternal: Record<string, string> = compilation.custom[
-    CUSTOM_KEYS.external_record
-  ]
-    ? safeJsonParse(compilation.custom[CUSTOM_KEYS.external_record], {}) || {}
-    : {};
-
-  return [
-    [...new Set(stringExternal)],
-    isObject(oldRecordExternal)
-      ? { ...oldRecordExternal, ...recordExternal }
-      : recordExternal
-  ];
+  return [[...new Set(stringExternal)], recordExternal];
 }
