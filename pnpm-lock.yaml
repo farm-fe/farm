@@ -232,7 +232,7 @@ importers:
         version: 3.4.13(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.17))(@types/node@20.14.12)(typescript@5.6.3))
       ts-node:
         specifier: ^10.9.1
-        version: 10.9.1(@swc/core@1.7.26)(@types/node@20.14.12)(typescript@5.6.3)
+        version: 10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.17))(@types/node@20.14.12)(typescript@5.6.3)
 
   examples/arcgis:
     dependencies:
@@ -1324,7 +1324,7 @@ importers:
     optionalDependencies:
       '@tsconfig/create-react-app':
         specifier: latest
-        version: 2.0.7
+        version: 2.0.9
       abort-controller:
         specifier: latest
         version: 3.0.0
@@ -1333,7 +1333,7 @@ importers:
         version: 3.41.0
       cross-env:
         specifier: latest
-        version: 10.0.0
+        version: 10.1.0
       intl:
         specifier: latest
         version: 1.2.5
@@ -3126,6 +3126,12 @@ importers:
       sass-embedded-win32-x64:
         specifier: 1.62.0
         version: 1.62.0
+    devDependencies:
+      '@farmfe/plugin-tools':
+        specifier: workspace:*
+        version: link:../../packages/plugin-tools
+
+  rust-plugins/yaml:
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -9139,8 +9145,8 @@ packages:
   '@ts-morph/common@0.24.0':
     resolution: {integrity: sha512-c1xMmNHWpNselmpIqursHeOHHBTIsJLbB+NuovbTTRCNiTLEr/U9dbJ8qy0jd/O2x5pc3seWuOUN5R2IoOTp8A==}
 
-  '@tsconfig/create-react-app@2.0.7':
-    resolution: {integrity: sha512-gSui0f0bjRi824CzbUWdTaTrmQCCu23X/duAZLcYiJWmSok3aKAfBwg5lq1x/aBj3AuL9XQwE7RmvYxW5GG/Mg==}
+  '@tsconfig/create-react-app@2.0.9':
+    resolution: {integrity: sha512-2+Jmppd67O7syHtgrrnhhMrqqVU10NRQsOAgfqIzBlAcCO3Q8ew1nnSPR7hWdJDEsd1Gbfd02olyjjMhFQe5UQ==}
 
   '@tsconfig/node10@1.0.9':
     resolution: {integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA==}
@@ -12470,8 +12476,8 @@ packages:
   cross-dirname@0.1.0:
     resolution: {integrity: sha512-+R08/oI0nl3vfPcqftZRpytksBXDzOUveBq/NBVx0sUp1axwzPQrKinNx5yd5sxPu8j1wIy8AfnVQ+5eFdha6Q==}
 
-  cross-env@10.0.0:
-    resolution: {integrity: sha512-aU8qlEK/nHYtVuN4p7UQgAwVljzMg8hB4YK5ThRqD2l/ziSnryncPNn7bMLt5cFYsKVKBh8HqLqyCoTupEUu7Q==}
+  cross-env@10.1.0:
+    resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -31358,7 +31364,7 @@ snapshots:
       mkdirp: 3.0.1
       path-browserify: 1.0.1
 
-  '@tsconfig/create-react-app@2.0.7':
+  '@tsconfig/create-react-app@2.0.9':
     optional: true
 
   '@tsconfig/node10@1.0.9': {}
@@ -36111,7 +36117,7 @@ snapshots:
 
   cross-dirname@0.1.0: {}
 
-  cross-env@10.0.0:
+  cross-env@10.1.0:
     dependencies:
       '@epic-web/invariant': 1.0.0
       cross-spawn: 7.0.6
@@ -42389,7 +42395,7 @@ snapshots:
       yaml: 2.3.4
     optionalDependencies:
       postcss: 8.4.47
-      ts-node: 10.9.1(@swc/core@1.7.26)(@types/node@20.14.12)(typescript@5.6.3)
+      ts-node: 10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.17))(@types/node@20.14.12)(typescript@5.6.3)
 
   postcss-load-config@4.0.1(postcss@8.4.47)(ts-node@10.9.1(@swc/core@1.7.26)(@types/node@20.14.12)(typescript@5.6.3)):
     dependencies:
@@ -42397,7 +42403,7 @@ snapshots:
       yaml: 2.3.4
     optionalDependencies:
       postcss: 8.4.47
-      ts-node: 10.9.1(@swc/core@1.7.26)(@types/node@20.14.12)(typescript@5.6.3)
+      ts-node: 10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.17))(@types/node@20.14.12)(typescript@5.6.3)
 
   postcss-loader@7.3.4(postcss@8.4.47)(typescript@5.6.3)(webpack@5.92.1(@swc/core@1.7.26(@swc/helpers@0.5.17))):
     dependencies:
@@ -45866,6 +45872,26 @@ snapshots:
       '@ts-morph/common': 0.24.0
       code-block-writer: 13.0.1
 
+  ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.17))(@types/node@20.14.12)(typescript@5.6.3):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.9
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      '@types/node': 20.14.12
+      acorn: 8.12.0
+      acorn-walk: 8.3.2
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      typescript: 5.6.3
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
+    optionalDependencies:
+      '@swc/core': 1.7.26(@swc/helpers@0.5.17)
+
   ts-node@10.9.1(@swc/core@1.7.26)(@types/node@18.19.67)(typescript@5.4.5):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
@@ -45906,26 +45932,6 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.7.26(@swc/helpers@0.5.17)
     optional: true
-
-  ts-node@10.9.1(@swc/core@1.7.26)(@types/node@20.14.12)(typescript@5.6.3):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.9
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.14.12
-      acorn: 8.12.0
-      acorn-walk: 8.3.2
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.6.3
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optionalDependencies:
-      '@swc/core': 1.7.26(@swc/helpers@0.5.17)
 
   ts-node@10.9.1(@swc/core@1.7.26)(@types/node@20.5.1)(typescript@5.6.3):
     dependencies:

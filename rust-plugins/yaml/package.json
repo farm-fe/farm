@@ -1,0 +1,58 @@
+{
+  "name": "@farmfe/plugin-yaml",
+  "version": "2.0.0-beta.0",
+  "private": false,
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/farm-fe/plugins",
+  "author": "maidang1 <maidang@felixwliu.cn>",
+  "bugs": {
+    "url": "https://github.com/farm-fe/plugins/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/plugins.git"
+  },
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "keywords": [
+    "Rust",
+    "yaml",
+    "farmfe"
+  ],
+  "napi": {
+    "binaryName": "farm-plugin-yaml",
+    "triples": {
+      "additional": [
+        "x86_64-unknown-linux-gnu",
+        "x86_64-pc-windows-msvc",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_yaml --release",
+    "build:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z farm-plugin-tools build --platform --cargo-name farmfe_plugin_yaml -p farmfe_plugin_yaml --release",
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  "files": [
+    "scripts"
+  ]
+}
