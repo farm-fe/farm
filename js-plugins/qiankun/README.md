@@ -29,7 +29,7 @@ export default defineConfig({
 // main.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { injectQiankun } from '@farmfe/js-plugin-qiankun/dist/helper/esm/qiankun-farm-plugin-helper';
+import { injectQiankun } from '@farmfe/js-plugin-qiankun/helper';
 import App from './App';
 
 let root: ReactDOM.Root | null = null;
@@ -63,7 +63,7 @@ injectQiankun({
 ```ts
 // main.ts
 import { createApp } from 'vue';
-import { injectQiankun } from '@farmfe/js-plugin-qiankun/dist/helper/esm/qiankun-farm-plugin-helper';
+import { injectQiankun } from '@farmfe/js-plugin-qiankun/helper';
 import App from './App.vue';
 
 let app: ReturnType<typeof createApp> | null = null;

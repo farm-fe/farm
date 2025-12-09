@@ -11,6 +11,11 @@
       "import": "./dist/plugin/esm/qiankun-farm-plugin.mjs",
       "require": "./dist/plugin/cjs/qiankun-farm-plugin.cjs",
       "types": "./dist/plugin/qiankun-farm-plugin.d.ts"
+    },
+    "./helper": {
+      "import": "./dist/helper/esm/qiankun-farm-helper.mjs",
+      "require": "./dist/helper/cjs/qiankun-farm-helper.cjs",
+      "types": "./dist/helper/qiankun-farm-helper.d.ts"
     }
   },
   "scripts": {
