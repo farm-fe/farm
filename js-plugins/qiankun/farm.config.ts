@@ -1,4 +1,4 @@
-import { defineConfig, VERSION } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import dts from '@farmfe/js-plugin-dts';
 
 export default defineConfig({

@@ -5,10 +5,12 @@
   "type": "module",
   "main": "./dist/plugin/cjs/qiankun-farm-plugin.cjs",
   "module": "./dist/plugin/esm/qiankun-farm-plugin.mjs",
+  "types": "./dist/plugin/qiankun-farm-plugin.d.ts",
   "exports": {
     ".": {
       "import": "./dist/plugin/esm/qiankun-farm-plugin.mjs",
-      "require": "./dist/plugin/cjs/qiankun-farm-plugin.cjs"
+      "require": "./dist/plugin/cjs/qiankun-farm-plugin.cjs",
+      "types": "./dist/plugin/qiankun-farm-plugin.d.ts"
     }
   },
   "scripts": {
@@ -20,10 +22,12 @@
     "farm",
     "qiankun"
   ],
+  "dependencies": {
+    "cheerio": "1.1.2"
+  },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/js-plugin-dts": "workspace:*",
-    "cheerio": "1.1.2"
+    "@farmfe/js-plugin-dts": "workspace:*"
   }
 }

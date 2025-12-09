@@ -31,7 +31,14 @@ const createQiankunHelper = (qiankunName: string, devMode: boolean) => `
   })(window);
 `;
 
+const VALID_IDENTIFIER_REGEX = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+
 export function qiankunFarmPlugin(options: PluginOptions): JsPlugin {
+  if (!options.appName || !VALID_IDENTIFIER_REGEX.test(options.appName)) {
+    throw new Error(
+      `[qiankun-farm-plugin] appName must be a valid JavaScript identifier, got: "${options.appName}"`
+    );
+  }
   return {
     name: 'qiankun-farm-plugin',
     transformHtml: {
