@@ -93,9 +93,9 @@ impl Compiler {
 
       println!(
         "\n[Farm warn] Invalid Configuration: {}.\n\
-         • Output: {}\n\
-         • Public: {}\n\
-         This would cause infinite nesting during build. Public directory copy skipped.\n",
+• Output: {}\n\
+• Public: {}\n\
+This would cause infinite nesting during build. Public directory copy skipped.\n",
         warning_type,
         output_dir_path.display(),
         public_dir_path.display()
