@@ -62,6 +62,21 @@ impl Compiler {
     Ok(())
   }
 
+  // Checks if one directory is nested inside another
+  fn check_directory_nesting(first: &Path, second: &Path) -> (bool, bool) {
+    let first_in_second = first.strip_prefix(second)
+      .ok()
+      .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
+      .is_some();
+    
+    let second_in_first = second.strip_prefix(first)
+      .ok()
+      .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
+      .is_some();
+    
+    (first_in_second, second_in_first)
+  }
+
   fn copy_public_dir(&self, output_dir: &Path) -> Result<()> {
     let build_config = &self.context.config;
     let output_dir_path = Path::new(&output_dir);
@@ -74,15 +89,8 @@ impl Compiler {
     }
 
     // Check if output and public directories overlap
-    let output_in_public = output_dir_path.strip_prefix(public_dir_path)
-      .ok()
-      .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
-      .is_some();
-    
-    let public_in_output = public_dir_path.strip_prefix(output_dir_path)
-      .ok()
-      .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
-      .is_some();
+    let (output_in_public, public_in_output) = 
+      Self::check_directory_nesting(output_dir_path, public_dir_path);
 
     if output_in_public || public_in_output {
       let warning_type = if output_in_public {

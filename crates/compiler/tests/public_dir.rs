@@ -194,12 +194,12 @@ fn test_public_dir_copy_with_output_as_parent_of_public() {
 }
 
 #[test]
-fn test_are_separate_folders_logic() {
+fn test_nested_directory_detection() {
   let crate_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   let test_dir = crate_path
     .join("tests")
     .join("fixtures")
-    .join("separate_folders_test");
+    .join("nested_detection_test");
 
   // Clean up if exists
   if test_dir.exists() {
@@ -208,8 +208,13 @@ fn test_are_separate_folders_logic() {
 
   fs::create_dir_all(&test_dir).unwrap();
   fs::write(test_dir.join("index.html"), "<html></html>").unwrap();
+  
+  // Create public directory for testing
+  let public_dir = test_dir.join("public");
+  fs::create_dir_all(&public_dir).unwrap();
+  fs::write(public_dir.join("test.txt"), "content").unwrap();
 
-  // Test case 1: Separate folders (should pass)
+  // Test case 1: Separate folders - should copy public files normally
   let compiler1 = create_compiler_with_args(
     test_dir.clone(),
     crate_path.clone(),
@@ -219,21 +224,25 @@ fn test_are_separate_folders_logic() {
         test_dir.join("index.html").to_string_lossy().to_string(),
       )]);
       config.output.path = "./dist".to_string();
+      config.assets.public_dir = Some(public_dir.to_string_lossy().to_string());
       config.mode = Mode::Production;
       config.minify = Box::new(BoolOrObj::Bool(false));
       (config, plugins)
     },
   );
 
-  // Use the internal are_separate_folders logic
-  // Since it's private, we test the behavior through write_resources_to_disk
   compiler1.compile().unwrap();
-  
-  // Should succeed without panic
   let result1 = compiler1.write_resources_to_disk();
   assert!(result1.is_ok(), "Should succeed with separate folders");
+  
+  // Verify public files were copied
+  let dist_dir = test_dir.join("dist");
+  assert!(
+    dist_dir.join("test.txt").exists(),
+    "Public files should be copied when directories are separate"
+  );
 
-  // Test case 2: Output inside public (should warn and skip)
+  // Test case 2: Output nested inside public - should skip copying
   let compiler2 = create_compiler_with_args(
     test_dir.clone(),
     crate_path.clone(),
@@ -243,6 +252,7 @@ fn test_are_separate_folders_logic() {
         test_dir.join("index.html").to_string_lossy().to_string(),
       )]);
       config.output.path = "./public/dist".to_string();
+      config.assets.public_dir = Some(public_dir.to_string_lossy().to_string());
       config.mode = Mode::Production;
       config.minify = Box::new(BoolOrObj::Bool(false));
       (config, plugins)
@@ -250,10 +260,47 @@ fn test_are_separate_folders_logic() {
   );
 
   compiler2.compile().unwrap();
-  
-  // Should succeed but skip copying public directory
   let result2 = compiler2.write_resources_to_disk();
   assert!(result2.is_ok(), "Should succeed but skip copying");
+  
+  // Verify public files were NOT copied (to prevent infinite nesting)
+  let nested_output = test_dir.join("public").join("dist");
+  assert!(
+    !nested_output.join("test.txt").exists(),
+    "Public files should NOT be copied when output is inside public"
+  );
+
+  // Test case 3: Public nested inside output - should skip copying
+  let src_public = test_dir.join("src").join("public");
+  fs::create_dir_all(&src_public).unwrap();
+  fs::write(src_public.join("data.txt"), "data").unwrap();
+  
+  let compiler3 = create_compiler_with_args(
+    test_dir.clone(),
+    crate_path.clone(),
+    |mut config, plugins| {
+      config.input = HashMap::from_iter(vec![(
+        "index".to_string(),
+        test_dir.join("index.html").to_string_lossy().to_string(),
+      )]);
+      config.output.path = "./src".to_string();
+      config.assets.public_dir = Some(src_public.to_string_lossy().to_string());
+      config.mode = Mode::Production;
+      config.minify = Box::new(BoolOrObj::Bool(false));
+      (config, plugins)
+    },
+  );
+
+  compiler3.compile().unwrap();
+  let result3 = compiler3.write_resources_to_disk();
+  assert!(result3.is_ok(), "Should succeed but skip copying");
+  
+  // Verify public files were NOT copied to parent output directory
+  let src_output = test_dir.join("src");
+  assert!(
+    !src_output.join("data.txt").exists(),
+    "Public files should NOT be copied when public is inside output"
+  );
 
   // Clean up
   fs::remove_dir_all(&test_dir).ok();
