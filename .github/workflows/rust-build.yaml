@@ -20,6 +20,7 @@ jobs:
               set -e &&
               unset CC_x86_64_unknown_linux_gnu &&
               unset CC &&
+              export CARGO_INCREMENTAL=0 &&
               cd packages/core &&
               npm run build:rs:publish -- --target x86_64-unknown-linux-gnu &&
               cd ../create-farm &&
@@ -41,6 +42,7 @@ jobs:
               apk update &&
               apk add --upgrade clang-static llvm-dev &&
               export CARGO_PROFILE_RELEASE_LTO=false &&
+              export CARGO_INCREMENTAL=0 &&
               cd packages/core &&
               npm run build:rs:publish -- --target x86_64-unknown-linux-musl &&
               cd ../create-farm &&
@@ -53,14 +55,15 @@ jobs:
           - os: windows-latest
             abi: win32-x64-msvc
             target: x86_64-pc-windows-msvc
-          - os: macos-13
-            abi: darwin-x64
-            target: x86_64-apple-darwin
           - os: macos-latest
             abi: darwin-arm64
             target: aarch64-apple-darwin
 
           # cross compile
+          # macOS x64 (cross-compile on ARM64)
+          - os: macos-latest
+            abi: darwin-x64
+            target: x86_64-apple-darwin
           # windows. Note swc plugins is not supported on ia32 and arm64
           - os: windows-latest
             abi: win32-ia32-msvc
@@ -156,6 +159,17 @@ jobs:
         if: ${{ matrix.settings.zig }}
         with:
           version: 0.13.0
+      - name: Free Disk Space (Ubuntu)
+        if: ${{ matrix.settings.docker }}
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
