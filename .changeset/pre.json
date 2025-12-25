@@ -96,7 +96,8 @@
     "@farmfe/plugin-dts": "1.0.0-nightly-20250827162746",
     "@farmfe/plugin-react": "2.0.0-nightly-20250827162746",
     "@farmfe/plugin-replace-dirname": "1.0.0-nightly-20250827162746",
-    "@farmfe/plugin-sass": "2.0.0-nightly-20250827162746"
+    "@farmfe/plugin-sass": "2.0.0-nightly-20250827162746",
+    "@farmfe/js-plugin-qiankun": "0.0.1"
   },
   "changesets": [
     "blue-jobs-lick",
@@ -111,6 +112,8 @@
     "ninety-clocks-change",
     "quick-snakes-heal",
     "quiet-llamas-love",
+    "selfish-crews-taste",
+    "sharp-beers-live",
     "shy-peas-smell",
     "small-bottles-warn",
     "thick-trees-collect",
