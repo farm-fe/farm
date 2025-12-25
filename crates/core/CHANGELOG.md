@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0](https://github.com/farm-fe/farm/compare/farmfe_core-v2.1.0...farmfe_core-v2.2.0) - 2025-12-25
+
+### Added
+
+- *(core)* support umd & css.transformToScript ([#2254](https://github.com/farm-fe/farm/pull/2254))
+- add env manual control thread max nums ([#2249](https://github.com/farm-fe/farm/pull/2249))
+
+### Fixed
+
+- *(v2)* #2262 HMR does not work with Qiankun framework ([#2263](https://github.com/farm-fe/farm/pull/2263))
+- reduce memory usage ([#2256](https://github.com/farm-fe/farm/pull/2256))
+
 ## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_core-v2.0.0...farmfe_core-v2.1.0) - 2025-09-21
 
 ### Added
