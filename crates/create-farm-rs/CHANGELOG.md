@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2](https://github.com/farm-fe/farm/compare/create-farm-v2.0.1...create-farm-v2.0.2) - 2025-12-25
+
+### Fixed
+
+- deno create & add dry-run flag ([#2247](https://github.com/farm-fe/farm/pull/2247))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/create-farm-v2.0.0...create-farm-v2.0.1) - 2025-09-21
 
 ### Other
