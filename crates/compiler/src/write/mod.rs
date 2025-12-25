@@ -62,6 +62,21 @@ impl Compiler {
     Ok(())
   }
 
+  // Checks if one directory is nested inside another
+  fn check_directory_nesting(first: &Path, second: &Path) -> (bool, bool) {
+    let first_in_second = first.strip_prefix(second)
+      .ok()
+      .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
+      .is_some();
+    
+    let second_in_first = second.strip_prefix(first)
+      .ok()
+      .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
+      .is_some();
+    
+    (first_in_second, second_in_first)
+  }
+
   fn copy_public_dir(&self, output_dir: &Path) -> Result<()> {
     let build_config = &self.context.config;
     let output_dir_path = Path::new(&output_dir);
@@ -73,35 +88,33 @@ impl Compiler {
       return Ok(());
     }
 
-    if !self.are_separate_folders(output_dir_path, public_dir_path) {
-      // TODO: add Farm rust logger
+    // Check if output and public directories overlap
+    let (output_in_public, public_in_output) = 
+      Self::check_directory_nesting(output_dir_path, public_dir_path);
+
+    if output_in_public || public_in_output {
+      let warning_type = if output_in_public {
+        "Output directory is nested inside public directory"
+      } else {
+        "Public directory is nested inside output directory"
+      };
+
       println!(
-        "\n(!) [Farm warn] The public directory feature may not work correctly. \
-               outDir {} and publicDir {} are not separate folders.\n",
+        "\n[Farm warn] Invalid Configuration: {}.\n\
+• Output: {}\n\
+• Public: {}\n\
+This would cause infinite nesting during build. Public directory copy skipped.\n",
+        warning_type,
         output_dir_path.display(),
         public_dir_path.display()
       );
+
+      return Ok(());
     }
 
     Self::copy_dir(public_dir_path, output_dir_path);
 
     Ok(())
-  }
-
-  fn are_separate_folders(&self, dir1: &Path, dir2: &Path) -> bool {
-    if let Ok(relative) = dir2.strip_prefix(dir1) {
-      if !relative.as_os_str().is_empty() && !relative.to_string_lossy().starts_with("..") {
-        return false;
-      }
-    }
-
-    if let Ok(relative) = dir1.strip_prefix(dir2) {
-      if !relative.as_os_str().is_empty() && !relative.to_string_lossy().starts_with("..") {
-        return false;
-      }
-    }
-
-    true
   }
 
   fn copy_dir(from: &Path, to: &Path) {
