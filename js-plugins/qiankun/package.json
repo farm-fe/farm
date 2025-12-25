@@ -1,0 +1,38 @@
+{
+  "name": "@farmfe/js-plugin-qiankun",
+  "version": "0.0.1",
+  "description": "farm qiankun plugin",
+  "type": "module",
+  "main": "./dist/plugin/cjs/qiankun-farm-plugin.cjs",
+  "module": "./dist/plugin/esm/qiankun-farm-plugin.mjs",
+  "types": "./dist/plugin/qiankun-farm-plugin.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/plugin/esm/qiankun-farm-plugin.mjs",
+      "require": "./dist/plugin/cjs/qiankun-farm-plugin.cjs",
+      "types": "./dist/plugin/qiankun-farm-plugin.d.ts"
+    },
+    "./helper": {
+      "import": "./dist/helper/esm/qiankun-farm-helper.mjs",
+      "require": "./dist/helper/cjs/qiankun-farm-helper.cjs",
+      "types": "./dist/helper/qiankun-farm-helper.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "pnpm run build:plugin && pnpm run build:helper",
+    "build:plugin": "farm build",
+    "build:helper": "farm build -c farm-helper.config.ts"
+  },
+  "keywords": [
+    "farm",
+    "qiankun"
+  ],
+  "dependencies": {
+    "cheerio": "1.1.2"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:*"
+  }
+}
