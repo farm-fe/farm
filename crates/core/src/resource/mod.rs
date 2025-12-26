@@ -11,6 +11,9 @@ pub mod meta_data;
 pub mod resource_pot;
 pub mod resource_pot_map;
 
+/// Meta key to mark a resource as the primary one when multiple resources exist for the same module
+pub const RESOURCE_META_PRIMARY_KEY: &str = "farm_primary_resource";
+
 #[cache_item]
 #[derive(Debug, Clone)]
 pub enum ResourceType {

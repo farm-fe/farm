@@ -17,6 +17,18 @@ export function Main() {
     <div className='main-3'>
       main-3
     </div>
+    <div className='main-4'>
+      main-4
+    </div>
+    <div className='main-5'>
+      main-5
+    </div>
+    <div className='main-6'>
+      main-6
+    </div>
+    <div className='main-7'>
+      main-7
+    </div>
     </>
   );
 }
