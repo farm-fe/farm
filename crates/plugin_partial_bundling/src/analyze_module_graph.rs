@@ -32,6 +32,8 @@ pub fn module_group_graph_from_entries(
   let mut module_group_graph = ModuleGroupGraph::new();
   let mut edges = vec![];
   let mut visited = HashSet::default();
+  // Create a set of entries for quick lookup to check if a dynamic import target is also an entry
+  let entries_set: HashSet<ModuleId> = entries.iter().cloned().collect();
 
   for entry in entries.clone() {
     if visited.contains(&entry) {
@@ -41,16 +43,24 @@ pub fn module_group_graph_from_entries(
     let (group, dynamic_dependencies) =
       module_group_from_entry(&entry, ModuleGroupType::Entry, module_graph);
     edges.extend(dynamic_dependencies.clone().into_iter().map(|dep| {
-      (
-        group.id.clone(),
-        ModuleGroupId::new(&dep, &ModuleGroupType::DynamicImport),
-      )
+      // If the dynamic import target is also an entry, use Entry type instead of DynamicImport
+      let dep_type = if entries_set.contains(&dep) {
+        ModuleGroupType::Entry
+      } else {
+        ModuleGroupType::DynamicImport
+      };
+      (group.id.clone(), ModuleGroupId::new(&dep, &dep_type))
     }));
 
     module_group_graph.add_module_group(group);
 
     visited.insert(entry);
-    let mut queue = VecDeque::from(dynamic_dependencies);
+    // Filter out dynamic dependencies that are also entries (they'll be processed as entries)
+    let queue_deps: Vec<ModuleId> = dynamic_dependencies
+      .into_iter()
+      .filter(|dep| !entries_set.contains(dep))
+      .collect();
+    let mut queue = VecDeque::from(queue_deps);
 
     while !queue.is_empty() {
       let head = queue.pop_front().unwrap();
@@ -64,14 +74,22 @@ pub fn module_group_graph_from_entries(
       let (group, dynamic_dependencies) =
         module_group_from_entry(&head, ModuleGroupType::DynamicImport, module_graph);
       edges.extend(dynamic_dependencies.clone().into_iter().map(|dep| {
-        (
-          group.id.clone(),
-          ModuleGroupId::new(&dep, &ModuleGroupType::DynamicImport),
-        )
+        // If the dynamic import target is also an entry, use Entry type instead of DynamicImport
+        let dep_type = if entries_set.contains(&dep) {
+          ModuleGroupType::Entry
+        } else {
+          ModuleGroupType::DynamicImport
+        };
+        (group.id.clone(), ModuleGroupId::new(&dep, &dep_type))
       }));
 
       module_group_graph.add_module_group(group);
-      queue.extend(dynamic_dependencies);
+      // Filter out dynamic dependencies that are also entries
+      queue.extend(
+        dynamic_dependencies
+          .into_iter()
+          .filter(|dep| !entries_set.contains(dep)),
+      );
     }
   }
 
@@ -390,5 +408,73 @@ mod tests {
 
     let module_group_graph = crate::module_group_graph_from_module_graph(&mut graph);
     assert_debug_snapshot!(module_group_graph);
+  }
+
+  /// Test the case where a module is both an entry file and dynamically imported by another entry.
+  /// This was causing a panic due to creating an edge to a non-existent module group.
+  /// See: https://github.com/farm-fe/farm/issues/XXXX
+  #[test]
+  fn module_group_graph_entry_also_dynamic_import() {
+    use farmfe_core::module::{
+      meta_data::script::ScriptModuleMetaData,
+      module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+      Module, ModuleMetaData, ModuleType,
+    };
+
+    // Create a simple graph:
+    // - `index` is an entry
+    // - `a` is ALSO an entry
+    // - `index` dynamically imports `a`
+    let mut graph = ModuleGraph::new();
+
+    // Add modules
+    for id in ["index", "a"] {
+      let mut m = Module::new(id.into());
+      m.module_type = ModuleType::Js;
+      m.meta = Box::new(ModuleMetaData::Script(Box::new(
+        ScriptModuleMetaData::default(),
+      )));
+      graph.add_module(m);
+    }
+
+    // Add dynamic import edge: index -> a
+    graph
+      .add_edge_item(
+        &"index".into(),
+        &"a".into(),
+        ModuleGraphEdgeDataItem {
+          source: "./a".to_string(),
+          kind: ResolveKind::DynamicImport,
+          order: 0,
+        },
+      )
+      .unwrap();
+
+    // Both are entries
+    graph.entries = HashMap::from_iter([
+      ("index".into(), "main".to_string()),
+      ("a".into(), "a".to_string()),
+    ]);
+
+    // This should NOT panic - previously this would panic because:
+    // - `index` group creates an edge to `a_DynamicImport` module group
+    // - But `a` is processed as an Entry, so `a_Entry` is created, not `a_DynamicImport`
+    let module_group_graph = crate::module_group_graph_from_entries(
+      &graph.entries.keys().cloned().collect(),
+      &mut graph,
+    );
+
+    // Verify the module groups are created correctly
+    let group_id_index = ModuleGroupId::new(&"index".into(), &ModuleGroupType::Entry);
+    let group_id_a = ModuleGroupId::new(&"a".into(), &ModuleGroupType::Entry);
+
+    assert!(module_group_graph.has(&group_id_index));
+    assert!(module_group_graph.has(&group_id_a));
+
+    // There should be exactly 2 module groups (both entries)
+    assert_eq!(module_group_graph.len(), 2);
+
+    // The edge should go from index_Entry -> a_Entry (not a_DynamicImport)
+    assert!(module_group_graph.has_edge(&group_id_index, &group_id_a));
   }
 }
