@@ -305,7 +305,7 @@ export class WsServer {
    * @param {string} event - The name of the event.
    * @param {Function} fn - The listener function.
    */
-  on(event: string, fn: () => void) {
+  on(event: string, fn: (...args: any[]) => void) {
     if (wsServerEvents.includes(event)) {
       this.wss.on(event, fn);
     } else {
@@ -321,7 +321,7 @@ export class WsServer {
    * @param {string} event - The name of the event.
    * @param {Function} fn - The listener function to remove.
    */
-  off(event: string, fn: () => void) {
+  off(event: string, fn: (...args: any[]) => void) {
     if (wsServerEvents.includes(event)) {
       this.wss.off(event, fn);
     } else {

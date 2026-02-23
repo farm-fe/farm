@@ -12,6 +12,40 @@ export type CompilerUpdateItem = {
   type: UpdateType;
 };
 
+export interface JsFetchModuleOptions {
+  cached?: boolean;
+  startOffset?: number;
+}
+
+export interface JsCachedFetchResult {
+  cache: true;
+}
+
+export interface JsExternalizedFetchResult {
+  externalize: string;
+  type: 'module' | 'commonjs' | 'builtin' | 'network';
+  bailoutReason?:
+    | 'unsupported-ts'
+    | 'import-mutation'
+    | 'unhandled-module-decl'
+    | 'not-script'
+    | 'empty-content';
+}
+
+export interface JsInlinedFetchResult {
+  code: string;
+  file: string | null;
+  id: string;
+  url: string;
+  invalidate: boolean;
+  map?: string | null;
+}
+
+export type JsFetchModuleResult =
+  | JsCachedFetchResult
+  | JsExternalizedFetchResult
+  | JsInlinedFetchResult;
+
 export type ResolveKind =
   | { entry: string }
   | LiteralUnion<

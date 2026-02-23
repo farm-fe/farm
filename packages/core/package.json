@@ -16,6 +16,10 @@
     "./types/*": {
       "types": "./types/*"
     },
+    "./module-runner/serverInvoke": {
+      "import": "./dist/module-runner/serverInvoke.js",
+      "types": "./dist/module-runner/serverInvoke.d.ts"
+    },
     "./package.json": "./package.json"
   },
   "napi": {

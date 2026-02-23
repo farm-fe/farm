@@ -2,6 +2,7 @@ export { Resolver } from '../binding/index.js';
 export * from './compiler/index.js';
 export * from './config/index.js';
 export { defineFarmConfig as defineConfig } from './config/index.js';
+export * from './module-runner/index.js';
 export * from './plugin/index.js';
 export * from './plugin/type.js';
 export * from './server/index.js';
