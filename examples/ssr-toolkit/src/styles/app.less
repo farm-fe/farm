@@ -1,0 +1,50 @@
+@app-bg: #f3f8f4;
+@app-border: #a7c4af;
+@app-heading: #14532d;
+@app-text: #24362a;
+
+#ssr-app {
+  margin: 1.5rem auto;
+  max-width: 860px;
+  padding: 1rem 1.25rem;
+  border: 1px solid @app-border;
+  border-radius: 12px;
+  background: linear-gradient(165deg, @app-bg 0%, #ffffff 100%);
+  color: @app-text;
+}
+
+.app-header {
+  h1 {
+    margin: 0 0 0.75rem;
+    color: @app-heading;
+    font-size: 1.8rem;
+  }
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  a {
+    color: #0f5132;
+    text-decoration: none;
+    font-weight: 600;
+  }
+}
+
+.route-shell {
+  background: #ffffff;
+  border: 1px solid #d7e7da;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.route-page {
+  line-height: 1.6;
+}
+
+.less-theme-active {
+  color: #0f766e;
+  font-weight: 700;
+}
