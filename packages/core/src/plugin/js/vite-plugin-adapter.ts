@@ -669,9 +669,29 @@ export class VitePluginAdapter implements JsPlugin {
 
           moduleGraph.context = ctx;
 
-          const result = [];
+          const mergedResult = new Map<string, UpdateType>();
+          const updateTypePriority: Record<UpdateType, number> = {
+            added: 1,
+            updated: 2,
+            removed: 3
+          };
+          const pushResult = (id: string, type: UpdateType) => {
+            if (!id) {
+              return;
+            }
 
-          for (const [file, _] of paths) {
+            const normalizedId = revertNormalizePath(id);
+            const existingType = mergedResult.get(normalizedId);
+
+            if (
+              !existingType ||
+              updateTypePriority[type] > updateTypePriority[existingType]
+            ) {
+              mergedResult.set(normalizedId, type);
+            }
+          };
+
+          for (const [file, updateType] of paths) {
             const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
@@ -684,8 +704,8 @@ export class VitePluginAdapter implements JsPlugin {
                 (m) =>
                   ({
                     ...m,
-                    id: normalizePath(m.id),
-                    file: normalizePath(m.file)
+                    id: isString(m.id) ? normalizePath(m.id) : m.id,
+                    file: isString(m.file) ? normalizePath(m.file) : m.file
                   }) as ModuleNode
               ),
               read: function (): string | Promise<string> {
@@ -697,13 +717,17 @@ export class VitePluginAdapter implements JsPlugin {
             const updateMods: ModuleNode[] = await hook?.(ctx);
 
             if (updateMods) {
-              result.push(...updateMods.map((mod) => mod.id));
+              for (const mod of updateMods) {
+                pushResult(mod.id, updateType);
+              }
             } else {
-              result.push(...mods.map((mod) => mod.id));
+              for (const mod of mods) {
+                pushResult(mod.id, updateType);
+              }
             }
           }
 
-          return [...new Set(result)].map((id) => revertNormalizePath(id));
+          return [...mergedResult.entries()];
         }
       )
     };
