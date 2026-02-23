@@ -38,6 +38,32 @@ export async function resolveCore(): Promise<{
   }
 }
 
+export async function resolveSsr(): Promise<{
+  runSsrCommand: (options: Record<string, unknown>) => Promise<unknown>;
+}> {
+  try {
+    const ssrPackageName = '@farmfe/ssr';
+    return (await import(ssrPackageName)) as {
+      runSsrCommand: (options: Record<string, unknown>) => Promise<unknown>;
+    };
+  } catch (err) {
+    try {
+      // Monorepo fallback for local integration runs where workspace package
+      // may not be linked in node_modules.
+      return (await import(
+        new URL('../../ssr/dist/index.js', import.meta.url).href
+      )) as {
+        runSsrCommand: (options: Record<string, unknown>) => Promise<unknown>;
+      };
+    } catch {
+      logger.error(
+        `Cannot find @farmfe/ssr module, Did you successfully install: \n${err.stack},`,
+        { exit: true }
+      );
+    }
+  }
+}
+
 /**
  * filter duplicate item in options
  */

@@ -39,6 +39,7 @@
     "node": ">= 16"
   },
   "dependencies": {
+    "@farmfe/ssr": "workspace:*",
     "cac": "^6.7.14"
   }
 }
