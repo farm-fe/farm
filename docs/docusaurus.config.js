@@ -49,7 +49,11 @@ const config = {
           lastVersion: "current",
           versions: {
             current: {
-              label: "2.0.0-nightly Version",
+              label: "2.x (Latest)",
+            },
+            "1.x": {
+              label: "1.x",
+              banner: "unmaintained",
             },
           },
         },

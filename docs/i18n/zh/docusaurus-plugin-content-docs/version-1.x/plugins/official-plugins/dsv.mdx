@@ -1,0 +1,66 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-dsv
+
+🍣 一个Farm插件，用于将`.csv`和`.tsv`文件转换为JavaScript模块。
+
+## 要求
+
+这个插件需要一个[LTS](https://github.com/nodejs/Release)版本的Node（v18.0.0+）和Farm v1.0.0+。
+
+## 安装
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-dsv</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-dsv</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-dsv</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## 使用
+
+创建一个`farm.config.js`[配置文件](https://www.farmfe.org/docs/config/configuring-farm)并导入插件：
+
+```js
+import { defineConfig } from '@farmfe/core';
+import dsv from '@farmfe/plugin-dsv';
+
+export default defineConfig({
+  plugins: [
+    [
+      dsv()
+    ]
+  ],
+});
+```
+
+## 实际示例
+
+假设你有一个包含一些关于美味水果信息的CSV（或TSV）文件：
+
+```csv
+type,count
+apples,7
+pears,4
+bananas,5
+```
+
+并且假设你想在代码的某个部分将该CSV文件作为`Array`导入。添加插件之后（如上所示），你可以直接`import`（或`require`）CSV文件。导入将提供一个`Array`，包含代表CSV文件行的`Objects`：
+
+```js
+import fruit from './fruit.csv';
+
+console.log(fruit);
+// [
+//   { type: 'apples', count: '7' },
+//   { type: 'pears', count: '4' },
+//   { type: 'bananas', count: '5' }
+// ]
+```
