@@ -88,7 +88,7 @@ pub fn emit_umd_resources(
 }
 
 /// Example:
-/// ```
+/// ```text
 /// // before
 /// console.log(require('node:fs'));
 ///
