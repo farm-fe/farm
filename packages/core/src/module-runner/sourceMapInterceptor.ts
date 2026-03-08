@@ -1,4 +1,5 @@
 import { cleanUrl } from '../utils/url.js';
+import type { RunnerSourceMapHooks } from './types.js';
 
 type StackTraceFormatter = (error: Error, trace: NodeJS.CallSite[]) => unknown;
 
@@ -26,8 +27,14 @@ type GlobalCandidateEntry = {
   map: SourceMapLike;
 };
 
+type HookStoreEntry = {
+  hooks: RunnerSourceMapHooks;
+  parsedCache: Map<string, SourceMapLike | null>;
+};
+
 const globalStores = new Map<number, Map<string, SourceMapLike>>();
 const globalCandidateEntries = new Map<string, GlobalCandidateEntry[]>();
+const globalHookStores = new Map<number, HookStoreEntry>();
 const STACK_FRAME_PATTERN = /^(\s*at\s+(?:.+?\s+\()?)(.+):(\d+):(\d+)(\)?)$/;
 
 let installedCount = 0;
@@ -121,7 +128,70 @@ function lookupSourceMap(source: string): SourceMapLike | undefined {
     }
   }
 
+  const hookEntries = [...globalHookStores.entries()].reverse();
+  for (const [, entry] of hookEntries) {
+    for (const candidate of candidates) {
+      const resolved = resolveHookSourceCandidate(entry.hooks, candidate);
+      for (const hookCandidate of sourceCandidates(resolved)) {
+        const fromHook = resolveHookSourceMap(entry, hookCandidate);
+        if (fromHook) {
+          return fromHook;
+        }
+      }
+    }
+  }
+
   return undefined;
+}
+
+function resolveHookSourceCandidate(
+  hooks: RunnerSourceMapHooks,
+  source: string
+): string {
+  if (!hooks.retrieveFile) {
+    return source;
+  }
+
+  try {
+    const resolved = hooks.retrieveFile(source);
+    if (typeof resolved === 'string' && resolved.length > 0) {
+      return resolved;
+    }
+  } catch {
+    // keep best-effort behavior
+  }
+
+  return source;
+}
+
+function resolveHookSourceMap(
+  entry: HookStoreEntry,
+  source: string
+): SourceMapLike | undefined {
+  if (!entry.hooks.retrieveSourceMap) {
+    return undefined;
+  }
+
+  if (entry.parsedCache.has(source)) {
+    return entry.parsedCache.get(source) ?? undefined;
+  }
+
+  let raw: string | null | undefined;
+  try {
+    raw = entry.hooks.retrieveSourceMap(source);
+  } catch {
+    entry.parsedCache.set(source, null);
+    return undefined;
+  }
+
+  if (typeof raw !== 'string' || raw.length === 0) {
+    entry.parsedCache.set(source, null);
+    return undefined;
+  }
+
+  const parsed = parseSourceMap(raw) ?? null;
+  entry.parsedCache.set(source, parsed);
+  return parsed ?? undefined;
 }
 
 function upsertGlobalCandidate(
@@ -189,6 +259,35 @@ function remapStackTrace(stack: string): string {
     .split('\n')
     .map((line, index) => (index === 0 ? line : remapStackFrame(line)))
     .join('\n');
+}
+
+function applyCustomStackFormatter(
+  error: Error,
+  remappedStack: string,
+  trace: NodeJS.CallSite[]
+): unknown {
+  const hookEntries = [...globalHookStores.entries()].reverse();
+  for (const [, entry] of hookEntries) {
+    const formatter = entry.hooks.formatStack;
+    if (!formatter) {
+      continue;
+    }
+
+    try {
+      const formatted = formatter({
+        error,
+        remappedStack,
+        trace
+      });
+      if (formatted !== undefined) {
+        return formatted;
+      }
+    } catch {
+      // Keep default behavior when formatter throws.
+    }
+  }
+
+  return remappedStack;
 }
 
 function defaultFormatStackTrace(
@@ -292,7 +391,8 @@ function ensureInstalled(useNative: boolean): boolean {
           return prepared;
         }
 
-        return remapStackTrace(prepared);
+        const remapped = remapStackTrace(prepared);
+        return applyCustomStackFormatter(error, remapped, trace);
       };
     } catch {
       if (useNative && nativeRequestedCount > 0) {
@@ -352,7 +452,8 @@ const noopInterceptor: RunnerSourceMapInterceptor = {
 
 export function createRunnerSourceMapInterceptor(
   enabled = true,
-  useNative = true
+  useNative = true,
+  hooks?: RunnerSourceMapHooks
 ): RunnerSourceMapInterceptor {
   if (!enabled) {
     return noopInterceptor;
@@ -364,9 +465,18 @@ export function createRunnerSourceMapInterceptor(
 
   const storeId = ++nextStoreId;
   const store = new Map<string, SourceMapLike>();
+  const hookEntry: HookStoreEntry | undefined = hooks
+    ? {
+        hooks,
+        parsedCache: new Map<string, SourceMapLike | null>()
+      }
+    : undefined;
   let closed = false;
 
   globalStores.set(storeId, store);
+  if (hookEntry) {
+    globalHookStores.set(storeId, hookEntry);
+  }
 
   return {
     register(sourceId: string, sourceMap: string): void {
@@ -395,6 +505,7 @@ export function createRunnerSourceMapInterceptor(
           removeGlobalCandidate(storeId, candidate);
         }
       }
+      hookEntry?.parsedCache.clear();
     },
     clear(): void {
       if (closed) {
@@ -405,6 +516,7 @@ export function createRunnerSourceMapInterceptor(
         removeGlobalCandidate(storeId, candidate);
       }
       store.clear();
+      hookEntry?.parsedCache.clear();
     },
     close(): void {
       if (closed) {
@@ -417,6 +529,7 @@ export function createRunnerSourceMapInterceptor(
       }
       store.clear();
       globalStores.delete(storeId);
+      globalHookStores.delete(storeId);
       ensureUninstalled(useNative);
     }
   };

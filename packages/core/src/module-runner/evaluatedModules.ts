@@ -68,6 +68,26 @@ export class EvaluatedModules {
     mod.exports = undefined;
     mod.meta = undefined;
     mod.imports.clear();
+    mod.importers.clear();
+  }
+
+  removeModule(mod: EvaluatedModuleNode): void {
+    this.idToModuleMap.delete(mod.id);
+
+    for (const [url, current] of this.urlToModuleMap.entries()) {
+      if (current === mod) {
+        this.urlToModuleMap.delete(url);
+      }
+    }
+
+    const fileKey = cleanUrl(mod.id);
+    const fileMatched = this.fileToModulesMap.get(fileKey);
+    if (fileMatched) {
+      fileMatched.delete(mod);
+      if (fileMatched.size === 0) {
+        this.fileToModulesMap.delete(fileKey);
+      }
+    }
   }
 
   clear(): void {

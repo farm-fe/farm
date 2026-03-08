@@ -182,7 +182,10 @@ function createMiddlewareServer(...middlewares: SsrMiddleware[]) {
   return middlewareServer;
 }
 
-function createFarmServerMock(withWatcher = false) {
+function createFarmServerMock(
+  withWatcher = false,
+  templateHtml = '<html><body><!--app-html--></body></html>'
+) {
   const farmMiddlewares = createMiddlewareServer();
   const trace: string[] = [];
   farmMiddlewares.use((_req, _res, next) => {
@@ -192,7 +195,7 @@ function createFarmServerMock(withWatcher = false) {
 
   const watcher = withWatcher ? new FakeWatcher() : undefined;
   const templateCompiler = new FakeTemplateCompiler({
-    'index.html': '<html><body><!--app-html--></body></html>'
+    'index.html': templateHtml
   });
   const runner = {
     import: vi.fn(async () => ({
@@ -278,6 +281,52 @@ describe('farm ssr dev server api shell', () => {
 
     expect(body).toContain('<div>render:/hello</div>');
     expect(headers['Content-Type']).toContain('text/html');
+    await devServer.close();
+  });
+
+  it('falls back to root container replacement when default placeholder is missing', async () => {
+    const { farmServer } = createFarmServerMock(
+      false,
+      '<html><body><div id="root"></div></body></html>'
+    );
+    const hostServer = new FakeHostServer();
+
+    const devServer = await createSsrDevServerWithFactories(
+      {
+        client: {},
+        ssr: {
+          entry: '/src/entry-server.ts',
+          template: {
+            resource: 'index.html'
+          }
+        }
+      },
+      createFactories(farmServer, hostServer)
+    );
+
+    const body = await new Promise<string>((resolve) => {
+      const res = {
+        statusCode: 0,
+        setHeader() {},
+        end(html: string) {
+          resolve(html);
+        }
+      };
+
+      devServer.middlewares(
+        {
+          method: 'GET',
+          url: '/root-fallback',
+          headers: { accept: 'text/html' }
+        } as never,
+        res as never,
+        () => resolve('next')
+      );
+    });
+
+    expect(body).toContain(
+      '<div id="root"><div>render:/root-fallback</div></div>'
+    );
     await devServer.close();
   });
 

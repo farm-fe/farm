@@ -383,6 +383,32 @@ function resolveTemplateFilePath(params: {
   return path.join(params.clientBuildOutput.root, params.templateFile);
 }
 
+function resolveTemplateFileCandidates(params: {
+  templateFile?: string;
+  clientBuildOutput: SsrResolvedBuildOutput;
+}) {
+  const defaultFilePath = path.join(
+    params.clientBuildOutput.outputPath,
+    'index.html'
+  );
+
+  if (!params.templateFile) {
+    return [defaultFilePath];
+  }
+
+  if (path.isAbsolute(params.templateFile)) {
+    return [params.templateFile];
+  }
+
+  const normalizedTemplateFile = params.templateFile.replace(/^\/+/, '');
+  const candidates = [
+    path.join(params.clientBuildOutput.outputPath, normalizedTemplateFile),
+    path.join(params.clientBuildOutput.root, params.templateFile)
+  ];
+
+  return [...new Set(candidates)];
+}
+
 async function loadTemplateContent(params: {
   options: SsrPreviewRenderOptions;
   clientBuildOutput: SsrResolvedBuildOutput;
@@ -403,11 +429,25 @@ async function loadTemplateContent(params: {
     return await template.load(loadContext);
   }
 
-  const templateFilePath = resolveTemplateFilePath({
+  const templateFileCandidates = resolveTemplateFileCandidates({
     templateFile: template.file,
     clientBuildOutput: params.clientBuildOutput
   });
-  return params.factories.readFile(templateFilePath);
+  let lastReadError: unknown;
+
+  for (const filePath of templateFileCandidates) {
+    try {
+      return await params.factories.readFile(filePath);
+    } catch (error) {
+      lastReadError = error;
+      const code = (error as { code?: unknown })?.code;
+      if (code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
+  throw lastReadError;
 }
 
 function resolveRenderResult(params: {

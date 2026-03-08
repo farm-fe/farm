@@ -262,6 +262,126 @@ describe('farm ssr build/preview api', () => {
     await previewServer.close();
   });
 
+  it('prefers built output template when preview template.file is relative', async () => {
+    const hostServer = new FakeHostServer();
+    const readFileMock = vi.fn(async (filePath: string) => {
+      if (filePath === '/project/dist/client/index.html') {
+        return '<html><body><div id=root><!--app-html--></div><script src=/index.built.js data-farm-resource=true></script></body></html>';
+      }
+
+      if (filePath === '/project/index.html') {
+        return '<html><body><div id=root><!--app-html--></div><script type="module" src="/src/main.ts"></script></body></html>';
+      }
+
+      throw Object.assign(new Error(`unexpected file: ${filePath}`), {
+        code: 'ENOENT'
+      });
+    });
+    const { factories } = createFactories({
+      hostServer,
+      readFile: readFileMock
+    });
+
+    const previewServer = await createSsrPreviewServerWithFactories(
+      {
+        client: { configFile: 'client' },
+        server: { configFile: 'server' },
+        ssr: {
+          entry: 'entry-server.js',
+          template: {
+            file: 'index.html'
+          }
+        }
+      },
+      factories
+    );
+
+    const body = await new Promise<string>((resolve) => {
+      previewServer.middlewares(
+        {
+          method: 'GET',
+          url: '/about',
+          headers: { accept: 'text/html' }
+        } as never,
+        {
+          setHeader() {},
+          end(html: string) {
+            resolve(html);
+          }
+        } as never,
+        () => resolve('next')
+      );
+    });
+
+    expect(body).toContain('data-farm-resource=true');
+    expect(body).not.toContain('/src/main.ts');
+    expect(readFileMock.mock.calls[0]?.[0]).toBe(
+      '/project/dist/client/index.html'
+    );
+    await previewServer.close();
+  });
+
+  it('falls back to root template file when relative preview template is absent in build output', async () => {
+    const hostServer = new FakeHostServer();
+    const readFileMock = vi.fn(async (filePath: string) => {
+      if (filePath === '/project/dist/client/custom.html') {
+        throw Object.assign(new Error('missing output template'), {
+          code: 'ENOENT'
+        });
+      }
+
+      if (filePath === '/project/custom.html') {
+        return '<html><body><div id=root><!--app-html--></div><script src=/custom.js data-farm-resource=true></script></body></html>';
+      }
+
+      throw Object.assign(new Error(`unexpected file: ${filePath}`), {
+        code: 'ENOENT'
+      });
+    });
+    const { factories } = createFactories({
+      hostServer,
+      readFile: readFileMock
+    });
+
+    const previewServer = await createSsrPreviewServerWithFactories(
+      {
+        client: { configFile: 'client' },
+        server: { configFile: 'server' },
+        ssr: {
+          entry: 'entry-server.js',
+          template: {
+            file: 'custom.html'
+          }
+        }
+      },
+      factories
+    );
+
+    const body = await new Promise<string>((resolve) => {
+      previewServer.middlewares(
+        {
+          method: 'GET',
+          url: '/fallback-template',
+          headers: { accept: 'text/html' }
+        } as never,
+        {
+          setHeader() {},
+          end(html: string) {
+            resolve(html);
+          }
+        } as never,
+        () => resolve('next')
+      );
+    });
+
+    expect(body).toContain('data-farm-resource=true');
+    expect(readFileMock.mock.calls.map((args) => args[0])).toEqual([
+      '/project/dist/client/custom.html',
+      '/project/custom.html'
+    ]);
+    await previewServer.close();
+  });
+
   it('uses default preview entry when ssr.entry is omitted', async () => {
     const hostServer = new FakeHostServer();
     const { factories } = createFactories({ hostServer });

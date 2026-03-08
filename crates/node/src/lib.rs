@@ -247,7 +247,7 @@ fn extract_query_string(value: &str) -> String {
     .unwrap_or_default()
 }
 
-fn stringify_query_pairs(query: &Vec<(String, String)>) -> String {
+fn stringify_query_pairs(query: &[(String, String)]) -> String {
   if query.is_empty() {
     return String::new();
   }
@@ -562,7 +562,7 @@ mod tests {
   "names": [],
   "mappings": "AAAA"
 }"#
-      .to_string(),
+        .to_string(),
     )];
 
     let transformed_map = Some(
@@ -573,7 +573,7 @@ mod tests {
   "names": [],
   "mappings": "AAAA"
 }"#
-      .to_string(),
+        .to_string(),
     );
 
     let collapsed = collapse_module_source_map(&module, transformed_map).expect("collapsed map");
@@ -999,8 +999,11 @@ impl JsCompiler {
           &context.config.root,
         );
 
-        match try_inlined_fetch_result(&context, &module_id, Some(&self.module_runner_transform_cache))
-        {
+        match try_inlined_fetch_result(
+          &context,
+          &module_id,
+          Some(&self.module_runner_transform_cache),
+        ) {
           InlinedFetchAttempt::Inlined(inlined) => return Some(inlined),
           InlinedFetchAttempt::Bailout(reason) => {
             return Some(external_fetch_result(
@@ -1073,8 +1076,11 @@ impl JsCompiler {
         &context.config.root,
       );
 
-      match try_inlined_fetch_result(&context, &module_id, Some(&self.module_runner_transform_cache))
-      {
+      match try_inlined_fetch_result(
+        &context,
+        &module_id,
+        Some(&self.module_runner_transform_cache),
+      ) {
         InlinedFetchAttempt::Inlined(inlined) => return Some(inlined),
         InlinedFetchAttempt::Bailout(reason) => {
           let resolved_file =

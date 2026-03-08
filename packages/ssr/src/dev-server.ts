@@ -583,6 +583,37 @@ function normalizeTemplateResourcePath(resource: string) {
   return resource;
 }
 
+const DEFAULT_TEMPLATE_PLACEHOLDER = '<!--app-html-->';
+const ROOT_CONTAINER_PATTERN =
+  /<div\s+id=(?:"root"|'root'|root)[^>]*>[\s\S]*?<\/div>/;
+
+function injectAppHtmlToTemplate(params: {
+  template: string;
+  appHtml: string;
+  placeholder: string;
+}) {
+  if (params.template.includes(params.placeholder)) {
+    return params.template.replace(params.placeholder, params.appHtml);
+  }
+
+  if (params.placeholder !== DEFAULT_TEMPLATE_PLACEHOLDER) {
+    throw new Error(
+      `[farm ssr] template placeholder "${params.placeholder}" was not found.`
+    );
+  }
+
+  if (!ROOT_CONTAINER_PATTERN.test(params.template)) {
+    throw new Error(
+      `[farm ssr] template placeholder "${params.placeholder}" was not found.`
+    );
+  }
+
+  return params.template.replace(
+    ROOT_CONTAINER_PATTERN,
+    `<div id="root">${params.appHtml}</div>`
+  );
+}
+
 async function loadTemplateContent(params: {
   options: SsrRenderOptions;
   farmServer: SsrDevFarmServerLike;
@@ -693,14 +724,13 @@ async function renderHtmlResponse(params: {
     });
   }
 
-  const placeholder = params.options.template.placeholder ?? '<!--app-html-->';
-  if (!template.includes(placeholder)) {
-    throw new Error(
-      `[farm ssr] template placeholder "${placeholder}" was not found.`
-    );
-  }
-
-  return template.replace(placeholder, appHtml);
+  const placeholder =
+    params.options.template.placeholder ?? DEFAULT_TEMPLATE_PLACEHOLDER;
+  return injectAppHtmlToTemplate({
+    template,
+    appHtml,
+    placeholder
+  });
 }
 
 function createSsrRenderMiddleware(params: {

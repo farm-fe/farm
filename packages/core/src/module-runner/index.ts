@@ -1,4 +1,5 @@
 export { createDefaultImportMeta } from './createImportMeta.js';
+export { ModuleRunnerDiagnosticsBus } from './diagnostics.js';
 export { EvaluatedModuleNode, EvaluatedModules } from './evaluatedModules.js';
 export {
   BunModulesEvaluator,
@@ -27,15 +28,24 @@ export type {
   InlinedFetchResult,
   InvokeMethods,
   ModuleEvaluator,
+  ModuleRunnerDiagnosticsEmitter,
+  ModuleRunnerDiagnosticsEvent,
   ModuleRunnerEvaluatorType,
   ModuleRunnerInvokeCompiler,
   ModuleRunnerInvokeContext,
   ModuleRunnerInvokeHandlers,
   ModuleRunnerTransport,
+  NonJsPolicyMode,
+  NonJsPolicyOptions,
   ResolvedFetchResult,
+  RunnerCachePolicyOptions,
+  RunnerExternalPolicyOptions,
   RunnerHotPayload,
   RunnerHotUpdate,
   RunnerInvokePayload,
   RunnerInvokeResponsePayload,
+  RunnerResolveContext,
+  RunnerResolveResult,
+  RunnerResolver,
   RunnerSourceMapInterceptorOptions
 } from './types.js';

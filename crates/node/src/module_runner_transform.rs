@@ -13,8 +13,8 @@ use farmfe_core::{
     ExportDefaultExpr, ExportDefaultSpecifier, ExportSpecifier, Expr, ExprOrSpread, ExprStmt,
     FnDecl, ForHead, ForInStmt, ForOfStmt, Id, Ident, ImportDecl, ImportSpecifier, KeyValuePatProp,
     KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind, Module as SwcModule,
-    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop, SimpleAssignTarget, Stmt, Str,
-    TsEntityName, TsExportAssignment, TsImportEqualsDecl, TsModuleRef, UpdateExpr, VarDecl,
+    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop, SimpleAssignTarget, Stmt,
+    Str, TsEntityName, TsExportAssignment, TsImportEqualsDecl, TsModuleRef, UpdateExpr, VarDecl,
     VarDeclKind, VarDeclarator,
   },
 };
@@ -62,14 +62,13 @@ pub fn transform_script_module_to_runner_code(
   let mut cm = context.meta.get_module_source_map(module_id);
 
   if ast.body.is_empty() {
-    let syntax =
-      syntax_from_module_type(&module.module_type, context.config.script.parser.clone())
-        .ok_or(RunnerTransformBailoutReason::UnhandledModuleDecl)?;
+    let syntax = syntax_from_module_type(&module.module_type, context.config.script.parser.clone())
+      .ok_or(RunnerTransformBailoutReason::UnhandledModuleDecl)?;
     let parsed = parse_module(
       module_id,
       Arc::new(module.content.to_string()),
       syntax,
-      context.config.script.target.clone(),
+      context.config.script.target,
     )
     .map_err(|_| RunnerTransformBailoutReason::UnhandledModuleDecl)?;
     ast = parsed.ast;
@@ -122,10 +121,13 @@ fn prune_type_only_import_decls(ast: &mut SwcModule) {
         return true;
       }
 
-      import_decl.specifiers.iter().any(|specifier| match specifier {
-        ImportSpecifier::Named(named_specifier) => !named_specifier.is_type_only,
-        _ => true,
-      })
+      import_decl
+        .specifiers
+        .iter()
+        .any(|specifier| match specifier {
+          ImportSpecifier::Named(named_specifier) => !named_specifier.is_type_only,
+          _ => true,
+        })
     }
     _ => true,
   });
@@ -251,7 +253,11 @@ impl RunnerModuleTransformer {
     let import_with = with.map(|with_obj| Expr::Object(*with_obj));
 
     if specifiers.is_empty() {
-      out.push(ModuleItem::Stmt(create_import_stmt(None, &source, import_with)));
+      out.push(ModuleItem::Stmt(create_import_stmt(
+        None,
+        &source,
+        import_with,
+      )));
       return Ok(());
     }
 
@@ -473,7 +479,7 @@ impl RunnerModuleTransformer {
       let reexport_namespace = self.next_reexport_ident();
       out.push(ModuleItem::Stmt(create_import_stmt(
         Some(reexport_namespace.clone()),
-        &source.value.to_string(),
+        source.value.as_ref(),
         export_with,
       )));
 
@@ -534,16 +540,16 @@ impl RunnerModuleTransformer {
         }
         ExportSpecifier::Default(ExportDefaultSpecifier { exported, .. }) => {
           out.push(ModuleItem::Stmt(create_export_name_stmt(
-            &exported.sym.to_string(),
-            Expr::Ident(exported),
+            exported.sym.as_ref(),
+            Expr::Ident(exported.clone()),
           )));
         }
         ExportSpecifier::Namespace(namespace_specifier) => {
           let local_ident = module_export_name_to_ident(&namespace_specifier.name)
             .ok_or(RunnerTransformBailoutReason::UnhandledModuleDecl)?;
           out.push(ModuleItem::Stmt(create_export_name_stmt(
-            &local_ident.sym.to_string(),
-            Expr::Ident(local_ident),
+            local_ident.sym.as_ref(),
+            Expr::Ident(local_ident.clone()),
           )));
         }
       }
@@ -572,7 +578,7 @@ impl RunnerModuleTransformer {
     let reexport_namespace = self.next_reexport_ident();
     out.push(ModuleItem::Stmt(create_import_stmt(
       Some(reexport_namespace.clone()),
-      &src.value.to_string(),
+      src.value.as_ref(),
       export_with,
     )));
 
@@ -678,7 +684,7 @@ fn create_expr_from_ts_entity_name(entity_name: &TsEntityName) -> Expr {
     TsEntityName::Ident(ident) => Expr::Ident(ident.clone()),
     TsEntityName::TsQualifiedName(qualified_name) => create_member_expr(
       create_expr_from_ts_entity_name(&qualified_name.left),
-      &qualified_name.right.sym.to_string(),
+      qualified_name.right.sym.as_ref(),
     ),
   }
 }
@@ -1088,6 +1094,7 @@ impl Visit for RunnerTransformEligibility {
   }
 }
 
+#[allow(dead_code)]
 fn can_transform_to_runner(ast: &SwcModule) -> bool {
   analyze_transform_eligibility(ast).should_transform()
 }
@@ -1139,10 +1146,7 @@ fn create_import_stmt(binding: Option<Ident>, source: &str, import_with: Option<
 
   let awaited_import = Expr::Await(AwaitExpr {
     span: DUMMY_SP,
-    arg: Box::new(create_helper_call_expr(
-      FARM_SSR_IMPORT,
-      import_args,
-    )),
+    arg: Box::new(create_helper_call_expr(FARM_SSR_IMPORT, import_args)),
   });
 
   if let Some(binding) = binding {
@@ -1950,7 +1954,10 @@ export const value = foo;
         && !output.contains("const foo=__farm_ssr_imported__0[\"foo\"]"),
       "{output}"
     );
-    assert!(output.contains("__farm_ssr_imported__0[\"foo\"]"), "{output}");
+    assert!(
+      output.contains("__farm_ssr_imported__0[\"foo\"]"),
+      "{output}"
+    );
     assert!(
       output.contains("__farm_ssr_export_name__(\"value\""),
       "{output}"
@@ -2065,8 +2072,14 @@ export const value = data;
     assert!(data_import_idx < dep2_import_idx, "{output}");
     assert!(dep2_import_idx < reexport_idx, "{output}");
     assert!(reexport_idx < value_export_idx, "{output}");
-    assert!(output.contains("__farm_ssr_import__(\"./data.json\","), "{output}");
-    assert!(output.contains("__farm_ssr_import__(\"./dep2.json\","), "{output}");
+    assert!(
+      output.contains("__farm_ssr_import__(\"./data.json\","),
+      "{output}"
+    );
+    assert!(
+      output.contains("__farm_ssr_import__(\"./dep2.json\","),
+      "{output}"
+    );
   }
 
   #[test]
@@ -2339,9 +2352,7 @@ export const value = data;
     let module_id = ModuleId::from("entry.ts");
     let parsed = parse_module(
       &module_id,
-      Arc::new(
-        "import { foo, bar } from './dep'; foo++; export const value = bar;".to_string(),
-      ),
+      Arc::new("import { foo, bar } from './dep'; foo++; export const value = bar;".to_string()),
       Syntax::Es(Default::default()),
       Default::default(),
     )
@@ -2366,7 +2377,10 @@ export const value = data;
         || output.contains("const foo=__farm_ssr_imported__0[\"foo\"]"),
       "{output}"
     );
-    assert!(output.contains("__farm_ssr_imported__0[\"bar\"]"), "{output}");
+    assert!(
+      output.contains("__farm_ssr_imported__0[\"bar\"]"),
+      "{output}"
+    );
     assert!(
       output.contains("__farm_ssr_export_name__(\"value\""),
       "{output}"
@@ -2405,7 +2419,10 @@ export const value = data;
         || output.contains("const foo=__farm_ssr_imported__0[\"foo\"]"),
       "{output}"
     );
-    assert!(output.contains("__farm_ssr_imported__0[\"bar\"]"), "{output}");
+    assert!(
+      output.contains("__farm_ssr_imported__0[\"bar\"]"),
+      "{output}"
+    );
     assert!(
       output.contains("__farm_ssr_export_name__(\"value\""),
       "{output}"
@@ -2731,7 +2748,10 @@ export const value = data;
         || output.contains("const foo=await __farm_ssr_import__(\"./dep\")"),
       "{output}"
     );
-    assert!(output.contains("__farm_ssr_export_name__(\"foo\""), "{output}");
+    assert!(
+      output.contains("__farm_ssr_export_name__(\"foo\""),
+      "{output}"
+    );
   }
 
   #[test]
@@ -2762,8 +2782,7 @@ export const value = data;
     .unwrap();
     let output = String::from_utf8(output).unwrap();
     assert!(
-      output.contains("const foo = Bar[\"Baz\"]")
-        || output.contains("const foo=Bar[\"Baz\"]"),
+      output.contains("const foo = Bar[\"Baz\"]") || output.contains("const foo=Bar[\"Baz\"]"),
       "{output}"
     );
     assert!(
@@ -2883,9 +2902,7 @@ export const value = 1;
     let module_id = ModuleId::from("entry.ts");
     let parsed = parse_module(
       &module_id,
-      Arc::new(
-        "namespace Foo { export const a = 1; } export const value = Foo.a;".to_string(),
-      ),
+      Arc::new("namespace Foo { export const a = 1; } export const value = Foo.a;".to_string()),
       Syntax::Typescript(TsSyntax {
         tsx: false,
         ..Default::default()
@@ -3123,7 +3140,10 @@ export default Box;
     .unwrap();
     let output = String::from_utf8(output).unwrap();
 
-    assert!(output.contains("[__farm_ssr_imported__0[\"key\"]]"), "{output}");
+    assert!(
+      output.contains("[__farm_ssr_imported__0[\"key\"]]"),
+      "{output}"
+    );
     assert!(
       output.contains("__farm_ssr_export_name__(\"default\""),
       "{output}"
@@ -3217,8 +3237,14 @@ export const box = create('local');
 
     assert!(output.contains("function create(key)"), "{output}");
     assert!(output.contains("[key]"), "{output}");
-    assert!(!output.contains("__farm_ssr_imported__0[\"key\"]"), "{output}");
-    assert!(output.contains("__farm_ssr_export_name__(\"box\""), "{output}");
+    assert!(
+      !output.contains("__farm_ssr_imported__0[\"key\"]"),
+      "{output}"
+    );
+    assert!(
+      output.contains("__farm_ssr_export_name__(\"box\""),
+      "{output}"
+    );
   }
 
   #[test]
@@ -3269,8 +3295,14 @@ export { local };
     assert!(base_import_idx < dep_import_idx, "{output}");
     assert!(dep_import_idx < alias_export_idx, "{output}");
     assert!(alias_export_idx < local_export_idx, "{output}");
-    assert!(output.contains("__farm_ssr_import__(\"./base.json\","), "{output}");
-    assert!(output.contains("__farm_ssr_import__(\"./dep.json\","), "{output}");
+    assert!(
+      output.contains("__farm_ssr_import__(\"./base.json\","),
+      "{output}"
+    );
+    assert!(
+      output.contains("__farm_ssr_import__(\"./dep.json\","),
+      "{output}"
+    );
     assert!(output.contains("type"), "{output}");
   }
 
@@ -3487,9 +3519,7 @@ export const value = dep.foo;
     let module_id = ModuleId::from("entry.ts");
     let parsed = parse_module(
       &module_id,
-      Arc::new(
-        "const value = { a: 1 } satisfies { a: number }; export { value };".to_string(),
-      ),
+      Arc::new("const value = { a: 1 } satisfies { a: number }; export { value };".to_string()),
       Syntax::Typescript(TsSyntax {
         tsx: false,
         ..Default::default()
