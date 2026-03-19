@@ -317,6 +317,10 @@ impl Plugin for JsPluginAdapter {
 
       if let Some(result) = update_result {
         for (item, update_type) in result {
+          if item.trim().is_empty() {
+            continue;
+          }
+
           if !updating_modules.contains(&item) {
             params.paths.push((item.clone(), update_type.into()));
             updating_modules.insert(item);

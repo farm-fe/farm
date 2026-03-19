@@ -1904,6 +1904,7 @@ dependencies = [
  "notify",
  "puffin_egui",
  "regex",
+ "swc_ecma_transforms_typescript",
 ]
 
 [[package]]

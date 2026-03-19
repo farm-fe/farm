@@ -11,6 +11,8 @@ import type {
 import type {
   CompilerUpdateItem,
   JsApiMetadata,
+  JsFetchModuleOptions,
+  JsFetchModuleResult,
   JsUpdateResult
 } from '../types/binding.js';
 import { cleanUrl } from '../utils/index.js';
@@ -169,6 +171,30 @@ export class Compiler {
       this._bindingCompiler.resource(path) ||
       this._bindingCompiler.resource(cleanUrl(path))
     );
+  }
+
+  fetchModule(
+    id: string,
+    importer?: string,
+    options?: JsFetchModuleOptions
+  ): JsFetchModuleResult | null {
+    const bindingCompiler = this._bindingCompiler as BindingCompiler & {
+      fetchModule?: (
+        id: string,
+        importer?: string | null,
+        options?: JsFetchModuleOptions | null
+      ) => JsFetchModuleResult | null;
+    };
+
+    if (typeof bindingCompiler.fetchModule !== 'function') {
+      return null;
+    }
+
+    return (bindingCompiler.fetchModule(
+      id,
+      importer ?? null,
+      options ?? null
+    ) ?? null) as JsFetchModuleResult | null;
   }
 
   resourcesMap(): Record<string, Resource> {

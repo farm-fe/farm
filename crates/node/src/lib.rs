@@ -2,15 +2,15 @@
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
 #![allow(clippy::blocks_in_conditions)]
-#[cfg(feature = "file_watcher")]
-use std::path::PathBuf;
 use std::{
+  fs,
   path::{Path, PathBuf},
-  sync::Arc,
+  sync::{Arc, Mutex},
 };
 
 use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
 
+pub mod module_runner_transform;
 pub mod plugin_adapters;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
@@ -25,12 +25,14 @@ use farmfe_core::{
 };
 
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
+use farmfe_toolkit::sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions, SourceMap};
 use napi::{
   bindgen_prelude::{Buffer, FromNapiValue, JsObjectValue, Object, ObjectRef, Undefined},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
   Env, JsValue, Status, Unknown,
 };
 
+use module_runner_transform::transform_script_module_to_runner_code;
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
 #[macro_use]
@@ -94,9 +96,496 @@ pub struct JsUpdateResult {
   pub extra_watch_result: WatchDiffResult,
 }
 
+#[napi(object)]
+pub struct JsFetchModuleOptions {
+  pub cached: Option<bool>,
+  pub start_offset: Option<i32>,
+}
+
+#[napi(object)]
+pub struct JsFetchModuleResult {
+  pub cache: Option<bool>,
+  pub externalize: Option<String>,
+  pub bailout_reason: Option<String>,
+  pub r#type: Option<String>,
+  pub code: Option<String>,
+  pub file: Option<String>,
+  pub id: Option<String>,
+  pub url: Option<String>,
+  pub invalidate: Option<bool>,
+  pub map: Option<String>,
+}
+
 #[napi(js_name = "Compiler")]
 pub struct JsCompiler {
   compiler: Arc<Compiler>,
+  module_runner_transform_cache: RunnerTransformCacheStore,
+}
+
+type RunnerTransformCacheStore = Mutex<HashMap<String, RunnerTransformCacheEntry>>;
+
+#[derive(Clone)]
+struct RunnerTransformCacheEntry {
+  content_hash: String,
+  code: String,
+  map: Option<String>,
+}
+
+fn clean_url(value: &str) -> &str {
+  let without_query = value
+    .split_once('?')
+    .map(|(before, _)| before)
+    .unwrap_or(value);
+
+  without_query
+    .split_once('#')
+    .map(|(before, _)| before)
+    .unwrap_or(without_query)
+}
+
+fn path_to_file_url(path: &Path) -> String {
+  let normalized = path.to_string_lossy().replace('\\', "/");
+
+  if cfg!(windows) {
+    if normalized.starts_with('/') {
+      format!("file://{normalized}")
+    } else {
+      format!("file:///{normalized}")
+    }
+  } else {
+    format!("file://{normalized}")
+  }
+}
+
+fn normalize_importer_path(importer: Option<&str>, root: &str) -> Option<PathBuf> {
+  let importer = clean_url(importer?);
+
+  if importer.starts_with("file://") {
+    let raw = importer.trim_start_matches("file://");
+    #[cfg(windows)]
+    {
+      if raw.len() >= 3 && raw.starts_with('/') && raw.as_bytes()[2] == b':' {
+        return Some(PathBuf::from(&raw[1..]));
+      }
+    }
+    return Some(PathBuf::from(raw));
+  }
+
+  if importer.starts_with('/') {
+    return Some(Path::new(root).join(importer.trim_start_matches('/')));
+  }
+
+  Some(PathBuf::from(importer))
+}
+
+fn try_resolve_file_path(id: &str, importer: Option<&str>, root: &str) -> Option<PathBuf> {
+  let id = clean_url(id);
+
+  if id.starts_with("file://") {
+    return normalize_importer_path(Some(id), root);
+  }
+
+  if Path::new(id).is_absolute() {
+    return Some(PathBuf::from(id));
+  }
+
+  if id.starts_with('/') {
+    return Some(Path::new(root).join(id.trim_start_matches('/')));
+  }
+
+  if id.starts_with("./") || id.starts_with("../") {
+    let importer_path = normalize_importer_path(importer, root)?;
+    let base_dir = if importer_path.is_file() {
+      importer_path.parent().unwrap_or(importer_path.as_path())
+    } else {
+      importer_path.as_path()
+    };
+    return Some(base_dir.join(id));
+  }
+
+  None
+}
+
+fn module_type_by_path(path: &Path) -> String {
+  if path
+    .extension()
+    .is_some_and(|ext| ext.eq_ignore_ascii_case("cjs"))
+  {
+    return "commonjs".to_string();
+  }
+
+  "module".to_string()
+}
+
+fn external_fetch_result(
+  externalize: String,
+  r#type: String,
+  bailout_reason: Option<String>,
+) -> JsFetchModuleResult {
+  JsFetchModuleResult {
+    cache: None,
+    externalize: Some(externalize),
+    bailout_reason,
+    r#type: Some(r#type),
+    code: None,
+    file: None,
+    id: None,
+    url: None,
+    invalidate: None,
+    map: None,
+  }
+}
+
+fn extract_query_string(value: &str) -> String {
+  let without_hash = value
+    .split_once('#')
+    .map(|(before, _)| before)
+    .unwrap_or(value);
+  without_hash
+    .split_once('?')
+    .map(|(_, query)| format!("?{query}"))
+    .unwrap_or_default()
+}
+
+fn stringify_query_pairs(query: &[(String, String)]) -> String {
+  if query.is_empty() {
+    return String::new();
+  }
+
+  format!(
+    "?{}",
+    query
+      .iter()
+      .map(|(key, value)| {
+        if value.is_empty() {
+          key.clone()
+        } else {
+          format!("{key}={value}")
+        }
+      })
+      .collect::<Vec<_>>()
+      .join("&")
+  )
+}
+
+fn module_id_from_resolved_path_and_query(
+  resolved_path: &str,
+  query_string: &str,
+  root: &str,
+) -> ModuleId {
+  if resolved_path.contains('?') {
+    return ModuleId::from_resolved_path_with_query(resolved_path, root);
+  }
+
+  if query_string.is_empty() {
+    return ModuleId::new(resolved_path, "", root);
+  }
+
+  ModuleId::from_resolved_path_with_query(&format!("{resolved_path}{query_string}"), root)
+}
+
+fn is_runner_ready_inlined_code(code: &str) -> bool {
+  code.contains("__farm_ssr_export_name__")
+    || code.contains("__farm_ssr_import__")
+    || code.contains("__farm_ssr_dynamic_import__")
+}
+
+fn collapse_module_source_map(
+  module: &farmfe_core::module::Module,
+  transformed_map: Option<String>,
+) -> Option<String> {
+  let mut chain = module
+    .source_map_chain
+    .iter()
+    .filter_map(|item| SourceMap::from_slice(item.as_bytes()).ok())
+    .collect::<Vec<_>>();
+
+  if let Some(map) = transformed_map {
+    if let Ok(parsed) = SourceMap::from_slice(map.as_bytes()) {
+      chain.push(parsed);
+    }
+  }
+
+  if chain.is_empty() {
+    return None;
+  }
+
+  let collapsed = collapse_sourcemap_chain(chain, CollapseSourcemapOptions::default());
+  let mut buffer = vec![];
+  collapsed.to_writer(&mut buffer).ok()?;
+
+  String::from_utf8(buffer).ok()
+}
+
+fn inlined_fetch_result(
+  module_id: &ModuleId,
+  code: String,
+  file: Option<String>,
+  url: String,
+  map: Option<String>,
+) -> JsFetchModuleResult {
+  JsFetchModuleResult {
+    cache: None,
+    externalize: None,
+    bailout_reason: None,
+    r#type: None,
+    code: Some(code),
+    file,
+    id: Some(module_id.to_string()),
+    url: Some(url),
+    invalidate: Some(false),
+    map,
+  }
+}
+
+enum InlinedFetchAttempt {
+  Inlined(JsFetchModuleResult),
+  Bailout(String),
+  NotApplicable,
+}
+
+fn get_cached_runner_transform(
+  cache: &RunnerTransformCacheStore,
+  module_key: &str,
+  content_hash: &str,
+) -> Option<(String, Option<String>)> {
+  let cache = cache.lock().ok()?;
+  let entry = cache.get(module_key)?;
+
+  if entry.content_hash != content_hash {
+    return None;
+  }
+
+  Some((entry.code.clone(), entry.map.clone()))
+}
+
+fn set_cached_runner_transform(
+  cache: &RunnerTransformCacheStore,
+  module_key: String,
+  content_hash: String,
+  code: String,
+  map: Option<String>,
+) {
+  if let Ok(mut cache) = cache.lock() {
+    cache.insert(
+      module_key,
+      RunnerTransformCacheEntry {
+        content_hash,
+        code,
+        map,
+      },
+    );
+  }
+}
+
+fn invalidate_cached_runner_transform(cache: &RunnerTransformCacheStore, module_key: &str) {
+  if let Ok(mut cache) = cache.lock() {
+    cache.remove(module_key);
+  }
+}
+
+fn try_inlined_fetch_result(
+  context: &Arc<CompilationContext>,
+  module_id: &ModuleId,
+  transform_cache: Option<&RunnerTransformCacheStore>,
+) -> InlinedFetchAttempt {
+  let module_graph = context.module_graph.read();
+  let Some(module) = module_graph.module(module_id) else {
+    return InlinedFetchAttempt::NotApplicable;
+  };
+
+  if module.external {
+    return InlinedFetchAttempt::NotApplicable;
+  }
+
+  if !module.module_type.is_script() {
+    return InlinedFetchAttempt::Bailout("not-script".to_string());
+  }
+
+  if module.content.is_empty() {
+    return InlinedFetchAttempt::Bailout("empty-content".to_string());
+  }
+
+  let code = module.content.to_string();
+
+  // Keep current runner behavior stable: only inline code that is already transformed
+  // to farm runner runtime calls.
+  if !is_runner_ready_inlined_code(&code) {
+    let module_key = module_id.to_string();
+    if let Some(cache) = transform_cache {
+      if let Some((cached_code, cached_map)) =
+        get_cached_runner_transform(cache, &module_key, &module.content_hash)
+      {
+        let map = collapse_module_source_map(module, cached_map);
+        let file = module_id.resolved_path(&context.config.root);
+        let url = module_id.resolved_path_with_query(&context.config.root);
+
+        return InlinedFetchAttempt::Inlined(inlined_fetch_result(
+          module_id,
+          cached_code,
+          Some(file),
+          url,
+          map,
+        ));
+      }
+    }
+
+    match transform_script_module_to_runner_code(module, module_id, context) {
+      Ok((transformed_code, transformed_map)) => {
+        if let Some(cache) = transform_cache {
+          set_cached_runner_transform(
+            cache,
+            module_key,
+            module.content_hash.clone(),
+            transformed_code.clone(),
+            transformed_map.clone(),
+          );
+        }
+
+        let map = collapse_module_source_map(module, transformed_map);
+        let file = module_id.resolved_path(&context.config.root);
+        let url = module_id.resolved_path_with_query(&context.config.root);
+
+        return InlinedFetchAttempt::Inlined(inlined_fetch_result(
+          module_id,
+          transformed_code,
+          Some(file),
+          url,
+          map,
+        ));
+      }
+      Err(reason) => {
+        if let Some(cache) = transform_cache {
+          invalidate_cached_runner_transform(cache, &module_key);
+        }
+        return InlinedFetchAttempt::Bailout(reason.as_str().to_string());
+      }
+    }
+  }
+
+  let map = collapse_module_source_map(module, None);
+  let file = module_id.resolved_path(&context.config.root);
+  let url = module_id.resolved_path_with_query(&context.config.root);
+
+  InlinedFetchAttempt::Inlined(inlined_fetch_result(module_id, code, Some(file), url, map))
+}
+
+#[cfg(test)]
+mod tests {
+  use std::{sync::Arc, sync::Mutex};
+
+  use farmfe_core::module::{Module, ModuleId};
+  use farmfe_core::HashMap;
+  use farmfe_toolkit::sourcemap::SourceMap;
+
+  use super::{
+    collapse_module_source_map, extract_query_string, get_cached_runner_transform,
+    is_runner_ready_inlined_code, set_cached_runner_transform, stringify_query_pairs,
+  };
+
+  #[test]
+  fn should_extract_query_without_hash() {
+    assert_eq!(extract_query_string("/src/entry.ts?t=1#hash"), "?t=1");
+    assert_eq!(extract_query_string("/src/entry.ts"), "");
+  }
+
+  #[test]
+  fn should_stringify_query_pairs() {
+    assert_eq!(
+      stringify_query_pairs(&vec![
+        ("t".to_string(), "1".to_string()),
+        ("raw".to_string(), "".to_string())
+      ]),
+      "?t=1&raw"
+    );
+  }
+
+  #[test]
+  fn should_detect_runner_ready_code() {
+    assert!(is_runner_ready_inlined_code(
+      "__farm_ssr_export_name__(\"value\", () => 1);"
+    ));
+    assert!(!is_runner_ready_inlined_code("export const value = 1;"));
+  }
+
+  #[test]
+  fn should_hit_runner_transform_cache_when_hash_matches() {
+    let cache = Mutex::new(HashMap::default());
+    set_cached_runner_transform(
+      &cache,
+      "/src/entry.ts".to_string(),
+      "hash-a".to_string(),
+      "code-a".to_string(),
+      Some("map-a".to_string()),
+    );
+
+    let hit = get_cached_runner_transform(&cache, "/src/entry.ts", "hash-a");
+    assert_eq!(hit, Some(("code-a".to_string(), Some("map-a".to_string()))));
+
+    let miss = get_cached_runner_transform(&cache, "/src/entry.ts", "hash-b");
+    assert!(miss.is_none());
+  }
+
+  #[test]
+  fn should_replace_runner_transform_cache_when_hash_changes() {
+    let cache = Mutex::new(HashMap::default());
+    set_cached_runner_transform(
+      &cache,
+      "/src/entry.ts".to_string(),
+      "hash-a".to_string(),
+      "code-a".to_string(),
+      Some("map-a".to_string()),
+    );
+    set_cached_runner_transform(
+      &cache,
+      "/src/entry.ts".to_string(),
+      "hash-b".to_string(),
+      "code-b".to_string(),
+      Some("map-b".to_string()),
+    );
+
+    assert!(get_cached_runner_transform(&cache, "/src/entry.ts", "hash-a").is_none());
+    assert_eq!(
+      get_cached_runner_transform(&cache, "/src/entry.ts", "hash-b"),
+      Some(("code-b".to_string(), Some("map-b".to_string())))
+    );
+  }
+
+  #[test]
+  fn should_collapse_transformed_map_after_existing_chain() {
+    let mut module = Module::new(ModuleId::from("entry.ts"));
+    module.source_map_chain = vec![Arc::new(
+      r#"{
+  "version": 3,
+  "file": "b.js",
+  "sources": ["a.ts"],
+  "names": [],
+  "mappings": "AAAA"
+}"#
+        .to_string(),
+    )];
+
+    let transformed_map = Some(
+      r#"{
+  "version": 3,
+  "file": "c.js",
+  "sources": ["b.js"],
+  "names": [],
+  "mappings": "AAAA"
+}"#
+        .to_string(),
+    );
+
+    let collapsed = collapse_module_source_map(&module, transformed_map).expect("collapsed map");
+    let parsed = SourceMap::from_slice(collapsed.as_bytes()).expect("valid source map");
+    let sources = parsed
+      .tokens()
+      .filter_map(|token| token.get_source().map(|s| s.to_string()))
+      .collect::<std::collections::HashSet<_>>();
+
+    assert!(sources.contains("a.ts"), "{sources:?}");
+    assert!(!sources.contains("b.js"), "{sources:?}");
+  }
 }
 
 #[napi]
@@ -159,6 +648,7 @@ impl JsCompiler {
         Compiler::new(config, plugins_adapters)
           .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))?,
       ),
+      module_runner_transform_cache: Mutex::new(HashMap::default()),
     })
   }
 
@@ -473,6 +963,161 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn fetch_module(
+    &self,
+    id: String,
+    importer: Option<String>,
+    _options: Option<JsFetchModuleOptions>,
+  ) -> Option<JsFetchModuleResult> {
+    let raw_id = id;
+    let clean_id = clean_url(&raw_id).to_string();
+    let has_query = raw_id.contains('?');
+
+    if clean_id.starts_with("data:") {
+      return Some(external_fetch_result(clean_id, "builtin".to_string(), None));
+    }
+
+    if clean_id.starts_with("node:") {
+      return Some(external_fetch_result(clean_id, "builtin".to_string(), None));
+    }
+
+    if clean_id.starts_with("http://") || clean_id.starts_with("https://") {
+      return Some(external_fetch_result(clean_id, "network".to_string(), None));
+    }
+
+    let context = self.compiler.context().clone();
+
+    let mut direct_file_fallback: Option<PathBuf> = None;
+
+    if let Some(path) = try_resolve_file_path(&raw_id, importer.as_deref(), &context.config.root) {
+      let resolved = fs::canonicalize(&path).unwrap_or(path);
+      if resolved.is_file() {
+        let query = extract_query_string(&raw_id);
+        let module_id = module_id_from_resolved_path_and_query(
+          resolved.to_string_lossy().as_ref(),
+          query.as_str(),
+          &context.config.root,
+        );
+
+        match try_inlined_fetch_result(
+          &context,
+          &module_id,
+          Some(&self.module_runner_transform_cache),
+        ) {
+          InlinedFetchAttempt::Inlined(inlined) => return Some(inlined),
+          InlinedFetchAttempt::Bailout(reason) => {
+            return Some(external_fetch_result(
+              path_to_file_url(&resolved),
+              module_type_by_path(&resolved),
+              Some(reason),
+            ));
+          }
+          InlinedFetchAttempt::NotApplicable => {}
+        }
+
+        if !has_query {
+          return Some(external_fetch_result(
+            path_to_file_url(&resolved),
+            module_type_by_path(&resolved),
+            None,
+          ));
+        }
+
+        direct_file_fallback = Some(resolved);
+      }
+    }
+
+    let resolver = Resolver::new();
+    let resolve_base_dir = normalize_importer_path(importer.as_deref(), &context.config.root)
+      .map(|importer_path| {
+        if importer_path.is_file() {
+          importer_path
+            .parent()
+            .unwrap_or(importer_path.as_path())
+            .to_path_buf()
+        } else {
+          importer_path
+        }
+      })
+      .unwrap_or_else(|| PathBuf::from(&context.config.root));
+
+    let resolve_source = raw_id
+      .split_once('#')
+      .map(|(before, _)| before.to_string())
+      .unwrap_or_else(|| raw_id.clone());
+
+    if let Some(resolved) = resolver.resolve(
+      &resolve_source,
+      resolve_base_dir,
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    ) {
+      let resolved_path = clean_url(&resolved.resolved_path).to_string();
+
+      if resolved.external {
+        let resolved_type = if resolved_path.starts_with("node:") {
+          "builtin".to_string()
+        } else if resolved_path.starts_with("http://") || resolved_path.starts_with("https://") {
+          "network".to_string()
+        } else if resolved_path.ends_with(".cjs") {
+          "commonjs".to_string()
+        } else {
+          "module".to_string()
+        };
+
+        return Some(external_fetch_result(resolved_path, resolved_type, None));
+      }
+
+      let query = stringify_query_pairs(&resolved.query);
+      let module_id = module_id_from_resolved_path_and_query(
+        &resolved.resolved_path,
+        query.as_str(),
+        &context.config.root,
+      );
+
+      match try_inlined_fetch_result(
+        &context,
+        &module_id,
+        Some(&self.module_runner_transform_cache),
+      ) {
+        InlinedFetchAttempt::Inlined(inlined) => return Some(inlined),
+        InlinedFetchAttempt::Bailout(reason) => {
+          let resolved_file =
+            fs::canonicalize(&resolved_path).unwrap_or(PathBuf::from(&resolved_path));
+          if resolved_file.is_file() {
+            return Some(external_fetch_result(
+              path_to_file_url(&resolved_file),
+              module_type_by_path(&resolved_file),
+              Some(reason),
+            ));
+          }
+        }
+        InlinedFetchAttempt::NotApplicable => {}
+      }
+
+      let resolved_file = fs::canonicalize(&resolved_path).unwrap_or(PathBuf::from(&resolved_path));
+      if resolved_file.is_file() {
+        return Some(external_fetch_result(
+          path_to_file_url(&resolved_file),
+          module_type_by_path(&resolved_file),
+          None,
+        ));
+      }
+    }
+
+    if let Some(fallback_file) = direct_file_fallback {
+      return Some(external_fetch_result(
+        path_to_file_url(&fallback_file),
+        module_type_by_path(&fallback_file),
+        None,
+      ));
+    }
+
+    None
+  }
+
+  #[napi]
   pub fn stats(&self) -> String {
     let context = self.compiler.context();
     context.stats.to_string()
@@ -544,10 +1189,19 @@ fn read_metadata_by_scope(js_compiler: &JsCompiler, scope: String) -> Vec<String
 }
 
 fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {
+  let raw_module_id = module_id.clone();
   let context = js_compiler.compiler.context();
   let module_id = ModuleId::new(&module_id, "", &context.config.root);
 
   context.invalidate_module(&module_id);
+  invalidate_cached_runner_transform(
+    &js_compiler.module_runner_transform_cache,
+    &module_id.to_string(),
+  );
+  invalidate_cached_runner_transform(
+    &js_compiler.module_runner_transform_cache,
+    clean_url(&raw_module_id),
+  );
 }
 
 #[napi(js_name = "Resolver")]

@@ -1,0 +1,29 @@
+{
+  "name": "@farmfe-examples/ssr-toolkit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vitejs/plugin-vue": "^6.0.4",
+    "vue": "^3.3.12",
+    "vue-router": "^4.2.1"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "pnpm run host:dev",
+    "dev:ejs": "pnpm run host:dev:ejs",
+    "host:dev": "node server.mjs",
+    "host:dev:ejs": "pnpm --filter @farmfe/ssr build && SSR_TEMPLATE_MODE=ejs node server.mjs",
+    "host:preview": "pnpm run cli:build && SSR_COMMAND=preview node server.mjs",
+    "cli:prepare": "pnpm --filter @farmfe/cli build && pnpm --filter @farmfe/ssr build",
+    "cli:dev": "farm ssr dev . --config farm.config.ts",
+    "cli:build": "farm ssr build . --config farm.config.ts",
+    "cli:preview": "pnpm run cli:build && farm ssr preview . --config farm.config.ts"
+  },
+  "devDependencies": {
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-less": "workspace:*",
+    "@farmfe/ssr": "workspace:*",
+    "less": "^4.1.3"
+  }
+}

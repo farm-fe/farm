@@ -18,6 +18,14 @@ import type {
   UserConfig
 } from '../config/types.js';
 import { colors, handleLazyCompilation, resolveConfig } from '../index.js';
+import { FarmModuleRunner } from '../module-runner/runner.js';
+import { createServerModuleRunnerInvokeHandlers } from '../module-runner/serverInvoke.js';
+import { createServerModuleRunnerTransport } from '../module-runner/serverTransport.js';
+import type {
+  FarmModuleRunnerOptions,
+  InvokeMethods,
+  ModuleRunnerInvokeHandlers
+} from '../module-runner/types.js';
 import { getSortedPluginHooksBindThis } from '../plugin/index.js';
 import type {
   CompilerUpdateItem,
@@ -90,6 +98,9 @@ export class Server extends httpServer {
   terminateServerFn: (_: unknown, exitCode?: number) => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
+  moduleRunnerStamp = 0;
+  moduleRunnerInvokeHandlers: Partial<ModuleRunnerInvokeHandlers> = {};
+  moduleRunners = new Set<FarmModuleRunner>();
 
   /**
    * Creates an instance of Server.
@@ -191,6 +202,9 @@ export class Server extends httpServer {
     // init websocket server
     await server.createWebSocketServer();
 
+    // init module runner invoke handlers
+    server.#initializeModuleRunner();
+
     // invalidate vite handler
     server.#invalidateVite();
 
@@ -201,6 +215,13 @@ export class Server extends httpServer {
 
     // init middlewares
     server.#initializeMiddlewares();
+
+    if (server.serverOptions.middlewareMode) {
+      // In middleware mode there is no standalone dev HTTP server, so compile
+      // eagerly here instead of relying on `listen()`.
+      await server.#startCompile();
+      server.watcher?.watchExtraFiles?.();
+    }
 
     server.terminateServerFn = async (_: unknown, exitCode?: number) => {
       try {
@@ -289,6 +310,8 @@ export class Server extends httpServer {
     });
 
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      this.moduleRunnerStamp++;
+
       const added = [
         ...updateResult.added,
         ...updateResult.extraWatchResult.add
@@ -387,7 +410,9 @@ export class Server extends httpServer {
       return;
     }
     await this.watcher.close();
-    await newServer.listen();
+    if (!newServer.serverOptions.middlewareMode) {
+      await newServer.listen();
+    }
     return newServer;
   }
 
@@ -396,12 +421,6 @@ export class Server extends httpServer {
    * @throws {Error} If the HTTP server is not created.
    */
   async createWebSocketServer() {
-    if (!this.httpServer) {
-      throw new Error(
-        'Websocket requires a http server. please check the server is created'
-      );
-    }
-
     this.ws = new WsServer(this);
     await this.ws.createWebSocketServer();
   }
@@ -411,7 +430,7 @@ export class Server extends httpServer {
    * @throws {Error} If the HTTP server is not created.
    */
   createHmrEngine() {
-    if (!this.httpServer) {
+    if (!this.httpServer && !this.serverOptions.middlewareMode) {
       throw new Error(
         'HmrEngine requires a http server. please check the server is be created'
       );
@@ -427,6 +446,9 @@ export class Server extends httpServer {
    */
   async listen(): Promise<void> {
     if (!this.httpServer) {
+      if (this.serverOptions.middlewareMode) {
+        return;
+      }
       this.logger.warn('HTTP server is not created yet');
       return;
     }
@@ -457,6 +479,43 @@ export class Server extends httpServer {
       );
       // throw error;
     }
+  }
+
+  async createModuleRunner(
+    options: Omit<FarmModuleRunnerOptions, 'transport'> = {}
+  ): Promise<FarmModuleRunner> {
+    if (!this.compiler) {
+      await this.#startCompile();
+      this.watcher?.watchExtraFiles?.();
+    }
+
+    const transport = createServerModuleRunnerTransport(this);
+    const runner = new FarmModuleRunner({
+      ...options,
+      transport
+    });
+
+    this.moduleRunners.add(runner);
+    return runner;
+  }
+
+  async invokeModuleRunner<T extends keyof InvokeMethods>(
+    name: T,
+    data: Parameters<InvokeMethods[T]>
+  ): Promise<Awaited<ReturnType<InvokeMethods[T]>>> {
+    const handler = this.moduleRunnerInvokeHandlers[name];
+
+    if (!handler) {
+      throw new Error(
+        `[farm module runner] Invoke method \"${String(name)}\" is not registered.`
+      );
+    }
+
+    return (await (
+      handler as (
+        ...args: Parameters<InvokeMethods[T]>
+      ) => ReturnType<InvokeMethods[T]>
+    )(...data)) as Awaited<ReturnType<InvokeMethods[T]>>;
   }
 
   /**
@@ -504,6 +563,50 @@ export class Server extends httpServer {
     )) {
       this.postConfigureServerHooks.push(await hook(reflexServer));
     }
+  }
+
+  #initializeModuleRunner() {
+    this.moduleRunnerInvokeHandlers =
+      createServerModuleRunnerInvokeHandlers(this);
+
+    this.ws.on(
+      'farm:invoke',
+      async (
+        payload: {
+          id: 'send' | `send:${string}`;
+          name: keyof InvokeMethods;
+          data: unknown[];
+        },
+        client: { send: (event: string, payload: unknown) => void }
+      ) => {
+        const responseId = payload.id.replace('send', 'response') as
+          | 'response'
+          | `response:${string}`;
+
+        try {
+          const result = await this.invokeModuleRunner(
+            payload.name,
+            payload.data as never
+          );
+          client.send('farm:invoke', {
+            id: responseId,
+            name: payload.name,
+            data: { result }
+          });
+        } catch (error) {
+          client.send('farm:invoke', {
+            id: responseId,
+            name: payload.name,
+            data: {
+              error: {
+                message: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined
+              }
+            }
+          });
+        }
+      }
+    );
   }
 
   /**
@@ -659,6 +762,7 @@ export class Server extends httpServer {
 
     const duration = performance.now() - start;
     bootstrap(duration, this.compiler.config, hasCacheDir);
+    this.moduleRunnerStamp++;
   }
 
   /**
@@ -746,11 +850,18 @@ export class Server extends httpServer {
       teardownSIGTERMListener(this.terminateServerFn);
     }
 
+    const closingModuleRunners = [...this.moduleRunners].map((runner) =>
+      runner.close()
+    );
+
     await Promise.allSettled([
       this.watcher.close(),
       this.ws.close(),
-      this.closeHttpServerFn()
+      this.closeHttpServerFn(),
+      ...closingModuleRunners
     ]);
+
+    this.moduleRunners.clear();
     this.resolvedUrls = null;
   }
 

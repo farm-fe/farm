@@ -16,6 +16,7 @@ pub fn handle_update_modules(
   context: &Arc<CompilationContext>,
   update_result: &mut UpdateResult,
 ) -> farmfe_core::error::Result<Vec<(String, UpdateType)>> {
+  let paths = sanitize_update_paths(paths);
   let (before_paths, start_time) = if context.config.record {
     (
       paths.clone(),
@@ -27,8 +28,12 @@ pub fn handle_update_modules(
   } else {
     (vec![], 0)
   };
-  let paths = resolve_watch_graph_paths(paths, context);
-  let paths = resolve_last_failed_module_paths(paths, last_fail_module_ids, context);
+  let paths = sanitize_update_paths(resolve_watch_graph_paths(paths, context));
+  let paths = sanitize_update_paths(resolve_last_failed_module_paths(
+    paths,
+    last_fail_module_ids,
+    context,
+  ));
 
   if context.config.record {
     let end_time = std::time::SystemTime::now()
@@ -66,7 +71,7 @@ pub fn handle_update_modules(
   } else {
     ("".to_string(), 0)
   };
-  let paths = plugin_update_modules_hook_params.paths;
+  let paths = sanitize_update_paths(plugin_update_modules_hook_params.paths);
   let mut module_graph = context.module_graph.write();
 
   let mut additional_paths = vec![];
@@ -120,16 +125,22 @@ pub fn handle_update_modules(
         // if /root/index.vue and /root/index.vue?foo=bar are both in paths, we should remove /root/index.vue?foo=bar
         if path != resolved_path {
           let child_module_id: ModuleId = relative(&context.config.root, &path).into();
+
+          // Child may already be absent after previous updates/plugins. Skip instead of panicking.
+          if !module_graph.has_module(&child_module_id) {
+            result.push(path);
+            continue;
+          }
+
           let dependents = module_graph.dependents_ids(&child_module_id);
 
           if dependents.contains(&module_id) && dependents.len() == 1 {
             let removed_module = module_graph.remove_module(&child_module_id);
 
             for module_group_id in removed_module.module_groups {
-              let module_group = module_group_graph
-                .module_group_mut(&module_group_id)
-                .unwrap();
-              module_group.remove_module(&child_module_id);
+              if let Some(module_group) = module_group_graph.module_group_mut(&module_group_id) {
+                module_group.remove_module(&child_module_id);
+              }
             }
 
             update_result.removed_module_ids.push(child_module_id)
@@ -186,6 +197,21 @@ pub fn handle_update_modules(
 struct UpdateModulesStatsResult {
   pub paths: Vec<(String, UpdateType)>,
   pub update_result: UpdateResult,
+}
+
+fn sanitize_update_paths(paths: Vec<(String, UpdateType)>) -> Vec<(String, UpdateType)> {
+  paths
+    .into_iter()
+    .filter_map(|(path, ty)| {
+      let trimmed = path.trim();
+
+      if trimmed.is_empty() {
+        None
+      } else {
+        Some((trimmed.to_string(), ty))
+      }
+    })
+    .collect()
 }
 
 fn resolve_watch_graph_paths(
@@ -247,4 +273,75 @@ fn resolve_last_failed_module_paths(
   );
 
   paths
+}
+
+#[cfg(test)]
+mod tests {
+  use std::sync::Arc;
+
+  use farmfe_core::{
+    config::Config,
+    context::CompilationContext,
+    module::{Module, ModuleId},
+    plugin::{UpdateResult, UpdateType},
+  };
+
+  use super::handle_update_modules;
+
+  #[test]
+  fn should_filter_empty_update_paths() {
+    let root = std::env::temp_dir()
+      .join("farm-handle-update-modules-empty-path")
+      .to_string_lossy()
+      .to_string();
+    let mut config = Config::default();
+    config.root = root.clone();
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let mut update_result = UpdateResult::default();
+
+    let result = handle_update_modules(
+      vec![
+        ("".to_string(), UpdateType::Updated),
+        ("   ".to_string(), UpdateType::Updated),
+      ],
+      &[],
+      &context,
+      &mut update_result,
+    )
+    .unwrap();
+
+    assert!(result.is_empty());
+  }
+
+  #[test]
+  fn should_not_panic_when_query_child_module_missing() {
+    let root = std::env::temp_dir()
+      .join("farm-handle-update-modules-missing-child")
+      .to_string_lossy()
+      .to_string();
+    let mut config = Config::default();
+    config.root = root.clone();
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+
+    let base_path = format!("{root}/src/entry.ts");
+    let base_module_id = ModuleId::new(&base_path, "", &root);
+    context
+      .module_graph
+      .write()
+      .add_module(Module::new(base_module_id));
+
+    let mut update_result = UpdateResult::default();
+    let result = handle_update_modules(
+      vec![
+        (base_path.clone(), UpdateType::Updated),
+        (format!("{base_path}?inline"), UpdateType::Updated),
+      ],
+      &[],
+      &context,
+      &mut update_result,
+    )
+    .unwrap();
+
+    assert!(result.iter().any(|(path, _)| path == &base_path));
+  }
 }

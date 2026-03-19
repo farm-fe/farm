@@ -19,6 +19,7 @@ export declare class Compiler {
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
+  fetchModule(id: string, importer?: string | undefined | null, options?: JsFetchModuleOptions | undefined | null): JsFetchModuleResult | null
   stats(): string
   invalidateModule(moduleId: string): void
   /** Write cache with name and data */
@@ -41,6 +42,24 @@ export interface JsApiMetadata {
   scope?: Array<string>
   /** reference ModuleId of the cache, when the module is invalidated, the cache will be invalidated too */
   refer?: Array<string>
+}
+
+export interface JsFetchModuleOptions {
+  cached?: boolean
+  startOffset?: number
+}
+
+export interface JsFetchModuleResult {
+  cache?: boolean
+  externalize?: string
+  bailoutReason?: string
+  type?: string
+  code?: string
+  file?: string
+  id?: string
+  url?: string
+  invalidate?: boolean
+  map?: string
 }
 
 export interface JsModuleHookFilters {

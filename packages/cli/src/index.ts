@@ -4,11 +4,14 @@ import {
   UserConfig
 } from '@farmfe/core';
 import { cac } from 'cac';
+import { normalizeCliArgv } from './argv.js';
+import { resolveSsrRunOptions } from './ssr.js';
 import type {
   CleanOptions,
   CliBuildOptions,
   CliPreviewOptions,
   CliServerOptions,
+  CliSsrOptions,
   GlobalCliOptions
 } from './types.js';
 import {
@@ -16,6 +19,7 @@ import {
   resolveCliConfig,
   resolveCommandOptions,
   resolveCore,
+  resolveSsr,
   VERSION
 } from './utils.js';
 
@@ -232,6 +236,75 @@ cli
     }
   );
 
+function createSsrAction(command: 'dev' | 'build' | 'preview') {
+  return async (root = '', options: CliSsrOptions & GlobalCliOptions) => {
+    const resolvedOptions = resolveSsrRunOptions({
+      command,
+      root,
+      options
+    });
+    const { runSsrCommand } = await resolveSsr();
+
+    handleAsyncOperationErrors(
+      runSsrCommand(resolvedOptions),
+      `Failed to run "farm ssr ${command}"`
+    );
+  };
+}
+
+cli
+  .command('ssr dev [root]', 'run SSR toolkit in dev mode')
+  .option('--client-config <file>', '[string] client config file')
+  .option('--server-config <file>', '[string] server config file')
+  .option('--entry <file>', '[string] server render entry file')
+  .option('--export-name <name>', '[string] render export name')
+  .option('--template-file <file>', '[string] html template file')
+  .option('--template-resource <name>', '[string] template resource name')
+  .option('--placeholder <html>', '[string] html placeholder')
+  .option('--host <host>', '[string] specify host')
+  .option('--port <port>', '[number] specify port')
+  .option('--open', '[boolean] open browser on server start')
+  .option('--strictPort', '[boolean] exit if specified port is already in use')
+  .option('-o, --outDir <dir>', '[string] output directory')
+  .option('--base <path>', '[string] public base path')
+  .action(createSsrAction('dev'));
+
+cli
+  .command('ssr build [root]', 'build SSR toolkit client and server bundles')
+  .option('--client-config <file>', '[string] client config file')
+  .option('--server-config <file>', '[string] server config file')
+  .option('-o, --outDir <dir>', '[string] output directory')
+  .option('-i, --input <file>', '[string] input file path')
+  .option(
+    '--target <target>',
+    '[string] transpile targetEnv node, browser, library'
+  )
+  .option('--format <format>', '[string] transpile format esm, commonjs')
+  .option('--sourcemap', '[boolean] output source maps for build')
+  .option(
+    '--treeShaking',
+    '[boolean] Eliminate useless code without side effects'
+  )
+  .option('--minify', '[boolean] code compression at build time')
+  .option('--base <path>', '[string] public base path')
+  .action(createSsrAction('build'));
+
+cli
+  .command('ssr preview [root]', 'preview SSR toolkit server from build output')
+  .option('--client-config <file>', '[string] client config file')
+  .option('--server-config <file>', '[string] server config file')
+  .option('--entry <file>', '[string] server render entry file')
+  .option('--export-name <name>', '[string] render export name')
+  .option('--template-file <file>', '[string] html template file')
+  .option('--placeholder <html>', '[string] html placeholder')
+  .option('--host <host>', '[string] specify host')
+  .option('--port <port>', '[number] specify port')
+  .option('--open', '[boolean] open browser on preview server start')
+  .option('--strictPort', '[boolean] exit if specified port is already in use')
+  .option('-o, --outDir <dir>', '[string] output directory')
+  .option('--base <path>', '[string] public base path')
+  .action(createSsrAction('preview'));
+
 cli
   .command('clean [path]', 'Clean up the cache built incrementally')
   .option(
@@ -254,4 +327,4 @@ cli.version(
   `@farmfe/cli ${VERSION ?? 'unknown'} @farmfe/core ${CORE_VERSION ?? 'unknown'}`
 );
 
-cli.parse();
+cli.parse(normalizeCliArgv(process.argv));

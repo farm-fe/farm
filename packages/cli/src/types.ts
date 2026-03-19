@@ -51,3 +51,13 @@ export interface CliBuildOptions {
 export interface CliPreviewOptions extends BaseServerOptions {
   outDir?: string;
 }
+
+export interface CliSsrOptions extends BaseServerOptions, CliBuildOptions {
+  clientConfig?: string;
+  serverConfig?: string;
+  entry?: string;
+  exportName?: string;
+  templateFile?: string;
+  templateResource?: string;
+  placeholder?: string;
+}
