@@ -13,6 +13,9 @@ export default defineConfig({
     },
     maxConcurrency: 1,
     retry: 0,
-    cache: false
+    cache: false,
+    env: {
+      FORCE_COLOR: '1'
+    }
   }
 });

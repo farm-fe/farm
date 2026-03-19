@@ -39,6 +39,8 @@ const DEFAULT_DEV_ENTRY_CANDIDATES = [
 ] as const;
 
 const DEFAULT_PREVIEW_ENTRY = 'index.js';
+const DEFAULT_CLIENT_OUTPUT_PATH = 'dist/client';
+const DEFAULT_SERVER_OUTPUT_PATH = 'dist/server';
 
 function resolveConfigFile(params: {
   sharedConfigFile?: string;
@@ -156,6 +158,78 @@ function resolveEntry(params: {
   }
 
   return DEFAULT_DEV_ENTRY_CANDIDATES[0];
+}
+
+function resolveBuildEntry(params: {
+  root: string;
+  options: GlobalCliOptions & CliSsrOptions;
+}) {
+  if (params.options.entry) {
+    return params.options.entry;
+  }
+
+  if (process.env.FARM_SSR_ENTRY) {
+    return process.env.FARM_SSR_ENTRY;
+  }
+
+  for (const candidate of DEFAULT_DEV_ENTRY_CANDIDATES) {
+    if (existsSync(toAbsolutePath(params.root, candidate))) {
+      return candidate;
+    }
+  }
+
+  return DEFAULT_DEV_ENTRY_CANDIDATES[0];
+}
+
+function ensureCompilation(
+  config: FarmCliOptions & UserConfig
+): NonNullable<UserConfig['compilation']> {
+  if (!config.compilation) {
+    config.compilation = {};
+  }
+  return config.compilation;
+}
+
+function applyBuildDefaults(params: {
+  root: string;
+  options: GlobalCliOptions & CliSsrOptions;
+  client: FarmCliOptions & UserConfig;
+  server: FarmCliOptions & UserConfig;
+}) {
+  const clientCompilation = ensureCompilation(params.client);
+  const serverCompilation = ensureCompilation(params.server);
+
+  if (
+    !clientCompilation.input ||
+    Object.keys(clientCompilation.input).length === 0
+  ) {
+    clientCompilation.input = {
+      index: './index.html'
+    };
+  }
+
+  if (
+    !serverCompilation.input ||
+    Object.keys(serverCompilation.input).length === 0
+  ) {
+    serverCompilation.input = {
+      index: resolveBuildEntry({
+        root: params.root,
+        options: params.options
+      })
+    };
+  }
+
+  clientCompilation.output = {
+    path: DEFAULT_CLIENT_OUTPUT_PATH,
+    ...(clientCompilation.output ?? {})
+  };
+  serverCompilation.output = {
+    path: DEFAULT_SERVER_OUTPUT_PATH,
+    targetEnv: 'node',
+    format: 'esm',
+    ...(serverCompilation.output ?? {})
+  };
 }
 
 function buildCompilationOutput(options: GlobalCliOptions & CliSsrOptions) {
@@ -298,6 +372,12 @@ export function resolveSsrRunOptions(params: {
   };
 
   if (params.command === 'build') {
+    applyBuildDefaults({
+      root,
+      options: params.options,
+      client: resolved.client,
+      server: resolved.server
+    });
     return resolved;
   }
 

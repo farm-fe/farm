@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { getRouteByKey } from '../../smoke/routes.mjs';
+import { getRouteByKey } from '../routes.mjs';
 
 const route = useRoute();
 const content = getRouteByKey('home')?.content ?? 'home-route-missing';

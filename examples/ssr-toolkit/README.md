@@ -12,6 +12,7 @@
 2. Vue SFC (`src/pages/*.vue`)
 3. Less (`src/styles/app.less`)
 4. TypeScript 入口（`src/main.ts` / `src/entry-server.ts`）
+5. Farm 配置收敛为单文件：`farm.config.ts`
 
 当前 example 为保证 preview 懒加载路由稳定，client 构建使用了 `compilation.minify=false`（已记录为 Farm 核心已知问题，后续可在核心修复后恢复）。
 
@@ -36,7 +37,7 @@ pnpm run cli:preview
 
 ## Usage B: Custom Node Host + Middleware
 
-`examples/ssr-toolkit/server.mjs` 展示了“外部 host 持有自己的 API，Farm 只处理 SSR + assets”的模式。
+`examples/ssr-toolkit/server.mjs` 展示了“外部 host 持有自己的 API，Farm 只处理 SSR + assets”的模式，使用 `createSsrRuntime` 创建运行时实例。该示例采用 **D05 模式 B**：Host 决定哪些请求进入 `runtime.render`，其他资源请求交给 `runtime.middlewares`。
 
 ```bash
 pnpm run host:dev
@@ -98,30 +99,12 @@ pnpm run host:preview
 3. `/products` -> `route:products`
 4. unknown path -> `route:not-found` + `#route-not-found`（业务 404 页面）
 
+路由元数据集中在 `src/routes.mjs`，供应用复用，避免示例数据漂移。
+
 ## HMR Contract
 
 1. Server HMR：修改 `src/entry-server.ts`，SSR HTML 会更新
 2. Client HMR：修改 `src/pages/HomePage.vue`，浏览器已打开页面会热更新
-
-## Smoke
-
-```bash
-pnpm run smoke
-```
-
-覆盖：
-
-1. middleware-dev（含 server/client HMR）
-2. middleware-preview
-3. cli build + cli preview
-4. host API 边界（middleware 有 `/api/ping`，cli-preview 无）
-5. less SSR 输出标记（`less-theme-active`）
-
-可选：开启 preview 浏览器级断言（用于排查懒加载路由与样式）：
-
-```bash
-SSR_SMOKE_PREVIEW_BROWSER=1 pnpm run smoke
-```
 
 ## 端口占用处理
 

@@ -2,25 +2,49 @@ import { createSsrRenderConfig } from './template.mjs';
 
 export function createSsrServerOptions(params) {
   const { runtime, hmrPort } = params;
+  const configFile = './farm.config.ts';
 
   return {
     command: runtime.command,
     mode: runtime.mode,
     client: {
-      configFile: './farm.config.client.ts',
-      ...(hmrPort
-        ? {
-            server: {
+      configFile,
+      server: {
+        preview: {
+          distDir: 'dist/client'
+        },
+        ...(hmrPort
+          ? {
               hmr: {
                 port: hmrPort,
                 host: runtime.host
               }
             }
-          }
-        : {})
+          : {})
+      },
+      compilation: {
+        minify: false,
+        input: {
+          index: './index.html'
+        },
+        output: {
+          path: 'dist/client'
+        }
+      }
     },
     server: {
-      configFile: './farm.config.server.ts'
+      configFile,
+      compilation: {
+        input: {
+          index: './src/entry-server.ts'
+        },
+        output: {
+          path: 'dist/server',
+          targetEnv: 'node',
+          format: 'esm'
+        },
+        minify: false
+      }
     },
     ssr: createSsrRenderConfig({
       command: runtime.command,
@@ -44,4 +68,3 @@ export function createStartupMessage(params) {
 
   return `ssr toolkit host: http://${runtime.host}:${hostPort} [command=${runtime.command}, mode=${runtime.mode}, template=${runtime.templateMode}${hmrPort ? `, hmr=${hmrPort}` : ''}]`;
 }
-

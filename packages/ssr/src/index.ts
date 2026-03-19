@@ -32,6 +32,7 @@ export {
   runSsrCommand,
   runSsrCommandWithResolvers
 } from './command.js';
+export type { SsrConfig } from './config-resolver.js';
 export type {
   SsrDevCompilerLike,
   SsrDevFarmServerLike,
@@ -57,6 +58,19 @@ export {
   startSsrDevServer,
   startSsrDevServerWithFactories
 } from './dev-server.js';
+export type { SsrError, SsrErrorCode } from './errors.js';
+export type { SsrBuildInfo, SsrManifest } from './manifest.js';
+export type {
+  SsrRuntime,
+  SsrRuntimeConfig
+} from './runtime.js';
+export { createSsrRuntime } from './runtime.js';
+export type { SsrRuntimeHooks } from './runtime-hooks.js';
+export type {
+  SsrRuntimeAssets,
+  SsrRuntimeCommand,
+  SsrRuntimeMeta
+} from './runtime-types.js';
 export type {
   SsrServer,
   SsrServerCommand,

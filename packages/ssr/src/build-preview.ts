@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import {
   createServer as createNodeServer,
@@ -23,10 +24,26 @@ import type {
   SsrTemplateLoadContext,
   SsrTemplateRenderContext
 } from './dev-server.js';
+import { toSsrError } from './errors.js';
+import {
+  injectAssetsIntoHtml,
+  resolveAssetsFromManifest,
+  type SsrBuildInfo,
+  type SsrManifest
+} from './manifest.js';
+import type { SsrRuntimeHooks } from './runtime-hooks.js';
+import type {
+  SsrRuntimeAssets,
+  SsrRuntimeCommand,
+  SsrRuntimeMeta
+} from './runtime-types.js';
 
 export interface SsrBuildOptions {
   client: FarmCliOptions & UserConfig;
   server: FarmCliOptions & UserConfig;
+  hooks?: SsrRuntimeHooks;
+  $client?: FarmCliOptions & UserConfig;
+  $server?: FarmCliOptions & UserConfig;
 }
 
 export interface SsrResolvedBuildOutput {
@@ -38,6 +55,11 @@ export interface SsrPreviewRenderContext {
   url: string;
   req: IncomingMessage;
   res: ServerResponse;
+  command: SsrRuntimeCommand;
+  mode: string;
+  runtime: SsrRuntimeMeta;
+  assets: SsrRuntimeAssets;
+  requestId?: string;
 }
 
 export interface SsrPreviewTemplateOptions {
@@ -68,6 +90,9 @@ export interface SsrPreviewOptions {
   host?: SsrDevServerListenOptions;
   ssrMiddleware?: SsrNextMiddleware;
   ssr?: SsrPreviewRenderOptions;
+  hooks?: SsrRuntimeHooks;
+  $client?: FarmCliOptions & UserConfig;
+  $server?: FarmCliOptions & UserConfig;
 }
 
 export interface SsrResolvedPreviewMetadata {
@@ -75,11 +100,18 @@ export interface SsrResolvedPreviewMetadata {
   serverBuildOutput: SsrResolvedBuildOutput | null;
   templateFilePath: string | null;
   serverEntryFilePath: string | null;
+  buildInfoPath: string | null;
+  manifestFilePath: string | null;
   manifestFileCandidates: string[];
 }
 
 export interface SsrPreviewServer {
   middlewares: SsrMiddlewareServer;
+  render(
+    url: string,
+    req: IncomingMessage,
+    res: ServerResponse
+  ): Promise<string>;
   listen(options?: SsrDevServerListenOptions): Promise<void>;
   close(): Promise<void>;
 }
@@ -94,12 +126,17 @@ export interface SsrBuildPreviewFactories {
   resolveBuildOutput(
     config: FarmCliOptions & UserConfig
   ): Promise<SsrResolvedBuildOutput>;
+  resolveClientEntries(
+    config: FarmCliOptions & UserConfig
+  ): Promise<{ entries: string[]; publicPath: string }>;
   createClientPreviewServer(
     config: FarmCliOptions & UserConfig
   ): Promise<SsrPreviewClientServerLike>;
   createHostServer(middlewares: SsrMiddleware): SsrDevHostServerLike;
   readFile(filePath: string): Promise<string>;
   importModule(filePath: string): Promise<Record<string, unknown>>;
+  listFiles(dir: string): Promise<string[]>;
+  writeFile(filePath: string, content: string): Promise<void>;
 }
 
 function shouldRetryImportWithoutCss(error: unknown) {
@@ -190,6 +227,14 @@ const defaultFactories: SsrBuildPreviewFactories = {
       outputPath
     };
   },
+  async resolveClientEntries(config) {
+    const resolved = await resolveConfig(config, 'build', 'production');
+    const inputs = Object.values(resolved.compilation.input ?? {});
+    return {
+      entries: inputs.length ? inputs : [],
+      publicPath: resolved.compilation.output.publicPath ?? '/'
+    };
+  },
   async createClientPreviewServer(config) {
     const previewServer = new PreviewServer(config);
     await previewServer.createPreviewServer();
@@ -205,6 +250,28 @@ const defaultFactories: SsrBuildPreviewFactories = {
   importModule(filePath) {
     return importModuleWithCssInterop(filePath, fs.readFile);
   },
+  async listFiles(dir) {
+    const results: string[] = [];
+    const walk = async (current: string) => {
+      const entries = await fs.readdir(current, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          await walk(fullPath);
+          continue;
+        }
+        if (entry.isFile()) {
+          const relPath = path.relative(dir, fullPath);
+          results.push(relPath.split(path.sep).join('/'));
+        }
+      }
+    };
+    await walk(dir);
+    return results;
+  },
+  writeFile(filePath, content) {
+    return fs.writeFile(filePath, content, 'utf-8');
+  },
   createHostServer(middlewares) {
     return createNodeServer(middlewares) as SsrDevHostServerLike;
   }
@@ -215,6 +282,9 @@ const PREVIEW_MANIFEST_CANDIDATES = [
   'manifest.json',
   'ssr-manifest.json'
 ] as const;
+const SSR_MANIFEST_CLIENT = 'manifest.client.json';
+const SSR_MANIFEST_SERVER = 'manifest.server.json';
+const SSR_BUILD_INFO = 'build-info.json';
 
 function isHtmlRequest(req: IncomingMessage) {
   const method = req.method?.toUpperCase();
@@ -368,6 +438,108 @@ function resolveManifestFileCandidates(
   );
 }
 
+function resolveBuildInfoPath(clientBuildOutput: SsrResolvedBuildOutput) {
+  return path.join(clientBuildOutput.outputPath, SSR_BUILD_INFO);
+}
+
+function resolveClientManifestPath(clientBuildOutput: SsrResolvedBuildOutput) {
+  return path.join(clientBuildOutput.outputPath, SSR_MANIFEST_CLIENT);
+}
+
+function resolveServerManifestPath(serverBuildOutput: SsrResolvedBuildOutput) {
+  return path.join(serverBuildOutput.outputPath, SSR_MANIFEST_SERVER);
+}
+
+function createManifestFromFiles(params: {
+  files: string[];
+  entries: string[];
+}): SsrManifest {
+  const jsFiles = params.files.filter(
+    (file) =>
+      file.endsWith('.js') || file.endsWith('.mjs') || file.endsWith('.cjs')
+  );
+  const cssFiles = params.files.filter((file) => file.endsWith('.css'));
+  const entries: Record<
+    string,
+    { js: string[]; css: string[]; preload: string[] }
+  > = {};
+
+  for (const entry of params.entries) {
+    entries[entry] = {
+      js: [...jsFiles],
+      css: [...cssFiles],
+      preload: [...jsFiles]
+    };
+  }
+
+  if (params.entries.length === 0) {
+    entries['__all__'] = {
+      js: [...jsFiles],
+      css: [...cssFiles],
+      preload: [...jsFiles]
+    };
+  }
+
+  return {
+    version: 1,
+    entries,
+    modules: {}
+  };
+}
+
+async function writeBuildArtifacts(params: {
+  options: SsrBuildOptions;
+  factories: SsrBuildPreviewFactories;
+}): Promise<void> {
+  const clientBuildOutput = await params.factories.resolveBuildOutput(
+    params.options.client
+  );
+  const serverBuildOutput = await params.factories.resolveBuildOutput(
+    params.options.server
+  );
+  const { entries } = await params.factories.resolveClientEntries(
+    params.options.client
+  );
+  const outputFiles = await params.factories.listFiles(
+    clientBuildOutput.outputPath
+  );
+  const manifest = createManifestFromFiles({
+    files: outputFiles,
+    entries
+  });
+  const manifestPath = resolveClientManifestPath(clientBuildOutput);
+  const serverManifestPath = resolveServerManifestPath(serverBuildOutput);
+  const serverEntry = path.join(
+    serverBuildOutput.outputPath,
+    DEFAULT_PREVIEW_ENTRY
+  );
+  const buildInfo: SsrBuildInfo = {
+    version: 1,
+    client: {
+      outputDir: clientBuildOutput.outputPath,
+      manifest: manifestPath,
+      entry: entries[0] ?? undefined
+    },
+    server: {
+      outputDir: serverBuildOutput.outputPath,
+      entry: serverEntry
+    }
+  };
+
+  await params.factories.writeFile(
+    manifestPath,
+    JSON.stringify(manifest, null, 2)
+  );
+  await params.factories.writeFile(
+    serverManifestPath,
+    JSON.stringify({ version: 1, entries: {}, modules: {} }, null, 2)
+  );
+  await params.factories.writeFile(
+    resolveBuildInfoPath(clientBuildOutput),
+    JSON.stringify(buildInfo, null, 2)
+  );
+}
+
 function resolveTemplateFilePath(params: {
   templateFile?: string;
   clientBuildOutput: SsrResolvedBuildOutput;
@@ -475,11 +647,205 @@ function resolveRenderResult(params: {
   );
 }
 
+export async function renderSsrPreviewHtml(params: {
+  options: SsrPreviewRenderOptions;
+  clientBuildOutput: SsrResolvedBuildOutput;
+  loadModule: () => Promise<Record<string, unknown>>;
+  factories: SsrBuildPreviewFactories;
+  url: string;
+  req: IncomingMessage;
+  res: ServerResponse;
+  mode: string;
+  runtime: SsrRuntimeMeta;
+  assets?: SsrRuntimeAssets;
+  hooks?: SsrRuntimeHooks;
+  requestId?: string;
+}): Promise<string> {
+  const requestId = params.requestId ?? randomUUID();
+  const context: SsrPreviewRenderContext = {
+    url: params.url,
+    req: params.req,
+    res: params.res,
+    command: 'preview',
+    mode: params.mode,
+    runtime: params.runtime,
+    assets: params.assets ?? { css: [], preload: [], scripts: [] },
+    requestId
+  };
+
+  const startTime = Date.now();
+  params.hooks?.onRenderStart?.({
+    requestId,
+    url: context.url,
+    command: context.command,
+    mode: context.mode,
+    runtime: context.runtime
+  });
+
+  try {
+    const moduleExports = await params.loadModule();
+    const renderResult = await resolveRenderResult({
+      options: params.options,
+      moduleExports,
+      context
+    });
+    const appHtml =
+      typeof renderResult === 'string' ? renderResult : String(renderResult);
+    const template = await loadTemplateContent({
+      options: params.options,
+      clientBuildOutput: params.clientBuildOutput,
+      req: params.req,
+      res: params.res,
+      url: context.url,
+      factories: params.factories
+    });
+    const templateOptions = params.options.template ?? {};
+
+    if (templateOptions.transform) {
+      const html = await templateOptions.transform({
+        url: context.url,
+        req: params.req,
+        res: params.res,
+        root: params.clientBuildOutput.root,
+        appHtml,
+        template
+      });
+      params.hooks?.onRenderEnd?.({
+        requestId,
+        url: context.url,
+        command: context.command,
+        mode: context.mode,
+        runtime: context.runtime,
+        ms: Date.now() - startTime
+      });
+      return html;
+    }
+
+    const placeholder = templateOptions.placeholder ?? '<!--app-html-->';
+
+    if (!template.includes(placeholder)) {
+      throw new Error(
+        `[farm ssr] template placeholder "${placeholder}" was not found.`
+      );
+    }
+
+    const html = template.replace(placeholder, appHtml);
+    const injected = injectAssetsIntoHtml({ html, assets: context.assets });
+    params.hooks?.onAssetInject?.({
+      requestId,
+      url: context.url,
+      css: context.assets.css.length,
+      preload: context.assets.preload.length,
+      scripts: context.assets.scripts.length
+    });
+    params.hooks?.onRenderEnd?.({
+      requestId,
+      url: context.url,
+      command: context.command,
+      mode: context.mode,
+      runtime: context.runtime,
+      ms: Date.now() - startTime
+    });
+    return injected;
+  } catch (error) {
+    const ssrError = toSsrError({
+      code: 'SSR_RENDER_FAILED',
+      error,
+      debug: params.mode === 'development'
+    });
+    params.hooks?.onRenderEnd?.({
+      requestId,
+      url: context.url,
+      command: context.command,
+      mode: context.mode,
+      runtime: context.runtime,
+      ms: Date.now() - startTime,
+      error: ssrError
+    });
+    throw error;
+  }
+}
+
+async function loadSsrManifest(params: {
+  metadata: SsrResolvedPreviewMetadata;
+  factories: SsrBuildPreviewFactories;
+}): Promise<SsrManifest | null> {
+  const candidates: string[] = [];
+  if (params.metadata.manifestFilePath) {
+    candidates.push(params.metadata.manifestFilePath);
+  }
+  candidates.push(...params.metadata.manifestFileCandidates);
+
+  for (const filePath of candidates) {
+    try {
+      const content = await params.factories.readFile(filePath);
+      return JSON.parse(content) as SsrManifest;
+    } catch (error) {
+      const code = (error as { code?: unknown })?.code;
+      if (code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
+  return null;
+}
+
+function resolveManifestEntryKey(params: {
+  buildInfo: SsrBuildInfo | null;
+  manifest: SsrManifest | null;
+  renderEntry?: string;
+}): string | null {
+  if (params.buildInfo?.client?.entry) {
+    return params.buildInfo.client.entry;
+  }
+
+  if (params.renderEntry) {
+    return params.renderEntry;
+  }
+
+  if (params.manifest) {
+    const keys = Object.keys(params.manifest.entries);
+    if (keys.length) {
+      return keys[0];
+    }
+  }
+
+  return null;
+}
+
+async function loadBuildInfo(params: {
+  metadata: SsrResolvedPreviewMetadata;
+  factories: SsrBuildPreviewFactories;
+}): Promise<SsrBuildInfo | null> {
+  if (!params.metadata.buildInfoPath) {
+    return null;
+  }
+
+  try {
+    const content = await params.factories.readFile(
+      params.metadata.buildInfoPath
+    );
+    return JSON.parse(content) as SsrBuildInfo;
+  } catch (error) {
+    const code = (error as { code?: unknown })?.code;
+    if (code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  return null;
+}
+
 function createSsrPreviewRenderMiddleware(params: {
   options: SsrPreviewRenderOptions;
   clientBuildOutput: SsrResolvedBuildOutput;
   loadModule: () => Promise<Record<string, unknown>>;
   factories: SsrBuildPreviewFactories;
+  runtime: SsrRuntimeMeta;
+  mode: string;
+  assets?: SsrRuntimeAssets;
+  hooks?: SsrRuntimeHooks;
 }) {
   return async (
     req: IncomingMessage,
@@ -489,7 +855,11 @@ function createSsrPreviewRenderMiddleware(params: {
     const context: SsrPreviewRenderContext = {
       url: req.url ?? '/',
       req,
-      res
+      res,
+      command: 'preview',
+      mode: params.mode,
+      runtime: params.runtime,
+      assets: { css: [], preload: [], scripts: [] }
     };
     const shouldHandle =
       params.options.shouldHandle ?? ((ctx) => isHtmlRequest(ctx.req));
@@ -500,45 +870,19 @@ function createSsrPreviewRenderMiddleware(params: {
     }
 
     try {
-      const moduleExports = await params.loadModule();
-      const renderResult = await resolveRenderResult({
-        options: params.options,
-        moduleExports,
-        context
-      });
-      const appHtml =
-        typeof renderResult === 'string' ? renderResult : String(renderResult);
-      const template = await loadTemplateContent({
+      const html = await renderSsrPreviewHtml({
         options: params.options,
         clientBuildOutput: params.clientBuildOutput,
+        loadModule: params.loadModule,
+        factories: params.factories,
+        url: context.url,
         req,
         res,
-        url: context.url,
-        factories: params.factories
+        mode: params.mode,
+        runtime: params.runtime,
+        assets: params.assets,
+        hooks: params.hooks
       });
-      const templateOptions = params.options.template ?? {};
-
-      let html: string;
-      if (templateOptions.transform) {
-        html = await templateOptions.transform({
-          url: context.url,
-          req,
-          res,
-          root: params.clientBuildOutput.root,
-          appHtml,
-          template
-        });
-      } else {
-        const placeholder = templateOptions.placeholder ?? '<!--app-html-->';
-
-        if (!template.includes(placeholder)) {
-          throw new Error(
-            `[farm ssr] template placeholder "${placeholder}" was not found.`
-          );
-        }
-
-        html = template.replace(placeholder, appHtml);
-      }
 
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -562,8 +906,35 @@ export async function buildSsrAppWithFactories(
   options: SsrBuildOptions,
   factories: SsrBuildPreviewFactories
 ) {
-  await factories.runBuild(options.client);
-  await factories.runBuild(options.server);
+  const resolvedClient = options.$client
+    ? { ...options.client, ...options.$client }
+    : options.client;
+  const resolvedServer = options.$server
+    ? { ...options.server, ...options.$server }
+    : options.server;
+  const clientStart = Date.now();
+  options.hooks?.onCompileStart?.({ kind: 'client' });
+  await factories.runBuild(resolvedClient);
+  options.hooks?.onCompileEnd?.({
+    kind: 'client',
+    ms: Date.now() - clientStart
+  });
+
+  const serverStart = Date.now();
+  options.hooks?.onCompileStart?.({ kind: 'server' });
+  await factories.runBuild(resolvedServer);
+  options.hooks?.onCompileEnd?.({
+    kind: 'server',
+    ms: Date.now() - serverStart
+  });
+  await writeBuildArtifacts({
+    options: {
+      ...options,
+      client: resolvedClient,
+      server: resolvedServer
+    },
+    factories
+  });
 }
 
 export async function buildSsrApp(options: SsrBuildOptions) {
@@ -586,6 +957,15 @@ export async function createSsrPreviewServerWithFactories(
   );
   const clientBuildOutput = previewMetadata.clientBuildOutput;
   const serverBuildOutput = previewMetadata.serverBuildOutput;
+  const buildInfo = await loadBuildInfo({
+    metadata: previewMetadata,
+    factories
+  });
+  const manifest = await loadSsrManifest({
+    metadata: previewMetadata,
+    factories
+  });
+  const { publicPath } = await factories.resolveClientEntries(options.client);
 
   let clientPreviewServer: SsrPreviewClientServerLike | null = null;
 
@@ -599,6 +979,22 @@ export async function createSsrPreviewServerWithFactories(
   }
 
   const middlewares = createMiddlewareServer();
+  const runtimeMeta: SsrRuntimeMeta = {
+    root: clientBuildOutput.root,
+    publicPath
+  };
+  const runtimeMode = options.client.mode ?? 'production';
+  const manifestEntryKey = resolveManifestEntryKey({
+    buildInfo,
+    manifest,
+    renderEntry: options.ssr?.entry
+  });
+  const resolvedAssets = resolveAssetsFromManifest({
+    manifest,
+    entry: manifestEntryKey,
+    usedModuleIds: [],
+    publicPath: runtimeMeta.publicPath
+  });
 
   if (options.ssrMiddleware) {
     middlewares.use(options.ssrMiddleware);
@@ -619,6 +1015,10 @@ export async function createSsrPreviewServerWithFactories(
         options: renderOptions,
         clientBuildOutput,
         factories,
+        runtime: runtimeMeta,
+        mode: runtimeMode,
+        assets: resolvedAssets,
+        hooks: options.hooks,
         loadModule() {
           if (!loadedModulePromise) {
             loadedModulePromise = factories.importModule(entryFile);
@@ -638,6 +1038,41 @@ export async function createSsrPreviewServerWithFactories(
 
   return {
     middlewares,
+    async render(url, req, res) {
+      if (
+        !options.ssr ||
+        !previewMetadata.serverEntryFilePath ||
+        !serverBuildOutput
+      ) {
+        throw new Error(
+          '[farm ssr] ssr options are required to call render() in preview.'
+        );
+      }
+      const renderOptions = {
+        ...options.ssr,
+        entry: resolvePreviewEntry(options.ssr.entry)
+      };
+      const entryFile = previewMetadata.serverEntryFilePath;
+      let loadedModulePromise: Promise<Record<string, unknown>> | null = null;
+      return renderSsrPreviewHtml({
+        options: renderOptions,
+        clientBuildOutput,
+        factories,
+        url,
+        req,
+        res,
+        mode: runtimeMode,
+        runtime: runtimeMeta,
+        assets: resolvedAssets,
+        hooks: options.hooks,
+        loadModule() {
+          if (!loadedModulePromise) {
+            loadedModulePromise = factories.importModule(entryFile);
+          }
+          return loadedModulePromise;
+        }
+      });
+    },
     async listen(listenOptions) {
       if (closed) {
         throw new Error('[farm ssr] preview server is already closed.');
@@ -679,6 +1114,22 @@ export async function resolveSsrPreviewMetadataWithFactories(
   const serverBuildOutput = options.ssr
     ? await factories.resolveBuildOutput(options.server)
     : null;
+  const buildInfoPath = resolveBuildInfoPath(clientBuildOutput);
+  let buildInfo: SsrBuildInfo | null = null;
+  let manifestFilePath: string | null = null;
+
+  try {
+    const buildInfoContent = await factories.readFile(buildInfoPath);
+    buildInfo = JSON.parse(buildInfoContent) as SsrBuildInfo;
+    if (buildInfo?.client?.manifest) {
+      manifestFilePath = buildInfo.client.manifest;
+    }
+  } catch (error) {
+    const code = (error as { code?: unknown })?.code;
+    if (code !== 'ENOENT') {
+      throw error;
+    }
+  }
   const templateFilePath = options.ssr
     ? resolveTemplateFilePath({
         templateFile: options.ssr.template?.file,
@@ -697,7 +1148,9 @@ export async function resolveSsrPreviewMetadataWithFactories(
     clientBuildOutput,
     serverBuildOutput,
     templateFilePath,
-    serverEntryFilePath,
+    serverEntryFilePath: buildInfo?.server?.entry ?? serverEntryFilePath,
+    buildInfoPath: buildInfo ? buildInfoPath : null,
+    manifestFilePath,
     manifestFileCandidates: resolveManifestFileCandidates(clientBuildOutput)
   };
 }

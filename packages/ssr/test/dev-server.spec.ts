@@ -153,6 +153,13 @@ class FakeServerCompilerWithoutHasModule extends FakeServerCompiler {
   }
 }
 
+class FakeServerCompilerWithUpdateError extends FakeServerCompiler {
+  async update() {
+    this.updateCalls++;
+    throw new Error('update failed');
+  }
+}
+
 function createMiddlewareServer(...middlewares: SsrMiddleware[]) {
   const stack = [...middlewares];
   const middlewareServer = ((req, res, next) => {
@@ -507,6 +514,7 @@ describe('farm ssr dev server api shell', () => {
     const { farmServer, watcher } = createFarmServerMock(true);
     const hostServer = new FakeHostServer();
     const serverCompiler = new FakeServerCompiler();
+    const invalidations: Array<{ reason: string }> = [];
 
     const devServer = await createSsrDevServerWithFactories(
       {
@@ -514,6 +522,11 @@ describe('farm ssr dev server api shell', () => {
         server: {},
         runner: {
           hmr: true
+        },
+        hooks: {
+          onInvalidate(ctx) {
+            invalidations.push({ reason: ctx.reason });
+          }
         }
       },
       createFactories(farmServer, hostServer, serverCompiler)
@@ -531,6 +544,7 @@ describe('farm ssr dev server api shell', () => {
     );
     expect(second.value).toBe(2);
     expect(serverCompiler.updateCalls).toBe(1);
+    expect(invalidations[0]?.reason).toBe('update');
 
     await devServer.close();
   });
@@ -563,6 +577,36 @@ describe('farm ssr dev server api shell', () => {
     );
     expect(second.value).toBe(1);
     expect(serverCompiler.updateCalls).toBe(1);
+
+    await devServer.close();
+  });
+
+  it('falls back to rebuild when server update fails', async () => {
+    const { farmServer, watcher } = createFarmServerMock(true);
+    const hostServer = new FakeHostServer();
+    const serverCompiler = new FakeServerCompilerWithUpdateError();
+    const invalidations: Array<{ reason: string }> = [];
+
+    const devServer = await createSsrDevServerWithFactories(
+      {
+        client: {},
+        server: {},
+        runner: {
+          hmr: true
+        },
+        hooks: {
+          onInvalidate(ctx) {
+            invalidations.push({ reason: ctx.reason });
+          }
+        }
+      },
+      createFactories(farmServer, hostServer, serverCompiler)
+    );
+
+    await watcher?.emit('change', '/src/entry-server.ts');
+
+    expect(serverCompiler.updateCalls).toBe(1);
+    expect(invalidations[0]?.reason).toBe('rebuild');
 
     await devServer.close();
   });

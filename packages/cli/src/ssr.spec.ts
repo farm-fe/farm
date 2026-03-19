@@ -14,6 +14,20 @@ describe('farm cli ssr option resolver', () => {
     expect(result.server.configFile).toBe('farm.config.server.ts');
     expect(result.client.root).toBe('/repo/app');
     expect(result.server.root).toBe('/repo/app');
+    expect(result.client.compilation?.input).toEqual({
+      index: './index.html'
+    });
+    expect(result.server.compilation?.input).toEqual({
+      index: '/src/entry-server.mjs'
+    });
+    expect(result.client.compilation?.output).toMatchObject({
+      path: 'dist/client'
+    });
+    expect(result.server.compilation?.output).toMatchObject({
+      path: 'dist/server',
+      targetEnv: 'node',
+      format: 'esm'
+    });
   });
 
   it('uses convention fallback entry when dev/preview entry is omitted', () => {

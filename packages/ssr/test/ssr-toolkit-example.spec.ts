@@ -181,6 +181,13 @@ describe('ssr toolkit example option builders', () => {
     const pingPayload = createPingPayload(runtime);
 
     expect(options.command).toBe('preview');
+    expect(options.client.configFile).toBe('./farm.config.ts');
+    expect(options.server.configFile).toBe('./farm.config.ts');
+    expect(options.client.server?.preview?.distDir).toBe('dist/client');
+    expect(options.client.compilation?.output?.path).toBe('dist/client');
+    expect(options.server.compilation?.output?.path).toBe('dist/server');
+    expect(options.server.compilation?.output?.targetEnv).toBe('node');
+    expect(options.server.compilation?.output?.format).toBe('esm');
     expect(options.ssr.entry).toBeUndefined();
     expect(options.ssr.template.file).toBe('./dist/client/index.html');
     expect(typeof options.ssr.template.transform).toBe('function');
@@ -190,6 +197,19 @@ describe('ssr toolkit example option builders', () => {
       command: 'preview',
       mode: 'production',
       templateMode: 'html'
+    });
+  });
+
+  it('injects hmr port into client config when provided', () => {
+    const runtime = createRuntimeConfig({});
+    const options = createSsrServerOptions({
+      runtime,
+      hmrPort: 9821
+    });
+
+    expect(options.client.server?.hmr).toMatchObject({
+      port: 9821,
+      host: runtime.host
     });
   });
 });

@@ -1,15 +1,17 @@
 import { buildSsrApp, type SsrBuildOptions } from './build-preview.js';
 import {
-  createSsrServer,
-  type SsrServer,
-  type SsrServerOptions,
-  startSsrServer
-} from './server.js';
+  resolveSsrConfigForCommand,
+  type SsrConfig
+} from './config-resolver.js';
+import {
+  createSsrRuntime,
+  type SsrRuntime,
+  type SsrRuntimeConfig
+} from './runtime.js';
 
 export type SsrToolkitCommand = 'dev' | 'preview' | 'build';
 
-export type SsrRunServerCommandOptions = SsrServerOptions & {
-  command?: 'dev' | 'preview';
+export type SsrRunServerCommandOptions = SsrRuntimeConfig & {
   start?: boolean;
 };
 
@@ -19,20 +21,19 @@ export type SsrRunBuildCommandOptions = SsrBuildOptions & {
 
 export type SsrRunCommandOptions =
   | SsrRunServerCommandOptions
-  | SsrRunBuildCommandOptions;
+  | SsrRunBuildCommandOptions
+  | (SsrConfig & SsrRunBuildCommandOptions);
 
-export type SsrRunCommandResult = void | SsrServer;
+export type SsrRunCommandResult = void | SsrRuntime;
 
 interface SsrRunCommandResolvers {
   buildSsrApp(options: SsrBuildOptions): Promise<void>;
-  createSsrServer(options: SsrServerOptions): Promise<SsrServer>;
-  startSsrServer(options: SsrServerOptions): Promise<SsrServer>;
+  createSsrRuntime(options: SsrRuntimeConfig): Promise<SsrRuntime>;
 }
 
 const defaultResolvers: SsrRunCommandResolvers = {
   buildSsrApp,
-  createSsrServer,
-  startSsrServer
+  createSsrRuntime
 };
 
 function isBuildCommand(
@@ -41,30 +42,32 @@ function isBuildCommand(
   return options.command === 'build';
 }
 
-function toServerOptions(
-  options: SsrRunServerCommandOptions
-): SsrServerOptions {
-  const { start: _start, ...serverOptions } = options;
-  return serverOptions as SsrServerOptions;
-}
-
 export async function runSsrCommandWithResolvers(
   options: SsrRunCommandOptions,
   resolvers: SsrRunCommandResolvers
 ): Promise<SsrRunCommandResult> {
   if (isBuildCommand(options)) {
-    await resolvers.buildSsrApp(options);
+    const resolved = resolveSsrConfigForCommand(options as SsrConfig, 'build');
+    await resolvers.buildSsrApp({
+      ...(options as SsrBuildOptions),
+      client: resolved.client,
+      server: resolved.server ?? (options as SsrBuildOptions).server
+    });
     return;
   }
 
-  const serverOptions = toServerOptions(options);
+  const { start: _start, ...runtimeOptions } =
+    options as SsrRunServerCommandOptions;
   const shouldStart = options.start ?? true;
+  const runtime = await resolvers.createSsrRuntime(
+    runtimeOptions as SsrRuntimeConfig
+  );
 
   if (shouldStart) {
-    return resolvers.startSsrServer(serverOptions);
+    await runtime.start();
   }
 
-  return resolvers.createSsrServer(serverOptions);
+  return runtime;
 }
 
 export async function runSsrCommand(

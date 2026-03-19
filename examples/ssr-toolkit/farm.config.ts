@@ -6,18 +6,6 @@ export default defineConfig({
   plugins: [farmLessPlugin()],
   vitePlugins: [vue()],
   server: {
-    middlewareMode: true,
-    preview: {
-      distDir: 'dist/client'
-    }
-  },
-  compilation: {
-    minify: false,
-    input: {
-      index: './index.html'
-    },
-    output: {
-      path: 'dist/client'
-    }
+    middlewareMode: true
   }
 });

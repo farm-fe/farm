@@ -4,6 +4,7 @@ import {
   type SsrPreviewServer,
   startSsrPreviewServer
 } from './build-preview.js';
+import { resolveSsrConfigForCommand } from './config-resolver.js';
 import {
   createSsrDevServer,
   type SsrDevServer,
@@ -58,29 +59,23 @@ function resolveMode(
   return command === 'preview' ? 'production' : 'development';
 }
 
-function withMode<T extends { mode?: string }>(config: T, mode: string): T {
-  if (config.mode) {
-    return config;
-  }
-
-  return {
-    ...config,
-    mode
-  };
-}
-
 function toDevServerOptions(options: SsrServerOptions): SsrDevServerOptions {
   const command = resolveCommand(options);
   const mode = resolveMode(options, command);
-  const { command: _command, mode: _mode, ...rest } = options;
-  const devOptions = rest as SsrDevServerOptions;
+  const resolved = resolveSsrConfigForCommand(options, command);
 
   return {
-    ...devOptions,
-    client: withMode(devOptions.client, mode),
-    ...(devOptions.server
+    ...resolved,
+    client: {
+      ...resolved.client,
+      mode: resolved.client.mode ?? mode
+    },
+    ...(resolved.server
       ? {
-          server: withMode(devOptions.server, mode)
+          server: {
+            ...resolved.server,
+            mode: resolved.server.mode ?? mode
+          }
         }
       : {})
   };
@@ -89,13 +84,18 @@ function toDevServerOptions(options: SsrServerOptions): SsrDevServerOptions {
 function toPreviewServerOptions(options: SsrServerOptions): SsrPreviewOptions {
   const command = resolveCommand(options);
   const mode = resolveMode(options, command);
-  const { command: _command, mode: _mode, ...rest } = options;
-  const previewOptions = rest as SsrPreviewOptions;
+  const resolved = resolveSsrConfigForCommand(options, command);
 
   return {
-    ...previewOptions,
-    client: withMode(previewOptions.client, mode),
-    server: withMode(previewOptions.server, mode)
+    ...resolved,
+    client: {
+      ...resolved.client,
+      mode: resolved.client.mode ?? mode
+    },
+    server: {
+      ...(resolved.server ?? {}),
+      mode: resolved.server?.mode ?? mode
+    }
   };
 }
 

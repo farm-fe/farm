@@ -1,4 +1,4 @@
-import { message } from './ssr-message.mjs';
+export const message = 'hello-from-ssr-toolkit';
 
 export const routes = [
   {

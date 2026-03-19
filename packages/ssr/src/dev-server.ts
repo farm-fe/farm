@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import {
   createServer as createNodeServer,
@@ -19,6 +20,13 @@ import {
   type UserConfig
 } from '@farmfe/core';
 import { createModuleRunnerInvokeHandlers } from '@farmfe/core/module-runner/serverInvoke';
+import { toSsrError } from './errors.js';
+import type { SsrRuntimeHooks } from './runtime-hooks.js';
+import type {
+  SsrRuntimeAssets,
+  SsrRuntimeCommand,
+  SsrRuntimeMeta
+} from './runtime-types.js';
 
 type SsrUpdateType = 'added' | 'updated' | 'removed';
 
@@ -47,12 +55,18 @@ export interface SsrDevServerOptions {
   host?: SsrDevServerListenOptions;
   ssrMiddleware?: SsrNextMiddleware;
   ssr?: SsrRenderOptions;
+  hooks?: SsrRuntimeHooks;
   runner?: Omit<FarmModuleRunnerOptions, 'transport'>;
 }
 
 export interface SsrDevServer {
   middlewares: SsrMiddlewareServer;
   runner: FarmModuleRunner;
+  render(
+    url: string,
+    req: IncomingMessage,
+    res: ServerResponse
+  ): Promise<string>;
   listen(options?: SsrDevServerListenOptions): Promise<void>;
   close(): Promise<void>;
 }
@@ -97,7 +111,12 @@ export interface SsrRenderContext {
   url: string;
   req: IncomingMessage;
   res: ServerResponse;
-  runner: FarmModuleRunner;
+  command: SsrRuntimeCommand;
+  mode: string;
+  runtime: SsrRuntimeMeta;
+  assets: SsrRuntimeAssets;
+  runner?: FarmModuleRunner;
+  requestId?: string;
 }
 
 export interface SsrRenderOptions {
@@ -505,7 +524,11 @@ function normalizeServerUpdateResultPaths(
 function watchServerCompilerWithSingleWatcher(params: {
   watcher: SsrDevWatcherLike;
   compiler: SsrDevCompilerLike;
-  onUpdateResult: (result: SsrUpdateResult) => void | Promise<void>;
+  onUpdateResult: (
+    result: SsrUpdateResult,
+    updateError?: unknown,
+    updateDurationMs?: number
+  ) => void | Promise<void>;
 }) {
   let active = true;
 
@@ -515,9 +538,12 @@ function watchServerCompilerWithSingleWatcher(params: {
     }
 
     let result: SsrUpdateResult;
+    let updateError: unknown;
+    const startTime = Date.now();
     try {
       result = await params.compiler.update([{ path, type }]);
-    } catch {
+    } catch (error) {
+      updateError = error;
       result = {
         added: [],
         changed: type === 'removed' ? [] : [path],
@@ -532,7 +558,7 @@ function watchServerCompilerWithSingleWatcher(params: {
       return;
     }
 
-    await params.onUpdateResult(result);
+    await params.onUpdateResult(result, updateError, Date.now() - startTime);
   };
 
   params.watcher.on('add', async (file) => {
@@ -687,12 +713,15 @@ function resolveRenderResult(params: {
   );
 }
 
-async function renderHtmlResponse(params: {
+export async function renderSsrHtmlResponse(params: {
   options: SsrRenderOptions;
   farmServer: SsrDevFarmServerLike;
   root: string;
   context: SsrRenderContext;
 }) {
+  if (!params.context.runner) {
+    throw new Error('[farm ssr] runner is required to render HTML in dev.');
+  }
   const mod = (await params.context.runner.import(
     params.options.entry
   )) as Record<string, unknown>;
@@ -738,17 +767,27 @@ function createSsrRenderMiddleware(params: {
   root: string;
   farmServer: SsrDevFarmServerLike;
   runner: FarmModuleRunner;
+  runtime: SsrRuntimeMeta;
+  mode: string;
+  assets?: SsrRuntimeAssets;
+  hooks?: SsrRuntimeHooks;
 }) {
   return async (
     req: IncomingMessage,
     res: ServerResponse,
     next: (error?: unknown) => void
   ) => {
+    const requestId = randomUUID();
     const context: SsrRenderContext = {
       url: req.url ?? '/',
       req,
       res,
-      runner: params.runner
+      runner: params.runner,
+      command: 'dev',
+      mode: params.mode,
+      runtime: params.runtime,
+      assets: params.assets ?? { css: [], preload: [], scripts: [] },
+      requestId
     };
     const shouldHandle =
       params.options.shouldHandle ?? ((ctx) => isHtmlRequest(ctx.req));
@@ -758,8 +797,16 @@ function createSsrRenderMiddleware(params: {
       return;
     }
 
+    const startTime = Date.now();
     try {
-      const html = await renderHtmlResponse({
+      params.hooks?.onRenderStart?.({
+        requestId,
+        url: context.url,
+        command: context.command,
+        mode: context.mode,
+        runtime: context.runtime
+      });
+      const html = await renderSsrHtmlResponse({
         options: params.options,
         farmServer: params.farmServer,
         root: params.root,
@@ -769,7 +816,29 @@ function createSsrRenderMiddleware(params: {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.end(html);
+      params.hooks?.onRenderEnd?.({
+        requestId,
+        url: context.url,
+        command: context.command,
+        mode: context.mode,
+        runtime: context.runtime,
+        ms: Date.now() - startTime
+      });
     } catch (error) {
+      const ssrError = toSsrError({
+        code: 'SSR_RENDER_FAILED',
+        error,
+        debug: params.mode === 'development'
+      });
+      params.hooks?.onRenderEnd?.({
+        requestId,
+        url: context.url,
+        command: context.command,
+        mode: context.mode,
+        runtime: context.runtime,
+        ms: Date.now() - startTime,
+        error: ssrError
+      });
       if (params.options.onError) {
         await params.options.onError(error, { ...context, next });
         return;
@@ -853,7 +922,7 @@ export async function createSsrDevServerWithFactories(
       stopWatcherSync = watchServerCompilerWithSingleWatcher({
         watcher: farmServer.watcher,
         compiler: serverCompilerResult.compiler,
-        async onUpdateResult(result) {
+        async onUpdateResult(result, updateError, updateDurationMs) {
           const changedCandidates = [
             ...result.changed,
             ...result.added,
@@ -868,16 +937,60 @@ export async function createSsrDevServerWithFactories(
             return;
           }
 
-          const recreatedCompilerResult = await factories.createServerCompiler(
-            options.server
-          );
-          invokeContext.root = recreatedCompilerResult.root;
-          invokeContext.publicPath = recreatedCompilerResult.publicPath;
-          invokeContext.compiler = recreatedCompilerResult.compiler;
+          options.hooks?.onInvalidate?.({
+            kind: 'server',
+            reason: updateError ? 'rebuild' : 'update',
+            added: result.added.length + result.extraWatchResult.add.length,
+            changed: result.changed.length,
+            removed: result.removed.length,
+            ms: updateDurationMs
+          });
+
+          if (updateError) {
+            const recreatedCompilerResult =
+              await factories.createServerCompiler(options.server);
+            invokeContext.root = recreatedCompilerResult.root;
+            invokeContext.publicPath = recreatedCompilerResult.publicPath;
+            invokeContext.compiler = recreatedCompilerResult.compiler;
+
+            const normalizePathByCompiler = (modulePath: string) =>
+              recreatedCompilerResult.compiler.transformModulePath(
+                recreatedCompilerResult.root,
+                modulePath
+              );
+            const normalizedResult = normalizeServerUpdateResultPaths(
+              result,
+              normalizePathByCompiler
+            );
+
+            invokeContext.moduleRunnerStamp++;
+            emit({ type: 'full-reload' });
+            emitRunnerPayload(emit, normalizedResult);
+
+            const addedWatchFiles = [
+              ...normalizedResult.added,
+              ...normalizedResult.extraWatchResult.add
+            ];
+            const recreatedWatchFiles =
+              recreatedCompilerResult.compiler.resolvedModulePaths?.(
+                recreatedCompilerResult.root
+              ) ?? [];
+            const mergedWatchFiles = [
+              ...addedWatchFiles,
+              ...recreatedWatchFiles
+            ].filter((file) =>
+              farmServer.watcher.filterWatchFile(file, clientRoot)
+            );
+
+            if (mergedWatchFiles.length > 0) {
+              farmServer.watcher.add(mergedWatchFiles);
+            }
+            return;
+          }
 
           const normalizePathByCompiler = (modulePath: string) =>
-            recreatedCompilerResult.compiler.transformModulePath(
-              recreatedCompilerResult.root,
+            invokeContext.compiler.transformModulePath(
+              invokeContext.root,
               modulePath
             );
           const normalizedResult = normalizeServerUpdateResultPaths(
@@ -886,26 +999,17 @@ export async function createSsrDevServerWithFactories(
           );
 
           invokeContext.moduleRunnerStamp++;
-          emit({ type: 'full-reload' });
           emitRunnerPayload(emit, normalizedResult);
 
           const addedWatchFiles = [
             ...normalizedResult.added,
             ...normalizedResult.extraWatchResult.add
-          ];
-          const recreatedWatchFiles =
-            recreatedCompilerResult.compiler.resolvedModulePaths?.(
-              recreatedCompilerResult.root
-            ) ?? [];
-          const mergedWatchFiles = [
-            ...addedWatchFiles,
-            ...recreatedWatchFiles
           ].filter((file) =>
             farmServer.watcher.filterWatchFile(file, clientRoot)
           );
 
-          if (mergedWatchFiles.length > 0) {
-            farmServer.watcher.add(mergedWatchFiles);
+          if (addedWatchFiles.length > 0) {
+            farmServer.watcher.add(addedWatchFiles);
           }
         }
       });
@@ -921,6 +1025,11 @@ export async function createSsrDevServerWithFactories(
   }
 
   const middlewares = createMiddlewareServer();
+  const runtimeMeta: SsrRuntimeMeta = {
+    root: clientRoot,
+    publicPath: resolvedClientConfig.compilation?.output?.publicPath ?? '/'
+  };
+  const runtimeMode = resolvedClientConfig.mode ?? 'development';
 
   if (options.ssrMiddleware) {
     middlewares.use(options.ssrMiddleware);
@@ -930,7 +1039,10 @@ export async function createSsrDevServerWithFactories(
         options: options.ssr,
         root: clientRoot,
         farmServer,
-        runner
+        runner,
+        runtime: runtimeMeta,
+        mode: runtimeMode,
+        hooks: options.hooks
       })
     );
   }
@@ -947,6 +1059,66 @@ export async function createSsrDevServerWithFactories(
   return {
     middlewares,
     runner,
+    async render(url, req, res) {
+      if (!options.ssr) {
+        throw new Error(
+          '[farm ssr] ssr options are required to call render() in dev.'
+        );
+      }
+      const requestId = randomUUID();
+      const startTime = Date.now();
+      options.hooks?.onRenderStart?.({
+        requestId,
+        url,
+        command: 'dev',
+        mode: runtimeMode,
+        runtime: runtimeMeta
+      });
+      return renderSsrHtmlResponse({
+        options: options.ssr,
+        farmServer,
+        root: clientRoot,
+        context: {
+          url,
+          req,
+          res,
+          runner,
+          command: 'dev',
+          mode: runtimeMode,
+          runtime: runtimeMeta,
+          assets: { css: [], preload: [], scripts: [] },
+          requestId
+        }
+      })
+        .then((html) => {
+          options.hooks?.onRenderEnd?.({
+            requestId,
+            url,
+            command: 'dev',
+            mode: runtimeMode,
+            runtime: runtimeMeta,
+            ms: Date.now() - startTime
+          });
+          return html;
+        })
+        .catch((error) => {
+          const ssrError = toSsrError({
+            code: 'SSR_RENDER_FAILED',
+            error,
+            debug: runtimeMode === 'development'
+          });
+          options.hooks?.onRenderEnd?.({
+            requestId,
+            url,
+            command: 'dev',
+            mode: runtimeMode,
+            runtime: runtimeMeta,
+            ms: Date.now() - startTime,
+            error: ssrError
+          });
+          throw error;
+        });
+    },
     async listen(listenOptions) {
       if (closed) {
         throw new Error('[farm ssr] dev server is already closed.');

@@ -7,11 +7,11 @@
 </template>
 
 <script setup lang="ts">
-import { useRoute } from "vue-router";
-import { getRouteByKey } from "../../smoke/routes.mjs";
+import { useRoute } from 'vue-router';
+import { getRouteByKey } from '../routes.mjs';
 
 const route = useRoute();
-const content = getRouteByKey("about")?.content ?? "about-route-missing";
+const content = getRouteByKey('about')?.content ?? 'about-route-missing';
 </script>
 
 <style scoped lang="less">

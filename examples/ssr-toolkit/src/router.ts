@@ -2,7 +2,7 @@ import { createRouter, type RouteRecordRaw, type RouterHistory } from 'vue-route
 import HomePage from './pages/HomePage.vue';
 import NotFoundPage from './pages/NotFoundPage.vue';
 import ProductsPage from './pages/ProductsPage.vue';
-import { notFoundRoute, routes } from '../smoke/routes.mjs';
+import { notFoundRoute, routes } from './routes.mjs';
 
 const routeRecords: RouteRecordRaw[] = [
   {

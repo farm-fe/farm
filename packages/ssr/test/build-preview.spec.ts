@@ -91,6 +91,11 @@ function createFactories(params: {
   clientPreviewServer?: SsrPreviewClientServerLike;
   readFile?: (filePath: string) => Promise<string>;
   importModule?: (filePath: string) => Promise<Record<string, unknown>>;
+  listFiles?: (dir: string) => Promise<string[]>;
+  writeFile?: (filePath: string, content: string) => Promise<void>;
+  resolveClientEntries?: (
+    config: FarmCliOptions & UserConfig
+  ) => Promise<{ entries: string[]; publicPath: string }>;
 }) {
   const calls: Array<FarmCliOptions & UserConfig> = [];
   const clientPreviewServer =
@@ -111,18 +116,40 @@ function createFactories(params: {
           ? '/project/dist/client'
           : '/project/dist/server'
     })),
+    resolveClientEntries:
+      params.resolveClientEntries ??
+      vi.fn(async (config) => ({
+        entries: Object.values(config.compilation?.input ?? {}),
+        publicPath: config.compilation?.output?.publicPath ?? '/'
+      })),
     createClientPreviewServer: vi.fn(async () => clientPreviewServer),
     createHostServer: vi.fn(() => params.hostServer),
-    readFile:
-      params.readFile ??
-      vi.fn(async () => '<html><body><!--app-html--></body></html>'),
+    readFile: vi.fn(async (filePath: string) => {
+      if (filePath.endsWith('build-info.json')) {
+        if (params.readFile) {
+          const content = await params.readFile(filePath);
+          if (content.trim().startsWith('{')) {
+            return content;
+          }
+        }
+        const error = new Error('ENOENT');
+        (error as NodeJS.ErrnoException).code = 'ENOENT';
+        throw error;
+      }
+      const fallback =
+        params.readFile ??
+        (async () => '<html><body><!--app-html--></body></html>');
+      return fallback(filePath);
+    }),
     importModule:
       params.importModule ??
       vi.fn(async () => ({
         default(url: string) {
           return `<div>preview:${url}</div>`;
         }
-      }))
+      })),
+    listFiles: params.listFiles ?? vi.fn(async () => []),
+    writeFile: params.writeFile ?? vi.fn(async () => undefined)
   };
 
   return {
@@ -148,6 +175,165 @@ describe('farm ssr build/preview api', () => {
     );
 
     expect(calls).toEqual([clientConfig, serverConfig]);
+  });
+
+  it('applies $client/$server overrides during build', async () => {
+    const hostServer = new FakeHostServer();
+    const { factories, calls } = createFactories({ hostServer });
+    const clientConfig = { configFile: 'client', root: '/base' };
+    const serverConfig = { configFile: 'server', root: '/base' };
+
+    await buildSsrAppWithFactories(
+      {
+        client: clientConfig,
+        server: serverConfig,
+        $client: { root: '/client-override' },
+        $server: { root: '/server-override' }
+      },
+      factories
+    );
+
+    expect(calls).toEqual([
+      { configFile: 'client', root: '/client-override' },
+      { configFile: 'server', root: '/server-override' }
+    ]);
+  });
+
+  it('fires asset inject hook during preview render', async () => {
+    const hostServer = new FakeHostServer();
+    const buildInfo = JSON.stringify({
+      version: 1,
+      client: {
+        outputDir: '/project/dist/client',
+        manifest: '/project/dist/client/manifest.client.json',
+        entry: '/src/main.ts'
+      },
+      server: {
+        outputDir: '/project/dist/server',
+        entry: '/project/dist/server/index.js'
+      }
+    });
+    const manifest = JSON.stringify({
+      version: 1,
+      entries: {
+        '/src/main.ts': {
+          js: ['assets/main.js'],
+          css: ['assets/main.css'],
+          preload: ['assets/vendor.js']
+        }
+      },
+      modules: {}
+    });
+    const events: Array<{ css: number; preload: number; scripts: number }> = [];
+
+    const { factories } = createFactories({
+      hostServer,
+      readFile: vi.fn(async (filePath: string) => {
+        if (filePath.endsWith('build-info.json')) {
+          return buildInfo;
+        }
+        if (filePath.endsWith('manifest.client.json')) {
+          return manifest;
+        }
+        return '<html><head></head><body><!--app-html--></body></html>';
+      })
+    });
+
+    const previewServer = await createSsrPreviewServerWithFactories(
+      {
+        client: { configFile: 'client' },
+        server: { configFile: 'server' },
+        ssr: { entry: 'entry-server.js' },
+        hooks: {
+          onAssetInject: (ctx) => events.push(ctx)
+        }
+      },
+      factories
+    );
+
+    await new Promise<void>((resolve) => {
+      previewServer.middlewares(
+        {
+          method: 'GET',
+          url: '/asset-hook',
+          headers: { accept: 'text/html' }
+        } as never,
+        {
+          setHeader() {},
+          end() {
+            resolve();
+          }
+        } as never,
+        () => resolve()
+      );
+    });
+
+    expect(events[0]).toEqual({ css: 1, preload: 1, scripts: 1 });
+    await previewServer.close();
+  });
+
+  it('fires compile hooks during build', async () => {
+    const hostServer = new FakeHostServer();
+    const events: string[] = [];
+    const { factories } = createFactories({ hostServer });
+
+    await buildSsrAppWithFactories(
+      {
+        client: { configFile: 'client' },
+        server: { configFile: 'server' },
+        hooks: {
+          onCompileStart: ({ kind }) => events.push(`start:${kind}`),
+          onCompileEnd: ({ kind }) => events.push(`end:${kind}`)
+        }
+      },
+      factories
+    );
+
+    expect(events).toEqual([
+      'start:client',
+      'end:client',
+      'start:server',
+      'end:server'
+    ]);
+  });
+
+  it('writes build-info and manifests after build', async () => {
+    const hostServer = new FakeHostServer();
+    const written: Record<string, string> = {};
+    const { factories } = createFactories({
+      hostServer,
+      listFiles: vi.fn(async () => [
+        'assets/index.123.js',
+        'assets/index.123.css'
+      ]),
+      writeFile: vi.fn(async (filePath, content) => {
+        written[filePath] = content;
+      }),
+      resolveClientEntries: vi.fn(async () => ({
+        entries: ['/src/main.ts'],
+        publicPath: '/'
+      }))
+    });
+
+    await buildSsrAppWithFactories(
+      {
+        client: { configFile: 'client' },
+        server: { configFile: 'server' }
+      },
+      factories
+    );
+
+    expect(written['/project/dist/client/manifest.client.json']).toBeTruthy();
+    expect(written['/project/dist/server/manifest.server.json']).toBeTruthy();
+    expect(written['/project/dist/client/build-info.json']).toBeTruthy();
+
+    const buildInfo = JSON.parse(
+      written['/project/dist/client/build-info.json']
+    );
+    expect(buildInfo.client.manifest).toBe(
+      '/project/dist/client/manifest.client.json'
+    );
+    expect(buildInfo.server.entry).toBe('/project/dist/server/index.js');
   });
 
   it('renders preview html through built server entry and default template', async () => {
@@ -199,13 +385,91 @@ describe('farm ssr build/preview api', () => {
     expect(body).toContain('<div>preview:/preview</div>');
     expect(headers['Content-Type']).toContain('text/html');
     expect(trace).toEqual([]);
-    expect((factories.readFile as any).mock.calls[0]?.[0]).toBe(
-      '/project/dist/client/index.html'
+    const readFileCalls = (factories.readFile as any).mock.calls.map(
+      (args: unknown[]) => args[0]
     );
+    expect(readFileCalls).toContain('/project/dist/client/index.html');
     expect((factories.importModule as any).mock.calls[0]?.[0]).toBe(
       '/project/dist/server/entry-server.js'
     );
 
+    await previewServer.close();
+  });
+
+  it('injects manifest assets into preview html', async () => {
+    const hostServer = new FakeHostServer();
+    const buildInfo = JSON.stringify({
+      version: 1,
+      client: {
+        outputDir: '/project/dist/client',
+        manifest: '/project/dist/client/manifest.client.json',
+        entry: '/src/main.ts'
+      },
+      server: {
+        outputDir: '/project/dist/server',
+        entry: '/project/dist/server/index.js'
+      }
+    });
+    const manifest = JSON.stringify({
+      version: 1,
+      entries: {
+        '/src/main.ts': {
+          js: ['assets/main.js'],
+          css: ['assets/main.css'],
+          preload: ['assets/vendor.js']
+        }
+      },
+      modules: {}
+    });
+
+    const { factories } = createFactories({
+      hostServer,
+      readFile: vi.fn(async (filePath: string) => {
+        if (filePath.endsWith('build-info.json')) {
+          return buildInfo;
+        }
+        if (filePath.endsWith('manifest.client.json')) {
+          return manifest;
+        }
+        return '<html><head></head><body><!--app-html--></body></html>';
+      })
+    });
+
+    const previewServer = await createSsrPreviewServerWithFactories(
+      {
+        client: { configFile: 'client' },
+        server: { configFile: 'server' },
+        ssr: {
+          entry: 'entry-server.js'
+        }
+      },
+      factories
+    );
+
+    const html = await new Promise<string>((resolve) => {
+      previewServer.middlewares(
+        {
+          method: 'GET',
+          url: '/about',
+          headers: { accept: 'text/html' }
+        } as never,
+        {
+          setHeader() {},
+          end(body: string) {
+            resolve(body);
+          }
+        } as never,
+        () => resolve('next')
+      );
+    });
+
+    expect(html).toContain('<link rel="stylesheet" href="/assets/main.css">');
+    expect(html).toContain(
+      '<link rel="modulepreload" href="/assets/vendor.js">'
+    );
+    expect(html).toContain(
+      '<script type="module" src="/assets/main.js"></script>'
+    );
     await previewServer.close();
   });
 

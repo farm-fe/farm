@@ -8,8 +8,7 @@ describe('farm ssr command runner', () => {
   it('runs build command without starting server', async () => {
     const resolvers = {
       buildSsrApp: vi.fn(async () => undefined),
-      createSsrServer: vi.fn(async () => ({ type: 'create' }) as never),
-      startSsrServer: vi.fn(async () => ({ type: 'start' }) as never)
+      createSsrRuntime: vi.fn(async () => ({ start: vi.fn() }) as never)
     };
 
     const result = await runSsrCommandWithResolvers(
@@ -23,21 +22,22 @@ describe('farm ssr command runner', () => {
 
     expect(result).toBeUndefined();
     expect(resolvers.buildSsrApp).toHaveBeenCalledTimes(1);
-    expect(resolvers.createSsrServer).toHaveBeenCalledTimes(0);
-    expect(resolvers.startSsrServer).toHaveBeenCalledTimes(0);
+    expect(resolvers.createSsrRuntime).toHaveBeenCalledTimes(0);
   });
 
   it('starts server by default for dev/preview commands', async () => {
-    const startedServer = { type: 'start' };
+    const runtime = {
+      start: vi.fn(async () => undefined)
+    };
     const resolvers = {
       buildSsrApp: vi.fn(async () => undefined),
-      createSsrServer: vi.fn(async () => ({ type: 'create' }) as never),
-      startSsrServer: vi.fn(async () => startedServer as never)
+      createSsrRuntime: vi.fn(async () => runtime as never)
     };
 
     const devResult = await runSsrCommandWithResolvers(
       {
-        client: {}
+        client: {},
+        $client: { mode: 'development' }
       } as SsrRunCommandOptions,
       resolvers
     );
@@ -50,17 +50,17 @@ describe('farm ssr command runner', () => {
       resolvers
     );
 
-    expect(devResult).toBe(startedServer);
-    expect(previewResult).toBe(startedServer);
-    expect(resolvers.startSsrServer).toHaveBeenCalledTimes(2);
-    expect(resolvers.createSsrServer).toHaveBeenCalledTimes(0);
-    expect(resolvers.startSsrServer).toHaveBeenNthCalledWith(
+    expect(devResult).toBe(runtime);
+    expect(previewResult).toBe(runtime);
+    expect(resolvers.createSsrRuntime).toHaveBeenCalledTimes(2);
+    expect(runtime.start).toHaveBeenCalledTimes(2);
+    expect(resolvers.createSsrRuntime).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         client: {}
       })
     );
-    expect(resolvers.startSsrServer).toHaveBeenNthCalledWith(
+    expect(resolvers.createSsrRuntime).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         command: 'preview',
@@ -71,11 +71,12 @@ describe('farm ssr command runner', () => {
   });
 
   it('uses create server flow when start=false', async () => {
-    const createdServer = { type: 'create' };
+    const runtime = {
+      start: vi.fn(async () => undefined)
+    };
     const resolvers = {
       buildSsrApp: vi.fn(async () => undefined),
-      createSsrServer: vi.fn(async () => createdServer as never),
-      startSsrServer: vi.fn(async () => ({ type: 'start' }) as never)
+      createSsrRuntime: vi.fn(async () => runtime as never)
     };
 
     const result = await runSsrCommandWithResolvers(
@@ -88,10 +89,10 @@ describe('farm ssr command runner', () => {
       resolvers
     );
 
-    expect(result).toBe(createdServer);
-    expect(resolvers.createSsrServer).toHaveBeenCalledTimes(1);
-    expect(resolvers.startSsrServer).toHaveBeenCalledTimes(0);
-    expect(resolvers.createSsrServer).toHaveBeenCalledWith({
+    expect(result).toBe(runtime);
+    expect(resolvers.createSsrRuntime).toHaveBeenCalledTimes(1);
+    expect(runtime.start).toHaveBeenCalledTimes(0);
+    expect(resolvers.createSsrRuntime).toHaveBeenCalledWith({
       command: 'preview',
       client: {},
       server: {}

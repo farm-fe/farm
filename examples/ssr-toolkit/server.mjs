@@ -1,5 +1,5 @@
 import { createServer as createNodeServer } from 'node:http';
-import { createSsrServer } from '../../packages/ssr/dist/index.js';
+import { createSsrRuntime } from '../../packages/ssr/dist/index.js';
 import { resolveHostPort, resolveOptionalDevHmrPort } from './server/ports.mjs';
 import { createRuntimeConfig } from './server/runtime-config.mjs';
 import {
@@ -19,12 +19,50 @@ const hostPort = await resolveHostPort({
   explicitHostPort: runtime.explicitHostPort
 });
 
-const ssrServer = await createSsrServer(
+const ssrRuntime = await createSsrRuntime(
   createSsrServerOptions({
     runtime,
     hmrPort
   })
 );
+
+function isHtmlRequest(req) {
+  const method = req.method?.toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD') {
+    return false;
+  }
+
+  const url = req.url ?? '/';
+  if (url.includes('/@') || url.includes('/__')) {
+    return false;
+  }
+
+  const queryIndex = url.indexOf('?');
+  const pathname = queryIndex >= 0 ? url.slice(0, queryIndex) : url;
+  if (/\.[a-zA-Z0-9]+$/.test(pathname)) {
+    return false;
+  }
+
+  const accept = req.headers.accept;
+  if (!accept) {
+    return true;
+  }
+
+  return accept.includes('text/html') || accept.includes('*/*');
+}
+
+function shouldHandleSsr(req) {
+  if (!isHtmlRequest(req)) {
+    return false;
+  }
+
+  const url = req.url ?? '/';
+  if (url.startsWith('/api/')) {
+    return false;
+  }
+
+  return true;
+}
 
 const hostServer = createNodeServer((req, res) => {
   if (req.url === '/api/ping') {
@@ -33,7 +71,27 @@ const hostServer = createNodeServer((req, res) => {
     return;
   }
 
-  ssrServer.middlewares(req, res, (error) => {
+  if (shouldHandleSsr(req)) {
+    ssrRuntime
+      .render(req.url ?? '/', req, res)
+      .then((html) => {
+        if (res.writableEnded) {
+          return;
+        }
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end(html);
+      })
+      .catch((error) => {
+        const stack = error instanceof Error ? error.stack ?? error.message : String(error);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.end(stack);
+      });
+    return;
+  }
+
+  ssrRuntime.middlewares(req, res, (error) => {
     if (error) {
       const stack = error instanceof Error ? error.stack ?? error.message : String(error);
       res.statusCode = 500;
@@ -68,7 +126,7 @@ const close = async () => {
       resolve();
     });
   });
-  await ssrServer.close();
+  await ssrRuntime.close();
 };
 
 process.on('SIGINT', async () => {
