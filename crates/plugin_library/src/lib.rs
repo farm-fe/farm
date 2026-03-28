@@ -329,9 +329,8 @@ impl Plugin for FarmPluginLibrary {
       // find a root module: one that is not depended on by any other module in this pot.
       let module_graph = context.module_graph.read();
       let modules = resource_pot.modules();
-      let modules_set: HashSet<ModuleId> =
-        modules.iter().map(|&m| m.clone()).collect();
-      let root = modules
+      let modules_set: HashSet<&ModuleId> = modules.iter().copied().collect();
+      modules
         .iter()
         .find(|m| {
           let dependents = module_graph.dependents(m);
@@ -339,8 +338,14 @@ impl Plugin for FarmPluginLibrary {
             .iter()
             .any(|(dep_id, _)| modules_set.contains(dep_id))
         })
-        .unwrap_or_else(|| modules.first().unwrap());
-      (*root).clone()
+        .unwrap_or(modules.first().expect(
+          &format!(
+            "resource pot {:?} has no modules, cannot determine entry module for rendering",
+            resource_pot.id
+          ),
+        ))
+        .to_owned()
+        .clone()
     };
 
     let module_graph = context.module_graph.read();
