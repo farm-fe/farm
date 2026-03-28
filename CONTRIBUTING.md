@@ -139,3 +139,47 @@ Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
   see code in the `packages` directory. contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
 - **the Rust side**:
   see code in the `crates` and `rust-plugins` directory. contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.
+
+---
+
+## AI-Assisted Development
+
+Farm's repository is configured with a set of AI agent skills and instructions to help contributors work more effectively. These are available when using VS Code with GitHub Copilot.
+
+### Agent Instructions
+
+The [`AGENTS.md`](./AGENTS.md) file at the repository root provides project-level context to any AI coding assistant. It covers the repo structure, key commands, conventions, and guardrails. Read it before relying on agent suggestions.
+
+### Slash Commands (Skills)
+
+Type `/` in Copilot Chat to access workflow-specific slash commands:
+
+| Command | What it does |
+|---------|--------------|
+| `/git-commit-push` | Safely stages, commits, and pushes changes with guardrails |
+| `/farm-ready-gate` | Runs `pnpm run ready` — the full CI gate — and reports any failing step |
+| `/opsx:propose` | Drafts a new change proposal with design and task artifacts |
+| `/opsx:apply` | Implements tasks from an OpenSpec change |
+| `/opsx:explore` | Opens a thinking-partner explore session (read-only) |
+| `/opsx:archive` | Archives a completed change |
+
+Skills live in `.github/skills/` (project-shared) and `.agents/skills/` (agent utilities). See [AGENTS.md §Skills](./AGENTS.md#available-skills-slash-commands) for the full list and instructions for creating new ones.
+
+### AI Agents
+
+A **FarmFE Docs Sync** agent (`.github/agents/farmfe-docs-sync.agent.md`) is available for keeping documentation in sync with code changes. Invoke it after modifying any public API, config option, or plugin interface.
+
+### Rust-Specific AI Guidance
+
+The `rust-engineer` and `rust-best-practices` skills (`.agents/skills/`) provide idiomatic Rust guidance aligned with this codebase. They are auto-suggested when working in `crates/` or `rust-plugins/`.
+
+### What AI Should Not Do
+
+Copilot and other agents are instructed **not** to:
+
+- Force-push or hard-reset without explicit approval.
+- Edit generated files (`dist/*.d.ts`, `typed-router.d.ts`, `auto-imports.d.ts`).
+- Modify `pnpm-lock.yaml` directly.
+- Bypass hooks with `--no-verify`.
+
+If an AI suggestion violates these, reject it and report the case.
