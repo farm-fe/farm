@@ -66,8 +66,8 @@ impl Plugin for FarmPluginDsv {
     _context: &std::sync::Arc<CompilationContext>,
   ) -> HookResult<Option<PluginTransformHookResult>> {
     let options = self.options.clone();
-    let include = options.include.unwrap_or(vec![]);
-    let exclude = options.exclude.unwrap_or(vec![]);
+    let include = options.include.unwrap_or_default();
+    let exclude = options.exclude.unwrap_or_default();
     let filter = PathFilter::new(&include, &exclude);
     if !filter.execute(&param.module_id) {
       return Ok(None);
@@ -96,7 +96,7 @@ impl Plugin for FarmPluginDsv {
     let json_string = serde_json::to_string(&records).unwrap();
 
     Ok(Some(PluginTransformHookResult {
-      content: format!("export default {}", json_string),
+      content: format!("export default {json_string}"),
       module_type: Some(ModuleType::Custom("json".to_string())),
       source_map: None,
       ignore_previous_source_map: true,

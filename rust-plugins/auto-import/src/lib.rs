@@ -158,8 +158,12 @@ impl Plugin for FarmfePluginAutoImport {
       if param.resolved_path.ends_with(".vue") {
         vue_template_addon(&mut content, &imports);
       }
-      let content =
-        parser::inject_imports::inject_imports(&content, imports.clone().to_vec(), None, options.inject_at_end.unwrap_or(false));
+      let content = parser::inject_imports::inject_imports(
+        &content,
+        imports.clone().to_vec(),
+        None,
+        options.inject_at_end.unwrap_or(false),
+      );
       // let (cm, src) = create_swc_source_map(Source {
       //   path: PathBuf::from(param.resolved_path),
       //   content: Arc::new(content.clone()),

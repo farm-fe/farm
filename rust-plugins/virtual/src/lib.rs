@@ -124,7 +124,8 @@ impl FarmPluginVirtualModule {
           Value::Str(s) => s.clone(),
         },
         module_type: match value {
-          Value::Struct(s) => s.module_type
+          Value::Struct(s) => s
+            .module_type
             .clone()
             .unwrap_or(module_type_from_id(id).unwrap_or(ModuleType::Js)),
           Value::Str(_) => module_type_from_id(id).unwrap_or(ModuleType::Js),

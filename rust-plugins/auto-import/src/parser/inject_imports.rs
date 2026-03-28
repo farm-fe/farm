@@ -54,7 +54,12 @@ fn get_exclude_imports(content: &str, imports: Vec<Import>) -> Vec<Import> {
     .collect()
 }
 
-pub fn inject_imports(content: &str, imports: Vec<Import>, priority: Option<usize>, inject_at_end: bool) -> String {
+pub fn inject_imports(
+  content: &str,
+  imports: Vec<Import>,
+  priority: Option<usize>,
+  inject_at_end: bool,
+) -> String {
   let esm_imports = parse_esm_imports(None, Some(content));
   let imports = get_exclude_imports(&content, imports)
     .into_iter()

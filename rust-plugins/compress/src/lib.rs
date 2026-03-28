@@ -84,16 +84,15 @@ impl Plugin for FarmfePluginCompress {
     let ext_name = utils::get_ext_name(&self.options.algorithm);
     let filter = Regex::new(&self.options.filter).map_err(|e| {
       CompilationError::GenericError(format!(
-        "Invalid regex expression for compress plugin: {}",
-        e
+        "Invalid regex expression for compress plugin: {e}"
       ))
     })?;
 
     let compressed_buffers = param
       .resources_map
       .par_iter_mut()
-      .filter_map(|(resource_id,resource)| {
-        if !filter.is_match(&resource_id) || resource.bytes.len() < self.options.threshold {
+      .filter_map(|(resource_id, resource)| {
+        if !filter.is_match(resource_id) || resource.bytes.len() < self.options.threshold {
           return None;
         }
         if self.options.delete_origin_file.unwrap_or(false) {
@@ -123,7 +122,7 @@ impl Plugin for FarmfePluginCompress {
     ) in compressed_buffers
     {
       let bytes = buffer?;
-      let name = format!("{}.{}", resource_id, ext_name);
+      let name = format!("{resource_id}.{ext_name}");
       saved += origin_file_size - bytes.len();
       param.resources_map.insert(
         name.clone(),
@@ -133,7 +132,7 @@ impl Plugin for FarmfePluginCompress {
           emitted: false,
           resource_type: ResourceType::Custom(ext_name.to_string()),
           origin,
-          name_hash: sha256(&name.as_bytes(), 8),
+          name_hash: sha256(name.as_bytes(), 8),
           meta,
           should_transform_output_filename,
           special_placeholders,

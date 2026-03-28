@@ -60,7 +60,7 @@ export const createDefaultWorkspaceFile = (
 	);
 };
 "#;
-  
+
   //   for c in re.find(&test_str).unwrap().groups() {
   //     println!("{:?}", &test_str[c.unwrap()]);
   //     // 我需要递归这个 test_str 后续的字符
@@ -87,12 +87,15 @@ export const createDefaultWorkspaceFile = (
   // }
 
   // let matches = match_global(WORKER_IMPORT_META_URL_RE, &test_str);
-  let matches = Regex::new(WORKER_IMPORT_META_URL_RE).unwrap().find_iter(&test_str).collect::<Vec<Match>>();
+  let matches = Regex::new(WORKER_IMPORT_META_URL_RE)
+    .unwrap()
+    .find_iter(&test_str)
+    .collect::<Vec<Match>>();
   println!("matches : {:?}", matches);
   matches.iter().for_each(|m| {
     let args = &m.captures[0].clone().unwrap();
     let worker_url = &m.captures[1].clone().unwrap();
-    println!("args:{}",&test_str[args.start..args.end]);
-    println!("worker_url:{}",&test_str[worker_url.start..worker_url.end])
+    println!("args:{}", &test_str[args.start..args.end]);
+    println!("worker_url:{}", &test_str[worker_url.start..worker_url.end])
   });
 }

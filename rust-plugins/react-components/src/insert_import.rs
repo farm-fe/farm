@@ -1,4 +1,8 @@
-use farmfe_core::{config::TargetEnv, swc_common::{DUMMY_SP, SyntaxContext}, swc_ecma_ast::*};
+use farmfe_core::{
+  config::TargetEnv,
+  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_ecma_ast::*,
+};
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
 use std::{
@@ -137,11 +141,19 @@ impl VisitMut for InsertImportModifier {
       };
       let specifier = match component.export_type {
         ExportType::Default => ImportSpecifier::Default(ImportDefaultSpecifier {
-          local: Ident::new(component.name.clone().into(), DUMMY_SP, SyntaxContext::empty()),
+          local: Ident::new(
+            component.name.clone().into(),
+            DUMMY_SP,
+            SyntaxContext::empty(),
+          ),
           span: DUMMY_SP,
         }),
         ExportType::Named => ImportSpecifier::Named(ImportNamedSpecifier {
-          local: Ident::new(component.name.clone().into(), DUMMY_SP, SyntaxContext::empty()),
+          local: Ident::new(
+            component.name.clone().into(),
+            DUMMY_SP,
+            SyntaxContext::empty(),
+          ),
           imported,
           span: DUMMY_SP,
           is_type_only: false,

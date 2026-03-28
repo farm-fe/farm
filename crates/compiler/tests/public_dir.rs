@@ -17,14 +17,17 @@ fn create_test_directory_structure(base_path: &Path) -> std::io::Result<()> {
   let public_dir = base_path.join("public");
   fs::create_dir_all(&public_dir)?;
   fs::write(public_dir.join("test.txt"), "test content")?;
-  
+
   // Create a subdirectory in public
   let public_subdir = public_dir.join("assets");
   fs::create_dir_all(&public_subdir)?;
   fs::write(public_subdir.join("image.png"), "fake image")?;
 
   // Create source files
-  fs::write(base_path.join("index.html"), "<html><body>Test</body></html>")?;
+  fs::write(
+    base_path.join("index.html"),
+    "<html><body>Test</body></html>",
+  )?;
   fs::write(base_path.join("index.js"), "console.log('test');")?;
 
   Ok(())
@@ -69,7 +72,10 @@ fn test_public_dir_copy_with_separate_folders() {
 
   // Verify that public files were copied to output directory
   let output_dir = test_dir.join("dist");
-  assert!(output_dir.join("test.txt").exists(), "test.txt should be copied");
+  assert!(
+    output_dir.join("test.txt").exists(),
+    "test.txt should be copied"
+  );
   assert!(
     output_dir.join("assets").join("image.png").exists(),
     "image.png should be copied"
@@ -148,13 +154,17 @@ fn test_public_dir_copy_with_output_as_parent_of_public() {
 
   // Create test directory structure
   fs::create_dir_all(&test_dir).unwrap();
-  
+
   // Create a nested public directory structure
   let nested_public = test_dir.join("src").join("public");
   fs::create_dir_all(&nested_public).unwrap();
   fs::write(nested_public.join("test.txt"), "test content").unwrap();
 
-  fs::write(test_dir.join("index.html"), "<html><body>Test</body></html>").unwrap();
+  fs::write(
+    test_dir.join("index.html"),
+    "<html><body>Test</body></html>",
+  )
+  .unwrap();
   fs::write(test_dir.join("index.js"), "console.log('test');").unwrap();
 
   let compiler = create_compiler_with_args(
@@ -208,7 +218,7 @@ fn test_nested_directory_detection() {
 
   fs::create_dir_all(&test_dir).unwrap();
   fs::write(test_dir.join("index.html"), "<html></html>").unwrap();
-  
+
   // Create public directory for testing
   let public_dir = test_dir.join("public");
   fs::create_dir_all(&public_dir).unwrap();
@@ -234,7 +244,7 @@ fn test_nested_directory_detection() {
   compiler1.compile().unwrap();
   let result1 = compiler1.write_resources_to_disk();
   assert!(result1.is_ok(), "Should succeed with separate folders");
-  
+
   // Verify public files were copied
   let dist_dir = test_dir.join("dist");
   assert!(
@@ -262,7 +272,7 @@ fn test_nested_directory_detection() {
   compiler2.compile().unwrap();
   let result2 = compiler2.write_resources_to_disk();
   assert!(result2.is_ok(), "Should succeed but skip copying");
-  
+
   // Verify public files were NOT copied (to prevent infinite nesting)
   let nested_output = test_dir.join("public").join("dist");
   assert!(
@@ -274,7 +284,7 @@ fn test_nested_directory_detection() {
   let src_public = test_dir.join("src").join("public");
   fs::create_dir_all(&src_public).unwrap();
   fs::write(src_public.join("data.txt"), "data").unwrap();
-  
+
   let compiler3 = create_compiler_with_args(
     test_dir.clone(),
     crate_path.clone(),
@@ -294,7 +304,7 @@ fn test_nested_directory_detection() {
   compiler3.compile().unwrap();
   let result3 = compiler3.write_resources_to_disk();
   assert!(result3.is_ok(), "Should succeed but skip copying");
-  
+
   // Verify public files were NOT copied to parent output directory
   let src_output = test_dir.join("src");
   assert!(

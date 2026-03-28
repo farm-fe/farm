@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 farmfe_core = { version = "*", path = "../../crates/core" }
 farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plugin_types" }
 farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
-csv = "1.3.0"
+csv = "~1.3"
 serde = "1.0.197"
 serde_json = "1.0.116"
 farmfe_toolkit = { version = "*", path = "../../crates/toolkit" }

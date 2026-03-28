@@ -64,16 +64,18 @@ impl Compiler {
 
   // Checks if one directory is nested inside another
   fn check_directory_nesting(first: &Path, second: &Path) -> (bool, bool) {
-    let first_in_second = first.strip_prefix(second)
+    let first_in_second = first
+      .strip_prefix(second)
       .ok()
       .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
       .is_some();
-    
-    let second_in_first = second.strip_prefix(first)
+
+    let second_in_first = second
+      .strip_prefix(first)
       .ok()
       .filter(|rel| !rel.as_os_str().is_empty() && !rel.to_string_lossy().starts_with(".."))
       .is_some();
-    
+
     (first_in_second, second_in_first)
   }
 
@@ -89,7 +91,7 @@ impl Compiler {
     }
 
     // Check if output and public directories overlap
-    let (output_in_public, public_in_output) = 
+    let (output_in_public, public_in_output) =
       Self::check_directory_nesting(output_dir_path, public_dir_path);
 
     if output_in_public || public_in_output {

@@ -23,7 +23,7 @@ use farmfe_core::{
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookResult},
   serde_json::{self},
-  swc_common::source_map::{DefaultSourceMapGenConfig},
+  swc_common::source_map::DefaultSourceMapGenConfig,
   swc_ecma_parser::{Syntax, TsSyntax},
 };
 
