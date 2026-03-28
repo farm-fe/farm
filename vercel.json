@@ -1,5 +1,4 @@
 {
-  "root": "website",
-  "buildCommand": "pnpm build",
-  "outputDirectory": "build"
+  "buildCommand": "cd website && pnpm build",
+  "outputDirectory": "website/build"
 }
