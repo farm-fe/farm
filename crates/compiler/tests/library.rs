@@ -188,7 +188,8 @@ fn test_bundle_type(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
       // Resolve relative paths in input against cwd
       let mut resolved_input: HashMap<String, String> = HashMap::default();
       for (key, value) in config.input.iter() {
-        let path = if value.starts_with("./") || value.starts_with("../") {
+        let path_buf = PathBuf::from(value);
+        let path = if path_buf.is_relative() && (value.starts_with("./") || value.starts_with("../")) {
           cwd.join(value).to_string_lossy().to_string()
         } else {
           value.clone()

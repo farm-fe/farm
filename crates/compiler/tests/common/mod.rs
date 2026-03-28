@@ -597,6 +597,16 @@ pub fn assert_compiler_result_as_dir(compiler: &Compiler, output_dir_name: &str)
       let expected_lines = expected_content.trim().lines().collect::<Vec<&str>>();
       let actual_lines = actual_content.trim().lines().collect::<Vec<&str>>();
 
+      // Check line count first for clearer diagnostics
+      assert_eq!(
+        expected_lines.len(),
+        actual_lines.len(),
+        "Line count mismatch in file '{}'\nExpected:\n{}\nActual:\n{}",
+        expected_name,
+        expected_content,
+        actual_content
+      );
+
       for (expected_line, actual_line) in expected_lines.iter().zip(actual_lines.iter()) {
         assert_eq!(
           expected_line.trim(),
@@ -607,15 +617,6 @@ pub fn assert_compiler_result_as_dir(compiler: &Compiler, output_dir_name: &str)
           actual_line
         );
       }
-
-      assert_eq!(
-        expected_lines.len(),
-        actual_lines.len(),
-        "Line count mismatch in file '{}'\nExpected:\n{}\nActual:\n{}",
-        expected_name,
-        expected_content,
-        actual_content
-      );
     }
   }
 }
