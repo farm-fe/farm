@@ -1,0 +1,27 @@
+{
+  "name": "playground",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "clsx": "^1.2.1",
+    "react": "18",
+    "react-dom": "18",
+    "@farmfe/plugin-svgr": "workspace:*"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "1.0.4",
+    "@farmfe/core": "1.4.3",
+    "@farmfe/plugin-react": "1.2.6",
+    "@types/react": "18",
+    "core-js": "^3.36.1",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0"
+  }
+}

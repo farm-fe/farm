@@ -1,0 +1,29 @@
+[package]
+edition = "2021"
+name = "farmfe_plugin_icons"
+version = "0.0.1"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*", path = "../../crates/core" }
+farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plugin_types" }
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+farmfe_toolkit = { version = "*", path = "../../crates/toolkit" }
+farmfe_utils = { version = "*", path = "../../crates/utils" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+svgr-rs = "0.2.0"
+once_cell = "1.19.0"
+fervid = "0.2.0"
+# reqwest = "0.12.5"
+tokio = { version = "1.38.0", features = ["full"] }
+walkdir = "2.5.0"
+xmltree = "0.11.0"
+reqwest = { version = "0.12.9", features = [
+  "rustls-tls",
+], default-features = false }
+cached = { version = "0.56.0", features = ["disk_store"] }
+bincode = "2.0.1"
+loading = "0.4.0"

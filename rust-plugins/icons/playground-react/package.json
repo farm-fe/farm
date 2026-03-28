@@ -1,0 +1,36 @@
+{
+  "name": "playground-react",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@farmfe/js-plugin-postcss": "^1.7.0",
+    "@farmfe/js-plugin-visualizer": "^1.0.0",
+    "@farmfe/plugin-icons": "workspace:*",
+    "@iconify-json/carbon": "^1.1.36",
+    "@iconify-json/logos": "^1.1.43",
+    "@iconify/json": "^2.2.227",
+    "browser": "link:@unocss/preset-icons/browser",
+    "clsx": "^1.2.1",
+    "postcss": "^8.4.39",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "1.3.0",
+    "@farmfe/plugin-react": "^1.2.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@unocss/postcss": "^0.61.3",
+    "core-js": "^3.37.1",
+    "react-refresh": "^0.14.2",
+    "unocss": "^0.61.3"
+  }
+}

@@ -1,0 +1,4 @@
+packages: 
+  - '.'
+  - playground-vue
+  - playground-react

@@ -1,0 +1,57 @@
+{
+  "name": "@farmfe/js-plugin-react-compiler",
+  "version": "0.0.3",
+  "description": "",
+  "scripts": {
+    "build": "npm run build:cjs",
+    "build:cjs": "cross-env FARM_FORMAT=cjs farm build",
+    "dev": "npm run build:cjs -- --watch"
+  },
+  "keywords": [
+    "babel",
+    "plugin",
+    "farm",
+    "farmfe",
+    "js",
+    "transform",
+    "bundler",
+    "compiler",
+    "react",
+    "compiler",
+    "react compiler",
+    "react19"
+  ],
+  "author": {
+    "name": "shulandmimi",
+    "email": "sshuang141@163.com",
+    "url": "https://github.com/shulandmimi"
+  },
+  "license": "MIT",
+  "exports": {
+    "require": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "dependencies": {
+    "@babel/plugin-syntax-jsx": "^7.25.9",
+    "babel-plugin-react-compiler": "19.0.0-beta-37ed2a7-20241206"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.26.3",
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^1.6.0",
+    "@farmfe/js-plugin-babel": "workspace:*",
+    "@farmfe/js-plugin-dts": "^0.6.4",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^22.7.4",
+    "cross-env": "^7.0.3"
+  },
+  "peerDependencies": {
+    "@farmfe/core": "^1.6.0"
+  },
+  "files": [
+    "package.json",
+    "README.md",
+    "dist"
+  ]
+}
