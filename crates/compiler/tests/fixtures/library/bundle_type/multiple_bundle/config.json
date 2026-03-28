@@ -1,4 +1,8 @@
 {
+  "input": {
+    "index": "./index.ts",
+    "foo": "./foo.ts"
+  },
   "output": {
     "targetEnv": "library",
     "format": "esm",

@@ -1,9 +1,7 @@
-import { add, multiply } from './math';
+import { add } from './shared';
 
-export function main() {
-  return add(1, 2) + ' ' + multiply(3, 4);
+export function sum(a: number, b: number): number {
+  return add(a, b);
 }
 
-export const loadGreeting = () => import('./greeting');
-
-export { add, multiply } from './math';
+export { add } from './shared';
