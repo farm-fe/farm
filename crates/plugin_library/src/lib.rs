@@ -330,14 +330,14 @@ impl Plugin for FarmPluginLibrary {
       let module_graph = context.module_graph.read();
       let modules = resource_pot.modules();
       let modules_set: HashSet<ModuleId> =
-        modules.iter().map(|m| (*m).clone()).collect();
+        modules.iter().map(|&m| m.clone()).collect();
       let root = modules
         .iter()
         .find(|m| {
           let dependents = module_graph.dependents(m);
           !dependents
             .iter()
-            .any(|dep| modules_set.contains(&dep.0))
+            .any(|(dep_id, _)| modules_set.contains(dep_id))
         })
         .unwrap_or_else(|| modules.first().unwrap());
       (*root).clone()
