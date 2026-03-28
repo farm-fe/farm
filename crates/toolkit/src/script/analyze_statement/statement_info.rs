@@ -37,7 +37,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   match stmt {
     ModuleItem::ModuleDecl(module_decl) => match module_decl {
       swc_ecma_ast::ModuleDecl::Import(import_decl) => {
-        let source = import_decl.src.value.to_string();
+        let source = import_decl.src.value.to_string_lossy().into_owned();
         let mut specifiers = vec![];
 
         for specifier in &import_decl.specifiers {
@@ -71,7 +71,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
       }
       swc_ecma_ast::ModuleDecl::ExportAll(export_all) => {
         export_info = Some(ExportInfo {
-          source: Some(export_all.src.value.to_string()),
+          source: Some(export_all.src.value.to_string_lossy().into_owned()),
           specifiers: vec![ExportSpecifierInfo::All],
           stmt_id: *id,
         })
@@ -193,7 +193,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
         }
 
         export_info = Some(ExportInfo {
-          source: export_named.src.as_ref().map(|s| s.value.to_string()),
+          source: export_named.src.as_ref().map(|s| s.value.to_string_lossy().into_owned()),
           specifiers,
           stmt_id: *id,
         });
