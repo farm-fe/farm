@@ -783,7 +783,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
 
 fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
   match &expr.expr {
-    box Expr::Lit(Lit::Str(str)) => Some(vec![str.value.to_string()]),
+    box Expr::Lit(Lit::Str(str)) => Some(vec![str.value.to_string_lossy().into_owned()]),
     box Expr::Array(ArrayLit { elems, .. }) => {
       let mut result = vec![];
 
@@ -793,7 +793,7 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
           expr: box Expr::Lit(Lit::Str(str)),
         } = elem
         {
-          result.push(str.value.to_string());
+          result.push(str.value.to_string_lossy().into_owned());
         }
       }
 
@@ -829,14 +829,14 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
           swc_ecma_ast::PropOrSpread::Prop(box Prop::KeyValue(KeyValueProp { key, value })) => {
             let k = match key {
               swc_ecma_ast::PropName::Ident(i) => Some(i.sym.to_string()),
-              swc_ecma_ast::PropName::Str(str) => Some(str.value.to_string()),
+              swc_ecma_ast::PropName::Str(str) => Some(str.value.to_string_lossy().into_owned()),
               swc_ecma_ast::PropName::Num(_)
               | swc_ecma_ast::PropName::Computed(_)
               | swc_ecma_ast::PropName::BigInt(_) => None,
             };
 
             let v = match value {
-              box Expr::Lit(Lit::Str(str)) => Some(str.value.to_string()),
+              box Expr::Lit(Lit::Str(str)) => Some(str.value.to_string_lossy().into_owned()),
               box Expr::Lit(Lit::Bool(b)) => Some(if b.value {
                 "true".to_string()
               } else {
@@ -854,13 +854,13 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
                     })) => {
                       let k = match key {
                         swc_ecma_ast::PropName::Ident(i) => Some(i.sym.to_string()),
-                        swc_ecma_ast::PropName::Str(str) => Some(str.value.to_string()),
+                        swc_ecma_ast::PropName::Str(str) => Some(str.value.to_string_lossy().into_owned()),
                         swc_ecma_ast::PropName::Num(_)
                         | swc_ecma_ast::PropName::Computed(_)
                         | swc_ecma_ast::PropName::BigInt(_) => None,
                       };
                       let v = match value {
-                        box Expr::Lit(Lit::Str(str)) => Some(str.value.to_string()),
+                        box Expr::Lit(Lit::Str(str)) => Some(str.value.to_string_lossy().into_owned()),
                         box Expr::Lit(Lit::Bool(b)) => Some(if b.value {
                           "true".to_string()
                         } else {

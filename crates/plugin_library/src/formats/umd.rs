@@ -142,7 +142,7 @@ impl VisitMut for RequireExprTransformer {
       if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
         if let box Expr::Lit(Lit::Str(str)) = &call_expr.args[0].expr {
           // replace all no A-Za-z0-9_ to _
-          let raw_module_name = str.value.to_string();
+          let raw_module_name = str.value.to_string_lossy().into_owned();
 
           let external_config = ExternalConfig::from(&*self.context.config);
 
