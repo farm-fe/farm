@@ -38,7 +38,7 @@ struct FarmPluginMdxOptions {
   parse: Option<MdxParseOptions>,
 }
 
-fn is_mdx_file(file_name: &String) -> bool {
+fn is_mdx_file(file_name: &str) -> bool {
   file_name.ends_with(".md") || file_name.ends_with(".mdx")
 }
 
@@ -110,7 +110,7 @@ impl Plugin for FarmPluginMdx {
     }
 
     if self.include != Some(String::from("")) {
-      let inc_reg = Regex::new(&format!("{}", self.include.as_ref().unwrap())).unwrap();
+      let inc_reg = Regex::new(&self.include.as_ref().unwrap().to_string()).unwrap();
       if let Some(_text) = inc_reg.find(param.resolved_path) {
       } else {
         return Ok(None);
@@ -118,7 +118,7 @@ impl Plugin for FarmPluginMdx {
     }
 
     if self.exclude != Some(String::from("")) {
-      let exc_reg = Regex::new(&format!("{}", self.exclude.as_ref().unwrap())).unwrap();
+      let exc_reg = Regex::new(&self.exclude.as_ref().unwrap().to_string()).unwrap();
       if let Some(_text) = exc_reg.find(param.resolved_path) {
         return Ok(None);
       }
@@ -133,6 +133,6 @@ impl Plugin for FarmPluginMdx {
         ignore_previous_source_map: true,
       }));
     }
-    return Ok(None);
+    Ok(None)
   }
 }

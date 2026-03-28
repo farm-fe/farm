@@ -21,7 +21,7 @@ use farmfe_core::{
 
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
-  fs::{TransformOutputFileNameParams, read_file_raw, transform_output_filename},
+  fs::{read_file_raw, transform_output_filename, TransformOutputFileNameParams},
   plugin_utils::path_filter::PathFilter,
 };
 use farmfe_utils::relative;
@@ -133,7 +133,7 @@ impl Plugin for FarmfePluginUrl {
         name_hash: "",
         bytes: &raw_bytes,
         ext,
-        special_placeholders: &Default::default()
+        special_placeholders: &Default::default(),
       };
       let output_file_name = transform_output_filename(transform_output_file_name_params);
       res = format!("{}{}", &public_path, &output_file_name);

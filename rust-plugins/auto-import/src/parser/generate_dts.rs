@@ -24,7 +24,9 @@ pub fn remove_tsx_jsx_suffix(s: &str) -> String {
 pub fn stringify_presets(item: &Import) -> String {
   format!(
     "\tconst {}: typeof import('{}')['{}']\n",
-    item.as_name.clone().unwrap_or(item.name.clone()), item.from, item.name
+    item.as_name.clone().unwrap_or(item.name.clone()),
+    item.from,
+    item.name
   )
 }
 

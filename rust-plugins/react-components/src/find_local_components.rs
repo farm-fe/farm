@@ -5,12 +5,14 @@ use farmfe_core::{
   swc_ecma_parser::{Syntax, TsSyntax},
 };
 use farmfe_toolkit::{
-  plugin_utils::{normalize_path::normalize_path, path_filter::PathFilter}, script::{ParseScriptModuleResult, parse_module}, swc_ecma_visit::{Visit, VisitWith}
+  plugin_utils::{normalize_path::normalize_path, path_filter::PathFilter},
+  script::{parse_module, ParseScriptModuleResult},
+  swc_ecma_visit::{Visit, VisitWith},
 };
 use glob::Pattern;
-use std::{fs, sync::Arc};
 use std::path::PathBuf;
 use std::{collections::HashSet, path::Path};
+use std::{fs, sync::Arc};
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
@@ -329,7 +331,7 @@ fn gen_components_by_file(file_path: &PathBuf) -> HashSet<ComponentInfo> {
     .unwrap_or_else(|_| panic!("Unable to read file: {:?}", file_path));
   let file_content = Arc::new(file_content);
   let components_path = file_path.to_string_lossy().into_owned();
-  let ParseScriptModuleResult { ast,..} = match parse_module(
+  let ParseScriptModuleResult { ast, .. } = match parse_module(
     &components_path.clone().into(),
     file_content,
     Syntax::Typescript(TsSyntax {

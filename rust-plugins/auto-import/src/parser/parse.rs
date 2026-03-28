@@ -1,12 +1,14 @@
-use std::{collections::HashMap, fs};
-use std::sync::Arc;
 use farmfe_core::{
-  swc_common::Span, swc_ecma_ast::*, swc_ecma_parser::{Syntax, TsSyntax}
+  swc_common::Span,
+  swc_ecma_ast::*,
+  swc_ecma_parser::{Syntax, TsSyntax},
 };
 use farmfe_toolkit::{
   script::{parse_module, ParseScriptModuleResult},
   swc_ecma_visit::{Visit, VisitWith},
 };
+use std::sync::Arc;
+use std::{collections::HashMap, fs};
 
 #[derive(Debug)]
 pub enum ImportType {
@@ -124,7 +126,7 @@ impl Visit for ImportsVisitor {
                 namespaced_import: None,
                 named_imports: None,
                 type_named_imports: None,
-                span: import.span
+                span: import.span,
               });
             }
             ImportSpecifier::Namespace(namespace) => {
@@ -136,7 +138,7 @@ impl Visit for ImportsVisitor {
                 default_import: None,
                 named_imports: None,
                 type_named_imports: None,
-                span: import.span
+                span: import.span,
               });
             }
           }
@@ -149,7 +151,7 @@ impl Visit for ImportsVisitor {
             namespaced_import: None,
             type_named_imports: None,
             named_imports: Some(named_imports),
-            span: import.span
+            span: import.span,
           });
         }
         if !type_named_imports.is_empty() {
@@ -160,7 +162,7 @@ impl Visit for ImportsVisitor {
             namespaced_import: None,
             type_named_imports: Some(type_named_imports),
             named_imports: None,
-            span: import.span
+            span: import.span,
           });
         }
       }

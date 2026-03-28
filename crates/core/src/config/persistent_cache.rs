@@ -113,7 +113,11 @@ impl PersistentCacheConfig {
             }
 
             let hash = sha256(content.as_bytes(), 32);
-            let mut cache_dir = PathBuf::from(&cloned_obj.cache_dir.expect("Persistent should have cache_dir"));
+            let mut cache_dir = PathBuf::from(
+              &cloned_obj
+                .cache_dir
+                .expect("Persistent should have cache_dir"),
+            );
             cache_dir.push(hash);
             cloned_obj.cache_dir = Some(cache_dir.to_string_lossy().to_string());
           }

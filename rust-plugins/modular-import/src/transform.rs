@@ -127,8 +127,7 @@ fn build_style_path(
         style_library_path.as_deref().unwrap_or_default()
       )
     }
-  } else {
-    if is_dot_path(&style_library_path) {
+  } else if is_dot_path(style_library_path) {
       format!(
         "{}/{}/{}",
         name,

@@ -14,20 +14,20 @@ farmfe_core = { path = "../core", version = "2.1.0" }
 farmfe_toolkit = { path = "../toolkit", version = "2.1.0" }
 farmfe_utils = { path = "../utils", version = "2.1.0" }
 farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob", version = "2.0.1" }
-swc_plugin_proxy = { version = "23.0.0", features = [
+swc_plugin_proxy = { workspace = true, features = [
   "plugin-rt",
 ], optional = true }
-swc_plugin_runner = { version = "27.0.0", features = [
+swc_plugin_runner = { workspace = true, features = [
   "ecma",
   "encoding-impl",
   "plugin_transform_schema_v1",
 ], optional = true }
-swc_plugin_backend_wasmer = { version = "10.0.0", features = [
+swc_plugin_backend_wasmer = { workspace = true, features = [
   "plugin_transform_host_native",
 ], optional = true }
 wasmer = { version = "=6.1.0-rc.3", default-features = false, optional = true }
 wasmer-wasix = { version = "=0.601.0-rc.3", default-features = false, optional = true }
-swc_ecma_loader = { version = "21.0.0", features = [
+swc_ecma_loader = { workspace = true, features = [
   "cache",
   "node",
   "tsc",

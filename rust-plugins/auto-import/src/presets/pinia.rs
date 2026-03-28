@@ -16,6 +16,6 @@ pub fn get_pinia_preset() -> ImportPreset {
       "setActivePinia".to_string(),
       "setMapStoreSuffix".to_string(),
       "storeToRefs".to_string(),
-    ]
+    ],
   }
 }
