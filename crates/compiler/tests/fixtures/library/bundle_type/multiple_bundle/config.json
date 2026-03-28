@@ -1,0 +1,7 @@
+{
+  "output": {
+    "targetEnv": "library",
+    "format": "esm",
+    "libraryBundleType": "multiple-bundle"
+  }
+}
