@@ -22,7 +22,6 @@
     "@farmfe/js-plugin-postcss": "workspace:^",
     "@farmfe/js-plugin-sass": "workspace:^",
     "@farmfe/js-plugin-visualizer": "workspace:^",
-    "@farmfe/js-plugin-vue": "workspace:*",
     "@farmfe/plugin-sass": "workspace:^",
     "@types/bcryptjs": "^2.4.5",
     "@types/lodash-es": "^4.17.12",

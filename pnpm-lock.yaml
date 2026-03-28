@@ -932,7 +932,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.5
+        version: 0.1.6
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@18.19.67)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.7.26)(@types/node@18.19.67)(typescript@5.4.5))
@@ -1729,31 +1729,6 @@ importers:
         specifier: ^4.18.2
         version: 4.18.2
 
-  examples/solid:
-    dependencies:
-      solid-element:
-        specifier: ^1.8.0
-        version: 1.8.0(solid-js@1.8.5)
-      solid-js:
-        specifier: ^1.7.8
-        version: 1.8.5
-    devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@farmfe/js-plugin-solid':
-        specifier: workspace:*
-        version: link:../../js-plugins/solid
-      solid-refresh:
-        specifier: ^0.5.3
-        version: 0.5.3(solid-js@1.8.5)
-      typescript:
-        specifier: ^5.1.6
-        version: 5.2.2
-
   examples/solid-ssr:
     dependencies:
       '@solidjs/router':
@@ -2210,9 +2185,6 @@ importers:
       '@farmfe/js-plugin-visualizer':
         specifier: workspace:^
         version: link:../../js-plugins/visualizer
-      '@farmfe/js-plugin-vue':
-        specifier: workspace:*
-        version: link:../../js-plugins/vue
       '@farmfe/plugin-sass':
         specifier: workspace:^
         version: link:../../rust-plugins/sass
@@ -2316,10 +2288,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.3.2(vue@2.6.14)
+        version: 0.4.2(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.7(vue@2.6.14)
+        version: 1.14.5(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -2350,10 +2322,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.3.2(vue@2.7.16)
+        version: 0.4.2(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.7(vue@2.7.16)
+        version: 1.14.5(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -2376,40 +2348,6 @@ importers:
       vue-template-compiler:
         specifier: ~2.7.16
         version: 2.7.16(vue@2.7.16)
-
-  examples/vue:
-    dependencies:
-      axios:
-        specifier: ^1.4.0
-        version: 1.6.0
-      core-js:
-        specifier: ^3.30.1
-        version: 3.33.2
-      element-plus:
-        specifier: ^2.4.1
-        version: 2.4.2(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.6.3)))(vue@3.3.7(typescript@5.6.3))
-      vue:
-        specifier: ^3.3.0
-        version: 3.3.7(typescript@5.6.3)
-    devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@farmfe/js-plugin-sass':
-        specifier: workspace:^
-        version: link:../../js-plugins/sass
-      '@farmfe/js-plugin-vue':
-        specifier: workspace:*
-        version: link:../../js-plugins/vue
-      '@farmfe/plugin-sass':
-        specifier: workspace:^
-        version: link:../../rust-plugins/sass
-      sass:
-        specifier: ^1.62.1
-        version: 1.69.5
 
   examples/vue-antdv:
     dependencies:
@@ -2707,37 +2645,6 @@ importers:
         specifier: ^1.74.1
         version: 1.74.1
 
-  js-plugins/solid:
-    dependencies:
-      '@babel/core':
-        specifier: ^7.22.9
-        version: 7.23.2
-      '@babel/preset-typescript':
-        specifier: ^7.22.5
-        version: 7.23.2(@babel/core@7.23.2)
-      '@rollup/pluginutils':
-        specifier: ^5.0.2
-        version: 5.0.5(rollup@4.14.1)
-      babel-preset-solid:
-        specifier: ^1.7.7
-        version: 1.8.4(@babel/core@7.23.2)
-      merge-anything:
-        specifier: ^5.1.7
-        version: 5.1.7
-      solid-refresh:
-        specifier: ^0.5.3
-        version: 0.5.3(solid-js@1.8.5)
-    devDependencies:
-      '@farmfe/js-plugin-dts':
-        specifier: workspace:*
-        version: link:../dts
-      '@types/babel__core':
-        specifier: ^7.20.1
-        version: 7.20.3
-      solid-js:
-        specifier: ^1.7.8
-        version: 1.8.5
-
   js-plugins/svgr:
     dependencies:
       '@svgr/core':
@@ -2827,12 +2734,9 @@ importers:
       '@farmfe/js-plugin-postcss':
         specifier: workspace:*
         version: link:../postcss
-      '@farmfe/js-plugin-vue':
-        specifier: workspace:*
-        version: link:../vue
       '@farmfe/plugin-worker':
         specifier: beta
-        version: 2.0.0-beta.0
+        version: 2.0.0-beta.1
       '@types/connect':
         specifier: ^3.4.38
         version: 3.4.38
@@ -2866,42 +2770,6 @@ importers:
       vue-router:
         specifier: ^4.2.1
         version: 4.4.5(vue@3.4.35(typescript@5.6.3))
-
-  js-plugins/vue:
-    devDependencies:
-      '@farmfe/js-plugin-dts':
-        specifier: workspace:^
-        version: link:../dts
-      '@jridgewell/gen-mapping':
-        specifier: ^0.3.2
-        version: 0.3.3
-      '@jridgewell/trace-mapping':
-        specifier: ^0.3.17
-        version: 0.3.20
-      '@types/less':
-        specifier: ^3.0.3
-        version: 3.0.5
-      '@types/node':
-        specifier: ^18.19.67
-        version: 18.19.67
-      '@types/sass':
-        specifier: ~1.43.1
-        version: 1.43.1
-      '@types/stylus':
-        specifier: ^0.48.38
-        version: 0.48.41
-      '@vue/compiler-sfc':
-        specifier: ^3.3.4
-        version: 3.3.7
-      less:
-        specifier: ^4.1.3
-        version: 4.2.0
-      sass:
-        specifier: ^1.62.1
-        version: 1.69.5
-      source-map:
-        specifier: ^0.7.4
-        version: 0.7.4
 
   packages/cli:
     dependencies:
@@ -6261,62 +6129,62 @@ packages:
   '@farmfe/plugin-svgr@0.0.1':
     resolution: {integrity: sha512-LVIkPZNyiOc7dgzN3yUuOPKA2wxBbb01sIb6WrcYOsLXD3Zk5SmbqW6uXI8qbRBvsB9kKMb4fTP5b84Y65xx3A==}
 
-  '@farmfe/plugin-worker-darwin-arm64@2.0.0-beta.0':
-    resolution: {integrity: sha512-wBDrGfCxfTLyZVfSv8E3C/Z1H1QUYVB9n3+k42nd7oeNkgr9FnUJSD4p9LWyoltfZo+9I+2dgnf3SGFAWRd3LQ==}
+  '@farmfe/plugin-worker-darwin-arm64@2.0.0-beta.1':
+    resolution: {integrity: sha512-65+fbrMQk77NRTPeDIqEaFwZnLIO9EeWvGnIgvLcSDAfoFO/YA0r6f5+9z8bTY3pwScyM6GU5Iqnf6GpzTiCkw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@farmfe/plugin-worker-darwin-x64@2.0.0-beta.0':
-    resolution: {integrity: sha512-IEKxWAOHCGYO8XCypXCD5RpY2QEiorO4QkUhTyLG7ip1+evUJkKl1spzeknwmJp4WKb6jm64AcEY4DvJP8sRUg==}
+  '@farmfe/plugin-worker-darwin-x64@2.0.0-beta.1':
+    resolution: {integrity: sha512-WzDJouH8mwbqNy3RHn/eVgdeUhws8PYLZ4Httpi3S/0axne/hCHW2+DWJ8uFJ7+OVrL0Y95fFoSMn2IpqNGLWw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  '@farmfe/plugin-worker-linux-arm64-gnu@2.0.0-beta.0':
-    resolution: {integrity: sha512-V9uGSevlyHyOmcXIa2RQ8SWnBGqBtvbNLl+lkqEcW9xmORX/u1Yx1fuBpR5cORSioNIT3pfx2+b6eUWAr7zKag==}
+  '@farmfe/plugin-worker-linux-arm64-gnu@2.0.0-beta.1':
+    resolution: {integrity: sha512-22SJiDPNHlpn/bp052g9qWYF2Kgd8/xmwwPLuXO+FxFgwS2SQJBQizkb7qA1ekt1s+37kIqmKdydk6BKzFuk3Q==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@farmfe/plugin-worker-linux-arm64-musl@2.0.0-beta.0':
-    resolution: {integrity: sha512-DTv+3HRMDp9gJw7ROyFOUBDQNLO8gxwVVGRXQwHGAJqa+IaLzJtTad58PY45f37OifzdrEWFo4lVtPQSNmxIfQ==}
+  '@farmfe/plugin-worker-linux-arm64-musl@2.0.0-beta.1':
+    resolution: {integrity: sha512-ezUizsqmnNPY0md4SUitPn7DlIV8gmVZwTh57RV7rO08qXjmoYq9KFOFCrsfxMarv3MzKuudB+MWZgjAriQcWw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  '@farmfe/plugin-worker-linux-x64-gnu@2.0.0-beta.0':
-    resolution: {integrity: sha512-RhCOyZr1HwcxfQBQ8t7qetEE94ZeEwdMHcjelOd0J+IpSviV5EQRTyJwbf6KgFYPL5t9+MCtAc86Yq0j7ANu2Q==}
+  '@farmfe/plugin-worker-linux-x64-gnu@2.0.0-beta.1':
+    resolution: {integrity: sha512-6z1fn5gB5qCC/sPER3RcaYF8u/i7mO9Ig/K0K9qRKo1WgaIoSFb9UTVnqps63skSBv7O7l72rjhtAra7+55zBA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@farmfe/plugin-worker-linux-x64-musl@2.0.0-beta.0':
-    resolution: {integrity: sha512-bFeP97H/U2jQ3KA6Wa5L3D67Fc/q3BcfU2RzQp6WYoaYLAw5ZiQzCPcdkjakvoGACi/VdtnfngBjBmxd0rjFpw==}
+  '@farmfe/plugin-worker-linux-x64-musl@2.0.0-beta.1':
+    resolution: {integrity: sha512-1abdOkliJ6dGFn4F2iF+bqQud2oRM5T5Igt+8vqF+gVN2s7xEL6fHcTA3RYDPp1MUOS7iM30X2PlTFjGURHWQQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@farmfe/plugin-worker-win32-arm64-msvc@2.0.0-beta.0':
-    resolution: {integrity: sha512-c3+CTs+20e/UhLybiwVNFjOs8wFvYn3qyCedMsQanO6uJqpk3rFiXFvzd7E9NsFac1AclL4l+uMT5LUFbaI5yw==}
+  '@farmfe/plugin-worker-win32-arm64-msvc@2.0.0-beta.1':
+    resolution: {integrity: sha512-09ZOsyr1rGdzp3Cd/kyxhUzDMtajReTfPbq/zTNAX8lit07mIY3vw5kstAl9y/eLRo+5bPvobAy50KJJ7fzO1Q==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@farmfe/plugin-worker-win32-ia32-msvc@2.0.0-beta.0':
-    resolution: {integrity: sha512-MbtJHcQkrx5YRedFpp20CjAVT97fkvu4Sch24jeM0nEiElF4UMT5i3cSwrBlV12nJRNJ5KqgMhRvqqSnlfMaXg==}
+  '@farmfe/plugin-worker-win32-ia32-msvc@2.0.0-beta.1':
+    resolution: {integrity: sha512-U3OjzjtMbQKbjUChThU1I8sXeJe+9HdG2/BfN5vH74mVz2USb86I1uVgp6VGYgiMley94+R/HPFMLGA7paDk8A==}
     engines: {node: '>= 10'}
     cpu: [ia32]
     os: [win32]
 
-  '@farmfe/plugin-worker-win32-x64-msvc@2.0.0-beta.0':
-    resolution: {integrity: sha512-wV++CgHVpNAP36R5vQfOKr3CpjG97u+2Gwc1L4vkn3KGoDvQoGwwME4S0nScNGSUMILdezSidlzfAEQRZQ/4UQ==}
+  '@farmfe/plugin-worker-win32-x64-msvc@2.0.0-beta.1':
+    resolution: {integrity: sha512-vzUtCadc2SvIO1v06jtoXMlhCrCi4DM9Z8mnW40nQaxLxmXHg0Dph8HQxxMjmvcOGvj/PxwPOejwWn8/JOTPIQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
 
-  '@farmfe/plugin-worker@2.0.0-beta.0':
-    resolution: {integrity: sha512-kNBTti7p6qGTssqLAqeI3XhziIJ5MalyqAwyyK+FPlmO3l5YgfBFFeiF2eis8zgV+VKMYOJZDFJzXN6SkCCu8g==}
+  '@farmfe/plugin-worker@2.0.0-beta.1':
+    resolution: {integrity: sha512-XUBEZSL91hZc6Mmg1/Wc+jcY4Pn85gOlOKPU+aKo1f5K+rfH8oagJaI66ytyG6s14bVwPVTgoZFTyceDXFn57A==}
 
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
@@ -9795,9 +9663,6 @@ packages:
   '@types/lodash-es@4.17.12':
     resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
 
-  '@types/lodash@4.14.182':
-    resolution: {integrity: sha512-/THyiqyQAP9AfARo4pF+aCGcyiQ94tX/Is2I7HofNRqoYLgN1PBoOWu2/zTA5zMxzP5EFutMtWtGAFRKUe961Q==}
-
   '@types/lodash@4.14.202':
     resolution: {integrity: sha512-OvlIYQK9tNneDlS0VN54LLd5uiPCBOp7gS5Z0f1mjoJYBrtStzgmJBxONW3U6OZqdtNzZPmn9BS/7WI7BFFcFQ==}
 
@@ -9912,9 +9777,6 @@ packages:
   '@types/retry@0.12.0':
     resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
 
-  '@types/sass@1.43.1':
-    resolution: {integrity: sha512-BPdoIt1lfJ6B7rw35ncdwBZrAssjcwzI5LByIrYs+tpXlj/CAkuVdRsgZDdP4lq5EjyWzwxZCqAoFyHKFwp32g==}
-
   '@types/sax@1.2.7':
     resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
 
@@ -9947,9 +9809,6 @@ packages:
 
   '@types/stats.js@0.17.3':
     resolution: {integrity: sha512-pXNfAD3KHOdif9EQXZ9deK82HVNaXP5ZIF5RP2QG6OQFNTaY2YIetfrE9t528vEreGQvEPRDDc8muaoYeK0SxQ==}
-
-  '@types/stylus@0.48.41':
-    resolution: {integrity: sha512-u0BzfnIgn/0I1YpAJGhkj9lUTLeiuiDXYOagXwe2aAsX8OKDFEWP6vqMMPxy4leQeX45LNDdCEjDJkuRxPCv7A==}
 
   '@types/superagent@8.1.7':
     resolution: {integrity: sha512-NmIsd0Yj4DDhftfWvvAku482PZum4DBW7U51OvS8gvOkDDY0WT1jsVyDV3hK+vplrsYw8oDwi9QxOM7U68iwww==}
@@ -11919,9 +11778,6 @@ packages:
   component-indexof@0.0.3:
     resolution: {integrity: sha512-puDQKvx/64HZXb4hBwIcvQLaLgux8o1CbWl39s41hrIIZDl1lJiD5jc22gj3RBeGK0ovxALDYpIbyjqDUUl0rw==}
 
-  component-register@0.8.3:
-    resolution: {integrity: sha512-/0u8ov0WPWi2FL78rgB9aFOcfY8pJT4jP/l9NTOukGNLVQ6hk35sEJE1RkEnNQU3yk48Qr7HlDQjRQKEVfgeWg==}
-
   composed-offset-position@0.0.6:
     resolution: {integrity: sha512-Q7dLompI6lUwd7LWyIcP66r4WcS9u7AL2h8HaeipiRfCRPLMWqRx8fYsjb4OHi6UQFifO7XtNC2IlEJ1ozIFxw==}
     peerDependencies:
@@ -13785,8 +13641,8 @@ packages:
   farm-plugin-remove-console@0.1.8:
     resolution: {integrity: sha512-t/QH2N97w2/VM4tj/hmnceU/95yYeORR5BnlWP91PherULRFhTVctECcC0JI33Psvyk06uSW4BuKgBPtktM5+w==}
 
-  farmup@0.1.5:
-    resolution: {integrity: sha512-LiO7ejtsD8GfRL6OXVSx9Y9h8wFp1nEw/RWydQe+zLN9W7xmPXWngi5TjzndYuqADBQi/93qD0aaZ4TYkoabiA==}
+  farmup@0.1.6:
+    resolution: {integrity: sha512-VFhf5Fb5iidYWcJOA26j6Ss7YhZgYH34wMyB/YEWx8kqht8PKkA/FBfC9KpONhbeoZAOkxZ5ilQqa2O9uG8A/A==}
     hasBin: true
 
   fast-check@3.23.1:
@@ -14304,25 +14160,28 @@ packages:
   glob@10.3.16:
     resolution: {integrity: sha512-JDKXl1DiuuHJ6fVS2FXjownaavciiHNUU4mOvV/B793RLh05vZL1rcPnCSaOgv1hDT6RDlY7AB7ZUvFYAtPgAw==}
     engines: {node: '>=16 || 14 >=14.18'}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@10.4.2:
     resolution: {integrity: sha512-GwMlUF6PkPo3Gk21UxkCohOv0PLcIXVtKyLlpEI28R/cO/4eNOdmLk3CMW1wROV/WR/EsZOWAfBbBOqYvs88/w==}
     engines: {node: '>=16 || 14 >=14.18'}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@11.0.0:
     resolution: {integrity: sha512-9UiX/Bl6J2yaBbxKoEBRm4Cipxgok8kQYcOPEhScPwebu2I0HoQOuYdIO6S3hLuWoZgpDpwQZMzTFxgpkyT76g==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@7.1.6:
     resolution: {integrity: sha512-LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   glob@8.1.0:
     resolution: {integrity: sha512-r8hpEjiQEYlF2QU0df3dS+nxxSIreXQS1qRhMJM0Q5NDdR386C7jb7Hwwod8Fgiuex+k0GFjgft18yvxm5XoCQ==}
@@ -16731,6 +16590,7 @@ packages:
   multer@1.4.4-lts.1:
     resolution: {integrity: sha512-WeSGziVj6+Z2/MwQo3GvqzgR+9Uc+qt8SwHKh3gvNPiISKfsMfG4SvCOFYlxxgkXt7yIV2i1yczehm0EOKIxIg==}
     engines: {node: '>= 6.0.0'}
+    deprecated: Multer 1.x is impacted by a number of vulnerabilities, which have been patched in 2.x. You should upgrade to the latest 2.x version.
 
   multicast-dns@7.2.5:
     resolution: {integrity: sha512-2eznPJP8z2BFLX50tf0LuODrpINqP1RVIm/CObbTcBRITQgmC/TjcREF1NeTBzIcR5XO/ukWo+YHOjBbFwIupg==}
@@ -19731,11 +19591,6 @@ packages:
     resolution: {integrity: sha512-l5x7VUUWbjVFbafGLxPWkYsHIhEvmF85tbIeFZWc8ZPtoMyybuEhL7Jye/ooC4/d48FgOjSJXgsF/AJPYCW8Zw==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
 
-  solid-element@1.8.0:
-    resolution: {integrity: sha512-DG8HBCej5kNExUiFbVG8OFZojMGcLF8keXdGLEcHXBYtJ7zhm+a8HJnl5lfmBlTYGRk4ApgoBvlwH1ibg7quaQ==}
-    peerDependencies:
-      solid-js: ^1.8.0
-
   solid-js@1.8.5:
     resolution: {integrity: sha512-xvtJvzJzWbsn35oKFhW9kNwaxG1Z/YLMsDp4tLVcYZTMPzvzQ8vEZuyDQ6nt7xDArVgZJ7TUFrJUwrui/oq53A==}
 
@@ -20074,11 +19929,12 @@ packages:
   superagent@8.1.2:
     resolution: {integrity: sha512-6WTxW1EB6yCxV5VFOIPQruWGHqc3yI7hEmZK6h+pyk69Lk/Ut7rLUY6W/ONF2MjBuGjvmMiIpsrVJ2vjrHlslA==}
     engines: {node: '>=6.4.0 <13 || >=14'}
-    deprecated: Please upgrade to v9.0.0+ as we have fixed a public vulnerability with formidable dependency. Note that v9.0.0+ requires Node.js v14.18.0+. See https://github.com/ladjs/superagent/pull/1800 for insight. This project is supported and maintained by the team at Forward Email @ https://forwardemail.net
+    deprecated: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
 
   supertest@6.3.4:
     resolution: {integrity: sha512-erY3HFDG0dPnhw4U+udPfrzXa4xhSG+n4rxfRuZWCUvjFWwKl+OxWf/7zk50s84/fAAs7vf5QAb9uRa0cCykxw==}
     engines: {node: '>=6.4.0'}
+    deprecated: Please upgrade to supertest v7.1.3+, see release notes at https://github.com/forwardemail/supertest/releases/tag/v7.1.3 - maintenance is supported by Forward Email @ https://forwardemail.net
 
   supports-color@2.0.0:
     resolution: {integrity: sha512-KKNVtd6pCYgPIKU4cp2733HWYCpplQhddZLBUryaAHou723x+FRzQ5Df824Fj+IyyuiQTRoub4SnIFfIcrp70g==}
@@ -20211,14 +20067,15 @@ packages:
   tar@7.4.3:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-  tdesign-icons-vue@0.3.2:
-    resolution: {integrity: sha512-FW1hqOoIBjnPzTOcGvWidVrWvyf0wHafxt7eAciz62hLU/Ix8TZ1AtFcG3QOafT0vpFPaBcCMVNNXvE5PSzuIA==}
+  tdesign-icons-vue@0.4.2:
+    resolution: {integrity: sha512-Lgw2O4MtHja/F0rwly8gdy3hNVjY1OGaven+z64rnaM0rzQ3LY3wGGJMeYcVTDMsEI+uuwfdjMTSZxMa2zs7zA==}
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.7:
-    resolution: {integrity: sha512-TEZyQsv+mvZteJEpWGZjmbDavfA3UQ/SAofoFl8VUm0WzUSJkMH07tuVHO2zeAkbWB1qV2mk03IhVRj+urMu5A==}
+  tdesign-vue@1.14.5:
+    resolution: {integrity: sha512-3s/BoG0bleP8pBmdsPth30+SaPDcFfCfsUtZ9ho5bySgYdw5cGZVhIb5GaZt38bqD1mJ+ozd5IDUqjT9cHZYYQ==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -20905,6 +20762,7 @@ packages:
 
   unplugin-vue-router@0.7.0:
     resolution: {integrity: sha512-ddRreGq0t5vlSB7OMy4e4cfU1w2AwBQCwmvW3oP/0IHQiokzbx4hd3TpwBu3eIAFVuhX2cwNQwp1U32UybTVCw==}
+    deprecated: 'Merged into vuejs/router. Migrate: https://router.vuejs.org/guide/migration/v4-to-v5.html'
     peerDependencies:
       vue-router: ^4.1.0
     peerDependenciesMeta:
@@ -26772,44 +26630,44 @@ snapshots:
       '@farmfe/plugin-svgr-win32-ia32-msvc': 0.0.1
       '@farmfe/plugin-svgr-win32-x64-msvc': 0.0.1
 
-  '@farmfe/plugin-worker-darwin-arm64@2.0.0-beta.0':
+  '@farmfe/plugin-worker-darwin-arm64@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-darwin-x64@2.0.0-beta.0':
+  '@farmfe/plugin-worker-darwin-x64@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-linux-arm64-gnu@2.0.0-beta.0':
+  '@farmfe/plugin-worker-linux-arm64-gnu@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-linux-arm64-musl@2.0.0-beta.0':
+  '@farmfe/plugin-worker-linux-arm64-musl@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-linux-x64-gnu@2.0.0-beta.0':
+  '@farmfe/plugin-worker-linux-x64-gnu@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-linux-x64-musl@2.0.0-beta.0':
+  '@farmfe/plugin-worker-linux-x64-musl@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-win32-arm64-msvc@2.0.0-beta.0':
+  '@farmfe/plugin-worker-win32-arm64-msvc@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-win32-ia32-msvc@2.0.0-beta.0':
+  '@farmfe/plugin-worker-win32-ia32-msvc@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker-win32-x64-msvc@2.0.0-beta.0':
+  '@farmfe/plugin-worker-win32-x64-msvc@2.0.0-beta.1':
     optional: true
 
-  '@farmfe/plugin-worker@2.0.0-beta.0':
+  '@farmfe/plugin-worker@2.0.0-beta.1':
     optionalDependencies:
-      '@farmfe/plugin-worker-darwin-arm64': 2.0.0-beta.0
-      '@farmfe/plugin-worker-darwin-x64': 2.0.0-beta.0
-      '@farmfe/plugin-worker-linux-arm64-gnu': 2.0.0-beta.0
-      '@farmfe/plugin-worker-linux-arm64-musl': 2.0.0-beta.0
-      '@farmfe/plugin-worker-linux-x64-gnu': 2.0.0-beta.0
-      '@farmfe/plugin-worker-linux-x64-musl': 2.0.0-beta.0
-      '@farmfe/plugin-worker-win32-arm64-msvc': 2.0.0-beta.0
-      '@farmfe/plugin-worker-win32-ia32-msvc': 2.0.0-beta.0
-      '@farmfe/plugin-worker-win32-x64-msvc': 2.0.0-beta.0
+      '@farmfe/plugin-worker-darwin-arm64': 2.0.0-beta.1
+      '@farmfe/plugin-worker-darwin-x64': 2.0.0-beta.1
+      '@farmfe/plugin-worker-linux-arm64-gnu': 2.0.0-beta.1
+      '@farmfe/plugin-worker-linux-arm64-musl': 2.0.0-beta.1
+      '@farmfe/plugin-worker-linux-x64-gnu': 2.0.0-beta.1
+      '@farmfe/plugin-worker-linux-x64-musl': 2.0.0-beta.1
+      '@farmfe/plugin-worker-win32-arm64-msvc': 2.0.0-beta.1
+      '@farmfe/plugin-worker-win32-ia32-msvc': 2.0.0-beta.1
+      '@farmfe/plugin-worker-win32-x64-msvc': 2.0.0-beta.1
 
   '@farmfe/utils@0.0.1': {}
 
@@ -32614,8 +32472,6 @@ snapshots:
     dependencies:
       '@types/lodash': 4.14.202
 
-  '@types/lodash@4.14.182': {}
-
   '@types/lodash@4.14.202': {}
 
   '@types/mdast@3.0.15':
@@ -32743,10 +32599,6 @@ snapshots:
 
   '@types/retry@0.12.0': {}
 
-  '@types/sass@1.43.1':
-    dependencies:
-      '@types/node': 18.19.67
-
   '@types/sax@1.2.7':
     dependencies:
       '@types/node': 18.19.67
@@ -32781,10 +32633,6 @@ snapshots:
   '@types/stack-utils@2.0.3': {}
 
   '@types/stats.js@0.17.3': {}
-
-  '@types/stylus@0.48.41':
-    dependencies:
-      '@types/node': 18.19.67
 
   '@types/superagent@8.1.7':
     dependencies:
@@ -35911,8 +35759,6 @@ snapshots:
 
   component-indexof@0.0.3: {}
 
-  component-register@0.8.3: {}
-
   composed-offset-position@0.0.6(@floating-ui/utils@0.2.8):
     dependencies:
       '@floating-ui/utils': 0.2.8
@@ -37809,7 +37655,7 @@ snapshots:
       farm-plugin-remove-console-win32-ia32-msvc: 0.1.8
       farm-plugin-remove-console-win32-x64-msvc: 0.1.8
 
-  farmup@0.1.5:
+  farmup@0.1.6:
     dependencies:
       '@farmfe/core': link:packages/core
       tmp: 0.2.3
@@ -45006,11 +44852,6 @@ snapshots:
       ip-address: 9.0.5
       smart-buffer: 4.2.0
 
-  solid-element@1.8.0(solid-js@1.8.5):
-    dependencies:
-      component-register: 0.8.3
-      solid-js: 1.8.5
-
   solid-js@1.8.5:
     dependencies:
       csstype: 3.1.2
@@ -45631,24 +45472,23 @@ snapshots:
       mkdirp: 3.0.1
       yallist: 5.0.0
 
-  tdesign-icons-vue@0.3.2(vue@2.6.14):
+  tdesign-icons-vue@0.4.2(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
       vue: 2.6.14
 
-  tdesign-icons-vue@0.3.2(vue@2.7.16):
+  tdesign-icons-vue@0.4.2(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.7(vue@2.6.14):
+  tdesign-vue@1.14.5(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
       '@types/clipboard': 2.0.7
-      '@types/lodash': 4.14.182
       '@types/raf': 3.4.3
       '@types/sortablejs': 1.15.8
       '@types/tinycolor2': 1.4.5
@@ -45656,21 +45496,20 @@ snapshots:
       '@vue/composition-api': 1.7.2(vue@2.6.14)
       clipboard: 2.0.11
       dayjs: 1.11.10
-      lodash: 4.17.21
+      lodash-es: 4.17.21
       mitt: 3.0.1
       raf: 3.4.1
       sortablejs: 1.15.2
-      tdesign-icons-vue: 0.3.2(vue@2.6.14)
+      tdesign-icons-vue: 0.4.2(vue@2.6.14)
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.7(vue@2.7.16):
+  tdesign-vue@1.14.5(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
       '@types/clipboard': 2.0.7
-      '@types/lodash': 4.14.182
       '@types/raf': 3.4.3
       '@types/sortablejs': 1.15.8
       '@types/tinycolor2': 1.4.5
@@ -45678,11 +45517,11 @@ snapshots:
       '@vue/composition-api': 1.7.2(vue@2.7.16)
       clipboard: 2.0.11
       dayjs: 1.11.10
-      lodash: 4.17.21
+      lodash-es: 4.17.21
       mitt: 3.0.1
       raf: 3.4.1
       sortablejs: 1.15.2
-      tdesign-icons-vue: 0.3.2(vue@2.7.16)
+      tdesign-icons-vue: 0.4.2(vue@2.7.16)
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.7.16

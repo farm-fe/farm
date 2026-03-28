@@ -32,7 +32,6 @@
     "@farmfe/js-plugin-dts": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",
-    "@farmfe/js-plugin-vue": "workspace:*",
     "@farmfe/plugin-worker": "beta",
     "@types/connect": "^3.4.38",
     "@types/envinfo": "^7.8.3",
