@@ -117,7 +117,7 @@
       "!**/binding/**",
       "!**/templates/**",
       "!**/dist/**",
-      "!**/docs/**",
+      "!**/website/**",
       "!**/node_modules/**",
       "!**/*.config.js",
       "!**/*.config.ts"
