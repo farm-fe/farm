@@ -1,0 +1,50 @@
+{
+  "name": "@farmfe/js-plugin-vuetify",
+  "version": "0.0.1",
+  "description": "Farm plugin for Vuetify",
+  "main": "./build/cjs/index.cjs",
+  "types": "./build/esm/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./build/esm/index.mjs",
+      "require": "./build/cjs/index.cjs",
+      "import": "./build/esm/index.mjs",
+      "types": "./build/esm/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build:cjs": "cross-env FARM_FORMAT=cjs farm build",
+    "build": "farm build && npm run build:cjs",
+    "dev": "farm watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "vuetify",
+    "farm",
+    "farmfe",
+    "auto-import"
+  ],
+  "author": {
+    "name": "苏向夜",
+    "email": "fu050409@163.com",
+    "url": "https://github.com/fu050409"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.1",
+    "@farmfe/js-plugin-dts": "^0.5.1",
+    "@types/node": "^18.19.67",
+    "cross-env": "^7.0.3"
+  },
+  "files": [
+    "build",
+    "package.json",
+    "README.md"
+  ],
+  "dependencies": {
+    "@vuetify/loader-shared": "^2.1.0",
+    "upath": "^2.0.1"
+  }
+}

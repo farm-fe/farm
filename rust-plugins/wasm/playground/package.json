@@ -1,0 +1,29 @@
+{
+  "name": "playground",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@farmfe/plugin-wasm": "workspace:*",
+    "clsx": "^1.2.1",
+    "json_typegen_wasm": "^0.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rust-wasm": "link:./wasm"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^2.0.0-bate.0",
+    "@farmfe/plugin-react": "^2.0.0-bate.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "core-js": "^3.40.0",
+    "react-refresh": "^0.14.2"
+  }
+}

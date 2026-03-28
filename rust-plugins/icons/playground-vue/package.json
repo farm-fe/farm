@@ -1,0 +1,22 @@
+{
+  "name": "playground-vue",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@farmfe/plugin-icons": "workspace:*",
+    "@iconify-json/fontisto": "^1.1.8",
+    "vue": "^3.4.31"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "latest",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "core-js": "^3.37.1"
+  }
+}

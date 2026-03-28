@@ -1,0 +1,54 @@
+{
+  "name": "@farmfe/js-plugin-copy",
+  "version": "0.0.4",
+  "description": "",
+  "main": "./build/cjs/index.cjs",
+  "types": "./build/esm/index.d.ts",
+  "type": "module",
+  "homepage": "https://github.com/farm-fe/plugins",
+  "author": "maidang1 <maidang@felixwliu.cn>",
+  "bugs": {
+    "url": "https://github.com/farm-fe/plugins/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/plugins.git"
+  },
+  "keywords": [
+    "Rust",
+    "virtual",
+    "farmfe"
+  ],
+  "exports": {
+    ".": {
+      "default": "./build/esm/index.mjs",
+      "require": "./build/cjs/index.cjs",
+      "import": "./build/esm/index.mjs",
+      "types": "./build/esm/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build:cjs": "cross-env FARM_FORMAT=cjs farm build",
+    "build": "farm build && npm run build:cjs",
+    "start": "farm watch",
+    "dev": "farm watch",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^1.3.23",
+    "@farmfe/js-plugin-dts": "^0.6.4",
+    "@types/node": "^22.7.4",
+    "cross-env": "^7.0.3"
+  },
+  "files": [
+    "build"
+  ],
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "colorette": "^2.0.20",
+    "fs-extra": "^11.2.0",
+    "globby": "^14.0.2"
+  }
+}

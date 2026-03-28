@@ -1,0 +1,19 @@
+[package]
+edition = "2021"
+name = "farmfe_plugin_image"
+version = "0.0.1"
+authors = ["CCherry07 <c_chenjunguang@163.com>"]
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*", path = "../../crates/core" }
+farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plugin_types" }
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+serde = { version = "1.0.197", features = ["derive"] }
+farmfe_toolkit = { version = "*", path = "../../crates/toolkit" }
+base64 = "0.22.1"
+mime_guess = "2.0.5"
+lazy_static = "1.5.0"

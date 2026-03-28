@@ -1,0 +1,31 @@
+{
+  "name": "playground",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@ant-design/pro-components": "^2.8.7",
+    "@farmfe/plugin-strip": "workspace:*",
+    "@tanstack/react-router": "^1.120.11",
+    "@tanstack/react-router-devtools": "^1.120.11",
+    "antd": "^5.25.3",
+    "react": "18",
+    "react-dom": "18",
+    "react-helmet-async": "^2.0.5"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^1.6.7",
+    "@farmfe/plugin-react": "^1.2.0",
+    "@tanstack/router-plugin": "^1.120.11",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "core-js": "^3.36.1",
+    "react-refresh": "^0.14.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "exclude": ["node_modules"],
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["DOM", "ESNext"],
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "target": "es2020",
+    "module": "ESNext",
+    "declaration": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler"
+  }
+}
