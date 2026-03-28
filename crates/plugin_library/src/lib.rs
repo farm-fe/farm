@@ -98,8 +98,10 @@ impl Plugin for FarmPluginLibrary {
           });
       }
       LibraryBundleType::MultipleBundle => {
-        config.partial_bundling.target_concurrent_requests = 1;
-        config.partial_bundling.target_min_size = usize::MAX;
+        // Use default partial bundling settings for multiple bundle mode
+        // to allow code splitting and multiple resource pot creation.
+        // Do not override target_concurrent_requests or target_min_size,
+        // so that dynamic imports can create separate resource pots.
       }
       LibraryBundleType::BundleLess => {
         config.partial_bundling.target_concurrent_requests = usize::MAX;
@@ -314,19 +316,31 @@ impl Plugin for FarmPluginLibrary {
       return Ok(None);
     }
 
-    let entry_module_id = if self.library_bundle_type == LibraryBundleType::BundleLess
-      && resource_pot.modules().len() == 1
-    {
-      resource_pot.modules().first().unwrap()
-    } else if let Some(entry) = resource_pot.entry_module.as_ref() {
-      entry
+    // Determine the entry module for concatenation.
+    // Priority: explicit entry > dynamic entry > single-module pot > root of dependency subgraph
+    let entry_module_id: ModuleId = if let Some(entry) = resource_pot.entry_module.as_ref() {
+      entry.clone()
     } else if let Some(entry) = resource_pot.dynamic_imported_entry_module.as_ref() {
-      entry
+      entry.clone()
+    } else if resource_pot.modules().len() == 1 {
+      resource_pot.modules().into_iter().next().unwrap().clone()
     } else {
-      panic!(
-        "dynamic imported entry module not found for resource pot {:?}",
-        resource_pot.id
-      );
+      // For multi-module resource pots without an entry (e.g., shared chunks),
+      // find a root module: one that is not depended on by any other module in this pot.
+      let module_graph = context.module_graph.read();
+      let modules = resource_pot.modules();
+      let modules_set: HashSet<ModuleId> =
+        modules.iter().map(|m| (*m).clone()).collect();
+      let root = modules
+        .iter()
+        .find(|m| {
+          let dependents = module_graph.dependents(m);
+          !dependents
+            .iter()
+            .any(|dep| modules_set.contains(&dep.0))
+        })
+        .unwrap_or_else(|| modules.first().unwrap());
+      (*root).clone()
     };
 
     let module_graph = context.module_graph.read();
@@ -341,7 +355,7 @@ impl Plugin for FarmPluginLibrary {
       unresolved_mark,
       top_level_mark,
     } = concatenate_modules_ast(
-      entry_module_id,
+      &entry_module_id,
       &resource_pot.modules,
       &module_graph,
       ConcatenateModulesAstOptions { check_esm: true },
