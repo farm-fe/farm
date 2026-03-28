@@ -124,6 +124,7 @@ Type `/` in Copilot Chat to browse all available slash commands.
 |-------|---------------|-------------|
 | `git-commit-push` | `/git-commit-push` | Safe commit + push workflow with guardrails |
 | `farm-ready-gate` | `/farm-ready-gate` | Run the full CI readiness gate (`pnpm run ready`) |
+| `rebase-commit-push-pr` | `/rebase-commit-push-pr` | Fetch/rebase onto `origin/main`, resolve conflicts, push, and ensure a PR exists |
 | `openspec-propose` | `/opsx:propose` | Propose a new change with full artifacts |
 | `openspec-apply-change` | `/opsx:apply` | Implement tasks from an OpenSpec change |
 | `openspec-explore` | `/opsx:explore` | Thinking-partner explore mode |
