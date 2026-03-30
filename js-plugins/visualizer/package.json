@@ -48,11 +48,12 @@
   },
   "scripts": {
     "start": "cd src/client && farm start",
-    "build": "pnpm build:plugin && pnpm build:client",
+    "build": "pnpm build:plugin",
     "build:plugin": "farm build",
     "build:client": "cd src/client && farm build",
+    "build:all": "pnpm build:plugin && pnpm build:client",
     "preview": "cd src/client && farm preview",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm build:all"
   },
   "files": [
     "build"
