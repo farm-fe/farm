@@ -180,9 +180,62 @@ module.exports = {
       rootValue: 16,
       propList: ['*'],
     }),
-    require('tailwindcss'),
   ]
 }
+```
+
+### TailwindCSS
+
+Farm 提供了专用的 `@farmfe/js-plugin-tailwindcss` 插件，用于集成 **TailwindCSS v4**。该插件直接使用原生 Tailwind v4 编译器，无需 `postcss.config.js`。
+
+1. 安装依赖
+```sh
+pnpm add -D @farmfe/js-plugin-tailwindcss tailwindcss
+```
+
+2. 配置插件
+```ts title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/js-plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [tailwindcss()],
+});
+```
+
+3. 在 CSS 入口文件中添加 Tailwind 指令
+```css title="index.css"
+@import "tailwindcss";
+```
+
+4. 在入口文件中导入 CSS
+```ts title="main.ts"
+import './index.css';
+```
+
+配置完成后，Farm 会自动扫描源文件中使用的 Tailwind 工具类，并生成对应的 CSS。
+
+:::tip
+`@farmfe/js-plugin-tailwindcss` 适用于 **TailwindCSS v4**。如果需要使用 TailwindCSS v3，请改用 `@farmfe/js-plugin-postcss`，并在 `postcss.config.js` 中引入 `require('tailwindcss')`。
+:::
+
+#### 过滤扫描文件
+
+默认情况下，插件会扫描除 `node_modules` 以外的所有文件。你可以通过 `filters` 选项限制扫描范围：
+
+```ts title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/js-plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      filters: {
+        resolvedPaths: ['src/'],
+      },
+    }),
+  ],
+});
 ```
 
 ## Css Prefixer
