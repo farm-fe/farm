@@ -19,21 +19,16 @@ pub enum ImportType {
   Dynamic,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ExportType {
   All,
   Type,
+  #[default]
   Declaration,
   Named,
   DefaultDecl,
   DefaultExpr,
   Namespace,
-}
-
-impl Default for ExportType {
-  fn default() -> Self {
-    ExportType::Declaration
-  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -99,8 +94,7 @@ impl ExportsVisitor {
 
 impl Visit for ImportsVisitor {
   fn visit_module_decl(&mut self, n: &ModuleDecl) {
-    match n {
-      ModuleDecl::Import(import) => {
+    if let ModuleDecl::Import(import) = n {
         let mut named_imports = HashMap::new();
         let mut type_named_imports = HashMap::new();
         for specifier in &import.specifiers {
@@ -165,8 +159,6 @@ impl Visit for ImportsVisitor {
             span: import.span,
           });
         }
-      }
-      _ => {}
     }
   }
 }
@@ -393,16 +385,12 @@ pub fn parse_esm_imports_exports(
   if file_path.is_none() && content.is_none() {
     return (vec![], vec![]);
   }
-  let file_path = if file_path.is_none() {
-    ""
+  let file_path = file_path.unwrap_or("");
+  let content = if let Some(c) = content {
+    c
   } else {
-    file_path.unwrap()
-  };
-  let content = if content.is_none() {
     &fs::read_to_string(file_path)
-      .unwrap_or_else(|_| panic!("Unable to read file: {:?}", file_path))
-  } else {
-    content.unwrap()
+      .unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
   };
   let content = Arc::new(content.to_string());
   let ParseScriptModuleResult { ast, .. } = match parse_module(
@@ -417,8 +405,8 @@ pub fn parse_esm_imports_exports(
   ) {
     Ok(res) => res,
     Err(err) => {
-      println!("{}", err.to_string());
-      panic!("Parse {} failed. See error details above.", file_path);
+      println!("{err}");
+      panic!("Parse {file_path} failed. See error details above.");
     }
   };
 
@@ -433,16 +421,12 @@ pub fn parse_esm_imports(file_path: Option<&str>, content: Option<&str>) -> Vec<
   if file_path.is_none() && content.is_none() {
     return vec![];
   }
-  let file_path = if file_path.is_none() {
-    ""
+  let file_path = file_path.unwrap_or("");
+  let content = if let Some(c) = content {
+    c
   } else {
-    file_path.unwrap()
-  };
-  let content = if content.is_none() {
     &fs::read_to_string(file_path)
-      .unwrap_or_else(|_| panic!("Unable to read file: {:?}", file_path))
-  } else {
-    content.unwrap()
+      .unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
   };
   let content = Arc::new(content.to_string());
   let ParseScriptModuleResult { ast, .. } = match parse_module(
@@ -459,8 +443,8 @@ pub fn parse_esm_imports(file_path: Option<&str>, content: Option<&str>) -> Vec<
   ) {
     Ok(res) => res,
     Err(err) => {
-      println!("{}", err.to_string());
-      panic!("Parse {} failed. See error details above.", file_path);
+      println!("{err}");
+      panic!("Parse {file_path} failed. See error details above.");
     }
   };
 
@@ -473,16 +457,12 @@ pub fn parse_esm_exports(file_path: Option<&str>, content: Option<&str>) -> Vec<
   if file_path.is_none() && content.is_none() {
     return vec![];
   }
-  let file_path = if file_path.is_none() {
-    ""
+  let file_path = file_path.unwrap_or("");
+  let content = if let Some(c) = content {
+    c
   } else {
-    file_path.unwrap()
-  };
-  let content = if content.is_none() {
     &fs::read_to_string(file_path)
-      .unwrap_or_else(|_| panic!("Unable to read file: {:?}", file_path))
-  } else {
-    content.unwrap()
+      .unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
   };
   let content = Arc::new(content.to_string());
   let ParseScriptModuleResult { ast, .. } = match parse_module(
@@ -497,8 +477,8 @@ pub fn parse_esm_exports(file_path: Option<&str>, content: Option<&str>) -> Vec<
   ) {
     Ok(res) => res,
     Err(err) => {
-      println!("{}", err.to_string());
-      panic!("Parse {} failed. See error details above.", file_path);
+      println!("{err}");
+      panic!("Parse {file_path} failed. See error details above.");
     }
   };
 

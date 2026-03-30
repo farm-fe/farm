@@ -45,7 +45,7 @@ pub struct Preset {
   alias: Option<String>,
 }
 
-pub fn parse_presets(presets: &Vec<PresetItem>) -> Vec<Preset> {
+pub fn parse_presets(presets: &[PresetItem]) -> Vec<Preset> {
   let mut parsed_presets = Vec::new();
   for p in presets {
     match p {
@@ -58,7 +58,7 @@ pub fn parse_presets(presets: &Vec<PresetItem>) -> Vec<Preset> {
           "vue-router" => vue_router::get_vue_router_preset(),
           "pinia" => pinia::get_pinia_preset(),
           _ => {
-            println!("[farm-plugin-auto-import] Unknown preset: {}", preset_name);
+            println!("[farm-plugin-auto-import] Unknown preset: {preset_name}");
             continue;
           }
         };
@@ -107,7 +107,7 @@ pub fn parse_presets(presets: &Vec<PresetItem>) -> Vec<Preset> {
   }
   parsed_presets
 }
-pub fn resolve_presets(presets: &Vec<PresetItem>) -> Vec<Import> {
+pub fn resolve_presets(presets: &[PresetItem]) -> Vec<Import> {
   let parsed_presets = parse_presets(presets);
   let mut imports = Vec::new();
   for p in parsed_presets {

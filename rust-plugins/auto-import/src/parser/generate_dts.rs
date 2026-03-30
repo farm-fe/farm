@@ -33,10 +33,7 @@ pub fn stringify_presets(item: &Import) -> String {
 pub fn stringify_imports_dts(dts_file_path: &str, item: &Import) -> String {
   let related = format!("./{}", relative(dts_file_path, &item.from));
   let import_path = remove_tsx_jsx_suffix(&related);
-  let is_export_decl = match item.export_type {
-    ExportType::DefaultDecl => false,
-    _ => true,
-  };
+  let is_export_decl = !matches!(item.export_type, ExportType::DefaultDecl);
   let mut target = "default";
   if is_export_decl {
     target = &item.name;
@@ -70,11 +67,11 @@ pub fn generate_dts(option: GenerateDtsOption) {
       .join(""),
   );
 
-  code.push_str("}");
+  code.push('}');
 
   let file = create_file(dts_output).unwrap();
   let mut writer = BufWriter::new(file);
-  writeln!(writer, "{}", code).unwrap();
+  writeln!(writer, "{code}").unwrap();
   writer.flush().unwrap();
 }
 
@@ -100,7 +97,7 @@ mod tests {
     let binding = current_dir.join("playground-vue");
     let root_path = binding.to_str().unwrap();
     let imports = scan_dir_exports(root_path);
-    println!("imports: {:#?}", imports);
+    println!("imports: {imports:#?}");
 
     let presets_imports = resolve_presets(&vec![PresetItem::String("react-router".to_string())]);
     let generate_dts_option = GenerateDtsOption {

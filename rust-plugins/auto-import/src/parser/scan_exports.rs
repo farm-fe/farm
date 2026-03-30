@@ -7,7 +7,7 @@ use farmfe_toolkit::plugin_utils::normalize_path::normalize_path;
 
 use super::parse::{parse_esm_exports, DeclarationType, ESMExport, ExportType};
 
-const FILE_EXTENSION_LOOKUP: [&'static str; 8] =
+const FILE_EXTENSION_LOOKUP: [&str; 8] =
   [".mts", ".cts", ".ts", ".mjs", ".cjs", ".js", ".jsx", ".tsx"];
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -53,7 +53,7 @@ impl Import {
 
 fn to_pascal_case(s: &str) -> String {
   if s.contains('-') || s.contains('_') {
-    s.split(|c| c == '-' || c == '_')
+    s.split(['-', '_'])
       .filter(|part| !part.is_empty())
       .map(|part| {
         let mut chars = part.chars();
@@ -176,7 +176,7 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
           if metadata(&specifier_path).unwrap().is_dir() {
             // check if specifier_path has index.tsx ...
             for ext in &file_exts {
-              let index_path = format!("{}/index{}", specifier_path, ext);
+              let index_path = format!("{specifier_path}/index{ext}");
               if metadata(&index_path).is_ok() {
                 let index_content = read_to_string(&index_path).unwrap();
                 let index_exports = scan_exports(&index_path, Some(&index_content));
@@ -187,7 +187,7 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
           } else {
             // check if specifier_path is a file
             for ext in &file_exts {
-              let index_path = format!("{}{}", specifier_path, ext);
+              let index_path = format!("{specifier_path}{ext}");
               if metadata(&index_path).is_ok() {
                 let index_content = read_to_string(&index_path).unwrap();
                 let index_exports = scan_exports(&index_path, Some(&index_content));
