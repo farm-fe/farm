@@ -83,6 +83,10 @@
   color: var(--ifm-color-success);
 }
 
+.hover-button {
+  position: relative;
+}
+
 .code-content {
   display: block;
   overflow-x: auto;
