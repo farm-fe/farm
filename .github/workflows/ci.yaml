@@ -75,6 +75,96 @@ jobs:
           path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4
+        id: download-plugin-auto-import
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
+          path: ./rust-plugins/auto-import/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-compress
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
+          path: ./rust-plugins/compress/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-dsv
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
+          path: ./rust-plugins/dsv/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-icons
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
+          path: ./rust-plugins/icons/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-image
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
+          path: ./rust-plugins/image/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-mdx
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
+          path: ./rust-plugins/mdx/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-modular-import
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
+          path: ./rust-plugins/modular-import/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-react-components
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
+          path: ./rust-plugins/react-components/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-strip
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
+          path: ./rust-plugins/strip/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-svgr
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
+          path: ./rust-plugins/svgr/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-url
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
+          path: ./rust-plugins/url/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-virtual
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
+          path: ./rust-plugins/virtual/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-wasm
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
+          path: ./rust-plugins/wasm/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-worker
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
+          path: ./rust-plugins/worker/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
+        id: download-plugin-yaml
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
+          path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -244,6 +334,21 @@ jobs:
           - name: plugin-sass
           - name: plugin-react
           - name: plugin-replace-dirname
+          - name: plugin-auto-import
+          - name: plugin-compress
+          - name: plugin-dsv
+          - name: plugin-icons
+          - name: plugin-image
+          - name: plugin-mdx
+          - name: plugin-modular-import
+          - name: plugin-react-components
+          - name: plugin-strip
+          - name: plugin-svgr
+          - name: plugin-url
+          - name: plugin-virtual
+          - name: plugin-wasm
+          - name: plugin-worker
+          - name: plugin-yaml
     steps:
       - uses: actions/download-artifact@v4
         with:
