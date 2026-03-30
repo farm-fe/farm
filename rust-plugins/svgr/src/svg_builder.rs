@@ -32,7 +32,7 @@ impl SvgBuilder {
 
         for child in element.children.iter_mut() {
           if let Some(child_element) = child.as_mut_element() {
-            println!("child_element: {:?}", child_element);
+            println!("child_element: {child_element:?}");
             update_fill_recursive(child_element, fill);
           }
         }
@@ -150,7 +150,6 @@ impl SvgBuilder {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
 
   #[test]
   fn test_remove_fill_attributes() {

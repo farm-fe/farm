@@ -110,7 +110,7 @@ pub fn get_resolvers(root_path: &str, component_lib: ResolverOption) -> Vec<Comp
   let re = Regex::new(r"export\s+\{\s*default\s+as\s+(\w+)\s*\}\s+from\s+'\.\/(\w+)';").unwrap();
   for cap in re.captures_iter(&content) {
     components.push(ComponentInfo {
-      name: format!("{}{}", prefix, cap[1].to_string()),
+      name: format!("{}{}", prefix, &cap[1]),
       path: component_lib.module.clone(),
       export_type: ExportType::Named,
       original_name: cap[1].to_string(),
@@ -140,6 +140,6 @@ mod tests {
     };
 
     let components = get_resolvers(root_path, resolver_option);
-    println!("components:{:#?}", components);
+    println!("components:{components:#?}");
   }
 }

@@ -36,7 +36,7 @@ impl FarmPluginSvgr {
       .exclude
       .as_ref()
       .map(|v| v.iter().map(|s| s.as_str()).collect())
-      .unwrap_or_else(Vec::new);
+      .unwrap_or_default();
 
     let filter = create_filter(Some(include), Some(exclude)).expect("Failed to create SVG filter");
 
@@ -75,7 +75,7 @@ impl Plugin for FarmPluginSvgr {
       return Ok(None);
     }
 
-    let svg_content = get_svg_by_local_path(&param.resolved_path);
+    let svg_content = get_svg_by_local_path(param.resolved_path);
     let query_map = &param.query.iter().cloned().collect::<HashMap<_, _>>();
     let svg = SvgBuilder::new(&svg_content)
       .fill(query_map.get("fill").cloned())
@@ -92,15 +92,14 @@ impl Plugin for FarmPluginSvgr {
       root_path: None,
       svg_name: None,
     });
-    return Ok(Some(PluginLoadHookResult {
+    Ok(Some(PluginLoadHookResult {
       content: code,
       module_type: ModuleType::Jsx,
       source_map: None,
-    }));
+    }))
   }
 }
 
 pub fn get_svg_by_local_path(path: &str) -> String {
-  let svg_raw = read_file_utf8(path).unwrap();
-  svg_raw
+  read_file_utf8(path).unwrap()
 }

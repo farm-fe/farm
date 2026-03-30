@@ -83,9 +83,7 @@ impl Plugin for FarmfePluginCompress {
     let start = std::time::Instant::now();
     let ext_name = utils::get_ext_name(&self.options.algorithm);
     let filter = Regex::new(&self.options.filter).map_err(|e| {
-      CompilationError::GenericError(format!(
-        "Invalid regex expression for compress plugin: {e}"
-      ))
+      CompilationError::GenericError(format!("Invalid regex expression for compress plugin: {e}"))
     })?;
 
     let compressed_buffers = param

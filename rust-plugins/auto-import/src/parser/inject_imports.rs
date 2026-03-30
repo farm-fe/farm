@@ -16,10 +16,7 @@ const MATCH_RE: &str = r"(^|\.\.\.|(?:\bcase|\?)\s+|[^\w$/)]|\bextends\s+)([\w$]
 fn get_exclude_imports(content: &str, imports: Vec<Import>) -> Vec<Import> {
   let mut exclude_vars = vec![];
   let mut include_vars = vec![];
-  for capture in Regex::new(JS_VAR_DEF_REGEX)
-    .unwrap()
-    .captures_iter(content)
-  {
+  for capture in Regex::new(JS_VAR_DEF_REGEX).unwrap().captures_iter(content) {
     if let Some(var_name) = capture.name("var_name") {
       exclude_vars.push(var_name.as_str());
     }
@@ -82,9 +79,7 @@ pub fn inject_imports(
           let import_keys: Vec<String> = named_import.keys().cloned().collect();
           if import_keys.contains(import_name) {
             if c_priority == 0 {
-              println!(
-                "Duplicated in imported, has been ignored and {import_name} is used"
-              );
+              println!("Duplicated in imported, has been ignored and {import_name} is used");
               return false;
             } else {
               return true;
@@ -100,9 +95,7 @@ pub fn inject_imports(
         if let Some(default_import) = default_import {
           if default_import == import_name {
             if c_priority == 0 {
-              println!(
-                "Duplicated in imported, has been ignored and {import_name} is used"
-              );
+              println!("Duplicated in imported, has been ignored and {import_name} is used");
               return false;
             } else {
               return true;
@@ -112,9 +105,7 @@ pub fn inject_imports(
         if let Some(namespaced_import) = namespaced_import {
           if namespaced_import == import_name {
             if c_priority == 0 {
-              println!(
-                "Duplicated in imported, has been ignored and {import_name} is used"
-              );
+              println!("Duplicated in imported, has been ignored and {import_name} is used");
               return false;
             } else {
               return true;

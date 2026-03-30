@@ -1,5 +1,3 @@
-use std::env::args;
-
 use regress::{Match, Regex};
 const WORKER_OR_SHARED_WORKER_RE: &str = r#"(?:\?|&)(worker|sharedworker)(?:&|$)"#;
 const WORKER_IMPORT_META_URL_RE: &str = r#"\bnew\s+(?:Worker|SharedWorker)\s*\(\s*(new\s+URL\s*\(\s*('[^']+'|"[^"]+"|`[^`]+`)\s*,\s*import\.meta\.url[^)]*\))"#;
@@ -7,7 +5,7 @@ const WORKER_IMPORT_META_URL_RE: &str = r#"\bnew\s+(?:Worker|SharedWorker)\s*\(\
 fn test_regex() {
   let re = Regex::new(WORKER_OR_SHARED_WORKER_RE).unwrap();
   let test_str = "src/worker/test.worker.ts?worker";
-  assert_eq!(re.find(test_str).is_some(), true);
+  assert!(re.find(test_str).is_some());
 
   //   let re = Regex::new(WORKER_IMPORT_META_URL_RE).unwrap();
   let test_str = r#"import type { Uri } from "vscode";
@@ -89,9 +87,9 @@ export const createDefaultWorkspaceFile = (
   // let matches = match_global(WORKER_IMPORT_META_URL_RE, &test_str);
   let matches = Regex::new(WORKER_IMPORT_META_URL_RE)
     .unwrap()
-    .find_iter(&test_str)
+    .find_iter(test_str)
     .collect::<Vec<Match>>();
-  println!("matches : {:?}", matches);
+  println!("matches : {matches:?}");
   matches.iter().for_each(|m| {
     let args = &m.captures[0].clone().unwrap();
     let worker_url = &m.captures[1].clone().unwrap();

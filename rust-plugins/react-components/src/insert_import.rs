@@ -37,7 +37,7 @@ impl VisitMut for ImportModifier {
       match specifier {
         ImportSpecifier::Default(default_spec) => {
           let imported_name = default_spec.local.sym.as_ref();
-          components.retain(|c: &ComponentInfo| &c.name != imported_name);
+          components.retain(|c: &ComponentInfo| c.name != imported_name);
         }
 
         ImportSpecifier::Named(named_spec) => {
@@ -48,8 +48,7 @@ impl VisitMut for ImportModifier {
             },
             None => named_spec.local.sym.as_ref(),
           };
-          components
-            .retain(|c| &c.name != imported_name || c.name != named_spec.local.sym.as_ref());
+          components.retain(|c| c.name != imported_name || c.name != named_spec.local.sym.as_ref());
         }
         _ => {}
       }
@@ -61,7 +60,7 @@ impl VisitMut for ImportModifier {
       if component_name
         .chars()
         .next()
-        .map_or(false, |c| c.is_uppercase())
+        .is_some_and(|c| c.is_uppercase())
       {
         let item = self
           .components
@@ -210,7 +209,7 @@ impl VisitMut for InsertImportModifier {
           ImportStyle::String(res) => {
             let import_decl = ImportDecl {
               src: Box::new(Str {
-                value: format!("{}/{}", full_component_path, res).into(),
+                value: format!("{full_component_path}/{res}").into(),
                 span: DUMMY_SP,
                 raw: None,
               }),

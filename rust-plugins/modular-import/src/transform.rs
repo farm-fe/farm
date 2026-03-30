@@ -107,15 +107,12 @@ fn build_style_path(
   if let Some(style_library_name) = style_library_name {
     if is_dot_path(style_library_path) {
       format!(
-        "{}/{}/{}/{}",
+        "{}/{}/{}/{}{}",
         name,
         style_lib_dir.as_deref().unwrap_or_default(),
         style_library_name,
-        format!(
-          "{}{}",
-          formatted_component_name,
-          style_library_path.as_deref().unwrap_or_default()
-        )
+        formatted_component_name,
+        style_library_path.as_deref().unwrap_or_default()
       )
     } else {
       format!(
@@ -128,25 +125,21 @@ fn build_style_path(
       )
     }
   } else if is_dot_path(style_library_path) {
-      format!(
-        "{}/{}/{}",
-        name,
-        style_lib_dir.as_deref().unwrap_or_default(),
-        format!(
-          "{}{}",
-          formatted_component_name,
-          style_library_path.as_deref().unwrap_or_default()
-        )
-      )
-    } else {
-      format!(
-        "{}/{}/{}/{}",
-        name,
-        style_lib_dir.as_deref().unwrap_or_default(),
-        formatted_component_name,
-        style_library_path.as_deref().unwrap_or_default()
-      )
-    }
+    format!(
+      "{}/{}/{}{}",
+      name,
+      style_lib_dir.as_deref().unwrap_or_default(),
+      formatted_component_name,
+      style_library_path.as_deref().unwrap_or_default()
+    )
+  } else {
+    format!(
+      "{}/{}/{}/{}",
+      name,
+      style_lib_dir.as_deref().unwrap_or_default(),
+      formatted_component_name,
+      style_library_path.as_deref().unwrap_or_default()
+    )
   }
 }
 
@@ -157,5 +150,5 @@ fn build_style_path(
  * @return True if the path starts with a dot, false otherwise.
  */
 fn is_dot_path(path: &Option<String>) -> bool {
-  path.as_ref().map_or(false, |s| s.starts_with('.'))
+  path.as_ref().is_some_and(|s| s.starts_with('.'))
 }

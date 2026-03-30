@@ -9,7 +9,8 @@ pub struct CompilerParams {
 // TODO custom react component compiler
 pub fn react_compiler(param: CompilerParams) -> String {
   let CompilerParams { svg, .. } = param;
-  let code = _react_compiler(
+
+  _react_compiler(
     svg,
     Config {
       jsx_runtime: JSXRuntime::Classic,
@@ -17,6 +18,5 @@ pub fn react_compiler(param: CompilerParams) -> String {
     },
     Default::default(),
   )
-  .unwrap();
-  code
+  .unwrap()
 }
