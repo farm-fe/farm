@@ -190,8 +190,10 @@ jobs:
         run: |
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }}
           cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }}
+          cd ../../rust-plugins
           for plugin in react replace-dirname sass auto-import compress dsv icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
-            cd ../../rust-plugins/$plugin && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} || exit 1
+            cd $plugin && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} || exit 1
+            cd ..
           done
         shell: bash
       - name: Build
