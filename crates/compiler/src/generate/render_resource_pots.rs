@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  config::LibraryBundleType,
   context::CompilationContext,
   error::{CompilationError, Result},
   parking_lot::Mutex,
@@ -89,6 +90,19 @@ pub fn render_resource_pots_and_generate_resources(
         // ignore runtime resource
         if r.should_transform_output_filename {
           let content_with_extra_content_hash = &[&r.bytes, augment_resource_hash_bytes].concat();
+
+          // In bundle-less mode, don't auto-append name_hash to filenames.
+          // Each module has its own resource pot with a unique name already, so hashes
+          // are unnecessary unless the user explicitly configures [hash] or [contentHash]
+          // in the output filename config.
+          let is_bundle_less =
+            context.config.output.library_bundle_type == LibraryBundleType::BundleLess;
+          let name_hash = if is_bundle_less {
+            ""
+          } else {
+            r.name_hash.as_str()
+          };
+
           if let Some(name) = resource_pot.entry_module.as_ref() {
             let entry_name = entries
               .get(name)
@@ -105,7 +119,7 @@ pub fn render_resource_pots_and_generate_resources(
                   context.config.output.filename.clone()
                 },
                 name: &r.name,
-                name_hash: &r.name_hash,
+                name_hash,
                 ext: &r.resource_type.to_ext(),
                 bytes: content_with_extra_content_hash,
                 special_placeholders: &r.special_placeholders,
@@ -115,7 +129,7 @@ pub fn render_resource_pots_and_generate_resources(
             r.name = transform_output_filename(TransformOutputFileNameParams {
               filename_config: context.config.output.filename.clone(),
               name: &r.name,
-              name_hash: &r.name_hash,
+              name_hash,
               ext: &r.resource_type.to_ext(),
               bytes: content_with_extra_content_hash,
               special_placeholders: &r.special_placeholders,
