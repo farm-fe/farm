@@ -106,10 +106,10 @@ impl FarmfePluginAutoImport {
   fn new(config: &Config, options: String) -> Self {
     let options: Options = serde_json::from_str(&options).unwrap();
     let collect_imports: Arc<Mutex<Vec<Import>>> = Arc::new(Mutex::new(vec![]));
-    let dirs = options.dirs.clone().unwrap_or(vec![]);
+    let dirs = options.dirs.clone().unwrap_or_default();
     let root_path = config.root.clone();
-    let presets = options.presets.clone().unwrap_or(vec![]);
-    let ignore = options.ignore.clone().unwrap_or(vec![]);
+    let presets = options.presets.clone().unwrap_or_default();
+    let ignore = options.ignore.clone().unwrap_or_default();
     finish_imports::finish_imports(FinishImportsParams {
       root_path,
       presets,
@@ -145,13 +145,13 @@ impl Plugin for FarmfePluginAutoImport {
       return Ok(None);
     }
     let options = self.options.clone();
-    let include = options.include.unwrap_or(vec![]);
+    let include = options.include.unwrap_or_default();
     let exclude = options
       .exclude
       .unwrap_or(vec![ConfigRegex::new("node_modules")]);
     let filter = PathFilter::new(&include, &exclude);
     if !filter.execute(&param.module_id) {
-      return Ok(None);
+      Ok(None)
     } else {
       let imports = self.collect_imports.lock().unwrap();
       let mut content = param.content.clone();
@@ -187,10 +187,10 @@ impl Plugin for FarmfePluginAutoImport {
     &self,
     context: &Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let dirs = self.options.dirs.clone().unwrap_or(vec![]);
+    let dirs = self.options.dirs.clone().unwrap_or_default();
     let root_path = context.config.root.clone();
-    let presets = self.options.presets.clone().unwrap_or(vec![]);
-    let ignore = self.options.ignore.clone().unwrap_or(vec![]);
+    let presets = self.options.presets.clone().unwrap_or_default();
+    let ignore = self.options.ignore.clone().unwrap_or_default();
     finish_imports::finish_imports(FinishImportsParams {
       root_path,
       presets,

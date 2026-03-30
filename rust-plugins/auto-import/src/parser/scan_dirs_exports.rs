@@ -6,7 +6,7 @@ use walkdir::{DirEntry, WalkDir};
 
 pub fn scan_dir_exports(dir: &str) -> Vec<Import> {
   let walker = WalkDir::new(dir).into_iter();
-  let file_exts = vec!["js", "ts", "jsx", "tsx"];
+  let file_exts = ["js", "ts", "jsx", "tsx"];
   let filtered_entries = walker.filter_map(Result::ok).filter(|e| {
     e.file_type().is_file()
       && e.path().extension().is_some()
@@ -27,12 +27,13 @@ pub fn is_exclude_dir(entry: &DirEntry, exclude_patterns: &[Pattern]) -> bool {
   exclude_patterns.iter().any(|p| p.matches_path(path))
 }
 
-pub fn scan_dirs_exports(root_path: &str, dirs: &Vec<ConfigRegex>) -> Vec<Import> {
+pub fn scan_dirs_exports(root_path: &str, dirs: &[ConfigRegex]) -> Vec<Import> {
   let exclude_patterns = vec![Pattern::new("**/node_modules/**").expect("Invalid pattern")];
   let exclude = vec![];
-  let filter = PathFilter::new(&dirs, &exclude);
+  let dirs_vec = dirs.to_vec();
+  let filter = PathFilter::new(&dirs_vec, &exclude);
   let walker = WalkDir::new(root_path).into_iter();
-  let file_exts = vec!["js", "ts", "jsx", "tsx"];
+  let file_exts = ["js", "ts", "jsx", "tsx"];
   let filtered_entries = walker
     .filter_entry(|e| !is_exclude_dir(e, &exclude_patterns))
     .filter_map(Result::ok)
@@ -43,9 +44,9 @@ pub fn scan_dirs_exports(root_path: &str, dirs: &Vec<ConfigRegex>) -> Vec<Import
           && e.path().extension().is_some()
           && file_exts.contains(&e.path().extension().unwrap().to_str().unwrap())
         {
-          return Some(normalized_path);
+          Some(normalized_path)
         } else {
-          return None;
+          None
         }
       } else {
         None

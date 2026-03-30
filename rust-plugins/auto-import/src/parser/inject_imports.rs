@@ -18,7 +18,7 @@ fn get_exclude_imports(content: &str, imports: Vec<Import>) -> Vec<Import> {
   let mut include_vars = vec![];
   for capture in Regex::new(JS_VAR_DEF_REGEX)
     .unwrap()
-    .captures_iter(&content)
+    .captures_iter(content)
   {
     if let Some(var_name) = capture.name("var_name") {
       exclude_vars.push(var_name.as_str());
@@ -27,7 +27,7 @@ fn get_exclude_imports(content: &str, imports: Vec<Import>) -> Vec<Import> {
 
   for capture in Regex::new(JS_CLASS_DEF_REGEX)
     .unwrap()
-    .captures_iter(&content)
+    .captures_iter(content)
   {
     if let Some(class_name) = capture.name("class_name") {
       exclude_vars.push(class_name.as_str());
@@ -35,13 +35,13 @@ fn get_exclude_imports(content: &str, imports: Vec<Import>) -> Vec<Import> {
   }
   for capture in Regex::new(JS_FUNC_DEF_REGEX)
     .unwrap()
-    .captures_iter(&content)
+    .captures_iter(content)
   {
     if let Some(func_name) = capture.name("func_name") {
       exclude_vars.push(func_name.as_str());
     }
   }
-  for m in JsRegex::new(MATCH_RE).unwrap().find_iter(&content) {
+  for m in JsRegex::new(MATCH_RE).unwrap().find_iter(content) {
     include_vars.push(content[m.range()].trim());
   }
   imports
@@ -61,7 +61,7 @@ pub fn inject_imports(
   inject_at_end: bool,
 ) -> String {
   let esm_imports = parse_esm_imports(None, Some(content));
-  let imports = get_exclude_imports(&content, imports)
+  let imports = get_exclude_imports(content, imports)
     .into_iter()
     .filter(|import| {
       !esm_imports.iter().any(|esm_import| {
@@ -80,14 +80,10 @@ pub fn inject_imports(
         let c_priority = priority.unwrap_or(1) - import_priority;
         if let Some(named_import) = named_imports {
           let import_keys: Vec<String> = named_import.keys().cloned().collect();
-          if import_keys.contains(&import_name) {
+          if import_keys.contains(import_name) {
             if c_priority == 0 {
               println!(
-                "{}",
-                format!(
-                  "Duplicated in imported, has been ignored and {} is used",
-                  import_name
-                )
+                "Duplicated in imported, has been ignored and {import_name} is used"
               );
               return false;
             } else {
@@ -97,7 +93,7 @@ pub fn inject_imports(
         }
         if let Some(type_named_import) = type_named_imports {
           let import_keys: Vec<String> = type_named_import.keys().cloned().collect();
-          if import_keys.contains(&import_name) {
+          if import_keys.contains(import_name) {
             return true;
           }
         }
@@ -105,11 +101,7 @@ pub fn inject_imports(
           if default_import == import_name {
             if c_priority == 0 {
               println!(
-                "{}",
-                format!(
-                  "Duplicated in imported, has been ignored and {} is used",
-                  import_name
-                )
+                "Duplicated in imported, has been ignored and {import_name} is used"
               );
               return false;
             } else {
@@ -121,11 +113,7 @@ pub fn inject_imports(
           if namespaced_import == import_name {
             if c_priority == 0 {
               println!(
-                "{}",
-                format!(
-                  "Duplicated in imported, has been ignored and {} is used",
-                  import_name
-                )
+                "Duplicated in imported, has been ignored and {import_name} is used"
               );
               return false;
             } else {
@@ -142,7 +130,7 @@ pub fn inject_imports(
   } else {
     0
   };
-  let mut content_str = stringify_imports(imports);
+  let content_str = stringify_imports(imports);
   let mut content = content.to_string();
   content.insert_str(inject_idx, &content_str);
   // content_str.push_str(content);

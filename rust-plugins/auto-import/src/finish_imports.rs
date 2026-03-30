@@ -18,9 +18,9 @@ pub struct FinishImportsParams<'a> {
 }
 
 fn maybe_has_new_or_removed_imports(
-  old_imports: &Vec<Import>,
-  local_imports: &Vec<Import>,
-  resolvers_imports: &Vec<Import>,
+  old_imports: &[Import],
+  local_imports: &[Import],
+  resolvers_imports: &[Import],
 ) -> bool {
   let old_len = old_imports.len();
   let new_len = local_imports.len() + resolvers_imports.len();
@@ -47,7 +47,7 @@ pub fn finish_imports(params: FinishImportsParams) {
     .into_iter()
     .filter(|import| !ignore.iter().any(|ignore| ignore.is_match(&import.name)))
     .collect::<Vec<_>>();
-  let local_imports = if dirs.len() > 0 {
+  let local_imports = if !dirs.is_empty() {
     scan_dirs_exports(&root_path, &dirs.clone())
       .into_iter()
       .filter(|import| !ignore.iter().any(|ignore| ignore.is_match(&import.name)))

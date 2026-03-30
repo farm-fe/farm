@@ -1,7 +1,7 @@
 use super::ImportPreset;
 
 pub fn get_react_preset() -> ImportPreset {
-  return ImportPreset {
+  ImportPreset {
     from: "react".to_string(),
     imports: vec![
       "useState".to_string(),
@@ -12,5 +12,5 @@ pub fn get_react_preset() -> ImportPreset {
       "useContext".to_string(),
       "useReducer".to_string(),
     ],
-  };
+  }
 }

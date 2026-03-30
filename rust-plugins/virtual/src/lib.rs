@@ -75,7 +75,7 @@ impl FarmPluginVirtualModule {
   fn resolve_virtual_path(&self, source: &str) -> Option<PluginResolveHookResult> {
     if self.is_virtual_module(source) {
       Some(PluginResolveHookResult {
-        resolved_path: format!("{}{}", VIRTUAL_PREFIX, source),
+        resolved_path: format!("{VIRTUAL_PREFIX}{source}"),
         ..Default::default()
       })
     } else {
@@ -90,8 +90,8 @@ impl FarmPluginVirtualModule {
     importer: &str,
     root: &str,
   ) -> Option<PluginResolveHookResult> {
-    let importer_path = if importer.starts_with(VIRTUAL_PREFIX) {
-      &importer[VIRTUAL_PREFIX.len()..]
+    let importer_path = if let Some(stripped) = importer.strip_prefix(VIRTUAL_PREFIX) {
+      stripped
     } else {
       importer
     };
@@ -104,7 +104,7 @@ impl FarmPluginVirtualModule {
 
     if self.resolved_paths.contains_key(&resolved) {
       Some(PluginResolveHookResult {
-        resolved_path: format!("{}{}", VIRTUAL_PREFIX, resolved),
+        resolved_path: format!("{VIRTUAL_PREFIX}{resolved}"),
         ..Default::default()
       })
     } else {

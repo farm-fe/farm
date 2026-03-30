@@ -1,12 +1,12 @@
 use crate::parser::scan_exports::Import;
 use regress::Regex;
 const CONTEXT_RE: &str = r#"\b_ctx\.([$\w]+)\b"#;
-pub fn vue_template_addon(content: &mut String, imports: &Vec<Import>) {
+pub fn vue_template_addon(content: &mut String, imports: &[Import]) {
   let re = Regex::new(CONTEXT_RE).unwrap();
   let mut result = String::new();
   let mut last_end = 0;
 
-  for cap in re.find_iter(&content) {
+  for cap in re.find_iter(content) {
     let start = cap.start();
     let end = cap.end();
     let import = &content[start + 5..end];
@@ -56,6 +56,6 @@ mod tests {
     "#,
     );
     vue_template_addon(&mut content, &imports);
-    println!("content:{}", content);
+    println!("content:{content}");
   }
 }
