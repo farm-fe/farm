@@ -1,55 +1,61 @@
 import { type JsPlugin } from '@farmfe/core';
-import { globby } from 'globby';
-import { bold, green, yellow } from "colorette"
-import fs, { type WriteFileOptions } from "fs-extra"
-import path from "path"
-import util from "util"
+import { bold, green, yellow } from 'colorette';
+import fs, { type WriteFileOptions } from 'fs-extra';
 import type { Options as GlobbyOptions } from 'globby';
-
+import { globby } from 'globby';
+import path from 'path';
+import util from 'util';
 
 function stringify(value: any) {
-  return util.inspect(value, { breakLength: Infinity })
+  return util.inspect(value, { breakLength: Infinity });
 }
 
 function isObject(value: any) {
-  return value !== null && typeof value === 'object'
+  return value !== null && typeof value === 'object';
 }
 
 async function isFile(filePath: string) {
-  const fileStats = await fs.stat(filePath)
+  const fileStats = await fs.stat(filePath);
 
-  return fileStats.isFile()
+  return fileStats.isFile();
 }
 
 function renameTarget(target: string, rename: string | Function, src: string) {
-  const parsedPath = path.parse(target)
+  const parsedPath = path.parse(target);
 
   return typeof rename === 'string'
     ? rename
-    : rename(parsedPath.name, parsedPath.ext.replace('.', ''), src)
+    : rename(parsedPath.name, parsedPath.ext.replace('.', ''), src);
 }
 
-async function generateCopyTarget(src: any, dest: any, { flatten, rename, transform }: any) {
-  if (transform && !await isFile(src)) {
-    throw new Error(`"transform" option works only on files: '${src}' must be a file`)
+async function generateCopyTarget(
+  src: any,
+  dest: any,
+  { flatten, rename, transform }: any
+) {
+  if (transform && !(await isFile(src))) {
+    throw new Error(
+      `"transform" option works only on files: '${src}' must be a file`
+    );
   }
 
-  const { base, dir } = path.parse(src)
-  const destinationFolder = (flatten || (!flatten && !dir))
-    ? dest
-    : dir.replace(dir.split('/')[0], dest)
+  const { base, dir } = path.parse(src);
+  const destinationFolder =
+    flatten || (!flatten && !dir) ? dest : dir.replace(dir.split('/')[0], dest);
 
   return {
     src,
-    dest: path.join(destinationFolder, rename ? renameTarget(base, rename, src) : base),
-    ...(transform && { contents: await transform(await fs.readFile(src), base) }),
+    dest: path.join(
+      destinationFolder,
+      rename ? renameTarget(base, rename, src) : base
+    ),
+    ...(transform && {
+      contents: await transform(await fs.readFile(src), base)
+    }),
     renamed: rename,
     transformed: transform
-  }
+  };
 }
-
-
-
 
 interface Target extends GlobbyOptions {
   /**
@@ -65,7 +71,9 @@ interface Target extends GlobbyOptions {
   /**
    * Change destination file or folder name.
    */
-  readonly rename?: string | ((name: string, extension: string, fullPath: string) => string);
+  readonly rename?:
+    | string
+    | ((name: string, extension: string, fullPath: string) => string);
 
   /**
    * Modify file contents.
@@ -105,10 +113,9 @@ interface CopyOptions extends GlobbyOptions, fs.CopyOptions {
   readonly verbose?: boolean;
 }
 
-
-export default function farmPlugin(options: CopyOptions & WriteFileOptions): JsPlugin {
-
-
+export default function farmPlugin(
+  options: CopyOptions & WriteFileOptions
+): JsPlugin {
   const {
     copyOnce = false,
     copySync = false,
@@ -117,54 +124,71 @@ export default function farmPlugin(options: CopyOptions & WriteFileOptions): JsP
     verbose = false,
     // @ts-ignore
     ...restPluginOptions
-  } = options
+  } = options;
   let copied = false;
   return {
     name: 'farm-plugin-copy',
 
-
     buildEnd: {
       executor: async () => {
-
         if (copyOnce && copied) {
-          return
+          return;
         }
 
-        const copyTargets: any[] = []
+        const copyTargets: any[] = [];
         if (Array.isArray(targets) && targets.length) {
           for (const target of targets) {
             if (!isObject(target)) {
-              throw new Error(`${stringify(target)} target must be an object`)
+              throw new Error(`${stringify(target)} target must be an object`);
             }
 
-            const { dest, rename, src, transform, ...restTargetOptions } = target
+            const { dest, rename, src, transform, ...restTargetOptions } =
+              target;
 
             if (!src || !dest) {
-              throw new Error(`${stringify(target)} target must have "src" and "dest" properties`)
+              throw new Error(
+                `${stringify(target)} target must have "src" and "dest" properties`
+              );
             }
 
-            if (rename && typeof rename !== 'string' && typeof rename !== 'function') {
-              throw new Error(`${stringify(target)} target's "rename" property must be a string or a function`)
+            if (
+              rename &&
+              typeof rename !== 'string' &&
+              typeof rename !== 'function'
+            ) {
+              throw new Error(
+                `${stringify(target)} target's "rename" property must be a string or a function`
+              );
             }
 
-            const matchedPaths = await globby(src as (string | string[]), {
+            const matchedPaths = await globby(src as string | string[], {
               expandDirectories: false,
               onlyFiles: false,
               ...restPluginOptions,
               ...restTargetOptions
-            })
+            });
 
             if (matchedPaths.length) {
               for (const matchedPath of matchedPaths) {
                 const generatedCopyTargets = Array.isArray(dest)
-                  ? await Promise.all(dest.map((destination) => generateCopyTarget(
-                    matchedPath,
-                    destination,
-                    { flatten, rename, transform }
-                  )))
-                  : [await generateCopyTarget(matchedPath, dest, { flatten, rename, transform })]
+                  ? await Promise.all(
+                      dest.map((destination) =>
+                        generateCopyTarget(matchedPath, destination, {
+                          flatten,
+                          rename,
+                          transform
+                        })
+                      )
+                    )
+                  : [
+                      await generateCopyTarget(matchedPath, dest, {
+                        flatten,
+                        rename,
+                        transform
+                      })
+                    ];
 
-                copyTargets.push(...generatedCopyTargets)
+                copyTargets.push(...generatedCopyTargets);
               }
             }
           }
@@ -172,39 +196,41 @@ export default function farmPlugin(options: CopyOptions & WriteFileOptions): JsP
 
         if (copyTargets.length) {
           if (verbose) {
-            console.log(green('copied:'))
+            console.log(green('copied:'));
           }
 
           for (const copyTarget of copyTargets) {
-            const { contents, dest, src, transformed } = copyTarget
+            const { contents, dest, src, transformed } = copyTarget;
 
             if (transformed) {
-              await fs.outputFile(dest, contents, restPluginOptions)
+              await fs.outputFile(dest, contents, restPluginOptions);
             } else if (!copySync) {
-              await fs.copy(src, dest, restPluginOptions)
+              await fs.copy(src, dest, restPluginOptions);
             } else {
-              fs.copySync(src, dest, restPluginOptions)
+              fs.copySync(src, dest, restPluginOptions);
             }
 
             if (verbose) {
-              let message = green(`  ${bold(src)} → ${bold(dest)}`)
+              let message = green(`  ${bold(src)} → ${bold(dest)}`);
               const flags = Object.entries(copyTarget)
-                .filter(([key, value]) => ['renamed', 'transformed'].includes(key) && value)
-                .map(([key]) => key.charAt(0).toUpperCase())
+                .filter(
+                  ([key, value]) =>
+                    ['renamed', 'transformed'].includes(key) && value
+                )
+                .map(([key]) => key.charAt(0).toUpperCase());
 
               if (flags.length) {
-                message = `${message} ${yellow(`[${flags.join(', ')}]`)}`
+                message = `${message} ${yellow(`[${flags.join(', ')}]`)}`;
               }
 
-              console.log(message)
+              console.log(message);
             }
           }
         } else if (verbose) {
-          console.log(yellow('no items to copy'))
+          console.log(yellow('no items to copy'));
         }
-        copied = true
+        copied = true;
       }
     }
-  }
+  };
 }
-

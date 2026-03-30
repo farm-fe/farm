@@ -26,15 +26,15 @@
     "auto-import"
   ],
   "author": {
-    "name": "苏向夜",
+    "name": "\u82cf\u5411\u591c",
     "email": "fu050409@163.com",
     "url": "https://github.com/fu050409"
   },
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "^1.0.1",
-    "@farmfe/core": "^1.1.1",
-    "@farmfe/js-plugin-dts": "^0.5.1",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:*",
     "@types/node": "^18.19.67",
     "cross-env": "^7.0.3"
   },
@@ -46,5 +46,13 @@
   "dependencies": {
     "@vuetify/loader-shared": "^2.1.0",
     "upath": "^2.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/farm.git"
+  },
+  "homepage": "https://github.com/farm-fe/farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
   }
 }

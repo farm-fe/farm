@@ -38,10 +38,10 @@
   },
   "devDependencies": {
     "@babel/types": "^7.26.3",
-    "@farmfe/cli": "^1.0.4",
-    "@farmfe/core": "^1.6.0",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-babel": "workspace:*",
-    "@farmfe/js-plugin-dts": "^0.6.4",
+    "@farmfe/js-plugin-dts": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^22.7.4",
     "cross-env": "^7.0.3"
@@ -53,5 +53,13 @@
     "package.json",
     "README.md",
     "dist"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/farm.git"
+  },
+  "homepage": "https://github.com/farm-fe/farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  }
 }

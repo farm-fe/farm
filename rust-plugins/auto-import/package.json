@@ -6,17 +6,16 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/plugin-tools": "latest",
-    "@farmfe/js-plugin-visualizer": "latest"
+    "@farmfe/plugin-tools": "workspace:*"
   },
-  "homepage": "https://github.com/farm-fe/plugins",
+  "homepage": "https://github.com/farm-fe/farm",
   "author": "CCherry07 <2405693142@qq.com>",
   "bugs": {
-    "url": "https://github.com/farm-fe/plugins/issues"
+    "url": "https://github.com/farm-fe/farm/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farm-fe/plugins.git"
+    "url": "git+https://github.com/farm-fe/farm.git"
   },
   "keywords": [
     "rust",

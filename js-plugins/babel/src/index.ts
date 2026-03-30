@@ -1,5 +1,5 @@
-import { transformAsync, type TransformOptions } from "@babel/core";
-import type { ModuleType, JsPlugin } from "@farmfe/core";
+import { type TransformOptions, transformAsync } from '@babel/core';
+import type { JsPlugin, ModuleType } from '@farmfe/core';
 
 export interface NormalizeFilterParams {
   moduleTypes: ModuleType[];
@@ -17,34 +17,34 @@ export interface BabelOptions {
   name?: string;
 }
 
-const defaultFilters: BabelOptions["filters"] = {
-  moduleTypes: ["js", "jsx", "ts", "tsx"],
-  resolvedPaths: [],
+const defaultFilters: BabelOptions['filters'] = {
+  moduleTypes: ['js', 'jsx', 'ts', 'tsx'],
+  resolvedPaths: []
 };
 
 export function babel(options: BabelOptions = { priority: 99 }): JsPlugin {
   return {
-    name: options.name ?? "js-plugin:babel",
+    name: options.name ?? 'js-plugin:babel',
     priority: options.priority,
 
     processModule: {
       filters: {
         moduleTypes: options.filters?.moduleTypes ?? defaultFilters.moduleTypes,
         resolvedPaths:
-          options.filters?.resolvedPaths ?? defaultFilters.resolvedPaths,
+          options.filters?.resolvedPaths ?? defaultFilters.resolvedPaths
       },
       async executor(param) {
         const { content, moduleId } = param;
 
         const result = await transformAsync(content, {
           filename: moduleId,
-          ...options.transformOptions,
+          ...options.transformOptions
         });
 
         return {
-          content: result.code,
+          content: result.code
         };
-      },
-    },
+      }
+    }
   };
 }

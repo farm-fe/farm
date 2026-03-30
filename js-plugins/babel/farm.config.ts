@@ -1,30 +1,30 @@
-import { defineConfig } from "@farmfe/core";
-import dts from "@farmfe/js-plugin-dts";
+import { defineConfig } from '@farmfe/core';
+import dts from '@farmfe/js-plugin-dts';
 
 export default defineConfig({
   compilation: {
-    external: ["@farmfe/core", '@babel/core'],
+    external: ['@farmfe/core', '@babel/core'],
     input: {
-      index: "./src/index.ts",
+      index: './src/index.ts'
     },
     output: {
-      targetEnv: "library-node",
+      targetEnv: 'library-node',
       path: `./dist`,
-      format: "cjs",
+      format: 'cjs'
     },
     partialBundling: {
       enforceResources: [
         {
-          name: "index",
-          test: [".+"],
-        },
-      ],
+          name: 'index',
+          test: ['.+']
+        }
+      ]
     },
     minify: false,
     sourcemap: true,
     resolve: {
-      autoExternalFailedResolve: true,
-    },
+      autoExternalFailedResolve: true
+    }
   },
-  plugins: [dts()],
+  plugins: [dts()]
 });

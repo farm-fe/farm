@@ -1,33 +1,33 @@
-import { SourceLocation } from "@babel/types";
+import { SourceLocation } from '@babel/types';
 
 export enum ErrorSeverity {
   /**
    * Invalid JS syntax, or valid syntax that is semantically invalid which may indicate some
    * misunderstanding on the user’s part.
    */
-  InvalidJS = "InvalidJS",
+  InvalidJS = 'InvalidJS',
   /**
    * Code that breaks the rules of React.
    */
-  InvalidReact = "InvalidReact",
+  InvalidReact = 'InvalidReact',
   /**
    * Incorrect configuration of the compiler.
    */
-  InvalidConfig = "InvalidConfig",
+  InvalidConfig = 'InvalidConfig',
   /**
    * Code that can reasonably occur and that doesn't break any rules, but is unsafe to preserve
    * memoization.
    */
-  CannotPreserveMemoization = "CannotPreserveMemoization",
+  CannotPreserveMemoization = 'CannotPreserveMemoization',
   /**
    * Unhandled syntax that we don't support yet.
    */
-  Todo = "Todo",
+  Todo = 'Todo',
   /**
    * An unexpected internal error in the compiler that indicates critical issues that can panic
    * the compiler.
    */
-  Invariant = "Invariant",
+  Invariant = 'Invariant'
 }
 
 export type CompilerErrorDetailOptions = {
@@ -42,7 +42,7 @@ export enum CompilerSuggestionOperation {
   InsertBefore,
   InsertAfter,
   Remove,
-  Replace,
+  Replace
 }
 export type CompilerSuggestion =
   | {
@@ -75,23 +75,23 @@ export type CompilerSuggestion =
  */
 export type LoggerEvent =
   | {
-      kind: "CompileError";
+      kind: 'CompileError';
       fnLoc: SourceLocation | null;
       detail: CompilerErrorDetailOptions;
     }
   | {
-      kind: "CompileDiagnostic";
+      kind: 'CompileDiagnostic';
       fnLoc: SourceLocation | null;
-      detail: Omit<Omit<CompilerErrorDetailOptions, "severity">, "suggestions">;
+      detail: Omit<Omit<CompilerErrorDetailOptions, 'severity'>, 'suggestions'>;
     }
   | {
-      kind: "CompileSkip";
+      kind: 'CompileSkip';
       fnLoc: SourceLocation | null;
       reason: string;
       loc: SourceLocation | null;
     }
   | {
-      kind: "CompileSuccess";
+      kind: 'CompileSuccess';
       fnLoc: SourceLocation | null;
       fnName: string | null;
       memoSlots: number;
@@ -101,7 +101,7 @@ export type LoggerEvent =
       prunedMemoValues: number;
     }
   | {
-      kind: "PipelineError";
+      kind: 'PipelineError';
       fnLoc: SourceLocation | null;
       data: string;
     };
@@ -125,15 +125,15 @@ type PanicThresholdOptions =
    * If Forget is invoked through `BabelPluginReactCompiler`, this will at the least
    * skip Forget compilation for the rest of current file.
    */
-  | "all_errors"
+  | 'all_errors'
   /*
    * Panic by throwing an exception only on critical or unrecognized errors.
    * For all other errors, skip the erroring function without inserting
    * a Forget-compiled version (i.e. same behavior as noEmit).
    */
-  | "critical_errors"
+  | 'critical_errors'
   // Never panic by throwing an exception.
-  | "none";
+  | 'none';
 type CompilationMode =
   /*
    * Compiles functions annotated with "use forget" or component/hook-like functions.
@@ -145,13 +145,13 @@ type CompilationMode =
    *     false positives, since compilation has a greater impact than linting.
    * This is the default mode
    */
-  | "infer"
+  | 'infer'
   // Compile only components using Flow component syntax and hooks using hook syntax.
-  | "syntax"
+  | 'syntax'
   // Compile only functions which are explicitly annotated with "use forget"
-  | "annotation"
+  | 'annotation'
   // Compile all top-level functions
-  | "all";
+  | 'all';
 
 /**
  *
@@ -246,9 +246,9 @@ export type PluginOptions = {
 };
 
 export type CompilerReactTarget =
-  | "17"
-  | "18"
-  | "19"
+  | '17'
+  | '18'
+  | '19'
 
   /**
    * Used exclusively for Meta apps which are guaranteed to have compatible
@@ -258,7 +258,7 @@ export type CompilerReactTarget =
    * so this option is invalid / creates runtime errors for open-source users.
    */
   | {
-      kind: "donotuse_meta_internal";
+      kind: 'donotuse_meta_internal';
       /**
        * @default react
        */
