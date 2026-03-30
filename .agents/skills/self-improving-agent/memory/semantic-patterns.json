@@ -1,0 +1,288 @@
+{
+  "patterns": {
+    "prd_document_separation": {
+      "id": "pat-2025-01-11-001",
+      "name": "Document Separation for Complex PRDs",
+      "source": "user_feedback",
+      "confidence": 0.95,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "prd_structure",
+      "pattern": "For non-trivial PRDs, split into 4 files with clear purposes",
+      "problem": "Single large PRD file (~500 lines) with mixed product/technical content is hard to follow",
+      "solution": {
+        "files": [
+          {
+            "name": "{name}-notes.md",
+            "purpose": "Thinking process, options analysis",
+            "audience": "Self + future reviewers"
+          },
+          {
+            "name": "{name}-task-plan.md",
+            "purpose": "Project tracking, phases, progress",
+            "audience": "PM + development lead"
+          },
+          {
+            "name": "{name}-prd.md",
+            "purpose": "Product requirements (what & why)",
+            "audience": "PM + stakeholders + developers"
+          },
+          {
+            "name": "{name}-tech.md",
+            "purpose": "Technical design (how)",
+            "audience": "Developers + architects"
+          }
+        ]
+      },
+      "quality_rules": [
+        "PRD focuses on problem, goals, scope, user flows",
+        "Tech doc focuses on API, data flow, implementation",
+        "Notes document architecture options with A/B/C analysis",
+        "Task plan has checkboxes with timestamps",
+        "PRD references tech doc, doesn't duplicate"
+      ],
+      "target_skills": ["prd-planner", "architecting-solutions"]
+    },
+    "state_monitoring_over_callbacks": {
+      "id": "pat-2025-01-11-002",
+      "name": "Direct State Monitoring vs Callbacks",
+      "source": "implementation_review",
+      "confidence": 0.90,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "react_patterns",
+      "pattern": "Prefer direct state monitoring over callback chains for side effects",
+      "problem": "Callback chains passed through multiple layers are hard to trace and debug",
+      "solution": {
+        "anti_pattern": "useActionQueue({ onRefresh: () => { /* refresh logic */ } });",
+        "pattern": "const pendingCount = requests.length;\nconst prevPendingCount = usePrevious(pendingCount);\nuseEffect(() => {\n  if (pendingCount < prevPendingCount) {\n    triggerDataRefresh({ reason: 'completed' });\n  }\n}, [pendingCount, prevPendingCount]);"
+      },
+      "when_to_use": [
+        "State changes need to trigger side effects",
+        "Callback chain would be 3+ layers deep",
+        "Multiple components need to react to same state change"
+      ],
+      "quality_rules": [
+        "Use usePrevious to detect state changes instead of callbacks when feasible",
+        "Keep state monitoring close to where state is consumed",
+        "Use callbacks only for cross-component boundaries"
+      ],
+      "target_skills": ["debugger", "refactoring-specialist"]
+    },
+    "state_machine_over_booleans": {
+      "id": "pat-2025-01-11-003",
+      "name": "State Machine Over Boolean Flags",
+      "source": "implementation_review",
+      "confidence": 0.85,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "async_patterns",
+      "pattern": "Use state machines for async operations with multiple phases",
+      "problem": "Simple boolean flags can't represent 'waiting to run' vs 'currently running', causing race conditions",
+      "solution": {
+        "anti_pattern": "const inFlight = false;",
+        "pattern": "enum EStatus {\n  Idle = 'idle',\n  Waiting = 'waiting',  // Scheduled but not running yet\n  Running = 'running',\n}"
+      },
+      "benefits": [
+        "Prevents race conditions (can't schedule new request while running)",
+        "Distinguishes 'waiting to run' from 'currently running'",
+        "Easier to debug and log state transitions"
+      ],
+      "quality_rules": [
+        "Use state machine for async operations with multiple phases",
+        "Prevent state transitions that don't make sense",
+        "Log state transitions for debugging"
+      ],
+      "target_skills": ["debugger", "api-designer"]
+    },
+    "measurable_success_criteria": {
+      "id": "pat-2025-01-11-004",
+      "name": "Measurable Success Criteria",
+      "source": "user_feedback",
+      "confidence": 0.90,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "prd_quality",
+      "pattern": "Success criteria must include specific numbers/timings to enable verification",
+      "problem": "Vague success criteria like 'data refreshes' don't enable testing or verification",
+      "solution": {
+        "bad_examples": [
+          "Data refreshes after transaction",
+          "Manual refresh works",
+          "No performance regression"
+        ],
+        "good_examples": [
+          "Dashboard data refreshes within 3-5 seconds after a pending action completes",
+          "Manual refresh button triggers full refresh and shows loading state",
+          "API response time under 500ms for 95th percentile"
+        ]
+      },
+      "quality_rules": [
+        "Success criteria include specific numbers/timings",
+        "Each criterion is objectively verifiable",
+        "Performance targets have percentiles (e.g., 95th, 99th)",
+        "User-facing behavior has observable indicators"
+      ],
+      "target_skills": ["prd-planner", "architecting-solutions"]
+    },
+    "non_goals_section": {
+      "id": "pat-2025-01-11-005",
+      "name": "Non-Goals Section",
+      "source": "user_feedback",
+      "confidence": 0.90,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "prd_structure",
+      "pattern": "Explicitly state what won't be done to prevent scope creep",
+      "problem": "Without explicit non-goals, scope creeps during implementation",
+      "solution": {
+        "structure": "## Goals\n- [Specific achievable outcomes]\n\n## Non-Goals\n- [Explicit exclusions - things that might seem related but aren't]"
+      },
+      "quality_rules": [
+        "Goals section has 3-5 focused items",
+        "Non-goals section explicitly excludes reasonable-but-out-of-scope items",
+        "Each non-goal has a brief rationale if not obvious"
+      ],
+      "target_skills": ["prd-planner", "architecting-solutions"]
+    },
+    "ui_ux_specification_granularity": {
+      "id": "pat-2025-01-11-006",
+      "name": "UI/UX Specification Granularity",
+      "source": "retrospective",
+      "confidence": 0.95,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "ui_patterns",
+      "pattern": "UI/UX PRDs require explicit visual specifications to prevent rework",
+      "problem": "Ambiguous UI specs (position, size, spacing) cause implementation rework",
+      "solution": {
+        "required_elements": {
+          "layout_structure": ["Relative position: same row / next row / below / above", "Parent-child container relationships", "Spacing values (gap, padding, margin)"],
+          "component_specs": ["Icon/Button sizes: iconSize=\"$4\" (24px)", "Text styles: size=\"$bodyMd\", color=\"$textSubdued\"", "Component variants: size=\"small\", variant=\"tertiary\""],
+          "visual_comparison": "Before/After ASCII art showing layout change",
+          "executable_criteria": "Checklist with exact prop values"
+        },
+        "examples": {
+          "bad": "Refresh button next to amount",
+          "good": "Refresh button in same XStack as amount with gap='$3'"
+        }
+      },
+      "quality_rules": [
+        "Relative position explicitly stated (same row/next row/below/above)",
+        "Component sizes with exact values (iconSize prop or px)",
+        "Spacing values defined (gap=\"$3\", mx=\"$2\")",
+        "Before/After visual comparison included",
+        "Success criteria are executable (verify by reading code)",
+        "Mobile vs desktop differences explicitly called out"
+      ],
+      "target_skills": ["prd-planner", "architecting-solutions"]
+    },
+    "reuse_existing_infrastructure": {
+      "id": "pat-2025-01-11-007",
+      "name": "Reuse Existing Infrastructure",
+      "source": "comparison_analysis",
+      "confidence": 0.90,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "architecture",
+      "pattern": "Always check if Context/Provider already has the data before adding new fetching",
+      "problem": "Adding duplicate data fetching creates redundant network calls and complexity",
+      "solution": {
+        "anti_pattern": "const { pendingRequests } = useActionQueue({ workspaceId, userId, client }); // Creates new polling loop!",
+        "pattern": "const { pendingRequests } = useFeatureContext(); // Shared provider already updates this"
+      },
+      "quality_checklist": [
+        "Check if Context/Provider already has the data",
+        "Verify no duplicate polling/fetching",
+        "Confirm single source of truth",
+        "Only add new fetching when lifecycle is truly independent"
+      ],
+      "benefits": ["Reduces network/background calls", "Better performance (no redundant work)", "Single source of truth", "Simpler code (fewer hooks to manage)"],
+      "target_skills": ["architecting-solutions", "api-designer", "debugger"]
+    },
+    "click_time_vs_open_time_computation": {
+      "id": "pat-2025-01-11-008",
+      "name": "Click-Time vs Open-Time Computation",
+      "source": "implementation_review",
+      "confidence": 0.85,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "react_patterns",
+      "pattern": "For mutable state, compute at action time, not at render/init time",
+      "problem": "Open-time computation creates stale snapshots when state changes before user acts",
+      "solution": {
+        "anti_pattern": "const allIds = useMemo(() =>\n  actionableItems.filter(i => !inFlightIds.includes(i.id)),\n  [actionableItems, inFlightIds]\n); // Stale if inFlightIds changes before user clicks",
+        "pattern": "onRunAll: (ids: string[]) => Promise<void> => {\n  const freshIds = actionableItems\n    .filter(i => !inFlightIds.includes(i.id))\n    .map(i => i.id);\n  return submitBatchAction(freshIds);\n}"
+      },
+      "decision_matrix": {
+        "open_time": ["Immutable data", "Expensive computation"],
+        "click_time": ["Mutable state", "User-dependent filters"]
+      },
+      "benefits": ["State is always fresh when user acts", "No stale data issues", "Simpler reasoning about state"],
+      "target_skills": ["debugger", "api-designer"]
+    },
+    "search_before_creating_components": {
+      "id": "pat-2025-01-11-009",
+      "name": "Search Before Creating Components",
+      "source": "prud_correction",
+      "confidence": 0.90,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "development",
+      "pattern": "ALWAYS search existing codebase before proposing new components/types",
+      "problem": "Creating duplicate components creates maintenance burden and UI inconsistency",
+      "solution": {
+        "pre_prd_search": [
+          "grep -r \"Alert\" packages/kit/src/views/ --include=\"*.tsx\"",
+          "grep -r \"IAlert\\|Alert\" packages/shared/types/ --include=\"*.ts\"",
+          "If found, read existing implementation"
+        ],
+        "decision_matrix": {
+          "existing_component_matches_ui": "Reuse",
+          "existing_component_needs_small_tweak": "Extend or wrap",
+          "existing_component_has_wrong_responsibilities": "Create new",
+          "not_sure": "Reuse first"
+        }
+      },
+      "impact": {
+        "duplicate_component": "Over-engineering, UI inconsistency",
+        "reuse": "Faster implementation, shared improvements"
+      },
+      "target_skills": ["prd-planner", "architecting-solutions", "api-designer"]
+    },
+    "spacing_and_divider_debugging": {
+      "id": "pat-2025-01-11-010",
+      "name": "Spacing and Divider Debugging",
+      "source": "bug_analysis",
+      "confidence": 0.85,
+      "applications": 0,
+      "created": "2025-01-11",
+      "category": "debugging",
+      "pattern": "When debugging spacing/divider issues, audit all spacing values systematically",
+      "problem": "Component spacing (mt, mb, py, padding) can create unintended visual separators that appear as extra lines",
+      "solution": {
+        "debugging_steps": [
+          "Search for spacing-related props in components",
+          "Check for StyleSheet.hairlineWidth usage (may render differently per platform)",
+          "Compare components that work vs components that have issues",
+          "Draw component structure to identify spacing conflicts"
+        ],
+        "audit_template": "| Element | Before | After | Unit | Notes |\\n|---------|--------|-------|------|-------|\\n| Trigger padding | `py=\"$3\"` | - | 12px | Accordion.Trigger |\\n| Header top margin | `mt=\"$3\"` | `mt=\"$0\"` | 12px → 0px | Remove this |"
+      },
+      "quality_rules": [
+        "Include ASCII diagram showing component structure",
+        "List exact spacing values with pixel conversions ($3 = 12px, $5 = 20px)",
+        "Compare working vs broken components",
+        "Note platform-specific behaviors (hairlineWidth varies)",
+        "Verify fix on all platforms (iOS, Android, Desktop, Web)"
+      ],
+      "target_skills": ["debugger"]
+    }
+  },
+  "meta": {
+    "version": "1.0.0",
+    "last_updated": "2025-01-12",
+    "total_patterns": 10,
+    "categories": ["prd_structure", "prd_quality", "react_patterns", "async_patterns", "ui_patterns", "architecture", "development", "debugging"]
+  }
+}

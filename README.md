@@ -2,7 +2,7 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-  <h3>Extremely fast Vite-compatible web building tool written in Rust</h3>
+  <h3>Extremely fast, Vite-compatible web build tool written in Rust</h3>
   <p>
     <span>English</span> |
     <a href="https://github.com/farm-fe/farm/blob/main/README.zh-CN.md">简体中文</a>  
@@ -33,7 +33,7 @@
 
 ## Intro
 
-Farm is an extremely fast vite-compatible web-building tool written in Rust. It's designed to be fast, powerful and consistent, aims to provide best experience for web development, which is the real next generation build tool.
+Farm is an extremely fast, Vite-compatible web build tool written in Rust. Designed to be fast, powerful, and consistent, it delivers the best web development experience — the real next-generation build tool.
 
 ## Online experience
 
@@ -62,7 +62,7 @@ Farm can solve these problems perfectly, and it's really fast cause it's written
 - ⚡ **Extremely Fast**: Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 20ms for most situations.
 - ⚡ **Incremental Building**: Support persistent cache, module level cache enabled by default, any module won't be compiled twice until it's changed!
 - 🧰 **Fully Pluggable and Vite Compatible**: Everything inside Farm is powered by plugins, Support Vite Plugins out of box. Supports Farm compilation plugins(both Rust and JavaScript plugins, and SWC plugins), Farm runtime plugins and Farm server plugin.
-- ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, Css Modules, HTML, and static assets out of the box. Support official compilation plugins for Popular frameworks/tools like React, Vue, SolidJs, Sass, Less, Postcss and so on.
+- ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, CSS Modules, HTML, and static assets out of the box. Official compilation plugins for React, Vue, Sass, Less, PostCSS, and more.
 - ⏱️ **Lazy Compilation**: Dynamically imported resources are compiled only when requested, speed up compilation for large scale project. Just write a `dynamic import` and the imported module won't be compiled when it is executed.
 - 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles automatically, speeding up resource loading without losing caching granularity. Refer to [RFC-003 Partial Bundling](https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md) for details.
 - 🔒 **Consistency**: What you see in development will be the same as what you get in production.
@@ -78,7 +78,7 @@ See [RFC-001 Architecture](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-co
 
 ## Getting Started
 
-Create a new Farm(support both React and Vue) project with your favorite package manager:
+Create a new Farm project with your favorite package manager:
 
 ```bash
 # with npm

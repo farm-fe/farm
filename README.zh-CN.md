@@ -2,7 +2,7 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-  <h3>基于 Rust 的极速构建引擎</h3>
+  <h3>基于 Rust 的极速、Vite 兼容构建引擎</h3>
   <p>
     <a href="https://github.com/farm-fe/farm/blob/main/README.md">English</a> | 
     <span>简体中文</span>
@@ -22,6 +22,9 @@
   <a href="https://github.com/farm-fe/farm/blob/main/LICENSE">
     <img src="https://img.shields.io/npm/l/@farmfe/core?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
   </a>
+  <a href="https://gurubase.io/g/farm">
+    <img src="https://img.shields.io/badge/Gurubase-Ask%20Farm%20Guru-711a5f?style=flat-square&labelColor=ffe3f5" alt="Gurubase" />
+  </a>
   </p>
   <br/>
 </div>
@@ -30,7 +33,7 @@
 
 ## 介绍
 
-Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件生态。Farm 设计为极速、强大、一致的构建工具，旨在提供更好的 web 开发体验，是真正意义的下一代构建工具。
+Farm 是一个使用 Rust 编写的极速 Web 构建工具，兼容 Vite 插件生态。Farm 设计为极速、强大、一致的构建工具，旨在提供最好的 Web 开发体验，是真正意义上的下一代构建工具。
 
 ## 在线体验
 
@@ -57,7 +60,7 @@ Farm 可以完美解决这些问题，而且速度非常快。 Farm 的目标是
 - ⚡ **超级快**: 使用 Rust 编写, 可以在毫秒级别内启动一个 React 或 Vue 项目。 在大多数情况下, 可以在 10ms 内执行 HMR 的更新。
 - ⚡ **增量构建**: 支持持久缓存，以模块粒度进行缓存复用，任何一个模块如果没有改变，始终只会编译一次！
 - 🧰 **完全可插拔**: Farm 由插件驱动, 兼容 Vite 插件，同时支持 Farm 编译插件（Rust 和 JavaScript 插件，以及 Swc 插件），Farm Runtime 插件，Farm Dev Server 插件。
-- ⚙️ **丰富的编译能力支持**: 开箱即用, Farm 内置了 JS/TS/JSX/TSX、CSS、Css Modules、Sass、Less、Postcss，HTML 和静态资源的编译，为 React，Vue，Solid 等框架提供了官方插件。
+- ⚙️ **丰富的编译能力支持**: 开箱即用, Farm 内置了 JS/TS/JSX/TSX、CSS、CSS Modules、Sass、Less、PostCSS，HTML 和静态资源的编译，为 React、Vue 等框架提供了官方插件支持。
 - ⏱️ **懒编译**: 仅仅在请求时才编译动态导入的资源，极大提速大型项目的编译。通过 `dynamic import` 即可启用，被 `dynamic import` 的模块及其依赖仅在使用时才会编译。
 - 📦 **局部打包**: 自动根据依赖关系、资源大小，将项目打包成若干个资源，提升资源加载性能的同时，保证缓存命中率。参考 [RFC-003 Partial Bundling](https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md)
 - 🔒 **一致性**: 开发环境和生产环境的表现一致，所见即所得。
