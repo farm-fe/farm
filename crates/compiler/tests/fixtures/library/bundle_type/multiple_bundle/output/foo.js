@@ -1,4 +1,4 @@
-import { multiply } from "shared.ts";
+import { multiply } from "./index-2c6c8c27.js";
 function product(a, b) {
     return multiply(a, b);
 }

@@ -1,5 +1,5 @@
-import { formatName } from "lib/utils.ts";
-import { DEFAULT_PREFIX } from "lib/constants.ts";
+import { formatName } from "./lib/utils.js";
+import { DEFAULT_PREFIX } from "./lib/constants.js";
 function createMessage(name) {
     return DEFAULT_PREFIX + formatName(name);
 }

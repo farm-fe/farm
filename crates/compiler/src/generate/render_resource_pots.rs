@@ -7,13 +7,15 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::{GeneratedResource, PluginGenerateResourcesHookResult, PluginHookContext},
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::resource_pot::ResourcePot,
+  resource::{resource_pot::ResourcePot, Resource, ResourceType},
   HashMap,
 };
 use farmfe_toolkit::{
   fs::{transform_output_entry_filename, transform_output_filename, TransformOutputFileNameParams},
   sourcemap::append_sourcemap_comment,
 };
+
+use farmfe_plugin_library::FARM_BUNDLE_PLACEHOLDER_PREFIX;
 
 use crate::generate::resource_cache::{set_resource_cache, try_get_resource_cache};
 
@@ -29,6 +31,11 @@ pub fn render_resource_pots_and_generate_resources(
   let entries = context.module_graph.read().entries.clone();
   let dynamic_entries = context.module_graph.read().dynamic_entries.clone();
 
+  let is_library = context.config.output.target_env.is_library();
+  // Collect module_id -> JS resource filename mapping for library mode
+  // placeholder replacement (used to replace FARM_BUNDLE_PLACEHOLDER:: markers)
+  let module_to_resource: Mutex<HashMap<String, String>> = Mutex::new(HashMap::default());
+
   let mut resource_pots_need_render = vec![];
 
   for resource_pot in resource_pots {
@@ -42,6 +49,23 @@ pub fn render_resource_pots_and_generate_resources(
 
       for cached_resource in &cached_resources.resources {
         resource_pot.add_resource(cached_resource.resource.name.clone());
+      }
+
+      // For cached resource pots, also collect module -> resource mapping
+      if is_library {
+        let js_name = cached_resources.resources.iter().find_map(|r| {
+          if matches!(r.resource.resource_type, ResourceType::Js) {
+            Some(r.resource.name.clone())
+          } else {
+            None
+          }
+        });
+        if let Some(js_name) = js_name {
+          let mut map = module_to_resource.lock();
+          for module_id in resource_pot.modules() {
+            map.insert(module_id.to_string(), js_name.clone());
+          }
+        }
       }
 
       for cached_resource in cached_resources.resources {
@@ -138,6 +162,23 @@ pub fn render_resource_pots_and_generate_resources(
         }
       }
 
+      // Collect module_id -> JS resource filename mapping for library mode
+      if is_library {
+        let js_name = generated_resources.resources.iter().find_map(|r| {
+          if matches!(r.resource.resource_type, ResourceType::Js) {
+            Some(r.resource.name.clone())
+          } else {
+            None
+          }
+        });
+        if let Some(js_name) = js_name {
+          let mut map = module_to_resource.lock();
+          for module_id in resource_pot.modules() {
+            map.insert(module_id.to_string(), js_name.clone());
+          }
+        }
+      }
+
       // process generated resources after rendering
       context
         .plugin_driver
@@ -184,6 +225,17 @@ pub fn render_resource_pots_and_generate_resources(
 
       Ok::<(), CompilationError>(())
     })?;
+
+  // Replace bundle placeholders in library mode JS resources with actual relative paths
+  if is_library {
+    let module_to_resource = module_to_resource.into_inner();
+    let mut resources_vec = resources.lock();
+    for resource in resources_vec.iter_mut() {
+      if matches!(resource.resource_type, ResourceType::Js) {
+        replace_bundle_placeholders(resource, &module_to_resource);
+      }
+    }
+  }
 
   let mut resources_map: farmfe_core::parking_lot::lock_api::MutexGuard<
     '_,
@@ -269,4 +321,62 @@ pub fn render_resource_pot_generate_resources(
       augment_resource_pot_hash,
     ))
   }
+}
+
+/// Replace FARM_BUNDLE_PLACEHOLDER:: markers in JS resource bytes with actual
+/// relative paths to the target resource files.
+fn replace_bundle_placeholders(resource: &mut Resource, module_to_resource: &HashMap<String, String>) {
+  let content = String::from_utf8_lossy(&resource.bytes);
+  if !content.contains(FARM_BUNDLE_PLACEHOLDER_PREFIX) {
+    return;
+  }
+
+  let mut new_content = content.to_string();
+  for (module_id, target_resource_name) in module_to_resource {
+    let placeholder = format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id);
+    if new_content.contains(&placeholder) {
+      let relative = compute_relative_path(&resource.name, target_resource_name);
+      new_content = new_content.replace(&placeholder, &relative);
+    }
+  }
+
+  resource.bytes = new_content.into_bytes();
+}
+
+/// Compute a relative path from one resource to another.
+/// Both paths are relative to the output directory (e.g., "index.js", "lib/utils.js").
+/// Returns a path suitable for JS imports (e.g., "./lib/utils.js", "../other.js").
+fn compute_relative_path(from_resource: &str, to_resource: &str) -> String {
+  // Get the directory of the source resource
+  let from_parts: Vec<&str> = from_resource.split('/').collect();
+  let from_dir: Vec<&str> = if from_parts.len() > 1 {
+    from_parts[..from_parts.len() - 1].to_vec()
+  } else {
+    vec![]
+  };
+
+  let to_parts: Vec<&str> = to_resource.split('/').collect();
+
+  // Find common prefix length
+  let common_len = from_dir
+    .iter()
+    .zip(to_parts.iter())
+    .take_while(|(a, b)| a == b)
+    .count();
+
+  // Number of ".." needed
+  let ups = from_dir.len() - common_len;
+  let remaining = &to_parts[common_len..];
+
+  let mut result = String::new();
+  if ups == 0 {
+    result.push_str("./");
+  } else {
+    for _ in 0..ups {
+      result.push_str("../");
+    }
+  }
+  result.push_str(&remaining.join("/"));
+
+  result
 }

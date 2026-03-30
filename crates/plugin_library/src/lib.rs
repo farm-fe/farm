@@ -10,6 +10,7 @@ use farmfe_core::{
     meta_data::script::{
       FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID, FARM_RUNTIME_SUFFIX,
     },
+    module_graph::ModuleGraph,
     ModuleId, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
@@ -23,7 +24,8 @@ use farmfe_core::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::ResourcePotType,
   },
-  swc_ecma_ast::Module,
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{Module, ModuleDecl, ModuleItem, Str},
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
@@ -47,6 +49,10 @@ use crate::formats::{generate_library_format_resources, GenerateLibraryFormatRes
 mod formats;
 mod import_meta_visitor;
 mod utils;
+
+/// Placeholder prefix used to mark import sources that need to be replaced
+/// with actual output resource filenames after resources are generated.
+pub const FARM_BUNDLE_PLACEHOLDER_PREFIX: &str = "FARM_BUNDLE_PLACEHOLDER::";
 
 const FARM_RUNTIME_PREFIX: &str = "@farmfe/runtime/";
 const PLUGIN_NAME: &str = "FarmPluginLibrary";
@@ -351,7 +357,7 @@ impl Plugin for FarmPluginLibrary {
     let module_graph = context.module_graph.read();
 
     let ConcatenateModulesAstResult {
-      ast,
+      mut ast,
       module_ids,
       external_modules,
       source_map,
@@ -367,6 +373,15 @@ impl Plugin for FarmPluginLibrary {
       context,
     )
     .map_err(|e| CompilationError::GenericError(e.to_string()))?;
+
+    // Replace import sources for internal modules (modules in other resource pots,
+    // not truly external packages) with placeholders. These will be replaced with
+    // actual relative paths to the output resource files after resources are generated.
+    replace_internal_import_sources_with_placeholders(
+      &mut ast,
+      &external_modules,
+      &module_graph,
+    );
 
     context
       .meta
@@ -421,5 +436,70 @@ impl Plugin for FarmPluginLibrary {
     )?;
 
     Ok(Some(result))
+  }
+}
+
+/// Replace import/export-from sources in the AST for modules that are NOT truly
+/// external (i.e., modules that exist in other resource pots within the compilation).
+/// These sources are replaced with placeholders like `FARM_BUNDLE_PLACEHOLDER::<module_id>`
+/// which will be resolved to actual relative paths after resource filenames are determined.
+fn replace_internal_import_sources_with_placeholders(
+  ast: &mut Module,
+  external_modules: &HashMap<(String, ResolveKind), ModuleId>,
+  module_graph: &ModuleGraph,
+) {
+  // Build a mapping from source string -> module_id for non-truly-external modules
+  // that are script types (JS/TS). CSS and other module types should not be replaced.
+  let source_to_internal_module: HashMap<String, &ModuleId> = external_modules
+    .iter()
+    .filter(|((_, _), module_id)| {
+      module_graph
+        .module(module_id)
+        .map(|m| !m.external && m.module_type.is_script())
+        .unwrap_or(false)
+    })
+    .map(|((source, _), module_id)| (source.clone(), module_id))
+    .collect();
+
+  if source_to_internal_module.is_empty() {
+    return;
+  }
+
+  for item in &mut ast.body {
+    match item {
+      ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) => {
+        let source = import_decl.src.value.to_string();
+        if let Some(module_id) = source_to_internal_module.get(&source) {
+          import_decl.src = Box::new(Str {
+            span: DUMMY_SP,
+            value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+            raw: None,
+          });
+        }
+      }
+      ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(export)) => {
+        if let Some(ref mut src) = export.src {
+          let source = src.value.to_string();
+          if let Some(module_id) = source_to_internal_module.get(&source) {
+            *src = Box::new(Str {
+              span: DUMMY_SP,
+              value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+              raw: None,
+            });
+          }
+        }
+      }
+      ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) => {
+        let source = export_all.src.value.to_string();
+        if let Some(module_id) = source_to_internal_module.get(&source) {
+          export_all.src = Box::new(Str {
+            span: DUMMY_SP,
+            value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+            raw: None,
+          });
+        }
+      }
+      _ => {}
+    }
   }
 }
