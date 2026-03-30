@@ -133,7 +133,7 @@ impl SourceReplacer<'_> {
         expr: box Expr::Lit(Lit::Str(str)),
       } = &mut call_expr.args[0]
       {
-        let source = str.value.to_string();
+        let source = str.value.to_string_lossy().into_owned();
 
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
@@ -189,7 +189,7 @@ impl SourceReplacer<'_> {
         expr: box Expr::Lit(Lit::Str(str)),
       } = &mut call_expr.args[0]
       {
-        let source = str.value.to_string();
+        let source = str.value.to_string_lossy().into_owned();
 
         if let Some(id) =
           self.find_real_module_meta_by_source(&source, vec![ResolveKind::DynamicImport])
@@ -270,7 +270,7 @@ impl<'a> VisitMut for ExistingCommonJsRequireVisitor<'a> {
         expr: box Expr::Lit(Lit::Str(str)),
       } = &mut call_expr.args[0]
       {
-        let source = str.value.to_string();
+        let source = str.value.to_string_lossy().into_owned();
 
         if let Some(id) =
           self

@@ -98,8 +98,8 @@ impl<'a> RuntimeFeatureGuardRemover<'a> {
             {
               let expect_value = self.string_features.get(sym.as_str());
               let is_cond_true = match bin.op {
-                BinaryOp::EqEqEq => value.as_str() == expect_value.unwrap(),
-                BinaryOp::NotEqEq => value.as_str() != expect_value.unwrap(),
+                BinaryOp::EqEqEq => value.as_str() == Some(expect_value.unwrap().as_str()),
+                BinaryOp::NotEqEq => value.as_str() != Some(expect_value.unwrap().as_str()),
                 _ => unreachable!(),
               };
               // if (xxx) { 123 } => { 123 }

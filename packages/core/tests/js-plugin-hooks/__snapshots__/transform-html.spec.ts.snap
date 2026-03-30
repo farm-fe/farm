@@ -7,11 +7,10 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
     __FARM_TARGET_ENV__: 'browser'
 };
 (function() {
-    var e = global;
-    const t = void 0 !== e ? e : {};
-    t.require = t.require || u;
-    const r = {}, n = {};
-    var o = {
+    let e, t;
+    (e = void 0 !== (o = global) ? o : {}).require = e.require || u;
+    let r = {}, n = {};
+    var o, l = {
         r: u,
         g: function(e, t) {
             return r[e] = t, ()=>u(e);
@@ -22,13 +21,13 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
     function u(e) {
         if (n[e]) {
             var t = n[e].initializer || n[e].exports;
-            if (!o.p?.b("readModuleCache", n[e])) return t;
+            if (!l.p?.b("readModuleCache", n[e])) return t;
         }
-        let l = r[e];
-        if (!l) {
-            if (o.em[e]) return o.em[e];
+        let o = r[e];
+        if (!o) {
+            if (l.em[e]) return l.em[e];
             {
-                let t = o.p?.b("moduleNotFound", e);
+                let t = l.p?.b("moduleNotFound", e);
                 if (t) return t;
             }
             try {
@@ -44,31 +43,30 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
             exports: {},
             require: u
         };
-        return o.p?.s("moduleCreated", i), n[e] = i, l(i, i.exports, u, o.d), o.p?.s("moduleInitialized", i), i.exports;
+        return l.p?.s("moduleCreated", i), n[e] = i, o(i, i.exports, u, l.d), l.p?.s("moduleInitialized", i), i.exports;
     }
-    o.te = "node", o.em = {}, o.se = function(e) {
+    l.te = "node", l.em = {}, l.se = function(e) {
         for(let t in e){
             let r = e[t];
             r && r.default && !r.__esModule && (r = {
                 ...r,
                 __esModule: !0
-            }), o.em[t] = r;
+            }), l.em[t] = r;
         }
-    }, (global.f081367f80fe14896375a9f8b8918ca3 = {}).m = o;
-    let l = {}, i = [];
-    const f = {
+    }, (global.f081367f80fe14896375a9f8b8918ca3 = {}).m = l;
+    let i = {}, f = [], a = {
         p: function(e) {
-            i = e;
+            f = e;
         },
         s: function(e, ...t) {
-            for(let r in i){
-                let n = i[r], o = n[e];
+            for(let r in f){
+                let n = f[r], o = n[e];
                 o && o.apply(n, t);
             }
         },
         b: function(e, ...t) {
-            for(let r in i){
-                let n = i[r], o = n[e];
+            for(let r in f){
+                let n = f[r], o = n[e];
                 if (o) {
                     let e = o.apply(n, t);
                     if (e) return e;
@@ -76,39 +74,37 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
             }
         }
     };
-    function a(e, t, r) {
+    function d(e, t, r) {
         Object.prototype.hasOwnProperty.call(e, t) || Object.defineProperty(e, t, {
             enumerable: !0,
             get: r
         });
     }
-    o.p = f, o.b = function() {
-        f.s("bootstrap", this);
-    };
-    const d = o.r;
-    d.o = a, d.d = function(e, t, r) {
-        a(e, t, function() {
+    l.p = a, l.b = function() {
+        a.s("bootstrap", this);
+    }, (t = l.r).o = d, t.d = function(e, t, r) {
+        d(e, t, function() {
             return r;
         });
-    }, d._m = function(e) {
+    }, t._m = function(e) {
         let t = "__esModule";
         e[t] || Object.defineProperty(e, t, {
             value: !0
         });
-    }, d.i = function(e) {
+    }, t.i = function(e) {
         return e && e.__esModule ? e : {
             default: e
         };
-    }, d.f = function(e) {
+    }, t.f = function(e) {
         return void 0 !== e.default ? e.default : e;
     }, global.f081367f80fe14896375a9f8b8918ca3.m.p.p([
         {
             name: "farm-runtime-import-meta",
             bootstrap: (e)=>{
-                l = e;
+                i = e;
             },
             moduleCreated: (e)=>{
-                let t = l.pp?.[0] || "", r = "node" === l.te;
+                let t = i.pp?.[0] || "", r = "node" === i.te;
                 e.meta.env = {
                     NODE_ENV: null,
                     BASE_URL: "/",
@@ -123,7 +119,7 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
                     SSR: r
                 };
                 for(let e in o)n[e] = o[e];
-                e.meta.url = l.m()[e.id].url;
+                e.meta.url = i.m()[e.id].url;
             }
         }
     ]);

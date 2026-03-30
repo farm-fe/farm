@@ -59,7 +59,7 @@ pub fn remove_useless_stmts(
           }
           ModuleDecl::ExportAll(export_all) => {
             if let Some((source_module_id, is_empty)) =
-              is_export_all_source_module_empty.get(&export_all.src.value.to_string())
+              is_export_all_source_module_empty.get(&export_all.src.value.to_string_lossy().into_owned())
             {
               if *is_empty {
                 modules_to_remove.push(source_module_id.clone());
@@ -105,7 +105,7 @@ fn get_export_all_source_module_is_empty(
 
   for item in meta.ast.body.iter() {
     if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) = item {
-      let source = export_all.src.value.to_string();
+      let source = export_all.src.value.to_string_lossy().into_owned();
       let source_module_id = module_graph.get_dep_by_source_optional(
         tree_shake_module_id,
         &source,

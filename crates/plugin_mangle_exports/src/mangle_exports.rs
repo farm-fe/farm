@@ -364,7 +364,7 @@ pub fn update_exports_meta_and_module_decl(
                         // rename export { hello as hello1 } from './hello'; to export { a as hello1 } from './hello';
                         if let Some(mangled_ident) = imports_to_rename.get(&(
                           named.orig.atom().to_string(),
-                          src.as_ref().unwrap().value.to_string(),
+                          src.as_ref().unwrap().value.to_string_lossy().into_owned(),
                         )) {
                           match &mut named.orig {
                             ModuleExportName::Ident(ident) => {
@@ -422,7 +422,7 @@ pub fn update_exports_meta_and_module_decl(
                         .unwrap_or(import_named_specifier.local.sym.to_string());
 
                       if let Some(mangled_ident) =
-                        imports_to_rename.get(&(imported_str, import_decl.src.value.to_string()))
+                        imports_to_rename.get(&(imported_str, import_decl.src.value.to_string_lossy().into_owned()))
                       {
                         match &mut import_named_specifier.imported {
                           Some(imported) => match imported {

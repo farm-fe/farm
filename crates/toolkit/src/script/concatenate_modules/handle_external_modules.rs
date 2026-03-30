@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use farmfe_core::{
   module::{
     meta_data::script::{
@@ -284,7 +286,7 @@ pub fn get_imported_external_ident(
             .imported
             .as_ref()
             .map(|i| i.atom())
-            .unwrap_or(&local_ident.sym);
+            .unwrap_or(Cow::Borrowed(&local_ident.sym));
 
           if let ImportSpecifierInfo::Named { local, imported } = current_specifier {
             let imported_ident = imported.as_ref().unwrap_or(local);

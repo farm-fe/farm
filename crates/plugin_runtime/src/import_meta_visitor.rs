@@ -108,7 +108,7 @@ impl VisitMut for HmrAcceptedVisitor {
             // string literal
             let resolve_result = self.context.plugin_driver.resolve(
               &PluginResolveHookParam {
-                source: s.value.to_string(),
+                source: s.value.to_string_lossy().into_owned(),
                 importer: Some(self.module_id.clone()),
                 kind: ResolveKind::Import,
               },

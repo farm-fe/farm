@@ -8,9 +8,9 @@ export function normalizeScript(
   if (resolvedCompilation.script?.plugins?.length) {
     logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v35.0.0'
+        'swc_core v59.0.1'
       )}, please make sure the plugin is ${colors.green('compatible')} with swc_core ${colors.yellow(
-        'swc_core v35.0.0'
+        'swc_core v59.0.1'
       )}. Otherwise, it may exit unexpectedly.`
     );
   }

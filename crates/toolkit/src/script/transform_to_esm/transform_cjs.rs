@@ -322,7 +322,7 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
             ..
           } = &call_expr.args[0]
           {
-            let source = str.value.to_string();
+            let source = str.value.to_string_lossy().into_owned();
 
             if let Some((_, module_system)) = self
               .cjs_require_map

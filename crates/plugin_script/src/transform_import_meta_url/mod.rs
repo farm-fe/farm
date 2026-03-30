@@ -128,7 +128,7 @@ impl<'a> ImportMetaURLVisitor<'a> {
         };
 
         match &args[0].expr {
-          box Expr::Lit(Lit::Str(str)) => str.value.to_string(),
+          box Expr::Lit(Lit::Str(str)) => str.value.to_string_lossy().into_owned(),
           box Expr::Tpl(tpl) => {
             let mut pattern_builder = String::new();
             // maybe quasis is continuous

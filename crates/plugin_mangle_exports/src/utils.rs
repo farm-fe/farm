@@ -64,7 +64,7 @@ pub fn transform_export_all_to_export_named(module_id: ModuleId, module_graph: &
       if let ModuleDecl::ExportAll(export_all) = module_decl {
         let dep_module_id = module_graph.get_dep_by_source(
           &module_id,
-          &export_all.src.value,
+          &export_all.src.value.as_str().expect("non-UTF-8 string literal"),
           Some(ResolveKind::ExportFrom),
         );
         let dep_module = module_graph.module(&dep_module_id).unwrap();
