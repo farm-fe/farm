@@ -19,8 +19,6 @@
       "!**/packages/create-farm/templates/**",
       "!**/packages/create-farm-plugin/templates/**",
       "!**/rust-plugins/**",
-      "!**/js-plugins/vue/**",
-      "!**/js-plugins/solid/**",
       "!**/examples/**",
       "!**/*.{js,mjs,cjs}",
       "!cspell.json",
@@ -117,7 +115,7 @@
       "!**/binding/**",
       "!**/templates/**",
       "!**/dist/**",
-      "!**/docs/**",
+      "!**/website/**",
       "!**/node_modules/**",
       "!**/*.config.js",
       "!**/*.config.ts"

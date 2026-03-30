@@ -1,0 +1,107 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-postcss
+Support `postcss` for Farm.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-postcss postcss</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-postcss postcss</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-postcss postcss</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+```ts {2,6}
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginPostcss({ /* options */ })
+  ]
+}
+```
+
+## Options
+```ts
+export type PostcssPluginOptions = {
+  /**
+   * @default undefined
+   * postcss-load-config options. path default to farm.config.js root.
+   */
+  postcssLoadConfig?: {
+    ctx?: postcssLoadConfig.ConfigContext;
+    path?: string;
+    options?: Parameters<typeof postcssLoadConfig>[2];
+  };
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
+  implementation?: string;
+};
+
+```
+
+### postcssLoadConfig
+Farm uses `postcss-load-config` to load `postcss` config, so you can use `postcss-load-config`'s options. Refer to [postcss-load-config](https://github.com/postcss/postcss-load-config).
+
+Example:
+```ts
+import path from 'node:path';
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginPostcss({
+      postcssLoadConfig: {
+        // load config from client/postcss.config.js
+        path: path.join(process.cwd(), 'client')
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### filters
+Which files should be processed by `postcss`. default to `{ moduleTypes: ['css'] }`.
+
+* `resolvedPaths`: Only files under these paths will be processed. Support regex.
+* `moduleTypes`: Only files with these module types will be processed. note that less/sass files should be processed by `@farmfe/js-plugin-less`/`@farmfe/plugin-sass` first. 
+
+`resolvedPaths` and `moduleTypes` are unioned, which means files match any of them will be processed.
+
+Example:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginPostcss({
+      filters: {
+        // all files end with .custom-css will be processed
+        resolvedPaths: ['\\.custom-css$'],
+        moduleTypes: ['css']
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### implementation
+`implementation` package name of `postcss`. Default to `postcss`.

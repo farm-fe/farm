@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "a5c-ai-docusaurus": {
+      "source": "smithery/ai",
+      "sourceType": "well-known",
+      "computedHash": "53de48284e7617f2c06dd4fa84f8717aa8cf13ad025e07003cf1b0c4f3bc6c65"
+    },
+    "agent-browser": {
+      "source": "vercel-labs/agent-browser",
+      "sourceType": "github",
+      "computedHash": "9757e62a964103e0b5659ccae7aab3ee893957e2c7f2a9a872851773d06efe7e"
+    },
+    "creating-changesets": {
+      "source": "saleor/configurator",
+      "sourceType": "github",
+      "computedHash": "3fe08550239d5a1ab345a6e7ed0217a34dc1ca9abbeb51fc5de25b8d67738efd"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "645b891da1edbae76ab79c7b088d4e73397464f8396edaf773c0e01971ce75d6"
+    },
+    "rust-best-practices": {
+      "source": "apollographql/skills",
+      "sourceType": "github",
+      "computedHash": "3f89cd417842ca60bffefea01ee88fc28116b75a8e69329c4d6db446fbfcad02"
+    },
+    "rust-engineer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "3bc7367d913e710bc7c37f8cc33c60507210d334e2de821db09b39647acc0f8a"
+    },
+    "self-improving-agent": {
+      "source": "charon-fan/agent-playbook",
+      "sourceType": "github",
+      "computedHash": "f52b5577f09152ab9c2577f6fd6bd4d23ba87acc884dfc3e90a551949f0d90f1"
+    }
+  }
+}
