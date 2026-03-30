@@ -43,5 +43,11 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.biome": "explicit",
     "source.organizeImports.biome": "explicit"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^Push-Location docs; pnpm build; \\$code=\\$LASTEXITCODE; Pop-Location; exit \\$code$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
 }

@@ -54,7 +54,7 @@
     "vitest": "2.0.4"
   },
   "lint-staged": {
-    "{packages,js-plugins,docs,scripts}/**/*.{ts,json,yaml,yml}": [
+    "{packages,js-plugins,website,scripts}/**/*.{ts,json,yaml,yml}": [
       "pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },
