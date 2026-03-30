@@ -55,6 +55,7 @@ const sidebars = {
         "features/script",
         "features/static",
         "features/env",
+        "features/library",
         "features/lazy-compilation",
         "features/sourcemap",
       ],
