@@ -105,9 +105,7 @@ export default function CodeBlockWrapper(props: Props): JSX.Element {
             )}
           </button>
         </div>}
-        <div className={styles['hover-button']}>
-          <div className={styles['code-content']} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
-        </div>
+        <div className={styles['code-content']} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
       </div>
     </>
   );
