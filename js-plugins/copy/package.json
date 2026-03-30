@@ -5,14 +5,14 @@
   "main": "./build/cjs/index.cjs",
   "types": "./build/esm/index.d.ts",
   "type": "module",
-  "homepage": "https://github.com/farm-fe/plugins",
+  "homepage": "https://github.com/farm-fe/farm",
   "author": "maidang1 <maidang@felixwliu.cn>",
   "bugs": {
-    "url": "https://github.com/farm-fe/plugins/issues"
+    "url": "https://github.com/farm-fe/farm/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farm-fe/plugins.git"
+    "url": "git+https://github.com/farm-fe/farm.git"
   },
   "keywords": [
     "Rust",
@@ -36,9 +36,9 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "^1.0.4",
-    "@farmfe/core": "^1.3.23",
-    "@farmfe/js-plugin-dts": "^0.6.4",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:*",
     "@types/node": "^22.7.4",
     "cross-env": "^7.0.3"
   },

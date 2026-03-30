@@ -35,7 +35,5 @@ export default defineConfig({
   server: {
     hmr: false
   },
-  plugins: [
-    farmDtsPlugin()
-  ]
+  plugins: [farmDtsPlugin()]
 });

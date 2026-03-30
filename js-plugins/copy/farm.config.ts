@@ -6,7 +6,7 @@ const ext = format === 'esm' ? 'mjs' : 'cjs';
 
 export default defineConfig({
   compilation: {
-    external: ["@farmfe/core"],
+    external: ['@farmfe/core'],
     input: {
       index: './src/index.ts'
     },
@@ -36,7 +36,5 @@ export default defineConfig({
   server: {
     hmr: false
   },
-  plugins: [
-    farmDtsPlugin()
-  ]
+  plugins: [farmDtsPlugin()]
 });

@@ -6,15 +6,15 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/plugin-tools": "latest"
+    "@farmfe/plugin-tools": "workspace:*"
   },
-  "homepage": "https://github.com/farm-fe/plugins",
+  "homepage": "https://github.com/farm-fe/farm",
   "author": {
-    "name": "苏向夜",
+    "name": "\u82cf\u5411\u591c",
     "email": "fu050409@163.com"
   },
   "bugs": {
-    "url": "https://github.com/farm-fe/plugins/issues"
+    "url": "https://github.com/farm-fe/farm/issues"
   },
   "keywords": [
     "rust",
@@ -23,7 +23,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farm-fe/plugins.git"
+    "url": "git+https://github.com/farm-fe/farm.git"
   },
   "napi": {
     "name": "farmfe_plugin_compress",

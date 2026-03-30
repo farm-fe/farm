@@ -1,25 +1,23 @@
+import type { JsPlugin } from '@farmfe/core';
 import {
   generateImports,
-  resolveVuetifyBase,
+  includes,
   isObject,
   normalizePath,
-  includes,
-  type Options as VuetifyOptions,
-} from "@vuetify/loader-shared";
-
-import path from "upath";
-
-import type { JsPlugin } from "@farmfe/core";
+  resolveVuetifyBase,
+  type Options as VuetifyOptions
+} from '@vuetify/loader-shared';
+import path from 'upath';
 
 interface Options extends VuetifyOptions {}
 
 function isSubdir(root: string, test: string) {
   const relative = path.relative(root, test);
-  return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+  return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
 }
 
-const PLUGIN_VIRTUAL_PREFIX = "virtual:";
-const PLUGIN_VIRTUAL_NAME = "plugin-vuetify";
+const PLUGIN_VIRTUAL_PREFIX = 'virtual:';
+const PLUGIN_VIRTUAL_NAME = 'plugin-vuetify';
 const VIRTUAL_MODULE_ID = `${PLUGIN_VIRTUAL_PREFIX}${PLUGIN_VIRTUAL_NAME}`;
 
 export default function farmPlugin(_options?: Options): JsPlugin[] {
@@ -35,7 +33,7 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
   const tempFiles = new Map();
 
   const importPlugin: JsPlugin = {
-    name: "js-plugin:vuetify:import",
+    name: 'js-plugin:vuetify:import',
     priority: 40,
 
     configResolved(config) {
@@ -43,18 +41,18 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
 
       const vuePlugin = vitePlugins.find(
         (plugin: JsPlugin) =>
-          plugin.name === "unplugin-vue" || plugin.name === "vite:vue",
+          plugin.name === 'unplugin-vue' || plugin.name === 'vite:vue'
       );
 
       if (!vuePlugin) {
         throw new Error(
-          "No Vue plugin found, please install either @vitejs/plugin-vue nor unplugin-vue.",
+          'No Vue plugin found, please install either @vitejs/plugin-vue nor unplugin-vue.'
         );
       }
 
       const vueOptions = vuePlugin.api.options;
       if (vueOptions === undefined) {
-        throw new Error("Vue plugin options not found.");
+        throw new Error('Vue plugin options not found.');
       }
 
       include = vueOptions.include || /\.vue$/;
@@ -62,12 +60,12 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
     },
     transform: {
       filters: {
-        resolvedPaths: ["\\.vue$"],
+        resolvedPaths: ['\\.vue$']
       },
       async executor(param) {
         const { content, query, resolvedPath } = param;
         const isVueVirtual =
-          query && query.find(([key, _value]) => key === "vue") !== undefined;
+          query && query.find(([key, _value]) => key === 'vue') !== undefined;
         const isVueFile =
           !isVueVirtual &&
           include.test(resolvedPath) &&
@@ -77,24 +75,24 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
           isVueVirtual &&
           query.find(([key, value]) => {
             const matchType =
-              key === "type" && (value === "template" || value === "script");
-            const matchSetup = key === "setup" && value === "true";
+              key === 'type' && (value === 'template' || value === 'script');
+            const matchSetup = key === 'setup' && value === 'true';
             return matchType || matchSetup;
           });
         if (isVueFile || isVueTemplate) {
           const { code: imports, source } = generateImports(content, options);
           return {
             content: source + imports,
-            sourceMap: null,
+            sourceMap: null
           };
         }
         return null;
-      },
-    },
+      }
+    }
   };
 
   const stylesPlugin: JsPlugin = {
-    name: "js-plugin:vuetify:styles",
+    name: 'js-plugin:vuetify:styles',
     priority: 120,
 
     configResolved(config) {
@@ -104,39 +102,39 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
         } else {
           configFile = path.join(
             config.root || process.cwd(),
-            options.styles.configFile,
+            options.styles.configFile
           );
         }
       }
     },
     resolve: {
       filters: {
-        importers: [".*"],
-        sources: ["\\.css$", "vuetify/styles"],
+        importers: ['.*'],
+        sources: ['\\.css$', 'vuetify/styles']
       },
       async executor(param) {
         const { source, importer } = param;
 
         if (
-          source === "vuetify/styles" ||
+          source === 'vuetify/styles' ||
           (importer &&
-            source.endsWith(".css") &&
+            source.endsWith('.css') &&
             isSubdir(vuetifyBase, path.isAbsolute(source) ? source : importer))
         ) {
-          if (options.styles === "none") {
+          if (options.styles === 'none') {
             return { resolvedPath: `${PLUGIN_VIRTUAL_PREFIX}__void__` };
           }
-          if (options.styles === "sass") {
-            const target = source.replace(/\.css$/, ".sass");
+          if (options.styles === 'sass') {
+            const target = source.replace(/\.css$/, '.sass');
             return {
-              resolvedPath: target,
+              resolvedPath: target
             };
           }
           if (isObject(options.styles)) {
             // Vite port plugin resolves the file manually by calling `this.resolve`,
             // this is a workaround and may not work properly.
-            const target = source.replace(/\.css$/, ".sass");
-            const file = path.relative(path.join(vuetifyBase, "lib"), target);
+            const target = source.replace(/\.css$/, '.sass');
+            const file = path.relative(path.join(vuetifyBase, 'lib'), target);
             const contents = `@use "${normalizePath(configFile)};\n@use "${normalizePath(target)}";`;
             tempFiles.set(file, contents);
             return { resolvedPath: `${VIRTUAL_MODULE_ID}:${file}` };
@@ -150,40 +148,40 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
         }
 
         return null;
-      },
+      }
     },
     load: {
       filters: {
-        resolvedPaths: [`^${PLUGIN_VIRTUAL_PREFIX}`, `^${VIRTUAL_MODULE_ID}`],
+        resolvedPaths: [`^${PLUGIN_VIRTUAL_PREFIX}`, `^${VIRTUAL_MODULE_ID}`]
       },
       async executor(param) {
         const id = param.moduleId;
         if (new RegExp(`^${PLUGIN_VIRTUAL_PREFIX}__void__(\\?.*)?$`).test(id)) {
           return {
-            content: "",
-            moduleType: "css",
+            content: '',
+            moduleType: 'css'
           };
         }
         if (id.startsWith(`${VIRTUAL_MODULE_ID}`)) {
           const content = tempFiles.get(
-            new RegExp(`^${VIRTUAL_MODULE_ID}:(.*?)(\\?.*)?$`).exec(id)[1],
+            new RegExp(`^${VIRTUAL_MODULE_ID}:(.*?)(\\?.*)?$`).exec(id)[1]
           );
-          return content ? { content, moduleType: "css" } : null;
+          return content ? { content, moduleType: 'css' } : null;
         }
         return null;
-      },
-    },
+      }
+    }
   };
 
   const plugins = [];
   if (options.autoImport) {
     plugins.push(importPlugin);
   }
-  if (includes(["none", "sass"], options.styles) || isObject(options.styles)) {
+  if (includes(['none', 'sass'], options.styles) || isObject(options.styles)) {
     plugins.push(stylesPlugin);
   }
 
   return plugins;
 }
 
-export { transformAssetUrls } from "@vuetify/loader-shared";
+export { transformAssetUrls } from '@vuetify/loader-shared';

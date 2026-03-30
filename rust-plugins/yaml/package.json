@@ -6,14 +6,14 @@
   "types": "scripts/index.d.ts",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://github.com/farm-fe/plugins",
+  "homepage": "https://github.com/farm-fe/farm",
   "author": "maidang1 <maidang@felixwliu.cn>",
   "bugs": {
-    "url": "https://github.com/farm-fe/plugins/issues"
+    "url": "https://github.com/farm-fe/farm/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farm-fe/plugins.git"
+    "url": "git+https://github.com/farm-fe/farm.git"
   },
   "keywords": [
     "Rust",
@@ -50,5 +50,8 @@
   },
   "files": [
     "scripts"
-  ]
+  ],
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  }
 }

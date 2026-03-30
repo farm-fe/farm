@@ -5,14 +5,14 @@
   "types": "scripts/index.d.ts",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://github.com/farm-fe/plugins",
+  "homepage": "https://github.com/farm-fe/farm",
   "author": "CCherry07 <2405693142@qq.com>",
   "bugs": {
-    "url": "https://github.com/farm-fe/plugins/issues"
+    "url": "https://github.com/farm-fe/farm/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/farm-fe/plugins.git"
+    "url": "git+https://github.com/farm-fe/farm.git"
   },
   "keywords": [
     "rust",
@@ -20,7 +20,7 @@
     "farmfe"
   ],
   "devDependencies": {
-    "@farmfe/plugin-tools": "latest"
+    "@farmfe/plugin-tools": "workspace:*"
   },
   "napi": {
     "name": "farmfe_plugin_icons",

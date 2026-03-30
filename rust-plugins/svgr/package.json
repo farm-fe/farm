@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/plugin-tools": "latest"
+    "@farmfe/plugin-tools": "workspace:*"
   },
   "napi": {
     "name": "farm_plugin_svgr",
@@ -39,5 +39,13 @@
   "files": [
     "scripts",
     "options.d.ts"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/farm.git"
+  },
+  "homepage": "https://github.com/farm-fe/farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  }
 }
