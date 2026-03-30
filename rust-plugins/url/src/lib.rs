@@ -72,7 +72,7 @@ impl FarmfePluginUrl {
       r".*\.gif$",
       r".*\.webp$",
     ]
-    .map(|o| ConfigRegex::new(o))
+    .map(ConfigRegex::new)
     .to_vec();
     if options.include.is_none() {
       options.include = Some(include);
@@ -94,8 +94,8 @@ impl Plugin for FarmfePluginUrl {
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let options: Options = self.options.clone();
-    let include = options.include.unwrap_or(vec![]);
-    let exclude = options.exclude.unwrap_or(vec![]);
+    let include = options.include.unwrap_or_default();
+    let exclude = options.exclude.unwrap_or_default();
 
     let filter = PathFilter::new(&include, &exclude);
     if !filter.execute(&param.module_id) {
@@ -103,7 +103,7 @@ impl Plugin for FarmfePluginUrl {
     }
     let mut res = String::new();
     let limit = options.limit.unwrap_or(14 * 1024);
-    let raw_bytes = read_file_raw(param.resolved_path).unwrap_or(vec![]);
+    let raw_bytes = read_file_raw(param.resolved_path).unwrap_or_default();
     let public_path = options.public_path.unwrap_or("".to_string());
     if get_file_size(param.resolved_path) > limit {
       let file_path = Path::new(param.resolved_path);
@@ -149,14 +149,14 @@ impl Plugin for FarmfePluginUrl {
         copies.insert(param.resolved_path.to_owned(), output_file_name);
       }
     } else {
-      let mime_type = from_path(&param.resolved_path).first_or_octet_stream();
+      let mime_type = from_path(param.resolved_path).first_or_octet_stream();
       if mime_type.type_() == IMAGE {
         let file_base64 = general_purpose::STANDARD.encode(raw_bytes);
-        res = format!("data:{};base64,{}", mime_type.to_string(), file_base64);
+        res = format!("data:{mime_type};base64,{file_base64}");
       }
     }
     Ok(Some(PluginLoadHookResult {
-      content: format!("export default \"{}\"", res),
+      content: format!("export default \"{res}\""),
       module_type: ModuleType::Js,
       source_map: None,
     }))
@@ -167,15 +167,13 @@ impl Plugin for FarmfePluginUrl {
     _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParam,
     context: &Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if matches!(context.config.mode, Mode::Production) {
-      if self.options.emit_files.unwrap_or(false) {
-        let copies = self.copies.lock().unwrap();
-        let dest_dir = &self.options.dest_dir.clone().unwrap_or("".to_string());
-        let base_dir = Path::new(dest_dir);
-        for (key, value) in copies.iter() {
-          let base_dir = base_dir.join(Path::new(value));
-          let _ = copy_file(key, base_dir);
-        }
+    if matches!(context.config.mode, Mode::Production) && self.options.emit_files.unwrap_or(false) {
+      let copies = self.copies.lock().unwrap();
+      let dest_dir = &self.options.dest_dir.clone().unwrap_or("".to_string());
+      let base_dir = Path::new(dest_dir);
+      for (key, value) in copies.iter() {
+        let base_dir = base_dir.join(Path::new(value));
+        let _ = copy_file(key, base_dir);
       }
     }
     Ok(None)

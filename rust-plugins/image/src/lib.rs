@@ -43,27 +43,26 @@ impl Plugin for FarmfePluginImage {
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     let options: Options = self.options.clone();
-    let include = options.include.unwrap_or(vec![]);
-    let exclude = options.exclude.unwrap_or(vec![]);
+    let include = options.include.unwrap_or_default();
+    let exclude = options.exclude.unwrap_or_default();
     let filter = PathFilter::new(&include, &exclude);
     if !filter.execute(&param.module_id) {
       return Ok(None);
     }
-    let mime_type = from_path(&param.resolved_path).first_or_octet_stream();
+    let mime_type = from_path(param.resolved_path).first_or_octet_stream();
     if mime_type.type_() == IMAGE {
       let dom = options.dom.unwrap_or(false);
       let file_base64 =
-        general_purpose::STANDARD.encode(read_file_raw(param.resolved_path).unwrap_or(vec![]));
-      let data_uri = format!("data:{};base64,{}", mime_type.to_string(), file_base64);
+        general_purpose::STANDARD.encode(read_file_raw(param.resolved_path).unwrap_or_default());
+      let data_uri = format!("data:{mime_type};base64,{file_base64}");
       let content = if dom {
         format!(
           "var img = new Image();
-          img.src = \"{}\";
-          export default img;",
-          data_uri
+          img.src = \"{data_uri}\";
+          export default img;"
         )
       } else {
-        format!("export default \"{}\"", data_uri)
+        format!("export default \"{data_uri}\"")
       };
       return Ok(Some(PluginLoadHookResult {
         content,

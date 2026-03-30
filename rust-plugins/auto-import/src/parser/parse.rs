@@ -95,70 +95,70 @@ impl ExportsVisitor {
 impl Visit for ImportsVisitor {
   fn visit_module_decl(&mut self, n: &ModuleDecl) {
     if let ModuleDecl::Import(import) = n {
-        let mut named_imports = HashMap::new();
-        let mut type_named_imports = HashMap::new();
-        for specifier in &import.specifiers {
-          match specifier {
-            ImportSpecifier::Named(named) => {
-              let imported_name = named
-                .imported
-                .as_ref()
-                .map(|ident| ident.atom().to_string())
-                .unwrap_or(named.local.sym.to_string());
-              if !named.is_type_only {
-                type_named_imports.insert(named.local.sym.to_string(), imported_name);
-              } else {
-                named_imports.insert(named.local.sym.to_string(), imported_name);
-              }
-            }
-            ImportSpecifier::Default(default) => {
-              let default_name = default.local.sym.to_string();
-              self.imports.push(ESMImport {
-                import_type: ImportType::Named,
-                specifier: import.src.value.to_string(),
-                default_import: Some(default_name.clone()),
-                namespaced_import: None,
-                named_imports: None,
-                type_named_imports: None,
-                span: import.span,
-              });
-            }
-            ImportSpecifier::Namespace(namespace) => {
-              let namespace_name = namespace.local.sym.to_string();
-              self.imports.push(ESMImport {
-                import_type: ImportType::Namespace,
-                specifier: import.src.value.to_string(),
-                namespaced_import: Some(namespace_name.clone()),
-                default_import: None,
-                named_imports: None,
-                type_named_imports: None,
-                span: import.span,
-              });
+      let mut named_imports = HashMap::new();
+      let mut type_named_imports = HashMap::new();
+      for specifier in &import.specifiers {
+        match specifier {
+          ImportSpecifier::Named(named) => {
+            let imported_name = named
+              .imported
+              .as_ref()
+              .map(|ident| ident.atom().to_string())
+              .unwrap_or(named.local.sym.to_string());
+            if !named.is_type_only {
+              type_named_imports.insert(named.local.sym.to_string(), imported_name);
+            } else {
+              named_imports.insert(named.local.sym.to_string(), imported_name);
             }
           }
+          ImportSpecifier::Default(default) => {
+            let default_name = default.local.sym.to_string();
+            self.imports.push(ESMImport {
+              import_type: ImportType::Named,
+              specifier: import.src.value.to_string(),
+              default_import: Some(default_name.clone()),
+              namespaced_import: None,
+              named_imports: None,
+              type_named_imports: None,
+              span: import.span,
+            });
+          }
+          ImportSpecifier::Namespace(namespace) => {
+            let namespace_name = namespace.local.sym.to_string();
+            self.imports.push(ESMImport {
+              import_type: ImportType::Namespace,
+              specifier: import.src.value.to_string(),
+              namespaced_import: Some(namespace_name.clone()),
+              default_import: None,
+              named_imports: None,
+              type_named_imports: None,
+              span: import.span,
+            });
+          }
         }
-        if !named_imports.is_empty() {
-          self.imports.push(ESMImport {
-            import_type: ImportType::Named,
-            specifier: import.src.value.to_string(),
-            default_import: None,
-            namespaced_import: None,
-            type_named_imports: None,
-            named_imports: Some(named_imports),
-            span: import.span,
-          });
-        }
-        if !type_named_imports.is_empty() {
-          self.imports.push(ESMImport {
-            import_type: ImportType::Type,
-            specifier: import.src.value.to_string(),
-            default_import: None,
-            namespaced_import: None,
-            type_named_imports: Some(type_named_imports),
-            named_imports: None,
-            span: import.span,
-          });
-        }
+      }
+      if !named_imports.is_empty() {
+        self.imports.push(ESMImport {
+          import_type: ImportType::Named,
+          specifier: import.src.value.to_string(),
+          default_import: None,
+          namespaced_import: None,
+          type_named_imports: None,
+          named_imports: Some(named_imports),
+          span: import.span,
+        });
+      }
+      if !type_named_imports.is_empty() {
+        self.imports.push(ESMImport {
+          import_type: ImportType::Type,
+          specifier: import.src.value.to_string(),
+          default_import: None,
+          namespaced_import: None,
+          type_named_imports: Some(type_named_imports),
+          named_imports: None,
+          span: import.span,
+        });
+      }
     }
   }
 }
@@ -389,8 +389,7 @@ pub fn parse_esm_imports_exports(
   let content = if let Some(c) = content {
     c
   } else {
-    &fs::read_to_string(file_path)
-      .unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
+    &fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
   };
   let content = Arc::new(content.to_string());
   let ParseScriptModuleResult { ast, .. } = match parse_module(
@@ -425,8 +424,7 @@ pub fn parse_esm_imports(file_path: Option<&str>, content: Option<&str>) -> Vec<
   let content = if let Some(c) = content {
     c
   } else {
-    &fs::read_to_string(file_path)
-      .unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
+    &fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
   };
   let content = Arc::new(content.to_string());
   let ParseScriptModuleResult { ast, .. } = match parse_module(
@@ -461,8 +459,7 @@ pub fn parse_esm_exports(file_path: Option<&str>, content: Option<&str>) -> Vec<
   let content = if let Some(c) = content {
     c
   } else {
-    &fs::read_to_string(file_path)
-      .unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
+    &fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
   };
   let content = Arc::new(content.to_string());
   let ParseScriptModuleResult { ast, .. } = match parse_module(

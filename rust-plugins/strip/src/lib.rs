@@ -69,30 +69,24 @@ impl Plugin for FarmPulginStrip {
       return Ok(None);
     }
     let options = self.options.clone();
-    let include = options.include.unwrap_or(vec![]);
+    let include = options.include.unwrap_or_default();
     let exclude = options
       .exclude
       .unwrap_or_else(|| vec![ConfigRegex::new("node_modules/.*")]);
     let filter = PathFilter::new(&include, &exclude);
-    if !filter.execute(&param.resolved_path) {
+    if !filter.execute(param.resolved_path) {
       return Ok(None);
     }
 
-    let source_map = match options.source_map {
-      Some(s) => s != false,
-      None => false,
-    };
+    let source_map = options.source_map.unwrap_or_default();
 
-    let remove_debugger_statements = match options.debugger {
-      Some(s) => s != false,
-      None => false,
-    };
+    let remove_debugger_statements = options.debugger.unwrap_or_default();
 
-    let labels = options.labels.unwrap_or(vec![]);
+    let labels = options.labels.unwrap_or_default();
 
-    let functions: Vec<String> = options.functions.unwrap_or(vec![]);
+    let functions: Vec<String> = options.functions.unwrap_or_default();
 
-    let mut labels_patterns: Vec<String> = labels.iter().map(|l| format!(r"{}\s*:", l)).collect();
+    let mut labels_patterns: Vec<String> = labels.iter().map(|l| format!(r"{l}\s*:")).collect();
     let mut first_pass = functions.clone();
     first_pass.append(&mut labels_patterns);
     if remove_debugger_statements {
@@ -128,7 +122,7 @@ impl Plugin for FarmPulginStrip {
     ) {
       Ok(res) => res,
       Err(err) => {
-        println!("{}", err.to_string());
+        println!("{err}");
         panic!("Parse {} failed. See error details above.", param.module_id);
       }
     };
@@ -214,13 +208,15 @@ impl VisitMut for StripCode {
   }
 
   fn visit_mut_expr(&mut self, e: &mut Expr) {
-    if let Expr::Call(CallExpr { callee, .. }) = e {
-      if let Callee::Expr(callee_expr) = callee {
-        if let Some(flatten_callee) = flatten(&callee_expr) {
-          if self.re_functions_regex.is_match(&flatten_callee) {
-            *e = *void_expr();
-            return;
-          }
+    if let Expr::Call(CallExpr {
+      callee: Callee::Expr(callee_expr),
+      ..
+    }) = e
+    {
+      if let Some(flatten_callee) = flatten(callee_expr) {
+        if self.re_functions_regex.is_match(&flatten_callee) {
+          *e = *void_expr();
+          return;
         }
       }
     }
@@ -271,13 +267,13 @@ fn flatten(expr: &Expr) -> Option<String> {
 fn create_regex_from_list(functions: &[String]) -> Result<Regex, Box<dyn Error>> {
   let patterns: Vec<&str> = functions.iter().map(AsRef::as_ref).collect();
   let joined_patterns = patterns.join("|");
-  let regex = Regex::new(&format!("^(?:{})$", joined_patterns))?;
+  let regex = Regex::new(&format!("^(?:{joined_patterns})$"))?;
   Ok(regex)
 }
 
 fn create_first_pass_regex(first_pass: &[String]) -> Result<Regex, Box<dyn Error>> {
   let patterns: Vec<&str> = first_pass.iter().map(AsRef::as_ref).collect();
   let joined_patterns = patterns.join("|");
-  let regex = Regex::new(&format!(r"\b(?:{})", joined_patterns))?;
+  let regex = Regex::new(&format!(r"\b(?:{joined_patterns})"))?;
   Ok(regex)
 }

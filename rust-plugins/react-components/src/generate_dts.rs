@@ -21,10 +21,7 @@ pub fn remove_tsx_jsx_suffix(s: &str) -> String {
 }
 
 pub fn stringify_resolver(item: &ComponentInfo) -> String {
-  let is_export_component = match item.export_type {
-    ExportType::Named => true,
-    _ => false,
-  };
+  let is_export_component = matches!(item.export_type, ExportType::Named);
   let mut target = "default";
   if is_export_component {
     target = &item.original_name;
@@ -38,10 +35,7 @@ pub fn stringify_resolver(item: &ComponentInfo) -> String {
 pub fn stringify_component(dts_file_path: &str, item: &ComponentInfo) -> String {
   let related = format!("./{}", relative(dts_file_path, &item.path));
   let import_path = remove_tsx_jsx_suffix(&related);
-  let is_export_component = match item.export_type {
-    ExportType::Named => true,
-    _ => false,
-  };
+  let is_export_component = matches!(item.export_type, ExportType::Named);
   let mut target = "default";
   if is_export_component {
     target = &item.name;
@@ -75,11 +69,11 @@ pub fn generate_dts(option: GenerateDtsOption) {
       .join(""),
   );
 
-  code.push_str("}");
+  code.push('}');
 
   let file = create_file(dts_output).unwrap();
   let mut writer = BufWriter::new(file);
-  writeln!(writer, "{}", code).unwrap();
+  writeln!(writer, "{code}").unwrap();
   writer.flush().unwrap();
 }
 
@@ -103,7 +97,7 @@ mod tests {
     let root_path = binding.to_str().unwrap();
     let components = find_local_components(root_path, vec![]);
     let resolvers = [];
-    let resolvers_components = get_resolvers_result(&root_path, resolvers.to_vec());
+    let resolvers_components = get_resolvers_result(root_path, resolvers.to_vec());
     let generate_dts_option = GenerateDtsOption {
       components: &components.iter().collect::<Vec<_>>(),
       resolvers_components: &resolvers_components.iter().collect::<Vec<_>>(),

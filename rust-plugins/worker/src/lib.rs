@@ -89,8 +89,8 @@ fn build_worker(
   compiler.compile().unwrap();
   let resources_map = compiler.context().resources_map.lock();
   let resource = resources_map.get(&full_file_name).unwrap();
-  let content_bytes = resource.bytes.clone();
-  content_bytes
+
+  resource.bytes.clone()
 }
 
 fn emit_worker_file(
@@ -116,14 +116,14 @@ fn get_worker_url(
   let file_name_ext = Path::new(resolved_path)
     .file_name()
     .map(|x| x.to_string_lossy().to_string())
-    .unwrap_or_else(|| "".to_string());
+    .unwrap_or_default();
   let (file_name, ext) = file_name_ext.split_once(".").unwrap();
   let assets_filename_config = compiler_config.output.assets_filename.clone();
   let transform_output_file_name_params = TransformOutputFileNameParams {
     filename_config: assets_filename_config,
     name: file_name,
     name_hash: "",
-    bytes: &module_id.as_bytes(),
+    bytes: module_id.as_bytes(),
     ext,
     special_placeholders: &Default::default(),
   };
@@ -137,9 +137,9 @@ fn get_worker_url(
   };
   let worker_url = if !compiler_config.output.public_path.is_empty() {
     let normalized_public_path = compiler_config.output.public_path.trim_end_matches("/");
-    format!("{}/{}", normalized_public_path, file_name)
+    format!("{normalized_public_path}/{file_name}")
   } else {
-    format!("/{}", file_name)
+    format!("/{file_name}")
   };
   (worker_url, file_name)
 }
@@ -169,22 +169,22 @@ fn process_worker(param: ProcessWorkerParam) -> String {
   } = param;
 
   let (worker_url, file_name) = get_worker_url(resolved_path, module_id, compiler_config);
-  let content_bytes = build_worker(resolved_path, module_id, &compiler_config, &host_config);
+  let content_bytes = build_worker(resolved_path, module_id, compiler_config, host_config);
 
   if worker_cache.get(&file_name).is_none() {
-    let content_bytes = insert_worker_cache(&worker_cache, file_name.to_string(), content_bytes);
+    let content_bytes = insert_worker_cache(worker_cache, file_name.to_string(), content_bytes);
     emit_worker_file(module_id, &file_name, content_bytes, context);
   } else {
     let catch_content_bytes = worker_cache.get(&file_name).unwrap();
     if content_bytes != catch_content_bytes {
-      let content_bytes = insert_worker_cache(&worker_cache, file_name.to_string(), content_bytes);
+      let content_bytes = insert_worker_cache(worker_cache, file_name.to_string(), content_bytes);
       emit_worker_file(module_id, &file_name, content_bytes, context);
     }
   }
 
   let worker_match = JsRegex::new(WORKER_OR_SHARED_WORKER_RE)
     .unwrap()
-    .find(&param.module_id);
+    .find(param.module_id);
   let worker_constructor = &module_id[worker_match.unwrap().group(1).unwrap()];
 
   let worker_constructor = match worker_constructor {
@@ -205,20 +205,19 @@ fn process_worker(param: ProcessWorkerParam) -> String {
     "module" => "{type: 'module', name: options?.name}",
     _ => "{name: options?.name}",
   };
-  if is_build {
-    if is_inline {
-      let content_bytes = worker_cache.get(resolved_path).unwrap();
-      let content_base64 = general_purpose::STANDARD.encode(content_bytes);
-      let content_base64_code = format!(r#"const encodedJs = "{}";"#, content_base64);
-      let code = if worker_constructor == "Worker" {
-        let blob_url = if worker_type == "classic" {
-          String::from("")
-        } else {
-          String::from("'URL.revokeObjectURL(import.meta.url);',")
-        };
+  if is_build && is_inline {
+    let content_bytes = worker_cache.get(resolved_path).unwrap();
+    let content_base64 = general_purpose::STANDARD.encode(content_bytes);
+    let content_base64_code = format!(r#"const encodedJs = "{content_base64}";"#);
+    let code = if worker_constructor == "Worker" {
+      let blob_url = if worker_type == "classic" {
+        String::from("")
+      } else {
+        String::from("'URL.revokeObjectURL(import.meta.url);',")
+      };
 
-        format!(
-          r#"{0}
+      format!(
+        r#"{0}
             const decodeBase64 = (base64) => Uint8Array.from(atob(base64), c => c.charCodeAt(0));
             const blob = typeof self !== "undefined" && self.Blob && new Blob([{1}decodeBase64(encodedJs)], {{ type: "text/javascript;charset=utf-8" }});
             export default function WorkerWrapper(options) {{
@@ -238,49 +237,46 @@ fn process_worker(param: ProcessWorkerParam) -> String {
                 );
               }}{4}
             }}"#,
-          content_base64_code,
-          blob_url,
-          worker_constructor,
-          worker_type_option,
-          if worker_type == "classic" {
-            String::from(
-              r#" finally {
+        content_base64_code,
+        blob_url,
+        worker_constructor,
+        worker_type_option,
+        if worker_type == "classic" {
+          String::from(
+            r#" finally {
                       objURL && (self.URL || self.webkitURL).revokeObjectURL(objURL);
                     }"#,
-            )
-          } else {
-            String::from("")
-          }
-        )
-      } else {
-        format!(
-          r#"{0}
+          )
+        } else {
+          String::from("")
+        }
+      )
+    } else {
+      format!(
+        r#"{content_base64_code}
             export default function WorkerWrapper(options) {{
-              return new {1}(
+              return new {worker_constructor}(
                 "data:text/javascript;base64," + encodedJs,
-                {2}
+                {worker_type_option}
               );
-            }}"#,
-          content_base64_code, worker_constructor, worker_type_option
-        )
-      };
-      return code;
-    }
+            }}"#
+      )
+    };
+    return code;
   }
   if is_url {
-    return format!(r#"export default "{}""#, worker_url);
+    return format!(r#"export default "{worker_url}""#);
   }
 
-  return format!(
+  format!(
     r#"
       export default function WorkerWrapper(options) {{
-        return new {0}(
-          "{1}",
-          {2}
+        return new {worker_constructor}(
+          "{worker_url}",
+          {worker_type_option}
         );
-      }}"#,
-    worker_constructor, worker_url, worker_type_option
-  );
+      }}"#
+  )
 }
 
 fn insert_worker_cache(worker_cache: &WorkerCache, key: String, content_bytes: Vec<u8>) -> Vec<u8> {
@@ -372,7 +368,7 @@ impl Plugin for FarmfePluginWorker {
         source_map: None,
       }));
     }
-    return Ok(None);
+    Ok(None)
   }
 
   fn transform(
@@ -437,11 +433,11 @@ impl Plugin for FarmfePluginWorker {
       }
     });
     content.push_str(&param.content[last_end..]);
-    return Ok(Some(PluginTransformHookResult {
+    Ok(Some(PluginTransformHookResult {
       content,
       module_type: Some(param.module_type.clone()),
       ..Default::default()
-    }));
+    }))
   }
 
   fn plugin_cache_loaded(

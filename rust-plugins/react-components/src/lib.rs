@@ -122,8 +122,8 @@ pub struct FarmPluginReactComponents {
 impl FarmPluginReactComponents {
   pub fn new(config: &Config, options: String) -> Self {
     let options: Options = serde_json::from_str(&options).unwrap();
-    let resolvers = options.resolvers.clone().unwrap_or(vec![]);
-    let dirs = options.dirs.clone().unwrap_or(vec![]);
+    let resolvers = options.resolvers.clone().unwrap_or_default();
+    let dirs = options.dirs.clone().unwrap_or_default();
     let root_path = config.root.clone();
     let components = Arc::new(Mutex::new(HashSet::new()));
     finish_components(FinishComponentsParams {
@@ -155,8 +155,8 @@ impl Plugin for FarmPluginReactComponents {
       return Ok(None);
     }
     let options = self.options.clone();
-    let include = options.include.unwrap_or(vec![]);
-    let exclude = options.exclude.unwrap_or(vec![]);
+    let include = options.include.unwrap_or_default();
+    let exclude = options.exclude.unwrap_or_default();
     let filter = PathFilter::new(&include, &exclude);
     if !filter.execute(&param.module_id) {
       return Ok(None);
@@ -175,11 +175,11 @@ impl Plugin for FarmPluginReactComponents {
         no_early_errors: true,
         disallow_ambiguous_jsx_like: true,
       }),
-      context.config.script.target.clone(),
+      context.config.script.target,
     ) {
       Ok(res) => res,
       Err(err) => {
-        println!("{}", err.to_string());
+        println!("{err}");
         panic!("Parse {} failed. See error details above.", param.module_id);
       }
     };
@@ -227,8 +227,8 @@ impl Plugin for FarmPluginReactComponents {
     &self,
     context: &Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let resolvers = self.options.resolvers.clone().unwrap_or(vec![]);
-    let dirs = self.options.dirs.clone().unwrap_or(vec![]);
+    let resolvers = self.options.resolvers.clone().unwrap_or_default();
+    let dirs = self.options.dirs.clone().unwrap_or_default();
     let root_path = context.config.root.clone();
     finish_components(FinishComponentsParams {
       root_path: normalize_path(&root_path),
