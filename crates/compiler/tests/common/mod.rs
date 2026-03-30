@@ -632,7 +632,9 @@ fn collect_files_recursive(dir: &Path, base: &Path, result: &mut Vec<(String, St
       collect_files_recursive(&path, base, result);
     } else {
       let relative = path.strip_prefix(base).unwrap();
-      let name = relative.to_string_lossy().to_string();
+      // Normalize path separators to forward slashes for cross-platform consistency.
+      // Resource names always use '/' but Windows file paths use '\'.
+      let name = relative.to_string_lossy().replace('\\', "/");
       let content = fs::read_to_string(&path).unwrap_or_default();
       result.push((name, content));
     }

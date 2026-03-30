@@ -62,19 +62,14 @@ pub struct FarmPluginLibrary {
   export_namespace_modules: Mutex<HashSet<ModuleId>>,
   cjs_require_map: Mutex<HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>>,
 
-  library_bundle_type: LibraryBundleType,
-
   runtime_module_helper_ast: Mutex<Option<Module>>,
   all_used_helper_idents: Mutex<HashSet<String>>,
   should_add_farm_node_require: Mutex<bool>,
 }
 
 impl FarmPluginLibrary {
-  pub fn new(config: &Config) -> Self {
-    Self {
-      library_bundle_type: config.output.library_bundle_type,
-      ..Self::default()
-    }
+  pub fn new(_config: &Config) -> Self {
+    Self::default()
   }
 }
 

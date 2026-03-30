@@ -333,7 +333,7 @@ fn replace_bundle_placeholders(resource: &mut Resource, module_to_resource: &Has
 
   let mut new_content = content.to_string();
   for (module_id, target_resource_name) in module_to_resource {
-    let placeholder = format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id);
+    let placeholder = format!("{FARM_BUNDLE_PLACEHOLDER_PREFIX}{module_id}");
     if new_content.contains(&placeholder) {
       let relative = compute_relative_path(&resource.name, target_resource_name);
       new_content = new_content.replace(&placeholder, &relative);
