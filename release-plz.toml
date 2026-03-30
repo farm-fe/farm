@@ -26,6 +26,66 @@ release = false
 name = "farmfe_plugin_replace_dirname"
 release = false
 
+[[package]]
+name = "farmfe_plugin_auto_import"
+release = false
+
+[[package]]
+name = "farmfe_plugin_compress"
+release = false
+
+[[package]]
+name = "farmfe_plugin_dsv"
+release = false
+
+[[package]]
+name = "farmfe_plugin_icons"
+release = false
+
+[[package]]
+name = "farmfe_plugin_image"
+release = false
+
+[[package]]
+name = "farmfe_plugin_mdx"
+release = false
+
+[[package]]
+name = "farmfe_plugin_modular_import"
+release = false
+
+[[package]]
+name = "farmfe_plugin_react_components"
+release = false
+
+[[package]]
+name = "farmfe_plugin_strip"
+release = false
+
+[[package]]
+name = "farm_plugin_svgr"
+release = false
+
+[[package]]
+name = "farmfe_plugin_url"
+release = false
+
+[[package]]
+name = "farmfe_plugin_virtual"
+release = false
+
+[[package]]
+name = "farmfe_plugin_wasm"
+release = false
+
+[[package]]
+name = "farmfe_plugin_worker"
+release = false
+
+[[package]]
+name = "farmfe_plugin_yaml"
+release = false
+
 
 [[package]]
 name = "farmfe_utils"
