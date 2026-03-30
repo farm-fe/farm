@@ -197,7 +197,7 @@ impl VisitMut for ImportPathRewriter {
         )
         .unwrap();
         let resolved = self.resolver.resolve(
-          src.value.as_str(),
+          src.value.as_str().expect("non-UTF-8 string literal"),
           PathBuf::from(self.config.root.clone()),
           &ResolveKind::Import,
           &ResolveOptions::default(),

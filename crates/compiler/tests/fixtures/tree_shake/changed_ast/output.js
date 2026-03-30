@@ -44,7 +44,8 @@ initModuleSystem$2(__farm_internal_module_system__);
                         fileName: "comp.tsx",
                         lineNumber: 8,
                         columnNumber: 30
-                    }
+                    },
+                    __self: this
                 }, "Loading..."),
                 __source: {
                     fileName: "comp.tsx",

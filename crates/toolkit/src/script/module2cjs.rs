@@ -411,7 +411,7 @@ fn transform_import_decl(
   }
 
   // 1. push var val_name = require(src);
-  let val_name_ident = create_require_val_ident(import_decl.src.value.as_str());
+  let val_name_ident = create_require_val_ident(import_decl.src.value.as_str().expect("non-UTF-8 string literal"));
 
   let mut contains_default = false;
   let mut contains_named = false;
@@ -615,7 +615,7 @@ fn transform_export_named(
         if let Some(src) = &named_export.src {
           let export_from_ident = cached_export_from_item
             .clone()
-            .unwrap_or(create_require_val_ident(src.value.as_str()));
+            .unwrap_or(create_require_val_ident(src.value.as_str().expect("non-UTF-8 string literal")));
           let is_equal = exported_ident.to_id() == local_ident.to_id();
           let mut args = vec![
             ExprOrSpread {
@@ -626,7 +626,7 @@ fn transform_export_named(
               spread: None,
               expr: Box::new(Expr::Lit(Lit::Str(Str {
                 span: DUMMY_SP,
-                value: exported_ident.sym,
+                value: exported_ident.sym.into(),
                 raw: None,
               }))),
             },
@@ -640,7 +640,7 @@ fn transform_export_named(
               spread: None,
               expr: Box::new(Expr::Lit(Lit::Str(Str {
                 span: DUMMY_SP,
-                value: local_ident.sym,
+                value: local_ident.sym.into(),
                 raw: None,
               }))),
             })
@@ -853,7 +853,7 @@ fn create_require_call_expr(src: Str, unresolved_mark: Mark) -> Box<Expr> {
 }
 
 fn create_require_stmt(src: Str, unresolved_mark: Mark) -> (ModuleItem, Ident) {
-  let val_name_ident = create_require_val_ident(src.value.as_str());
+  let val_name_ident = create_require_val_ident(src.value.as_str().expect("non-UTF-8 string literal"));
   (
     create_var_decl_stmt(
       val_name_ident.clone(),
@@ -1101,7 +1101,7 @@ fn create_define_export_property_ident_call_expr(
         spread: None,
         expr: Box::new(Expr::Lit(Lit::Str(Str {
           span: DUMMY_SP,
-          value: exported_ident.sym.clone(),
+          value: exported_ident.sym.clone().into(),
           raw: None,
         }))),
       },
