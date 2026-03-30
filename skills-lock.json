@@ -11,6 +11,11 @@
       "sourceType": "github",
       "computedHash": "9757e62a964103e0b5659ccae7aab3ee893957e2c7f2a9a872851773d06efe7e"
     },
+    "creating-changesets": {
+      "source": "saleor/configurator",
+      "sourceType": "github",
+      "computedHash": "3fe08550239d5a1ab345a6e7ed0217a34dc1ca9abbeb51fc5de25b8d67738efd"
+    },
     "find-skills": {
       "source": "vercel-labs/skills",
       "sourceType": "github",
