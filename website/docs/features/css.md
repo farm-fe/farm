@@ -179,9 +179,62 @@ module.exports = {
        rootValue: 16,
        propList: ['*'],
      }),
-     require('tailwindcss'),
    ]
 }
+```
+
+### TailwindCSS
+
+Farm provides a dedicated `@farmfe/js-plugin-tailwindcss` plugin for **TailwindCSS v4** integration. It uses the native Tailwind v4 compiler directly — no `postcss.config.js` is needed.
+
+1. Install dependencies
+```sh
+pnpm add -D @farmfe/js-plugin-tailwindcss tailwindcss
+```
+
+2. Configure the plugin
+```ts title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/js-plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [tailwindcss()],
+});
+```
+
+3. Add the Tailwind directive to your CSS entry file
+```css title="index.css"
+@import "tailwindcss";
+```
+
+4. Import the CSS file in your entry
+```ts title="main.ts"
+import './index.css';
+```
+
+That's it — Farm will scan your source files for Tailwind utility classes and generate the corresponding CSS automatically.
+
+:::tip
+`@farmfe/js-plugin-tailwindcss` targets **TailwindCSS v4**. If you need TailwindCSS v3, use `@farmfe/js-plugin-postcss` with `require('tailwindcss')` in your `postcss.config.js` instead.
+:::
+
+#### Filtering scanned files
+
+By default the plugin scans all files except those inside `node_modules`. You can restrict which files are scanned for utility classes via the `filters` option:
+
+```ts title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/js-plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      filters: {
+        resolvedPaths: ['src/'],
+      },
+    }),
+  ],
+});
 ```
 
 ## Css Prefixer
