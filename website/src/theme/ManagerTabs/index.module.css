@@ -1,15 +1,7 @@
 .container {
   /* background-color: var(--rp-code-block-bg); */
-  contain: content;
+  overflow: hidden;
   border-radius: 6px;
-
-  :global(div[class*="language-"]) {
-    margin: 6px 0;
-
-    code {
-      /* background-color: var(--rp-c-bg); */
-    }
-  }
 }
 
 .tab-list {

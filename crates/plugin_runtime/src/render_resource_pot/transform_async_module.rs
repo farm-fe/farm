@@ -224,7 +224,7 @@ fn try_get_farm_require_id(expr: &Expr) -> Option<String> {
           ..
         } = &call_expr.args[0]
         {
-          return Some(id.value.to_string());
+          return Some(id.value.to_string_lossy().into_owned());
         }
       }
     }

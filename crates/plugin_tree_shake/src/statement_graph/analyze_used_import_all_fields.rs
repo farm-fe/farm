@@ -76,7 +76,7 @@ impl Visit for UsedImportAllCollector<'_> {
             if let Expr::Lit(Lit::Str(str)) = &*computed_prop_name.expr {
               self
                 .used_import_all_fields
-                .insert(UsedImportAllFields::LiteralComputed(str.value.to_string()));
+                .insert(UsedImportAllFields::LiteralComputed(str.value.to_string_lossy().into_owned()));
             } else {
               self.used_import_all_fields.insert(UsedImportAllFields::All);
             }

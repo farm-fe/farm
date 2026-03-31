@@ -414,8 +414,8 @@ importers:
         specifier: workspace:*
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
-        specifier: 11.0.2
-        version: 11.0.2
+        specifier: 14.7.0
+        version: 14.7.0
       '@types/react':
         specifier: '18'
         version: 18.2.35
@@ -8701,8 +8701,8 @@ packages:
   '@swc/helpers@0.5.3':
     resolution: {integrity: sha512-FaruWX6KdudYloq1AHD/4nU+UsMTdNE8CKyrseXWEcgjDAbvkwJg2QGPAnfIJLIWsjZOSPLOAykK6fuYp4vp4A==}
 
-  '@swc/plugin-emotion@11.0.2':
-    resolution: {integrity: sha512-Mv7AQrvF6oMurNT5MhOIyyCjnptOLoFI/5lItUt4nNzZ5AXTQ/XWTz7OHRw2IYbqny+3Nv//QAKpGjlMLp3L+w==}
+  '@swc/plugin-emotion@14.7.0':
+    resolution: {integrity: sha512-RwYrsxia8GKh2qLHWwymcfCeP6C5gAkssB2YtBRhP/qlKCxXYfv808buEXkCYvyGIY+bN3XziKXCuAi+waA5pQ==}
 
   '@swc/types@0.1.12':
     resolution: {integrity: sha512-wBJA+SdtkbFhHjTMYH+dEH1y4VpfGdAc2Kw/LK09i9bXd/K6j6PkDcFCEzb6iVfZMkPRrl/q0e3toqTAJdkIVA==}
@@ -30682,7 +30682,7 @@ snapshots:
     dependencies:
       tslib: 2.6.2
 
-  '@swc/plugin-emotion@11.0.2':
+  '@swc/plugin-emotion@14.7.0':
     dependencies:
       '@swc/counter': 0.1.3
 

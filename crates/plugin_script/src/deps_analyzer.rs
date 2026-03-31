@@ -57,20 +57,20 @@ impl<'a> Visit for DepsAnalyzer<'a> {
       ModuleItem::ModuleDecl(decl) => match decl {
         ModuleDecl::Import(import) => {
           self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-            source: import.src.value.to_string(),
+            source: import.src.value.to_string_lossy().into_owned(),
             kind: ResolveKind::Import,
           });
         }
         ModuleDecl::ExportAll(ExportAll { src, .. }) => {
           self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-            source: src.value.to_string(),
+            source: src.value.to_string_lossy().into_owned(),
             kind: ResolveKind::ExportFrom,
           });
         }
         ModuleDecl::ExportNamed(NamedExport { src, .. }) => {
           if let Some(src) = src {
             self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-              source: src.value.to_string(),
+              source: src.value.to_string_lossy().into_owned(),
               kind: ResolveKind::ExportFrom,
             });
           }
@@ -83,7 +83,7 @@ impl<'a> Visit for DepsAnalyzer<'a> {
             expr,
             ..
           }) => self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-            source: expr.value.to_string(),
+            source: expr.value.to_string_lossy().into_owned(),
             // treat TsImportEquals as require cause it only works in commonjs
             kind: ResolveKind::Require,
           }),
@@ -107,14 +107,14 @@ impl<'a> Visit for DepsAnalyzer<'a> {
     if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
       if let box Expr::Lit(Lit::Str(str)) = &call_expr.args[0].expr {
         self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-          source: str.value.to_string(),
+          source: str.value.to_string_lossy().into_owned(),
           kind: ResolveKind::Require,
         })
       }
     } else if is_dynamic_import(call_expr) {
       if let box Expr::Lit(Lit::Str(str)) = &call_expr.args[0].expr {
         self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-          source: str.value.to_string(),
+          source: str.value.to_string_lossy().into_owned(),
           kind: ResolveKind::DynamicImport,
         })
       }
