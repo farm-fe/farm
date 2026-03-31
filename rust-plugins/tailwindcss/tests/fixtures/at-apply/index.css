@@ -1,0 +1,4 @@
+.btn {
+  @apply text-red-500;
+  padding: 8px 16px;
+}

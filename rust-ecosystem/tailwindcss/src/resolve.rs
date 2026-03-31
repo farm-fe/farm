@@ -42,12 +42,19 @@ pub fn resolve_css_id(
 // ── JS resolution ───────────────────────────────────────────────────────────
 
 const ESM_EXTENSIONS: &[&str] = &["", ".js", ".json", ".node", ".ts"];
-const JS_MAIN_FIELDS: &[&str] = &["main", "module"];
+const CJS_EXTENSIONS: &[&str] = &["", ".js", ".json", ".node", ".ts"];
+const JS_ESM_MAIN_FIELDS: &[&str] = &["module", "main"];
+const JS_CJS_MAIN_FIELDS: &[&str] = &["main"];
+/// ESM condition names matching the upstream `esmResolver`.
+pub const ESM_CONDITIONS: &[&str] = &["node", "import"];
+/// CJS condition names matching the upstream `cjsResolver`.
+pub const CJS_CONDITIONS: &[&str] = &["node", "require"];
 
-/// Resolve a JS module id from `base`.
+/// Resolve a JS module id from `base` using ESM resolution.
 ///
 /// If a `custom_resolver` is provided it is tried first. Falls back to the
-/// built-in resolution algorithm.
+/// built-in ESM resolution algorithm and then CJS as a fallback, matching
+/// the upstream dual-resolver pattern.
 pub fn resolve_js_id(
     id: &str,
     base: &str,
@@ -60,7 +67,37 @@ pub fn resolve_js_id(
         }
     }
 
-    resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_MAIN_FIELDS)
+    // Try ESM resolution first, fall back to CJS (matches upstream behaviour)
+    resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_ESM_MAIN_FIELDS)
+        .or_else(|_| resolve_with_extensions(id, base, CJS_EXTENSIONS, JS_CJS_MAIN_FIELDS))
+}
+
+/// Resolve a JS module using ESM-only resolution.
+pub fn resolve_js_esm(
+    id: &str,
+    base: &str,
+    custom_resolver: Option<&CustomResolver>,
+) -> io::Result<PathBuf> {
+    if let Some(resolver) = custom_resolver {
+        if let Some(resolved) = resolver(id, base) {
+            return Ok(PathBuf::from(resolved));
+        }
+    }
+    resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_ESM_MAIN_FIELDS)
+}
+
+/// Resolve a JS module using CJS-only resolution.
+pub fn resolve_js_cjs(
+    id: &str,
+    base: &str,
+    custom_resolver: Option<&CustomResolver>,
+) -> io::Result<PathBuf> {
+    if let Some(resolver) = custom_resolver {
+        if let Some(resolved) = resolver(id, base) {
+            return Ok(PathBuf::from(resolved));
+        }
+    }
+    resolve_with_extensions(id, base, CJS_EXTENSIONS, JS_CJS_MAIN_FIELDS)
 }
 
 // ── shared implementation ───────────────────────────────────────────────────

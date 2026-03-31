@@ -4,12 +4,14 @@
 //! [`@tailwindcss-node/src/compile.ts`](https://github.com/tailwindlabs/tailwindcss/blob/main/packages/%40tailwindcss-node/src/compile.ts).
 //!
 //! It includes:
-//! - CSS / JS module resolution
+//! - CSS / JS module resolution (ESM + CJS dual-resolver pattern)
 //! - Stylesheet loading and URL rewriting
 //! - JS module dependency tracing
 //! - Path normalization
 //! - Source‑map utilities
-//! - Top‑level `compile` orchestration
+//! - CSS AST node representation
+//! - Top‑level `compile` and `compile_ast` orchestration
+//! - Unstable `load_design_system` API
 
 pub mod compile;
 pub mod get_module_dependencies;

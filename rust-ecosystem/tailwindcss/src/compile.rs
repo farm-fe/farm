@@ -40,6 +40,22 @@ impl Features {
     }
 }
 
+/// Polyfill flags that control which CSS compatibility transforms are applied.
+///
+/// Mirrors the `Polyfills` enum from `tailwindcss`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Polyfills(u32);
+
+impl Polyfills {
+    pub const NONE: Self = Self(0);
+    /// Enable `@media (hover: hover)` polyfill for older browsers.
+    pub const AT_MEDIA_HOVER: Self = Self(1 << 0);
+
+    pub fn contains(self, other: Self) -> bool {
+        self.0 & other.0 != 0
+    }
+}
+
 impl std::ops::BitOr for Features {
     type Output = Self;
     fn bitor(self, rhs: Self) -> Self {
@@ -60,7 +76,20 @@ impl std::ops::BitAnd for Features {
     }
 }
 
-/// Options passed to [`compile`].
+impl std::ops::BitOr for Polyfills {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl std::ops::BitOrAssign for Polyfills {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+/// Options passed to [`compile`] and [`compile_ast`].
 pub struct CompileOptions {
     /// Base directory for resolving relative paths.
     pub base: String,
@@ -68,6 +97,8 @@ pub struct CompileOptions {
     pub from: Option<String>,
     /// Whether to rewrite relative `url()` references.
     pub should_rewrite_urls: bool,
+    /// Polyfill flags for CSS compatibility transforms.
+    pub polyfills: Polyfills,
     /// Callback invoked whenever a dependency is discovered.
     pub on_dependency: Box<dyn Fn(&str) + Send>,
     /// Optional custom CSS resolver.
@@ -82,6 +113,7 @@ impl Default for CompileOptions {
             base: ".".to_string(),
             from: None,
             should_rewrite_urls: false,
+            polyfills: Polyfills::NONE,
             on_dependency: Box::new(|_| {}),
             custom_css_resolver: None,
             custom_js_resolver: None,
@@ -111,6 +143,59 @@ pub struct SourceRoot {
     pub base: String,
 }
 
+/// Simplified AST node representation.
+///
+/// Mirrors the `AstNode` type from `tailwindcss/src/ast`. In the upstream
+/// TypeScript implementation, a full CSS AST is passed to `compileAst`.
+/// This Rust version uses a simplified representation.
+#[derive(Debug, Clone)]
+pub enum AstNode {
+    /// A CSS rule, e.g. `.foo { color: red; }`.
+    Rule {
+        selector: String,
+        nodes: Vec<AstNode>,
+    },
+    /// A CSS at-rule, e.g. `@import "tailwindcss";`.
+    AtRule {
+        name: String,
+        params: String,
+        nodes: Vec<AstNode>,
+    },
+    /// A CSS declaration, e.g. `color: red`.
+    Declaration { property: String, value: String },
+    /// Raw CSS text (comment or preserved text).
+    Comment(String),
+}
+
+impl AstNode {
+    /// Convert the AST back into a CSS string.
+    pub fn to_css(&self) -> String {
+        match self {
+            AstNode::Rule { selector, nodes } => {
+                let inner: String = nodes.iter().map(|n| n.to_css()).collect::<Vec<_>>().join("\n");
+                format!("{selector} {{\n{inner}\n}}")
+            }
+            AstNode::AtRule {
+                name,
+                params,
+                nodes,
+            } => {
+                if nodes.is_empty() {
+                    format!("@{name} {params};")
+                } else {
+                    let inner: String =
+                        nodes.iter().map(|n| n.to_css()).collect::<Vec<_>>().join("\n");
+                    format!("@{name} {params} {{\n{inner}\n}}")
+                }
+            }
+            AstNode::Declaration { property, value } => {
+                format!("  {property}: {value};")
+            }
+            AstNode::Comment(text) => format!("/* {text} */"),
+        }
+    }
+}
+
 /// The compiled state. Holds the processed CSS, detected features, dependency
 /// graph, and methods for building the final output from a set of candidates.
 pub struct Compiler {
@@ -118,6 +203,8 @@ pub struct Compiler {
     css: String,
     /// Detected features in the CSS.
     pub features: Features,
+    /// Active polyfills.
+    pub polyfills: Polyfills,
     /// Source detection root, if any.
     pub root: Option<SourceRoot>,
     /// Build dependencies discovered during compilation.
@@ -370,6 +457,7 @@ pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
     let compiler = Compiler {
         css: processed_css,
         features,
+        polyfills: options.polyfills,
         root: None,
         dependencies: seen.keys().cloned().collect(),
         last_build: None,
@@ -379,6 +467,33 @@ pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
     ensure_source_detection_root_exists(&compiler.root)?;
 
     Ok(compiler)
+}
+
+/// Compile a pre-parsed AST with the given options.
+///
+/// Mirrors the `compileAst()` function from the TS `@tailwindcss-node`
+/// package. Instead of accepting raw CSS text, it takes a pre-parsed
+/// [`AstNode`] tree, serialises it to CSS, and then runs the standard
+/// compilation pipeline.
+pub fn compile_ast(ast: &[AstNode], options: CompileOptions) -> io::Result<Compiler> {
+    let css: String = ast.iter().map(|n| n.to_css()).collect::<Vec<_>>().join("\n");
+    compile(&css, options)
+}
+
+/// Load the design system from a CSS string.
+///
+/// Mirrors the `__unstable__loadDesignSystem()` function from the TS
+/// `@tailwindcss-node` package. This is an unstable API used internally to
+/// load the design system without a full compilation pipeline. Currently
+/// delegates to [`compile`] with minimal options.
+pub fn load_design_system(css: &str, base: &str) -> io::Result<Compiler> {
+    compile(
+        css,
+        CompileOptions {
+            base: base.to_string(),
+            ..Default::default()
+        },
+    )
 }
 
 #[cfg(test)]
@@ -688,5 +803,145 @@ mod tests {
             base: "/tmp/farm_tw_compile_test_missing".to_string(),
         };
         assert!(ensure_source_detection_root_exists(&Some(root)).is_err());
+    }
+
+    #[test]
+    fn polyfills_bitflags() {
+        let p = Polyfills::NONE;
+        assert!(!p.contains(Polyfills::AT_MEDIA_HOVER));
+
+        let p = Polyfills::AT_MEDIA_HOVER;
+        assert!(p.contains(Polyfills::AT_MEDIA_HOVER));
+
+        let combined = Polyfills::NONE | Polyfills::AT_MEDIA_HOVER;
+        assert!(combined.contains(Polyfills::AT_MEDIA_HOVER));
+    }
+
+    #[test]
+    fn compile_with_polyfills() {
+        let dir = setup_dir("with_polyfills");
+        let css = ".foo { color: red; }";
+
+        let compiler = compile(
+            css,
+            CompileOptions {
+                base: dir.to_str().unwrap().to_string(),
+                polyfills: Polyfills::AT_MEDIA_HOVER,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        assert!(compiler.polyfills.contains(Polyfills::AT_MEDIA_HOVER));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn compile_ast_simple() {
+        let dir = setup_dir("compile_ast");
+        let ast = vec![
+            AstNode::Rule {
+                selector: ".foo".to_string(),
+                nodes: vec![AstNode::Declaration {
+                    property: "color".to_string(),
+                    value: "red".to_string(),
+                }],
+            },
+            AstNode::Rule {
+                selector: ".bar".to_string(),
+                nodes: vec![AstNode::Declaration {
+                    property: "margin".to_string(),
+                    value: "0".to_string(),
+                }],
+            },
+        ];
+
+        let mut compiler = compile_ast(
+            &ast,
+            CompileOptions {
+                base: dir.to_str().unwrap().to_string(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let output = compiler.build(&[]);
+        assert!(output.contains(".foo"));
+        assert!(output.contains("color: red"));
+        assert!(output.contains(".bar"));
+        assert!(output.contains("margin: 0"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn compile_ast_at_rule() {
+        let dir = setup_dir("compile_ast_atrule");
+        let ast = vec![AstNode::AtRule {
+            name: "import".to_string(),
+            params: "\"tailwindcss\"".to_string(),
+            nodes: vec![],
+        }];
+
+        let compiler = compile_ast(
+            &ast,
+            CompileOptions {
+                base: dir.to_str().unwrap().to_string(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        // The @import "tailwindcss" should be detected as a UTILITIES feature
+        assert!(compiler.features.contains(Features::UTILITIES));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ast_node_to_css() {
+        let node = AstNode::Rule {
+            selector: ".foo".to_string(),
+            nodes: vec![AstNode::Declaration {
+                property: "color".to_string(),
+                value: "red".to_string(),
+            }],
+        };
+        let css = node.to_css();
+        assert!(css.contains(".foo {"));
+        assert!(css.contains("color: red;"));
+
+        let at_rule = AstNode::AtRule {
+            name: "media".to_string(),
+            params: "(hover: hover)".to_string(),
+            nodes: vec![AstNode::Rule {
+                selector: ".btn:hover".to_string(),
+                nodes: vec![AstNode::Declaration {
+                    property: "opacity".to_string(),
+                    value: "0.8".to_string(),
+                }],
+            }],
+        };
+        let css = at_rule.to_css();
+        assert!(css.contains("@media (hover: hover) {"));
+        assert!(css.contains(".btn:hover {"));
+
+        let comment = AstNode::Comment("test comment".to_string());
+        assert_eq!(comment.to_css(), "/* test comment */");
+    }
+
+    #[test]
+    fn load_design_system_works() {
+        let dir = setup_dir("design_system");
+        let css = ".foo { color: red; }";
+
+        let mut compiler =
+            load_design_system(css, dir.to_str().unwrap()).unwrap();
+        let output = compiler.build(&[]);
+        assert!(output.contains(".foo"));
+        assert!(output.contains("color: red"));
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }
