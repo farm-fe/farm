@@ -147,7 +147,7 @@ export function PackageManagerTabs({
       >
         {Object.entries(commandInfo).map(([key, value]) => (
           <Tab key={key}>
-            <div className='codeBlock-tab shadow-md'
+            <div className='codeBlock-tab'
               dangerouslySetInnerHTML={{ __html: highlightedCode[key] || '' }}
             ></div>
           </Tab>

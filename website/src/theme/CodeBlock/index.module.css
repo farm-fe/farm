@@ -25,33 +25,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  svg {
-    width: 22px;
-  }
 }
 
-.copy-button {
-  display: flex;
-  align-items: center;
-  background-color: transparent;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.85em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.copy-button:hover {
-  background-color: #e9ecef;
-  border-color: #adb5bd;
-}
-
-.copy-button span {
-  transition: opacity 0.2s ease;
-}
-
-.copy-button:active span {
-  opacity: 0.6;
+.code-title svg {
+  width: 22px;
 }
 
 @keyframes popIn {
@@ -63,10 +40,6 @@
     transform: scale(1);
     opacity: 1;
   }
-}
-
-.copy-button svg {
-  animation: popIn 0.3s ease forwards;
 }
 
 .copy-button {
@@ -84,11 +57,14 @@
 
 .copy-button:hover {
   background-color: var(--ifm-color-emphasis-200);
-  /* border-color: var(--ifm-color-emphasis-400); */
 }
 
-.copy-button:focus {
-  /* box-shadow: 0 0 0 2px var(--ifm-color-primary-lightest); */
+.copy-button:active span {
+  opacity: 0.6;
+}
+
+.copy-button svg {
+  animation: popIn 0.3s ease forwards;
 }
 
 .copy-icon {
@@ -103,40 +79,16 @@
   transform: scale(1.1);
 }
 
-.copy-button span {
-  transition: opacity 0.2s ease;
-}
-
-.copy-button:active span {
-  opacity: 0.6;
-}
-
-@keyframes popIn {
-  0% {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.copy-button svg {
-  animation: popIn 0.3s ease forwards;
-}
-
 .copy-success {
   color: var(--ifm-color-success);
 }
 
 .hover-button {
   position: relative;
-  button {
-    position: absolute;
-    margin: 16px;
-    right: 0;
-  }
 }
 
+.code-content {
+  display: block;
+  overflow-x: auto;
+}
 
