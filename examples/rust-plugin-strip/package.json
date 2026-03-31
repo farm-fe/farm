@@ -19,9 +19,9 @@
     "react-helmet-async": "^2.0.5"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.4",
-    "@farmfe/core": "^1.6.7",
-    "@farmfe/plugin-react": "^1.2.0",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
     "@tanstack/router-plugin": "^1.120.11",
     "@types/react": "18",
     "@types/react-dom": "18",
