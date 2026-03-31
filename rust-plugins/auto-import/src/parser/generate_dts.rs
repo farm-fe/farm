@@ -99,7 +99,7 @@ mod tests {
     let imports = scan_dir_exports(root_path);
     println!("imports: {imports:#?}");
 
-    let presets_imports = resolve_presets(&vec![PresetItem::String("react-router".to_string())]);
+    let presets_imports = resolve_presets(&[PresetItem::String("react-router".to_string())]);
     let generate_dts_option = GenerateDtsOption {
       imports: &imports.iter().collect::<Vec<_>>(),
       presets_imports: &presets_imports.iter().collect::<Vec<_>>(),
