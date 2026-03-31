@@ -91,7 +91,8 @@ impl FarmPluginTailwindCSS {
     }
 
     /// Get the file extension from a module id (stripping query strings).
-    fn _get_extension(id: &str) -> &str {
+    #[cfg(test)]
+    fn get_extension(id: &str) -> &str {
         let filename = id.split('?').next().unwrap_or(id);
         filename
             .rsplit('.')
@@ -228,10 +229,7 @@ impl Plugin for FarmPluginTailwindCSS {
                 }))
             }
             Err(e) => {
-                eprintln!(
-                    "[{}] Failed to compile TailwindCSS: {}",
-                    PKG_NAME, e
-                );
+                eprintln!("[{PKG_NAME}] Failed to compile TailwindCSS: {e}");
                 Ok(None)
             }
         }
@@ -285,12 +283,12 @@ mod tests {
 
     #[test]
     fn get_extension_works() {
-        assert_eq!(FarmPluginTailwindCSS::_get_extension("/src/app.css"), "css");
+        assert_eq!(FarmPluginTailwindCSS::get_extension("/src/app.css"), "css");
         assert_eq!(
-            FarmPluginTailwindCSS::_get_extension("/src/app.css?v=1"),
+            FarmPluginTailwindCSS::get_extension("/src/app.css?v=1"),
             "css"
         );
-        assert_eq!(FarmPluginTailwindCSS::_get_extension("/src/app.tsx"), "tsx");
+        assert_eq!(FarmPluginTailwindCSS::get_extension("/src/app.tsx"), "tsx");
     }
 
     #[test]

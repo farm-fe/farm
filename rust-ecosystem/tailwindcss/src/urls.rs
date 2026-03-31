@@ -66,11 +66,7 @@ fn rebase_url(url: &str, base: &str, root: &str) -> String {
 
     // Join base + url using forward slashes (posix-style)
     let base_norm = normalize_path(base);
-    let absolute_url = if url.starts_with("./") || url.starts_with("../") {
-        join_posix(&base_norm, url)
-    } else {
-        join_posix(&base_norm, url)
-    };
+    let absolute_url = join_posix(&base_norm, url);
 
     let root_norm = normalize_path(root);
     let mut relative = make_relative(&root_norm, &absolute_url);
@@ -111,10 +107,7 @@ fn make_relative(from: &str, to: &str) -> String {
         .count();
 
     let ups = from_parts.len() - common;
-    let mut result = Vec::new();
-    for _ in 0..ups {
-        result.push("..");
-    }
+    let mut result: Vec<&str> = vec![".."; ups];
     for part in &to_parts[common..] {
         result.push(part);
     }
@@ -136,9 +129,9 @@ fn do_url_replace(raw_url: &str, matched: &str, base: &str, root: &str) -> Strin
 
     let new_url = rebase_url(inner, base, root);
 
-    let wrap_char = if wrap.is_empty() && new_url != url_encode_simple(&new_url) {
-        "\""
-    } else if wrap == "'" && new_url.contains('\'') {
+    let wrap_char = if (wrap.is_empty() && new_url != url_encode_simple(&new_url))
+        || (wrap == "'" && new_url.contains('\''))
+    {
         "\""
     } else {
         wrap

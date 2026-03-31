@@ -52,11 +52,11 @@ fn normalize_path_base(path: &str, strip_trailing: bool) -> String {
     let starts_with_sep = remaining
         .as_bytes()
         .first()
-        .map_or(false, |&b| b == b'/' || b == b'\\');
+        .is_some_and(|&b| b == b'/' || b == b'\\');
 
     // Split on one-or-more separators (like the TS `/[/\\]+/` regex)
     let segs: Vec<&str> = remaining
-        .split(|c: char| c == '/' || c == '\\')
+        .split(['/', '\\'])
         .filter(|s| !s.is_empty())
         .collect();
 

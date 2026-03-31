@@ -26,7 +26,6 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "@farmfe/plugin-tools": "workspace:*"
   },
   "optionalDependencies": {
