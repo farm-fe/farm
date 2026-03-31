@@ -172,7 +172,13 @@ impl AstNode {
     pub fn to_css(&self) -> String {
         match self {
             AstNode::Rule { selector, nodes } => {
-                let inner: String = nodes.iter().map(|n| n.to_css()).collect::<Vec<_>>().join("\n");
+                let mut inner = String::new();
+                for (i, n) in nodes.iter().enumerate() {
+                    if i > 0 {
+                        inner.push('\n');
+                    }
+                    inner.push_str(&n.to_css());
+                }
                 format!("{selector} {{\n{inner}\n}}")
             }
             AstNode::AtRule {
@@ -183,8 +189,13 @@ impl AstNode {
                 if nodes.is_empty() {
                     format!("@{name} {params};")
                 } else {
-                    let inner: String =
-                        nodes.iter().map(|n| n.to_css()).collect::<Vec<_>>().join("\n");
+                    let mut inner = String::new();
+                    for (i, n) in nodes.iter().enumerate() {
+                        if i > 0 {
+                            inner.push('\n');
+                        }
+                        inner.push_str(&n.to_css());
+                    }
                     format!("@{name} {params} {{\n{inner}\n}}")
                 }
             }
@@ -476,7 +487,13 @@ pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
 /// [`AstNode`] tree, serialises it to CSS, and then runs the standard
 /// compilation pipeline.
 pub fn compile_ast(ast: &[AstNode], options: CompileOptions) -> io::Result<Compiler> {
-    let css: String = ast.iter().map(|n| n.to_css()).collect::<Vec<_>>().join("\n");
+    let mut css = String::new();
+    for (i, node) in ast.iter().enumerate() {
+        if i > 0 {
+            css.push('\n');
+        }
+        css.push_str(&node.to_css());
+    }
     compile(&css, options)
 }
 
