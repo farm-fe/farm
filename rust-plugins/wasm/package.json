@@ -34,9 +34,7 @@
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
-    "play": "pnpm build:wasm && pnpm --filter playground dev",
     "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_wasm -p farmfe_plugin_wasm --release",
-    "build:wasm": "wasm-pack build rust-wasm --target bundler --out-dir ../playground/wasm",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
