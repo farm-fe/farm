@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./main.css";
 import FarmLogo from "./assets/logo.png";
 import reactLogo from "./assets/react.svg";
-// import TestButton from "./components/buttton"
+// import TestButton from "./components/button"
 export function Main() {
   const [count, setCount] = useState(0);
   console.log("rendering Main component")
