@@ -421,9 +421,10 @@ pub fn update_exports_meta_and_module_decl(
                         .map(|i| i.atom().to_string())
                         .unwrap_or(import_named_specifier.local.sym.to_string());
 
-                      if let Some(mangled_ident) =
-                        imports_to_rename.get(&(imported_str, import_decl.src.value.to_string_lossy().into_owned()))
-                      {
+                      if let Some(mangled_ident) = imports_to_rename.get(&(
+                        imported_str,
+                        import_decl.src.value.to_string_lossy().into_owned(),
+                      )) {
                         match &mut import_named_specifier.imported {
                           Some(imported) => match imported {
                             ModuleExportName::Ident(ident) => {

@@ -41,12 +41,12 @@ impl VisitMut for ImportModifier {
         }
 
         ImportSpecifier::Named(named_spec) => {
-          let imported_name = match &named_spec.imported {
+          let imported_name: String = match &named_spec.imported {
             Some(imported) => match imported {
-              ModuleExportName::Ident(ident) => ident.sym.as_ref(),
-              ModuleExportName::Str(str) => str.value.as_ref(),
+              ModuleExportName::Ident(ident) => ident.sym.to_string(),
+              ModuleExportName::Str(str) => str.value.to_string_lossy().into_owned(),
             },
-            None => named_spec.local.sym.as_ref(),
+            None => named_spec.local.sym.to_string(),
           };
           components.retain(|c| c.name != imported_name || c.name != named_spec.local.sym.as_ref());
         }

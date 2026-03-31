@@ -58,8 +58,8 @@ pub fn remove_useless_stmts(
             decl.visit_mut_with(&mut useless_specifier_remover);
           }
           ModuleDecl::ExportAll(export_all) => {
-            if let Some((source_module_id, is_empty)) =
-              is_export_all_source_module_empty.get(&export_all.src.value.to_string_lossy().into_owned())
+            if let Some((source_module_id, is_empty)) = is_export_all_source_module_empty
+              .get(&export_all.src.value.to_string_lossy().into_owned())
             {
               if *is_empty {
                 modules_to_remove.push(source_module_id.clone());
