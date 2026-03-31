@@ -3,11 +3,9 @@ import "./main.css";
 import reactLogo from "./assets/react.svg";
 import FarmLogo from "./assets/logo.png";
 import init from "./assets/json_typegen_wasm_bg.wasm?init";
-import { greet } from "rust-wasm"
 import { run } from "json_typegen_wasm"
 
 export function Main() {
-  greet();
   const [count, setCount] = useState(0);
 
   const transformToInterface = async (json: string) => {
@@ -21,32 +19,9 @@ export function Main() {
   }
 
   const json = `{
-  "name": "playground",
+  "name": "example",
   "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "farm start",
-    "start": "farm start",
-    "build": "farm build",
-    "preview": "farm preview",
-    "clean": "farm clean"
-  },
-  "dependencies": {
-    "@farmfe/plugin-wasm": "workspace:*",
-    "clsx": "^1.2.1",
-    "json_typegen_wasm": "^0.7.0",
-    "react": "18",
-    "react-dom": "18"
-  },
-  "devDependencies": {
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^1.3.0",
-    "@farmfe/plugin-react": "^1.2.0",
-    "@types/react": "18",
-    "@types/react-dom": "18",
-    "core-js": "^3.36.1",
-    "react-refresh": "^0.14.0"
-  }
+  "type": "module"
 }
 `
 
