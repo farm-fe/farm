@@ -463,7 +463,7 @@ fn replace_internal_import_sources_with_placeholders(
   for item in &mut ast.body {
     match item {
       ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) => {
-        let source = import_decl.src.value.to_string();
+        let source = import_decl.src.value.to_string_lossy().into_owned();
         if let Some(module_id) = source_to_internal_module.get(&source) {
           import_decl.src = Box::new(Str {
             span: DUMMY_SP,
@@ -474,7 +474,7 @@ fn replace_internal_import_sources_with_placeholders(
       }
       ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(export)) => {
         if let Some(ref mut src) = export.src {
-          let source = src.value.to_string();
+          let source = src.value.to_string_lossy().into_owned();
           if let Some(module_id) = source_to_internal_module.get(&source) {
             *src = Box::new(Str {
               span: DUMMY_SP,
@@ -485,7 +485,7 @@ fn replace_internal_import_sources_with_placeholders(
         }
       }
       ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) => {
-        let source = export_all.src.value.to_string();
+        let source = export_all.src.value.to_string_lossy().into_owned();
         if let Some(module_id) = source_to_internal_module.get(&source) {
           export_all.src = Box::new(Str {
             span: DUMMY_SP,
