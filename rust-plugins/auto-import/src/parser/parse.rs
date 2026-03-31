@@ -115,7 +115,7 @@ impl Visit for ImportsVisitor {
             let default_name = default.local.sym.to_string();
             self.imports.push(ESMImport {
               import_type: ImportType::Named,
-              specifier: import.src.value.to_string(),
+              specifier: import.src.value.to_string_lossy().into_owned(),
               default_import: Some(default_name.clone()),
               namespaced_import: None,
               named_imports: None,
@@ -127,7 +127,7 @@ impl Visit for ImportsVisitor {
             let namespace_name = namespace.local.sym.to_string();
             self.imports.push(ESMImport {
               import_type: ImportType::Namespace,
-              specifier: import.src.value.to_string(),
+              specifier: import.src.value.to_string_lossy().into_owned(),
               namespaced_import: Some(namespace_name.clone()),
               default_import: None,
               named_imports: None,
@@ -140,7 +140,7 @@ impl Visit for ImportsVisitor {
       if !named_imports.is_empty() {
         self.imports.push(ESMImport {
           import_type: ImportType::Named,
-          specifier: import.src.value.to_string(),
+          specifier: import.src.value.to_string_lossy().into_owned(),
           default_import: None,
           namespaced_import: None,
           type_named_imports: None,
@@ -151,7 +151,7 @@ impl Visit for ImportsVisitor {
       if !type_named_imports.is_empty() {
         self.imports.push(ESMImport {
           import_type: ImportType::Type,
-          specifier: import.src.value.to_string(),
+          specifier: import.src.value.to_string_lossy().into_owned(),
           default_import: None,
           namespaced_import: None,
           type_named_imports: Some(type_named_imports),
@@ -169,7 +169,10 @@ impl Visit for ExportsVisitor {
       ModuleDecl::ExportNamed(named_export) => {
         let mut named_exports = HashMap::new();
         let mut type_named_exports = HashMap::new();
-        let specifier_str = named_export.src.as_ref().map(|s| s.value.to_string());
+        let specifier_str = named_export
+          .src
+          .as_ref()
+          .map(|s| s.value.to_string_lossy().into_owned());
         for specifier in &named_export.specifiers {
           match specifier {
             ExportSpecifier::Named(named) => {
@@ -257,7 +260,16 @@ impl Visit for ExportsVisitor {
                 .clone()
                 .str()
                 .is_some()
-                .then_some(module_decl.id.clone().str().unwrap().value.to_string())
+                .then_some(
+                  module_decl
+                    .id
+                    .clone()
+                    .str()
+                    .unwrap()
+                    .value
+                    .to_string_lossy()
+                    .into_owned(),
+                )
                 .unwrap()
             } else {
               module_decl
@@ -362,7 +374,7 @@ impl Visit for ExportsVisitor {
         });
       }
       ModuleDecl::ExportAll(export_all) => {
-        let specifier = export_all.src.value.to_string();
+        let specifier = export_all.src.value.to_string_lossy().into_owned();
         self.exports.push(ESMExport {
           export_type: ExportType::All,
           declaration_type: None,
