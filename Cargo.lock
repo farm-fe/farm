@@ -2170,6 +2170,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_tailwindcss"
+version = "0.0.1"
+dependencies = [
+ "farmfe_compiler",
+ "farmfe_core",
+ "farmfe_ecosystem_tailwindcss",
+ "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 2.1.0",
+ "serde",
+]
+
+[[package]]
 name = "farmfe_plugin_tree_shake"
 version = "2.0.1"
 dependencies = [
