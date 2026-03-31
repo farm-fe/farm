@@ -128,7 +128,7 @@ mod tests {
   #[test]
   fn test_generate_dts() {
     let current_dir = env::current_dir().unwrap();
-    let binding = current_dir.join("playground");
+    let binding = current_dir.join("tests/fixtures");
     let root_path = binding.to_str().unwrap();
     let resolver_option = ResolverOption {
       module: "antd".to_string(),
