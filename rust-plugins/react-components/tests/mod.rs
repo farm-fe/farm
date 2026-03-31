@@ -20,6 +20,7 @@ use farmfe_plugin_react_components::ImportMode;
 use farmfe_plugin_react_components::{FarmPluginReactComponents, Options};
 use rustc_hash::FxHashMap;
 #[test]
+#[ignore = "requires playground/node_modules to be installed"]
 fn transform() {
   let current_dir = env::current_dir().unwrap();
   let root_path = current_dir.join("playground").to_string_lossy().to_string();

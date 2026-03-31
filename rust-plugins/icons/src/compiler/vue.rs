@@ -40,6 +40,6 @@ mod tests {
       svg_name: Some("abc".to_string()),
     };
     let result = vue_compiler(params);
-    println!("{}", result)
+    println!("{result}")
   }
 }
