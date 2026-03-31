@@ -502,7 +502,7 @@ mod tests {
   #[test]
   fn test_parse_esm_imports_exports() {
     let (imports, exports) = parse_esm_imports_exports(Some("./tests/test.ts"), None);
-    println!("imports: {:#?}", imports);
-    println!("exports: {:#?}", exports);
+    println!("imports: {imports:#?}");
+    println!("exports: {exports:#?}");
   }
 }

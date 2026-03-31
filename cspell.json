@@ -334,7 +334,32 @@
     "opsx",
     "rustfmt",
     "saleor",
-    "qiankun"
+    "qiankun",
+    "Comlink",
+    "comlink",
+    "Iconify",
+    "iconify",
+    "Stylable",
+    "Vuetify",
+    "vuetify",
+    "customisations",
+    "customizer",
+    "donotuse",
+    "extname",
+    "fontisto",
+    "iconname",
+    "iconsets",
+    "mdxjs",
+    "ordinating",
+    "osstr",
+    "sharedworker",
+    "simpleicons",
+    "uicons",
+    "uncompiled",
+    "upath",
+    "vueuse",
+    "wasmparser",
+    "xmltree"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
@@ -356,6 +381,7 @@
     "**/gitignore",
     "**/test_**",
     "packages/core/binding/binding.cjs",
-    "packages/create-farm/index.js"
+    "packages/create-farm/index.js",
+    "patches/**"
   ]
 }
