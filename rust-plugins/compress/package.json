@@ -10,7 +10,7 @@
   },
   "homepage": "https://github.com/farm-fe/farm",
   "author": {
-    "name": "\u82cf\u5411\u591c",
+    "name": "苏向夜",
     "email": "fu050409@163.com"
   },
   "bugs": {
@@ -49,7 +49,6 @@
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
-    "play": "pnpm --filter playground dev",
     "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_compress -p farmfe_plugin_compress --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },

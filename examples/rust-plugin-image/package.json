@@ -1,5 +1,5 @@
 {
-  "name": "playground",
+  "name": "@farmfe-examples/rust-plugin-image",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
