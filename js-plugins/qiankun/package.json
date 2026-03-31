@@ -18,6 +18,9 @@
       "types": "./dist/helper/qiankun-farm-helper.d.ts"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "pnpm run build:plugin && pnpm run build:helper",
     "build:plugin": "farm build",
