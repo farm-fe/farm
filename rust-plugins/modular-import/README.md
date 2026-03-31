@@ -44,7 +44,7 @@ export default defineConfig({
          */
         styleLibDir: 'lib',
         /**
-         * @description the style library name. e.g. custon-theme =>  custon-theme/index.css
+         * @description the style library name. e.g. custom-theme =>  custom-theme/index.css
          * @type {string}
          */
         styleLibraryName: '',
