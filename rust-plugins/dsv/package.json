@@ -42,7 +42,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_dsv -p farmfe_plugin_dsv --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_dsv --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
