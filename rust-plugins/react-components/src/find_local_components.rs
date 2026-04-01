@@ -394,11 +394,18 @@ pub fn find_local_components(root_path: &str, dirs: Vec<ConfigRegex>) -> HashSet
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::env;
   #[test]
   fn test_find_local_components() {
-    let current_dir = env::current_dir().unwrap();
-    let root_path = current_dir.join("playground").to_string_lossy().to_string();
+    // Use CARGO_MANIFEST_DIR to get the crate directory, then navigate to workspace root
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let crate_dir = std::path::Path::new(manifest_dir);
+    // workspace root is two levels up from rust-plugins/react-components/
+    let workspace_root = crate_dir.parent().unwrap().parent().unwrap();
+    let root_path = workspace_root
+      .join("examples")
+      .join("rust-plugin-react-components")
+      .to_string_lossy()
+      .to_string();
     let components = find_local_components(&root_path, vec![]);
     println!("components {components:#?}");
     assert!(!components.is_empty(), "Components should not be empty");

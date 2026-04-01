@@ -30,7 +30,7 @@ jobs:
               apt-get install -y protobuf-compiler --fix-missing &&
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
-              for plugin in auto-import compress dsv icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu || exit 1; done
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu || exit 1; done
 
           - os: ubuntu-latest
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
@@ -52,7 +52,7 @@ jobs:
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               apk add protobuf &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
-              for plugin in auto-import compress dsv icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl || exit 1; done
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl || exit 1; done
 
           - os: windows-latest
             abi: win32-x64-msvc
@@ -78,7 +78,7 @@ jobs:
               cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
               cd ../replace-dirname && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
               cd ../sass && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
-              for plugin in auto-import compress dsv icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
                 cd ../$plugin && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc || exit 1
               done
           - os: windows-latest
@@ -93,7 +93,7 @@ jobs:
               cd ../../rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../replace-dirname && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../sass && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
-              for plugin in auto-import compress dsv icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
                 cd ../$plugin && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc || exit 1
               done
           # linux
@@ -191,7 +191,7 @@ jobs:
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }}
           cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }}
           cd ../../rust-plugins
-          for plugin in react replace-dirname sass auto-import compress dsv icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
+          for plugin in react replace-dirname sass auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
             cd $plugin && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} || exit 1
             cd ..
           done
@@ -250,6 +250,12 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
           path: rust-plugins/dsv/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Dts
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
+          path: rust-plugins/dts/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Icons
         if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
