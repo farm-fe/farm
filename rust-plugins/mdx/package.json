@@ -44,7 +44,7 @@
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
     "play": "pnpm --filter playground dev",
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_mdx -p farmfe_plugin_mdx --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_mdx --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [

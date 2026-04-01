@@ -84,7 +84,7 @@
     "bump": "npx changeset version",
     "play-react": "pnpm --filter playground-react dev",
     "play-vue": "pnpm --filter playground-vue dev",
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_icons -p farmfe_plugin_icons --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_icons --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [

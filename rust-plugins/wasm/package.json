@@ -34,7 +34,7 @@
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_wasm -p farmfe_plugin_wasm --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_wasm --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [

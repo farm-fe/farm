@@ -32,7 +32,7 @@
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
-    "build": "farm-plugin-tools build --platform --cargo-name farm_plugin_svgr -p farm_plugin_svgr --release",
+    "build": "farm-plugin-tools build --platform -p farm_plugin_svgr --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [

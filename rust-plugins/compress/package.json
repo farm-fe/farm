@@ -49,7 +49,7 @@
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_compress -p farmfe_plugin_compress --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_compress --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [

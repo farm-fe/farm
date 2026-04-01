@@ -42,7 +42,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_virtual -p farmfe_plugin_virtual --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_virtual --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [

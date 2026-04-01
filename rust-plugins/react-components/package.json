@@ -65,7 +65,7 @@
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
     "bump": "npx changeset version",
-    "build": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_react_components -p farmfe_plugin_react_components --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_react_components --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "devDependencies": {
