@@ -1,6 +1,7 @@
 {
-  "name": "playground-vue",
+  "name": "@farmfe-examples/rust-plugin-auto-import-vue",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "farm start",
     "start": "farm start",
@@ -13,8 +14,8 @@
     "vue": "^3.4.0"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^2.0.0-beta.0",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@farmfe/plugin-auto-import": "workspace:*",
     "@vitejs/plugin-vue": "^5.0.4",
     "core-js": "^3.30.1"
