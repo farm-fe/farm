@@ -93,6 +93,12 @@ jobs:
           path: ./rust-plugins/dsv/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4
+        id: download-plugin-dts
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
+          path: ./rust-plugins/dts/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
         id: download-plugin-icons
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
@@ -337,6 +343,7 @@ jobs:
           - name: plugin-auto-import
           - name: plugin-compress
           - name: plugin-dsv
+          - name: plugin-dts
           - name: plugin-icons
           - name: plugin-image
           - name: plugin-mdx

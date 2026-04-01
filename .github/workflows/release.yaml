@@ -111,6 +111,7 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-auto-import/* ./rust-plugins/auto-import/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-compress/* ./rust-plugins/compress/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dsv/* ./rust-plugins/dsv/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dts/* ./rust-plugins/dts/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-icons/* ./rust-plugins/icons/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-image/* ./rust-plugins/image/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-mdx/* ./rust-plugins/mdx/npm/${abi}
@@ -133,6 +134,7 @@ jobs:
             test -f ./rust-plugins/auto-import/npm/${abi}/index.farm
             test -f ./rust-plugins/compress/npm/${abi}/index.farm
             test -f ./rust-plugins/dsv/npm/${abi}/index.farm
+            test -f ./rust-plugins/dts/npm/${abi}/index.farm
             test -f ./rust-plugins/icons/npm/${abi}/index.farm
             test -f ./rust-plugins/image/npm/${abi}/index.farm
             test -f ./rust-plugins/mdx/npm/${abi}/index.farm
