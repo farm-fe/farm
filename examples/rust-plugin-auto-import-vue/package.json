@@ -16,6 +16,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-visualizer": "workspace:*",
     "@farmfe/plugin-auto-import": "workspace:*",
     "@vitejs/plugin-vue": "^5.0.4",
     "core-js": "^3.30.1"
