@@ -1,6 +1,7 @@
 {
-  "name": "playground-vue",
+  "name": "@farmfe-examples/rust-plugin-icons-vue",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "farm start",
     "start": "farm start",
@@ -14,8 +15,8 @@
     "vue": "^3.4.31"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "latest",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@vitejs/plugin-vue": "^5.0.5",
     "core-js": "^3.37.1"
   }
