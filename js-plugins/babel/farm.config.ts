@@ -8,7 +8,7 @@ export default defineConfig({
       index: './src/index.ts'
     },
     output: {
-      targetEnv: 'library-node',
+      targetEnv: 'node',
       path: `./dist`,
       format: 'cjs'
     },
