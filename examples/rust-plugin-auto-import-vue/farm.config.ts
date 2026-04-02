@@ -5,7 +5,7 @@ import visualizer from '@farmfe/js-plugin-visualizer';
 export default defineConfig({
   vitePlugins: [vue()],
   plugins: [
-    visualizer(),
+    process.env.FARM_VISUALIZER ? visualizer() : null,
     farmAutoImport({
       dts: "./src/auto_import.d.ts",
       presets:[
@@ -17,5 +17,6 @@ export default defineConfig({
           ],
         }
       ]
-    })],
+    })
+  ].filter(Boolean),
 });
