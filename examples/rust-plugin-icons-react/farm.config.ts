@@ -21,8 +21,7 @@ export default defineConfig({
       compiler: "jsx",
       defaultClass: "icon-color",
       customCollections: {
-        local: './src/assets',
-        remote: "https://cdn.simpleicons.org/[iconname]"
+        local: './src/assets'
       }
     }),
   ].filter(Boolean),

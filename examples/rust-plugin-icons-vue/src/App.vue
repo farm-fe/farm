@@ -2,7 +2,6 @@
 import HelloWorld from './components/HelloWorld.vue'
 import IconAccessibility from '~icons/fontisto/ambulance'
 import LocalIcon from '~icons/local/vue'
-import RemoteIcon from "~icons/remote/simpleicons?width=6em&height=6em&fill=#42b883"
 </script>
 
 <template>
@@ -15,7 +14,6 @@ import RemoteIcon from "~icons/remote/simpleicons?width=6em&height=6em&fill=#42b
     </a>
   <IconAccessibility color="red" />
   <LocalIcon style="height: 8em; width: 8em;" />
-  <RemoteIcon />
   </div>
   <HelloWorld msg="Farm + Vue" />
 </template>

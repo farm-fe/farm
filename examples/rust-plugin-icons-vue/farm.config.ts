@@ -19,8 +19,7 @@ export default defineConfig({
       //   height: "2em",
       // },
       customCollections: {
-        local: './src/assets',
-        remote: "https://cdn.simpleicons.org/[iconname]/"
+        local: './src/assets'
       }
     }),
   ]
