@@ -1,7 +1,6 @@
 import { defineConfig } from "@farmfe/core";
 import react from '@farmfe/plugin-react';
 import autoImport from '@farmfe/plugin-auto-import';
-import visualizer from '@farmfe/js-plugin-visualizer';
 
 export default defineConfig({
   compilation: {
@@ -22,6 +21,5 @@ export default defineConfig({
       dirs: ['src/apis'],
       ignore:[]
     }),
-    visualizer()
   ],
 });

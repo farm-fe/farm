@@ -13,7 +13,7 @@ export default defineConfig({
   },
   plugins: [
     farmJsPluginPostcss(),
-    visualizer(),
+    process.env.FARM_VISUALIZER ? visualizer() : null,
     react(),
     icons({
       scale: 1.2,
@@ -25,5 +25,5 @@ export default defineConfig({
         remote: "https://cdn.simpleicons.org/[iconname]"
       }
     }),
-  ],
+  ].filter(Boolean),
 });
