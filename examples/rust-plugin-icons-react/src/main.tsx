@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import "./main.css";
 import FarmLogo from "./assets/logo.png";
 import VueLogoIconifyRaw from '~icons/logos/vue?raw'
-import RemoteComponent from "~icons/remote/react";
 import ReactLogoIconify from '~icons/logos/react?width=2em&height=2em'
 import ReactLogoComponent from "./assets/react.svg?component";
 import LocalReactLogo from "~icons/local/react";
@@ -24,7 +23,6 @@ export function Main() {
           <ReactLogoIconify className="text-100px text-#00D8FF" />
           <ReactLogoComponent className="text-100px h-1em w-1em" />
           <LocalReactLogo />
-          <RemoteComponent className="text-100px h-1em w-1em" />
           <div dangerouslySetInnerHTML={
             {
               __html: VueLogoIconifyRaw
