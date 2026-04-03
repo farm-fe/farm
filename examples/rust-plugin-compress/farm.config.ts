@@ -17,7 +17,7 @@ export default defineConfig({
       filter: '\\.(js|mjs|json|css|html)$',
       level: 11,
       threshold: 2048,
-      deleteOriginFile: true,
+      deleteOriginFile: false,
     })
   ],
 });
