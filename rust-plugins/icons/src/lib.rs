@@ -7,7 +7,7 @@ mod cache;
 use cache::HttpClient;
 use compiler::{get_compiler, get_module_type_by_compiler, CompilerParams, GetCompilerParams};
 use farmfe_core::{
-  config::Config,
+  config::{persistent_cache::PersistentCacheConfig, Config},
   module::ModuleType,
   plugin::{Plugin, PluginLoadHookResult, PluginResolveHookResult},
   serde_json,
@@ -44,11 +44,14 @@ impl FarmfePluginIcons {
         .unwrap_or(config.root.clone()),
     );
 
-    let cache_dir = config
-      .persistent_cache
-      .as_obj(&config.root)
-      .cache_dir
-      .unwrap();
+    let cache_dir = if config.persistent_cache.enabled() {
+      config.persistent_cache.as_obj(&config.root).cache_dir.unwrap()
+    } else {
+      PersistentCacheConfig::get_default_config(&config.root)
+        .as_obj(&config.root)
+        .cache_dir
+        .unwrap()
+    };
     let cache_name = "icons";
     let http_client = HttpClient::new(cache_name, &cache_dir);
     let jsx = options::guess_jsx(&config.root);
