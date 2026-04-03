@@ -12,7 +12,7 @@ export default defineConfig({
   vitePlugins: [vue()],
   plugins: [
     icons({
-      autoInstall: true,
+      autoInstall: false,
       compiler: 'vue',
       // defaultStyle: {
       //   width: "2em",

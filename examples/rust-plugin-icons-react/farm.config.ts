@@ -17,7 +17,7 @@ export default defineConfig({
     react(),
     icons({
       scale: 1.2,
-      autoInstall: true,
+      autoInstall: false,
       compiler: "jsx",
       defaultClass: "icon-color",
       customCollections: {
