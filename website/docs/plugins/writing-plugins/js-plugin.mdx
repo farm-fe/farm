@@ -131,7 +131,7 @@ Before you start to write your js plugin, you should know the following concepts
 * **Resource and Resource Pot**: `Resource` is the final output bundle file, and `Resource Pot` is the abstract representation of the resource, similar to `Chunk` of other bundlers. Inside Farm, first we will generate `Resource Pots` from `ModuleGraph`, render `Resource Pots` and finally generate `Resources` from `Resource Pots`.
 
 ### Filters
-Cause `Js Plugins` are much slower than `Rust Plugins`, Farm use `filters` to control the execution of js plugin hooks. The plugin hook executes only when given `filters` matched to improve performance. `filters` is neccessary for some commonly used hooks, such as `resolve`, `load`, `transform`, etc. 
+Cause `Js Plugins` are much slower than `Rust Plugins`, Farm use `filters` to control the execution of js plugin hooks. The plugin hook executes only when given `filters` matched to improve performance. `filters` is necessary for some commonly used hooks, such as `resolve`, `load`, `transform`, etc. 
 
 For example, if you want to transform css files, you can use `transform.filters.moduleTypes = ['css']` to make sure that the transform hook of your js plugin only runs for `.css` files:
 
@@ -179,7 +179,7 @@ Farm provides official templates to help your create your js plugins quickly:
 
 then follow the prompts to create your plugin.
 
-or you can create a plugin derectly by running the following command:
+or you can create a plugin directly by running the following command:
 <Tabs>
       <TabItem value="pnpm" label="pnpm">
           <CodeBlock>pnpm create farm-plugin my-farm-plugin --type js</CodeBlock>
