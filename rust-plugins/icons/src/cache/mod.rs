@@ -3,6 +3,7 @@ use cached::stores::DiskCache;
 use loading::Loading;
 use reqwest::{header::CACHE_CONTROL, Error, Response};
 use std::time::{Duration, SystemTime};
+
 #[derive(Encode, Decode, Debug)]
 struct CacheValue {
   data: String,
@@ -10,33 +11,66 @@ struct CacheValue {
 }
 
 pub struct HttpClient {
-  cache: DiskCache<String, Vec<u8>>,
+  cache: Option<DiskCache<String, Vec<u8>>>,
+}
+
+fn try_build_disk_cache(
+  cache_name: &str,
+  cache_dir: &str,
+) -> Option<DiskCache<String, Vec<u8>>> {
+  const MAX_RETRIES: u32 = 5;
+  let mut delay = Duration::from_millis(50);
+
+  for attempt in 0..=MAX_RETRIES {
+    match DiskCache::new(cache_name)
+      .set_disk_directory(cache_dir)
+      .build()
+    {
+      Ok(cache) => return Some(cache),
+      Err(e) => {
+        if attempt < MAX_RETRIES {
+          std::thread::sleep(delay);
+          delay *= 2;
+        } else {
+          eprintln!(
+            "[farm-plugin-icons] Warning: could not open disk cache after {} retries: {}. \
+             Continuing without disk cache.",
+            MAX_RETRIES, e
+          );
+        }
+      }
+    }
+  }
+  None
 }
 
 impl HttpClient {
   pub fn new(cache_name: &str, cache_dir: &str) -> Self {
-    let cache: DiskCache<String, Vec<u8>> = DiskCache::new(cache_name)
-      .set_disk_directory(cache_dir)
-      .build()
-      .unwrap();
+    let cache = try_build_disk_cache(cache_name, cache_dir);
     HttpClient { cache }
   }
 
   pub async fn fetch_data(&self, url: &str) -> Result<String, Error> {
     let loading = Loading::default();
     let config = config::standard();
-    if let Ok(Some(entry)) = self.cache.connection().get(url) {
-      let cached_value: (CacheValue, usize) = bincode::decode_from_slice(&entry, config).unwrap();
-      if cached_value.0.expiration > SystemTime::now() {
-        // Return cached value if not expired
-        loading.success(format!("{url} icon fetched from cache"));
-        loading.end();
-        return Ok(cached_value.0.data);
-      } else {
-        // Remove expired cache
-        self.cache.connection().remove(url).unwrap();
+
+    if let Some(disk_cache) = &self.cache {
+      if let Ok(Some(entry)) = disk_cache.connection().get(url) {
+        if let Ok((cached_value, _)) =
+          bincode::decode_from_slice::<CacheValue, _>(&entry, config)
+        {
+          if cached_value.expiration > SystemTime::now() {
+            loading.success(format!("{url} icon fetched from cache"));
+            loading.end();
+            return Ok(cached_value.data);
+          } else {
+            // Remove expired cache entry; ignore errors
+            let _ = disk_cache.connection().remove(url);
+          }
+        }
       }
     }
+
     loading.text(format!("Fetching {url} icon from network..."));
     let result = reqwest::get(url).await;
     match result {
@@ -46,17 +80,19 @@ impl HttpClient {
           let text = response.text().await?;
           loading.success(format!("{url} icon fetched from network"));
           loading.end();
-          let cache_value = CacheValue {
-            data: text,
-            expiration: SystemTime::now() + cache_duration,
-          };
-          let serialized_data = bincode::encode_to_vec(&cache_value, config).unwrap();
-          self
-            .cache
-            .connection()
-            .insert(url, serialized_data)
-            .unwrap();
-          Ok(cache_value.data)
+
+          if let Some(disk_cache) = &self.cache {
+            let cache_value = CacheValue {
+              data: text.clone(),
+              expiration: SystemTime::now() + cache_duration,
+            };
+            if let Ok(serialized_data) = bincode::encode_to_vec(&cache_value, config) {
+              // Ignore cache write errors — non-fatal
+              let _ = disk_cache.connection().insert(url, serialized_data);
+            }
+          }
+
+          Ok(text)
         } else {
           let status = response.status();
           loading.fail(format!("{url} icon fetch err: {status:?}"));

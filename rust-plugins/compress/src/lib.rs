@@ -90,7 +90,14 @@ impl Plugin for FarmfePluginCompress {
       .resources_map
       .par_iter_mut()
       .filter_map(|(resource_id, resource)| {
-        if !filter.is_match(resource_id) || resource.bytes.len() < self.options.threshold {
+        // Skip resources already marked as emitted (e.g. Farm's internal runtime
+        // which is inlined into HTML and never written to disk as a standalone file).
+        // Compressing them would produce orphaned .br/.gz files with no matching
+        // original, causing the preview server to 404 or fall back to index.html.
+        if resource.emitted
+          || !filter.is_match(resource_id)
+          || resource.bytes.len() < self.options.threshold
+        {
           return None;
         }
         if self.options.delete_origin_file.unwrap_or(false) {
