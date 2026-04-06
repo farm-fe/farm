@@ -26,7 +26,7 @@ pub fn base64_decode(bytes: &[u8]) -> String {
           String::from_utf8_lossy(&decoded).to_string()
         }
       }
-    },
+    }
     Err(_) => {
       // If base64 decode fails (usually due to long paths), return safe representation of original input
       String::from_utf8_lossy(bytes).to_string()

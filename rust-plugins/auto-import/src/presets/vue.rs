@@ -1,0 +1,62 @@
+use super::ImportPreset;
+
+pub fn get_vue_preset() -> ImportPreset {
+  ImportPreset {
+    from: "vue".to_string(),
+    imports: vec![
+      // lifecycle
+      "onActivated".to_string(),
+      "onBeforeMount".to_string(),
+      "onBeforeUnmount".to_string(),
+      "onBeforeUpdate".to_string(),
+      "onErrorCaptured".to_string(),
+      "onDeactivated".to_string(),
+      "onMounted".to_string(),
+      "onServerPrefetch".to_string(),
+      "onUnmounted".to_string(),
+      "onUpdated".to_string(),
+      // setup helpers
+      "useAttrs".to_string(),
+      "useSlots".to_string(),
+      // reactivity.to_string(),
+      "computed".to_string(),
+      "customRef".to_string(),
+      "isReadonly".to_string(),
+      "isRef".to_string(),
+      "isProxy".to_string(),
+      "isReactive".to_string(),
+      "markRaw".to_string(),
+      "reactive".to_string(),
+      "readonly".to_string(),
+      "ref".to_string(),
+      "shallowReactive".to_string(),
+      "shallowReadonly".to_string(),
+      "shallowRef".to_string(),
+      "triggerRef".to_string(),
+      "toRaw".to_string(),
+      "toRef".to_string(),
+      "toRefs".to_string(),
+      "toValue".to_string(),
+      "unref".to_string(),
+      "watch".to_string(),
+      "watchEffect".to_string(),
+      "watchPostEffect".to_string(),
+      "watchSyncEffect".to_string(),
+      // component
+      "defineComponent".to_string(),
+      "defineAsyncComponent".to_string(),
+      "getCurrentInstance".to_string(),
+      "h".to_string(),
+      "inject".to_string(),
+      "nextTick".to_string(),
+      "provide".to_string(),
+      "useCssModule".to_string(),
+      "createApp".to_string(),
+      // effect scope
+      "effectScope".to_string(),
+      "EffectScope".to_string(),
+      "getCurrentScope".to_string(),
+      "onScopeDispose".to_string(),
+    ],
+  }
+}

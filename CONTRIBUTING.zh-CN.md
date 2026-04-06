@@ -114,6 +114,13 @@ cargo test
 pnpm test
 ```
 
+### Example 的 E2E 测试
+
+- 在 `examples/<name>/e2e.spec.ts` 中新增或修改示例级 E2E 测试。
+- 在新增/更新 E2E 用例前后，都应调用 `/e2e-example-acceptance` skill。
+- 编写规范见 [`e2e/README.md`](./e2e/README.md)。
+- 对受影响 example 需要分别验证 `start`、`build`、`preview`。
+
 ## 通过脚手架快速创建插件
 
 Farm 提供了一个脚手架来帮助您快速创建一个插件, 您可以通过以下命令来创建一个插件。

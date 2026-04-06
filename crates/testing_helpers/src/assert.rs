@@ -9,9 +9,8 @@ macro_rules! assert_resource_pots {
       resources.sort();
       module_groups.sort_by_key(|a| a.to_string());
 
-      output.push(
-        format!(
-          "name: {}
+      output.push(format!(
+        "name: {}
 id: {}
 immutable: {}
 resource_pot_type: {:?}
@@ -19,16 +18,15 @@ entry: {:#?}
 module_groups: {:#?}
 modules: {:#?}
 resources: {:#?}",
-          &resource_pot.name,
-          &resource_pot.id,
-          resource_pot.immutable,
-          &resource_pot.resource_pot_type,
-          &resource_pot.entry_module,
-          module_groups,
-          resource_pot.modules(),
-          resources,
-        ),
-      );
+        &resource_pot.name,
+        &resource_pot.id,
+        resource_pot.immutable,
+        &resource_pot.resource_pot_type,
+        &resource_pot.entry_module,
+        module_groups,
+        resource_pot.modules(),
+        resources,
+      ));
 
       farmfe_testing_helpers::assert_snapshot!(output.join("\n\n-------\n\n"));
     }

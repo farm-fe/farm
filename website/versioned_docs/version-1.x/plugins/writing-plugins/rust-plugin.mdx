@@ -17,7 +17,7 @@ use farmfe_macro_plugin::farm_plugin;
 pub struct FarmPluginExample {}
 
 impl FarmPluginExample {
-  // a Rust plugin must export a new method that accepts 2 arguments for initialization�?
+  // a Rust plugin must export a new method that accepts 2 arguments for initialization�?
   fn new(config: &Config, options: String) -> Self {
     Self {}
   }
@@ -108,20 +108,20 @@ The plugin project structure is as follows:
 ```plaintext
 my-farm-plugin
 ├── .github
-�?  └── workflows
+�?  └── workflows
 |       ├── release.yml
 |       ├── build.yml
-�?      └── ci.yml
+�?      └── ci.yml
 ├── Cargo.toml
 |── .gitignore
 ├── npm
-�?  ├── darwin-x64
-�?  ├── linux-x64-gnu
+�?  ├── darwin-x64
+�?  ├── linux-x64-gnu
 |   ├── win32-x64-msvc
-�?  └── ...
+�?  └── ...
 ├── package.json
 ├── src
-�?  └── lib.rs
+�?  └── lib.rs
 └── rust-toolchain.toml
 ```
 Notable files and directories:
@@ -138,7 +138,7 @@ Farm provides a tool(`@farmfe/plugin-tools`) to help you build and publish your 
   // ...
   "scripts": {
     // build your plugin for current platform
-    "build": "farm-plugin-tools build --platform --cargo-name my_farm_plugin -p my_farm_plugin --release",
+    "build": "farm-plugin-tools build --platform -p my_farm_plugin --release",
     // publish all platform packages under npm directory to npm registry
     "prepublishOnly": "farm-plugin-tools prepublish"
   },

@@ -537,10 +537,7 @@ fn test_diff_module_deps_remove_and_add_complex() {
     &module_graph,
     &update_module_graph,
   );
-  assert_eq!(
-    added_modules,
-    HashSet::from_iter(["e".into(), "c".into()])
-  );
+  assert_eq!(added_modules, HashSet::from_iter(["e".into(), "c".into()]));
   assert_eq!(removed_modules, HashSet::from_iter([]));
   assert_eq!(
     diff_result,

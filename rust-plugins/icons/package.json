@@ -1,0 +1,95 @@
+{
+  "name": "@farmfe/plugin-icons",
+  "version": "2.0.0-beta.0",
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/farm-fe/farm",
+  "author": "CCherry07 <2405693142@qq.com>",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/farm.git"
+  },
+  "keywords": [
+    "rust",
+    "icons",
+    "farmfe"
+  ],
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "napi": {
+    "name": "farmfe_plugin_icons",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
+    },
+    "./package.json": "./package.json",
+    "./types/astro": {
+      "types": "./types/astro.d.ts"
+    },
+    "./types/preact": {
+      "types": "./types/preact.d.ts"
+    },
+    "./types/qwik": {
+      "types": "./types/qwik.d.ts"
+    },
+    "./types/raw": {
+      "types": "./types/raw.d.ts"
+    },
+    "./types/react": {
+      "types": "./types/react.d.ts"
+    },
+    "./types/solid": {
+      "types": "./types/solid.d.ts"
+    },
+    "./types/svelte": {
+      "types": "./types/svelte.d.ts"
+    },
+    "./types/svelte3": {
+      "types": "./types/svelte3.d.ts"
+    },
+    "./types/svelte4": {
+      "types": "./types/svelte4.d.ts"
+    },
+    "./types/vue": {
+      "types": "./types/vue.d.ts"
+    },
+    "./types/vue3": {
+      "types": "./types/vue3.d.ts"
+    },
+    "./types/web-components": {
+      "types": "./types/web-components.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "cargo watch -w src -s 'scripts/watch.sh'",
+    "bump": "npx changeset version",
+    "play-react": "pnpm --filter playground-react dev",
+    "play-vue": "pnpm --filter playground-vue dev",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_icons --release",
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  "files": [
+    "scripts",
+    "types",
+    "options.d.ts"
+  ]
+}

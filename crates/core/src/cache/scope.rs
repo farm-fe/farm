@@ -314,10 +314,10 @@ mod tests {
       Some(vec![IdType::Scope("s2".to_string())]),
     );
 
-    let s1_data = c1.get_scope::<Module>(&"s1".to_string());
+    let s1_data = c1.get_scope::<Module>("s1");
     assert_eq!(s1_data.len(), 2);
 
-    let s2_data = c1.get_scope::<Module>(&"s2".to_string());
+    let s2_data = c1.get_scope::<Module>("s2");
     assert_eq!(s2_data.len(), 1);
 
     let m1_data = c1.get::<Module>("module1", None);
@@ -356,7 +356,7 @@ mod tests {
       ]),
     );
 
-    let tw_scope_values = c1.get_scope::<TwToken>(&"tailwind-token".to_string());
+    let tw_scope_values = c1.get_scope::<TwToken>("tailwind-token");
 
     assert_eq!(tw_scope_values.len(), 2);
 

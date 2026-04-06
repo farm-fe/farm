@@ -1,0 +1,34 @@
+{
+  "name": "@farmfe-examples/rust-plugin-react-components",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@arco-design/web-react": "^2.63.1",
+    "@farmfe/js-plugin-less": "workspace:*",
+    "@farmfe/plugin-react-components": "workspace:*",
+    "antd": "^5.19.3",
+    "clsx": "^1.2.1",
+    "less": "^4.2.0",
+    "postcss": "^8.4.39",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@unocss/postcss": "^0.61.3",
+    "core-js": "^3.37.1",
+    "react-refresh": "^0.14.2",
+    "unocss": "^0.61.3"
+  }
+}

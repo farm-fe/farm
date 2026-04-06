@@ -485,20 +485,29 @@ fn merge_stripped_module_asts(
       .as_module_decl()
       .and_then(|decl| decl.as_import())
     {
-      (import.src.value.to_string_lossy().into_owned(), ResolveKind::Import)
+      (
+        import.src.value.to_string_lossy().into_owned(),
+        ResolveKind::Import,
+      )
     } else if let Some(src) = item
       .import_item
       .as_module_decl()
       .and_then(|decl| decl.as_export_named())
       .and_then(|export| export.src.as_ref())
     {
-      (src.value.to_string_lossy().into_owned(), ResolveKind::ExportFrom)
+      (
+        src.value.to_string_lossy().into_owned(),
+        ResolveKind::ExportFrom,
+      )
     } else if let Some(export_all) = item
       .import_item
       .as_module_decl()
       .and_then(|decl| decl.as_export_all())
     {
-      (export_all.src.value.to_string_lossy().into_owned(), ResolveKind::ExportFrom)
+      (
+        export_all.src.value.to_string_lossy().into_owned(),
+        ResolveKind::ExportFrom,
+      )
     } else {
       continue;
     };

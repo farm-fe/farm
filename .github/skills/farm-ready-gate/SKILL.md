@@ -1,6 +1,6 @@
 ---
 name: farm-ready-gate
-description: Run Farm's full ready gate and confirm all tests/checks pass. Use when user asks to verify everything before merge, release, or push; keywords: ready, full check, all tests, CI parity, npm run ready.
+description: Run Farm verification with build-first constraints. For verify/acceptance, use npm run build only for core, rust plugins, and affected examples; do not run cargo check/clippy. Use when validating changes before merge or push.
 license: MIT
 compatibility: Requires Node, pnpm, cargo, and project dependencies.
 metadata:
@@ -8,21 +8,62 @@ metadata:
   version: "1.0"
 ---
 
-Run the repository readiness gate and verify all quality checks pass.
+Run repository verification with build-first constraints. For verify/acceptance, default to npm run build only.
 
-## Primary Command
+## Verify Constraints (MANDATORY)
 
-Use the same top-level workflow as the repository ready script:
+1. All build verification for core and Rust plugins must use `npm run build`.
+2. Verify flow must not run `cargo build`, `cargo check`, or `cargo clippy`.
+3. For examples, verify by running `npm run build` in each affected example directory.
+4. Only run `pnpm run ready` when the user explicitly asks for full CI parity.
+
+## Tiered Verification (choose one tier before running anything)
+
+### Tier 1 — Bug Fixes & Simple/Localized Changes
+
+Use when: fixing a bug, changing a single package/crate/plugin, adding a small localized feature.
+
+**Steps (run in order, stop at first failure):**
+
+1. **Build `@farmfe/core`** (always required — it is the central dependency):
+  ```bash
+  pnpm --filter @farmfe/core run build
+  ```
+2. **Build affected Rust plugin packages** (from each changed plugin directory):
+  ```bash
+   npm run build
+  ```
+3. **Build affected examples** (every example that exercises the changed feature):
+  ```bash
+  cd examples/<name> && npm run build
+  ```
+
+If all three steps pass, verification is PASS.
+
+---
+
+### Tier 2 — Complex / Multi-Package Changes & Pre-Release Gate
+
+Use when: refactoring across multiple packages/plugins, changing plugin/compiler APIs, touching build infrastructure.
+
+**Default verify flow (still build-only):**
+
+```bash
+pnpm --filter @farmfe/core run build
+# then run npm run build in each changed rust-plugin/js-plugin/example package
+```
+
+**Optional CI parity flow (only if explicitly requested):**
 
 ```bash
 pnpm run ready
 ```
 
-This maps to `node scripts/ready.mjs` and should be the default path.
+Do not switch to this flow automatically.
 
 ## Ready Flow Reference (from scripts/ready.mjs)
 
-The ready script runs checks in this order:
+When `pnpm run ready` is explicitly requested, the script runs checks in this order:
 
 1. Install dependencies (`pnpm install`)
 2. Clean artifacts (`node ./scripts/clean.mjs`)
@@ -39,10 +80,11 @@ The ready script runs checks in this order:
 
 ## Execution Policy
 
-1. Prefer running `pnpm run ready` once first.
-2. If it fails, report the exact failing step and error excerpt.
-3. Optionally rerun only the failed step for a clearer diagnosis.
-4. Do not claim success unless the overall ready command exits with code 0.
+1. Determine tier based on change scope before running any commands.
+2. For verify/acceptance, default to build-only checks using `npm run build`.
+3. Do not run `cargo check` or `cargo clippy` in verify flow.
+4. Run `pnpm run ready` only when explicitly requested by the user.
+5. Do not claim success unless all chosen-tier steps exit with code 0.
 
 ## Output Format
 
