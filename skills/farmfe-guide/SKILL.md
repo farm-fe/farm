@@ -3,21 +3,23 @@ name: farmfe-guide
 description: >
   Comprehensive Farm build-tool reference for AI agents. Use when writing or reviewing farm.config.ts,
   adding/configuring plugins, troubleshooting builds, implementing SSR or library mode, using the
-  JavaScript API, or writing Farm JS/Rust plugins. Covers all config options, official plugins,
-  CLI commands, and key features sourced from website/docs.
+  JavaScript API, writing Farm JS/Rust plugins, or authoring custom plugins from scratch. Covers all
+  config options, official plugins, CLI commands, key features, and plugin authoring sourced from
+  website/docs.
 license: MIT
 compatibility: Farm ≥ 1.x. Node 16.18.0+. Uses pnpm as package manager.
 metadata:
   author: farm
-  version: "1.1"
+  version: "1.2"
 references:
-  - .github/skills/farmfe-guide/references/config.md
-  - .github/skills/farmfe-guide/references/cli.md
-  - .github/skills/farmfe-guide/references/plugins.md
-  - .github/skills/farmfe-guide/references/features.md
-  - .github/skills/farmfe-guide/references/javascript-api.md
-  - .github/skills/farmfe-guide/references/js-plugin-api.md
-  - .github/skills/farmfe-guide/references/recipes.md
+  - skills/farmfe-guide/references/config.md
+  - skills/farmfe-guide/references/cli.md
+  - skills/farmfe-guide/references/plugins.md
+  - skills/farmfe-guide/references/features.md
+  - skills/farmfe-guide/references/javascript-api.md
+  - skills/farmfe-guide/references/js-plugin-api.md
+  - skills/farmfe-guide/references/writing-plugins.md
+  - skills/farmfe-guide/references/recipes.md
 ---
 
 # Farm Build Tool — Agent Guide
@@ -39,6 +41,7 @@ Detailed documentation is split into focused reference files under `references/`
 | [`references/features.md`](references/features.md) | Quick start, CSS, TypeScript/JSX, env vars, assets, library mode, SSR, HMR, lazy compilation, persistent cache |
 | [`references/javascript-api.md`](references/javascript-api.md) | `@farmfe/core` JS API — `start/build/watch/preview/clean`, `Compiler`, `Server`, `loadEnv` |
 | [`references/js-plugin-api.md`](references/js-plugin-api.md) | Writing JS plugins — all hooks, `filters` structure, code examples |
+| [`references/writing-plugins.md`](references/writing-plugins.md) | **Authoring custom plugins** — scaffolding, JS plugin structure, Rust plugin structure, hooks, publishing |
 | [`references/recipes.md`](references/recipes.md) | Common patterns, framework quick-configs (React/Vue/Svelte/Electron), troubleshooting |
 
 ---
