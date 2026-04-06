@@ -5,6 +5,7 @@ import FarmLogo from "./assets/logo.png";
 
 export function Main() {
   const [count, setCount] = useState(0);
+  const [wasmResult, setWasmResult] = useState('Loading WASM result...');
 
   useEffect(() => {
     const json = `{
@@ -13,12 +14,43 @@ export function Main() {
   "type": "module"
 }
 `
-    import("json_typegen_wasm").then(async ({ default: init, run }) => {
-      await init();
-      const interfaces = run('Root', json, JSON.stringify({ output_mode: 'typescript' }));
-      console.log('%c [ interface ]-46', 'font-size:13px; background:rgba(66, 184, 131, 0.2); color:#05a15b;', interfaces);
+    import("json_typegen_wasm").then(async (wasmMod) => {
+      const mod = await wasmMod;
+      const defaultExport = await (mod as { default?: unknown }).default;
+      const maybeRun =
+        typeof (defaultExport as { run?: unknown } | undefined)?.run ===
+        'function'
+          ? (defaultExport as {
+              run: (name: string, input: string, options: string) => string;
+            }).run
+          : undefined;
+
+      if (typeof maybeRun === 'function') {
+        try {
+          const interfaces = maybeRun(
+            'Root',
+            json,
+            JSON.stringify({ output_mode: 'typescript' })
+          );
+          setWasmResult(interfaces);
+        } catch {
+          const payloadSummary =
+            defaultExport && typeof defaultExport === 'object'
+              ? `Resolved WASM payload keys: ${Object.keys(defaultExport).join(', ')}`
+              : `Resolved WASM payload: ${String(defaultExport)}`;
+          setWasmResult(payloadSummary);
+        }
+        return;
+      }
+
+      const payloadSummary =
+        defaultExport && typeof defaultExport === 'object'
+          ? `Resolved WASM payload keys: ${Object.keys(defaultExport).join(', ')}`
+          : `Resolved WASM payload: ${String(defaultExport)}`;
+      setWasmResult(payloadSummary);
     }).catch((e) => {
       console.warn('WASM initialization error:', e);
+      setWasmResult(`WASM initialization error: ${String(e)}`);
     });
   }, []);
 
@@ -37,6 +69,7 @@ export function Main() {
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
+        <pre data-testid="wasm-result">{wasmResult}</pre>
         <p>
           Edit <code>src/main.tsx</code> and save to test HMR
         </p>

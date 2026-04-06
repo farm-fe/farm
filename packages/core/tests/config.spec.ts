@@ -8,6 +8,7 @@ import {
   normalizeDevServerConfig,
   resolveConfig
 } from '../src/index.js';
+import { shouldAutoSyncHmrPort, syncServerPort } from '../src/server/index.js';
 
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
@@ -183,6 +184,51 @@ describe('normalize-dev-server-options', () => {
       mode: 'production'
     });
     expect(options.hmr).toBe(false);
+  });
+
+  test('auto sync hmr port when hmr shares dev server port', () => {
+    const server = normalizeDevServerConfig({ server: { port: 9000 } });
+    const config = {
+      compilation: {
+        define: {}
+      },
+      server
+    } as any;
+
+    expect(shouldAutoSyncHmrPort(server)).toBe(true);
+
+    server.hmr.port = 9555;
+
+    syncServerPort(config, 9001, true);
+
+    expect(config.server.port).toBe(9001);
+    expect(config.server.hmr.port).toBe(9001);
+    expect(config.compilation.define.FARM_HMR_PORT).toBe('9001');
+  });
+
+  test('keep explicit hmr port when it does not share dev server port', () => {
+    const server = normalizeDevServerConfig({
+      server: {
+        port: 9000,
+        hmr: {
+          port: 24678
+        }
+      }
+    });
+    const config = {
+      compilation: {
+        define: {}
+      },
+      server
+    } as any;
+
+    expect(shouldAutoSyncHmrPort(server)).toBe(false);
+
+    syncServerPort(config, 9001);
+
+    expect(config.server.port).toBe(9001);
+    expect(config.server.hmr.port).toBe(24678);
+    expect(config.compilation.define.FARM_HMR_PORT).toBeUndefined();
   });
 });
 

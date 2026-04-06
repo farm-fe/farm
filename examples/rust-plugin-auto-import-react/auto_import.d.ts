@@ -2,10 +2,10 @@
 export {} 
 declare global {
 	const getCss: typeof import('./src/apis/css/index.ts')['getCss']
-	const getName: typeof import('./src/apis/index.ts')['getName']
-	const getCss: typeof import('./src/apis/css/index.ts')['getCss']
 	const getData: typeof import('./src/apis/auth/login.ts')['getData']
 	const login: typeof import('./src/apis/auth/login.ts')['login']
+	const getName: typeof import('./src/apis/index.ts')['getName']
+	const getCss: typeof import('./src/apis/css/index.ts')['getCss']
 	const useState: typeof import('react')['useState']
 	const useCallback: typeof import('react')['useCallback']
 	const useMemo: typeof import('react')['useMemo']

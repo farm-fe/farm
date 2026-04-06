@@ -37,16 +37,16 @@ farm/
 
 ## Key Commands
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm bootstrap` | First-time setup: install deps + build core packages |
-| `pnpm run ready` | Full CI gate — install, clean, build, all tests (see below) |
-| `pnpm run test` | Unit tests (vitest) |
-| `cargo test` | Rust unit tests |
-| `pnpm run test-e2e` | Playwright E2E tests |
-| `pnpm run check` | Biome lint + format |
-| `cargo clippy` | Rust linter |
-| `pnpm run spell-check` | cspell across all files |
+| Command                | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `pnpm bootstrap`       | First-time setup: install deps + build core packages        |
+| `pnpm run ready`       | Full CI gate — install, clean, build, all tests (see below) |
+| `pnpm run test`        | Unit tests (vitest)                                         |
+| `cargo test`           | Rust unit tests                                             |
+| `pnpm run test-e2e`    | Playwright E2E tests                                        |
+| `pnpm run check`       | Biome lint + format                                         |
+| `cargo clippy`         | Rust linter                                                 |
+| `pnpm run spell-check` | cspell across all files                                     |
 
 ### Ready Gate (full CI parity)
 
@@ -70,11 +70,13 @@ farm/
 ## Tech Stack & Conventions
 
 ### Rust
+
 - Rust edition 2021, toolchain pinned in `rust-toolchain.toml`
 - Formatting via `rustfmt.toml`; lint with `cargo clippy`
 - Crates share workspace dependencies declared in the root `Cargo.toml`
 
 ### TypeScript / JavaScript
+
 - **Formatter + linter:** Biome (`biome.json`). Run `pnpm run check` before committing.
 - **Package manager:** pnpm v9+ with workspaces (`pnpm-workspace.yaml`)
 - **Module format:** ESM in source; dual CJS+ESM output for published packages
@@ -82,6 +84,7 @@ farm/
 - All TS config files extend `tsconfig.base.json`
 
 ### Git
+
 - Commit messages follow Conventional Commits (`feat:`, `fix:`, `chore:`, etc.)
 - Changesets managed via `@changesets/cli` — run `npx changeset` when bumping a package version
 - PR titles are linted by `lint-pr-title.yml` — must match Conventional Commits
@@ -100,10 +103,10 @@ farm/
 
 ## Available AI Agents
 
-| Agent | Trigger | File |
-|-------|---------|------|
-| **FarmFE Docs Sync** | After code changes that affect docs; finding doc/code discrepancies | `.github/agents/farmfe-docs-sync.agent.md` |
-| **Explore** | Read-only codebase Q&A, researching architectures, tracing code paths | Built-in subagent |
+| Agent                | Trigger                                                               | File                                       |
+| -------------------- | --------------------------------------------------------------------- | ------------------------------------------ |
+| **FarmFE Docs Sync** | After code changes that affect docs; finding doc/code discrepancies   | `.github/agents/farmfe-docs-sync.agent.md` |
+| **Explore**          | Read-only codebase Q&A, researching architectures, tracing code paths | Built-in subagent                          |
 
 ---
 
@@ -111,37 +114,38 @@ farm/
 
 Skills are on-demand workflows invoked as slash commands in VS Code Copilot chat. They are discovered automatically from two directories:
 
-| Directory | Scope | How to add a skill |
-|-----------|-------|--------------------|
-| `.github/skills/<name>/SKILL.md` | Workspace-shared (checked in, affects whole team) | Create the folder + `SKILL.md` with YAML frontmatter |
-| `.agents/skills/<name>/SKILL.md` | Workspace-local (checked in, agent-only utilities) | Same structure; place in `.agents/skills/` |
+| Directory                        | Scope                                              | How to add a skill                                   |
+| -------------------------------- | -------------------------------------------------- | ---------------------------------------------------- |
+| `.github/skills/<name>/SKILL.md` | Workspace-shared (checked in, affects whole team)  | Create the folder + `SKILL.md` with YAML frontmatter |
+| `.agents/skills/<name>/SKILL.md` | Workspace-local (checked in, agent-only utilities) | Same structure; place in `.agents/skills/`           |
 
 Type `/` in Copilot Chat to browse all available slash commands.
 
 ### Project Skills (`.github/skills/`)
 
-| Skill | Slash Command | Description |
-|-------|---------------|-------------|
-| `git-commit-push` | `/git-commit-push` | Safe commit + push workflow with guardrails |
-| `farm-ready-gate` | `/farm-ready-gate` | Run the full CI readiness gate (`pnpm run ready`) |
-| `rebase-commit-push-pr` | `/rebase-commit-push-pr` | Fetch/rebase onto `origin/main`, resolve conflicts, push, and ensure a PR exists |
-| `openspec-propose` | `/opsx:propose` | Propose a new change with full artifacts |
-| `openspec-apply-change` | `/opsx:apply` | Implement tasks from an OpenSpec change |
-| `openspec-explore` | `/opsx:explore` | Thinking-partner explore mode |
-| `openspec-archive-change` | `/opsx:archive` | Archive a completed change |
-| `a5c-ai-docusaurus` | Built-in | Deep Docusaurus integration for the website |
+| Skill                     | Slash Command             | Description                                                                                     |
+| ------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
+| `git-commit-push`         | `/git-commit-push`        | Safe commit + push workflow with guardrails                                                     |
+| `farm-ready-gate`         | `/farm-ready-gate`        | Run the full CI readiness gate (`pnpm run ready`)                                               |
+| `e2e-example-acceptance`  | `/e2e-example-acceptance` | Validate affected examples with start/build/preview plus browser console/request/content checks |
+| `rebase-commit-push-pr`   | `/rebase-commit-push-pr`  | Fetch/rebase onto `origin/main`, resolve conflicts, push, and ensure a PR exists                |
+| `openspec-propose`        | `/opsx:propose`           | Propose a new change with full artifacts                                                        |
+| `openspec-apply-change`   | `/opsx:apply`             | Implement tasks from an OpenSpec change                                                         |
+| `openspec-explore`        | `/opsx:explore`           | Thinking-partner explore mode                                                                   |
+| `openspec-archive-change` | `/opsx:archive`           | Archive a completed change                                                                      |
+| `a5c-ai-docusaurus`       | Built-in                  | Deep Docusaurus integration for the website                                                     |
 
 ### Agent Utility Skills (`.agents/skills/`)
 
 These skills ship with the agent toolchain and are available in all workspaces that use the same agent setup.
 
-| Skill | Trigger phrases | Description |
-|-------|----------------|-------------|
-| `rust-engineer` | Rust, Cargo, ownership, lifetimes, async | Writes, reviews, and debugs idiomatic Rust. Use for any Rust implementation work in `crates/` or `rust-plugins/`. |
-| `rust-best-practices` | Rust review, idiomatic Rust, borrowing, cloning | Apollo-based Rust best practices guide. Use when reviewing or refactoring existing Rust code. |
-| `agent-browser` | open website, fill form, screenshot, scrape, browser automation | Browser automation CLI for AI agents. Useful for testing Farm's dev server output in a real browser. |
-| `find-skills` | find a skill, how do I do X, is there a skill | Helps discover and install additional agent skills. |
-| `self-improving-agent` | (auto-triggers on skill completion/error) | Multi-memory self-correction agent that learns from skill outcomes and continuously improves the codebase. |
+| Skill                  | Trigger phrases                                                 | Description                                                                                                       |
+| ---------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `rust-engineer`        | Rust, Cargo, ownership, lifetimes, async                        | Writes, reviews, and debugs idiomatic Rust. Use for any Rust implementation work in `crates/` or `rust-plugins/`. |
+| `rust-best-practices`  | Rust review, idiomatic Rust, borrowing, cloning                 | Apollo-based Rust best practices guide. Use when reviewing or refactoring existing Rust code.                     |
+| `agent-browser`        | open website, fill form, screenshot, scrape, browser automation | Browser automation CLI for AI agents. Useful for testing Farm's dev server output in a real browser.              |
+| `find-skills`          | find a skill, how do I do X, is there a skill                   | Helps discover and install additional agent skills.                                                               |
+| `self-improving-agent` | (auto-triggers on skill completion/error)                       | Multi-memory self-correction agent that learns from skill outcomes and continuously improves the codebase.        |
 
 ### How to Create a New Skill
 
@@ -151,13 +155,11 @@ These skills ship with the agent toolchain and are available in all workspaces t
 
 ```yaml
 ---
-name: your-skill-name        # must match folder name
+name: your-skill-name # must match folder name
 description: "Use when ..." # discovery surface — be specific
 license: MIT
 ---
-
 ## Steps
-...
 ```
 
 4. Commit the file. The slash command `/your-skill-name` will appear in Copilot Chat immediately.
