@@ -1,7 +1,12 @@
 #[cfg(feature = "file_watcher")]
-use farmfe_core::resource::Resource;
+use std::path::{Path, PathBuf};
+
 #[cfg(feature = "file_watcher")]
-use napi::threadsafe_function::ThreadSafeCallContext;
+use napi::{
+  bindgen_prelude::FunctionRef,
+  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+  Env, Status,
+};
 
 #[cfg(feature = "file_watcher")]
 use notify::{
@@ -130,22 +135,16 @@ pub struct FileWatcher {
 #[napi]
 impl FileWatcher {
   #[napi(constructor)]
-  pub fn new(_: Env, callback: JsFunction) -> napi::Result<Self> {
-    let thread_safe_callback: ThreadsafeFunction<Vec<String>, ErrorStrategy::Fatal> = callback
-      .create_threadsafe_function(0, |ctx: ThreadSafeCallContext<Vec<String>>| {
-        let mut array = ctx.env.create_array_with_length(ctx.value.len())?;
-
-        for (i, v) in ctx.value.iter().enumerate() {
-          array.set_element(i as u32, ctx.env.create_string(v)?)?;
-        }
-
-        Ok(vec![array])
-      })?;
+  pub fn new(env: Env, callback: FunctionRef<Vec<String>, ()>) -> napi::Result<Self> {
+    let callback = callback.borrow_back(&env)?;
+    let thread_safe_callback = callback
+      .build_threadsafe_function::<Vec<String>>()
+      .build()?;
 
     let watcher = FsWatcher::new(move |paths| {
       thread_safe_callback.call(paths, ThreadsafeFunctionCallMode::Blocking);
     })
-    .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+    .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))?;
 
     Ok(Self { watcher })
   }
