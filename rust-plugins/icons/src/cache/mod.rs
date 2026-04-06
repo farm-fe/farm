@@ -14,10 +14,7 @@ pub struct HttpClient {
   cache: Option<DiskCache<String, Vec<u8>>>,
 }
 
-fn try_build_disk_cache(
-  cache_name: &str,
-  cache_dir: &str,
-) -> Option<DiskCache<String, Vec<u8>>> {
+fn try_build_disk_cache(cache_name: &str, cache_dir: &str) -> Option<DiskCache<String, Vec<u8>>> {
   const MAX_RETRIES: u32 = 5;
   let mut delay = Duration::from_millis(50);
 
@@ -33,9 +30,8 @@ fn try_build_disk_cache(
           delay *= 2;
         } else {
           eprintln!(
-            "[farm-plugin-icons] Warning: could not open disk cache after {} retries: {}. \
-             Continuing without disk cache.",
-            MAX_RETRIES, e
+            "[farm-plugin-icons] Warning: could not open disk cache after {MAX_RETRIES} retries: {e}. \
+             Continuing without disk cache."
           );
         }
       }
@@ -56,9 +52,7 @@ impl HttpClient {
 
     if let Some(disk_cache) = &self.cache {
       if let Ok(Some(entry)) = disk_cache.connection().get(url) {
-        if let Ok((cached_value, _)) =
-          bincode::decode_from_slice::<CacheValue, _>(&entry, config)
-        {
+        if let Ok((cached_value, _)) = bincode::decode_from_slice::<CacheValue, _>(&entry, config) {
           if cached_value.expiration > SystemTime::now() {
             loading.success(format!("{url} icon fetched from cache"));
             loading.end();

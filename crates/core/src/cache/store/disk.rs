@@ -329,6 +329,16 @@ impl DiskCacheFactory {
 
 #[cfg(feature = "profile")]
 mod profile {
+  use std::sync::Arc;
+
+  use crate::cache::{
+    store::{
+      constant::CacheStoreItemRef,
+      error::CacheError,
+      CacheStoreKey,
+    },
+    CacheStoreTrait,
+  };
 
   pub struct TimeCacheFactory {
     store: Arc<Box<dyn CacheStoreTrait>>,
@@ -393,6 +403,10 @@ mod profile {
     fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
       time!("remove_cache", name, self.store.remove_cache(name))
     }
+
+    fn remove_cache_only(&self, name: &str) {
+      time!("remove_cache_only", name, self.store.remove_cache_only(name))
+    }
   }
 }
 
@@ -400,11 +414,14 @@ impl CacheStoreFactory for DiskCacheFactory {
   fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
     #[cfg(feature = "profile")]
     {
-      return Box::new(NamespaceStore::new(
-        Box::new(profile::TimeCacheFactory::new(self.store.clone())),
-        name.to_string(),
-      ));
+      let profile_store: Arc<Box<dyn CacheStoreTrait>> =
+        Arc::new(Box::new(profile::TimeCacheFactory::new(self.store.clone())));
+      Box::new(NamespaceStore::new(profile_store, name.to_string()))
     }
-    Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
+
+    #[cfg(not(feature = "profile"))]
+    {
+      Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
+    }
   }
 }
