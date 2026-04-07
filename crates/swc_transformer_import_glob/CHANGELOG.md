@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2](https://github.com/farm-fe/farm/compare/farmfe_swc_transformer_import_glob-v2.0.1...farmfe_swc_transformer_import_glob-v2.0.2) - 2026-04-07
+
+### Other
+
+- Update SWC related crates to latest version and ensure tests pass ([#2281](https://github.com/farm-fe/farm/pull/2281))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_swc_transformer_import_glob-v2.0.0...farmfe_swc_transformer_import_glob-v2.0.1) - 2025-09-21
 
 ### Other

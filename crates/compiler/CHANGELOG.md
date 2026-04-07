@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0](https://github.com/farm-fe/farm/compare/farmfe_compiler-v2.1.0...farmfe_compiler-v2.2.0) - 2026-04-07
+
+### Added
+
+- add support for emitting multiple resources in farm library mode ([#2280](https://github.com/farm-fe/farm/pull/2280))
+- *(core)* support umd & css.transformToScript ([#2254](https://github.com/farm-fe/farm/pull/2254))
+
+### Fixed
+
+- fixed the issue of nested public and output config ([#2271](https://github.com/farm-fe/farm/pull/2271))
+- *(v2)* #2262 HMR does not work with Qiankun framework ([#2263](https://github.com/farm-fe/farm/pull/2263))
+- cjs require doesn't be handled correctly when targetEnv is library ([#2259](https://github.com/farm-fe/farm/pull/2259))
+
+### Other
+
+- Update SWC related crates to latest version and ensure tests pass ([#2281](https://github.com/farm-fe/farm/pull/2281))
+
 ## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_compiler-v2.0.0...farmfe_compiler-v2.1.0) - 2025-09-21
 
 ### Added
