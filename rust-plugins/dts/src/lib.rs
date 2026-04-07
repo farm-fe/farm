@@ -110,12 +110,12 @@ impl Plugin for FarmPluginDts {
     let dts_code = to_code(&program.expect_module());
     *self.total_dts_time.lock().unwrap() += start.elapsed();
 
-    context.emit_file(EmitFileParams {
-      resolved_path: param.module_id.to_string(),
-      name: dts_path,
-      content: dts_code.as_bytes().to_vec(),
-      resource_type: ResourceType::Custom("d.ts".to_string()),
-    });
+    context.emit_file(EmitFileParams::new(
+      param.module_id.to_string(),
+      dts_path,
+      dts_code.as_bytes().to_vec(),
+      ResourceType::Custom("d.ts".to_string()),
+    ));
     Ok(Some(()))
   }
 

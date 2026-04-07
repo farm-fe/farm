@@ -22,26 +22,26 @@ impl DepAnalyzer {
     if let Some(name) = &url.name.raw {
       if name == "url" {
         if let Some(value) = &url.value {
-          match value {
-            box farmfe_core::swc_css_ast::UrlValue::Str(str) => {
-              self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-                source: str.value.to_string(),
-                kind,
-              });
-            }
-            box farmfe_core::swc_css_ast::UrlValue::Raw(raw) => {
-              self.insert_dep(PluginAnalyzeDepsHookResultEntry {
-                source: raw.value.to_string(),
-                kind,
-              });
-            }
-          }
+          let source = match value {
+            box farmfe_core::swc_css_ast::UrlValue::Str(str) => &str.value,
+            box farmfe_core::swc_css_ast::UrlValue::Raw(raw) => &raw.value,
+          };
+          
+          self.insert_dep(PluginAnalyzeDepsHookResultEntry {
+            source: source.to_string(),
+            kind,
+          });
         }
       }
     }
   }
 
   fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) -> bool {
+    // ignore empty strings and whitespace-only strings
+    if dep.source.trim().is_empty() {
+      return false;
+    }
+    
     // ignore http and /
     if is_source_ignored(&dep.source) && !is_start_with_alias(&self.alias, &dep.source) {
       return false;
