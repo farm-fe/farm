@@ -36,6 +36,11 @@
   "bin": {
     "create-farm": "create-farm.js"
   },
+  "files": [
+    "create-farm.js",
+    "index.js",
+    "index.d.ts"
+  ],
   "scripts": {
     "create-farm": "node ./create-farm.js",
     "artifacts": "napi artifacts",
