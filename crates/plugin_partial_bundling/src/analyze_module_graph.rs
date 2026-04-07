@@ -32,6 +32,7 @@ pub fn module_group_graph_from_entries(
   let mut module_group_graph = ModuleGroupGraph::new();
   let mut edges = vec![];
   let mut visited = HashSet::default();
+  let entries_set: HashSet<ModuleId> = entries.iter().cloned().collect();
 
   for entry in entries.clone() {
     if visited.contains(&entry) {
@@ -41,16 +42,22 @@ pub fn module_group_graph_from_entries(
     let (group, dynamic_dependencies) =
       module_group_from_entry(&entry, ModuleGroupType::Entry, module_graph);
     edges.extend(dynamic_dependencies.clone().into_iter().map(|dep| {
-      (
-        group.id.clone(),
-        ModuleGroupId::new(&dep, &ModuleGroupType::DynamicImport),
-      )
+      let dep_type = if entries_set.contains(&dep) {
+        ModuleGroupType::Entry
+      } else {
+        ModuleGroupType::DynamicImport
+      };
+      (group.id.clone(), ModuleGroupId::new(&dep, &dep_type))
     }));
 
     module_group_graph.add_module_group(group);
 
     visited.insert(entry);
-    let mut queue = VecDeque::from(dynamic_dependencies);
+    let queue_deps: Vec<ModuleId> = dynamic_dependencies
+      .into_iter()
+      .filter(|dep| !entries_set.contains(dep))
+      .collect();
+    let mut queue = VecDeque::from(queue_deps);
 
     while !queue.is_empty() {
       let head = queue.pop_front().unwrap();
@@ -64,14 +71,20 @@ pub fn module_group_graph_from_entries(
       let (group, dynamic_dependencies) =
         module_group_from_entry(&head, ModuleGroupType::DynamicImport, module_graph);
       edges.extend(dynamic_dependencies.clone().into_iter().map(|dep| {
-        (
-          group.id.clone(),
-          ModuleGroupId::new(&dep, &ModuleGroupType::DynamicImport),
-        )
+        let dep_type = if entries_set.contains(&dep) {
+          ModuleGroupType::Entry
+        } else {
+          ModuleGroupType::DynamicImport
+        };
+        (group.id.clone(), ModuleGroupId::new(&dep, &dep_type))
       }));
 
       module_group_graph.add_module_group(group);
-      queue.extend(dynamic_dependencies);
+      queue.extend(
+        dynamic_dependencies
+          .into_iter()
+          .filter(|dep| !entries_set.contains(dep)),
+      );
     }
   }
 
@@ -390,5 +403,55 @@ mod tests {
 
     let module_group_graph = crate::module_group_graph_from_module_graph(&mut graph);
     assert_debug_snapshot!(module_group_graph);
+  }
+
+  #[test]
+  fn module_group_graph_entry_also_dynamic_import() {
+    use farmfe_core::module::{
+      meta_data::script::ScriptModuleMetaData,
+      module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+      Module, ModuleMetaData, ModuleType,
+    };
+
+    let mut graph = ModuleGraph::new();
+
+    for id in ["index", "a"] {
+      let mut m = Module::new(id.into());
+      m.module_type = ModuleType::Js;
+      m.meta = Box::new(ModuleMetaData::Script(Box::new(
+        ScriptModuleMetaData::default(),
+      )));
+      graph.add_module(m);
+    }
+
+    graph
+      .add_edge_item(
+        &"index".into(),
+        &"a".into(),
+        ModuleGraphEdgeDataItem {
+          source: "./a".to_string(),
+          kind: ResolveKind::DynamicImport,
+          order: 0,
+        },
+      )
+      .unwrap();
+
+    graph.entries = HashMap::from_iter([
+      ("index".into(), "main".to_string()),
+      ("a".into(), "a".to_string()),
+    ]);
+
+    let module_group_graph = crate::module_group_graph_from_entries(
+      &graph.entries.keys().cloned().collect(),
+      &mut graph,
+    );
+
+    let group_id_index = ModuleGroupId::new(&"index".into(), &ModuleGroupType::Entry);
+    let group_id_a = ModuleGroupId::new(&"a".into(), &ModuleGroupType::Entry);
+
+    assert!(module_group_graph.has(&group_id_index));
+    assert!(module_group_graph.has(&group_id_a));
+    assert_eq!(module_group_graph.len(), 2);
+    assert!(module_group_graph.has_edge(&group_id_index, &group_id_a));
   }
 }
