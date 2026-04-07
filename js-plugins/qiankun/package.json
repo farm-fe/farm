@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-qiankun",
-  "version": "0.0.1",
+  "version": "1.0.0-beta.0",
   "description": "farm qiankun plugin",
   "type": "module",
   "main": "./dist/plugin/cjs/qiankun-farm-plugin.cjs",
