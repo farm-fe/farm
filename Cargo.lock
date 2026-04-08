@@ -1882,6 +1882,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_ecosystem_tailwindcss"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "regex",
+]
+
+[[package]]
 name = "farmfe_macro_cache_item"
 version = "2.1.0"
 dependencies = [
@@ -2159,6 +2167,20 @@ dependencies = [
  "farmfe_utils 2.1.0",
  "mime_guess",
  "rkyv",
+]
+
+[[package]]
+name = "farmfe_plugin_tailwindcss"
+version = "0.0.1"
+dependencies = [
+ "farmfe_compiler",
+ "farmfe_core",
+ "farmfe_ecosystem_tailwindcss",
+ "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 2.1.0",
+ "serde",
 ]
 
 [[package]]

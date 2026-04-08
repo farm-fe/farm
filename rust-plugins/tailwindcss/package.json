@@ -1,0 +1,46 @@
+{
+  "name": "@farmfe/plugin-tailwindcss",
+  "version": "0.0.1",
+  "description": "Rust-based TailwindCSS plugin for Farm.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "napi": {
+    "binaryName": "farm-plugin-tailwindcss",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-unknown-linux-musl",
+      "i686-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  },
+  "scripts": {
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_tailwindcss --release",
+    "build:publish": "farm-plugin-tools build --platform --cargo-name farmfe_plugin_tailwindcss -p farmfe_plugin_tailwindcss --release",
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@farmfe/plugin-tailwindcss-darwin-arm64": "0.0.1",
+    "@farmfe/plugin-tailwindcss-darwin-x64": "0.0.1",
+    "@farmfe/plugin-tailwindcss-linux-arm64-gnu": "0.0.1",
+    "@farmfe/plugin-tailwindcss-linux-arm64-musl": "0.0.1",
+    "@farmfe/plugin-tailwindcss-linux-x64-gnu": "0.0.1",
+    "@farmfe/plugin-tailwindcss-linux-x64-musl": "0.0.1",
+    "@farmfe/plugin-tailwindcss-win32-arm64-msvc": "0.0.1",
+    "@farmfe/plugin-tailwindcss-win32-ia32-msvc": "0.0.1",
+    "@farmfe/plugin-tailwindcss-win32-x64-msvc": "0.0.1"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ]
+}

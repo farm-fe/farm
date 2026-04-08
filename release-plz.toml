@@ -26,6 +26,14 @@ release = false
 name = "farmfe_plugin_replace_dirname"
 release = false
 
+[[package]]
+name = "farmfe_plugin_tailwindcss"
+release = false
+
+[[package]]
+name = "farmfe_ecosystem_tailwindcss"
+release = false
+
 
 [[package]]
 name = "farmfe_utils"
