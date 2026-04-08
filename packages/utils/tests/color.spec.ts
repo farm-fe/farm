@@ -3,6 +3,9 @@ import {
   bgBlue,
   bold,
   createFormatter,
+  dim,
+  green,
+  italic,
   red,
   reset,
   underline
@@ -51,5 +54,17 @@ describe('color functions', () => {
 
   it('reset should wrap with ansi code', () => {
     expect(reset('abc')).toMatch(/\x1b\[0mabc\x1b\[0m/);
+  });
+
+  it('dim should wrap with ansi code', () => {
+    expect(dim('abc')).toMatch(/\x1b\[2mabc\x1b\[22m/);
+  });
+
+  it('italic should wrap with ansi code', () => {
+    expect(italic('abc')).toMatch(/\x1b\[3mabc\x1b\[23m/);
+  });
+
+  it('green should wrap with ansi code', () => {
+    expect(green('abc')).toMatch(/\x1b\[32mabc\x1b\[39m/);
   });
 });
