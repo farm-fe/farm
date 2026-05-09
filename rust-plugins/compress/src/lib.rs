@@ -2,7 +2,7 @@
 
 use farmfe_core::error::CompilationError;
 use farmfe_core::parking_lot::Mutex;
-use farmfe_core::rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::regex::Regex;
 use farmfe_core::resource::{Resource, ResourceType};
 use farmfe_core::{config::Config, plugin::Plugin};
@@ -12,7 +12,17 @@ use farmfe_toolkit::hash::sha256;
 
 mod utils;
 
-#[derive(serde::Deserialize, serde::Serialize, Default)]
+type CompressionOutput = (
+  String,
+  farmfe_core::resource::ResourceOrigin,
+  farmfe_core::error::Result<Vec<u8>>,
+  usize,
+  farmfe_core::HashMap<String, String>,
+  bool,
+  farmfe_core::HashMap<String, String>,
+);
+
+#[derive(serde::Deserialize, serde::Serialize, Default, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub enum CompressAlgorithm {
   #[default]
@@ -82,13 +92,14 @@ impl Plugin for FarmfePluginCompress {
   ) -> farmfe_core::error::Result<Option<()>> {
     let start = std::time::Instant::now();
     let ext_name = utils::get_ext_name(&self.options.algorithm);
+    let should_delete_origin = self.options.delete_origin_file.unwrap_or(false);
     let filter = Regex::new(&self.options.filter).map_err(|e| {
       CompilationError::GenericError(format!("Invalid regex expression for compress plugin: {e}"))
     })?;
 
-    let compressed_buffers = param
+    let compressed_buffers: Vec<CompressionOutput> = param
       .resources_map
-      .par_iter_mut()
+      .par_iter()
       .filter_map(|(resource_id, resource)| {
         // Skip resources already marked as emitted (e.g. Farm's internal runtime
         // which is inlined into HTML and never written to disk as a standalone file).
@@ -100,9 +111,6 @@ impl Plugin for FarmfePluginCompress {
         {
           return None;
         }
-        if self.options.delete_origin_file.unwrap_or(false) {
-          resource.emitted = true;
-        }
         Some((
           resource_id.to_string(),
           resource.origin.clone(),
@@ -113,7 +121,7 @@ impl Plugin for FarmfePluginCompress {
           resource.special_placeholders.clone(),
         ))
       })
-      .collect::<Vec<_>>();
+      .collect();
 
     let mut saved = 0;
     for (
@@ -143,6 +151,12 @@ impl Plugin for FarmfePluginCompress {
           special_placeholders,
         },
       );
+
+      if should_delete_origin {
+        if let Some(resource) = param.resources_map.get_mut(&resource_id) {
+          resource.emitted = true;
+        }
+      }
     }
 
     *self.saved.lock() = saved;

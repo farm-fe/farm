@@ -2,12 +2,22 @@ import './style.css';
 import 'ant-design-vue/dist/reset.css';
 
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
-import * as monaco from 'monaco-editor';
+import {
+  conf as javascriptConf,
+  language as javascriptLanguage
+} from 'monaco-editor/esm/vs/basic-languages/javascript/javascript';
+import {
+  conf as typescriptConf,
+  language as typescriptLanguage
+} from 'monaco-editor/esm/vs/basic-languages/typescript/typescript';
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import 'monaco-editor/esm/vs/language/css/monaco.contribution';
+import 'monaco-editor/esm/vs/language/html/monaco.contribution';
+import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import { createPinia } from 'pinia';
 // register vue composition api globally
 import { createApp } from 'vue';
@@ -27,11 +37,42 @@ self.MonacoEnvironment = {
       return new htmlWorker();
     }
     if (label === 'typescript' || label === 'javascript') {
-      return new tsWorker();
+      return new editorWorker();
     }
     return new editorWorker();
   }
 };
+
+function registerStandaloneLanguage(
+  id: string,
+  aliases: string[],
+  extensions: string[],
+  conf: Parameters<typeof monaco.languages.setLanguageConfiguration>[1],
+  language: Parameters<typeof monaco.languages.setMonarchTokensProvider>[1]
+) {
+  if (!monaco.languages.getLanguages().some((item) => item.id === id)) {
+    monaco.languages.register({ id, aliases, extensions });
+  }
+
+  monaco.languages.setLanguageConfiguration(id, conf);
+  monaco.languages.setMonarchTokensProvider(id, language);
+}
+
+registerStandaloneLanguage(
+  'javascript',
+  ['JavaScript', 'javascript', 'js'],
+  ['.js', '.jsx', '.mjs', '.cjs'],
+  javascriptConf,
+  javascriptLanguage
+);
+
+registerStandaloneLanguage(
+  'typescript',
+  ['TypeScript', 'typescript', 'ts'],
+  ['.ts', '.tsx', '.mts', '.cts'],
+  typescriptConf,
+  typescriptLanguage
+);
 
 const app = createApp(App);
 const pinia = createPinia();

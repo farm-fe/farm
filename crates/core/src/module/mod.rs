@@ -246,6 +246,7 @@ impl ToString for ModuleType {
 #[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
   relative_path: FarmBytesStr,
+  // query string is the part after "?" in the resolved id, for example, "index.js?inline" has a query string of "?inline"
   query_string: FarmBytesStr,
 }
 
@@ -261,9 +262,15 @@ impl ModuleId {
       resolved_path.to_string()
     };
 
+    let normalized_query = if query_string.is_empty() || query_string.starts_with('?') {
+      query_string.to_string()
+    } else {
+      format!("?{query_string}")
+    };
+
     Self {
       relative_path: FarmBytesStr::from(relative_path),
-      query_string: FarmBytesStr::from(query_string.to_string()),
+      query_string: FarmBytesStr::from(normalized_query),
     }
   }
 
