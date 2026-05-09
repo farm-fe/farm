@@ -24,6 +24,5 @@ xmltree = "0.11.0"
 reqwest = { version = "0.12.9", features = [
   "rustls-tls",
 ], default-features = false }
-cached = { version = "0.56.0", features = ["disk_store"] }
 bincode = "2.0.1"
 loading = "0.4.0"

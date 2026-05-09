@@ -1,7 +1,8 @@
 use bincode::{config, Decode, Encode};
-use cached::stores::DiskCache;
+use farmfe_utils::hash::sha256;
 use loading::Loading;
 use reqwest::{header::CACHE_CONTROL, Error, Response};
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
 #[derive(Encode, Decode, Debug)]
@@ -11,24 +12,46 @@ struct CacheValue {
 }
 
 pub struct HttpClient {
-  cache: Option<DiskCache<String, Vec<u8>>>,
+  cache: Option<FileDiskCache>,
 }
 
-fn try_build_disk_cache(cache_name: &str, cache_dir: &str) -> Option<DiskCache<String, Vec<u8>>> {
+struct FileDiskCache {
+  dir: PathBuf,
+}
+
+impl FileDiskCache {
+  fn new(cache_name: &str, cache_dir: &str) -> std::io::Result<Self> {
+    let dir = Path::new(cache_dir).join(cache_name);
+    std::fs::create_dir_all(&dir)?;
+    Ok(Self { dir })
+  }
+
+  fn cache_file_path(&self, key: &str) -> PathBuf {
+    let hash = sha256(key.as_bytes(), 32);
+    self.dir.join(format!("{hash}.bin"))
+  }
+
+  fn get(&self, key: &str) -> Option<Vec<u8>> {
+    std::fs::read(self.cache_file_path(key)).ok()
+  }
+
+  fn insert(&self, key: &str, value: &[u8]) {
+    let _ = std::fs::write(self.cache_file_path(key), value);
+  }
+
+  fn remove(&self, key: &str) {
+    let _ = std::fs::remove_file(self.cache_file_path(key));
+  }
+}
+
+fn try_build_disk_cache(cache_name: &str, cache_dir: &str) -> Option<FileDiskCache> {
   const MAX_RETRIES: u32 = 5;
-  let mut delay = Duration::from_millis(50);
 
   for attempt in 0..=MAX_RETRIES {
-    match DiskCache::new(cache_name)
-      .set_disk_directory(cache_dir)
-      .build()
-    {
+    match FileDiskCache::new(cache_name, cache_dir) {
       Ok(cache) => return Some(cache),
       Err(e) => {
-        if attempt < MAX_RETRIES {
-          std::thread::sleep(delay);
-          delay *= 2;
-        } else {
+        if attempt == MAX_RETRIES {
           eprintln!(
             "[farm-plugin-icons] Warning: could not open disk cache after {MAX_RETRIES} retries: {e}. \
              Continuing without disk cache."
@@ -43,6 +66,7 @@ fn try_build_disk_cache(cache_name: &str, cache_dir: &str) -> Option<DiskCache<S
 impl HttpClient {
   pub fn new(cache_name: &str, cache_dir: &str) -> Self {
     let cache = try_build_disk_cache(cache_name, cache_dir);
+
     HttpClient { cache }
   }
 
@@ -51,7 +75,7 @@ impl HttpClient {
     let config = config::standard();
 
     if let Some(disk_cache) = &self.cache {
-      if let Ok(Some(entry)) = disk_cache.connection().get(url) {
+      if let Some(entry) = disk_cache.get(url) {
         if let Ok((cached_value, _)) = bincode::decode_from_slice::<CacheValue, _>(&entry, config) {
           if cached_value.expiration > SystemTime::now() {
             loading.success(format!("{url} icon fetched from cache"));
@@ -59,7 +83,7 @@ impl HttpClient {
             return Ok(cached_value.data);
           } else {
             // Remove expired cache entry; ignore errors
-            let _ = disk_cache.connection().remove(url);
+            disk_cache.remove(url);
           }
         }
       }
@@ -82,7 +106,7 @@ impl HttpClient {
             };
             if let Ok(serialized_data) = bincode::encode_to_vec(&cache_value, config) {
               // Ignore cache write errors — non-fatal
-              let _ = disk_cache.connection().insert(url, serialized_data);
+              disk_cache.insert(url, &serialized_data);
             }
           }
 

@@ -153,7 +153,13 @@ impl CompilationContext {
     let is_absolute = Path::new(id).is_absolute();
     if is_absolute {
       let (resolved_path, query) = id.split_once('?').unwrap_or((id, EMPTY_STR));
-      ModuleId::new(resolved_path, query, &self.config.root)
+      let query = if query.is_empty() {
+        query.to_string()
+      } else {
+        format!("?{query}")
+      };
+
+      ModuleId::new(resolved_path, &query, &self.config.root)
     } else {
       ModuleId::from(id)
     }
