@@ -180,21 +180,21 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
         let mut rename_handler = strip_context.rename_handler.borrow_mut();
 
         // if the ident is not renamed and the ident is defined in a external module
-        if rename_handler.get_renamed_ident(module_id, ident).is_none()
-          && let Some((source_module_id, export_str)) = is_ident_reexported_from_external_module(
+        if rename_handler.get_renamed_ident(module_id, ident).is_none() {
+          if let Some((source_module_id, export_str)) = is_ident_reexported_from_external_module(
             module_ids,
             &source_module_id,
             export_str,
             module_graph,
             &rename_handler,
             &mut HashSet::default(),
-          )
-        {
-          external_module_idents_map
-            .entry(source_module_id)
-            .or_insert(vec![])
-            .push((ident.clone(), export_str));
-          continue;
+          ) {
+            external_module_idents_map
+              .entry(source_module_id)
+              .or_insert(vec![])
+              .push((ident.clone(), export_str));
+            continue;
+          }
         }
 
         let source_module_script_meta = source_module.meta.as_script();
@@ -206,14 +206,15 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           export_str,
           source_module_script_meta,
           &mut rename_handler,
-        ) && let Some(module_export_ident) =
-          source_module_script_meta.export_ident_map.get(export_str)
-        {
-          strip_context
-            .cyclic_idents
-            .entry(module_id.clone())
-            .or_default()
-            .insert((Some(ident.clone()), module_export_ident.clone()));
+        ) {
+          if let Some(module_export_ident) = source_module_script_meta.export_ident_map.get(export_str)
+          {
+            strip_context
+              .cyclic_idents
+              .entry(module_id.clone())
+              .or_default()
+              .insert((Some(ident.clone()), module_export_ident.clone()));
+          }
         } else {
           let export_ident = source_module_script_meta
             .export_ident_map
