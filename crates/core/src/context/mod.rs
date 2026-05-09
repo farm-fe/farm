@@ -55,9 +55,11 @@ pub struct CompilationContext {
   pub watch_graph: Box<RwLock<WatchGraph>>,
   pub module_graph: Box<RwLock<ModuleGraph>>,
   pub module_group_graph: Box<RwLock<ModuleGroupGraph>>,
+  // resources_map must drop BEFORE plugin_driver so that the DLL is still
+  // loaded when the entries (potentially allocated by DLL code) are freed.
+  pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub plugin_driver: Box<PluginDriver>,
   pub resource_pot_map: Box<RwLock<ResourcePotMap>>,
-  pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
   pub thread_pool: Arc<ThreadPool>,
   pub meta: Box<ContextMetaData>,
