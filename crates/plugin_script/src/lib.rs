@@ -1,21 +1,5 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
-#![cfg_attr(
-  all(target_os = "linux", target_arch = "x86_64", feature = "swc_plugin"),
-  feature(linkage)
-)]
-
-// wasmer-vm references `__rust_probestack` for stack probing on Linux x86_64.
-// Newer Rust nightly toolchains no longer export this symbol from compiler-builtins
-// (stack probing is now done via inline assembly). Provide a weak stub so the
-// linker can resolve the reference without breaking builds that still supply the
-// real implementation.
-#[cfg(all(target_os = "linux", target_arch = "x86_64", feature = "swc_plugin"))]
-mod probestack_compat {
-  #[linkage = "weak"]
-  #[no_mangle]
-  pub unsafe extern "C" fn __rust_probestack() {}
-}
 
 use std::{path::Path, sync::Arc};
 
