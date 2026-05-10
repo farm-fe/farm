@@ -76,7 +76,7 @@ impl CachedModule {
           .into_iter()
           .map(|item| (item.source, item.kind, item.order))
           .collect::<Vec<_>>();
-        sorted_dep.sort_by(|a, b| a.2.cmp(&b.2));
+        sorted_dep.sort_by_key(|item| item.2);
 
         sorted_dep.into_iter().map(move |item| {
           (

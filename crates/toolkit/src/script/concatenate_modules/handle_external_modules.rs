@@ -175,8 +175,12 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
           import_decl.specifiers.push(new_sp);
         }
       }
+
+      return;
     }
-  } else if let Some(preserved_item) = strip_context
+  }
+
+  if let Some(preserved_item) = strip_context
     .preserved_import_decls
     .iter_mut()
     .find(|item| item.is_namespace_import && item.source_module_id == *source_module_id)
