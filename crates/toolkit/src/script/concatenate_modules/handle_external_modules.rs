@@ -647,6 +647,13 @@ pub fn handle_ambiguous_export_all(options: HandleAmbiguousExportAllOptions) -> 
 
   let source_module = module_graph.module(&source_module_id).unwrap();
 
+  eprintln!(
+    "DEBUG handle_ambiguous_export_all: module_id={:?} source_module_id={:?} should_add_ns={} contains_ambiguous={} source_external={} source_is_script={} module_in_ids={} source_in_ids={}",
+    module_id, source_module_id, should_add_namespace_ident, contains_ambiguous_export_ident,
+    source_module.external, source_module.module_type.is_script(),
+    module_ids.contains(module_id), module_ids.contains(&source_module_id)
+  );
+
   // if module and source_module are both in module ids
   if should_add_namespace_ident
     && module_ids.contains(module_id)
