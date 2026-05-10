@@ -2,7 +2,7 @@ use farmfe_core::{
   config::AliasItem,
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
-  resource::{Resource, ResourceOrigin},
+  resource::{Resource, ResourceOrigin, RESOURCE_META_PRIMARY_KEY},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
   HashMap,
@@ -17,9 +17,9 @@ use crate::dep_analyzer::is_source_ignored;
 pub struct SourceReplacer<'a> {
   module_id: ModuleId,
   module_graph: &'a ModuleGraph,
-  resources_map: &'a HashMap<String, Resource>,
-  public_path: String,
   alias: Vec<AliasItem>,
+  normalized_public_path: String,
+  resources_map: &'a HashMap<String, Resource>,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -30,13 +30,67 @@ impl<'a> SourceReplacer<'a> {
     public_path: String,
     alias: Vec<AliasItem>,
   ) -> Self {
+    let normalized_public_path = if public_path.is_empty() {
+      "/".to_string()
+    } else {
+      let trimmed = public_path.trim_end_matches('/');
+      if trimmed.is_empty() {
+        "/".to_string()
+      } else {
+        format!("{}/", trimmed)
+      }
+    };
+
     Self {
       module_id,
       module_graph,
-      resources_map,
-      public_path,
       alias,
+      normalized_public_path,
+      resources_map,
     }
+  }
+
+  fn resolve_url(&self, source: &str) -> Option<String> {
+    if source.trim().is_empty() {
+      return None;
+    }
+
+    if is_source_ignored(source) && !is_start_with_alias(&self.alias, source) {
+      return Some(source.to_string());
+    }
+    
+    let dep_module = self.module_graph.get_dep_by_source_optional(
+      &self.module_id,
+      source,
+      Some(ResolveKind::CssUrl),
+    )?;
+
+    let matching_resources: Vec<&Resource> = self
+      .resources_map
+      .values()
+      .filter(|r| matches!(&r.origin, ResourceOrigin::Module(m_id) if m_id == &dep_module))
+      .collect();
+
+    if matching_resources.is_empty() {
+      return None;
+    }
+
+    let resource = if matching_resources.len() > 1 {
+      matching_resources
+        .iter()
+        .find(|res| {
+          res
+            .meta
+            .get(RESOURCE_META_PRIMARY_KEY)
+            .map(|v| v == "true")
+            .unwrap_or(false)
+        })
+        .unwrap_or(&matching_resources[0])
+    } else {
+      &matching_resources[0]
+    };
+
+    Some(format!("{}{}", self.normalized_public_path, resource.name))
   }
 }
 
@@ -45,57 +99,19 @@ impl<'a> VisitMut for SourceReplacer<'a> {
     if let Some(name) = &url.name.raw {
       if name == "url" {
         if let Some(value) = &mut url.value {
-          let deal_url_value = |source: &str| -> String {
-            if is_source_ignored(source) && !is_start_with_alias(&self.alias, source) {
-              return source.to_string();
-            }
-            let dep_module = self.module_graph.get_dep_by_source(
-              &self.module_id,
-              source,
-              Some(ResolveKind::CssUrl),
-            );
-
-            for resource in self.resources_map.values() {
-              if let ResourceOrigin::Module(m_id) = &resource.origin {
-                if &dep_module == m_id {
-                  // fix #1076. url prefixed by publicPath
-                  let normalized_public_path = if self.public_path.is_empty() {
-                    ""
-                  } else {
-                    self.public_path.trim_end_matches('/')
-                  };
-
-                  let normalized_public_path = if normalized_public_path.is_empty() {
-                    "/".to_string()
-                  } else {
-                    format!("{normalized_public_path}/")
-                  };
-
-                  return format!("{normalized_public_path}{}", resource.name);
-                }
-              }
-            }
-
-            panic!(
-              "can not find resource: resolving {:?} for {:?}. dep: {:?}",
-              source, self.module_id, dep_module
-            );
-          };
-
           let resource_name = match &mut **value {
-            farmfe_core::swc_css_ast::UrlValue::Str(str) => {
-              deal_url_value(str.value.to_string().as_str())
-            }
-            farmfe_core::swc_css_ast::UrlValue::Raw(raw) => {
-              deal_url_value(raw.value.to_string().as_str())
-            }
+            farmfe_core::swc_css_ast::UrlValue::Str(str) => self.resolve_url(&str.value),
+            farmfe_core::swc_css_ast::UrlValue::Raw(raw) => self.resolve_url(&raw.value),
           };
 
-          *value = Box::new(UrlValue::Str(Str {
-            span: DUMMY_SP,
-            value: resource_name.into(),
-            raw: None,
-          }));
+          // Only update the value if we got a valid resource name
+          if let Some(name) = resource_name {
+            *value = Box::new(UrlValue::Str(Str {
+              span: DUMMY_SP,
+              value: name.into(),
+              raw: None,
+            }));
+          }
         }
       }
     }

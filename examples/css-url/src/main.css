@@ -1,3 +1,9 @@
+@import '';
+@import "";
+@import url('');
+@import url("");
+@import url('./test.css');
+
 .main {
   color: red;
   background: url(/@/logo.png);
@@ -16,7 +22,6 @@
   background-repeat: no-repeat;
 }
 
-
 .main-3 {
   color: red;
   background: url(@/logo.png);
@@ -25,3 +30,31 @@
   background-size: 100px 100px;
   background-repeat: no-repeat;
 }
+
+.main-5 {
+  color: red;
+  background: url();
+  width: 100px;
+  height: 100px;
+  background-size: 100px 100px;
+  background-repeat: no-repeat;
+}
+
+.main-6 {
+  color: red;
+  background: url('');
+  width: 100px;
+  height: 100px;
+  background-size: 100px 100px;
+  background-repeat: no-repeat;
+}
+
+.main-7 {
+  color: red;
+  background: url("  ");
+  width: 100px;
+  height: 100px;
+  background-size: 100px 100px;
+  background-repeat: no-repeat;
+}
+
