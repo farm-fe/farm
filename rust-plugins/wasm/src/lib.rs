@@ -1,28 +1,20 @@
 pub mod utils;
 
 use farmfe_core::{
-  cache_item,
   config::Config,
-  context::{CompilationContext, EmitFileParams},
-  deserialize,
+  context::EmitFileParams,
   error::CompilationError,
   module::ModuleType,
   plugin::{Plugin, PluginLoadHookResult, PluginResolveHookResult},
-  resource::{Resource, ResourceOrigin, ResourceType},
-  serialize, Cacheable,
+  resource::ResourceType,
 };
-use std::{fs, path::Path, sync::Arc};
+use std::{fs, path::Path};
 use utils::generate_glue_code;
 
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::fs::{transform_output_filename, TransformOutputFileNameParams};
 
 const WASM_HELPER_ID_FARM: &str = "farm/wasm-helper.js";
-
-#[cache_item]
-struct CachedStaticAssets {
-  list: Vec<Resource>,
-}
 
 #[farm_plugin]
 pub struct FarmfePluginWasm {}
@@ -75,6 +67,7 @@ impl Plugin for FarmfePluginWasm {
         resolved_path: wasm_file_path.to_string(),
         source: Some(Box::new(e)),
       })?;
+
       let file_name_ext = Path::new(wasm_file_path)
         .file_name()
         .map(|x| x.to_string_lossy().to_string())
@@ -127,48 +120,5 @@ impl Plugin for FarmfePluginWasm {
       }));
     }
     Ok(None)
-  }
-
-  fn plugin_cache_loaded(
-    &self,
-    cache: &Vec<u8>,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_static_assets = deserialize!(cache, CachedStaticAssets);
-
-    for asset in cached_static_assets.list {
-      if let ResourceOrigin::Module(m) = asset.origin {
-        context.emit_file(EmitFileParams {
-          resolved_path: m.to_string(),
-          name: asset.name,
-          content: asset.bytes,
-          resource_type: asset.resource_type,
-        });
-      }
-    }
-
-    Ok(Some(()))
-  }
-
-  fn write_plugin_cache(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
-    let mut list = vec![];
-    let resources_map = context.resources_map.lock();
-    for (_, resource) in resources_map.iter() {
-      if let ResourceOrigin::Module(m) = &resource.origin {
-        if context.cache_manager.module_cache.has_cache(m) {
-          list.push(resource.clone());
-        }
-      }
-    }
-
-    if !list.is_empty() {
-      let cached_static_assets = CachedStaticAssets { list };
-      Ok(Some(serialize!(&cached_static_assets)))
-    } else {
-      Ok(None)
-    }
   }
 }

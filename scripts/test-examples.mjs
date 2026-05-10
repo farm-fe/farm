@@ -29,6 +29,22 @@ function parseStartFromArg(argv) {
   return process.env.FARM_EXAMPLE_START_FROM;
 }
 
+function parseExampleArg(argv) {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+
+    if (arg === "--example" && argv[i + 1]) {
+      return argv[i + 1];
+    }
+
+    if (arg.startsWith("--example=")) {
+      return arg.slice("--example=".length);
+    }
+  }
+
+  return process.env.FARM_EXAMPLE;
+}
+
 function parseSkipBuildJsPluginsArg(argv) {
   for (const arg of argv) {
     if (arg === "--skip-build-js-plugins" || arg === "--skip-build-js-plugin") {
@@ -52,6 +68,7 @@ function parseSkipBuildJsPluginsArg(argv) {
 
 const argv = process.argv.slice(2);
 const startFrom = parseStartFromArg(argv);
+const example = parseExampleArg(argv);
 const skipBuildJsPlugins = parseSkipBuildJsPluginsArg(argv);
 
 if (startFrom) {
@@ -61,6 +78,16 @@ if (startFrom) {
 
   if (!examples.includes(startFrom)) {
     throw new Error(`Example '${startFrom}' was not found under ./examples`);
+  }
+}
+
+if (example) {
+  const examples = readdirSync("./examples").filter((name) =>
+    statSync(join("./examples", name)).isDirectory(),
+  );
+
+  if (!examples.includes(example)) {
+    throw new Error(`Example '${example}' was not found under ./examples`);
   }
 }
 
@@ -81,4 +108,8 @@ if (startFrom) {
   console.log(`Building examples from: ${startFrom}`);
 }
 
-await buildExamples({ startFrom });
+if (example) {
+  console.log(`Building only example: ${example}`);
+}
+
+await buildExamples({ startFrom, example });
