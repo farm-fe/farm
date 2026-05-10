@@ -149,8 +149,13 @@ pub fn fill_necessary_fields_for_resource_pot(
       );
 
       if module_graph.entries.contains_key(module_id) {
-        if entry_module.is_some() {
-          panic!("a resource pot({}) can only have one entry module, but both {:?} and {:?} are entry modules", resource_pot.id, entry_module.unwrap(), module_id);
+        if let Some(entry_module_id) = &entry_module {
+          panic!(
+            "a resource pot({}) can only have one entry module, but both {:?} and {:?} are entry modules",
+            resource_pot.id,
+            entry_module_id,
+            module_id
+          );
         }
         entry_module = Some(module_id.clone());
       }

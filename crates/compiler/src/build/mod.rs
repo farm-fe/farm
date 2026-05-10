@@ -399,7 +399,7 @@ impl Compiler {
     module.side_effects = resolve_result.side_effects;
     module.external = false;
     module.source_map_chain = transform_result.source_map_chain;
-    module.meta = Box::new(module_meta);
+    *module.meta = module_meta;
 
     let resolved_path = module.id.resolved_path(&context.config.root);
     let package_info =

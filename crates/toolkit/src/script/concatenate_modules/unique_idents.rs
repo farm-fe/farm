@@ -164,10 +164,10 @@ impl<'a> VisitMut for RenameVisitor<'a> {
   }
 
   fn visit_mut_named_export(&mut self, node: &mut farmfe_core::swc_ecma_ast::NamedExport) {
-    if node.src.is_none()
-      && let Some(source_module_id) = self.source_module_id
-    {
-      node.src = Some(Box::new(source_module_id.to_string().into()));
+    if node.src.is_none() {
+      if let Some(source_module_id) = self.source_module_id {
+        node.src = Some(Box::new(source_module_id.to_string().into()));
+      }
     }
 
     node.visit_mut_children_with(self);

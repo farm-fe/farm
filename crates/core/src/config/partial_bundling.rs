@@ -61,10 +61,11 @@ pub struct PartialBundlingGroupConfig {
   pub resource_type: PartialBundlingGroupConfigResourceType,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum PartialBundlingGroupConfigGroupType {
   #[serde(rename = "all")]
+  #[default]
   All,
   #[serde(rename = "mutable")]
   Mutable,
@@ -82,16 +83,11 @@ impl PartialBundlingGroupConfigGroupType {
   }
 }
 
-impl Default for PartialBundlingGroupConfigGroupType {
-  fn default() -> Self {
-    Self::All
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum PartialBundlingGroupConfigResourceType {
   #[serde(rename = "all")]
+  #[default]
   All,
   #[serde(rename = "initial")]
   Initial,
@@ -99,11 +95,6 @@ pub enum PartialBundlingGroupConfigResourceType {
   Async,
 }
 
-impl Default for PartialBundlingGroupConfigResourceType {
-  fn default() -> Self {
-    Self::All
-  }
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]

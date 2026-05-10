@@ -130,9 +130,10 @@ impl Default for Config {
   }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub enum Mode {
   #[serde(rename = "development")]
+  #[default]
   Development,
   #[serde(rename = "production")]
   Production,
@@ -145,12 +146,6 @@ impl Mode {
 
   pub fn is_prod(&self) -> bool {
     matches!(self, Mode::Production)
-  }
-}
-
-impl Default for Mode {
-  fn default() -> Self {
-    Self::Development
   }
 }
 
