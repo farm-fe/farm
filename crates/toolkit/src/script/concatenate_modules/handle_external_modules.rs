@@ -647,13 +647,6 @@ pub fn handle_ambiguous_export_all(options: HandleAmbiguousExportAllOptions) -> 
 
   let source_module = module_graph.module(&source_module_id).unwrap();
 
-  eprintln!(
-    "DEBUG handle_ambiguous_export_all: module_id={:?} source_module_id={:?} should_add_ns={} contains_ambiguous={} source_external={} source_is_script={} module_in_ids={} source_in_ids={}",
-    module_id, source_module_id, should_add_namespace_ident, contains_ambiguous_export_ident,
-    source_module.external, source_module.module_type.is_script(),
-    module_ids.contains(module_id), module_ids.contains(&source_module_id)
-  );
-
   // if module and source_module are both in module ids
   if should_add_namespace_ident
     && module_ids.contains(module_id)
@@ -680,6 +673,26 @@ pub fn handle_ambiguous_export_all(options: HandleAmbiguousExportAllOptions) -> 
       ));
 
       ns_idents.push(renamed_ident)
+    } else {
+      // source module is in the bundle but has no namespace ident of its own;
+      // it may still re-export from external modules via `export * from 'external'`.
+      // Fall through to the same logic as the else-if branch: emit defineExportStar
+      // for each external module that source re-exports from.
+      let source_module_meta = source_module.meta.as_script();
+
+      if let Some(export_all_idents) = source_module_meta
+        .ambiguous_export_ident_map
+        .get(AMBIGUOUS_EXPORT_ALL)
+      {
+        for export_all_ident in export_all_idents {
+          ns_idents.push(add_external_export_all_helper(
+            strip_context,
+            module_id,
+            &export_all_ident.as_internal().module_id,
+            result,
+          ));
+        }
+      }
     }
   }
   // 1. add export star only namespace ident is enabled

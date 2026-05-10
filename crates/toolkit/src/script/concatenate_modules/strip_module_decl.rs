@@ -278,13 +278,6 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
               ExportSpecifierInfo::All => {
                 let module = params.module_graph.module(params.module_id).unwrap();
                 let module_meta = module.meta.as_script();
-                eprintln!(
-                  "DEBUG strip_export: module_id={:?} ambiguous_keys={:?} should_add_ns={:?} export_ns={:?}",
-                  params.module_id,
-                  module_meta.ambiguous_export_ident_map.keys().collect::<Vec<_>>(),
-                  params.strip_context.should_add_namespace_ident.contains(params.module_id),
-                  module_meta.export_ident_map.get(EXPORT_NAMESPACE),
-                );
                 // should handle ambiguous export all here
                 if module_meta
                   .ambiguous_export_ident_map
