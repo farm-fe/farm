@@ -55,10 +55,9 @@ pub struct CompilationContext {
   pub watch_graph: Box<RwLock<WatchGraph>>,
   pub module_graph: Box<RwLock<ModuleGraph>>,
   pub module_group_graph: Box<RwLock<ModuleGroupGraph>>,
-  // resources_map must drop BEFORE plugin_driver so that the DLL is still
-  // loaded when the entries (potentially allocated by DLL code) are freed.
+  // resources_map must drop BEFORE plugin_driver so that plugin-emitted
+  // resources are released while the plugin DLL is still loaded.
   pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
-  pub plugin_driver: Box<PluginDriver>,
   pub resource_pot_map: Box<RwLock<ResourcePotMap>>,
   pub cache_manager: Box<CacheManager>,
   pub thread_pool: Arc<ThreadPool>,
@@ -68,11 +67,15 @@ pub struct CompilationContext {
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>>,
+  // Keep plugin_driver last so plugin DLLs are unloaded only after all
+  // context-owned data structures have been dropped.
+  pub plugin_driver: Box<PluginDriver>,
 }
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let cache_type = Self::create_persistent_cache_type(&mut config);
+    let record = config.record;
     let thread_pool = Arc::new(
       ThreadPoolBuilder::new()
         .num_threads(farm_thread_nums())
@@ -86,7 +89,6 @@ impl CompilationContext {
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::default())),
-      plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(CacheManager::new(CacheOption {
         cache_enable: config.persistent_cache.enabled(),
         option: cache_type,
@@ -99,6 +101,7 @@ impl CompilationContext {
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::default())),
       custom: Box::new(Mutex::default()),
+      plugin_driver: Box::new(Self::create_plugin_driver(plugins, record)),
     })
   }
 

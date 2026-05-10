@@ -27,7 +27,7 @@ pub use farmfe_macro_cache_item::cache_item;
 /// and the changes will affect the memory layout,
 /// like adding or removing a field, this version should be bumped.
 /// So plugin loader can recognize compatibility of the dynamic library plugins and the core.
-pub const VERSION: &str = "0.5.0";
+pub const VERSION: &str = "0.5.1";
 
 // re-export common external crates
 pub use dashmap;

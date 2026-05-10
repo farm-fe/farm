@@ -58,6 +58,46 @@ Validation:
 - Re-ran `examples/rust-plugin-url` build multiple times.
 - Stable exit code `0` and correct output artifacts.
 
+### 3. `rust-plugins/wasm`: keep `emit_file`, avoid Windows plugin-cache teardown risk
+
+Observed pattern:
+- `examples/rust-plugin-wasm` could print build success and then exit with `-1073741819`.
+- Crash happened after normal emit/write output stages.
+
+Remediation guideline:
+- Do not replace wasm emission with forced data URL inline mode as a crash workaround.
+- Keep `emit_file` behavior unchanged for wasm assets.
+- Prefer mitigating teardown-sensitive paths in plugin cache lifecycle on Windows (for example, disable plugin-level cache load/write hooks for this plugin).
+
+### 4. `rust-plugins/compress`: keep parallelism, but do not use plugin-side Rayon iterators
+
+Observed pattern:
+- `examples/rust-plugin-compress` could print successful build output and still exit with `-1073741819`.
+- Replacing parallel compression with serial iteration stabilized the build, confirming the issue was in the parallel execution path rather than compressed output contents.
+- A later attempt using `context.thread_pool.install(...)` plus plugin-side Rayon iterators triggered a Rayon registry assertion on Windows instead of the original access violation.
+
+Rejected approaches:
+- Do not parallelize directly over `resources_map` with `par_iter()`.
+- Do not call `context.thread_pool.install(...)` and then use plugin-side `into_par_iter()` for this plugin on Windows.
+
+Effective fix:
+- Build an owned list of compression tasks first, separate from `resources_map` mutation.
+- Use `std::mem::take(&mut resource.bytes)` to move original bytes out of each resource without cloning the whole buffer.
+- Schedule compression work with `context.thread_pool.spawn(...)`.
+- Collect results through a standard channel.
+- Restore original bytes back into `resources_map` before inserting compressed artifacts.
+- Perform final `resources_map` mutation serially.
+
+Why this worked:
+- It keeps parallel compression.
+- It avoids plugin-side Rayon iterator / registry interactions that were unstable on Windows in this DLL-backed plugin path.
+- It removes unnecessary large-buffer cloning during task collection.
+
+Validation:
+- Rebuilt `@farmfe/plugin-compress`.
+- Re-ran `node scripts/test-examples.mjs --skip-build-js-plugins --example rust-plugin-compress` repeatedly.
+- Stable exit code `0` with no panic and no post-build crash.
+
 ## Reusable Debug Workflow
 
 1. Minimize reproduction scope.
@@ -78,6 +118,9 @@ Validation:
 
 5. For dynamic-library plugin systems.
 - Always inspect lifecycle and field drop ordering on host-side owner structs.
+6. For parallel Rust plugin work on Windows.
+- Prefer `thread_pool.spawn(...)` on owned tasks over plugin-side Rayon iterators when the plugin runs from a dynamically loaded library.
+- If task inputs contain large `Vec<u8>`, prefer ownership transfer (`mem::take`) over full-buffer clone.
 
 ## Validation Templates (Windows)
 
@@ -139,8 +182,15 @@ If this fails:
 - Avoid shared mutable state across lifecycle phases.
 - Design cache/copy features as non-critical and degradable.
 - In DLL-based plugin systems, treat drop order as a correctness constraint.
+- Do not "fix" Windows native crashes by bypassing `emit_file` (for example, forcing data URL inline only);
+	keep `emit_file` semantics intact and fix host/plugin lifecycle issues (drop order, teardown timing, cache ownership).
 
 ## Follow-up Recommendations
+
+- Current Windows example sweep status:
+	- Stable with exit code 0 through `scripts/test-examples`: `rust-plugin-auto-import-react`, `rust-plugin-auto-import-vue`, `rust-plugin-compress`, `rust-plugin-icons-react`, `rust-plugin-icons-vue`, `rust-plugin-image`, `rust-plugin-modular-import`, `rust-plugin-react-components`, `rust-plugin-strip`, `rust-plugin-svgr`, `rust-plugin-url`, `rust-plugin-virtual`.
+	- `rust-plugin-wasm` currently fails with a module resolution error for `json_typegen_wasm_bg.wasm?url`; this is not the same as a post-build native crash.
+	- `rust-plugin-worker` is the remaining reproduced Windows native crash case in the current sweep (`0xC0000005` after successful build output).
 
 - Add repeated Windows build stability checks (at least 10 runs) for high-risk plugins.
 - Add lightweight hook-level debug logs behind a switch.

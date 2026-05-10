@@ -2,7 +2,6 @@
 
 use farmfe_core::error::CompilationError;
 use farmfe_core::parking_lot::Mutex;
-use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::regex::Regex;
 use farmfe_core::resource::{Resource, ResourceType};
 use farmfe_core::{config::Config, plugin::Plugin};
@@ -15,6 +14,7 @@ mod utils;
 type CompressionOutput = (
   String,
   farmfe_core::resource::ResourceOrigin,
+  Vec<u8>,
   farmfe_core::error::Result<Vec<u8>>,
   usize,
   farmfe_core::HashMap<String, String>,
@@ -88,7 +88,7 @@ impl Plugin for FarmfePluginCompress {
   fn finalize_resources(
     &self,
     param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let start = std::time::Instant::now();
     let ext_name = utils::get_ext_name(&self.options.algorithm);
@@ -97,9 +97,9 @@ impl Plugin for FarmfePluginCompress {
       CompilationError::GenericError(format!("Invalid regex expression for compress plugin: {e}"))
     })?;
 
-    let compressed_buffers: Vec<CompressionOutput> = param
+    let compression_tasks: Vec<_> = param
       .resources_map
-      .par_iter()
+      .iter_mut()
       .filter_map(|(resource_id, resource)| {
         // Skip resources already marked as emitted (e.g. Farm's internal runtime
         // which is inlined into HTML and never written to disk as a standalone file).
@@ -114,8 +114,7 @@ impl Plugin for FarmfePluginCompress {
         Some((
           resource_id.to_string(),
           resource.origin.clone(),
-          utils::compress_buffer(&resource.bytes, &self.options.algorithm, self.options.level),
-          resource.bytes.len(),
+          std::mem::take(&mut resource.bytes),
           resource.meta.clone(),
           resource.should_transform_output_filename,
           resource.special_placeholders.clone(),
@@ -123,10 +122,71 @@ impl Plugin for FarmfePluginCompress {
       })
       .collect();
 
-    let mut saved = 0;
+    let task_count = compression_tasks.len();
+    let (result_sender, result_receiver) = std::sync::mpsc::channel();
+
     for (
       resource_id,
       origin,
+      origin_bytes,
+      meta,
+      should_transform_output_filename,
+      special_placeholders,
+    ) in compression_tasks
+    {
+      let result_sender = result_sender.clone();
+      let algorithm = self.options.algorithm;
+      let level = self.options.level;
+      context.thread_pool.spawn(move || {
+        let origin_file_size = origin_bytes.len();
+        let buffer = utils::compress_buffer(&origin_bytes, &algorithm, level);
+        let _ = result_sender.send((
+          resource_id,
+          origin,
+          origin_bytes,
+          buffer,
+          origin_file_size,
+          meta,
+          should_transform_output_filename,
+          special_placeholders,
+        ));
+      });
+    }
+
+    drop(result_sender);
+
+    let mut compressed_buffers: Vec<CompressionOutput> = Vec::with_capacity(task_count);
+
+    for _ in 0..task_count {
+      let result = result_receiver.recv().map_err(|e| {
+        CompilationError::GenericError(format!(
+          "Compress plugin failed to collect parallel task result: {e}"
+        ))
+      })?;
+      compressed_buffers.push(result);
+    }
+
+    let mut saved = 0;
+    for (
+      resource_id,
+      _origin,
+      origin_bytes,
+      _buffer,
+      _origin_file_size,
+      _meta,
+      _should_transform_output_filename,
+      _special_placeholders,
+    ) in &mut compressed_buffers
+    {
+      if let Some(resource) = param.resources_map.get_mut(resource_id) {
+        resource.bytes = std::mem::take(origin_bytes);
+      }
+    }
+
+    for (
+      resource_id,
+      origin,
+      _origin_bytes,
       buffer,
       origin_file_size,
       meta,

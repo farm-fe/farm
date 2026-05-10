@@ -44,9 +44,17 @@ farm/
 | `pnpm run test`        | Unit tests (vitest)                                         |
 | `cargo test`           | Rust unit tests                                             |
 | `pnpm run test-e2e`    | Playwright E2E tests                                        |
+| `node scripts/test-examples.mjs --skip-build-js-plugins --example <name>` | Build and validate one example only.                        |
 | `pnpm run check`       | Biome lint + format                                         |
 | `cargo clippy`         | Rust linter                                                 |
 | `pnpm run spell-check` | cspell across all files                                     |
+
+### Example Test Argument Mapping
+
+- `--example <name>` → single-example mode (build only that example)
+- `--from <name>` / `--start-from <name>` → build from that example to the end of the sorted example list
+- `--skip-build-js-plugins` → skip JS plugin build stage
+- Full guide: `docs/experiences/example-testing-guide.md`
 
 ### Ready Gate (full CI parity)
 

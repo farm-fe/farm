@@ -69,7 +69,7 @@ export const executeStartProject = async () =>
     stdio: "inherit",
   });
 
-export const buildExamples = async ({ startFrom } = {}) => {
+export const buildExamples = async ({ startFrom, example } = {}) => {
   const examples = fs.readdirSync("./examples").sort((a, b) =>
     a.localeCompare(b),
   );
@@ -113,8 +113,18 @@ export const buildExamples = async ({ startFrom } = {}) => {
     return [...result];
   };
 
-  const examplesToBuild = startFrom
+  const examplesToBuild = example
     ? (() => {
+        const exampleIndex = examples.indexOf(example);
+
+        if (exampleIndex === -1) {
+          throw new Error(`Example '${example}' was not found under ./examples`);
+        }
+
+        return [examples[exampleIndex]];
+      })()
+    : startFrom
+      ? (() => {
         const startIndex = examples.indexOf(startFrom);
 
         if (startIndex === -1) {
@@ -124,8 +134,8 @@ export const buildExamples = async ({ startFrom } = {}) => {
         }
 
         return examples.slice(startIndex);
-      })()
-    : examples;
+        })()
+      : examples;
   console.log("Building", examplesToBuild.length, "examples...");
 
   for (const example of examplesToBuild) {
