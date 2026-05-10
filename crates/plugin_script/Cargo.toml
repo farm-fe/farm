@@ -27,7 +27,6 @@ swc_plugin_backend_wasmer = { version = "10.0.0", features = [
 ], optional = true }
 wasmer = { version = "=6.1.0-rc.3", default-features = false, optional = true }
 wasmer-wasix = { version = "=0.601.0-rc.3", default-features = false, optional = true }
-wasmtime = { version = "=38.0.1", default-features = false, optional = true }
 swc_ecma_loader = { version = "21.0.0", features = [
   "cache",
   "node",
@@ -51,5 +50,4 @@ swc_plugin = [
   "dep:swc_plugin_backend_wasmer",
   "dep:wasmer",
   "dep:wasmer-wasix",
-  "dep:wasmtime",
 ]
