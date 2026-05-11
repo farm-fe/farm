@@ -1,12 +1,17 @@
 //index.js:
  (function(){; // module_id: 9cd7578f
-function setGlobalRequire(globalThis) {
+function setGlobalRequire(globalObj) {
     // polyfill require when running in browser or node with Farm runtime
-    const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : {};
+    const __global_this__ = typeof globalObj !== 'undefined' ? globalObj : {};
     __global_this__.require = __global_this__.require || farmRequire$1;
 }
 {
-    setGlobalRequire(window);
+    const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : self;
+    // keep runtime-generated references like `window[...]` / `global[...]` working in workers and other runtime environments by poly-filling a global `window` variable if it doesn't exist
+    if (typeof __global_this__.window === 'undefined') {
+        __global_this__.window = __global_this__;
+    }
+    setGlobalRequire(__global_this__);
 }// all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -18,8 +23,9 @@ var __farm_internal_module_system__ = {
     c: ()=>__farm_internal_cache__
 };
 {
-    // @ts-ignore injected during compile time
-    __farm_internal_module_system__.te = "browser";
+    __farm_internal_module_system__.te = // @ts-ignore injected during compile time
+    // eslint-disable-next-line no-undef
+    "browser";
 }{
     // externalModules
     __farm_internal_module_system__.em = {};
@@ -37,8 +43,8 @@ var __farm_internal_module_system__ = {
             __farm_internal_module_system__.em[key] = em;
         }
     };
-    // init `window['xxxx] = {}`
-    const __farm_global_this__ = window['__farm_default_namespace__'] = {};
+    // init global namespace container
+    const __farm_global_this__ = (window['__farm_default_namespace__'] = {});
     __farm_global_this__.m = __farm_internal_module_system__;
 }function farmRequire$1(id) {
     if (__farm_internal_cache__[id]) {
