@@ -1,5 +1,5 @@
 # Source Map
-Farm supports `Source Map`, which is automatically enabled by default. Sourcemap can be `enable` or `disable` via the [`compilation.sourcemap`](/docs/config/compilation-options#sourcemap) option.
+Farm supports `Source Map`. Sourcemap is enabled by default in development mode and disabled by default in build/production mode. It can be `enable` or `disable` via the [`compilation.sourcemap`](/docs/config/compilation-options#sourcemap) option.
 
 :::note
 Farm will not generate sourcemap for files under `node_modules` by default, if you want to generate sourcemap for files under node_modules, configure `compilation.sourcemap` to `all`.

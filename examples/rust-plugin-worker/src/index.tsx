@@ -2,6 +2,7 @@ import * as Comlink from "comlink";
 import { createRoot } from "react-dom/client";
 import { Main, WorkerCaseResult } from "./main";
 import ComlinkWorkerCtor from "./worker/comlink.worker.ts?worker";
+import TestWorkerCtor from "./worker/test.worker.ts?worker";
 import WorkerCtor from "./worker/vue.worker.ts?worker";
 import SharedWorkerCtor from "./worker/shared.worker.ts?sharedworker";
 import workerUrl from "./worker/vue.worker.ts?worker&url";
@@ -69,6 +70,14 @@ const runWorkerCases = async (): Promise<WorkerCaseResult[]> => {
   await runCase("query worker (?worker)", async () => {
     const worker = new WorkerCtor({ name: "query-worker" });
     return runBasicWorker(worker, [3, 7]);
+  });
+
+  await runCase("test worker (?worker + lodash-es)", async () => {
+    const worker = new TestWorkerCtor({
+      type: "module",
+      name: "test-worker-case",
+    });
+    return runBasicWorker(worker, [4, 8]);
   });
 
   await runCase("worker url export (?worker&url)", async () => {
