@@ -98,6 +98,106 @@ Validation:
 - Re-ran `node scripts/test-examples.mjs --skip-build-js-plugins --example rust-plugin-compress` repeatedly.
 - Stable exit code `0` with no panic and no post-build crash.
 
+### 5. `rust-plugins/worker`: DLL pinning is the only reliable fix for Rayon TLS / host thread lifetime
+
+Observed pattern:
+- `examples/rust-plugin-worker` printed "Build completed" then exited with `-1073741819`.
+- Crash rate was ~70% (7 out of 10 runs) and fully reproducible.
+- No crash occurred inside the build itself — only during process teardown.
+
+Root cause analysis:
+
+The worker plugin's `load()` and `transform()` hooks are invoked from **host Rayon pool threads** (i.e., threads owned by `CompilationContext::thread_pool`).  When those threads execute DLL code, any DLL-statically-linked thread-local storage (TLS) — from `rayon`, `parking_lot`, `std`, SWC, etc. — is initialised on those threads.
+
+The teardown sequence is:
+1. `CompilationContext` drops field by field in declaration order.
+2. `thread_pool` drops → Rayon sends a non-blocking terminate signal to worker threads (does not wait).
+3. `plugin_driver` drops → calls `FreeLibrary(worker_plugin.node)` → DLL unloaded.
+4. Host Rayon threads eventually exit → their TLS destructors fire at DLL addresses → `STATUS_ACCESS_VIOLATION`.
+
+Rejected approaches tried in this investigation:
+
+| Approach | Why it failed |
+|---|---|
+| Reorder `resources_map` before `plugin_driver` (already done for url/compress) | Necessary but not sufficient — the crash is in host thread TLS, not in resource memory |
+| Share host `ThreadPool` with nested `Compiler` | Host threads still acquire DLL TLS during `load()` calls; sharing the pool doesn't change that |
+| Spawn isolated `std::thread::spawn + join` for nested compilation | Only protects nested pool threads, not the host Rayon threads that called `load()` |
+| Custom `spawn_handler` with counter + `Condvar` to drain nested pool | Same limitation — host threads are not in scope |
+| Global serial mutex | Reduces frequency; cannot eliminate the race between thread exit and DLL unload |
+
+Effective fix — **DLL pinning via `GetModuleHandleExA` with `GET_MODULE_HANDLE_EX_FLAG_PIN`**:
+
+```rust
+#[cfg(target_os = "windows")]
+fn pin_current_dll_in_memory() {
+    use std::sync::OnceLock;
+    static PINNED: OnceLock<()> = OnceLock::new();
+    PINNED.get_or_init(|| {
+        const GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS: u32 = 0x00000004;
+        const GET_MODULE_HANDLE_EX_FLAG_PIN: u32 = 0x00000001;
+        extern "system" {
+            fn GetModuleHandleExA(flags: u32, name: *const u8, phm: *mut *mut u8) -> i32;
+        }
+        let mut handle: *mut u8 = std::ptr::null_mut();
+        unsafe {
+            GetModuleHandleExA(
+                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
+                pin_current_dll_in_memory as *const u8,
+                &mut handle,
+            );
+        }
+    });
+}
+```
+
+Call this once from `FarmfePluginWorker::new()` on Windows.
+
+Why this is the correct fix:
+- `GET_MODULE_HANDLE_EX_FLAG_PIN` increments the DLL's reference count permanently.  Subsequent `FreeLibrary` calls can never decrement it to zero — the DLL stays resident for the entire process lifetime.
+- All host Rayon threads can safely run their TLS destructors against DLL addresses at any time, regardless of when `plugin_driver` calls `FreeLibrary`.
+- This is the **canonical Windows pattern** for DLLs that install thread-lifetime hooks or whose code may be referenced by threads whose lifetime extends beyond explicit unloads.
+- No functional regression: the DLL is already present in memory (the process is about to exit anyway); pinning only affects the unload count, not memory consumption.
+
+Why this works while the other approaches don't:
+- The crash originates on **host pool threads** that called into DLL code during the build.  No amount of nested-compiler lifecycle management can prevent host threads from acquiring DLL TLS.  The only correct fix is to ensure the DLL remains valid for as long as those threads live — which is what pinning achieves.
+
+Validation:
+- Rebuilt `@farmfe/plugin-worker` (`pnpm --filter @farmfe/plugin-worker run build`).
+- Ran `node scripts/test-examples.mjs --skip-build-js-plugins --example rust-plugin-worker` 10 times.
+- **10/10 exit 0**, no access violations.
+
+#### Architectural improvement: deferred compilation via `build_end()` / `update_finished()`
+
+After the DLL-pinning fix was validated, the plugin was further refactored to move `Compiler::new()` + `compile()` out of Rayon-dispatched hooks entirely for non-inline workers.
+
+**Before the refactoring:**
+- `load()` and `transform()` hooks (both Rayon threads) called `build_worker()` which internally ran `Compiler::new()` + `compile()`.
+
+**After the refactoring:**
+- `load()` for **non-inline** workers: computes the output URL deterministically (no compilation), pushes to a `pending_workers: Mutex<Vec<PendingWorker>>`, returns the URL wrapper.
+- `transform()` for `new Worker(new URL(...))` patterns: computes the URL deterministically, defers to `pending_workers`, transforms the source.
+- `build_end()` hook (main thread): drains `pending_workers`, calls `build_worker()` for each, emits files.
+- `update_finished()` hook (main thread): same as `build_end()`, for HMR incremental updates.
+- `load()` for **inline** workers still compiles immediately (bytes are needed in the returned module code).
+
+DLL pinning is still necessary because `load()` and `transform()` themselves run on host Rayon threads and acquire DLL TLS, even without calling `Compiler::new()`.  Pinning ensures those threads can safely run TLS destructors after `FreeLibrary`.
+
+**Key hooks used (both new to the worker plugin):**
+
+| Hook | Thread | Purpose |
+|---|---|---|
+| `build_end()` | Main | Compile + emit all pending non-inline workers after the build graph is complete |
+| `update_finished()` | Main | Same, after each HMR incremental rebuild |
+
+### 6. General principle: parallel Rust plugin work on Windows
+
+If a Rust plugin spawns threads (directly or via Rayon) that execute DLL code, those threads acquire DLL-linked TLS.  On Windows, `FreeLibrary` does not wait for threads to exit.  If those threads outlive the `FreeLibrary` call, their TLS destructors will crash.
+
+Decision tree:
+- Does the plugin's hook run on a host Rayon thread? → **Always pin the DLL** (`GET_MODULE_HANDLE_EX_FLAG_PIN`).
+- Does the plugin create its own Rayon pool for parallel work? → Also drain the pool (wait for all workers to exit) before the hook returns — *or* pin the DLL.
+- Does the plugin use `context.thread_pool.spawn()`? → Those are host threads; DLL pinning is still needed if DLL TLS is acquired.
+
 ## Reusable Debug Workflow
 
 1. Minimize reproduction scope.
@@ -187,10 +287,14 @@ If this fails:
 
 ## Follow-up Recommendations
 
-- Current Windows example sweep status:
-	- Stable with exit code 0 through `scripts/test-examples`: `rust-plugin-auto-import-react`, `rust-plugin-auto-import-vue`, `rust-plugin-compress`, `rust-plugin-icons-react`, `rust-plugin-icons-vue`, `rust-plugin-image`, `rust-plugin-modular-import`, `rust-plugin-react-components`, `rust-plugin-strip`, `rust-plugin-svgr`, `rust-plugin-url`, `rust-plugin-virtual`.
-	- `rust-plugin-wasm` currently fails with a module resolution error for `json_typegen_wasm_bg.wasm?url`; this is not the same as a post-build native crash.
-	- `rust-plugin-worker` is the remaining reproduced Windows native crash case in the current sweep (`0xC0000005` after successful build output).
+- Current Windows example sweep status (all stable, 10/10 exit 0):
+	- `rust-plugin-auto-import-react`, `rust-plugin-auto-import-vue`
+	- `rust-plugin-compress` (parallel compression via `thread_pool.spawn` + `mem::take`)
+	- `rust-plugin-icons-react`, `rust-plugin-icons-vue`
+	- `rust-plugin-image`, `rust-plugin-modular-import`, `rust-plugin-react-components`
+	- `rust-plugin-strip`, `rust-plugin-svgr`, `rust-plugin-url`, `rust-plugin-virtual`
+	- `rust-plugin-wasm` (fixed: static URL string instead of `?url` import)
+	- `rust-plugin-worker` (fixed: DLL pinning via `GetModuleHandleExA` + `GET_MODULE_HANDLE_EX_FLAG_PIN`)
 
 - Add repeated Windows build stability checks (at least 10 runs) for high-risk plugins.
 - Add lightweight hook-level debug logs behind a switch.

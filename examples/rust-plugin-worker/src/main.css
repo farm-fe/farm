@@ -40,3 +40,34 @@
 .read-the-docs {
   color: #888;
 }
+
+.worker-cases {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.worker-cases h2 {
+  margin-bottom: 0.5rem;
+}
+
+.worker-cases ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.worker-cases li {
+  margin: 0.3rem 0;
+}
+
+.worker-running {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
+.worker-ok {
+  color: #157f3b;
+}
+
+.worker-error {
+  color: #be1e2d;
+}

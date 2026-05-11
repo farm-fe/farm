@@ -1,9 +1,9 @@
 import * as Comlink from "comlink";
-import { count } from "./util";
-export class MyWorker {
-  async add(a: number, b: number) {
-    return count(a, b);
-  }
-}
 
-Comlink.expose(MyWorker);
+const api = {
+  async add(a: number, b: number) {
+    return a + b;
+  },
+};
+
+Comlink.expose(api);

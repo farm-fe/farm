@@ -84,30 +84,30 @@ impl Plugin for FarmfePluginWasm {
       };
       let output_file_name = transform_output_filename(transform_output_file_name_params);
       let params = EmitFileParams {
-        name: output_file_name,
+        name: output_file_name.clone(),
         content,
         resource_type: ResourceType::Asset("wasm".to_string()),
         resolved_path: param.module_id.to_string(),
       };
       context.emit_file(params);
 
-      // let wasm_url = if !context.config.output.public_path.is_empty() {
-      //   let normalized_public_path = context.config.output.public_path.trim_end_matches('/');
-      //   format!("{}/{}", normalized_public_path, resolved_path)
-      // } else {
-      //   format!("/{}", resolved_path)
-      // };
+      let wasm_url = if !context.config.output.public_path.is_empty() {
+        let normalized_public_path = context.config.output.public_path.trim_end_matches('/');
+        format!("{normalized_public_path}/{output_file_name}")
+      } else {
+        format!("/{output_file_name}")
+      };
 
       let content = if init {
         format!(
           r#"import initWasm from "{WASM_HELPER_ID_FARM}";
-          import wasmUrl from "{wasm_file_path}?url";
+          const wasmUrl = "{wasm_url}";
           export default opts => initWasm(opts, wasmUrl)"#,
         )
       } else {
         format!(
           r#"import initWasm from "{WASM_HELPER_ID_FARM}";
-          import wasmUrl from "{wasm_file_path}?url";
+          const wasmUrl = "{wasm_url}";
           {}
           "#,
           generate_glue_code(wasm_file_path, "initWasm", "wasmUrl")?
