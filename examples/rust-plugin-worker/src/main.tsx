@@ -2,9 +2,23 @@ import React, { useState } from "react";
 import "./main.css";
 import reactLogo from "./assets/react.svg";
 import FarmLogo from "./assets/logo.png";
-export function Main() {
+
+export type WorkerCaseStatus = "ok" | "error";
+
+export interface WorkerCaseResult {
+  caseName: string;
+  status: WorkerCaseStatus;
+  detail: string;
+}
+
+interface MainProps {
+  workerResults: WorkerCaseResult[];
+  running: boolean;
+}
+
+export function Main({ workerResults, running }: MainProps) {
   const [count, setCount] = useState(0);
-  console.log("rendering Main component")
+
   return (
     <>
       <div>
@@ -27,6 +41,17 @@ export function Main() {
       <p className="read-the-docs">
         Click on the Farm and React logos to learn more
       </p>
+      <section className="worker-cases">
+        <h2>Worker Cases</h2>
+        {running && <p className="worker-running">Running worker checks...</p>}
+        <ul>
+          {workerResults.map((item) => (
+            <li key={item.caseName} className={item.status === "ok" ? "worker-ok" : "worker-error"}>
+              <strong>{item.caseName}</strong>: {item.detail}
+            </li>
+          ))}
+        </ul>
+      </section>
     </>
   );
 }
