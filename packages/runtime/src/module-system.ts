@@ -147,15 +147,9 @@ if (__FARM_ENABLE_EXTERNAL_MODULES__) {
 }
 
 export function farmRequire(id: string): any {
-  var cachedModuleResult;
-
   if (__farm_internal_cache__[id]) {
-    if (__FARM_RUNTIME_TARGET_ENV__ === 'library')
-      cachedModuleResult = __farm_internal_cache__[id].exports;
-    else
-      cachedModuleResult =
-        __farm_internal_cache__[id].initializer ||
-        __farm_internal_cache__[id].exports;
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'library') var cachedModuleResult = __farm_internal_cache__[id].exports;
+    else var cachedModuleResult = __farm_internal_cache__[id].initializer || __farm_internal_cache__[id].exports;
     // will be removed as dead code if no plugin enabled when minify enabled
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
       const shouldSkip = __farm_internal_module_system__.p?.b(
@@ -200,14 +194,14 @@ export function farmRequire(id: string): any {
   }
 
   // create a full new module instance and store it in cache to avoid cyclic initializing
-  const module = (__farm_internal_cache__[id] = {
+  const module = __farm_internal_cache__[id] = {
     id,
     meta: {
       env: {}
     },
     exports: {},
     require: farmRequire
-  } as Module);
+  } as Module;
 
   if (__FARM_ENABLE_RUNTIME_PLUGIN__)
     __farm_internal_module_system__.p?.s('moduleCreated', module); // call the module created hook
