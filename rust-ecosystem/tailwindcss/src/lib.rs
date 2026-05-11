@@ -5,5 +5,6 @@
 //! does **not** implement plugin-compat APIs.
 
 pub mod compiler;
+pub mod scanner;
 
 pub use compiler::{compile, Compiler, CompilerOptions, Features, Polyfills, TailwindConfig};

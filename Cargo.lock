@@ -1992,6 +1992,7 @@ name = "farmfe_ecosystem_tailwindcss"
 version = "0.1.0"
 dependencies = [
  "farmfe_testing_helpers",
+ "regex",
  "serde_json",
 ]
 

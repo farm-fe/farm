@@ -15,6 +15,7 @@ use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::regex::Regex;
 
+use farmfe_ecosystem_tailwindcss::scanner::extract_candidates;
 use farmfe_ecosystem_tailwindcss::TailwindConfig;
 use farmfe_ecosystem_tailwindcss_node::compile::{self, CompileOptions};
 
@@ -27,12 +28,6 @@ lazy_static! {
     /// Regex matching file extensions that may contain TailwindCSS candidates.
     static ref CANDIDATE_EXT_RE: Regex = Regex::new(
         r"\.(js|jsx|ts|tsx|vue|svelte|html|mdx|md|astro|php|blade\.php|twig|erb|hbs|liquid|pug|slim|haml)(\?|$)"
-    ).unwrap();
-
-    /// Simple candidate scanner that extracts potential Tailwind CSS utility class
-    /// names from source files.
-    static ref CANDIDATE_RE: Regex = Regex::new(
-        r#"(?:^|[\s'"`;{}\(])([!a-zA-Z0-9@\[\]:./_%\-][a-zA-Z0-9\-_:/.\[\]%#!]*[a-zA-Z0-9\]%])"#
     ).unwrap();
 }
 
@@ -70,21 +65,11 @@ impl FarmPluginTailwindCSS {
   }
 
   /// Scan `content` for TailwindCSS candidate class names.
+  ///
+  /// Delegates to [`farmfe_ecosystem_tailwindcss::scanner::extract_candidates`]
+  /// so the extraction logic lives in the shared core crate.
   fn scan_candidates(&self, content: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    for cap in CANDIDATE_RE.captures_iter(content) {
-      if let Some(m) = cap.get(1) {
-        let candidate = m.as_str().to_string();
-        // Filter out obvious non-candidates
-        if !candidate.starts_with("//")
-          && !candidate.starts_with("/*")
-          && !candidate.contains("://")
-        {
-          result.push(candidate);
-        }
-      }
-    }
-    result
+    extract_candidates(content)
   }
 
   /// Check whether `id` looks like a CSS root file that should trigger

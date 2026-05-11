@@ -11,6 +11,8 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 
 ## Migration checklist
 
+### Shared / cross-crate
+
 - [x] Audit upstream `@tailwindcss/node` package structure and map each source module to the Rust crate.
 - [x] Audit upstream `tailwindcss` package structure and identify missing Rust workstreams.
 - [x] Record the current migration status in the branch.
@@ -27,6 +29,21 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 - [ ] Port candidate extraction, utilities, variants, and design-system generation from `tailwindcss` core.
 - [ ] Replace the current `Compiler::build()` passthrough with full Tailwind candidate-driven CSS generation.
 - [ ] Evaluate whether upstream `crates/oxide` scanner should be integrated or adapted for Farm.
+
+### `tailwindcss` core crate (`rust-ecosystem/tailwindcss`)
+
+- [x] Audit upstream `tailwindcss` core package structure and identify Rust migration scope.
+- [x] Define `Features` bitflag type mirroring upstream compiler feature detection.
+- [x] Define `Polyfills` bitflag type for CSS compatibility transforms.
+- [x] Define `TailwindConfig` struct for externally supplied config (no JS config loading).
+- [x] Define `Compiler`, `CompilerOptions`, and `compile()` as the public API entry point.
+- [x] Add integration test with snapshot coverage for `Compiler` accepting external config.
+- [x] Scope JS config-file loading and plugin compatibility out of this implementation.
+- [x] Add a `scanner` module for extracting CSS utility class candidates from HTML/JS/CSS source text.
+- [x] Add unit tests for `Features` bitflag operations (union, intersection, named constants).
+- [x] Add unit tests for `Polyfills` bitflag operations.
+- [x] Add snapshot tests for `scanner::extract_candidates()` with fixture inputs.
+- [x] Migrate plugin's inline candidate regex into the shared `scanner` module.
 
 ## Workstream detail
 
