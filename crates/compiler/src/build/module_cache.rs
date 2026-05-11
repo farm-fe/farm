@@ -17,6 +17,15 @@ use farmfe_toolkit::script::{
   analyze_statement::analyze_statements, swc_try_with::resolve_module_mark,
 };
 
+fn set_script_marks(
+  script: &mut farmfe_core::module::meta_data::script::ScriptModuleMetaData,
+  unresolved_mark: u32,
+  top_level_mark: u32,
+) {
+  script.top_level_mark = top_level_mark;
+  script.unresolved_mark = unresolved_mark;
+}
+
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   farm_profile_function!(format!("get_timestamp_of_module: {:?}", module_id));
   let resolved_path = module_id.resolved_path(root);
@@ -279,8 +288,7 @@ pub fn handle_cached_modules(
         context.meta.get_globals(&cached_module.module.id).value(),
       );
 
-      script.top_level_mark = unresolved_mark.as_u32();
-      script.unresolved_mark = top_level_mark.as_u32();
+      set_script_marks(script, unresolved_mark.as_u32(), top_level_mark.as_u32());
       script.statements = analyze_statements(&script.ast);
     }
     box farmfe_core::module::ModuleMetaData::Css(_)
@@ -313,6 +321,23 @@ pub fn handle_cached_modules(
 
   // TODO: return of resolve hook should be treated as part of the cache key
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use farmfe_core::module::meta_data::script::ScriptModuleMetaData;
+
+  use super::set_script_marks;
+
+  #[test]
+  fn set_script_marks_preserves_unresolved_and_top_level_semantics() {
+    let mut script = ScriptModuleMetaData::default();
+
+    set_script_marks(&mut script, 11, 22);
+
+    assert_eq!(script.unresolved_mark, 11);
+    assert_eq!(script.top_level_mark, 22);
+  }
 }
 
 /// recreate the watch graph for the cached module

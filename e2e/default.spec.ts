@@ -1,6 +1,6 @@
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe } from 'node:test';
-import { existsSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
 import { expect, test } from 'vitest';
 import { logger } from './utils.js';
 import { startProjectAndTest } from './vitestSetup.js';

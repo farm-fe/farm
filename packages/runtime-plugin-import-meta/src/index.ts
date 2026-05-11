@@ -1,4 +1,4 @@
-import type { ModuleSystem } from "@farmfe/runtime";
+import type { ModuleSystem } from '@farmfe/runtime';
 
 let _moduleSystem = {} as ModuleSystem;
 
@@ -9,22 +9,22 @@ function assignObj(target: any, source: any) {
 }
 
 export default {
-  name: "farm-runtime-import-meta",
+  name: 'farm-runtime-import-meta',
   bootstrap: (system: ModuleSystem) => {
     _moduleSystem = system;
   },
   moduleCreated: (module: any) => {
-    const publicPath = _moduleSystem.pp?.[0] || "";
-    const isSSR = _moduleSystem.te === "node";
+    const publicPath = _moduleSystem.pp?.[0] || '';
+    const isSSR = _moduleSystem.te === 'node';
 
     module.meta.env = FARM_PROCESS_ENV ?? {};
     assignObj(module.meta.env, {
-      dev: process.env.NODE_ENV === "development",
-      prod: process.env.NODE_ENV === "production",
+      dev: process.env.NODE_ENV === 'development',
+      prod: process.env.NODE_ENV === 'production',
       BASE_URL: publicPath,
-      SSR: isSSR,
+      SSR: isSSR
     });
 
     module.meta.url = _moduleSystem.m()[module.id].url;
-  },
+  }
 };

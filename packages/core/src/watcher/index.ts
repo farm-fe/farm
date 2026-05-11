@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import chokidar from 'chokidar';
 import glob from 'fast-glob';
-import { Compiler, createInlineCompiler } from '../compiler/index.js';
+import { type Compiler, createInlineCompiler } from '../compiler/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import type {
@@ -123,10 +123,10 @@ export default class Watcher extends EventEmitter implements IWatcher {
       '**/.git/**',
       '**/node_modules/**',
       '**/test-results/**', // Playwright
-      glob.escapePath(
+      `${glob.escapePath(
         path.resolve(this.config.root, this.config.compilation.output.path)
-      ) + '/**',
-      cacheDir ? glob.escapePath(cacheDir) + '/**' : undefined,
+      )}/**`,
+      cacheDir ? `${glob.escapePath(cacheDir)}/**` : undefined,
       ...arraify(ignoredList || [])
     ].filter(Boolean);
 

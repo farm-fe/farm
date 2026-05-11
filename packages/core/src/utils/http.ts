@@ -10,7 +10,7 @@
 import { promises as dns } from 'node:dns';
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
-import { ResolvedUserConfig } from '../config/types.js';
+import type { ResolvedUserConfig } from '../config/types.js';
 import { getValidPublicPath } from './share.js';
 
 export interface ResolvedServerUrls {
@@ -50,7 +50,7 @@ export async function resolveServerUrls(
     return { local: [], network: [] };
   }
 
-  const serverOptions = type == 'dev' ? config.server : config.server.preview;
+  const serverOptions = type === 'dev' ? config.server : config.server.preview;
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(serverOptions.host);
@@ -63,8 +63,7 @@ export async function resolveServerUrls(
     .flatMap((nInterface) => nInterface ?? [])
     .filter(
       (detail) =>
-        detail &&
-        detail.address &&
+        detail?.address &&
         (detail.family === 'IPv4' ||
           // @ts-expect-error Node 18.0 - 18.3 returns number
           detail.family === 4)

@@ -303,7 +303,6 @@ declare class WebSocket extends EventEmitter {
 }
 
 declare const WebSocketAlias: typeof WebSocket;
-// @ts-ignore
 interface WebSocketAlias extends WebSocket {} // tslint:disable-line no-empty-interface
 
 // biome-ignore lint/style/noNamespace: declaration

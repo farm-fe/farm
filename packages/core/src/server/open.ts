@@ -7,10 +7,9 @@
  * https://github.com/facebook/create-react-app/blob/master/LICENSE
  */
 
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-import { execSync } from 'child_process';
 import { execa } from 'execa';
 import open from 'open';
 import { cyan, Logger, red } from '../utils/index.js';
@@ -18,7 +17,7 @@ import { cyan, Logger, red } from '../utils/index.js';
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';
 
-const enum Actions {
+enum Actions {
   NONE,
   BROWSER,
   SCRIPT
@@ -54,7 +53,7 @@ function executeNodeScript(scriptPath: string, url: string) {
       console.log(
         red('The script specified as BROWSER environment variable failed.')
       );
-      console.log(cyan(scriptPath) + ' exited with code ' + code + '.');
+      console.log(`${cyan(scriptPath)} exited with code ${code}.`);
       console.log();
       return;
     }
@@ -77,7 +76,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
       // Try our best to reuse existing tab
       // on OS X Google Chrome with AppleScript
       execSync('ps cax | grep "Google Chrome"');
-      execSync('osascript openChrome.applescript "' + encodeURI(url) + '"', {
+      execSync(`osascript openChrome.applescript "${encodeURI(url)}"`, {
         cwd: path.resolve(dirname, '../../bin'),
         stdio: 'ignore'
       });

@@ -76,10 +76,9 @@ export function genFileTree(files: string[], sep = '/'): FileNode[] {
     ).children || [];
 
   res.forEach((fileNode) => {
-    fileNode.children &&
-      fileNode.children.forEach((child) =>
-        flattenDirectory(child, fileNode, sep)
-      );
+    fileNode.children?.forEach((child) =>
+      flattenDirectory(child, fileNode, sep)
+    );
   });
 
   return res;
@@ -110,10 +109,9 @@ export function flattenDirectory(
     parent.title = defaultTitle;
 
     // Recursively flatten child nodes
-    n.children &&
-      n.children.forEach((c) => {
-        flattenDirectory(c, parent, sep);
-      });
+    n.children?.forEach((c) => {
+      flattenDirectory(c, parent, sep);
+    });
   } else {
     // Generate a default title
     const defaultTitle = [parent.title, n.title].join(sep);
@@ -122,9 +120,8 @@ export function flattenDirectory(
     n.title = defaultTitle;
 
     // Recursively flatten child nodes
-    n.children &&
-      n.children.forEach((c) => {
-        flattenDirectory(c, n, sep);
-      });
+    n.children?.forEach((c) => {
+      flattenDirectory(c, n, sep);
+    });
   }
 }

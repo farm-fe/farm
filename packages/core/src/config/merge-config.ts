@@ -1,8 +1,8 @@
 import path, { isAbsolute } from 'node:path';
 
 import { isArray, isObject, isString } from '../utils/share.js';
-import { CompilationMode } from './env.js';
-import { FarmCliOptions, UserConfig } from './types.js';
+import type { CompilationMode } from './env.js';
+import type { FarmCliOptions, UserConfig } from './types.js';
 
 export function mergeConfig<T extends Record<string, any>>(
   userConfig: T,

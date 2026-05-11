@@ -6,7 +6,7 @@ import {
   DEFAULT_DEV_SERVER_OPTIONS,
   DEFAULT_HMR_OPTIONS
 } from './constants.js';
-import { NormalizedServerConfig, UserConfig } from './types.js';
+import type { NormalizedServerConfig, UserConfig } from './types.js';
 
 function tryHttpsAsFileRead(value: unknown): string | Buffer | unknown {
   if (typeof value === 'string') {

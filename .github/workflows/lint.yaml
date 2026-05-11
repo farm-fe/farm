@@ -46,4 +46,4 @@ jobs:
           command: pnpm i --frozen-lockfile
 
       - name: Run lint
-        run: npx biome check --no-errors-on-unmatched --files-ignore-unknown=true
+        run: npx biome check . --diagnostic-level=warn --no-errors-on-unmatched --files-ignore-unknown=true

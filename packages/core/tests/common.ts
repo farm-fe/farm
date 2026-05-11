@@ -1,13 +1,13 @@
+import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
 import {
   normalizeUserCompilationConfig,
   resolveUserConfig,
-  UserConfig
+  type UserConfig
 } from '../src/config/index.js';
 import { resolveConfigResolvedHook } from '../src/plugin/index.js';
-import { JsPlugin } from '../src/plugin/type.js';
+import type { JsPlugin } from '../src/plugin/type.js';
 import { Logger } from '../src/utils/index.js';
 
 export async function getCompiler(

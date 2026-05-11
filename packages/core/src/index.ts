@@ -9,9 +9,8 @@ export * from './utils/index.js';
 
 import fs from 'node:fs/promises';
 
-import { Compiler, createCompiler } from './compiler/index.js';
-import { __FARM_GLOBAL__ } from './config/_global.js';
-import { resolveConfig, UserConfig } from './config/index.js';
+import { type Compiler, createCompiler } from './compiler/index.js';
+import { resolveConfig, type UserConfig } from './config/index.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 import { getSortedPluginHooksBindThis } from './plugin/index.js';
 import { PreviewServer, Server } from './server/index.js';

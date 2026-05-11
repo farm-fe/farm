@@ -10,13 +10,13 @@ import { Yarn } from './icons/Yarn';
 export interface PackageManagerTabProps {
   skip?: boolean;
   command:
-  | string
-  | {
-    npm?: string;
-    yarn?: string;
-    pnpm?: string;
-    bun?: string;
-  };
+    | string
+    | {
+        npm?: string;
+        yarn?: string;
+        pnpm?: string;
+        bun?: string;
+      };
   additionalTabs?: {
     tool: string;
     icon?: React.ReactNode;
@@ -30,7 +30,7 @@ function normalizeCommand(command: string): string {
   // If command include `install` and package name, replace `install` with `add`
   const pureCommand = command
     .split(' ')
-    .filter(item => !item.startsWith('-') && !item.startsWith('--'))
+    .filter((item) => !item.startsWith('-') && !item.startsWith('--'))
     .join(' ');
   if (pureCommand === 'yarn install' || pureCommand === 'bun install') {
     return command;
@@ -39,12 +39,11 @@ function normalizeCommand(command: string): string {
   return command.replace('install', 'add');
 }
 
-
 function replaceTool(command, tool) {
   const tools = ['npm', 'yarn', 'pnpm', 'bun'];
   let newCommand = command;
 
-  tools.forEach(t => {
+  tools.forEach((t) => {
     const regex = new RegExp(`\\b${t}\\b`, 'g');
     newCommand = newCommand.replace(regex, tool);
   });
@@ -55,7 +54,7 @@ function replaceTool(command, tool) {
 export function PackageManagerTabs({
   command,
   skip = true,
-  additionalTabs = [],
+  additionalTabs = []
 }: PackageManagerTabProps) {
   let commandInfo: {
     npm?: string;
@@ -70,9 +69,9 @@ export function PackageManagerTabs({
     npm: <Npm />,
     yarn: <Yarn />,
     pnpm: <Pnpm />,
-    bun: <Bun />,
+    bun: <Bun />
   };
-  additionalTabs.forEach(tab => {
+  additionalTabs.forEach((tab) => {
     packageMangerToIcon[tab.tool] = tab.icon;
   });
 
@@ -82,9 +81,9 @@ export function PackageManagerTabs({
       npm: `npm ${command}`,
       yarn: `yarn ${command}`,
       pnpm: `pnpm ${command}`,
-      bun: `bun ${command}`,
+      bun: `bun ${command}`
     };
-    additionalTabs.forEach(tab => {
+    additionalTabs.forEach((tab) => {
       if (skip) {
         commandInfo[tab.tool] = replaceTool(command, tab.tool);
       } else {
@@ -100,7 +99,7 @@ export function PackageManagerTabs({
   commandInfo.bun && (commandInfo.bun = normalizeCommand(commandInfo.bun));
   if (skip) {
     const tools = ['npm', 'yarn', 'pnpm', 'bun'];
-    tools.forEach(tool => {
+    tools.forEach((tool) => {
       commandInfo[tool] = replaceTool(command, tool);
     });
   }
@@ -115,7 +114,7 @@ export function PackageManagerTabs({
         for (const [key, value] of Object.entries(commandInfo)) {
           highlighted[key] = await codeToHtml(value as string, {
             lang: 'bash',
-            theme: colorMode === 'dark' ? 'vitesse-dark' : 'vitesse-light',
+            theme: colorMode === 'dark' ? 'vitesse-dark' : 'vitesse-light'
           });
         }
         setHighlightedCode(highlighted);
@@ -125,29 +124,30 @@ export function PackageManagerTabs({
   }, [command, colorMode, isBrowser]);
 
   return (
-    <div className="border-solid my-4 rounded-md border-package">
+    <div className='border-solid my-4 rounded-md border-package'>
       <Tabs
-        groupId="package.manager"
+        groupId='package.manager'
         values={Object.entries(commandInfo).map(([key]) => (
           <div
             key={key}
-            className="package-manager-tab"
+            className='package-manager-tab'
             style={{
               display: 'flex',
               alignItems: 'center',
               padding: '2px 4px',
               borderRadius: '4px',
-              transition: 'background-color 0.3s ease',
+              transition: 'background-color 0.3s ease'
             }}
           >
             {packageMangerToIcon[key]}
-            <span className="package-manager-name ">{key}</span>
+            <span className='package-manager-name '>{key}</span>
           </div>
         ))}
       >
         {Object.entries(commandInfo).map(([key, value]) => (
           <Tab key={key}>
-            <div className='codeBlock-tab'
+            <div
+              className='codeBlock-tab'
               dangerouslySetInnerHTML={{ __html: highlightedCode[key] || '' }}
             ></div>
           </Tab>

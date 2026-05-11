@@ -31,7 +31,7 @@ const visitPage = async (
   command: string
 ) => {
   if (!path) return;
-  // @ts-ignore
+  // @ts-expect-error
   const wsEndpoint = inject('wsEndpoint');
   if (!wsEndpoint) {
     throw new Error('wsEndpoint not found');
@@ -218,8 +218,8 @@ const startProjectAndTestInternal = async (
     });
 
     onTestFinished(() => {
-      logger('try kill child process: ' + child.pid);
-      logger('current process id: ' + process.pid);
+      logger(`try kill child process: ${child.pid}`);
+      logger(`current process id: ${process.pid}`);
       if (!child.killed) {
         child.kill(0);
       }
@@ -295,8 +295,8 @@ export const watchProjectAndTest = async (
     });
 
     onTestFinished(() => {
-      logger('try kill child process: ' + child.pid);
-      logger('current process id: ' + process.pid);
+      logger(`try kill child process: ${child.pid}`);
+      logger(`current process id: ${process.pid}`);
       if (!child.killed) {
         child.kill();
       }

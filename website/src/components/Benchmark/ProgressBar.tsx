@@ -1,6 +1,6 @@
-import { animated, useSpring } from "@react-spring/web";
-import React, { useEffect, useState } from "react";
-import styles from "./index.module.css";
+import { animated, useSpring } from '@react-spring/web';
+import React, { useEffect, useState } from 'react';
+import styles from './index.module.css';
 
 export function formatTime(time: number, totalTime: number) {
   if (totalTime < 1000) {
@@ -17,33 +17,33 @@ export function ProgressBar({ value, max }) {
   const progressBarWidth = isMobile ? 80 : 18;
   const formattedTime = formatTime(elapsedTime, TOTAL_TIME);
   const props = useSpring({
-    width: "100%",
-    from: { width: "0%" },
+    width: '100%',
+    from: { width: '0%' },
     config: {
-      duration: TOTAL_TIME,
+      duration: TOTAL_TIME
     },
     onChange(data) {
       setElapsedTime((parseFloat(data.value.width) / 100) * TOTAL_TIME);
-    },
+    }
   });
 
   return (
     <div
-      className={`${styles["progress-bar-container"]} flex justify-between items-center sm:pr-4`}
+      className={`${styles['progress-bar-container']} flex justify-between items-center sm:pr-4`}
       style={{
         width: `${progressBarWidth}vw`,
-        flex: 1,
+        flex: 1
       }}
     >
       <div
-        className={`${styles["progress-bar-inner-container"]} flex justify-between`}
+        className={`${styles['progress-bar-inner-container']} flex justify-between`}
         style={{
-          width: `${(value / max) * 0.8 * progressBarWidth}vw`,
+          width: `${(value / max) * 0.8 * progressBarWidth}vw`
         }}
       >
-        <animated.div className={styles["progress-bar"]} style={props} />
+        <animated.div className={styles['progress-bar']} style={props} />
       </div>
-      <div className={`${styles["font-mono"]} text-sm sm:text-base`}>
+      <div className={`${styles['font-mono']} text-sm sm:text-base`}>
         {formattedTime}
       </div>
     </div>

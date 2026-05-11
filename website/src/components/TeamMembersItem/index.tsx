@@ -1,8 +1,8 @@
-import Link from "@docusaurus/Link";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
-import clsx from "clsx";
-import React from "react";
-import styles from "./index.module.css";
+import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import clsx from 'clsx';
+import React from 'react';
+import styles from './index.module.css';
 
 export default function TeamMembersItem({ member }) {
   return (
@@ -10,10 +10,10 @@ export default function TeamMembersItem({ member }) {
       <div className={clsx(styles.profile)}>
         <figure
           className={styles.avatar}
-          onClick={() => window.open(member.orgLink, "_blank")}
+          onClick={() => window.open(member.orgLink, '_blank')}
         >
           <img
-            className={styles["avatar-img"]}
+            className={styles['avatar-img']}
             src={member.avatar}
             alt={member.name}
           />

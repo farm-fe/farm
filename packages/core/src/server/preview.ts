@@ -1,13 +1,16 @@
 import { existsSync } from 'node:fs';
-import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
+import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import type * as net from 'node:net';
 import path from 'node:path';
 import compression from '@polka/compression';
 import connect from 'connect';
 import corsMiddleware from 'cors';
-import sirv, { RequestHandler } from 'sirv';
-import { PreviewServerMiddleware, resolveConfig } from '../config/index.js';
+import sirv, { type RequestHandler } from 'sirv';
 import {
+  type PreviewServerMiddleware,
+  resolveConfig
+} from '../config/index.js';
+import type {
   FarmCliOptions,
   ResolvedUserConfig,
   UserConfig

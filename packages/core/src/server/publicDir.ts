@@ -1,4 +1,4 @@
-import { ResolvedUserConfig } from '../config/types.js';
+import type { ResolvedUserConfig } from '../config/types.js';
 import { recursiveReaddir } from '../utils/index.js';
 
 export const ERR_SYMLINK_IN_RECURSIVE_READDIR =

@@ -1,6 +1,6 @@
-import { test, expect } from 'vitest';
-import { Module, ModuleSystem } from '../src/index.js';
+import { expect, test } from 'vitest';
 import { initModuleSystem } from '../dist/modules/plugin.js';
+import type { Module, ModuleSystem } from '../src/index.js';
 
 test('plugin hooks serial execution', async () => {
   const moduleSystem = {} as ModuleSystem;
@@ -21,16 +21,13 @@ test('plugin hooks serial execution', async () => {
     }
   ]);
 
-  moduleSystem.p.s(
-    'moduleCreated',
-    {
-      id: 'test-module',
-      meta: {
-        env: {}
-      },
-      exports: {},
-    } as Module
-  );
+  moduleSystem.p.s('moduleCreated', {
+    id: 'test-module',
+    meta: {
+      env: {}
+    },
+    exports: {}
+  } as Module);
   expect(calledPlugins).toEqual(['test-1', 'test-2']);
 });
 
@@ -62,16 +59,13 @@ test('plugin hook bail execution', async () => {
     }
   ]);
 
-  const res = await moduleSystem.p.b(
-    'readModuleCache',
-    {
-      id: 'test-module',
-      meta: {
-        env: {}
-      },
-      exports: {},
-    } as Module
-  );
+  const res = await moduleSystem.p.b('readModuleCache', {
+    id: 'test-module',
+    meta: {
+      env: {}
+    },
+    exports: {}
+  } as Module);
   expect(res).toBe(true);
   expect(calledPlugins).toEqual(['test-0', 'test-1']);
 });

@@ -1,3 +1,7 @@
+import { existsSync, statSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import path, { isAbsolute } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type {
   CompilationContext,
   JsPlugin,
@@ -5,12 +9,8 @@ import type {
   UserConfig
 } from '@farmfe/core';
 import { getAdditionContext, rebaseUrls } from '@farmfe/core';
-import { existsSync, statSync } from 'fs';
-import { readFile } from 'fs/promises';
-import path, { isAbsolute } from 'path';
+import type * as Sass from 'sass';
 import type { CompileResult, LegacyOptions, StringOptions } from 'sass';
-import * as Sass from 'sass';
-import { fileURLToPath, pathToFileURL } from 'url';
 import { pluginName, throwError, tryRead } from './options.js';
 import { getSassImplementation } from './utils.js';
 
@@ -48,7 +48,7 @@ export default function farmSassPlugin(
   let farmConfig!: UserConfig['compilation'];
   const implementation = getSassImplementation(options.implementation);
 
-  // @ts-ignore TODO fix it
+  // @ts-expect-error TODO fix it
   const cwd = () => farmConfig.root ?? process.cwd();
 
   const resolvedPaths = options.filters?.resolvedPaths ?? DEFAULT_PATHS_REGEX;
@@ -358,7 +358,7 @@ async function compileScssLegacy(param: CompileCssParams) {
         sourceMapRoot: path.dirname(transformParam.resolvedPath),
         indentedSyntax: transformParam.moduleId.endsWith('.sass'),
         importer: [
-          function (url, _, done) {
+          (url, _, done) => {
             resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
               rebaseUrls(
                 resolvedPath,
@@ -394,7 +394,7 @@ async function compileScssLegacy(param: CompileCssParams) {
 
         resolve({
           css: result.css.toString(),
-          sourceMap: result.map && result.map.toString()
+          sourceMap: result.map?.toString()
         });
       }
     );

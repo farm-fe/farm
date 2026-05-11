@@ -1,8 +1,8 @@
-import path from 'path';
+import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import {
   normalizeUserCompilationConfig,
-  ResolvedCompilation
+  type ResolvedCompilation
 } from '../../src/config/index.js';
 import { mergeFarmCliConfig } from '../../src/config/merge-config.js';
 import { normalizeOutput } from '../../src/config/normalize-config/normalize-output.js';
@@ -68,7 +68,7 @@ describe('mergeFarmCliConfig', () => {
         );
       }).rejects.toThrowError();
 
-      let config = await normalizeUserCompilationConfig(
+      const config = await normalizeUserCompilationConfig(
         {
           logger: new NoopLogger(),
           compilation: {

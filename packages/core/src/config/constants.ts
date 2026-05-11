@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import {
+import type {
   HmrOptions,
   NormalizedServerConfig,
   ResolvedCompilation

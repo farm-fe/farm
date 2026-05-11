@@ -1,5 +1,5 @@
+import { createServer, type Server } from 'node:http';
 import getPort from 'get-port';
-import { createServer, Server } from 'http';
 import type { BrowserServer } from 'playwright-chromium';
 import { chromium } from 'playwright-chromium';
 import type { GlobalSetupContext } from 'vitest/node';
@@ -24,7 +24,7 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
 
   client.listen(12306);
 
-  // @ts-ignore
+  // @ts-expect-error
   provide('wsEndpoint', browserServer.wsEndpoint());
 }
 

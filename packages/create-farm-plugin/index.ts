@@ -77,7 +77,7 @@ async function createFarm() {
         {
           type: (_, { overwrite }: { overwrite?: boolean }) => {
             if (overwrite === false) {
-              throw new Error(colors.red('❌') + ' Operation cancelled');
+              throw new Error(`${colors.red('❌')} Operation cancelled`);
             }
             return null;
           },
@@ -86,7 +86,7 @@ async function createFarm() {
       ],
       {
         onCancel: () => {
-          throw new Error(colors.red('❌') + ' Operation cancelled');
+          throw new Error(`${colors.red('❌')} Operation cancelled`);
         }
       }
     );

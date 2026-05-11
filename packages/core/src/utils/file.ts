@@ -1,6 +1,6 @@
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
-import fs from 'fs';
-import path from 'path';
+import path from 'node:path';
 import { normalizePath } from './share.js';
 
 interface FileNode {

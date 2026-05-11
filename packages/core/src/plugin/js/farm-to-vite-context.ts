@@ -187,7 +187,7 @@ export function farmContextToViteContext(
       has: cacheError
     },
     moduleIds: new Set<string>()[Symbol.iterator](),
-    // @ts-ignore Vite specific property
+    // @ts-expect-error Vite specific property
     getCombinedSourcemap() {
       logger.warn(
         '`vite-plugin-adapter`: getCombinedSourcemap is not supported in Farm for now. It will always return undefined.'

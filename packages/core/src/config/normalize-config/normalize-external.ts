@@ -60,7 +60,7 @@ export function normalizeExternal(
       defaultExternals.push(
         ...[...module.builtinModules].filter(
           (m) =>
-            //@ts-ignore
+            //@ts-expect-error
             !resolvedCompilation.resolve?.alias?.[m] &&
             !packageJson?.devDependencies?.[m] &&
             !packageJson?.dependencies?.[m]

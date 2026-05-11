@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { mergeConfig } from '../../src/config/merge-config.js';
-import { UserConfig } from '../../src/index.js';
+import type { UserConfig } from '../../src/index.js';
 
 describe('mergeConfig', () => {
   test('merge object', () => {

@@ -7,7 +7,7 @@ import {
   cyan,
   getDynamicResources,
   green,
-  Server,
+  type Server,
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX
 } from '../../index.js';
 import { send } from '../send.js';

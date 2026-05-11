@@ -1,7 +1,7 @@
 import { fromZodError } from 'zod-validation-error';
-import { CompilationMode } from '../../config/env.js';
+import type { CompilationMode } from '../../config/env.js';
 import { normalizeDevServerConfig } from '../../config/resolve-server.js';
-import { type JsPlugin, type UserConfig } from '../../index.js';
+import type { JsPlugin, UserConfig } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
 import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
@@ -102,8 +102,7 @@ export function processVitePlugin(
       filters,
       mode
     );
-    // @ts-ignore
-    convertPluginVite(vitePluginAdapter);
+    convertPluginVite(vitePluginAdapter as any);
     jsPlugins.push(vitePluginAdapter);
   };
 

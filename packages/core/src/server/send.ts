@@ -1,7 +1,11 @@
+import type {
+  IncomingMessage,
+  OutgoingHttpHeaders,
+  ServerResponse
+} from 'node:http';
+import { extname } from 'node:path/posix';
 import getEtag from 'etag';
-import { IncomingMessage, OutgoingHttpHeaders, ServerResponse } from 'http';
 import mime from 'mime';
-import { extname } from 'path/posix';
 
 export interface SendOptions {
   etag?: string;

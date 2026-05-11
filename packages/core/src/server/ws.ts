@@ -7,13 +7,13 @@ import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRaw } from 'ws';
 import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 import { DEFAULT_HMR_OPTIONS } from '../config/constants.js';
-import { ResolvedUserConfig } from '../config/types.js';
+import type { ResolvedUserConfig } from '../config/types.js';
 import type { WebSocket as WebSocketTypes } from '../types/ws.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
-import { ILogger, Logger } from '../utils/logger.js';
+import { type ILogger, Logger } from '../utils/logger.js';
 import { isObject } from '../utils/share.js';
 import type { Server as FarmDevServer, ServerConfig } from './index.js';
-import {
+import type {
   CustomPayload,
   ErrorPayload,
   HMRPayload,
@@ -39,18 +39,16 @@ export interface WebSocketServer {
   /**
    * Handle custom event emitted by `import.meta.hot.send`
    */
-  on: WebSocketTypes.Server['on'] & {
-    <T extends string>(
+  on: WebSocketTypes.Server['on'] &
+    (<T extends string>(
       event: T,
       listener: WebSocketCustomListener<InferCustomEventPayload<T>>
-    ): void;
-  };
+    ) => void);
   /**
    * Unregister event listener.
    */
-  off: WebSocketTypes.Server['off'] & {
-    (event: string, listener: Function): void;
-  };
+  off: WebSocketTypes.Server['off'] &
+    ((event: string, listener: Function) => void);
 }
 
 export interface WebSocketClient {
@@ -141,11 +139,7 @@ export class WsServer {
     // Add non-localhost origin
     const configuredOrigin = `${protocol}://${hostname.name}:${port}`;
 
-    if (
-      hostname &&
-      hostname.name &&
-      localUrls.every((url) => url !== configuredOrigin)
-    ) {
+    if (hostname?.name && localUrls.every((url) => url !== configuredOrigin)) {
       origins.push(configuredOrigin);
     }
 
@@ -173,7 +167,7 @@ export class WsServer {
       hmrServer || (portsAreCompatible && this.devServer.httpServer);
 
     this.port = (hmrPort as number) || DEFAULT_HMR_OPTIONS.port;
-    this.host = ((hmr && hmr.host) as string) || undefined;
+    this.host = (hmr?.host as string) || undefined;
 
     if (this.httpServer) {
       let hmrBase = this.devServer.publicPath;
@@ -192,7 +186,7 @@ export class WsServer {
           );
         }
 
-        const origin = req.headers['origin'];
+        const origin = req.headers.origin;
 
         if (
           req.headers['sec-websocket-protocol'] === HMR_HEADER &&
@@ -250,7 +244,7 @@ export class WsServer {
         try {
           parsed = JSON.parse(String(raw));
         } catch {
-          this.logger.error('Failed to parse WebSocket message: ' + raw);
+          this.logger.error(`Failed to parse WebSocket message: ${raw}`);
         }
 
         // transform vite js-update to farm update
@@ -421,7 +415,7 @@ export class WsServer {
           const payload: HMRPayload = this.#createPayload(...args);
           socket.send(JSON.stringify(payload));
         },
-        // @ts-ignore
+        // @ts-expect-error
         rawSend: (str: string) => socket.send(str),
         socket
       });

@@ -1,5 +1,5 @@
-import deepmerge, { Options } from 'deepmerge';
-// @ts-ignore ignore type check
+import deepmerge, { type Options } from 'deepmerge';
+// @ts-expect-error ignore type check
 import { isPlainObject } from 'is-plain-object';
 import { isArray } from './share.js';
 
@@ -71,7 +71,6 @@ export default function merge<T>(target: T, ...sources: Partial<T>[]): T {
         const sourceValue = (source as any)[key];
 
         if (sourceValue === undefined) {
-          continue;
         } else if (
           isMergeableObject(destination[key]) &&
           isMergeableObject(sourceValue)

@@ -1,5 +1,5 @@
-import type { Resource } from "./modules/dynamic-import.js";
-import type { FarmRuntimePluginContainer } from "./modules/plugin.js";
+import type { Resource } from './modules/dynamic-import.js';
+import type { FarmRuntimePluginContainer } from './modules/plugin.js';
 
 // if statement will be removed during compile time when referencing following variables
 declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node' | 'library';
@@ -23,7 +23,7 @@ type ModuleInitializationFunction = ((
   module: Module,
   exports: any,
   __farm_require__?: (moduleId: string) => any,
-  __farm_dynamic_require__?: (moduleId: string) => any,
+  __farm_dynamic_require__?: (moduleId: string) => any
 ) => void | Promise<void>) & { url: string };
 
 export type ModuleInitialization = ModuleInitializationFunction;
@@ -42,45 +42,49 @@ export interface ModuleSystem {
   /** require*/
   r(id: string): any;
   /** register*/
-  g(id: string, module: ModuleInitialization): () => any
+  g(id: string, module: ModuleInitialization): () => any;
   /** dynamicImport*/
-  d(id: string): Promise<void>,
+  d(id: string): Promise<void>;
   /** getModules*/
-  m(): Record<string, ModuleInitialization>,
+  m(): Record<string, ModuleInitialization>;
   /** getCache*/
-  c(): Record<string, Module>,
+  c(): Record<string, Module>;
   /** updateModule*/
-  u(moduleId: string, init: ModuleInitialization): void
+  u(moduleId: string, init: ModuleInitialization): void;
   /** deleteModule*/
-  e(moduleId: string): boolean
+  e(moduleId: string): boolean;
   /** clearCache*/
-  a(moduleId: string): boolean
+  a(moduleId: string): boolean;
   /** loadDynamicResourcesOnly*/
-  l(moduleId: string, force?: boolean): Promise<any>
+  l(moduleId: string, force?: boolean): Promise<any>;
   /** setExternalModules*/
-  se(externalModules: Record<string, any>): void
+  se(externalModules: Record<string, any>): void;
   /** setInitialLoadedResources*/
-  si(resources: string[]): void
+  si(resources: string[]): void;
   /** setDynamicModuleResourcesMap
-    * These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
-    * This method can also be called during runtime to add new dynamic modules */
-  sd(dynamicResources: Resource[], dynamicModuleResourcesMap: Record<string, number[]>): void
+   * These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
+   * This method can also be called during runtime to add new dynamic modules */
+  sd(
+    dynamicResources: Resource[],
+    dynamicModuleResourcesMap: Record<string, number[]>
+  ): void;
   /** setPublicPaths
-  * The public paths are injected during compile time */
-  sp(publicPaths: string[]): void
+   * The public paths are injected during compile time */
+  sp(publicPaths: string[]): void;
   /** bootstrap
-    * bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
-    * This method should only be called once */
-  b(): void
+   * bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
+   * This method should only be called once */
+  b(): void;
 }
 
-function setGlobalRequire(globalThis: any) {
+function setGlobalRequire(globalObj: any) {
   // polyfill require when running in browser or node with Farm runtime
-  const __global_this__: any = typeof globalThis !== 'undefined' ? globalThis : {};
+  const __global_this__: any =
+    typeof globalObj !== 'undefined' ? globalObj : {};
   __global_this__.require = __global_this__.require || farmRequire;
 }
 
-// It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime 
+// It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime
 if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
   setGlobalRequire(window);
 }
@@ -97,48 +101,58 @@ export var __farm_internal_module_system__ = {
   r: farmRequire,
   g: farmRegister,
   m: () => __farm_internal_modules__,
-  c: () => __farm_internal_cache__,
+  c: () => __farm_internal_cache__
 } as ModuleSystem;
 
 if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') {
-  // @ts-ignore injected during compile time
-  __farm_internal_module_system__.te = __FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__;
+  __farm_internal_module_system__.te =
+    // @ts-expect-error injected during compile time
+    // eslint-disable-next-line no-undef
+    __FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__;
 }
 
 if (__FARM_ENABLE_EXTERNAL_MODULES__) {
   // externalModules
-  __farm_internal_module_system__.em = {}
+  __farm_internal_module_system__.em = {};
   // The external modules are injected during compile time.
-  __farm_internal_module_system__.se = function setExternalModules(externalModules: Record<string, any>): void {
+  __farm_internal_module_system__.se = function setExternalModules(
+    externalModules: Record<string, any>
+  ): void {
     for (const key in externalModules) {
       let em = externalModules[key];
       // add a __esModule flag to the module if the module has default export
-      if (em && em.default && !em.__esModule) {
+      if (em?.default && !em.__esModule) {
         em = {
           ...em,
-          __esModule: true,
+          __esModule: true
         };
       }
 
-      __farm_internal_module_system__.em[key]= em;
+      __farm_internal_module_system__.em[key] = em;
     }
-  }
+  };
   // init `window['xxxx] = {}`
-  const __farm_global_this__: any = $__farm_global_this__$ = {};
+  const __farm_global_this__: any = ($__farm_global_this__$ = {});
   __farm_global_this__.m = __farm_internal_module_system__;
 }
 
 export function farmRequire(id: string): any {
+  var cachedModuleResult;
+
   if (__farm_internal_cache__[id]) {
-    if (__FARM_RUNTIME_TARGET_ENV__ === 'library') var cachedModuleResult =__farm_internal_cache__[id].exports;
-    else var cachedModuleResult = __farm_internal_cache__[id].initializer || __farm_internal_cache__[id].exports;
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'library')
+      cachedModuleResult = __farm_internal_cache__[id].exports;
+    else
+      cachedModuleResult =
+        __farm_internal_cache__[id].initializer ||
+        __farm_internal_cache__[id].exports;
     // will be removed as dead code if no plugin enabled when minify enabled
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
       const shouldSkip = __farm_internal_module_system__.p?.b(
-        "readModuleCache",
-        __farm_internal_cache__[id],
+        'readModuleCache',
+        __farm_internal_cache__[id]
       );
-  
+
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) return cachedModuleResult;
     } else return cachedModuleResult;
@@ -155,10 +169,10 @@ export function farmRequire(id: string): any {
     }
 
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-      const res = __farm_internal_module_system__.p?.b("moduleNotFound", id);
+      const res = __farm_internal_module_system__.p?.b('moduleNotFound', id);
 
       if (res) {
-        return res
+        return res;
       }
     }
 
@@ -176,33 +190,36 @@ export function farmRequire(id: string): any {
   }
 
   // create a full new module instance and store it in cache to avoid cyclic initializing
-  const module = __farm_internal_cache__[id] = {
+  const module = (__farm_internal_cache__[id] = {
     id,
     meta: {
-      env: {},
+      env: {}
     },
     exports: {},
-    require: farmRequire,
-  } as Module;
+    require: farmRequire
+  } as Module);
 
-  if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleCreated", module); // call the module created hook
+  if (__FARM_ENABLE_RUNTIME_PLUGIN__)
+    __farm_internal_module_system__.p?.s('moduleCreated', module); // call the module created hook
 
   __farm_internal_cache__[id] = module;
-  
+
   // initialize the new module
-  if (__FARM_RUNTIME_TARGET_ENV__ === 'library') initializer(module, module.exports)
+  if (__FARM_RUNTIME_TARGET_ENV__ === 'library')
+    initializer(module, module.exports);
   else if (__FARM_ENABLE_TOP_LEVEL_AWAIT__) {
     const result = initializer(
       module,
       module.exports,
       farmRequire,
-      __farm_internal_module_system__.d,
+      __farm_internal_module_system__.d
     );
 
     // it's a async module, return the promise
     if (result && result instanceof Promise) {
       module.initializer = result.then(() => {
-        if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleInitialized", module); // call the module initialized hook
+        if (__FARM_ENABLE_RUNTIME_PLUGIN__)
+          __farm_internal_module_system__.p?.s('moduleInitialized', module); // call the module initialized hook
 
         module.initializer = undefined;
         // return the exports of the module
@@ -211,20 +228,25 @@ export function farmRequire(id: string): any {
 
       return module.initializer;
     }
-  } else initializer(
+  } else
+    initializer(
       module,
       module.exports,
       farmRequire,
-      __farm_internal_module_system__.d,
+      __farm_internal_module_system__.d
     );
 
-  if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleInitialized", module);  // call the module initialized hook
-  
+  if (__FARM_ENABLE_RUNTIME_PLUGIN__)
+    __farm_internal_module_system__.p?.s('moduleInitialized', module); // call the module initialized hook
+
   // return the exports of the module
   return module.exports;
 }
 
-export function farmRegister(id: string, module: ModuleInitialization): () => any {
+export function farmRegister(
+  id: string,
+  module: ModuleInitialization
+): () => any {
   __farm_internal_modules__[id] = module;
   return () => farmRequire(id);
 }

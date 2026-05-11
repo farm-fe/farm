@@ -1,8 +1,8 @@
+import type { IncomingMessage } from 'node:http';
 import path from 'node:path/posix';
 import type Connect from 'connect';
-import type { IncomingMessage } from 'http';
 import sirv from 'sirv';
-import { Compiler } from '../../compiler/index.js';
+import type { Compiler } from '../../compiler/index.js';
 import {
   cleanUrl,
   generateFileTree,

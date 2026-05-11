@@ -80,9 +80,9 @@ export interface SwcPresetEnvOptions {
   forceAllTransforms?: boolean;
 }
 
-interface TerserEcmaVersion {}
+type TerserEcmaVersion = {};
 
-interface TerserManglePropertiesOptions {}
+type TerserManglePropertiesOptions = {};
 
 export interface TerserCompressOptions {
   arguments?: boolean;

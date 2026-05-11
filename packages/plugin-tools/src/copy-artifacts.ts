@@ -1,5 +1,5 @@
-import { copyFile } from 'fs/promises';
-import path from 'path';
+import { copyFile } from 'node:fs/promises';
+import path from 'node:path';
 
 export const copyArtifacts = async (abi?: string) => {
   if (!abi) {
@@ -13,7 +13,7 @@ export const copyArtifacts = async (abi?: string) => {
       'linux-x64-musl',
       'win32-x64-msvc'
     ];
-    const localAbi = process.platform + '-' + process.arch;
+    const localAbi = `${process.platform}-${process.arch}`;
     console.log('localAbi', localAbi);
     const found = supportedAbis.find((abi) => abi.includes(localAbi));
     if (found) {
@@ -24,7 +24,7 @@ export const copyArtifacts = async (abi?: string) => {
   }
 
   // find .node file
-  const files = await import('fs').then((m) => m.promises.readdir('.'));
+  const files = await import('node:fs').then((m) => m.promises.readdir('.'));
   const nodeFile = files.find(
     (file) => file.endsWith('.node') && file.includes(abi)
   );
@@ -32,7 +32,7 @@ export const copyArtifacts = async (abi?: string) => {
   if (!nodeFile) {
     console.log('files:\n', files);
     throw new Error(
-      'Missing .node file in current directory: ' + process.cwd()
+      `Missing .node file in current directory: ${process.cwd()}`
     );
   }
 

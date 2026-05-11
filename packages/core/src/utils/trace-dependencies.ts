@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { dirname } from 'node:path';
 
 import { createInlineCompiler } from '../compiler/index.js';
-import { ResolvedUserConfig } from '../config/types.js';
+import type { ResolvedUserConfig } from '../config/types.js';
 import { convertErrorMessage } from './error.js';
 
 function createTraceDepCompiler(entry: string) {
@@ -25,7 +25,7 @@ export async function traceDependencies(
 
     const compiler = createTraceDepCompiler(configFilePath);
     const files = (await compiler.traceDependencies()) as string[];
-    return files.filter((file) => !/@farm-runtime[\/\\]module/.test(file)); // ignore internal runtime module
+    return files.filter((file) => !/@farm-runtime[/\\]module/.test(file)); // ignore internal runtime module
   } catch (error) {
     const errorMessage = convertErrorMessage(error);
     throw Error(`Error tracing dependencies: ${errorMessage}`);

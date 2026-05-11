@@ -1,13 +1,13 @@
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { ResolvedUserConfig } from '../config/types.js';
+import type { ResolvedUserConfig } from '../config/types.js';
 import {
   bold,
-  ColorFunction,
+  type ColorFunction,
   colors,
   green,
   PersistentCacheBrand
 } from './color.js';
-import { ResolvedServerUrls } from './http.js';
+import type { ResolvedServerUrls } from './http.js';
 import { getShortName } from './path.js';
 import { clearScreen, pad, version } from './share.js';
 
@@ -130,7 +130,7 @@ export class Logger implements ILogger {
       let loggerMessage: string;
 
       if (typeof message === 'string') {
-        const timeRegex = new RegExp(`\\{time:(\\d+(\\.\\d+)?)\\}`, 'g');
+        const timeRegex = /\{time:(\d+(\.\d+)?)\}/g;
         loggerMessage = message.replace(timeRegex, (_, durationStr) => {
           const duration = parseFloat(durationStr);
 
@@ -234,7 +234,7 @@ export class NoopLogger extends Logger {
   warn(_message: string): void {}
   error(_message: string | Error, _errorOptions?: ErrorOptions): void {
     if (_errorOptions?.exit) {
-      let e = _message instanceof Error ? _message : new Error(_message);
+      const e = _message instanceof Error ? _message : new Error(_message);
       if (_errorOptions?.e || _errorOptions?.error) {
         e.cause = _errorOptions.e || _errorOptions.error;
       }

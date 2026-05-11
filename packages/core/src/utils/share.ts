@@ -3,10 +3,10 @@ import os from 'node:os';
 import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { Config, OutputConfig } from '../types/binding.js';
+import type { Config, OutputConfig } from '../types/binding.js';
 import { cleanUrl } from './url.js';
 
-// @ts-ignore import packageJson from '../../package.json';
+import packageJson from '../../package.json' assert { type: 'json' }; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -190,7 +190,6 @@ export function formatTime(time: number, format: 'ms' | 's' = 'ms'): string {
   switch (format) {
     case 's':
       return `${Math.floor(time) / 1000}s`;
-    case 'ms':
     default:
       return `${Math.floor(time)}ms`;
   }

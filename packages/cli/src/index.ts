@@ -1,7 +1,7 @@
 import {
   VERSION as CORE_VERSION,
-  FarmCliOptions,
-  UserConfig
+  type FarmCliOptions,
+  type UserConfig
 } from '@farmfe/core';
 import { cac } from 'cac';
 import type {

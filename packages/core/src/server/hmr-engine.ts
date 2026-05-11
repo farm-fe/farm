@@ -2,11 +2,11 @@ import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 import type { Resource } from '@farmfe/runtime';
 import fse from 'fs-extra';
-import { HmrOptions } from '../config/index.js';
+import type { HmrOptions } from '../config/index.js';
 import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { bold, cyan, green } from '../utils/index.js';
-import { Server as FarmDevServer } from './index.js';
+import type { Server as FarmDevServer } from './index.js';
 
 export class HmrEngine {
   private _updateQueue: CompilerUpdateItem[] = [];
@@ -50,8 +50,7 @@ export class HmrEngine {
       })
       .join(', ');
     if (updatedFilesStr.length >= 100) {
-      updatedFilesStr =
-        updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
+      updatedFilesStr = `${updatedFilesStr.slice(0, 100)}...(${queue.length} files)`;
     }
 
     // we must add callback before update
@@ -86,7 +85,7 @@ export class HmrEngine {
           dynamicResourcesMap = {} as Record<string, Resource[]>;
         }
 
-        // @ts-ignore
+        // @ts-expect-error
         dynamicResourcesMap[key] = value.map((r) => ({
           path: r[0],
           type: r[1] as 'script' | 'link'

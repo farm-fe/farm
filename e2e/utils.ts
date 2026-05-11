@@ -115,7 +115,7 @@ export async function editFile(
     : join(process.cwd(), _filename);
   const content = await fs.readFile(filename, 'utf-8');
 
-  let newContent = content.replaceAll(matched, to);
+  const newContent = content.replaceAll(matched, to);
 
   if (content.length !== newContent.length || content !== newContent) {
     await fs.writeFile(filename, newContent);

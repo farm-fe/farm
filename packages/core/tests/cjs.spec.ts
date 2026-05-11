@@ -1,8 +1,8 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 
-// @ts-ignore ignore error for cjs
+// @ts-expect-error ignore error for cjs
 import { normalizeDevServerConfig, resolveConfig } from '../dist/cjs/index.cjs';
 import { isDisableCache } from '../src/config/env.js';
 

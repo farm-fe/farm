@@ -13,11 +13,11 @@
 
 import type { OutgoingHttpHeaders as HttpServerHeaders } from 'node:http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
-import connect from 'connect';
+import type connect from 'connect';
 import { readFileIfExists } from '../utils/fsUtils.js';
-import { Logger } from '../utils/logger.js';
-import { HttpServer } from './index.js';
-import { ProxyOptions } from './middlewares/proxy.js';
+import type { Logger } from '../utils/logger.js';
+import type { HttpServer } from './index.js';
+import type { ProxyOptions } from './middlewares/proxy.js';
 
 export interface CommonServerOptions {
   port?: number;
@@ -56,7 +56,6 @@ export class httpServer {
   public logger: Logger;
   protected httpServer: HttpServer | null = null;
   protected resolvedUrls: ResolvedServerUrls | null = null;
-  constructor() {}
 
   protected async resolveHttpServer(
     { proxy }: CommonServerOptions,
@@ -86,7 +85,7 @@ export class httpServer {
           ...httpsOptions,
           allowHTTP1: true
         },
-        // @ts-ignore
+        // @ts-expect-error
         app
       );
     }

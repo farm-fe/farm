@@ -9,7 +9,7 @@ import type {
   RenderedChunk
 } from 'rollup';
 import type { Config } from '../../types/binding.js';
-import { Logger } from '../../utils/logger.js';
+import type { Logger } from '../../utils/logger.js';
 import type { JsResourcePot, Resource } from '../type.js';
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 

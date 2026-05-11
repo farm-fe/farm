@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { JsPlugin, UserConfig } from '../../src/index.js';
+import type { JsPlugin, UserConfig } from '../../src/index.js';
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler

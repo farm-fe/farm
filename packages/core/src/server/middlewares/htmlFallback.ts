@@ -39,7 +39,7 @@ export function htmlFallbackMiddleware(
         return next();
       }
     } else {
-      const html = app.compiler.resource(pathname + '.html');
+      const html = app.compiler.resource(`${pathname}.html`);
 
       if (html) {
         send(req, res, html, pathname, { headers });

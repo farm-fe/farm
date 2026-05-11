@@ -3,10 +3,10 @@ import type * as net from 'node:net';
 import type Connect from 'connect';
 import type Server from 'http-proxy';
 import httpProxy from 'http-proxy';
-import { ResolvedUserConfig } from '../../config/types.js';
-import { CommonServerOptions } from '../http.js';
+import type { ResolvedUserConfig } from '../../config/types.js';
+import type { CommonServerOptions } from '../http.js';
 import type { Server as DevServer, HttpServer } from '../index.js';
-import { PreviewServer } from '../preview.js';
+import type { PreviewServer } from '../preview.js';
 
 export interface ProxyOptions extends httpProxy.ServerOptions {
   rewrite?: (path: string) => string;
@@ -15,7 +15,7 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
     req: http.IncomingMessage,
     res: http.ServerResponse,
     options: ProxyOptions
-  ) => void | null | undefined | false | string;
+  ) => undefined | null | undefined | false | string;
   rewriteWsOrigin?: boolean | undefined;
 }
 
@@ -51,7 +51,7 @@ export function proxyMiddleware(
         );
       } else if ('req' in res) {
         resolvedUserConfig.logger.error(
-          // @ts-ignore
+          // @ts-expect-error
           `http proxy error: ${originalRes.req.url}\n${err.stack}`
         );
 

@@ -8,7 +8,7 @@ export interface InjectOptions {
 }
 
 export function injectQiankun(options: InjectOptions): void {
-  // @ts-ignore
+  // @ts-expect-error
   window[injectSymbol] = {
     ...options
   };

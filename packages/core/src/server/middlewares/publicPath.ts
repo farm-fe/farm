@@ -1,6 +1,6 @@
 import type Connect from 'connect';
 import { withTrailingSlash } from '../../utils/index.js';
-import { Server as DevServer } from '../index.js';
+import type { Server as DevServer } from '../index.js';
 import type { PreviewServer } from '../preview.js';
 
 export function publicPathMiddleware(
@@ -74,7 +74,7 @@ export function joinUrlSegments(a: string, b: string): string {
     a = a.substring(0, a.length - 1);
   }
   if (b[0] !== '/') {
-    b = '/' + b;
+    b = `/${b}`;
   }
   return a + b;
 }

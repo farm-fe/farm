@@ -2,9 +2,9 @@ import {
   mergeCustomExternal,
   partialExternal
 } from '../../config/normalize-config/normalize-external.js';
-import { UserConfig } from '../../config/types.js';
+import type { UserConfig } from '../../config/types.js';
 import { isArray } from '../../utils/share.js';
-import { JsPlugin } from '../type.js';
+import type { JsPlugin } from '../type.js';
 
 /**
  * avoid add new external in config hook
@@ -20,7 +20,7 @@ export function externalAdapter(): JsPlugin {
         config?.compilation?.external &&
         isArray(config.compilation.external)
       ) {
-        let [stringExternal, recordExternal] = mergeCustomExternal(
+        const [stringExternal, recordExternal] = mergeCustomExternal(
           partialExternal(config.compilation.external)
         );
 

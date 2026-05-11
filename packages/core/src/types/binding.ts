@@ -27,7 +27,7 @@ export type ResolveKind =
 
 import type { WatchOptions } from 'chokidar';
 import type { JsPlugin, LiteralUnion } from '../plugin/type.js';
-import {
+import type {
   JsMinifyOptions,
   ScriptDecoratorsConfig,
   ScriptParseConfig,

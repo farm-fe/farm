@@ -18,6 +18,9 @@ await execa("node", ["./scripts/clean.mjs"], { cwd });
 console.log("Code Spell lint...");
 await execa("npx", ["cspell", "**", "--gitignore"], { cwd });
 
+console.log("Code Biome lint...");
+await execa("npx", ["biome", "check", ".", "--diagnostic-level=warn", "--write"], { cwd });
+
 console.log("build core、js/rust plugins、cli ...");
 await runTaskQueue();
 

@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
-import { UserConfig } from '../../../config/types.js';
+import type { UserConfig } from '../../../config/types.js';
 import { Logger } from '../../../utils/logger.js';
-import { JsPlugin } from '../../type.js';
+import type { JsPlugin } from '../../type.js';
 import { getCssModuleType, VITE_PLUGIN_DEFAULT_MODULE_TYPE } from '../utils.js';
 import { VitePluginAdapter } from '../vite-plugin-adapter.js';
 

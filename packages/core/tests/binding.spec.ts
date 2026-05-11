@@ -1,12 +1,12 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'vitest';
 import {
   Compiler,
   normalizeDevServerConfig,
   normalizeUserCompilationConfig,
   resolveUserConfig,
-  UserConfig
+  type UserConfig
 } from '../src/index.js';
 
 // just make sure the binding works

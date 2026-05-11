@@ -1,4 +1,4 @@
-import type { ModuleInitialization, ModuleSystem } from "../module-system.js";
+import type { ModuleInitialization, ModuleSystem } from '../module-system.js';
 
 let moduleSystem: ModuleSystem;
 

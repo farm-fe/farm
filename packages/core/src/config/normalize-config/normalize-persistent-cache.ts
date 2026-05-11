@@ -2,11 +2,14 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import { RustPlugin } from '../../plugin/index.js';
-import { Config, GlobalBuiltinCacheKeyStrategy } from '../../types/binding.js';
+import type { RustPlugin } from '../../plugin/index.js';
+import type {
+  Config,
+  GlobalBuiltinCacheKeyStrategy
+} from '../../types/binding.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { isDisableCache } from '../env.js';
-import { ResolvedUserConfig } from '../index.js';
+import type { ResolvedUserConfig } from '../index.js';
 
 const DEFAULT_CACHE_DIR = 'node_modules/.farm/cache';
 const DEFAULT_PACKAGE_JSON = 'package.json';
@@ -30,7 +33,7 @@ export async function normalizePersistentCache(
     return;
   }
 
-  if (config.persistentCache === true || config.persistentCache == undefined) {
+  if (config.persistentCache === true || config.persistentCache === undefined) {
     config.persistentCache = {
       buildDependencies: [],
       moduleCacheKeyStrategy: {},
@@ -171,7 +174,6 @@ export async function normalizePersistentCache(
           } else if (Array.isArray(p) && typeof p[0] === 'string') {
             config.persistentCache.buildDependencies.push(p[0]);
           }
-          continue;
         }
       }
     }

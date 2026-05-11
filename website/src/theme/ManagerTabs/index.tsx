@@ -1,4 +1,3 @@
-
 /*
 Use the rspress tabs component to rewrite tabs
 https://rspress.dev/
@@ -15,7 +14,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useState
 } from 'react';
 import { TabDataContext } from '../logic/TabDataContext';
 import { useStorageValue } from '../logic/useStorageValue';
@@ -62,28 +61,27 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
       children: rawChildren,
       groupId,
       tabPosition = 'left',
-      tabContainerClassName,
+      tabContainerClassName
     } = props;
     // remove "\n" character when write JSX element in multiple lines, use Children.toArray for Tabs with no Tab element
     const children = Children.toArray(rawChildren).filter(
-      child => !(typeof child === 'string' && child.trim() === ''),
+      (child) => !(typeof child === 'string' && child.trim() === '')
     );
-
 
     let tabValues = values || [];
 
     if (tabValues.length === 0) {
-      tabValues = Children.map(children, child => {
+      tabValues = Children.map(children, (child) => {
         if (isValidElement(child)) {
           return {
             label: child.props?.label,
-            value: child.props?.value || child.props?.label,
+            value: child.props?.value || child.props?.label
           };
         }
 
         return {
           label: undefined,
-          value: undefined,
+          value: undefined
         };
       });
     }
@@ -94,7 +92,7 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
         return 0;
       }
 
-      return tabValues.findIndex(item => {
+      return tabValues.findIndex((item) => {
         if (typeof item === 'string') {
           return item === defaultValue;
         }
@@ -107,9 +105,8 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
 
     const [storageIndex, setStorageIndex] = useStorageValue(
       `${groupIdPrefix}${groupId}`,
-      activeIndex,
+      activeIndex
     );
-
 
     const syncIndex = useMemo(() => {
       if (groupId) {
@@ -143,7 +140,9 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
       }
     }, [groupId, syncIndex, activeIndex]);
 
-    const [currentIndex, setCurrentIndex] = useState(groupId ? syncIndex : activeIndex);
+    const [currentIndex, setCurrentIndex] = useState(
+      groupId ? syncIndex : activeIndex
+    );
 
     return (
       <div className={styles['container']} ref={ref}>
@@ -154,17 +153,18 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
               style={{
                 display: 'flex',
                 justifyContent:
-                  tabPosition === 'center' ? 'center' : 'flex-start',
+                  tabPosition === 'center' ? 'center' : 'flex-start'
               }}
             >
               {tabValues.map((item, index) => {
                 return (
                   <div
                     key={index}
-                    className={`${styles['tab']} ${currentIndex === index
-                      ? styles['selected']
-                      : styles['not-selected']
-                      }`}
+                    className={`${styles['tab']} ${
+                      currentIndex === index
+                        ? styles['selected']
+                        : styles['not-selected']
+                    }`}
                     onClick={() => {
                       const newIndex = index;
                       onChange?.(newIndex);
@@ -188,7 +188,7 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
         <div>{Children.toArray(children)[currentIndex]}</div>
       </div>
     );
-  },
+  }
 );
 
 export function Tab({
@@ -197,7 +197,7 @@ export function Tab({
 }: ComponentPropsWithRef<'div'> &
   Pick<TabItem, 'label' | 'value'>): ReactElement {
   return (
-    <div {...props} className="rounded-md">
+    <div {...props} className='rounded-md'>
       {children}
     </div>
   );

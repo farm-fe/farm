@@ -1,4 +1,4 @@
-import type { ModuleSystem, Module } from '../module-system.js';
+import type { Module, ModuleSystem } from '../module-system.js';
 import type { Resource } from './dynamic-import.js';
 
 export interface ResourceLoadResult {
@@ -33,9 +33,12 @@ export interface FarmRuntimePluginContainer {
   // setPlugins
   p(plugins: FarmRuntimePlugin[]): void;
   // hookSerial
-  s(hookName: Exclude<keyof FarmRuntimePlugin, "name">, ...args: any[]): void
+  s(hookName: Exclude<keyof FarmRuntimePlugin, 'name'>, ...args: any[]): void;
   // hookBail
-  b<T = any>(hookName: Exclude<keyof FarmRuntimePlugin, "name">, ...args: any[]): T | undefined
+  b<T = any>(
+    hookName: Exclude<keyof FarmRuntimePlugin, 'name'>,
+    ...args: any[]
+  ): T | undefined;
 }
 
 let RUNTIME_PLUGINS: FarmRuntimePlugin[] = [];
@@ -83,10 +86,10 @@ const pluginContainer: FarmRuntimePluginContainer = {
   p: setPlugins,
   s: hookPluginsSerial,
   b: hookPluginsBail
-}
+};
 
 function bootstrap(): void {
-  pluginContainer.s("bootstrap", this);
+  pluginContainer.s('bootstrap', this);
 }
 
 export function initModuleSystem(moduleSystem: ModuleSystem) {

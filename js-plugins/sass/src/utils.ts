@@ -1,4 +1,4 @@
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import { throwError } from './options.js';
 
 const __require = createRequire(import.meta.url);

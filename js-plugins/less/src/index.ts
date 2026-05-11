@@ -1,11 +1,11 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import {
-  Compiler,
+  type Compiler,
   getAdditionContext,
-  JsPlugin,
-  UserConfig
+  type JsPlugin,
+  type UserConfig
 } from '@farmfe/core';
-import { existsSync } from 'fs';
-import path from 'path';
 import { createLessResolvePlugin } from './plugin-resolve.js';
 import {
   getLessImplementation,
@@ -35,7 +35,7 @@ export default function farmLessPlugin(
     options?.implementation
   );
 
-  // @ts-ignore TODO fix it
+  // @ts-expect-error TODO fix it
   const cwd = () => farmConfig.root ?? process.cwd();
 
   return {

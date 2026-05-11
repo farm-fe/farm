@@ -1,5 +1,5 @@
-import { Logger } from '../../utils/logger.js';
-import { CompilationContext, ViteModule } from '../type.js';
+import type { Logger } from '../../utils/logger.js';
+import type { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
 export class ViteDevServerAdapter {

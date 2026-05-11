@@ -1,12 +1,12 @@
 export * from './js/index.js';
 export * from './rust/index.js';
 
-import { isAbsolute, relative } from 'path';
-import {
+import { isAbsolute, relative } from 'node:path';
+import type {
   CompilationMode,
   ConfigEnv,
   ResolvedUserConfig,
-  type UserConfig
+  UserConfig
 } from '../config/index.js';
 import { isArray, isObject } from '../utils/index.js';
 import merge from '../utils/merge.js';
@@ -52,12 +52,12 @@ export async function resolveFarmPlugins(config: UserConfig) {
         await rustPluginResolver(plugin as string, config.root ?? process.cwd())
       );
     } else if (isObject(plugin)) {
-      // @ts-ignore
+      // @ts-expect-error
       plugin = convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
     } else if (isArray(plugin)) {
       for (let pluginNestItem of plugin as JsPlugin[]) {
-        // @ts-ignore
+        // @ts-expect-error
         pluginNestItem = convertPlugin(pluginNestItem as JsPlugin);
         jsPlugins.push(pluginNestItem as JsPlugin);
       }
@@ -172,7 +172,7 @@ function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
 
         if (typeof callback === 'function') {
           function proxyHookCallback(...args: any) {
-            let context = args[1];
+            const context = args[1];
 
             if (context) {
               const proxyKeys = [
@@ -268,7 +268,7 @@ function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
               );
             }
 
-            // @ts-ignore
+            // @ts-expect-error
             return callback.apply(this, args);
           }
 

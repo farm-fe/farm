@@ -10,8 +10,8 @@ import {
   ENV_DEVELOPMENT,
   ENV_PRODUCTION
 } from '../constants.js';
-import { CompilationMode, setProcessEnv } from '../env.js';
-import {
+import { type CompilationMode, setProcessEnv } from '../env.js';
+import type {
   EnvResult,
   ResolvedCompilation,
   ResolvedUserConfig
@@ -72,7 +72,6 @@ export async function normalizeUserCompilationConfig(
   normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
-  // @ts-ignore do not check type for this internal option
   if (!resolvedCompilation.assets?.publicDir) {
     resolvedCompilation.assets ??= {};
 
@@ -81,11 +80,9 @@ export async function normalizeUserCompilationConfig(
       : path.join(resolvedCompilation.root, 'public');
 
     if (path.isAbsolute(userPublicDir)) {
-      // @ts-ignore do not check type for this internal option
-      resolvedCompilation.assets.publicDir = userPublicDir;
+      (resolvedCompilation.assets as any).publicDir = userPublicDir;
     } else {
-      // @ts-ignore do not check type for this internal option
-      resolvedCompilation.assets.publicDir = path.join(
+      (resolvedCompilation.assets as any).publicDir = path.join(
         resolvedCompilation.root,
         userPublicDir
       );

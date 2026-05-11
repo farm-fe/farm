@@ -136,7 +136,7 @@ function injectToBody(
     if (htmlInjectRE.test(html)) {
       return html.replace(htmlInjectRE, `${serializeTags(tags)}\n$&`);
     }
-    return html + `\n` + serializeTags(tags);
+    return `${html}\n${serializeTags(tags)}`;
   }
 }
 
@@ -173,7 +173,7 @@ function serializeTags(
 ): string {
   if (typeof tags === 'string') {
     return tags;
-  } else if (tags && tags.length) {
+  } else if (tags?.length) {
     return tags
       .map((tag) => `${indent}${serializeTag(tag, indent)}\n`)
       .join('');

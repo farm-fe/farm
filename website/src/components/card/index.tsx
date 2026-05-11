@@ -1,7 +1,7 @@
-import { animated, useSpring } from "@react-spring/web";
-import { useControls } from "leva";
-import React, { useRef, useState } from "react";
-import styled from "./index.module.css";
+import { animated, useSpring } from '@react-spring/web';
+import { useControls } from 'leva';
+import React, { useRef, useState } from 'react';
+import styled from './index.module.css';
 
 export default function Card(props) {
   const cardRef = useRef(null);
@@ -18,13 +18,13 @@ export default function Card(props) {
 
   const handleMouseLeave = () =>
     api.start({
-      xys: [0, 0, 1],
+      xys: [0, 0, 1]
     });
 
   const handleMouseMove = (e) => {
     const rect = cardRef.current.getBoundingClientRect();
     api.start({
-      xys: calc(e.clientX / 1.2, e.clientY / 1.2, rect),
+      xys: calc(e.clientX / 1.2, e.clientY / 1.2, rect)
     });
   };
 
@@ -45,7 +45,7 @@ export default function Card(props) {
 const calc = (x, y, rect) => [
   -(y - rect.top - rect.height / 40) / 8,
   (x - rect.left - rect.width / 40) / 8,
-  1.4,
+  1.4
 ];
 
 const trans = (x, y, s) =>

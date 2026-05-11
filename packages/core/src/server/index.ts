@@ -1,6 +1,6 @@
 export * from './preview.js';
 
-import fs, { PathLike } from 'node:fs';
+import fs, { type PathLike } from 'node:fs';
 import type {
   Server as HttpBaseServer,
   ServerOptions as HttpsServerOptions
@@ -9,7 +9,7 @@ import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
 import connect from 'connect';
 import corsMiddleware from 'cors';
-import { Compiler, createCompiler } from '../compiler/index.js';
+import { type Compiler, createCompiler } from '../compiler/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import type {
   FarmCliOptions,
@@ -88,7 +88,7 @@ export class Server extends httpServer {
   config: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
   terminateServerFn: (_: unknown, exitCode?: number) => Promise<void>;
-  postConfigureServerHooks: ((() => void) | void)[] = [];
+  postConfigureServerHooks: ((() => void) | undefined)[] = [];
   logger: Logger;
 
   /**
@@ -588,9 +588,9 @@ export class Server extends httpServer {
       this.middlewares.use(resourceMiddleware(this));
     }
 
-    this.postConfigureServerHooks.reduce((_, fn) => {
+    this.postConfigureServerHooks.forEach((fn) => {
       if (typeof fn === 'function') fn();
-    }, null);
+    });
 
     this.serverOptions.middlewares?.forEach((middleware) =>
       this.middlewares.use(middleware(this))

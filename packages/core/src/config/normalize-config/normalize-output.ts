@@ -1,13 +1,13 @@
 import path, { isAbsolute } from 'node:path';
 
-import { Config } from '../../types/binding.js';
+import type { Config } from '../../types/binding.js';
 import { urlRegex } from '../../utils/http.js';
-import { Logger } from '../../utils/logger.js';
+import type { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue
 } from '../../utils/share.js';
-import { ResolvedCompilation } from '../types.js';
+import type { ResolvedCompilation } from '../types.js';
 
 export function normalizeOutput(
   config: ResolvedCompilation,
@@ -230,7 +230,7 @@ function tryGetDefaultPublicPath(
 
     if (targetEnv === 'node' && isAbsolute(publicPath)) {
       // vitejs plugin maybe set absolute path, should transform to relative path
-      const relativePath = './' + path.posix.normalize(publicPath).slice(1);
+      const relativePath = `./${path.posix.normalize(publicPath).slice(1)}`;
 
       logger.warn(
         `publicPath can't support absolute path in NodeJs, will be transform "${publicPath}" to "${relativePath}".`
@@ -275,7 +275,7 @@ export function normalizePublicPath(
     if (!urlRegex.test(defaultPublicPath)) {
       warning = true;
     }
-    defaultPublicPath = defaultPublicPath + '/';
+    defaultPublicPath = `${defaultPublicPath}/`;
   }
 
   // normalize prepended relative path

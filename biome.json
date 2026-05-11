@@ -9,21 +9,20 @@
   "files": {
     "includes": [
       "**",
-      "!**/node_modules/**",
-      "!**/crates/**",
+      "!**/node_modules",
+      "!**/crates",
       "!**/*.vue",
       "!**/tsconfig.base.json",
       "!**/tsconfig.json",
       "!**/*.d.ts",
-      "!**/packages/core/cjs/**",
-      "!**/packages/create-farm/templates/**",
-      "!**/packages/create-farm-plugin/templates/**",
-      "!**/rust-plugins/**",
-      "!**/examples/**",
+      "!**/packages/core/cjs",
+      "!**/packages/create-farm/templates",
+      "!**/packages/create-farm-plugin/templates",
+      "!**/rust-plugins",
+      "!**/examples",
       "!**/*.{js,mjs,cjs}",
       "!cspell.json",
-      "!packages/runtime",
-      "!packages/runtime-plugin-import-meta"
+      "!**/packages/core/src/utils/share.ts"
     ],
     "ignoreUnknown": true
   },
@@ -35,9 +34,27 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "includes": ["**/*.ts", "!**/node_modules", "!**/dist"]
+    "includes": ["**/*.{ts,tsx}", "!**/node_modules/**", "!**/dist/**"]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "javascript": {
+    "formatter": {
+      "jsxQuoteStyle": "single",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "none",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteStyle": "single",
+      "attributePosition": "auto"
+    },
+    "globals": [
+      "FARM_PROCESS_ENV",
+      "__FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__",
+      "assert"
+    ]
+  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -120,18 +137,5 @@
       "!**/*.config.js",
       "!**/*.config.ts"
     ]
-  },
-  "javascript": {
-    "formatter": {
-      "jsxQuoteStyle": "single",
-      "quoteProperties": "asNeeded",
-      "trailingCommas": "none",
-      "semicolons": "always",
-      "arrowParentheses": "always",
-      "bracketSpacing": true,
-      "bracketSameLine": false,
-      "quoteStyle": "single",
-      "attributePosition": "auto"
-    }
   }
 }

@@ -6,10 +6,10 @@
  */
 
 import { existsSync, statSync } from 'node:fs';
-import { OutgoingHttpHeaders } from 'node:http';
+import type { OutgoingHttpHeaders } from 'node:http';
 import path from 'node:path';
 import type Connect from 'connect';
-import sirv, { Options } from 'sirv';
+import sirv, { type Options } from 'sirv';
 import {
   cleanUrl,
   fsPathFromUrl,
@@ -29,7 +29,7 @@ export function staticMiddleware(app: Server): Connect.NextHandleFunction {
     })
   );
   return function handleStaticMiddleware(req, res, next) {
-    let stripQueryAndHashUrl = stripQueryAndHash(req.url);
+    const stripQueryAndHashUrl = stripQueryAndHash(req.url);
 
     if (
       stripQueryAndHashUrl[stripQueryAndHashUrl.length - 1] === '/' ||
@@ -58,7 +58,7 @@ export function staticMiddleware(app: Server): Connect.NextHandleFunction {
 }
 
 export function publicMiddleware(app: Server): Connect.NextHandleFunction {
-  const { config: config, publicDir, publicFiles } = app;
+  const { config, publicDir, publicFiles } = app;
   const serve = sirv(
     publicDir,
     sirvOptions({

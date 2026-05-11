@@ -1,4 +1,4 @@
-import { JsPlugin } from '../index.js';
+import type { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
   type RustPlugin,
@@ -12,9 +12,8 @@ import { externalAdapter } from '../plugin/js/external-adapter.js';
 
 import { resolveHostname } from '../utils/http.js';
 import { Logger } from '../utils/index.js';
-import { __FARM_GLOBAL__ } from './_global.js';
 import { ENV_PRODUCTION } from './constants.js';
-import { CompilationMode, setProcessEnv } from './env.js';
+import { type CompilationMode, setProcessEnv } from './env.js';
 import { loadConfigFile } from './load-config-file.js';
 import { mergeConfig, mergeFarmCliConfig } from './merge-config.js';
 import { normalizeUserCompilationConfig } from './normalize-config/index.js';

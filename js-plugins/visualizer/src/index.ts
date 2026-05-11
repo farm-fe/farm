@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import type { Compiler, JsPlugin, UserConfig } from '@farmfe/core';
 import { createDateSourceMiddleware } from './node/dataSource';
 import { createRecordViewerServer } from './node/server';
-import { RecordViewerOptions } from './types';
+import type { RecordViewerOptions } from './types';
 
 const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url));
 
@@ -27,7 +27,7 @@ export default function farmRecorderPlugin(
       compiler = c;
       const middleware = createDateSourceMiddleware(compiler);
 
-      let { host: h, port: p } = createRecordViewerServer({
+      const { host: h, port: p } = createRecordViewerServer({
         host: recordViewerOptions.host,
         port: recordViewerOptions.port,
         clientPath: PLUGIN_DIR_CLIENT,

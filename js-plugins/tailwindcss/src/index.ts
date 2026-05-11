@@ -5,7 +5,7 @@ import path from 'node:path';
  * Copyright Farm and All Contributors
  * Copyright (c) Tailwind Labs, Inc.
  */
-import { JsPlugin, logger, ResolvedUserConfig, Resolver } from '@farmfe/core';
+import { type JsPlugin, type ResolvedUserConfig, Resolver } from '@farmfe/core';
 import {
   compile,
   env,
@@ -20,7 +20,7 @@ import { Scanner } from '@tailwindcss/oxide';
 const DEBUG = env.DEBUG;
 const SPECIAL_QUERY_RE = /[?&](?:worker|sharedworker|raw|url)\b/;
 const COMMON_JS_PROXY_RE = /\?commonjs-proxy/;
-const INLINE_STYLE_ID_RE = /[?&]index\=\d+\.css$/;
+const INLINE_STYLE_ID_RE = /[?&]index=\d+\.css$/;
 
 export interface Options {
   filters?: {
@@ -36,7 +36,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
   let config: ResolvedUserConfig | null = null;
   let minify = false;
 
-  let roots: DefaultMap<string, Root> = new DefaultMap((id) => {
+  const roots: DefaultMap<string, Root> = new DefaultMap((id) => {
     const compilation = config?.compilation ?? {};
 
     const cssResolver = new Resolver({
@@ -136,7 +136,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
           const I = new Instrumentation();
           DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Generate CSS');
 
-          let root = roots.get(param.moduleId);
+          const root = roots.get(param.moduleId);
 
           // add watch file for scanned files
           for (const resolvedPath of candidatesModuleList) {
@@ -144,7 +144,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
           }
           const candidateList = (
             context?.readMetadataByScope<string[]>(CANDIDATE_SCOPE) ?? []
-          ).flatMap((v) => v);
+          ).flat();
 
           let result = await root.generate(
             param.content,
@@ -183,14 +183,14 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
 }
 
 function getExtension(id: string) {
-  let [filename] = id.split('?', 2);
+  const [filename] = id.split('?', 2);
   return path.extname(filename).slice(1);
 }
 
 function isPotentialCssRootFile(id: string) {
   if (id.includes('/.vite/')) return;
-  let extension = getExtension(id);
-  let isCssFile =
+  const extension = getExtension(id);
+  const isCssFile =
     (extension === 'css' ||
       id.includes('&lang.css') ||
       id.match(INLINE_STYLE_ID_RE)) &&
@@ -266,7 +266,7 @@ class Root {
     | false
   > {
     // handle virtual id
-    let inputPath = path.isAbsolute(this.id)
+    const inputPath = path.isAbsolute(this.id)
       ? idToPath(this.id)
       : idToPath(path.join(this.base, this.id));
 
@@ -281,14 +281,14 @@ class Root {
       // crash Vite. We work around this for now by ignoring updates to them.
       //
       // https://github.com/tailwindlabs/tailwindcss/issues/16877
-      if (/[\#\?].*\.svg$/.test(file)) {
+      if (/[#?].*\.svg$/.test(file)) {
         return;
       }
       _addWatchFile(file);
     }
 
-    let requiresBuildPromise = this.requiresBuild();
-    let inputBase = path.dirname(path.resolve(inputPath));
+    const requiresBuildPromise = this.requiresBuild();
+    const inputBase = path.dirname(path.resolve(inputPath));
 
     if (!this.compiler || (await requiresBuildPromise)) {
       clearRequireCache(Array.from(this.buildDependencies.keys()));
@@ -297,7 +297,7 @@ class Root {
       this.addBuildDependency(idToPath(inputPath));
 
       DEBUG && I.start('Setup compiler');
-      let addBuildDependenciesPromises: Promise<void>[] = [];
+      const addBuildDependenciesPromises: Promise<void>[] = [];
       this.compiler = await compile(content, {
         from: this.enableSourceMaps ? this.id : undefined,
         base: inputBase,
@@ -313,7 +313,7 @@ class Root {
       await Promise.all(addBuildDependenciesPromises);
       DEBUG && I.end('Setup compiler');
     } else {
-      for (let buildDependency of this.buildDependencies.keys()) {
+      for (const buildDependency of this.buildDependencies.keys()) {
         addWatchFile(buildDependency);
       }
     }
@@ -331,11 +331,11 @@ class Root {
     }
 
     DEBUG && I.start('Build CSS');
-    let code = this.compiler.build([...candidates]);
+    const code = this.compiler.build([...candidates]);
     DEBUG && I.end('Build CSS');
 
     DEBUG && I.start('Build Source Map');
-    let map = this.enableSourceMaps
+    const map = this.enableSourceMaps
       ? toSourceMap(this.compiler.buildSourceMap()).raw
       : undefined;
     DEBUG && I.end('Build Source Map');
@@ -355,10 +355,10 @@ class Root {
   }
 
   private async requiresBuild(): Promise<boolean> {
-    for (let [path, mtime] of this.buildDependencies) {
+    for (const [path, mtime] of this.buildDependencies) {
       if (mtime === null) return true;
       try {
-        let stat = await fs.stat(path);
+        const stat = await fs.stat(path);
         if (stat.mtimeMs > mtime) {
           return true;
         }

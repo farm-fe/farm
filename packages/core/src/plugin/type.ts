@@ -1,4 +1,4 @@
-import {
+import type {
   Compiler,
   ConfigEnv,
   ResolvedUserConfig,
@@ -6,7 +6,7 @@ import {
   UserConfig
 } from '../index.js';
 
-import {
+import type {
   Config,
   ModuleType,
   PluginLoadHookParam,
@@ -242,7 +242,7 @@ export interface JsPlugin {
   };
 
   pluginCacheLoaded?: {
-    executor: Callback<number[], undefined | null | void>;
+    executor: Callback<number[], undefined | null | undefined>;
   };
 
   writePluginCache?: {
@@ -255,7 +255,7 @@ export interface JsPlugin {
   updateModules?: {
     executor: Callback<
       PluginUpdateModulesHookParam,
-      [string, UpdateType][] | undefined | null | void
+      [string, UpdateType][] | undefined | null | undefined
     >;
   };
 }

@@ -37,7 +37,7 @@ const enabled =
   ('FORCE_COLOR' in env ||
     argv.includes('--color') ||
     process.platform === 'win32' ||
-    (require != null && require('tty').isatty(1) && env.TERM !== 'dumb') ||
+    (require?.('node:tty').isatty(1) && env.TERM !== 'dumb') ||
     'CI' in env);
 
 export const createFormatter =
@@ -46,7 +46,7 @@ export const createFormatter =
     if (open === '' || close === '') {
       return input;
     }
-    const string = '' + input;
+    const string = `${input}`;
     const index = string.indexOf(close, open.length);
     return ~index
       ? open + replaceClose(string, close, replace, index) + close

@@ -13,8 +13,8 @@ import {
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
   FARM_DEFAULT_NAMESPACE,
-  ResolvedCompilation,
-  ResolvedUserConfig
+  type ResolvedCompilation,
+  type ResolvedUserConfig
 } from '../index.js';
 
 export function normalizeRuntimeConfig(

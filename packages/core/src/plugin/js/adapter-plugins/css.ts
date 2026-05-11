@@ -4,7 +4,7 @@
  * 2. unwrap the css code from `` after post plugins execute
  */
 
-import { JsPlugin } from '../../type.js';
+import type { JsPlugin } from '../../type.js';
 
 const BEGIN = '__farm_vite_css_hack_start__=`';
 const END = '`;__farm_vite_css_hack_end__';

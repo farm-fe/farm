@@ -1,7 +1,7 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import deepmerge from 'deepmerge';
-import { readFile } from 'fs/promises';
 import fse from 'fs-extra';
-import path from 'path';
 import type {
   FunctionPluginHooks,
   OutputBundle,
@@ -20,19 +20,19 @@ import type {
 } from 'vite';
 import { Resolver } from '../../../binding/index.js';
 import {
-  Compiler,
+  type Compiler,
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX
 } from '../../compiler/index.js';
-import { CompilationMode } from '../../config/env.js';
+import type { CompilationMode } from '../../config/env.js';
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import {
   isObject,
   isString,
   Logger,
   normalizePath,
-  Server
+  type Server
 } from '../../index.js';
-import {
+import type {
   Config,
   PluginLoadHookParam,
   PluginLoadHookResult,
@@ -43,7 +43,7 @@ import {
   UpdateType
 } from '../../types/binding.js';
 import merge from '../../utils/merge.js';
-import {
+import type {
   CompilationContext,
   CompilationContextEmitFileParams,
   JsPlugin,
@@ -82,7 +82,7 @@ import {
 } from './utils.js';
 import {
   createViteDevServerAdapter,
-  ViteDevServerAdapter,
+  type ViteDevServerAdapter,
   ViteModuleGraphAdapter
 } from './vite-server-adapter.js';
 
@@ -262,7 +262,7 @@ export class VitePluginAdapter implements JsPlugin {
     // Farm is not fully compatible with vite, some resolved configs are not supported and will be ignore.
     const resolvedViteConfig = farmUserConfigToViteConfig(config);
 
-    // @ts-ignore ignore readonly check
+    // @ts-expect-error ignore readonly check
     resolvedViteConfig.createResolver = (options: ResolveOptions) => {
       const farmCompilation = deepmerge({}, this._farmConfig.compilation);
       farmCompilation.resolve ??= {};
@@ -446,7 +446,7 @@ export class VitePluginAdapter implements JsPlugin {
             VitePluginAdapter.isFarmInternalVirtualModule(params.source) ||
             (params.importer &&
               VitePluginAdapter.isFarmInternalVirtualModule(params.importer)) ||
-            hookContext?.caller === this.name + '.resolveId'
+            hookContext?.caller === `${this.name}.resolveId`
           ) {
             return null;
           }
@@ -548,7 +548,7 @@ export class VitePluginAdapter implements JsPlugin {
           const result = await hook?.(id, isSSR ? { ssr: true } : undefined);
 
           if (result) {
-            let map = undefined;
+            let map;
 
             if (typeof result === 'object' && result.map) {
               if (typeof result.map === 'string') {
@@ -688,9 +688,7 @@ export class VitePluginAdapter implements JsPlugin {
                     file: normalizePath(m.file)
                   }) as ModuleNode
               ),
-              read: function (): string | Promise<string> {
-                return readFile(file, 'utf-8');
-              },
+              read: (): string | Promise<string> => readFile(file, 'utf-8'),
               server: this._viteDevServer as unknown as ViteDevServer
             };
 
@@ -876,7 +874,7 @@ export class VitePluginAdapter implements JsPlugin {
           const { htmlResource } = params;
           const hook = this.wrapRawPluginHook(
             'transformIndexHtml',
-            // @ts-ignore ignore type error
+            // @ts-expect-error ignore type error
             this._rawPlugin.transformIndexHtml,
             context
           );

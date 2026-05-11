@@ -4,7 +4,11 @@ import { traceDependencies } from '../utils/trace-dependencies.js';
 import { ENV_DEVELOPMENT, ENV_PRODUCTION } from './constants.js';
 import { getExistsEnvFiles, loadEnv } from './env.js';
 import { normalizePublicDir } from './normalize-config/index.js';
-import { DefaultOptionsType, ResolvedUserConfig, UserConfig } from './types.js';
+import type {
+  DefaultOptionsType,
+  ResolvedUserConfig,
+  UserConfig
+} from './types.js';
 
 export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
   const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =

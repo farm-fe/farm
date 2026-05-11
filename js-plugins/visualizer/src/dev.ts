@@ -1,6 +1,6 @@
-import { DevServerMiddleware, JsPlugin, Server } from '@farmfe/core';
+import type { ServerResponse } from 'node:http';
+import type { DevServerMiddleware, JsPlugin, Server } from '@farmfe/core';
 import type Connect from 'connect';
-import { ServerResponse } from 'http';
 import { createDateSourceMiddleware } from './node/dataSource';
 
 export function records(devServer: Server): ReturnType<DevServerMiddleware> {

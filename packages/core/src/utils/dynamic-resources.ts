@@ -8,7 +8,7 @@ export function getDynamicResources(
 } {
   let dynamicResources: Resource[] | null = null;
   let dynamicModuleResourcesMap: Record<string, number[]> | null = null;
-  let visitedMap = new Map();
+  const visitedMap = new Map();
 
   if (dynamicResourcesMap) {
     dynamicResources = [];
@@ -16,7 +16,7 @@ export function getDynamicResources(
 
     for (const [key, value] of Object.entries(dynamicResourcesMap)) {
       for (const r of value) {
-        const visitedKey = r[0] + '.' + r[1];
+        const visitedKey = `${r[0]}.${r[1]}`;
         if (visitedMap.has(visitedKey)) {
           dynamicModuleResourcesMap[key] ??= [];
           dynamicModuleResourcesMap[key].push(visitedMap.get(visitedKey));

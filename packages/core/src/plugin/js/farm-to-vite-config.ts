@@ -1,9 +1,9 @@
-import { WatchOptions } from 'chokidar';
-import path from 'path';
+import path from 'node:path';
+import type { WatchOptions } from 'chokidar';
 import type { UserConfig as ViteUserConfig } from 'vite';
 import { normalizeResolveAlias } from '../../config/normalize-config/normalize-resolve.js';
-import type { UserConfig } from '../../config/types.js';
-import { isObject, Logger, logger, normalizePath } from '../../index.js';
+import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
+import { isObject, type Logger, logger, normalizePath } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
 import {
@@ -11,7 +11,9 @@ import {
   throwIncompatibleError
 } from './utils.js';
 
-export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
+export function farmUserConfigToViteConfig(
+  config: UserConfig | ResolvedUserConfig
+): ViteUserConfig {
   const vitePlugins = config.vitePlugins.filter(Boolean).map((plugin) => {
     if (typeof plugin === 'function') {
       return plugin().vitePlugin;
@@ -43,7 +45,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     plugins: vitePlugins,
     server: {
-      // @ts-ignore ignore error
+      // @ts-expect-error ignore error
       hmr: config.server?.hmr,
       port: config.server?.port,
       host: config.server?.host,
@@ -54,7 +56,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       watch: typeof config.watch === 'object' ? config.watch : {}
       // other options are not supported in farm
     },
-    // @ts-ignore ignore this error
     isProduction: config.compilation?.mode === 'production',
     css: config.compilation?.css?._viteCssOptions ?? {},
     build: {
@@ -80,8 +81,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
-    // @ts-ignore
-    env: config.env,
+    env: (config as ResolvedUserConfig).env ?? {},
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
@@ -397,12 +397,12 @@ export function viteConfigToFarmConfig(
     farmConfig.compilation.resolve.mainFields = config.resolve.mainFields;
     farmConfig.compilation.resolve.conditions = config.resolve.conditions;
     farmConfig.compilation.resolve.symlinks =
-      config.resolve.preserveSymlinks != true;
+      config.resolve.preserveSymlinks !== true;
   }
 
   if (config.server) {
     farmConfig.server ??= {};
-    // @ts-ignore
+    // @ts-expect-error
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
 
@@ -462,9 +462,9 @@ export function viteConfigToFarmConfig(
         const keys = ['assetFileNames', 'entryFilename', 'filename'];
 
         for (const k of keys) {
-          // @ts-ignore type is correct
+          // @ts-expect-error type is correct
           farmConfig.compilation.output[k] =
-            // @ts-ignore type is correct
+            // @ts-expect-error type is correct
             config.build.rollupOptions.output[k];
         }
       }

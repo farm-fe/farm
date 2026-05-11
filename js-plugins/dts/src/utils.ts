@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path, {
   dirname,
@@ -7,9 +8,8 @@ import path, {
   resolve,
   sep
 } from 'node:path';
-import crypto from 'crypto';
 import extra from 'fs-extra';
-import { CompilerOptions } from 'ts-morph';
+import type { CompilerOptions } from 'ts-morph';
 import typescript from 'typescript';
 import { throwError } from './options.js';
 
@@ -24,12 +24,12 @@ const dynamicImportRE = /import\(['"]([^;\n]+?)['"]\)/;
 const simpleStaticImportRE = /((?:import|export).+from\s?)['"](.+)['"]/;
 const simpleDynamicImportRE = /(import\()['"](.+)['"]\)/;
 
-// @ts-ignore
+// @ts-expect-error
 export function warn({ id, message }) {
   console.warn(`[${id}:warn]:"${message}"`);
 }
 
-// @ts-ignore
+// @ts-expect-error
 export function error({ id, message }) {
   console.error(`[${id}-(error)]:"${message}"`);
 }
@@ -149,8 +149,7 @@ export function getResolvedOptions(defaultVueOptions: ResolvedOptions) {
         break;
     }
   }
-  resolvedOptions.sourceMap =
-    resolvedOptions.isProduction === true ? false : true;
+  resolvedOptions.sourceMap = resolvedOptions.isProduction !== true;
   return resolvedOptions;
 }
 
@@ -370,10 +369,10 @@ export async function tryToReadFileSync(path: string) {
 
 export function normalizeGlob(path: string) {
   if (/[\\/]$/.test(path)) {
-    return path + '**';
+    return `${path}**`;
     // biome-ignore lint/style/noNonNullAssertion: wont be null
   } else if (!globSuffixRE.test(path.split(/[\\/]/).pop()!)) {
-    return path + '/**';
+    return `${path}/**`;
   }
 
   return path;

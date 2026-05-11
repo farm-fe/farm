@@ -3,15 +3,15 @@ import { pathToFileURL } from 'node:url';
 
 import fse from 'fs-extra';
 
-import { ModuleFormat } from '../types/binding.js';
+import type { ModuleFormat } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { isObject, isWindows } from '../utils/share.js';
 import { DEFAULT_CONFIG_NAMES, ENV_PRODUCTION } from './constants.js';
-import { CompilationMode } from './env.js';
+import type { CompilationMode } from './env.js';
 import { normalizeUserCompilationConfig } from './normalize-config/index.js';
 import { createDefaultConfig, resolveUserConfig } from './resolve-config.js';
 import { parseUserConfig } from './schema.js';
-import {
+import type {
   ConfigEnv,
   ConfigResult,
   DefaultOptionsType,

@@ -1,6 +1,6 @@
-import path from 'path';
+import path from 'node:path';
 import { expect, test } from 'vitest';
-import { JsPlugin } from '../src/index.js';
+import type { JsPlugin } from '../src/index.js';
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler,
