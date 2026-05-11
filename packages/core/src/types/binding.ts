@@ -498,6 +498,7 @@ export interface Config {
     };
     /**
      * Configure whether to enable sourcemap, optional configuration items and descriptions are as follows:
+      * By default, sourcemap is enabled in development mode and disabled in build/production mode.
       - true: Only generate sourcemap for files not under node_modules, and generate a separate sourcemap file
       - false: turn off sourcemap
       - inline: Only generate sourcemap for files not under node_modules, and inline sourcemap into the product, do not generate a separate file

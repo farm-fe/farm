@@ -94,7 +94,7 @@ test('resolveUserConfig-prod', async () => {
     targetEnv: 'browser'
   });
   expect(config.compilation.lazyCompilation).toEqual(false);
-  expect(config.compilation.sourcemap).toEqual(true);
+  expect(config.compilation.sourcemap).toEqual(false);
   expect(config.compilation.minify).toEqual(true);
   expect(config.compilation.presetEnv).toEqual(false);
   expect(config.server).toEqual(normalizeDevServerConfig(config));
@@ -145,7 +145,7 @@ test('resolveUserConfig-input-html-prod', async () => {
   });
 
   expect(config.compilation.lazyCompilation).toEqual(false);
-  expect(config.compilation.sourcemap).toEqual(true);
+  expect(config.compilation.sourcemap).toEqual(false);
   expect(config.compilation.minify).toEqual(true);
 
   expect(config.compilation.presetEnv).toEqual({
