@@ -6,10 +6,6 @@ declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node' | 'library';
 declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
 declare const __FARM_ENABLE_TOP_LEVEL_AWAIT__: boolean;
 declare const __FARM_ENABLE_EXTERNAL_MODULES__: boolean; // always true if target env is not library
-declare const __FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__:
-  | 'browser'
-  | 'node'
-  | 'library'; // injected during compile time, only for non-library target env
 
 declare let $__farm_global_this__$: any;
 
@@ -119,9 +115,9 @@ export var __farm_internal_module_system__ = {
 } as ModuleSystem;
 
 if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') {
-  // @ts-ignore injected during compile time
-  // eslint-disable-next-line no-undef
   __farm_internal_module_system__.te =
+    // @ts-ignore injected during compile time
+    // eslint-disable-next-line no-undef
     __FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__;
 }
 
