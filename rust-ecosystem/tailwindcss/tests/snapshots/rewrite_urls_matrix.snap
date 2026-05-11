@@ -1,0 +1,30 @@
+---
+source: rust-ecosystem/tailwindcss/tests/urls.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+relative:
+.foo { background: url(./styles/image.png); }
+
+parent relative:
+.foo { background: url(./styles/image.png); }
+
+absolute:
+.foo { background: url(/image.png); }
+
+external:
+.foo { background: url(https://example.com/image.png); }
+
+data uri:
+.foo { background: url(data:image/png;base64,abc); }
+
+fragment:
+.foo { background: url(#pattern); }
+
+function call:
+.foo { background: url(./styles/var(--image)); }
+
+image set:
+.foo { background-image: image-set( url('./styles/styles/image.png') 1x, url('./styles/styles/image@2x.png') 2x); }
+
+no urls:
+.foo { color: red; }

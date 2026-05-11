@@ -1,0 +1,7 @@
+---
+source: rust-ecosystem/tailwindcss/tests/source_maps.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+raw: {"version":3,"sources":[],"names":[],"mappings":""}
+comment: /*# sourceMappingURL=app.css.map */
+inline: /*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IiJ9 */

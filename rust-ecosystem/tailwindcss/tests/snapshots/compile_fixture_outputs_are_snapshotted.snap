@@ -1,0 +1,30 @@
+---
+source: rust-ecosystem/tailwindcss/tests/compile.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+simple:
+-- input --
+.foo { color: red; }
+
+-- output --
+.foo { color: red; }
+
+
+imports:
+-- input --
+@import "./sub.css";
+.main { color: blue; }
+
+-- output --
+body { margin: 0; }
+.main { color: blue; }
+
+-- deps --
+tests/fixtures/compile/imports/./sub.css
+
+rewrite:
+-- input --
+@import "./sub/styles.css";
+
+-- output --
+.bg { background: url(./sub/image.png); }

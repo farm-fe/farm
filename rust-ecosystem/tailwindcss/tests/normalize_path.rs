@@ -2,7 +2,10 @@ mod support;
 
 #[allow(dead_code)]
 mod normalize_path {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/normalize_path.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/normalize_path.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {

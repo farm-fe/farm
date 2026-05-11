@@ -2,7 +2,10 @@ mod support;
 
 #[allow(dead_code)]
 mod get_module_dependencies {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/get_module_dependencies.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/get_module_dependencies.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {
@@ -13,7 +16,10 @@ mod get_module_dependencies {
     #[test]
     fn dependency_traces_match_fixtures() {
       let cases = [
-        ("single", fixture_path("get_module_dependencies/single/main.js")),
+        (
+          "single",
+          fixture_path("get_module_dependencies/single/main.js"),
+        ),
         (
           "relative import",
           fixture_path("get_module_dependencies/follows_relative_import/main.js"),

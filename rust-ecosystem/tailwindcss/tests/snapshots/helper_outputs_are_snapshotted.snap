@@ -1,0 +1,9 @@
+---
+source: rust-ecosystem/tailwindcss/tests/urls.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+join basic: a/b/c/d
+relative basic: ../c/d
+rebase basic: ./styles/img.png
+rebase parent: ./styles/img.png
+rebase plain: ./styles/img.png

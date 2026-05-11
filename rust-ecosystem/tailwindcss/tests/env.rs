@@ -2,7 +2,10 @@ mod support;
 
 #[allow(dead_code)]
 mod env {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/env.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/env.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {

@@ -2,7 +2,10 @@ mod support;
 
 #[allow(dead_code)]
 mod source_maps {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/source_maps.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/source_maps.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {

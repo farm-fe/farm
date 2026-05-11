@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::path::{Path, PathBuf};
 
 pub fn fixture_path(relative: &str) -> PathBuf {
@@ -8,7 +10,8 @@ pub fn fixture_path(relative: &str) -> PathBuf {
 }
 
 pub fn manifest_path(path: &Path) -> String {
-  path.strip_prefix(env!("CARGO_MANIFEST_DIR"))
+  path
+    .strip_prefix(env!("CARGO_MANIFEST_DIR"))
     .unwrap_or(path)
     .to_string_lossy()
     .replace('\\', "/")

@@ -2,17 +2,24 @@ mod support;
 
 #[allow(dead_code)]
 mod instrumentation {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/instrumentation.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/instrumentation.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {
     use super::*;
     use farmfe_testing_helpers::assert_snapshot;
+    use regex::Regex;
 
     fn capture_report(i: &mut Instrumentation) -> String {
       let mut buf = String::new();
       i.report(|msg| buf.push_str(msg));
-      strip_ansi(&buf)
+      Regex::new(r"\[\s*\d+\.\d+ms\]")
+        .unwrap()
+        .replace_all(&strip_ansi(&buf), "[TIME]")
+        .into_owned()
     }
 
     #[test]

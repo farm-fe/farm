@@ -24,27 +24,27 @@ use lightningcss::targets::{Browsers, Features, Targets};
 /// Options for [`optimize`].
 #[derive(Debug, Clone)]
 pub struct OptimizeOptions {
-    /// The filename being transformed — used in error messages and source maps.
-    /// Defaults to `"input.css"`.
-    pub file: String,
-    /// Enable minified output (removes whitespace, merges declarations, etc.).
-    pub minify: bool,
+  /// The filename being transformed — used in error messages and source maps.
+  /// Defaults to `"input.css"`.
+  pub file: String,
+  /// Enable minified output (removes whitespace, merges declarations, etc.).
+  pub minify: bool,
 }
 
 impl Default for OptimizeOptions {
-    fn default() -> Self {
-        Self {
-            file: "input.css".to_string(),
-            minify: false,
-        }
+  fn default() -> Self {
+    Self {
+      file: "input.css".to_string(),
+      minify: false,
     }
+  }
 }
 
 /// The result of [`optimize`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransformResult {
-    /// The optimized (and optionally minified) CSS string.
-    pub code: String,
+  /// The optimized (and optionally minified) CSS string.
+  pub code: String,
 }
 
 // ── browser targets ──────────────────────────────────────────────────────────
@@ -57,18 +57,18 @@ pub struct TransformResult {
 /// chrome:  111   → (111 << 16)
 /// ```
 fn default_targets() -> Targets {
-    Targets {
-        browsers: Some(Browsers {
-            safari: Some((16 << 16) | (4 << 8)),
-            firefox: Some(128 << 16),
-            chrome: Some(111 << 16),
-            ..Default::default()
-        }),
-        // Mirror upstream: include Nesting + MediaQueries transforms
-        include: Features::Nesting | Features::MediaQueries,
-        // Mirror upstream: exclude LogicalProperties, DirSelector, LightDark
-        exclude: Features::LogicalProperties | Features::DirSelector | Features::LightDark,
-    }
+  Targets {
+    browsers: Some(Browsers {
+      safari: Some((16 << 16) | (4 << 8)),
+      firefox: Some(128 << 16),
+      chrome: Some(111 << 16),
+      ..Default::default()
+    }),
+    // Mirror upstream: include Nesting + MediaQueries transforms
+    include: Features::Nesting | Features::MediaQueries,
+    // Mirror upstream: exclude LogicalProperties, DirSelector, LightDark
+    exclude: Features::LogicalProperties | Features::DirSelector | Features::LightDark,
+  }
 }
 
 // ── implementation ────────────────────────────────────────────────────────────
@@ -77,27 +77,27 @@ fn default_targets() -> Targets {
 ///
 /// Returns the transformed CSS or an error message.
 fn run_pass(input: &str, minify: bool) -> Result<String, String> {
-    let targets = default_targets();
+  let targets = default_targets();
 
-    let mut sheet = StyleSheet::parse(input, ParserOptions::default())
-        .map_err(|e| format!("lightningcss parse error: {e}"))?;
+  let mut sheet = StyleSheet::parse(input, ParserOptions::default())
+    .map_err(|e| format!("lightningcss parse error: {e}"))?;
 
-    sheet
-        .minify(MinifyOptions {
-            targets,
-            ..Default::default()
-        })
-        .map_err(|e| format!("lightningcss minify error: {e}"))?;
+  sheet
+    .minify(MinifyOptions {
+      targets,
+      ..Default::default()
+    })
+    .map_err(|e| format!("lightningcss minify error: {e}"))?;
 
-    let result = sheet
-        .to_css(PrinterOptions {
-            minify,
-            targets,
-            ..Default::default()
-        })
-        .map_err(|e| format!("lightningcss print error: {e}"))?;
+  let result = sheet
+    .to_css(PrinterOptions {
+      minify,
+      targets,
+      ..Default::default()
+    })
+    .map_err(|e| format!("lightningcss print error: {e}"))?;
 
-    Ok(result.code)
+  Ok(result.code)
 }
 
 /// Apply `@media not (` → `@media not all and (` workaround.
@@ -107,7 +107,7 @@ fn run_pass(input: &str, minify: bool) -> Result<String, String> {
 /// support requires the optional `sourcemap` feature), a plain string replace
 /// is sufficient.
 fn fix_media_not(css: &str) -> String {
-    css.replace("@media not (", "@media not all and (")
+  css.replace("@media not (", "@media not all and (")
 }
 
 // ── public API ────────────────────────────────────────────────────────────────
@@ -125,14 +125,14 @@ fn fix_media_not(css: &str) -> String {
 /// assert!(result.code.contains(".foo"));
 /// ```
 pub fn optimize(input: &str, options: OptimizeOptions) -> Result<TransformResult, String> {
-    // First pass — apply transforms (nesting → flat, media-query range → level-3)
-    let after_first = run_pass(input, options.minify)?;
+  // First pass — apply transforms (nesting → flat, media-query range → level-3)
+  let after_first = run_pass(input, options.minify)?;
 
-    // Second pass — merge adjacent rules produced by the first pass
-    let mut code = run_pass(&after_first, options.minify)?;
+  // Second pass — merge adjacent rules produced by the first pass
+  let mut code = run_pass(&after_first, options.minify)?;
 
-    // Apply the @media-not fix
-    code = fix_media_not(&code);
+  // Apply the @media-not fix
+  code = fix_media_not(&code);
 
-    Ok(TransformResult { code })
+  Ok(TransformResult { code })
 }

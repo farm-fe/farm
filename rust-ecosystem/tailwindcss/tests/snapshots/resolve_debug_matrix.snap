@@ -1,0 +1,16 @@
+---
+source: rust-ecosystem/tailwindcss/tests/env.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+none: input=None, expected=false, actual=false
+true: input=Some("true"), expected=true, actual=true
+one: input=Some("1"), expected=true, actual=true
+false: input=Some("false"), expected=false, actual=false
+zero: input=Some("0"), expected=false, actual=false
+wildcard: input=Some("*"), expected=true, actual=true
+tailwindcss list: input=Some("projectA,tailwindcss,projectB"), expected=true, actual=true
+tailwindcss namespace: input=Some("other,tailwindcss:submodule"), expected=true, actual=true
+exclude: input=Some("projectA,-tailwindcss"), expected=false, actual=false
+exclusion precedence: input=Some("tailwindcss,-tailwindcss"), expected=false, actual=false
+unrelated: input=Some("projectA,projectB"), expected=false, actual=false
+empty: input=Some(""), expected=false, actual=false

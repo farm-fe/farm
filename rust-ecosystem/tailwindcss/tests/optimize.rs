@@ -2,7 +2,10 @@ mod support;
 
 #[allow(dead_code)]
 mod optimize {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/optimize.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/optimize.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {
@@ -57,7 +60,11 @@ mod optimize {
 
     #[test]
     fn optimize_metadata_and_identity_cases() {
-      assert!(optimize("", OptimizeOptions::default()).unwrap().code.trim().is_empty());
+      assert!(optimize("", OptimizeOptions::default())
+        .unwrap()
+        .code
+        .trim()
+        .is_empty());
       assert_eq!(OptimizeOptions::default().file, "input.css");
       assert!(!OptimizeOptions::default().minify);
       assert_eq!(

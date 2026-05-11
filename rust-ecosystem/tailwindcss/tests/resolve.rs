@@ -2,7 +2,10 @@ mod support;
 
 #[allow(dead_code)]
 mod resolve {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/resolve.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/resolve.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {
@@ -65,8 +68,12 @@ mod resolve {
         ),
         (
           "custom css",
-          resolve_css_id("ignored", fixture_root.join("custom").to_str().unwrap(), Some(&custom))
-            .map(|path| manifest_path(&path)),
+          resolve_css_id(
+            "ignored",
+            fixture_root.join("custom").to_str().unwrap(),
+            Some(&custom),
+          )
+          .map(|path| manifest_path(&path)),
         ),
       ];
 

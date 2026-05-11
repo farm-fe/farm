@@ -25,18 +25,18 @@ const CSS_MAIN_FIELDS: &[&str] = &["style"];
 /// built-in resolution algorithm which checks extensions `.css` and the `style`
 /// field in `package.json` when resolving from `node_modules`.
 pub fn resolve_css_id(
-    id: &str,
-    base: &str,
-    custom_resolver: Option<&CustomResolver>,
+  id: &str,
+  base: &str,
+  custom_resolver: Option<&CustomResolver>,
 ) -> io::Result<PathBuf> {
-    // Try custom resolver first
-    if let Some(resolver) = custom_resolver {
-        if let Some(resolved) = resolver(id, base) {
-            return Ok(PathBuf::from(resolved));
-        }
+  // Try custom resolver first
+  if let Some(resolver) = custom_resolver {
+    if let Some(resolved) = resolver(id, base) {
+      return Ok(PathBuf::from(resolved));
     }
+  }
 
-    resolve_with_extensions(id, base, CSS_EXTENSIONS, CSS_MAIN_FIELDS)
+  resolve_with_extensions(id, base, CSS_EXTENSIONS, CSS_MAIN_FIELDS)
 }
 
 // ── JS resolution ───────────────────────────────────────────────────────────
@@ -56,132 +56,132 @@ pub const CJS_CONDITIONS: &[&str] = &["node", "require"];
 /// built-in ESM resolution algorithm and then CJS as a fallback, matching
 /// the upstream dual-resolver pattern.
 pub fn resolve_js_id(
-    id: &str,
-    base: &str,
-    custom_resolver: Option<&CustomResolver>,
+  id: &str,
+  base: &str,
+  custom_resolver: Option<&CustomResolver>,
 ) -> io::Result<PathBuf> {
-    // Try custom resolver first
-    if let Some(resolver) = custom_resolver {
-        if let Some(resolved) = resolver(id, base) {
-            return Ok(PathBuf::from(resolved));
-        }
+  // Try custom resolver first
+  if let Some(resolver) = custom_resolver {
+    if let Some(resolved) = resolver(id, base) {
+      return Ok(PathBuf::from(resolved));
     }
+  }
 
-    // Try ESM resolution first, fall back to CJS (matches upstream behaviour)
-    resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_ESM_MAIN_FIELDS)
-        .or_else(|_| resolve_with_extensions(id, base, CJS_EXTENSIONS, JS_CJS_MAIN_FIELDS))
+  // Try ESM resolution first, fall back to CJS (matches upstream behaviour)
+  resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_ESM_MAIN_FIELDS)
+    .or_else(|_| resolve_with_extensions(id, base, CJS_EXTENSIONS, JS_CJS_MAIN_FIELDS))
 }
 
 /// Resolve a JS module using ESM-only resolution.
 pub fn resolve_js_esm(
-    id: &str,
-    base: &str,
-    custom_resolver: Option<&CustomResolver>,
+  id: &str,
+  base: &str,
+  custom_resolver: Option<&CustomResolver>,
 ) -> io::Result<PathBuf> {
-    if let Some(resolver) = custom_resolver {
-        if let Some(resolved) = resolver(id, base) {
-            return Ok(PathBuf::from(resolved));
-        }
+  if let Some(resolver) = custom_resolver {
+    if let Some(resolved) = resolver(id, base) {
+      return Ok(PathBuf::from(resolved));
     }
-    resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_ESM_MAIN_FIELDS)
+  }
+  resolve_with_extensions(id, base, ESM_EXTENSIONS, JS_ESM_MAIN_FIELDS)
 }
 
 /// Resolve a JS module using CJS-only resolution.
 pub fn resolve_js_cjs(
-    id: &str,
-    base: &str,
-    custom_resolver: Option<&CustomResolver>,
+  id: &str,
+  base: &str,
+  custom_resolver: Option<&CustomResolver>,
 ) -> io::Result<PathBuf> {
-    if let Some(resolver) = custom_resolver {
-        if let Some(resolved) = resolver(id, base) {
-            return Ok(PathBuf::from(resolved));
-        }
+  if let Some(resolver) = custom_resolver {
+    if let Some(resolved) = resolver(id, base) {
+      return Ok(PathBuf::from(resolved));
     }
-    resolve_with_extensions(id, base, CJS_EXTENSIONS, JS_CJS_MAIN_FIELDS)
+  }
+  resolve_with_extensions(id, base, CJS_EXTENSIONS, JS_CJS_MAIN_FIELDS)
 }
 
 // ── shared implementation ───────────────────────────────────────────────────
 
 fn resolve_with_extensions(
-    id: &str,
-    base: &str,
-    extensions: &[&str],
-    _main_fields: &[&str],
+  id: &str,
+  base: &str,
+  extensions: &[&str],
+  _main_fields: &[&str],
 ) -> io::Result<PathBuf> {
-    let base_path = Path::new(base);
+  let base_path = Path::new(base);
 
-    // Relative or absolute path
-    if id.starts_with('.') || id.starts_with('/') {
-        let full = if id.starts_with('/') {
-            PathBuf::from(id)
-        } else {
-            base_path.join(id)
-        };
+  // Relative or absolute path
+  if id.starts_with('.') || id.starts_with('/') {
+    let full = if id.starts_with('/') {
+      PathBuf::from(id)
+    } else {
+      base_path.join(id)
+    };
 
-        // Try exact match, then with extensions
-        for ext in extensions {
-            let candidate = if ext.is_empty() {
-                full.clone()
-            } else {
-                let mut s = full.as_os_str().to_os_string();
-                s.push(ext);
-                PathBuf::from(s)
-            };
-            if candidate.is_file() {
-                return Ok(candidate);
-            }
-        }
-
-        // Try index files
-        for ext in extensions {
-            if ext.is_empty() {
-                continue;
-            }
-            let candidate = full.join(format!("index{ext}"));
-            if candidate.is_file() {
-                return Ok(candidate);
-            }
-        }
-
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("Could not resolve '{id}' from '{base}'"),
-        ));
+    // Try exact match, then with extensions
+    for ext in extensions {
+      let candidate = if ext.is_empty() {
+        full.clone()
+      } else {
+        let mut s = full.as_os_str().to_os_string();
+        s.push(ext);
+        PathBuf::from(s)
+      };
+      if candidate.is_file() {
+        return Ok(candidate);
+      }
     }
 
-    // node_modules resolution
-    let mut current = Some(base_path);
-    while let Some(dir) = current {
-        let nm = dir.join("node_modules").join(id);
-        for ext in extensions {
-            let candidate = if ext.is_empty() {
-                nm.clone()
-            } else {
-                let mut s = nm.as_os_str().to_os_string();
-                s.push(ext);
-                PathBuf::from(s)
-            };
-            if candidate.is_file() {
-                return Ok(candidate);
-            }
-        }
-
-        // Try index files in node_modules
-        for ext in extensions {
-            if ext.is_empty() {
-                continue;
-            }
-            let candidate = nm.join(format!("index{ext}"));
-            if candidate.is_file() {
-                return Ok(candidate);
-            }
-        }
-
-        current = dir.parent();
+    // Try index files
+    for ext in extensions {
+      if ext.is_empty() {
+        continue;
+      }
+      let candidate = full.join(format!("index{ext}"));
+      if candidate.is_file() {
+        return Ok(candidate);
+      }
     }
 
-    Err(io::Error::new(
-        io::ErrorKind::NotFound,
-        format!("Could not resolve '{id}' from '{base}'"),
-    ))
+    return Err(io::Error::new(
+      io::ErrorKind::NotFound,
+      format!("Could not resolve '{id}' from '{base}'"),
+    ));
+  }
+
+  // node_modules resolution
+  let mut current = Some(base_path);
+  while let Some(dir) = current {
+    let nm = dir.join("node_modules").join(id);
+    for ext in extensions {
+      let candidate = if ext.is_empty() {
+        nm.clone()
+      } else {
+        let mut s = nm.as_os_str().to_os_string();
+        s.push(ext);
+        PathBuf::from(s)
+      };
+      if candidate.is_file() {
+        return Ok(candidate);
+      }
+    }
+
+    // Try index files in node_modules
+    for ext in extensions {
+      if ext.is_empty() {
+        continue;
+      }
+      let candidate = nm.join(format!("index{ext}"));
+      if candidate.is_file() {
+        return Ok(candidate);
+      }
+    }
+
+    current = dir.parent();
+  }
+
+  Err(io::Error::new(
+    io::ErrorKind::NotFound,
+    format!("Could not resolve '{id}' from '{base}'"),
+  ))
 }

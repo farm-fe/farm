@@ -1,0 +1,26 @@
+---
+source: rust-ecosystem/tailwindcss/tests/instrumentation.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+hits:
+
+Hits:
+  Potato × 3
+
+nested:
+
+[TIME] Foo
+[TIME]   ↳ Bar
+
+repeated:
+
+[TIME] Foo
+[TIME]   ↳ Inner × 5
+
+mixed:
+
+Hits:
+  cache_miss × 2
+
+Timers:
+[TIME] Resolve

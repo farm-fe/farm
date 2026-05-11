@@ -2,12 +2,18 @@ mod support;
 
 #[allow(dead_code)]
 mod normalize_path {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/normalize_path.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/normalize_path.rs"
+  ));
 }
 
 #[allow(dead_code)]
 mod urls {
-  include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/urls.rs"));
+  include!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/support/generated/urls.rs"
+  ));
 
   #[cfg(test)]
   mod moved_tests {
@@ -20,7 +26,10 @@ mod urls {
         ("join basic", join_posix("a/b", "c/d")),
         ("relative basic", make_relative("a/b", "a/c/d")),
         ("rebase basic", rebase_url("./img.png", "src/styles", "src")),
-        ("rebase parent", rebase_url("../img.png", "src/styles/components", "src")),
+        (
+          "rebase parent",
+          rebase_url("../img.png", "src/styles/components", "src"),
+        ),
         ("rebase plain", rebase_url("img.png", "src/styles", "src")),
       ];
 
@@ -36,14 +45,24 @@ mod urls {
     #[test]
     fn rewrite_urls_matrix() {
       let cases = [
-        ("relative", ".foo { background: url(./image.png); }", "src/styles", "src"),
+        (
+          "relative",
+          ".foo { background: url(./image.png); }",
+          "src/styles",
+          "src",
+        ),
         (
           "parent relative",
           ".foo { background: url(../image.png); }",
           "src/styles/components",
           "src",
         ),
-        ("absolute", ".foo { background: url(/image.png); }", "src/styles", "src"),
+        (
+          "absolute",
+          ".foo { background: url(/image.png); }",
+          "src/styles",
+          "src",
+        ),
         (
           "external",
           ".foo { background: url(https://example.com/image.png); }",
@@ -56,7 +75,12 @@ mod urls {
           "src/styles",
           "src",
         ),
-        ("fragment", ".foo { background: url(#pattern); }", "src/styles", "src"),
+        (
+          "fragment",
+          ".foo { background: url(#pattern); }",
+          "src/styles",
+          "src",
+        ),
         (
           "function call",
           ".foo { background: url(var(--image)); }",
@@ -74,9 +98,7 @@ mod urls {
 
       let output = cases
         .into_iter()
-        .map(|(name, css, base, root)| {
-          format!("{name}:\n{}", rewrite_urls(css, base, root))
-        })
+        .map(|(name, css, base, root)| format!("{name}:\n{}", rewrite_urls(css, base, root)))
         .collect::<Vec<_>>()
         .join("\n\n");
 
