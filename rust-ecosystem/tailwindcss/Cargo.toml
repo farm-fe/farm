@@ -13,3 +13,4 @@ lightningcss = { version = "1.0.0-alpha.71", features = ["serde"] }
 regex = "1"
 
 [dev-dependencies]
+farmfe_testing_helpers = { path = "../../crates/testing_helpers" }

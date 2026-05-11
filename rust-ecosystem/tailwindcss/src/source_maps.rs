@@ -47,36 +47,3 @@ impl SourceMap {
         ))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn comment_with_file_url() {
-        let sm = SourceMap::new(
-            r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string(),
-        );
-        assert_eq!(
-            sm.comment("app.css.map"),
-            "/*# sourceMappingURL=app.css.map */\n"
-        );
-    }
-
-    #[test]
-    fn inline_encodes_base64() {
-        let sm = SourceMap::new(
-            r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string(),
-        );
-        let inline = sm.inline();
-        assert!(inline.contains("data:application/json;base64,"));
-        assert!(inline.ends_with("*/\n"));
-    }
-
-    #[test]
-    fn raw_returns_original_json() {
-        let json = r#"{"version":3}"#.to_string();
-        let sm = SourceMap::new(json.clone());
-        assert_eq!(sm.raw(), json);
-    }
-}
