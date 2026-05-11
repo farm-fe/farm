@@ -18,7 +18,9 @@ mod urls {
   #[cfg(test)]
   mod moved_tests {
     use super::*;
+    use crate::support::fixture_path;
     use farmfe_testing_helpers::assert_snapshot;
+    use std::fs;
 
     #[test]
     fn helper_outputs_are_snapshotted() {
@@ -101,6 +103,28 @@ mod urls {
         .map(|(name, css, base, root)| format!("{name}:\n{}", rewrite_urls(css, base, root)))
         .collect::<Vec<_>>()
         .join("\n\n");
+
+      assert_snapshot!(output);
+    }
+
+    #[test]
+    fn upstream_tailwind_urls_case() {
+      let input = fs::read_to_string(fixture_path("upstream/urls/input.css")).unwrap();
+      let output = rewrite_urls(&input, "/root/foo/bar", "/root");
+
+      assert!(output.contains("url(./foo/bar/image.jpg)"));
+      assert!(output.contains("url(./foo/image.jpg)"));
+      assert!(output.contains("url(/image.jpg)"));
+      assert!(output.contains("url(~/image.jpg)"));
+      assert!(output.contains("url(#/image.jpg)"));
+      assert!(output.contains("url(@/image.jpg)"));
+      assert!(output.contains("url(http://example.com/image.jpg)"));
+      assert!(output.contains("url('data:image/png;base64,abc==')"));
+      assert!(output.contains("url(var(--foo))"));
+      assert!(output.contains("url(#dont-touch-this)"));
+      assert!(output.contains("url('./foo/bar/image1.jpg')"));
+      assert!(output.contains("url(\"./foo/bar/image2.jpg\")"));
+      assert!(output.contains("url(\"./foo/bar/newman-outline.woff\")"));
 
       assert_snapshot!(output);
     }

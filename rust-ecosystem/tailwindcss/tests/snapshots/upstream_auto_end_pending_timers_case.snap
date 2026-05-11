@@ -1,0 +1,7 @@
+---
+source: rust-ecosystem/tailwindcss/tests/instrumentation.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+[TIME] Foo
+[TIME]   ↳ Bar × 100
+[TIME]   ↳ Baz

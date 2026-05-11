@@ -27,5 +27,14 @@ mod source_maps {
       assert_snapshot!(output);
       assert_eq!(source_map.raw(), raw);
     }
+
+    #[test]
+    fn upstream_source_maps_case() {
+      let source_map = SourceMap::new(r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string());
+      assert_eq!(
+        source_map.comment("app.css.map"),
+        "/*# sourceMappingURL=app.css.map */\n"
+      );
+    }
   }
 }

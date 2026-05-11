@@ -16,9 +16,10 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 - [x] Record the current migration status in the branch.
 - [x] Move crate tests out of `src/` into `tests/`.
 - [x] Add filesystem-backed fixtures and snapshot coverage for persisted inputs and outputs.
-- [ ] Port Node-specific cache loader behavior (`esm-cache.loader.mts`, `require-cache`) or explicitly scope it out for Farm.
+- [x] Explicitly scope out Node-specific cache loader behavior (`esm-cache.loader.mts`, `require-cache`) for Farm's Rust-only runtime boundary.
 - [ ] Add a Rust-side TS/JS config loading strategy equivalent to the upstream `jiti` fallback.
 - [ ] Port upstream source-map serialization/remapping parity from `@tailwindcss/node`.
+- [x] Migrate upstream `@tailwindcss/node` test cases for `urls`, `source-maps`, and `instrumentation` into Rust integration tests with persisted fixtures/snapshots.
 - [ ] Design and implement a Rust AST/parser layer for `tailwindcss` core.
 - [ ] Port candidate extraction, utilities, variants, and design-system generation from `tailwindcss` core.
 - [ ] Replace the current `Compiler::build()` passthrough with full Tailwind candidate-driven CSS generation.
@@ -38,10 +39,11 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 - Source-map wrapper helpers
 
 #### Remaining
-- Cache loader and require-cache parity
-- TS config loading fallback parity
 - Source-map remapping parity after optimizer rewrites
-- Broader fixture parity against upstream package tests
+- TS config loading fallback parity
+
+#### Scoped out for Farm
+- Cache loader and require-cache parity (Node.js module-loader concern; not required by the Rust crate boundary)
 
 ### `tailwindcss`
 

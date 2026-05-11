@@ -21,10 +21,10 @@ fragment:
 .foo { background: url(#pattern); }
 
 function call:
-.foo { background: url(./styles/var(--image)); }
+.foo { background: url(var(--image)); }
 
 image set:
-.foo { background-image: image-set( url('./styles/styles/image.png') 1x, url('./styles/styles/image@2x.png') 2x); }
+.foo { background-image: image-set( url('./styles/image.png') 1x, url('./styles/image@2x.png') 2x); }
 
 no urls:
 .foo { color: red; }

@@ -30,7 +30,7 @@ static DATA_URL_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"(?i)^\s*dat
 static EXTERNAL_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"^([a-z]+:)?//"#).unwrap());
 
 static FUNCTION_CALL_RE: LazyLock<Regex> =
-  LazyLock::new(|| Regex::new(r#"^[A-Z_][\.\w-]*\("#).unwrap());
+    LazyLock::new(|| Regex::new(r#"^[A-Za-z_][\.\w-]*\("#).unwrap());
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -160,36 +160,40 @@ fn url_encode_simple(s: &str) -> String {
 /// resolve correctly when the stylesheet is served from `root` but the CSS was
 /// originally authored relative to `base`.
 pub fn rewrite_urls(css: &str, base: &str, root: &str) -> String {
-  if !css.contains("url(") && !css.contains("image-set(") {
-    return css.to_string();
-  }
+    if !css.contains("url(") && !css.contains("image-set(") {
+        return css.to_string();
+    }
 
-  let mut result = css.to_string();
+    let mut result = css.to_string();
 
-  // Process image-set(...) first – it may contain url() tokens inside.
-  result = CSS_IMAGE_SET_RE
-    .replace_all(&result, |caps: &regex::Captures| {
-      let inner = &caps[1];
-      rewrite_image_set_inner(inner, base, root)
-    })
-    .into_owned();
+    // Process standalone url(...) tokens first.
+    result = rewrite_css_urls(&result, base, root);
 
-  // Process standalone url(...) tokens.
-  result = rewrite_css_urls(&result, base, root);
+    // Then process image-set(...) so generated url(...) entries are not rewritten twice.
+    result = CSS_IMAGE_SET_RE
+        .replace_all(&result, |caps: &regex::Captures| {
+            let inner = &caps[1];
+            rewrite_image_set_inner(inner, base, root)
+        })
+        .into_owned();
 
-  result
+    result
 }
 
 /// Rewrite url() tokens inside an image-set() argument list.
 fn rewrite_image_set_inner(inner: &str, base: &str, root: &str) -> String {
-  let replaced = CSS_URL_INNER_RE
-    .replace_all(inner, |caps: &regex::Captures| {
-      let raw = &caps[1];
-      do_url_replace(raw, &caps[0], base, root)
-    })
-    .into_owned();
+    let replaced = CSS_URL_INNER_RE
+        .replace_all(inner, |caps: &regex::Captures| {
+            let raw = &caps[1];
+            do_url_replace(raw, &caps[0], base, root)
+        })
+        .into_owned();
 
-  // Also handle bare image references (not wrapped in url())
+    if replaced.contains("gradient(") {
+        return format!("image-set({replaced})");
+    }
+
+    // Also handle bare image references (not wrapped in url())
   // Split by comma, process each candidate
   let parts: Vec<&str> = replaced.split(',').collect();
   let processed: Vec<String> = parts
@@ -208,15 +212,18 @@ fn rewrite_image_set_inner(inner: &str, base: &str, root: &str) -> String {
         return part.to_string();
       }
       // Try to rewrite bare image references
-      let mut tokens = trimmed.splitn(2, char::is_whitespace);
-      if let Some(url_part) = tokens.next() {
-        let (wrap, url_inner) = strip_quotes(url_part);
-        if !url_inner.is_empty() && !should_skip(url_inner) {
-          let new_url = rebase_url(url_inner, base, root);
-          let descriptor = tokens.next().unwrap_or("");
-          let desc_str = if descriptor.is_empty() {
-            String::new()
-          } else {
+            let mut tokens = trimmed.splitn(2, char::is_whitespace);
+            if let Some(url_part) = tokens.next() {
+                let (wrap, url_inner) = strip_quotes(url_part);
+                if url_inner.contains('(') || url_inner.contains(')') {
+                    return part.to_string();
+                }
+                if !url_inner.is_empty() && !should_skip(url_inner) {
+                    let new_url = rebase_url(url_inner, base, root);
+                    let descriptor = tokens.next().unwrap_or("");
+                    let desc_str = if descriptor.is_empty() {
+                        String::new()
+                    } else {
             format!(" {descriptor}")
           };
           if wrap.is_empty() {

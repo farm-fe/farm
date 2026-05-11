@@ -84,5 +84,49 @@ mod instrumentation {
       assert_eq!(strip_ansi(with_codes), "hello world");
       assert_eq!(strip_ansi("hello world"), "hello world");
     }
+
+    #[test]
+    fn upstream_instrumentation_case() {
+      let mut instrumentation = Instrumentation::new();
+
+      instrumentation.start("Foo");
+      let mut x: u128 = 1;
+      for _ in 0..100 {
+        instrumentation.start("Bar");
+        x = x.saturating_mul(2);
+        instrumentation.end("Bar");
+      }
+      instrumentation.end("Foo");
+
+      for _ in 0..4 {
+        instrumentation.hit("Potato");
+      }
+
+      let report = capture_report(&mut instrumentation);
+      assert!(report.contains("Potato × 4"));
+      assert!(report.contains("Foo"));
+      assert!(report.contains("Bar × 100"));
+      assert_snapshot!(report);
+    }
+
+    #[test]
+    fn upstream_auto_end_pending_timers_case() {
+      let mut instrumentation = Instrumentation::new();
+
+      instrumentation.start("Foo");
+      let mut x: u128 = 1;
+      for _ in 0..100 {
+        instrumentation.start("Bar");
+        x = x.saturating_mul(2);
+        instrumentation.end("Bar");
+      }
+      instrumentation.start("Baz");
+
+      let report = capture_report(&mut instrumentation);
+      assert!(report.contains("Foo"));
+      assert!(report.contains("Bar × 100"));
+      assert!(report.contains("Baz"));
+      assert_snapshot!(report);
+    }
   }
 }
