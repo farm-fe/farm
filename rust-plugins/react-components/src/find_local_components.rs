@@ -199,15 +199,11 @@ impl Visit for ComponentFinder {
             return;
           }
           match &**init {
-            Expr::Arrow(arrow_expr) => {
-              if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) {
-                self.add_component(ident.sym.as_ref());
-              }
+            Expr::Arrow(arrow_expr) if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) => {
+              self.add_component(ident.sym.as_ref());
             }
-            Expr::Fn(fn_expr) => {
-              if is_jsx_return_with_block_stmt(&fn_expr.function.body) {
-                self.add_component(ident.sym.as_ref());
-              }
+            Expr::Fn(fn_expr) if is_jsx_return_with_block_stmt(&fn_expr.function.body) => {
+              self.add_component(ident.sym.as_ref());
             }
             _ => {}
           }
@@ -225,11 +221,11 @@ impl Visit for ComponentFinder {
 impl Visit for ExportComponentsFinder {
   fn visit_export_decl(&mut self, n: &ExportDecl) {
     match &n.decl {
-      Decl::Fn(fn_decl) => {
-        if is_uppercase(&fn_decl.ident) && is_jsx_return_with_block_stmt(&fn_decl.function.body) {
-          let sym = &fn_decl.ident.sym;
-          self.add_exported_components(sym.as_ref(), ExportType::Named);
-        }
+      Decl::Fn(fn_decl)
+        if is_uppercase(&fn_decl.ident) && is_jsx_return_with_block_stmt(&fn_decl.function.body) =>
+      {
+        let sym = &fn_decl.ident.sym;
+        self.add_exported_components(sym.as_ref(), ExportType::Named);
       }
       // export const MyComponent1 = () => <div />;
       // export const MyComponent3 = function(){return <div />}
@@ -243,15 +239,13 @@ impl Visit for ExportComponentsFinder {
             }
             if let Some(init_expr) = &var.init {
               match &**init_expr {
-                Expr::Arrow(arrow_expr) => {
-                  if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) {
-                    self.add_exported_components(var_ident.id.sym.as_ref(), ExportType::Named);
-                  }
+                Expr::Arrow(arrow_expr)
+                  if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) =>
+                {
+                  self.add_exported_components(var_ident.id.sym.as_ref(), ExportType::Named);
                 }
-                Expr::Fn(fn_expr) => {
-                  if is_jsx_return_with_block_stmt(&fn_expr.function.body) {
-                    self.add_exported_components(var_ident.id.sym.as_ref(), ExportType::Named);
-                  }
+                Expr::Fn(fn_expr) if is_jsx_return_with_block_stmt(&fn_expr.function.body) => {
+                  self.add_exported_components(var_ident.id.sym.as_ref(), ExportType::Named);
                 }
                 _ => {}
               }
@@ -297,16 +291,12 @@ impl Visit for ExportComponentsFinder {
     let component_name = self.filename.clone();
     match &*n.expr {
       // 处理 export default ()=>{return <div/>}
-      Expr::Arrow(arrow_expr) => {
-        if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) {
-          self.add_exported_components(&component_name, ExportType::Default);
-        }
+      Expr::Arrow(arrow_expr) if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) => {
+        self.add_exported_components(&component_name, ExportType::Default);
       }
       // 处理 export default function(){return <div/>}
-      Expr::Fn(fn_expr) => {
-        if is_jsx_return_with_block_stmt(&fn_expr.function.body) {
-          self.add_exported_components(&component_name, ExportType::Default);
-        }
+      Expr::Fn(fn_expr) if is_jsx_return_with_block_stmt(&fn_expr.function.body) => {
+        self.add_exported_components(&component_name, ExportType::Default);
       }
       Expr::Ident(ident) => {
         let component_name = ident.sym.to_string();

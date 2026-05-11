@@ -189,11 +189,11 @@ impl Plugin for FarmfePluginIcons {
         .get(&meta.collection)
         .and_then(|v| v.as_str());
 
-      if custom_collection_path.is_some() {
+      if let Some(custom_collection_path) = custom_collection_path {
         svg_raw = get_svg_by_custom_collections(
           &self.http_client,
           GetSvgByCustomCollectionsParams {
-            custom_collection_path: custom_collection_path.unwrap().to_string(),
+            custom_collection_path: custom_collection_path.to_string(),
             icon: meta.icon.clone(),
             project_dir: root_path.clone(),
           },
