@@ -6,8 +6,8 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 
 | Package | Status | Notes |
 | --- | --- | --- |
-| `@tailwindcss/node` | In progress | Farm already ports the compile, env, dependency tracing, instrumentation, path normalization, optimize, resolve, source-map, and URL-rewrite modules into `rust-ecosystem/tailwindcss`. Remaining gaps are Node-specific cache loader shims, TS config loading fallback (`jiti`), and parity gaps around source-map remapping. |
-| `tailwindcss` | Planned | Farm does not yet have a Rust port for the core compiler pipeline (`ast`, `css-parser`, `candidate`, `utilities`, `variants`, `design-system`, `theme`, plugin API, and the full `compile/build` candidate expansion path). |
+| `@tailwindcss/node` | In progress | Node-side compile orchestration has been split to `rust-ecosystem/tailwindcss-node` (compile, env, dependency tracing, instrumentation, path normalization, optimize, resolve, source-map, URL-rewrite). Remaining gaps are TS config loading fallback (`jiti`) and source-map remapping parity. |
+| `tailwindcss` | In progress | Core-facing API now lives in `rust-ecosystem/tailwindcss` and accepts externally supplied config payloads. JS config-file loading and plugin compatibility are intentionally out of scope for this phase. |
 
 ## Migration checklist
 
@@ -20,6 +20,9 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 - [ ] Add a Rust-side TS/JS config loading strategy equivalent to the upstream `jiti` fallback.
 - [ ] Port upstream source-map serialization/remapping parity from `@tailwindcss/node`.
 - [x] Migrate upstream `@tailwindcss/node` test cases for `urls`, `source-maps`, and `instrumentation` into Rust integration tests with persisted fixtures/snapshots.
+- [x] Split `tailwindcss-node` and `tailwindcss` into separate Rust crates.
+- [x] Add explicit config pass-through API in `tailwindcss` core crate (no JS config file loading).
+- [x] Keep plugin compatibility out of scope for the current Rust core migration.
 - [ ] Design and implement a Rust AST/parser layer for `tailwindcss` core.
 - [ ] Port candidate extraction, utilities, variants, and design-system generation from `tailwindcss` core.
 - [ ] Replace the current `Compiler::build()` passthrough with full Tailwind candidate-driven CSS generation.
@@ -27,7 +30,7 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 
 ## Workstream detail
 
-### `@tailwindcss/node`
+### `@tailwindcss/node` (`rust-ecosystem/tailwindcss-node`)
 
 #### Done
 - Resolution and module loading scaffolding
@@ -40,12 +43,12 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 
 #### Remaining
 - Source-map remapping parity after optimizer rewrites
-- TS config loading fallback parity
+- TS config loading fallback parity (explicitly scoped to non-JS-config-loading strategy for now)
 
 #### Scoped out for Farm
 - Cache loader and require-cache parity (Node.js module-loader concern; not required by the Rust crate boundary)
 
-### `tailwindcss`
+### `tailwindcss` (`rust-ecosystem/tailwindcss`)
 
 #### Planned phases
 1. Port the core AST, parser, walker, and source location model.

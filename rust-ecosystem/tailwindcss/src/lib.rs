@@ -1,28 +1,9 @@
-//! Rust implementation of `@tailwindcss/node` compile utilities.
+//! Rust core surface for the upstream `tailwindcss` package.
 //!
-//! This crate provides the compilation orchestration layer originally found in
-//! the [`@tailwindcss-node`](https://github.com/tailwindlabs/tailwindcss/tree/main/packages/%40tailwindcss-node/src)
-//! TypeScript package.
-//!
-//! It includes:
-//! - CSS / JS module resolution (ESM + CJS dual-resolver pattern) — [`resolve`]
-//! - Stylesheet loading and URL rewriting — [`urls`], [`compile`]
-//! - JS module dependency tracing — [`get_module_dependencies`]
-//! - Cross-platform path normalization — [`normalize_path`]
-//! - Source‑map utilities — [`source_maps`]
-//! - CSS AST node representation — [`compile::AstNode`]
-//! - Top‑level `compile` and `compile_ast` orchestration — [`compile`]
-//! - Unstable `load_design_system` API — [`compile::load_design_system`]
-//! - Environment variable (DEBUG flag) resolution — [`env`]
-//! - CSS optimization via `lightningcss` — [`optimize`]
-//! - Performance instrumentation (hit counts + timers) — [`instrumentation`]
+//! This crate intentionally focuses on compile/build state and externally
+//! supplied configuration data. It does **not** load JS/TS config files and
+//! does **not** implement plugin-compat APIs.
 
-pub mod compile;
-pub mod env;
-pub mod get_module_dependencies;
-pub mod instrumentation;
-pub mod normalize_path;
-pub mod optimize;
-pub mod resolve;
-pub mod source_maps;
-pub mod urls;
+pub mod compiler;
+
+pub use compiler::{compile, Compiler, CompilerOptions, Features, Polyfills, TailwindConfig};

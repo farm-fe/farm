@@ -13,81 +13,11 @@ use std::path::{Path, PathBuf};
 
 use crate::resolve::{self, CustomResolver};
 use crate::urls;
+pub use farmfe_ecosystem_tailwindcss::compiler::{
+  Compiler, CompilerOptions, Features, Polyfills, TailwindConfig,
+};
 
 // ── Types ───────────────────────────────────────────────────────────────────
-
-/// Bitflags that describe which Tailwind CSS features are used in the compiled
-/// CSS.  Mirrors the `Features` enum from `tailwindcss`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Features(u32);
-
-impl Features {
-  pub const NONE: Self = Self(0);
-  pub const AT_APPLY: Self = Self(1 << 0);
-  pub const JS_PLUGIN_COMPAT: Self = Self(1 << 1);
-  pub const THEME_FUNCTION: Self = Self(1 << 2);
-  pub const UTILITIES: Self = Self(1 << 3);
-
-  pub fn contains(self, other: Self) -> bool {
-    self.0 & other.0 != 0
-  }
-
-  pub fn has_any_output_feature(self) -> bool {
-    self.contains(Self::AT_APPLY)
-      || self.contains(Self::JS_PLUGIN_COMPAT)
-      || self.contains(Self::THEME_FUNCTION)
-      || self.contains(Self::UTILITIES)
-  }
-}
-
-/// Polyfill flags that control which CSS compatibility transforms are applied.
-///
-/// Mirrors the `Polyfills` enum from `tailwindcss`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Polyfills(u32);
-
-impl Polyfills {
-  pub const NONE: Self = Self(0);
-  /// Enable `@media (hover: hover)` polyfill for older browsers.
-  pub const AT_MEDIA_HOVER: Self = Self(1 << 0);
-
-  pub fn contains(self, other: Self) -> bool {
-    self.0 & other.0 != 0
-  }
-}
-
-impl std::ops::BitOr for Features {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-
-impl std::ops::BitOrAssign for Features {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
-
-impl std::ops::BitAnd for Features {
-  type Output = Self;
-  fn bitand(self, rhs: Self) -> Self {
-    Self(self.0 & rhs.0)
-  }
-}
-
-impl std::ops::BitOr for Polyfills {
-  type Output = Self;
-  fn bitor(self, rhs: Self) -> Self {
-    Self(self.0 | rhs.0)
-  }
-}
-
-impl std::ops::BitOrAssign for Polyfills {
-  fn bitor_assign(&mut self, rhs: Self) {
-    self.0 |= rhs.0;
-  }
-}
 
 /// Options passed to [`compile`] and [`compile_ast`].
 pub struct CompileOptions {
@@ -99,6 +29,11 @@ pub struct CompileOptions {
   pub should_rewrite_urls: bool,
   /// Polyfill flags for CSS compatibility transforms.
   pub polyfills: Polyfills,
+  /// Optional externally provided Tailwind config object.
+  ///
+  /// This is intentionally pass-through only. JS/TS config file loading is out
+  /// of scope for this Rust implementation.
+  pub config: Option<TailwindConfig>,
   /// Callback invoked whenever a dependency is discovered.
   pub on_dependency: Box<dyn Fn(&str) + Send>,
   /// Optional custom CSS resolver.
@@ -114,6 +49,7 @@ impl Default for CompileOptions {
       from: None,
       should_rewrite_urls: false,
       polyfills: Polyfills::NONE,
+      config: None,
       on_dependency: Box::new(|_| {}),
       custom_css_resolver: None,
       custom_js_resolver: None,
@@ -204,55 +140,6 @@ impl AstNode {
       }
       AstNode::Comment(text) => format!("/* {text} */"),
     }
-  }
-}
-
-/// The compiled state. Holds the processed CSS, detected features, dependency
-/// graph, and methods for building the final output from a set of candidates.
-pub struct Compiler {
-  /// The original (or processed) CSS content.
-  css: String,
-  /// Detected features in the CSS.
-  pub features: Features,
-  /// Active polyfills.
-  pub polyfills: Polyfills,
-  /// Source detection root, if any.
-  pub root: Option<SourceRoot>,
-  /// Build dependencies discovered during compilation.
-  dependencies: Vec<String>,
-  /// Cached built CSS output (from last `build` call).
-  last_build: Option<String>,
-  /// Whether source maps are enabled.
-  source_maps_enabled: bool,
-}
-
-impl Compiler {
-  /// Build the final CSS output using the given set of candidate class names.
-  ///
-  /// In the upstream TS implementation this delegates to the core tailwindcss
-  /// compiler. In this Rust version the CSS is returned with imports resolved
-  /// and URLs rewritten. The `candidates` parameter is accepted for API
-  /// compatibility and will be used when a full Rust CSS generator is
-  /// available.
-  pub fn build(&mut self, _candidates: &[String]) -> String {
-    let css = self.css.clone();
-    self.last_build = Some(css.clone());
-    css
-  }
-
-  /// Build and return a source-map string, if source maps are enabled.
-  pub fn build_source_map(&self) -> Option<String> {
-    if !self.source_maps_enabled {
-      return None;
-    }
-    // Minimal source map — a full implementation would produce proper
-    // mappings by tracking transformations.
-    Some(r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string())
-  }
-
-  /// Return the list of dependencies discovered during compilation.
-  pub fn dependencies(&self) -> &[String] {
-    &self.dependencies
   }
 }
 
@@ -461,21 +348,21 @@ pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
     &mut seen,
   )?;
 
-  let compiler = Compiler {
-    css: processed_css,
-    features,
-    polyfills: options.polyfills,
-    root: None,
-    dependencies: seen.keys().cloned().collect(),
-    last_build: None,
-    source_maps_enabled: options.from.is_some(),
-  };
+  let compiler = farmfe_ecosystem_tailwindcss::compiler::compile(
+    &processed_css,
+    CompilerOptions {
+      features,
+      polyfills: options.polyfills,
+      dependencies: seen.keys().cloned().collect(),
+      source_maps_enabled: options.from.is_some(),
+      config: options.config.clone(),
+    },
+  );
 
-  ensure_source_detection_root_exists(&compiler.root)?;
+  ensure_source_detection_root_exists(&None)?;
 
   Ok(compiler)
 }
-
 /// Compile a pre-parsed AST with the given options.
 ///
 /// Mirrors the `compileAst()` function from the TS `@tailwindcss-node`

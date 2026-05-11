@@ -1991,7 +1991,16 @@ dependencies = [
 name = "farmfe_ecosystem_tailwindcss"
 version = "0.1.0"
 dependencies = [
+ "farmfe_testing_helpers",
+ "serde_json",
+]
+
+[[package]]
+name = "farmfe_ecosystem_tailwindcss_node"
+version = "0.1.0"
+dependencies = [
  "base64 0.22.1",
+ "farmfe_ecosystem_tailwindcss",
  "farmfe_testing_helpers",
  "lightningcss",
  "regex",
@@ -2284,6 +2293,7 @@ dependencies = [
  "farmfe_compiler",
  "farmfe_core",
  "farmfe_ecosystem_tailwindcss",
+ "farmfe_ecosystem_tailwindcss_node",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
  "farmfe_toolkit",

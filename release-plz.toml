@@ -34,6 +34,10 @@ release = false
 name = "farmfe_ecosystem_tailwindcss"
 release = false
 
+[[package]]
+name = "farmfe_ecosystem_tailwindcss_node"
+release = false
+
 
 [[package]]
 name = "farmfe_utils"

@@ -30,7 +30,8 @@ mod source_maps {
 
     #[test]
     fn upstream_source_maps_case() {
-      let source_map = SourceMap::new(r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string());
+      let source_map =
+        SourceMap::new(r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string());
       assert_eq!(
         source_map.comment("app.css.map"),
         "/*# sourceMappingURL=app.css.map */\n"

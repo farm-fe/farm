@@ -5,12 +5,10 @@ edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
-description = "Rust implementation of @tailwindcss/node compile utilities for Farm."
+description = "Rust core compiler surface for tailwindcss in Farm."
 
 [dependencies]
-base64 = "0.22"
-lightningcss = { version = "1.0.0-alpha.71", features = ["serde"] }
-regex = "1"
+serde_json = "1"
 
 [dev-dependencies]
 farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
