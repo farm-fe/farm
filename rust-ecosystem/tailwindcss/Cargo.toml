@@ -9,6 +9,7 @@ description = "Rust implementation of @tailwindcss/node compile utilities for Fa
 
 [dependencies]
 base64 = "0.22"
+lightningcss = { version = "1.0.0-alpha.71", features = ["serde"] }
 regex = "1"
 
 [dev-dependencies]
