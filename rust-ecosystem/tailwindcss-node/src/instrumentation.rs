@@ -11,7 +11,7 @@
 //! # Example
 //!
 //! ```
-//! use farmfe_ecosystem_tailwindcss::instrumentation::Instrumentation;
+//! use farmfe_ecosystem_tailwindcss_node::instrumentation::Instrumentation;
 //!
 //! let mut i = Instrumentation::new();
 //! i.start("resolve");

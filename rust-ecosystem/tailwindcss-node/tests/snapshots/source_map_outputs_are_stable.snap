@@ -1,5 +1,5 @@
 ---
-source: rust-ecosystem/tailwindcss/tests/source_maps.rs
+source: rust-ecosystem/tailwindcss-node/tests/source_maps.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 raw: {"version":3,"sources":[],"names":[],"mappings":""}

@@ -1,5 +1,5 @@
 ---
-source: rust-ecosystem/tailwindcss/tests/resolve.rs
+source: rust-ecosystem/tailwindcss-node/tests/resolve.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 relative css: tests/fixtures/resolve/rel_css/./styles.css

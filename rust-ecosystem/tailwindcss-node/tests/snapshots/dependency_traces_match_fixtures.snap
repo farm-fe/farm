@@ -1,5 +1,5 @@
 ---
-source: rust-ecosystem/tailwindcss/tests/get_module_dependencies.rs
+source: rust-ecosystem/tailwindcss-node/tests/get_module_dependencies.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 single:

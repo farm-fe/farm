@@ -1,5 +1,5 @@
 ---
-source: rust-ecosystem/tailwindcss/tests/urls.rs
+source: rust-ecosystem/tailwindcss-node/tests/urls.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 join basic: a/b/c/d

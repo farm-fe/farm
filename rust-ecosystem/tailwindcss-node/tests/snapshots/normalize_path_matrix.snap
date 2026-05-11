@@ -1,5 +1,5 @@
 ---
-source: rust-ecosystem/tailwindcss/tests/normalize_path.rs
+source: rust-ecosystem/tailwindcss-node/tests/normalize_path.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 forward: "foo/bar/baz" -> "foo/bar/baz"

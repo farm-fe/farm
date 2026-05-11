@@ -28,7 +28,7 @@ impl SourceMap {
   /// Generate a CSS comment that points at an external source-map file.
   ///
   /// ```
-  /// # use farmfe_ecosystem_tailwindcss::source_maps::SourceMap;
+  /// # use farmfe_ecosystem_tailwindcss_node::source_maps::SourceMap;
   /// let sm = SourceMap::new(String::new());
   /// assert_eq!(
   ///     sm.comment("app.css.map"),

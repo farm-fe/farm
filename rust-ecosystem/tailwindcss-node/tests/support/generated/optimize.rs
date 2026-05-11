@@ -99,7 +99,7 @@ fn fix_media_not(css: &str) -> String {
 /// Mirrors the `optimize()` function from `optimize.ts`.
 ///
 /// ```
-/// use farmfe_ecosystem_tailwindcss::optimize::{optimize, OptimizeOptions};
+/// use farmfe_ecosystem_tailwindcss_node::optimize::{optimize, OptimizeOptions};
 ///
 /// let input = ".foo { & .bar { color: red; } }";
 /// let result = optimize(input, OptimizeOptions::default()).unwrap();

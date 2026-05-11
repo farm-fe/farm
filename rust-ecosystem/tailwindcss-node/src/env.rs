@@ -8,7 +8,7 @@
 //! npm package.
 //!
 //! ```
-//! use farmfe_ecosystem_tailwindcss::env::resolve_debug;
+//! use farmfe_ecosystem_tailwindcss_node::env::resolve_debug;
 //! // When DEBUG is not set
 //! assert!(!resolve_debug(None));
 //! // When DEBUG is "tailwindcss"

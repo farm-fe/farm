@@ -1,5 +1,5 @@
 ---
-source: rust-ecosystem/tailwindcss/tests/optimize.rs
+source: rust-ecosystem/tailwindcss-node/tests/optimize.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 plain:
