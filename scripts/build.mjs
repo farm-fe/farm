@@ -74,6 +74,25 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
     a.localeCompare(b),
   );
   const builtRustPlugins = new Set();
+  const hasPrebuiltRustPluginArtifact = (rustPluginPath) => {
+    const npmPath = join(rustPluginPath, "npm");
+
+    if (!existsSync(npmPath)) {
+      return false;
+    }
+
+    for (const dirent of fs.readdirSync(npmPath, { withFileTypes: true })) {
+      if (!dirent.isDirectory()) {
+        continue;
+      }
+
+      if (existsSync(join(npmPath, dirent.name, "index.farm"))) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 
   const resolveRustPluginsForExample = (example, examplePath) => {
     const result = new Set();
@@ -156,6 +175,14 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
       console.log(
         `Building rust plugin ${rustPluginName} for example ${examplePath}`,
       );
+
+      if (process.env.CI && hasPrebuiltRustPluginArtifact(rustPluginPath)) {
+        console.log(
+          `Skipping rust plugin ${rustPluginName} build in CI because prebuilt artifact is available`,
+        );
+        builtRustPlugins.add(rustPluginName);
+        continue;
+      }
 
       await execa("npm", ["run", "build"], {
         cwd: rustPluginPath,
