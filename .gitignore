@@ -118,5 +118,3 @@ build
 # idea
 .idea
 
-# local worktrees
-.worktrees/
