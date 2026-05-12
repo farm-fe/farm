@@ -22,7 +22,8 @@ fn core_compiler_accepts_external_config() {
         "content": ["src/**/*.tsx"]
       }))),
     },
-  );
+  )
+  .unwrap();
 
   let output = format!(
     "css: {}\nmap: {}\ndeps: {}\nhas_config: {}\nfeatures: {}\npolyfills: {}",

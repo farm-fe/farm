@@ -357,7 +357,8 @@ pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
       source_maps_enabled: options.from.is_some(),
       config: options.config.clone(),
     },
-  );
+  )
+  .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Compile error: {}", e)))?;
 
   ensure_source_detection_root_exists(&None)?;
 

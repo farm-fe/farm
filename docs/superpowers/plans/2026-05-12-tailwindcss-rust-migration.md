@@ -10,6 +10,33 @@
 
 ---
 
+## Implementation Status (updated 2026-05-12)
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 0: Scaffold (delete scanner, add oxide) | ⏭ **Skipped** | `tailwindcss/crates/oxide` does not exist in repo; `scanner.rs` retained |
+| Phase 1.1: ast.rs (AstNode, to_css, optimize_ast) | ✅ **Done** | 9 tests pass |
+| Phase 1.2: walk.rs (WalkAction, walk) | ✅ **Done** | 4 tests pass |
+| Phase 1.3: parser.rs (parse) | ✅ **Done** | 8 tests pass |
+| Phase 2.1: candidate.rs (ParsedCandidate, parse_candidate) | ✅ **Done** | 11 tests pass |
+| Phase 3.1: theme.rs (Theme, resolve, resolve_by_key_path) | ✅ **Done** | 3 tests pass |
+| Phase 3.2: functions.rs (substitute_css_functions) | ✅ **Done** | 2 tests pass |
+| Phase 4.1: utilities.rs (UtilityRegistry) | ✅ **Done** | 4 tests pass |
+| Phase 5.1: variants.rs (VariantRegistry) | ✅ **Done** | 5 tests pass |
+| Phase 6.1: design_system.rs + Compiler::build() rewrite | ✅ **Done** | 5 tests pass; compile() now returns Result |
+| Phase 7.1: apply.rs (@apply substitution) | ✅ **Done** | 4 tests pass |
+| Phase 8.1: tailwindcss-node compile() for new Result API | ✅ **Done** | Node crate compiles; .map_err() added |
+| Phase 9: Plugin → oxide Scanner | ⏭ **Skipped** | `tailwindcss/crates/oxide` not available |
+| Phase 10: Final verification | ✅ **Done** | All tests pass; clippy clean |
+
+### Summary
+- **53 new tests** written TDD-style (RED then GREEN) across 10 test files
+- `Compiler::build()` now processes real candidate strings via `DesignSystem`
+- `compile()` returns `Result<Compiler, CompileError>` (breaking change — node crate updated)
+- All existing tests still pass (snapshot updated for new feature detection semantics)
+
+---
+
 ## File Structure
 
 ### Crate: `farmfe_ecosystem_tailwindcss` (`rust-ecosystem/tailwindcss/`)

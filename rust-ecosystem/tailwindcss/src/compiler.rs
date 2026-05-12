@@ -1,5 +1,10 @@
 use serde_json::Value;
 
+use crate::ast::{self, AstNode};
+use crate::design_system::DesignSystem;
+use crate::parser::parse;
+use crate::theme::Theme;
+
 /// Bitflags that describe which Tailwind CSS features are used in the compiled
 /// CSS.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,9 +112,8 @@ impl Default for CompilerOptions {
 }
 
 /// Compiled core state.
-#[derive(Debug, Clone)]
 pub struct Compiler {
-  css: String,
+  design_system: DesignSystem,
   pub features: Features,
   pub polyfills: Polyfills,
   dependencies: Vec<String>,
@@ -118,10 +122,10 @@ pub struct Compiler {
 }
 
 impl Compiler {
-  pub fn new(css: String, options: CompilerOptions) -> Self {
+  fn new(design_system: DesignSystem, features: Features, options: CompilerOptions) -> Self {
     Self {
-      css,
-      features: options.features,
+      design_system,
+      features,
       polyfills: options.polyfills,
       dependencies: options.dependencies,
       source_maps_enabled: options.source_maps_enabled,
@@ -129,15 +133,17 @@ impl Compiler {
     }
   }
 
-  pub fn build(&mut self, _candidates: &[String]) -> String {
-    self.css.clone()
+  /// Build final CSS from the given candidate list.
+  pub fn build(&mut self, candidates: &[String]) -> String {
+    let nodes = self.design_system.compile_candidates(candidates);
+    let optimized = ast::optimize_ast(nodes);
+    ast::to_css(&optimized)
   }
 
   pub fn build_source_map(&self) -> Option<String> {
     if !self.source_maps_enabled {
       return None;
     }
-
     Some(r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string())
   }
 
@@ -150,6 +156,80 @@ impl Compiler {
   }
 }
 
-pub fn compile(css: &str, options: CompilerOptions) -> Compiler {
-  Compiler::new(css.to_string(), options)
+// ── Error ─────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub enum CompileError {
+  ParseError(String),
 }
+
+impl std::fmt::Display for CompileError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      CompileError::ParseError(msg) => write!(f, "CSS parse error: {}", msg),
+    }
+  }
+}
+
+// ── compile() ─────────────────────────────────────────────────────────────────
+
+/// Parse CSS, detect features, build a [`DesignSystem`], and return a
+/// [`Compiler`].
+pub fn compile(css: &str, options: CompilerOptions) -> Result<Compiler, CompileError> {
+  let ast = parse(css);
+
+  let features = detect_features(&ast);
+
+  let theme = Theme::default();
+  let design_system = DesignSystem::build(&ast, theme);
+
+  Ok(Compiler::new(design_system, features, options))
+}
+
+// ── feature detection ─────────────────────────────────────────────────────────
+
+/// Walk the AST and determine which Tailwind features are used.
+fn detect_features(ast: &[AstNode]) -> Features {
+  let mut features = Features::NONE;
+  walk_features(ast, &mut features);
+  features
+}
+
+fn walk_features(nodes: &[AstNode], features: &mut Features) {
+  for node in nodes {
+    match node {
+      AstNode::AtRule(at_rule) => {
+        match at_rule.name.as_str() {
+          "@import" if at_rule.params.contains("tailwindcss") => {
+            *features |= Features::UTILITIES;
+          }
+          "@tailwind" => {
+            *features |= Features::UTILITIES;
+          }
+          "@apply" => {
+            *features |= Features::AT_APPLY;
+          }
+          _ => {}
+        }
+        walk_features(&at_rule.nodes, features);
+      }
+      AstNode::Rule(rule) => {
+        walk_features(&rule.nodes, features);
+      }
+      AstNode::Declaration(decl) => {
+        if decl.property == "@apply" {
+          *features |= Features::AT_APPLY;
+        }
+        if let Some(ref value) = decl.value {
+          if value.contains("theme(") {
+            *features |= Features::THEME_FUNCTION;
+          }
+        }
+      }
+      AstNode::Context(ctx) => walk_features(&ctx.nodes, features),
+      AstNode::AtRoot(at_root) => walk_features(&at_root.nodes, features),
+      _ => {}
+    }
+  }
+}
+
