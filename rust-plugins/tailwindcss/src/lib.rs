@@ -15,9 +15,9 @@ use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::regex::Regex;
 
-use farmfe_ecosystem_tailwindcss::scanner::extract_candidates;
 use farmfe_ecosystem_tailwindcss::TailwindConfig;
 use farmfe_ecosystem_tailwindcss_node::compile::{self, CompileOptions};
+use tailwindcss_oxide::{ChangedContent, Scanner};
 
 const PKG_NAME: &str = "@farmfe/plugin-tailwindcss";
 
@@ -64,12 +64,13 @@ impl FarmPluginTailwindCSS {
     }
   }
 
-  /// Scan `content` for TailwindCSS candidate class names.
-  ///
-  /// Delegates to [`farmfe_ecosystem_tailwindcss::scanner::extract_candidates`]
-  /// so the extraction logic lives in the shared core crate.
-  fn scan_candidates(&self, content: &str) -> Vec<String> {
-    extract_candidates(content)
+  /// Scan `content` for TailwindCSS candidate class names using oxide scanner.
+  fn scan_candidates(&self, content: &str, extension: &str) -> Vec<String> {
+    let mut scanner = Scanner::new(vec![]);
+    scanner.scan_content(vec![ChangedContent::Content(
+      content.to_string(),
+      extension.to_string(),
+    )])
   }
 
   /// Check whether `id` looks like a CSS root file that should trigger
@@ -78,8 +79,13 @@ impl FarmPluginTailwindCSS {
     CSS_EXT_RE.is_match(id) && !id.contains("node_modules")
   }
 
+  /// Check whether `id` is a non-CSS source file that should be scanned for
+  /// Tailwind class candidates.
+  fn is_candidate_source_file(id: &str) -> bool {
+    CANDIDATE_EXT_RE.is_match(id) && !id.contains("node_modules")
+  }
+
   /// Get the file extension from a module id (stripping query strings).
-  #[cfg(test)]
   fn get_extension(id: &str) -> &str {
     let filename = id.split('?').next().unwrap_or(id);
     filename.rsplit('.').next().unwrap_or("")
@@ -111,8 +117,9 @@ impl Plugin for FarmPluginTailwindCSS {
     let resolved_path = param.resolved_path;
 
     // ── Step 1: Scan non-CSS source files for candidates ────────────
-    if CANDIDATE_EXT_RE.is_match(resolved_path) {
-      let new_candidates = self.scan_candidates(&param.content);
+    if Self::is_candidate_source_file(resolved_path) {
+      let extension = Self::get_extension(resolved_path);
+      let new_candidates = self.scan_candidates(&param.content, extension);
 
       if !new_candidates.is_empty() {
         let mut candidates = self.candidates.lock().unwrap();
@@ -235,7 +242,7 @@ mod tests {
     };
 
     let content = r#"<div class="bg-red-500 text-white p-4 hover:bg-blue-500"></div>"#;
-    let candidates = plugin.scan_candidates(content);
+    let candidates = plugin.scan_candidates(content, "html");
     assert!(!candidates.is_empty());
     // Check that at least some expected candidates are found
     assert!(candidates.iter().any(|c| c.contains("bg-red")));
@@ -250,7 +257,7 @@ mod tests {
     };
 
     let content = r#"const url = "https://example.com";"#;
-    let candidates = plugin.scan_candidates(content);
+    let candidates = plugin.scan_candidates(content, "js");
     // Should not contain URL-like candidates
     for c in &candidates {
       assert!(!c.contains("://"), "Found URL-like candidate: {c}");
@@ -267,6 +274,20 @@ mod tests {
       "/node_modules/lib/style.css"
     ));
     assert!(!FarmPluginTailwindCSS::is_css_root_file("/src/app.js"));
+  }
+
+  #[test]
+  fn is_candidate_source_file_works() {
+    assert!(FarmPluginTailwindCSS::is_candidate_source_file("/src/app.tsx"));
+    assert!(FarmPluginTailwindCSS::is_candidate_source_file(
+      "/src/app.vue?lang.ts"
+    ));
+    assert!(!FarmPluginTailwindCSS::is_candidate_source_file(
+      "/node_modules/pkg/index.js"
+    ));
+    assert!(!FarmPluginTailwindCSS::is_candidate_source_file(
+      "/src/styles.css"
+    ));
   }
 
   #[test]

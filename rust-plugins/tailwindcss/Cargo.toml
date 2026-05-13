@@ -13,6 +13,7 @@ farmfe_toolkit = { path = "../../crates/toolkit" }
 farmfe_utils = { path = "../../crates/utils" }
 farmfe_ecosystem_tailwindcss = { path = "../../rust-ecosystem/tailwindcss" }
 farmfe_ecosystem_tailwindcss_node = { path = "../../rust-ecosystem/tailwindcss-node" }
+tailwindcss-oxide = { git = "https://github.com/tailwindlabs/tailwindcss", package = "tailwindcss-oxide", tag = "v4.1.12" }
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]

@@ -10,7 +10,7 @@
 
 ---
 
-## Implementation Status (updated 2026-05-12)
+## Implementation Status (updated 2026-05-13)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
@@ -26,7 +26,7 @@
 | Phase 6.1: design_system.rs + Compiler::build() rewrite | ✅ **Done** | 5 tests pass; compile() now returns Result |
 | Phase 7.1: apply.rs (@apply substitution) | ✅ **Done** | 4 tests pass |
 | Phase 8.1: tailwindcss-node compile() for new Result API | ✅ **Done** | Node crate compiles; .map_err() added |
-| Phase 9: Plugin → oxide Scanner | ⏭ **Skipped** | `tailwindcss/crates/oxide` not available |
+| Phase 9: Plugin → oxide Scanner | ✅ **Done** | Rust plugin now uses `tailwindcss-oxide` Scanner from remote package source (git tag `v4.1.12`), extension-aware scanning, and JS-parity candidate file guard |
 | Phase 10: Final verification | ✅ **Done** | All tests pass; clippy clean |
 
 ### Summary
@@ -3330,7 +3330,7 @@ git commit -m "chore: update node crate compile() for new Result-returning core 
 - Modify: `rust-plugins/tailwindcss/Cargo.toml`
 - Modify: `rust-plugins/tailwindcss/src/lib.rs`
 
-- [ ] **Step 1: Add tailwindcss-oxide to plugin dependencies**
+- [x] **Step 1: Add tailwindcss-oxide to plugin dependencies**
 
 Edit `rust-plugins/tailwindcss/Cargo.toml`:
 
@@ -3340,7 +3340,7 @@ Edit `rust-plugins/tailwindcss/Cargo.toml`:
 tailwindcss-oxide = { path = "../../tailwindcss/crates/oxide" }
 ```
 
-- [ ] **Step 2: Update plugin lib.rs scanner usage**
+- [x] **Step 2: Update plugin lib.rs scanner usage**
 
 Edit `rust-plugins/tailwindcss/src/lib.rs`:
 
@@ -3375,7 +3375,7 @@ Note: The exact Scanner API call will be adjusted based on the upstream `tailwin
 - `Scanner::new(sources: Vec<PublicSourceEntry>)` — create a new scanner
 - `Scanner::scan_content(changed_content: Vec<ChangedContent>) -> Vec<String>` — scan content and return candidates
 
-- [ ] **Step 3: Update the transform method**
+- [x] **Step 3: Update the transform method**
 
 In the `transform()` method, update the scan call:
 
@@ -3389,7 +3389,7 @@ if CANDIDATE_EXT_RE.is_match(resolved_path) {
 
 Remove `get_extension` `#[cfg(test)]` attribute so it's available at runtime.
 
-- [ ] **Step 4: Verify compilation**
+- [x] **Step 4: Verify compilation**
 
 ```bash
 cargo check -p farmfe_plugin_tailwindcss
@@ -3397,7 +3397,7 @@ cargo check -p farmfe_plugin_tailwindcss
 
 Expected: Compiles without errors
 
-- [ ] **Step 5: Run plugin tests**
+- [x] **Step 5: Run plugin tests**
 
 ```bash
 cargo test -p farmfe_plugin_tailwindcss
