@@ -109,14 +109,21 @@ farm/
 
 ## Available Skills (Slash Commands)
 
-Skills are on-demand workflows invoked as slash commands in VS Code Copilot chat. They are discovered automatically from two directories:
+Skills are on-demand workflows invoked as slash commands in VS Code Copilot chat. They are discovered automatically from three directories:
 
 | Directory | Scope | How to add a skill |
 |-----------|-------|--------------------|
+| `skills/<name>/SKILL.md` | Project knowledge base (top-level, community best practice) | Create the folder + `SKILL.md` with YAML frontmatter |
 | `.github/skills/<name>/SKILL.md` | Workspace-shared (checked in, affects whole team) | Create the folder + `SKILL.md` with YAML frontmatter |
 | `.agents/skills/<name>/SKILL.md` | Workspace-local (checked in, agent-only utilities) | Same structure; place in `.agents/skills/` |
 
 Type `/` in Copilot Chat to browse all available slash commands.
+
+### Project Knowledge Base (`skills/`)
+
+| Skill | Slash Command | Description |
+|-------|---------------|-------------|
+| `farmfe-guide` | `/farmfe-guide` | Comprehensive Farm build-tool reference — config, plugins, CLI, features, custom plugin authoring |
 
 ### Project Skills (`.github/skills/`)
 
@@ -145,8 +152,8 @@ These skills ship with the agent toolchain and are available in all workspaces t
 
 ### How to Create a New Skill
 
-1. Pick a scope: shared team workflow → `.github/skills/`; agent utility → `.agents/skills/`.
-2. Create the directory: `mkdir .github/skills/<your-skill-name>`.
+1. Pick a scope: project knowledge base → `skills/`; shared workflow → `.github/skills/`; agent utility → `.agents/skills/`.
+2. Create the directory, e.g. `mkdir skills/<your-skill-name>` or `mkdir .github/skills/<your-skill-name>`.
 3. Create `SKILL.md` with required frontmatter:
 
 ```yaml

@@ -10,6 +10,7 @@ use farmfe_core::{
     meta_data::script::{
       FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID, FARM_RUNTIME_SUFFIX,
     },
+    module_graph::ModuleGraph,
     ModuleId, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
@@ -23,7 +24,8 @@ use farmfe_core::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::ResourcePotType,
   },
-  swc_ecma_ast::Module,
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{Module, ModuleDecl, ModuleItem, Str},
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
@@ -48,6 +50,10 @@ mod formats;
 mod import_meta_visitor;
 mod utils;
 
+/// Placeholder prefix used to mark import sources that need to be replaced
+/// with actual output resource filenames after resources are generated.
+pub const FARM_BUNDLE_PLACEHOLDER_PREFIX: &str = "FARM_BUNDLE_PLACEHOLDER::";
+
 const FARM_RUNTIME_PREFIX: &str = "@farmfe/runtime/";
 const PLUGIN_NAME: &str = "FarmPluginLibrary";
 
@@ -56,19 +62,14 @@ pub struct FarmPluginLibrary {
   export_namespace_modules: Mutex<HashSet<ModuleId>>,
   cjs_require_map: Mutex<HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>>,
 
-  library_bundle_type: LibraryBundleType,
-
   runtime_module_helper_ast: Mutex<Option<Module>>,
   all_used_helper_idents: Mutex<HashSet<String>>,
   should_add_farm_node_require: Mutex<bool>,
 }
 
 impl FarmPluginLibrary {
-  pub fn new(config: &Config) -> Self {
-    Self {
-      library_bundle_type: config.output.library_bundle_type,
-      ..Self::default()
-    }
+  pub fn new(_config: &Config) -> Self {
+    Self::default()
   }
 }
 
@@ -98,8 +99,10 @@ impl Plugin for FarmPluginLibrary {
           });
       }
       LibraryBundleType::MultipleBundle => {
-        config.partial_bundling.target_concurrent_requests = 1;
-        config.partial_bundling.target_min_size = usize::MAX;
+        // Use default partial bundling settings for multiple bundle mode
+        // to allow code splitting and multiple resource pot creation.
+        // Do not override target_concurrent_requests or target_min_size,
+        // so that dynamic imports can create separate resource pots.
       }
       LibraryBundleType::BundleLess => {
         config.partial_bundling.target_concurrent_requests = usize::MAX;
@@ -314,25 +317,42 @@ impl Plugin for FarmPluginLibrary {
       return Ok(None);
     }
 
-    let entry_module_id = if self.library_bundle_type == LibraryBundleType::BundleLess
-      && resource_pot.modules().len() == 1
-    {
-      resource_pot.modules().first().unwrap()
-    } else if let Some(entry) = resource_pot.entry_module.as_ref() {
-      entry
+    // Determine the entry module for concatenation.
+    // Priority: explicit entry > dynamic entry > single-module pot > root of dependency subgraph
+    let entry_module_id: ModuleId = if let Some(entry) = resource_pot.entry_module.as_ref() {
+      entry.clone()
     } else if let Some(entry) = resource_pot.dynamic_imported_entry_module.as_ref() {
-      entry
+      entry.clone()
+    } else if resource_pot.modules().len() == 1 {
+      resource_pot.modules().into_iter().next().unwrap().clone()
     } else {
-      panic!(
-        "dynamic imported entry module not found for resource pot {:?}",
-        resource_pot.id
-      );
+      // For multi-module resource pots without an entry (e.g., shared chunks),
+      // find a root module: one that is not depended on by any other module in this pot.
+      let module_graph = context.module_graph.read();
+      let modules = resource_pot.modules();
+      let modules_set: HashSet<&ModuleId> = modules.iter().copied().collect();
+      modules
+        .iter()
+        .find(|m| {
+          let dependents = module_graph.dependents(m);
+          !dependents
+            .iter()
+            .any(|(dep_id, _)| modules_set.contains(dep_id))
+        })
+        .unwrap_or(modules.first().expect(
+          &format!(
+            "resource pot {:?} has no modules, cannot determine entry module for rendering",
+            resource_pot.id
+          ),
+        ))
+        .to_owned()
+        .clone()
     };
 
     let module_graph = context.module_graph.read();
 
     let ConcatenateModulesAstResult {
-      ast,
+      mut ast,
       module_ids,
       external_modules,
       source_map,
@@ -341,13 +361,22 @@ impl Plugin for FarmPluginLibrary {
       unresolved_mark,
       top_level_mark,
     } = concatenate_modules_ast(
-      entry_module_id,
+      &entry_module_id,
       &resource_pot.modules,
       &module_graph,
       ConcatenateModulesAstOptions { check_esm: true },
       context,
     )
     .map_err(|e| CompilationError::GenericError(e.to_string()))?;
+
+    // Replace import sources for internal modules (modules in other resource pots,
+    // not truly external packages) with placeholders. These will be replaced with
+    // actual relative paths to the output resource files after resources are generated.
+    replace_internal_import_sources_with_placeholders(
+      &mut ast,
+      &external_modules,
+      &module_graph,
+    );
 
     context
       .meta
@@ -402,5 +431,70 @@ impl Plugin for FarmPluginLibrary {
     )?;
 
     Ok(Some(result))
+  }
+}
+
+/// Replace import/export-from sources in the AST for modules that are NOT truly
+/// external (i.e., modules that exist in other resource pots within the compilation).
+/// These sources are replaced with placeholders like `FARM_BUNDLE_PLACEHOLDER::<module_id>`
+/// which will be resolved to actual relative paths after resource filenames are determined.
+fn replace_internal_import_sources_with_placeholders(
+  ast: &mut Module,
+  external_modules: &HashMap<(String, ResolveKind), ModuleId>,
+  module_graph: &ModuleGraph,
+) {
+  // Build a mapping from source string -> module_id for non-truly-external modules
+  // that are script types (JS/TS). CSS and other module types should not be replaced.
+  let source_to_internal_module: HashMap<String, &ModuleId> = external_modules
+    .iter()
+    .filter(|((_, _), module_id)| {
+      module_graph
+        .module(module_id)
+        .map(|m| !m.external && m.module_type.is_script())
+        .unwrap_or(false)
+    })
+    .map(|((source, _), module_id)| (source.clone(), module_id))
+    .collect();
+
+  if source_to_internal_module.is_empty() {
+    return;
+  }
+
+  for item in &mut ast.body {
+    match item {
+      ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) => {
+        let source = import_decl.src.value.to_string_lossy().into_owned();
+        if let Some(module_id) = source_to_internal_module.get(&source) {
+          import_decl.src = Box::new(Str {
+            span: DUMMY_SP,
+            value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+            raw: None,
+          });
+        }
+      }
+      ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(export)) => {
+        if let Some(ref mut src) = export.src {
+          let source = src.value.to_string_lossy().into_owned();
+          if let Some(module_id) = source_to_internal_module.get(&source) {
+            *src = Box::new(Str {
+              span: DUMMY_SP,
+              value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+              raw: None,
+            });
+          }
+        }
+      }
+      ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) => {
+        let source = export_all.src.value.to_string_lossy().into_owned();
+        if let Some(module_id) = source_to_internal_module.get(&source) {
+          export_all.src = Box::new(Str {
+            span: DUMMY_SP,
+            value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+            raw: None,
+          });
+        }
+      }
+      _ => {}
+    }
   }
 }

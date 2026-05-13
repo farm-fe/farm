@@ -194,6 +194,42 @@ pub fn merge_module_pots(
   resource_pots
 }
 
+/// Derive a resource pot name from a single-module current generation.
+/// When in bundle-less mode (target_size == 0) and each module pot creates its own resource pot,
+/// the resource pot name should be derived from the module's path to preserve the original
+/// directory structure in the output.
+fn derive_resource_pot_name_from_generation(
+  current_generation: &CurrentGeneration,
+  base_resource_pot_name: &str,
+) -> String {
+  // For single-module resource pots, use the module pot's name (which is the module path)
+  // to derive a path-based resource pot name that preserves directory structure
+  if current_generation.module_pots.len() == 1 {
+    let module_pot = current_generation.module_pots[0];
+    // module_pot.name is the module id string (e.g., "lib/utils.ts")
+    // Strip the extension to get the base name (e.g., "lib/utils")
+    let path = std::path::PathBuf::from(module_pot.name.clone());
+    return path
+      .file_stem()
+      .map(|stem| {
+        // Preserve directory structure by including parent path
+        if let Some(parent) = path.parent() {
+          let parent_str = parent.to_string_lossy().to_string();
+          if parent_str.is_empty() || parent_str == "." {
+            stem.to_string_lossy().to_string()
+          } else {
+            format!("{}/{}", parent_str, stem.to_string_lossy())
+          }
+        } else {
+          stem.to_string_lossy().to_string()
+        }
+      })
+      .unwrap_or_else(|| base_resource_pot_name.to_string());
+  }
+
+  base_resource_pot_name.to_string()
+}
+
 /// Abstraction of generating mutable and immutable resource pots.
 fn merge_resource_pots_by_buckets(
   module_pots_map: &HashMap<String, Vec<ModulePot>>,
@@ -244,8 +280,16 @@ fn merge_resource_pots_by_buckets(
         let current_generation = current_generation_map.remove(&key).unwrap();
         let modules = current_generation.modules();
 
+        // In bundle-less mode (target_size == 0), derive name from the module path
+        // to preserve the original directory structure in the output
+        let name = if target_size == 0 {
+          derive_resource_pot_name_from_generation(&current_generation, base_resource_pot_name)
+        } else {
+          base_resource_pot_name.to_string()
+        };
+
         resource_pots.push(create_resource_by_meta(
-          base_resource_pot_name.to_string(),
+          name,
           &modules,
           current_generation.module_type(),
           current_generation.immutable(),
@@ -258,8 +302,15 @@ fn merge_resource_pots_by_buckets(
       for (_, current_generation) in current_generation_map {
         let modules = current_generation.modules();
 
+        // In bundle-less mode (target_size == 0), derive name from the module path
+        let name = if target_size == 0 {
+          derive_resource_pot_name_from_generation(&current_generation, base_resource_pot_name)
+        } else {
+          base_resource_pot_name.to_string()
+        };
+
         resource_pots.push(create_resource_by_meta(
-          base_resource_pot_name.to_string(),
+          name,
           &modules,
           current_generation.module_type(),
           current_generation.immutable(),

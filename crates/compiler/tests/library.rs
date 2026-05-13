@@ -6,8 +6,8 @@ use farmfe_core::HashMap;
 
 mod common;
 use crate::common::{
-  assert_compiler_result_with_config, create_compiler_with_args, generate_runtime,
-  AssertCompilerResultConfig,
+  assert_compiler_result_as_dir, assert_compiler_result_with_config, create_compiler_with_args,
+  generate_runtime, AssertCompilerResultConfig,
 };
 
 fn normalize_path(path: &str) -> String {
@@ -23,6 +23,12 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
   use common::{format_output_name, get_dir_config_files, try_merge_config_file};
 
   let cwd = file_path_buf.parent().unwrap();
+
+  // Skip bundle_type tests - they are handled by library_bundle_type_test
+  if normalize_path(&cwd.to_string_lossy()).contains("bundle_type/") {
+    return;
+  }
+
   println!("testing test case: {cwd:?}");
 
   let entry_name = "index".to_string();
@@ -132,3 +138,81 @@ fn library_test() {
 //   "tests/fixtures/library/external/conflicts/**/index.ts",
 //   test
 // }
+
+/// Test function for bundle_type fixtures (multiple-bundle and bundle-less).
+/// Unlike the standard `test`, this function:
+/// 1. Reads input entries from config.json (supports multiple entries)
+/// 2. Writes each output resource to its own file in an `output/` directory
+/// 3. Verifies cross-file import/export relationships between emitted files
+#[allow(dead_code)]
+fn test_bundle_type(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
+  use common::{try_merge_config_file, try_read_config_from_json};
+
+  let cwd = file_path_buf.parent().unwrap();
+  println!("testing bundle_type test case: {cwd:?}");
+
+  let config_path = cwd.join("config.json");
+  let config_json = try_read_config_from_json(config_path.clone());
+
+  // Determine input entries: use config.json's input if present, otherwise default to index.ts
+  let default_input = HashMap::from_iter(vec![(
+    "index".to_string(),
+    file_path_buf.to_string_lossy().to_string(),
+  )]);
+
+  let has_config_input = config_json
+    .as_ref()
+    .and_then(|v| v.get("input"))
+    .is_some();
+
+  let compiler = create_compiler_with_args(
+    cwd.to_path_buf(),
+    crate_path_buf.clone(),
+    |mut config, plugins| {
+      config.mode = Mode::Development;
+      config.minify = Box::new(BoolOrObj::Bool(false));
+      config.tree_shaking = Box::new(BoolOrObj::Bool(false));
+      config.external = vec![
+        ConfigRegex::new("(^node:.*)"),
+        ConfigRegex::new("^fs$"),
+        ConfigRegex::new("/external/.+"),
+      ];
+      config.output.target_env = TargetEnv::Library;
+
+      if !has_config_input {
+        config.input = default_input.clone();
+      }
+
+      config = try_merge_config_file(config, config_path.clone());
+
+      // Resolve relative paths in input against cwd
+      let mut resolved_input: HashMap<String, String> = HashMap::default();
+      for (key, value) in config.input.iter() {
+        let path_buf = PathBuf::from(value);
+        let path = if path_buf.is_relative() && (value.starts_with("./") || value.starts_with("../")) {
+          cwd.join(value).to_string_lossy().to_string()
+        } else {
+          value.clone()
+        };
+        resolved_input.insert(key.clone(), path);
+      }
+      config.input = resolved_input;
+
+      (config, plugins)
+    },
+  );
+
+  compiler.compile().unwrap();
+
+  assert_compiler_result_as_dir(&compiler, "output");
+}
+
+#[test]
+fn library_bundle_type_test() {
+  use farmfe_testing_helpers::fixture;
+
+  fixture!(
+    "tests/fixtures/library/bundle_type/**/index.ts",
+    test_bundle_type
+  );
+}

@@ -119,7 +119,7 @@ impl CompilationContext {
           .expect("FarmDiskCache should have cache_dir filed, please check your config"),
         cache_config_obj.namespace.clone(),
       );
-      config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
+      *config.persistent_cache = PersistentCacheConfig::Obj(cache_config_obj);
 
       CacheType::Disk {
         cache_dir,

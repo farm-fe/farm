@@ -521,3 +521,122 @@ pub fn test_builder(options: TestBuilderOptions) {
     );
   }
 }
+
+/// Asserts compiler results by writing each resource to its own file in an `output/` directory.
+/// This allows verifying:
+/// 1. The exact set of output files produced
+/// 2. The content of each individual output file
+/// 3. Cross-file import/export relationships are preserved with correct file names
+///
+/// When `FARM_UPDATE_SNAPSHOTS=1`, it writes the actual output to the `output/` directory.
+/// Otherwise, it compares the actual output with the expected files in `output/`.
+#[allow(dead_code)]
+pub fn assert_compiler_result_as_dir(compiler: &Compiler, output_dir_name: &str) {
+  let resources_map = compiler.context().resources_map.lock();
+  let cwd = PathBuf::from(compiler.context().config.root.clone());
+  let output_dir = cwd.join(output_dir_name);
+
+  // Collect all non-emitted resources
+  let mut resources: Vec<(&String, &farmfe_core::resource::Resource)> = resources_map
+    .iter()
+    .filter(|(_, resource)| !resource.emitted)
+    .collect();
+  resources.sort_by_key(|(name, _)| name.to_string());
+
+  if is_update_snapshot_from_env() || !output_dir.exists() {
+    // Write each resource to its own file
+    // First clean the output dir
+    if output_dir.exists() {
+      fs::remove_dir_all(&output_dir).unwrap();
+    }
+    fs::create_dir_all(&output_dir).unwrap();
+
+    for (name, resource) in &resources {
+      // Resource name already includes the extension (e.g., "index.js")
+      let file_path = output_dir.join(name);
+
+      // Create parent directories if needed
+      if let Some(parent) = file_path.parent() {
+        fs::create_dir_all(parent).unwrap();
+      }
+
+      fs::write(&file_path, &resource.bytes).unwrap();
+    }
+  } else {
+    // Compare with expected output directory
+    // Collect expected files
+    let mut expected_files: Vec<(String, String)> = vec![];
+    collect_files_recursive(&output_dir, &output_dir, &mut expected_files);
+    expected_files.sort_by_key(|(name, _)| name.clone());
+
+    // Collect actual resource files
+    let mut actual_files: Vec<(String, String)> = resources
+      .iter()
+      .map(|(name, resource)| {
+        let content = String::from_utf8_lossy(&resource.bytes).to_string();
+        (name.to_string(), content)
+      })
+      .collect();
+    actual_files.sort_by_key(|(name, _)| name.clone());
+
+    // Compare file names
+    let expected_names: Vec<&str> = expected_files.iter().map(|(n, _)| n.as_str()).collect();
+    let actual_names: Vec<&str> = actual_files.iter().map(|(n, _)| n.as_str()).collect();
+
+    assert_eq!(
+      expected_names, actual_names,
+      "Output file names mismatch.\nExpected: {:?}\nActual: {:?}",
+      expected_names, actual_names
+    );
+
+    // Compare file contents
+    for ((expected_name, expected_content), (actual_name, actual_content)) in
+      expected_files.iter().zip(actual_files.iter())
+    {
+      assert_eq!(expected_name, actual_name);
+      let expected_lines = expected_content.trim().lines().collect::<Vec<&str>>();
+      let actual_lines = actual_content.trim().lines().collect::<Vec<&str>>();
+
+      // Check line count first for clearer diagnostics
+      assert_eq!(
+        expected_lines.len(),
+        actual_lines.len(),
+        "Line count mismatch in file '{}'\nExpected:\n{}\nActual:\n{}",
+        expected_name,
+        expected_content,
+        actual_content
+      );
+
+      for (expected_line, actual_line) in expected_lines.iter().zip(actual_lines.iter()) {
+        assert_eq!(
+          expected_line.trim(),
+          actual_line.trim(),
+          "Content mismatch in file '{}'\nExpected line: {}\nActual line: {}",
+          expected_name,
+          expected_line,
+          actual_line
+        );
+      }
+    }
+  }
+}
+
+fn collect_files_recursive(dir: &Path, base: &Path, result: &mut Vec<(String, String)>) {
+  if !dir.exists() {
+    return;
+  }
+  for entry in fs::read_dir(dir).unwrap() {
+    let entry = entry.unwrap();
+    let path = entry.path();
+    if path.is_dir() {
+      collect_files_recursive(&path, base, result);
+    } else {
+      let relative = path.strip_prefix(base).unwrap();
+      // Normalize path separators to forward slashes for cross-platform consistency.
+      // Resource names always use '/' but Windows file paths use '\'.
+      let name = relative.to_string_lossy().replace('\\', "/");
+      let content = fs::read_to_string(&path).unwrap_or_default();
+      result.push((name, content));
+    }
+  }
+}

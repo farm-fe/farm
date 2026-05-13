@@ -1,0 +1,2 @@
+const DEFAULT_PREFIX = 'Hello, ';
+export { DEFAULT_PREFIX as DEFAULT_PREFIX };

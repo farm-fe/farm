@@ -355,15 +355,15 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             StatementSideEffects::NoSideEffects
           });
 
-        if let Some(Some(ref lefts)) = self.in_assign_right
-          && (self.in_top_level || ident.ctxt.outer() == self.top_level_mark)
-        {
-          for left in lefts {
-            self
-              .assign_left_reference
-              .entry(left.clone())
-              .or_default()
-              .insert(ident.to_id().into());
+        if let Some(Some(ref lefts)) = self.in_assign_right {
+          if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
+            for left in lefts {
+              self
+                .assign_left_reference
+                .entry(left.clone())
+                .or_default()
+                .insert(ident.to_id().into());
+            }
           }
         }
       }

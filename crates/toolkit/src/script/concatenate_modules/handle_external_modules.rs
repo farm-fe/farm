@@ -105,76 +105,82 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
   let is_namespace_import = is_namespace_import_stmt(statement);
 
   // if the external module has been imported, we should reuse the import statement to avoid duplicate imports
-  if !is_namespace_import
-    && let Some(preserved_item) = find_preserved_import_named_stmt(strip_context, source_module_id)
-  {
-    for sp in &statement.import_info.as_ref().unwrap().specifiers {
-      if let Some((existing_ident, sp_ident)) =
-        get_imported_external_ident(&preserved_item.import_item, sp)
-      {
-        // rename the imported ident to the unique name
-        let renamed_ident = rename_handler
-          .get_renamed_ident(source_module_id, &existing_ident)
-          .unwrap_or(existing_ident.clone());
+  if !is_namespace_import {
+    if let Some(preserved_item) =
+      find_preserved_import_named_stmt(strip_context, source_module_id)
+    {
+      for sp in &statement.import_info.as_ref().unwrap().specifiers {
+        if let Some((existing_ident, sp_ident)) =
+          get_imported_external_ident(&preserved_item.import_item, sp)
+        {
+          // rename the imported ident to the unique name
+          let renamed_ident = rename_handler
+            .get_renamed_ident(source_module_id, &existing_ident)
+            .unwrap_or(existing_ident.clone());
 
-        rename_handler.rename_ident(module_id.clone(), sp_ident, renamed_ident.clone());
-      } else {
-        // push the ident to existing import decl and rename it
-        let import_decl = preserved_item
-          .import_item
-          .as_mut_module_decl()
-          .unwrap()
-          .as_mut_import()
-          .unwrap();
-        let new_sp = match sp {
-          ImportSpecifierInfo::Namespace(_) => {
-            unreachable!("Namespace should be in a separate import")
-          }
-          ImportSpecifierInfo::Named { local, imported } => {
-            rename_handler.rename_ident_if_conflict(module_id, local);
-            let renamed_ident = rename_handler.get_renamed_ident(module_id, local);
+          rename_handler.rename_ident(module_id.clone(), sp_ident, renamed_ident.clone());
+        } else {
+          // push the ident to existing import decl and rename it
+          let import_decl = preserved_item
+            .import_item
+            .as_mut_module_decl()
+            .unwrap()
+            .as_mut_import()
+            .unwrap();
+          let new_sp = match sp {
+            ImportSpecifierInfo::Namespace(_) => {
+              unreachable!("Namespace should be in a separate import")
+            }
+            ImportSpecifierInfo::Named { local, imported } => {
+              rename_handler.rename_ident_if_conflict(module_id, local);
+              let renamed_ident = rename_handler.get_renamed_ident(module_id, local);
 
-            if let Some(renamed_ident) = renamed_ident {
-              ImportSpecifier::Named(ImportNamedSpecifier {
+              if let Some(renamed_ident) = renamed_ident {
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                  span: DUMMY_SP,
+                  local: Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
+                  imported: imported
+                    .as_ref()
+                    .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt())))
+                    .or(Some(ModuleExportName::Ident(Ident::new(
+                      local.sym.clone(),
+                      DUMMY_SP,
+                      local.ctxt(),
+                    )))),
+                  is_type_only: false,
+                })
+              } else {
+                ImportSpecifier::Named(ImportNamedSpecifier {
+                  span: DUMMY_SP,
+                  local: Ident::new(local.sym.clone(), DUMMY_SP, local.ctxt()),
+                  imported: imported.as_ref().map(|i| {
+                    ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt()))
+                  }),
+                  is_type_only: false,
+                })
+              }
+            }
+            ImportSpecifierInfo::Default(swc_id) => {
+              rename_handler.rename_ident_if_conflict(module_id, swc_id);
+              let renamed_ident = rename_handler
+                .get_renamed_ident(module_id, swc_id)
+                .unwrap_or(swc_id.clone());
+              let local = Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt());
+              ImportSpecifier::Default(ImportDefaultSpecifier {
                 span: DUMMY_SP,
-                local: Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
-                imported: imported
-                  .as_ref()
-                  .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt())))
-                  .or(Some(ModuleExportName::Ident(Ident::new(
-                    local.sym.clone(),
-                    DUMMY_SP,
-                    local.ctxt(),
-                  )))),
-                is_type_only: false,
-              })
-            } else {
-              ImportSpecifier::Named(ImportNamedSpecifier {
-                span: DUMMY_SP,
-                local: Ident::new(local.sym.clone(), DUMMY_SP, local.ctxt()),
-                imported: imported
-                  .as_ref()
-                  .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt()))),
-                is_type_only: false,
+                local,
               })
             }
-          }
-          ImportSpecifierInfo::Default(swc_id) => {
-            rename_handler.rename_ident_if_conflict(module_id, swc_id);
-            let renamed_ident = rename_handler
-              .get_renamed_ident(module_id, swc_id)
-              .unwrap_or(swc_id.clone());
-            let local = Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt());
-            ImportSpecifier::Default(ImportDefaultSpecifier {
-              span: DUMMY_SP,
-              local,
-            })
-          }
-        };
-        import_decl.specifiers.push(new_sp);
+          };
+          import_decl.specifiers.push(new_sp);
+        }
       }
+
+      return;
     }
-  } else if let Some(preserved_item) = strip_context
+  }
+
+  if let Some(preserved_item) = strip_context
     .preserved_import_decls
     .iter_mut()
     .find(|item| item.is_namespace_import && item.source_module_id == *source_module_id)
@@ -647,25 +653,47 @@ pub fn handle_ambiguous_export_all(options: HandleAmbiguousExportAllOptions) -> 
     && module_ids.contains(&source_module_id)
     && !source_module.external
     && source_module.module_type.is_script()
-    && let Some(ns_ident) = source_module
+  {
+    if let Some(ns_ident) = source_module
       .meta
       .as_script()
       .export_ident_map
       .get(EXPORT_NAMESPACE)
-  {
-    let renamed_ident = strip_context
-      .rename_handler
-      .borrow()
-      .get_renamed_ident(&source_module_id, &ns_ident.as_internal().ident)
-      .unwrap_or(ns_ident.as_internal().ident.clone());
+    {
+      let renamed_ident = strip_context
+        .rename_handler
+        .borrow()
+        .get_renamed_ident(&source_module_id, &ns_ident.as_internal().ident)
+        .unwrap_or(ns_ident.as_internal().ident.clone());
 
-    // append defineExportStar
-    result.items_to_append.push(create_define_export_star_item(
-      &module_id,
-      renamed_ident.clone().into(),
-    ));
+      // append defineExportStar
+      result.items_to_append.push(create_define_export_star_item(
+        &module_id,
+        renamed_ident.clone().into(),
+      ));
 
-    ns_idents.push(renamed_ident)
+      ns_idents.push(renamed_ident)
+    } else {
+      // source module is in the bundle but has no namespace ident of its own;
+      // it may still re-export from external modules via `export * from 'external'`.
+      // Fall through to the same logic as the else-if branch: emit defineExportStar
+      // for each external module that source re-exports from.
+      let source_module_meta = source_module.meta.as_script();
+
+      if let Some(export_all_idents) = source_module_meta
+        .ambiguous_export_ident_map
+        .get(AMBIGUOUS_EXPORT_ALL)
+      {
+        for export_all_ident in export_all_idents {
+          ns_idents.push(add_external_export_all_helper(
+            strip_context,
+            module_id,
+            &export_all_ident.as_internal().module_id,
+            result,
+          ));
+        }
+      }
+    }
   }
   // 1. add export star only namespace ident is enabled
   // 2. add import if there are ambiguous export all idents

@@ -63,44 +63,44 @@ fn is_module_contains_reexport_ident(
   module_graph: &ModuleGraph,
 ) -> bool {
   meta.statements.iter().any(|stmt| {
-    if let Some(export_info) = &stmt.export_info
-      && let Some(source) = export_info.source.as_ref()
-    {
-      let source_module_id =
-        module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
+    if let Some(export_info) = &stmt.export_info {
+      if let Some(source) = export_info.source.as_ref() {
+        let source_module_id =
+          module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
 
-      for sp in &export_info.specifiers {
-        let is_reexport_used = match sp {
-          ExportSpecifierInfo::Named { local, exported } => {
-            let local_exported_str = exported.as_ref().unwrap_or(local).sym.as_str();
+        for sp in &export_info.specifiers {
+          let is_reexport_used = match sp {
+            ExportSpecifierInfo::Named { local, exported } => {
+              let local_exported_str = exported.as_ref().unwrap_or(local).sym.as_str();
 
-            if let ModuleReExportIdentType::FromExportNamed {
-              from_module_id,
-              local: local_local,
-            } = reexport_ident_type
-            {
-              source_module_id == *from_module_id
-                && local_exported_str == export_str
-                && *local_local == local.sym
-            } else {
+              if let ModuleReExportIdentType::FromExportNamed {
+                from_module_id,
+                local: local_local,
+              } = reexport_ident_type
+              {
+                source_module_id == *from_module_id
+                  && local_exported_str == export_str
+                  && *local_local == local.sym
+              } else {
+                false
+              }
+            }
+            ExportSpecifierInfo::All => {
+              if let ModuleReExportIdentType::FromExportAll(from_module_id) = reexport_ident_type {
+                source_module_id == *from_module_id
+              } else {
+                false
+              }
+            }
+            ExportSpecifierInfo::Default | ExportSpecifierInfo::Namespace(_) => {
+              // default export and namespace export don't reexport idents
               false
             }
-          }
-          ExportSpecifierInfo::All => {
-            if let ModuleReExportIdentType::FromExportAll(from_module_id) = reexport_ident_type {
-              source_module_id == *from_module_id
-            } else {
-              false
-            }
-          }
-          ExportSpecifierInfo::Default | ExportSpecifierInfo::Namespace(_) => {
-            // default export and namespace export don't reexport idents
-            false
-          }
-        };
+          };
 
-        if is_reexport_used {
-          return true;
+          if is_reexport_used {
+            return true;
+          }
         }
       }
     }
