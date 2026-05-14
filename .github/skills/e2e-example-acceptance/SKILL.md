@@ -31,7 +31,7 @@ Run example acceptance with executable checks for start/build/preview and browse
 3. Run start and preview checks for each affected example
 
    - For examples with dedicated `e2e.spec.ts`, run targeted E2E:
-     - `pnpm vitest run examples/<name>/e2e.spec.ts`
+    - `pnpm run test-e2e -- --example <name>`
    - For examples without a dedicated test, run smoke checks manually:
      - `cd examples/<name> && npm run start`
      - `cd examples/<name> && npm run preview`
@@ -52,15 +52,14 @@ Run example acceptance with executable checks for start/build/preview and browse
 ```ts
 import { basename, dirname } from "path";
 import { fileURLToPath } from "url";
-import { expect, test } from "vitest";
-import { startProjectAndTest } from "../../e2e/vitestSetup";
+import { expect, startAndTest } from "../../e2e/index.js";
 
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-test(`e2e tests - ${name}`, async () => {
+export default async function (ctx) {
   const runTest = (command?: "start" | "preview") =>
-    startProjectAndTest(
+    startAndTest(
       projectPath,
       async (page) => {
         await page.waitForSelector("#root > *", { timeout: 10000 });
@@ -69,9 +68,9 @@ test(`e2e tests - ${name}`, async () => {
       command,
     );
 
-  await runTest();
-  await runTest("preview");
-});
+  await ctx.test("e2e start", () => runTest());
+  await ctx.test("e2e preview", () => runTest("preview"));
+}
 ```
 
 ## Reporting Format
@@ -88,3 +87,4 @@ test(`e2e tests - ${name}`, async () => {
 - Do not rely only on build success; start/preview behavior must be observed.
 - Do not use `pnpm run ready` unless the user explicitly asks for full CI parity.
 - Do not edit generated `dist/` files.
+- Use the new standalone E2E runner (see `scripts/test-e2e.mts`) — vitest is no longer involved.

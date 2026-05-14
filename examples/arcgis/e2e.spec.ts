@@ -1,39 +1,25 @@
-import { test, describe } from 'vitest';
-import { startProjectAndTest } from '../../e2e/vitestSetup';
-import { basename, dirname } from 'path';
+import { startAndTest } from '../../e2e/index.ts';
+import type { SpecContext } from '../../e2e/index.ts';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-describe(`e2e tests - ${name}`, async () => {
+export default async function (ctx: SpecContext): Promise<void> {
   const runTest = (command: 'start' | 'preview' = 'start') =>
-    startProjectAndTest(
+    startAndTest(
       projectPath,
       async (page) => {
         await page.waitForSelector('arcgis-map');
-
-        return new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
           page.on('console', (msg) => {
-            // if (msg.type() === 'error') {
-            //   reject(msg.text());
-            //   return;
-            // }
-
-            if (msg.text().includes('arcgis all ready')) {
-              resolve();
-            }
-          })
-        })
+            if (msg.text().includes('arcgis all ready')) resolve();
+          });
+        });
       },
       command
     );
 
-  test('exmaples arcgis run start', async () => {
-    await runTest();
-  })
-
-  test('exampels arcgis run preview', async () => {
-    await runTest('preview');
-  })
-});
+  await ctx.test('run start', () => runTest());
+  await ctx.test('run preview', () => runTest('preview'));
+}

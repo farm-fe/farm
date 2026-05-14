@@ -1,62 +1,53 @@
-import { expect, test } from 'vitest';
-import { startProjectAndTest } from '../../e2e/vitestSetup';
-import { basename, dirname } from 'path';
+import { startAndTest, expect } from '../../e2e/index.ts';
+import type { SpecContext } from '../../e2e/index.ts';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-test(`e2e tests - ${name}`, async () => {
+let server: any;
+
+async function launchServer(): Promise<void> {
+  const { default: express } = await import('express');
+  const app = express();
+  app.use((_req: any, res: any) => {
+    res.json({ hello: 'world' });
+  });
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('listen port 3000 timeout'));
+    }, 3000);
+
+    server = app.listen(3000, () => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
+async function closeServer(): Promise<void> {
+  return new Promise((resolve) => {
+    server?.close(() => resolve());
+  });
+}
+
+export default async function (ctx: SpecContext): Promise<void> {
   const runTest = (command?: 'start' | 'preview') =>
-    startProjectAndTest(
+    startAndTest(
       projectPath,
       async (page) => {
         const app = await page.$('#app');
-        console.log(await page.innerHTML('body'));
         expect(await app?.innerHTML()).toBe('app');
       },
       command
     );
+
   await launchServer();
   try {
-    await runTest();
-    await runTest('preview');
-  } catch (e) {
-    throw e;
+    await ctx.test('run start', () => runTest());
+    await ctx.test('run preview', () => runTest('preview'));
   } finally {
     await closeServer();
   }
-});
-
-let server;
-
-async function launchServer() {
-  const { default: express } = await import('express');
-  const app = express();
-  app.use(async (req, res, next) => {
-    res.json({
-      hello: 'world'
-    });
-  });
-
-  return new Promise((res,rej) => {
-    try {
-      let timer = setTimeout(() => {
-        rej('listen port 3000 timeout.');
-      }, 3000);
-
-      server = app.listen(3000, () => {
-        clearTimeout(timer);
-        console.log('server up');
-        res(null);
-      });
-
-    } catch (error) {
-      rej(error);
-    }
-  });
-}
-
-async function closeServer() {
-  server.close();
 }

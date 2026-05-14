@@ -1,39 +1,46 @@
-import { test, describe, expect } from 'vitest';
-import { startProjectAndTest, watchProjectAndTest } from '../../e2e/vitestSetup';
-import { basename, dirname } from 'path';
+import { startAndTest, watchAndTest, expect } from '../../e2e/index.ts';
+import type { SpecContext } from '../../e2e/index.ts';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
-const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-describe(`e2e tests - ${name}`, async () => {
-  const runTest = (command: 'start' | 'preview' = 'start') =>
-    startProjectAndTest(
+export default async function (ctx: SpecContext): Promise<void> {
+  const runStart = () =>
+    startAndTest(
       projectPath,
       async (page) => {
         const root = await page.waitForSelector('#root');
         const img = await root.waitForSelector('img');
         expect(await img.getAttribute('src')).contains('logo');
       },
-      command
+      'start'
     );
 
-  test('exmaples react-ssr run start', async () => {
-    await watchProjectAndTest(projectPath, async (log, done) => {
-      console.log(log);
-      if (log.includes('Build completed in')) {
-        await runTest();
-        done();
-      }
-    }, 'watch');
-  },)
+  await ctx.test('run start (via watch)', async () => {
+    await watchAndTest(
+      projectPath,
+      async (log, done) => {
+        if (log.includes('Build completed in')) {
+          await runStart();
+          done();
+        }
+      },
+      'watch'
+    );
+  });
 
-  test('exampels react-ssr run preview', async () => {
-    execSync('npm run build', {
-      cwd: projectPath,
-      stdio: 'inherit'
-    });
-    await runTest('preview');
-  })
-});
+  await ctx.test('run preview', async () => {
+    execSync('npm run build', { cwd: projectPath, stdio: 'inherit' });
+    await startAndTest(
+      projectPath,
+      async (page) => {
+        const root = await page.waitForSelector('#root');
+        const img = await root.waitForSelector('img');
+        expect(await img.getAttribute('src')).contains('logo');
+      },
+      'preview'
+    );
+  });
+}
