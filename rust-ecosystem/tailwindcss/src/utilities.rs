@@ -504,7 +504,7 @@ fn build_base_selector_with_pseudo_classes(
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-fn build_class_name(candidate: &ParsedCandidate) -> String {
+pub(crate) fn build_class_name(candidate: &ParsedCandidate) -> String {
   let base = match &candidate.arbitrary_value {
     Some(val) => {
       let type_prefix = match &candidate.type_hint {
@@ -535,7 +535,7 @@ fn build_class_name(candidate: &ParsedCandidate) -> String {
   }
 }
 
-fn escape_class_name(name: &str) -> String {
+pub(crate) fn escape_class_name(name: &str) -> String {
   name
     .replace(':', "\\:")
     .replace('/', "\\/")
