@@ -18,6 +18,7 @@ fn test_hover_variant_generates_hover_selector() {
     modifier: None,
     modifier_is_arbitrary: false,
     important: false,
+    negative: false,
     is_static: true,
     raw: "hover:flex".to_string(),
   };
@@ -41,6 +42,7 @@ fn test_focus_variant() {
     modifier: None,
     modifier_is_arbitrary: false,
     important: false,
+    negative: false,
     is_static: true,
     raw: "focus:block".to_string(),
   };
@@ -64,6 +66,7 @@ fn test_stacked_variants() {
     modifier: None,
     modifier_is_arbitrary: false,
     important: false,
+    negative: false,
     is_static: true,
     raw: "focus:hover:flex".to_string(),
   };
@@ -88,6 +91,7 @@ fn test_no_variant_returns_plain_selector() {
     modifier: None,
     modifier_is_arbitrary: false,
     important: false,
+    negative: false,
     is_static: true,
     raw: "flex".to_string(),
   };

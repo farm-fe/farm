@@ -14,6 +14,7 @@ fn make_static(name: &str) -> ParsedCandidate {
     modifier: None,
     modifier_is_arbitrary: false,
     important: false,
+    negative: false,
     is_static: true,
     raw: name.to_string(),
   }
@@ -63,6 +64,7 @@ fn test_arbitrary_property() {
     modifier: None,
     modifier_is_arbitrary: false,
     important: false,
+    negative: false,
     is_static: false,
     raw: "[color:red]".to_string(),
   };

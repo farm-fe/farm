@@ -19,6 +19,8 @@ pub struct ParsedCandidate {
   pub modifier_is_arbitrary: bool,
   /// Whether the utility is important (!)
   pub important: bool,
+  /// Whether the utility is negated (leading `-` after variants, e.g. `-mt-4`)
+  pub negative: bool,
   /// Whether this is a static utility (no dash-separated value)
   pub is_static: bool,
   /// The raw input string
@@ -62,6 +64,20 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
     (base as &str, false)
   };
 
+  // Check for leading `-` (negative utility). Only meaningful when the
+  // remainder is a plain (non-arbitrary, non-bracketed) utility.
+  let (base, negative) = if let Some(stripped) = base.strip_prefix('-') {
+    // Don't consume `-` for arbitrary properties / arbitrary values starting
+    // with `[`, and never produce an empty base.
+    if stripped.is_empty() || stripped.starts_with('[') {
+      (base, false)
+    } else {
+      (stripped, true)
+    }
+  } else {
+    (base, false)
+  };
+
   // Split base into utility + modifier by '/' (outside brackets)
   let (base_no_modifier, modifier) = split_modifier(base);
 
@@ -78,7 +94,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
         return None;
       }
       let property = inner[..colon_idx].to_string();
-      let value = inner[colon_idx + 1..].to_string();
+      let value = normalize_arbitrary_value(&inner[colon_idx + 1..]);
 
       let first = property.as_bytes()[0];
       if !first.is_ascii_lowercase() && first != b'-' {
@@ -95,6 +111,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
         modifier,
         modifier_is_arbitrary,
         important,
+        negative,
         is_static: false,
         raw,
       });
@@ -111,6 +128,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
 
       // Split type hint if present: "color:var(--x)" -> hint="color", value="var(--x)"
       let (type_hint, value) = extract_type_hint(raw_value);
+      let value = normalize_arbitrary_value(&value);
 
       if value.trim().is_empty() {
         return None;
@@ -126,6 +144,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
         modifier,
         modifier_is_arbitrary,
         important,
+        negative,
         is_static: false,
         raw,
       });
@@ -150,6 +169,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
       modifier,
       modifier_is_arbitrary,
       important,
+      negative,
       is_static,
       raw,
     });
@@ -270,5 +290,67 @@ fn split_root(input: &str) -> (String, Option<String>) {
     (input[..idx].to_string(), Some(input[idx + 1..].to_string()))
   } else {
     (input.to_string(), None)
+  }
+}
+
+/// Normalize an arbitrary value the way Tailwind v4 does: convert lone
+/// underscores to spaces, leave `\_` as a literal `_`, and never substitute
+/// underscores that appear inside `url(...)` function calls (which are
+/// commonly used for unquoted URLs containing underscores).
+fn normalize_arbitrary_value(input: &str) -> String {
+  let bytes = input.as_bytes();
+  let mut out = String::with_capacity(bytes.len());
+  let mut i = 0;
+  while i < bytes.len() {
+    let b = bytes[i];
+    // Escaped underscore: emit literal '_'
+    if b == b'\\' && i + 1 < bytes.len() && bytes[i + 1] == b'_' {
+      out.push('_');
+      i += 2;
+      continue;
+    }
+    // Preserve everything inside url(...) verbatim (handles nested parens).
+    if (b == b'u' || b == b'U')
+      && bytes[i..].len() >= 4
+      && bytes[i + 1].eq_ignore_ascii_case(&b'r')
+      && bytes[i + 2].eq_ignore_ascii_case(&b'l')
+      && bytes[i + 3] == b'('
+    {
+      let start = i;
+      i += 4;
+      let mut depth = 1i32;
+      while i < bytes.len() && depth > 0 {
+        match bytes[i] {
+          b'(' => depth += 1,
+          b')' => depth -= 1,
+          _ => {}
+        }
+        i += 1;
+      }
+      out.push_str(&input[start..i]);
+      continue;
+    }
+    if b == b'_' {
+      out.push(' ');
+    } else {
+      // Push a single UTF-8 character starting at i.
+      let ch_len = utf8_char_len(b);
+      out.push_str(&input[i..i + ch_len]);
+      i += ch_len;
+      continue;
+    }
+    i += 1;
+  }
+  out
+}
+
+#[inline]
+fn utf8_char_len(first_byte: u8) -> usize {
+  match first_byte {
+    0x00..=0x7F => 1,
+    0xC0..=0xDF => 2,
+    0xE0..=0xEF => 3,
+    0xF0..=0xF7 => 4,
+    _ => 1,
   }
 }

@@ -127,3 +127,110 @@ fn test_optimize_ast_deduplicates_declarations() {
     panic!("expected rule");
   }
 }
+
+// ── Phase 12: merge adjacent identical at-rules ───────────────────────────────
+
+fn make_rule(selector: &str, prop: &str, value: &str) -> AstNode {
+  AstNode::Rule(StyleRule {
+    selector: selector.to_string(),
+    nodes: vec![AstNode::Declaration(Declaration {
+      property: prop.to_string(),
+      value: Some(value.to_string()),
+      important: false,
+    })],
+  })
+}
+
+#[test]
+fn test_optimize_ast_merges_adjacent_identical_at_rules() {
+  let media_a = AtRule {
+    name: "@media".to_string(),
+    params: "(min-width: 640px)".to_string(),
+    nodes: vec![make_rule(".sm\\:flex", "display", "flex")],
+  };
+  let media_b = AtRule {
+    name: "@media".to_string(),
+    params: "(min-width: 640px)".to_string(),
+    nodes: vec![make_rule(".sm\\:hidden", "display", "none")],
+  };
+  let result = optimize_ast(vec![AstNode::AtRule(media_a), AstNode::AtRule(media_b)]);
+  assert_eq!(result.len(), 1, "two same-params @media blocks should merge");
+  if let AstNode::AtRule(merged) = &result[0] {
+    assert_eq!(merged.nodes.len(), 2);
+  } else {
+    panic!("expected at-rule");
+  }
+}
+
+#[test]
+fn test_optimize_ast_does_not_merge_different_params() {
+  let media_a = AtRule {
+    name: "@media".to_string(),
+    params: "(min-width: 640px)".to_string(),
+    nodes: vec![make_rule(".a", "color", "red")],
+  };
+  let media_b = AtRule {
+    name: "@media".to_string(),
+    params: "(min-width: 768px)".to_string(),
+    nodes: vec![make_rule(".b", "color", "blue")],
+  };
+  let result = optimize_ast(vec![AstNode::AtRule(media_a), AstNode::AtRule(media_b)]);
+  assert_eq!(result.len(), 2);
+}
+
+#[test]
+fn test_optimize_ast_does_not_merge_non_adjacent_at_rules() {
+  let media_a = AtRule {
+    name: "@media".to_string(),
+    params: "(min-width: 640px)".to_string(),
+    nodes: vec![make_rule(".a", "color", "red")],
+  };
+  let between = make_rule(".between", "color", "green");
+  let media_b = AtRule {
+    name: "@media".to_string(),
+    params: "(min-width: 640px)".to_string(),
+    nodes: vec![make_rule(".b", "color", "blue")],
+  };
+  let result = optimize_ast(vec![
+    AstNode::AtRule(media_a),
+    between,
+    AstNode::AtRule(media_b),
+  ]);
+  assert_eq!(result.len(), 3);
+}
+
+#[test]
+fn test_optimize_ast_merges_nested_at_rules() {
+  // @supports { @media (a) { .x {} } } followed by @supports { @media (a) { .y {} } }
+  // should merge at both levels.
+  let outer_a = AtRule {
+    name: "@supports".to_string(),
+    params: "(display: grid)".to_string(),
+    nodes: vec![AstNode::AtRule(AtRule {
+      name: "@media".to_string(),
+      params: "(min-width: 640px)".to_string(),
+      nodes: vec![make_rule(".x", "color", "red")],
+    })],
+  };
+  let outer_b = AtRule {
+    name: "@supports".to_string(),
+    params: "(display: grid)".to_string(),
+    nodes: vec![AstNode::AtRule(AtRule {
+      name: "@media".to_string(),
+      params: "(min-width: 640px)".to_string(),
+      nodes: vec![make_rule(".y", "color", "blue")],
+    })],
+  };
+  let result = optimize_ast(vec![AstNode::AtRule(outer_a), AstNode::AtRule(outer_b)]);
+  assert_eq!(result.len(), 1);
+  if let AstNode::AtRule(outer) = &result[0] {
+    assert_eq!(outer.nodes.len(), 1, "inner @media blocks should also merge");
+    if let AstNode::AtRule(inner) = &outer.nodes[0] {
+      assert_eq!(inner.nodes.len(), 2);
+    } else {
+      panic!("expected nested at-rule");
+    }
+  } else {
+    panic!("expected outer at-rule");
+  }
+}

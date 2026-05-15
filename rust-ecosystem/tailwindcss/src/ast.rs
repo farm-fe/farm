@@ -121,10 +121,11 @@ const PRESERVABLE_AT_RULES: &[&str] = &[
   "@import",
 ];
 
-/// Optimize the AST: remove empty rules, deduplicate declarations.
+/// Optimize the AST: remove empty rules, deduplicate declarations, merge
+/// consecutive at-rules with identical name + params.
 /// Preserves empty at-rules that are semantically meaningful.
 pub fn optimize_ast(nodes: Vec<AstNode>) -> Vec<AstNode> {
-  nodes
+  let optimised: Vec<AstNode> = nodes
     .into_iter()
     .filter_map(|node| match node {
       AstNode::Rule(mut rule) => {
@@ -196,5 +197,33 @@ pub fn optimize_ast(nodes: Vec<AstNode>) -> Vec<AstNode> {
       }
       other => Some(other),
     })
-    .collect()
+    .collect();
+
+  merge_adjacent_at_rules(optimised)
+}
+
+/// Merge consecutive `@`-rules that share the same name and params into a
+/// single block. This matches Tailwind's upstream `optimize_ast` behaviour
+/// where, for example, multiple `@media (min-width: 640px)` blocks emitted
+/// while compiling separate candidates are coalesced into one.
+fn merge_adjacent_at_rules(nodes: Vec<AstNode>) -> Vec<AstNode> {
+  let mut out: Vec<AstNode> = Vec::with_capacity(nodes.len());
+  for node in nodes {
+    match (out.last_mut(), node) {
+      (Some(AstNode::AtRule(prev)), AstNode::AtRule(curr))
+        if prev.name == curr.name
+          && prev.params == curr.params
+          && !prev.nodes.is_empty()
+          && !curr.nodes.is_empty() =>
+      {
+        prev.nodes.extend(curr.nodes);
+        // Re-merge children since the appended nodes may now be adjacent
+        // mergeable at-rules themselves.
+        let merged_children = std::mem::take(&mut prev.nodes);
+        prev.nodes = merge_adjacent_at_rules(merged_children);
+      }
+      (_, node) => out.push(node),
+    }
+  }
+  out
 }
