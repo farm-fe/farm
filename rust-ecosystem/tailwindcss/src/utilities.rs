@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::{AstNode, Declaration, StyleRule};
+use crate::ast::{AstNode, Declaration};
 use crate::candidate::ParsedCandidate;
 use crate::theme::Theme;
 
@@ -303,16 +303,12 @@ impl UtilityRegistry {
     // Arbitrary property: [color:red]
     if let Some((ref property, ref value)) = candidate.arbitrary_property {
       let class_name = format!("[{}:{}]", property, value);
-      let selector = build_selector(&class_name, &candidate.variants);
       let decl = Declaration {
         property: property.clone(),
         value: Some(value.clone()),
         important: candidate.important,
       };
-      return vec![AstNode::Rule(StyleRule {
-        selector,
-        nodes: vec![AstNode::Declaration(decl)],
-      })];
+      return wrap_with_variants(&class_name, &candidate.variants, vec![AstNode::Declaration(decl)]);
     }
 
     // Static utilities — try full class name first (e.g. "items-center")
@@ -336,9 +332,7 @@ impl UtilityRegistry {
       .or_else(|| self.static_utilities.get(candidate.utility_root.as_str()))
     {
       let class_name = build_class_name(candidate);
-      let selector = build_selector(&class_name, &candidate.variants);
-
-      let nodes: Vec<AstNode> = declarations
+      let decl_nodes: Vec<AstNode> = declarations
         .iter()
         .map(|(prop, val)| {
           AstNode::Declaration(Declaration {
@@ -348,12 +342,42 @@ impl UtilityRegistry {
           })
         })
         .collect();
-
-      return vec![AstNode::Rule(StyleRule { selector, nodes })];
+      return wrap_with_variants(&class_name, &candidate.variants, decl_nodes);
     }
 
     vec![]
   }
+}
+
+/// Build the AST for `class_name + variants[]` wrapping `decl_nodes`. When
+/// there are no variants this produces a single rule; otherwise the variant
+/// application pipeline composes the selector and at-rule chain. Returns an
+/// empty `Vec` when any variant in the stack is unrecognised.
+fn wrap_with_variants(
+  class_name: &str,
+  variants: &[String],
+  decl_nodes: Vec<AstNode>,
+) -> Vec<AstNode> {
+  let escaped = escape_class_name(class_name);
+  let base_selector = build_base_selector_with_pseudo_classes(&escaped, variants);
+  if base_selector.is_none() {
+    return Vec::new();
+  }
+  let (base_selector, remaining) = base_selector.unwrap();
+  match crate::variants::apply_variants(base_selector, &remaining, decl_nodes) {
+    Some(node) => vec![node],
+    None => Vec::new(),
+  }
+}
+
+/// Splits `variants` into trailing variants that are not applicable here (none
+/// yet) — currently this is a thin wrapper that returns the full list. Left
+/// as an extension point in case future variants need pre-processing.
+fn build_base_selector_with_pseudo_classes(
+  escaped_class: &str,
+  variants: &[String],
+) -> Option<(String, Vec<String>)> {
+  Some((format!(".{}", escaped_class), variants.to_vec()))
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -374,68 +398,9 @@ fn build_class_name(candidate: &ParsedCandidate) -> String {
   }
 }
 
-fn build_selector(class_name: &str, variants: &[String]) -> String {
-  let escaped = escape_class_name(class_name);
+// Note: variant application (selector + at-rule wrapping) lives in
+// `crate::variants::apply_variants`, invoked above via `wrap_with_variants`.
 
-  if variants.is_empty() {
-    return format!(".{}", escaped);
-  }
-
-  // Build selector with pseudo-class variants
-  let mut selector = format!(".{}", escaped);
-  for variant in variants.iter().rev() {
-    selector = apply_variant(selector, variant);
-  }
-  selector
-}
-
-fn apply_variant(selector: String, variant: &str) -> String {
-  match variant {
-    "hover" => format!("{}:hover", selector),
-    "focus" => format!("{}:focus", selector),
-    "active" => format!("{}:active", selector),
-    "disabled" => format!("{}:disabled", selector),
-    "enabled" => format!("{}:enabled", selector),
-    "visited" => format!("{}:visited", selector),
-    "checked" => format!("{}:checked", selector),
-    "focus-visible" => format!("{}:focus-visible", selector),
-    "focus-within" => format!("{}:focus-within", selector),
-    "first" => format!("{}:first-child", selector),
-    "last" => format!("{}:last-child", selector),
-    "odd" => format!("{}:nth-child(odd)", selector),
-    "even" => format!("{}:nth-child(2n)", selector),
-    "first-of-type" => format!("{}:first-of-type", selector),
-    "last-of-type" => format!("{}:last-of-type", selector),
-    "only" => format!("{}:only-child", selector),
-    "only-of-type" => format!("{}:only-of-type", selector),
-    "empty" => format!("{}:empty", selector),
-    "required" => format!("{}:required", selector),
-    "valid" => format!("{}:valid", selector),
-    "invalid" => format!("{}:invalid", selector),
-    "placeholder-shown" => format!("{}:placeholder-shown", selector),
-    "autofill" => format!("{}:autofill", selector),
-    "read-only" => format!("{}:read-only", selector),
-    "read-write" => format!("{}:read-write", selector),
-    "in-range" => format!("{}:in-range", selector),
-    "out-of-range" => format!("{}:out-of-range", selector),
-    "indeterminate" => format!("{}:indeterminate", selector),
-    "default" => format!("{}:default", selector),
-    "optional" => format!("{}:optional", selector),
-    "target" => format!("{}:target", selector),
-    "open" => format!("{}:open", selector),
-    "inert" => format!("{}:inert", selector),
-    "before" => format!("{}::before", selector),
-    "after" => format!("{}::after", selector),
-    "first-letter" => format!("{}::first-letter", selector),
-    "first-line" => format!("{}::first-line", selector),
-    "marker" => format!("{}::marker", selector),
-    "selection" => format!("{}::selection", selector),
-    "file" => format!("{}::file-selector-button", selector),
-    "placeholder" => format!("{}::placeholder", selector),
-    "backdrop" => format!("{}::backdrop", selector),
-    _ => selector,
-  }
-}
 
 fn escape_class_name(name: &str) -> String {
   name
