@@ -6,12 +6,14 @@
 
 pub mod apply;
 pub mod ast;
+pub mod attribute_selector_parser;
 pub mod candidate;
 pub mod compiler;
 pub mod design_system;
 pub mod functions;
 pub mod parser;
 pub mod scanner;
+pub mod selector_parser;
 pub mod theme;
 pub mod utilities;
 pub mod utils;
