@@ -75,10 +75,7 @@ fn stringify(node: &AstNode, depth: usize, css: &mut String) {
     }
     AstNode::AtRule(at_rule) => {
       if at_rule.nodes.is_empty() {
-        css.push_str(&format!(
-          "{}{} {};\n",
-          indent, at_rule.name, at_rule.params
-        ));
+        css.push_str(&format!("{}{} {};\n", indent, at_rule.name, at_rule.params));
       } else if at_rule.params.is_empty() {
         css.push_str(&format!("{}{} {{\n", indent, at_rule.name));
         for child in &at_rule.nodes {
@@ -169,9 +166,7 @@ pub fn optimize_ast(nodes: Vec<AstNode>) -> Vec<AstNode> {
           return None;
         }
         at_rule.nodes = optimize_ast(at_rule.nodes);
-        if at_rule.nodes.is_empty()
-          && !PRESERVABLE_AT_RULES.contains(&at_rule.name.as_str())
-        {
+        if at_rule.nodes.is_empty() && !PRESERVABLE_AT_RULES.contains(&at_rule.name.as_str()) {
           return None;
         }
         Some(AstNode::AtRule(at_rule))

@@ -76,15 +76,12 @@ fn process_nodes(
         let names: Vec<&str> = params.split_whitespace().collect();
 
         for name in names {
-          let candidate = parse_candidate(name).ok_or_else(|| {
-            ApplyError::UnknownUtility(name.to_string())
-          })?;
+          let candidate =
+            parse_candidate(name).ok_or_else(|| ApplyError::UnknownUtility(name.to_string()))?;
 
-          let generated = ds.utilities.generate_with_variants(
-            &candidate,
-            &ds.theme,
-            Some(&ds.variants),
-          );
+          let generated =
+            ds.utilities
+              .generate_with_variants(&candidate, &ds.theme, Some(&ds.variants));
           if generated.is_empty() {
             return Err(ApplyError::UnknownUtility(name.to_string()));
           }
@@ -170,4 +167,3 @@ fn rewrite_selector(selector: &str, class_prefix: &str) -> String {
   // escaping.
   selector.replace(class_prefix, "&")
 }
-

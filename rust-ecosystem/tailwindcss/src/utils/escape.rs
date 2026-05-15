@@ -117,10 +117,7 @@ pub fn unescape(escaped: &str) -> String {
     // Try hex escape: 1..=6 hex digits, optionally followed by one ws.
     let j = i + 1;
     let mut hex_end = j;
-    while hex_end < len
-      && hex_end - j < 6
-      && (bytes[hex_end] as char).is_ascii_hexdigit()
-    {
+    while hex_end < len && hex_end - j < 6 && (bytes[hex_end] as char).is_ascii_hexdigit() {
       hex_end += 1;
     }
 
@@ -135,10 +132,7 @@ pub fn unescape(escaped: &str) -> String {
       }
       let hex_str = &escaped[j..hex_end];
       let code_point = u32::from_str_radix(hex_str, 16).unwrap_or(0);
-      if code_point == 0
-        || code_point > 0x10ffff
-        || (0xd800..=0xdfff).contains(&code_point)
-      {
+      if code_point == 0 || code_point > 0x10ffff || (0xd800..=0xdfff).contains(&code_point) {
         out.push('\u{FFFD}');
       } else if let Some(c) = char::from_u32(code_point) {
         out.push(c);

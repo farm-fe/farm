@@ -201,6 +201,16 @@ impl Compiler {
   pub fn config(&self) -> Option<&TailwindConfig> {
     self.config.as_ref()
   }
+
+  /// Every `@source` directive parsed from the user CSS, in source order.
+  ///
+  /// The Rust core does not perform filesystem scanning — the host (Node
+  /// bridge / Farm plugin) consumes these to extend or constrain its
+  /// candidate scan. See [`crate::design_system::SourceDirective`] for
+  /// the supported shapes.
+  pub fn sources(&self) -> &[crate::design_system::SourceDirective] {
+    self.design_system.sources()
+  }
 }
 
 /// Return `true` if the given at-rule is a Tailwind injection marker — i.e.
@@ -248,7 +258,8 @@ fn strip_user_definitions(nodes: Vec<AstNode>) -> Vec<AstNode> {
       AstNode::AtRule(at)
         if at.name == "@utility"
           || at.name == "@custom-variant"
-          || at.name == "@theme" =>
+          || at.name == "@theme"
+          || at.name == "@source" =>
       {
         // drop
       }
@@ -342,4 +353,3 @@ fn walk_features(nodes: &[AstNode], features: &mut Features) {
     }
   }
 }
-

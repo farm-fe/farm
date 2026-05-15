@@ -232,7 +232,9 @@ fn test_theme_mark_used_variable_idempotent() {
 
   assert!(theme.mark_used_variable("--color-red"));
   assert!(!theme.mark_used_variable("--color-red"));
-  assert!(theme.get_options("--color-red").contains(ThemeOptions::USED));
+  assert!(theme
+    .get_options("--color-red")
+    .contains(ThemeOptions::USED));
 }
 
 #[test]

@@ -54,7 +54,10 @@ impl UtilityRegistry {
     m.insert("flex-row", vec![("flex-direction", "row")]);
     m.insert("flex-row-reverse", vec![("flex-direction", "row-reverse")]);
     m.insert("flex-col", vec![("flex-direction", "column")]);
-    m.insert("flex-col-reverse", vec![("flex-direction", "column-reverse")]);
+    m.insert(
+      "flex-col-reverse",
+      vec![("flex-direction", "column-reverse")],
+    );
 
     // Flex wrap
     m.insert("flex-wrap", vec![("flex-wrap", "wrap")]);
@@ -72,7 +75,10 @@ impl UtilityRegistry {
     m.insert("justify-start", vec![("justify-content", "flex-start")]);
     m.insert("justify-center", vec![("justify-content", "center")]);
     m.insert("justify-end", vec![("justify-content", "flex-end")]);
-    m.insert("justify-between", vec![("justify-content", "space-between")]);
+    m.insert(
+      "justify-between",
+      vec![("justify-content", "space-between")],
+    );
     m.insert("justify-around", vec![("justify-content", "space-around")]);
     m.insert("justify-evenly", vec![("justify-content", "space-evenly")]);
     m.insert("justify-normal", vec![("justify-content", "normal")]);
@@ -129,7 +135,10 @@ impl UtilityRegistry {
     // Text decoration
     m.insert("underline", vec![("text-decoration-line", "underline")]);
     m.insert("overline", vec![("text-decoration-line", "overline")]);
-    m.insert("line-through", vec![("text-decoration-line", "line-through")]);
+    m.insert(
+      "line-through",
+      vec![("text-decoration-line", "line-through")],
+    );
     m.insert("no-underline", vec![("text-decoration-line", "none")]);
 
     // White space
@@ -766,12 +775,20 @@ fn resolve_radius(c: &ParsedCandidate, theme: &Theme) -> Option<String> {
 
 // ── spacing-style helpers (just shape declarations from resolve_spacing) ──
 
-fn spacing_decl(c: &ParsedCandidate, theme: &Theme, props: &[&str]) -> Option<Vec<(String, String)>> {
+fn spacing_decl(
+  c: &ParsedCandidate,
+  theme: &Theme,
+  props: &[&str],
+) -> Option<Vec<(String, String)>> {
   let v = resolve_spacing(c, theme)?;
   Some(props.iter().map(|p| (p.to_string(), v.clone())).collect())
 }
 
-fn sizing_decl(c: &ParsedCandidate, theme: &Theme, props: &[&str]) -> Option<Vec<(String, String)>> {
+fn sizing_decl(
+  c: &ParsedCandidate,
+  theme: &Theme,
+  props: &[&str],
+) -> Option<Vec<(String, String)>> {
   let v = resolve_sizing(c, theme)?;
   Some(props.iter().map(|p| (p.to_string(), v.clone())).collect())
 }

@@ -29,7 +29,13 @@ fn comma_groups() {
   );
   assert_eq!(
     sorted(expand("{{xs,sm,md,lg}:,}hidden").unwrap()),
-    sorted(s(&["xs:hidden", "sm:hidden", "md:hidden", "lg:hidden", "hidden"]))
+    sorted(s(&[
+      "xs:hidden",
+      "sm:hidden",
+      "md:hidden",
+      "lg:hidden",
+      "hidden"
+    ]))
   );
 }
 
@@ -113,9 +119,7 @@ fn nested_braces() {
   );
   assert_eq!(
     sorted(expand("a{b,c,/{x,y},{z,w}}/e").unwrap()),
-    sorted(s(&[
-      "ab/e", "ac/e", "a/x/e", "a/y/e", "az/e", "aw/e",
-    ]))
+    sorted(s(&["ab/e", "ac/e", "a/x/e", "a/y/e", "az/e", "aw/e",]))
   );
   assert_eq!(
     sorted(expand("a{b,c,/{x,y},{0..2}}/e").unwrap()),
@@ -162,5 +166,8 @@ fn throws_on_unbalanced_braces() {
 
 #[test]
 fn throws_when_step_is_zero() {
-  assert_eq!(expand("a{0..5..0}/b").unwrap_err(), BraceExpansionError::ZeroStep);
+  assert_eq!(
+    expand("a{0..5..0}/b").unwrap_err(),
+    BraceExpansionError::ZeroStep
+  );
 }

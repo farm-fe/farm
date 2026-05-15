@@ -56,17 +56,14 @@ fn test_walk_replace_node() {
     important: false,
   });
   let rule_nodes = vec![decl];
-  let result = walk(
-    rule_nodes,
-    &mut |node: &AstNode, _path, _depth| {
-      if let AstNode::Declaration(d) = node {
-        if d.value.as_deref() == Some("red") {
-          return WalkAction::Replace(vec![replacement.clone()]);
-        }
+  let result = walk(rule_nodes, &mut |node: &AstNode, _path, _depth| {
+    if let AstNode::Declaration(d) = node {
+      if d.value.as_deref() == Some("red") {
+        return WalkAction::Replace(vec![replacement.clone()]);
       }
-      WalkAction::Continue
-    },
-  );
+    }
+    WalkAction::Continue
+  });
   assert_eq!(result.len(), 1);
   if let AstNode::Declaration(d) = &result[0] {
     assert_eq!(d.value.as_deref(), Some("blue"));

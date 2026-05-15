@@ -29,12 +29,12 @@ const UNDERSCORE: u8 = 95;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AttributeOperator {
-  Equals,        // =
-  Includes,      // ~=
-  DashMatch,     // |=
-  StartsWith,    // ^=
-  EndsWith,      // $=
-  Contains,      // *=
+  Equals,     // =
+  Includes,   // ~=
+  DashMatch,  // |=
+  StartsWith, // ^=
+  EndsWith,   // $=
+  Contains,   // *=
 }
 
 impl AttributeOperator {

@@ -4,7 +4,10 @@
 pub enum ValueAstNode {
   Word(String),
   Separator(String),
-  Function { value: String, nodes: Vec<ValueAstNode> },
+  Function {
+    value: String,
+    nodes: Vec<ValueAstNode>,
+  },
 }
 
 impl ValueAstNode {
@@ -15,7 +18,10 @@ impl ValueAstNode {
     ValueAstNode::Separator(value.into())
   }
   pub fn function(value: impl Into<String>, nodes: Vec<ValueAstNode>) -> Self {
-    ValueAstNode::Function { value: value.into(), nodes }
+    ValueAstNode::Function {
+      value: value.into(),
+      nodes,
+    }
   }
 }
 
@@ -94,7 +100,11 @@ pub fn parse(input: &str) -> Vec<ValueAstNode> {
       SLASH => {
         // Flush buffer, push the `/` as its own word.
         if !buffer.is_empty() {
-          push_node(&mut stack, &mut ast, ValueAstNode::word(std::mem::take(&mut buffer)));
+          push_node(
+            &mut stack,
+            &mut ast,
+            ValueAstNode::word(std::mem::take(&mut buffer)),
+          );
         }
         push_node(&mut stack, &mut ast, ValueAstNode::word("/"));
         i += 1;
@@ -102,7 +112,11 @@ pub fn parse(input: &str) -> Vec<ValueAstNode> {
       }
       c if is_separator_byte(c) => {
         if !buffer.is_empty() {
-          push_node(&mut stack, &mut ast, ValueAstNode::word(std::mem::take(&mut buffer)));
+          push_node(
+            &mut stack,
+            &mut ast,
+            ValueAstNode::word(std::mem::take(&mut buffer)),
+          );
         }
         let start = i;
         let mut end = i + 1;

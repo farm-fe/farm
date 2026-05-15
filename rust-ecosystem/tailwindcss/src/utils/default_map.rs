@@ -18,7 +18,10 @@ pub struct DefaultMap<K: Eq + Hash + Clone, V, F: FnMut(&K) -> V> {
 
 impl<K: Eq + Hash + Clone, V, F: FnMut(&K) -> V> DefaultMap<K, V, F> {
   pub fn new(factory: F) -> Self {
-    Self { map: HashMap::new(), factory }
+    Self {
+      map: HashMap::new(),
+      factory,
+    }
   }
 
   /// Get a reference to the value, generating it on first access.

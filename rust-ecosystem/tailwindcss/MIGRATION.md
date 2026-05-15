@@ -67,9 +67,32 @@ Upstream source audit reference: `tailwindlabs/tailwindcss` commit `ae96721fc545
 
 ### `tailwindcss` (`rust-ecosystem/tailwindcss`)
 
-#### Planned phases
+#### Planned phases (original plan, `docs/superpowers/plans/2026-05-12-tailwindcss-rust-migration.md`)
 1. Port the core AST, parser, walker, and source location model.
 2. Port import/application transforms (`@import`, `@apply`) and theme/design-system primitives.
 3. Port candidate parsing, utilities, variants, and plugin APIs.
 4. Replace the temporary build passthrough with candidate expansion and source-map aware output.
 5. Add upstream fixture parity for compiler outputs and candidate scanning.
+
+#### Phase log (incremental work beyond the original plan)
+
+The Rust port has been delivered in narrow, individually-verifiable phases.
+Each phase ends with `cargo test -p farmfe_ecosystem_tailwindcss --tests`
+green; the test total is recorded below so regressions are visible.
+
+| Phase | Scope | Tests after |
+| ----- | ----- | ----------- |
+| 11 | Utility submodules: `segment`, `escape`, `to_key_path`, `brace_expansion`, `compare`, `compare_breakpoints`, `math_operators`, `decode_arbitrary_value`, `value_parser`, `infer_data_type`, `is_color`, `is_valid_arbitrary`, `replace_shadow_colors`, `dimensions`, `selector_parser` (incl. `:not/:where/:has/:is` recursion), `attribute_selector_parser`. | 254 |
+| 12 | `optimize_ast` recursively merges adjacent same-name same-params `@`-rules. | 267 |
+| 13 | `ParsedCandidate.negative`; arbitrary-value normalisation (`_` → space, preserving `\_` and `url(...)`); paren-arbitrary shorthand `bg-(--var) → var(--var)`; paren-aware variant splitter. | 267 → 293 |
+| 14 | Full `Theme` parity: `ThemeOptions` bitflags, namespace wildcards, `resolve` / `resolve_value` / `resolve_with`, `ignoredThemeKeyMap`, prefix, keyframes. | 293 |
+| 15 | `variants.rs` complete rewrite: at-rule wrapping (`sm/md/lg/xl/2xl` + `max-*`, `dark/print/motion-*/portrait/landscape/contrast-*`, `min-[]/max-[]`, `@container` + `@sm`–`@7xl` + `@min-[]/@max-[]/@[…]`, `supports-[]`); `data-/aria-/has-/not-` functional variants; `group-*` / `peer-*` (named + arbitrary `&`); arbitrary `[&_p]` variants. | 336 |
+| 16 | `FunctionalHandler` infrastructure on `UtilityRegistry`; `Theme::with_defaults()` seeded with v4 tokens; ~50 functional utility handlers (spacing, sizing, color, radius, border, opacity, z, order, grow, shrink, basis); longest-prefix functional-key lookup. | 372 |
+| 17 | `@apply` variant support: `@apply hover:flex` → nested `&:hover { display: flex }`; `@apply md:flex` → nested `@media { & { … } }`; `@apply flex!` preserves `!important`. | 377 |
+| 18 | `Compiler::build` weaves user CSS AST + `@apply` substitution + `@tailwind` / `@import "tailwindcss"` marker inlining. The compiler now stores the parsed AST; `inline_tailwind_markers` recursively replaces markers with generated utilities. | 382 |
+| 19 | User-defined `@utility name { … }` blocks and `@custom-variant name (selector \| @media …);` rules walked from the user AST in `DesignSystem::build` and registered into `UtilityRegistry.user_static_utilities` / `VariantRegistry.user_variants`. User entries take precedence over built-ins. `@utility` / `@custom-variant` stripped from output. | 385 |
+| 20 | `@theme { … }` block parsing (with `reference / inline / static / default` modifier flags). User theme custom properties materialise as `:root, :host { … }` prepended to inlined utilities (skipping `reference` entries and namespace resets). `@theme` rules stripped from output. `DesignSystem::empty()` constructor added. | 389 |
+| 21 | `@source` directive parsing: `@source "glob"`, `@source not "glob"`, `@source inline("…")`, `@source not inline("…")` collected into `DesignSystem::sources()`, exposed via `Compiler::sources()` for host-side scanner integration, and stripped from compiled output. Malformed forms silently dropped. | 394 |
+
+Run-of-show for the next phases is tracked in
+`docs/superpowers/plans/2026-05-12-tailwindcss-rust-migration.md`.

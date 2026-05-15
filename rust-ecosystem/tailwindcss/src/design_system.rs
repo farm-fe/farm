@@ -17,6 +17,32 @@ pub struct DesignSystem {
   /// `var(--…)` references actually have a value at runtime. Entries
   /// added with the `reference` modifier are excluded.
   user_theme_keys: Vec<String>,
+  /// `@source` directives collected from the user AST, in source order.
+  /// Consumed by the host (Node scanner / Farm plugin) — the core crate
+  /// only parses and exposes them via [`DesignSystem::sources`].
+  sources: Vec<SourceDirective>,
+}
+
+/// A parsed `@source` rule. Tailwind v4 supports four shapes:
+///
+/// ```css
+/// @source "glob";                /* Include  */
+/// @source not "glob";            /* Exclude  */
+/// @source inline("a b !c");      /* Inline   — literal candidates */
+/// @source not inline("foo*");    /* NotInline — class-name patterns */
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SourceDirective {
+  /// `@source "glob"` — include files matching the glob in scanning.
+  Include(String),
+  /// `@source not "glob"` — exclude files matching the glob from scanning.
+  Exclude(String),
+  /// `@source inline("…")` — treat the contents as a literal candidate
+  /// list to be included unconditionally.
+  Inline(String),
+  /// `@source not inline("…")` — class-name pattern list of candidates
+  /// to remove from the build.
+  NotInline(String),
 }
 
 impl DesignSystem {
@@ -28,6 +54,7 @@ impl DesignSystem {
       utilities: UtilityRegistry::builtin(),
       variants: VariantRegistry::builtin(),
       user_theme_keys: Vec::new(),
+      sources: Vec::new(),
     }
   }
 }
@@ -45,6 +72,7 @@ impl DesignSystem {
       utilities: UtilityRegistry::builtin(),
       variants: VariantRegistry::builtin(),
       user_theme_keys: Vec::new(),
+      sources: Vec::new(),
     };
     design_system.collect_user_definitions(ast);
     design_system
@@ -74,6 +102,11 @@ impl DesignSystem {
         AstNode::AtRule(at) if at.name == "@theme" => {
           let options = parse_theme_options(&at.params);
           self.register_theme_block(&at.nodes, options);
+        }
+        AstNode::AtRule(at) if at.name == "@source" => {
+          if let Some(directive) = parse_source_params(&at.params) {
+            self.sources.push(directive);
+          }
         }
         AstNode::AtRule(at) => self.collect_user_definitions(&at.nodes),
         AstNode::Rule(rule) => self.collect_user_definitions(&rule.nodes),
@@ -163,6 +196,16 @@ impl DesignSystem {
       nodes: decls,
     }))
   }
+
+  /// Every `@source` directive collected from the user AST, in source order.
+  ///
+  /// The Rust core does not perform filesystem scanning itself — these
+  /// entries are exposed so a host (Node bridge, Farm plugin) can extend or
+  /// constrain its candidate scan. See [`SourceDirective`] for the
+  /// supported shapes.
+  pub fn sources(&self) -> &[SourceDirective] {
+    &self.sources
+  }
 }
 
 /// Extract `(property, value)` pairs from a node list, skipping any nested
@@ -244,4 +287,72 @@ fn parse_theme_options(params: &str) -> ThemeOptions {
     }
   }
   options
+}
+
+/// Parse the params of an `@source` at-rule into a [`SourceDirective`].
+///
+/// Supported syntaxes (matching upstream Tailwind v4):
+///
+/// ```text
+///   @source "path/glob"            → Include
+///   @source not "path/glob"        → Exclude
+///   @source inline("a b !c")       → Inline
+///   @source not inline("foo*")     → NotInline
+/// ```
+///
+/// The quoted argument may use single or double quotes. Surrounding
+/// whitespace is trimmed. Malformed directives return `None` and are
+/// silently dropped — this mirrors the upstream behaviour of ignoring
+/// unrecognised forms so users can author new variants without breakage.
+fn parse_source_params(params: &str) -> Option<SourceDirective> {
+  let trimmed = params.trim();
+  if trimmed.is_empty() {
+    return None;
+  }
+
+  // Detect the optional `not` prefix.
+  let (negated, rest) = match trimmed.strip_prefix("not") {
+    Some(after) if after.starts_with(|c: char| c.is_ascii_whitespace()) => {
+      (true, after.trim_start())
+    }
+    _ => (false, trimmed),
+  };
+
+  // Detect the optional `inline(…)` form.
+  if let Some(after) = rest.strip_prefix("inline") {
+    let inner = after.trim_start();
+    let inside = inner
+      .strip_prefix('(')
+      .and_then(|s| s.strip_suffix(')'))?
+      .trim();
+    let unquoted = strip_quotes(inside).unwrap_or(inside).to_string();
+    return Some(if negated {
+      SourceDirective::NotInline(unquoted)
+    } else {
+      SourceDirective::Inline(unquoted)
+    });
+  }
+
+  // Otherwise expect a quoted glob.
+  let glob = strip_quotes(rest)?.to_string();
+  Some(if negated {
+    SourceDirective::Exclude(glob)
+  } else {
+    SourceDirective::Include(glob)
+  })
+}
+
+/// Strip a matching pair of leading/trailing `"` or `'` quotes from `s`.
+/// Returns `None` if `s` is not quoted.
+fn strip_quotes(s: &str) -> Option<&str> {
+  let s = s.trim();
+  if s.len() >= 2 {
+    let bytes = s.as_bytes();
+    let first = bytes[0];
+    let last = bytes[s.len() - 1];
+    if (first == b'"' || first == b'\'') && first == last {
+      return Some(&s[1..s.len() - 1]);
+    }
+  }
+  None
 }

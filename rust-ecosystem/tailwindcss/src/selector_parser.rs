@@ -4,7 +4,10 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SelectorAstNode {
   Combinator(String),
-  Function { value: String, nodes: Vec<SelectorAstNode> },
+  Function {
+    value: String,
+    nodes: Vec<SelectorAstNode>,
+  },
   Selector(String),
   Separator(String),
   Value(String),
@@ -15,7 +18,10 @@ impl SelectorAstNode {
     Self::Combinator(v.into())
   }
   pub fn function(v: impl Into<String>, nodes: Vec<SelectorAstNode>) -> Self {
-    Self::Function { value: v.into(), nodes }
+    Self::Function {
+      value: v.into(),
+      nodes,
+    }
   }
   pub fn selector(v: impl Into<String>) -> Self {
     Self::Selector(v.into())
@@ -74,7 +80,10 @@ const ASTERISK: u8 = 0x2a;
 
 #[inline]
 fn is_combinator_byte(b: u8) -> bool {
-  matches!(b, COMMA | GREATER_THAN | NEWLINE | SPACE | PLUS | TAB | TILDE)
+  matches!(
+    b,
+    COMMA | GREATER_THAN | NEWLINE | SPACE | PLUS | TAB | TILDE
+  )
 }
 
 /// Parse a CSS selector list into an AST.
@@ -114,8 +123,7 @@ pub fn parse(input: &str) -> Vec<SelectorAstNode> {
       }
       OPEN_PAREN => {
         let name = std::mem::take(&mut buffer);
-        let recurses =
-          matches!(name.as_str(), ":not" | ":where" | ":has" | ":is");
+        let recurses = matches!(name.as_str(), ":not" | ":where" | ":has" | ":is");
         if !recurses {
           // Capture everything up to matching ')' as a single Value child.
           let start = i + 1;
@@ -135,10 +143,7 @@ pub fn parse(input: &str) -> Vec<SelectorAstNode> {
             j += 1;
           }
           let value_str = std::str::from_utf8(&bytes[start..i]).unwrap().to_string();
-          let node = SelectorAstNode::function(
-            name,
-            vec![SelectorAstNode::value(value_str)],
-          );
+          let node = SelectorAstNode::function(name, vec![SelectorAstNode::value(value_str)]);
           push_into(&mut stack, &mut ast, node);
         } else {
           // Push function onto stack to receive children.

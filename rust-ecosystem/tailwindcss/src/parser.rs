@@ -196,7 +196,9 @@ impl<'a> Parser<'a> {
       // Collapse whitespace
       if !in_paren && (ch == SPACE || ch == TAB || ch == LINE_BREAK) {
         let next = self.peek(1);
-        if next == SPACE || next == TAB || next == LINE_BREAK
+        if next == SPACE
+          || next == TAB
+          || next == LINE_BREAK
           || (next == CARRIAGE_RETURN && self.peek(2) == LINE_BREAK)
         {
           self.i += 1;
@@ -224,11 +226,7 @@ impl<'a> Parser<'a> {
       }
 
       // Body-less at-rule ending with `;`
-      if !in_paren
-        && ch == SEMICOLON
-        && !buffer.is_empty()
-        && buffer.as_bytes()[0] == AT_SIGN
-      {
+      if !in_paren && ch == SEMICOLON && !buffer.is_empty() && buffer.as_bytes()[0] == AT_SIGN {
         let node = self.parse_at_rule(&buffer);
         push_node!(node);
         buffer.clear();

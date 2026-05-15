@@ -1,5 +1,5 @@
 use farmfe_ecosystem_tailwindcss::ast::{
-  optimize_ast, to_css, AtRule, AstNode, Declaration, StyleRule,
+  optimize_ast, to_css, AstNode, AtRule, Declaration, StyleRule,
 };
 
 #[test]
@@ -154,7 +154,11 @@ fn test_optimize_ast_merges_adjacent_identical_at_rules() {
     nodes: vec![make_rule(".sm\\:hidden", "display", "none")],
   };
   let result = optimize_ast(vec![AstNode::AtRule(media_a), AstNode::AtRule(media_b)]);
-  assert_eq!(result.len(), 1, "two same-params @media blocks should merge");
+  assert_eq!(
+    result.len(),
+    1,
+    "two same-params @media blocks should merge"
+  );
   if let AstNode::AtRule(merged) = &result[0] {
     assert_eq!(merged.nodes.len(), 2);
   } else {
@@ -224,7 +228,11 @@ fn test_optimize_ast_merges_nested_at_rules() {
   let result = optimize_ast(vec![AstNode::AtRule(outer_a), AstNode::AtRule(outer_b)]);
   assert_eq!(result.len(), 1);
   if let AstNode::AtRule(outer) = &result[0] {
-    assert_eq!(outer.nodes.len(), 1, "inner @media blocks should also merge");
+    assert_eq!(
+      outer.nodes.len(),
+      1,
+      "inner @media blocks should also merge"
+    );
     if let AstNode::AtRule(inner) = &outer.nodes[0] {
       assert_eq!(inner.nodes.len(), 2);
     } else {

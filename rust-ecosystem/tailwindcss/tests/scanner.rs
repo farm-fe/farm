@@ -38,7 +38,10 @@ fn scanner_fixture_outputs_are_snapshotted() {
 fn scanner_extracts_class_names_from_html_attribute() {
   let content = r#"<div class="flex items-center bg-blue-500 p-4">"#;
   let candidates = extract_candidates(content);
-  assert!(candidates.contains(&"flex".to_string()), "should contain 'flex'");
+  assert!(
+    candidates.contains(&"flex".to_string()),
+    "should contain 'flex'"
+  );
   assert!(
     candidates.contains(&"items-center".to_string()),
     "should contain 'items-center'"

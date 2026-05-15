@@ -10,18 +10,12 @@ fn can_convert_key_paths_to_arrays() {
     vec!["fontSize", "xs", "1", "lineHeight"]
   );
   assert_eq!(to_key_path("colors.red.500"), vec!["colors", "red", "500"]);
-  assert_eq!(
-    to_key_path("colors[red].500"),
-    vec!["colors", "red", "500"]
-  );
+  assert_eq!(to_key_path("colors[red].500"), vec!["colors", "red", "500"]);
   assert_eq!(
     to_key_path("colors[red].[500]"),
     vec!["colors", "red", "500"]
   );
-  assert_eq!(
-    to_key_path("colors[red]500"),
-    vec!["colors", "red", "500"]
-  );
+  assert_eq!(to_key_path("colors[red]500"), vec!["colors", "red", "500"]);
   assert_eq!(
     to_key_path("colors[red][500]"),
     vec!["colors", "red", "500"]

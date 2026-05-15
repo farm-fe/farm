@@ -1,5 +1,5 @@
 use farmfe_ecosystem_tailwindcss::apply::substitute_at_apply;
-use farmfe_ecosystem_tailwindcss::ast::{AstNode, AtRule, StyleRule, to_css};
+use farmfe_ecosystem_tailwindcss::ast::{to_css, AstNode, AtRule, StyleRule};
 use farmfe_ecosystem_tailwindcss::design_system::DesignSystem;
 
 fn make_design_system() -> DesignSystem {
@@ -136,4 +136,3 @@ fn test_apply_with_dark_variant_produces_nested_rule() {
   assert!(css.contains('&') || css.contains("@media"), "css={}", css);
   assert!(css.contains("display: flex"), "css={}", css);
 }
-

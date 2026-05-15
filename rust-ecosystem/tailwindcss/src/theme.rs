@@ -78,9 +78,9 @@ fn ignored_theme_keys_for(namespace: &str) -> &'static [&'static str] {
 }
 
 fn is_ignored_theme_key(theme_key: &str, namespace: &str) -> bool {
-  ignored_theme_keys_for(namespace).iter().any(|ignored| {
-    theme_key == *ignored || theme_key.starts_with(&format!("{ignored}-"))
-  })
+  ignored_theme_keys_for(namespace)
+    .iter()
+    .any(|ignored| theme_key == *ignored || theme_key.starts_with(&format!("{ignored}-")))
 }
 
 /// Resolved Tailwind theme.
@@ -481,7 +481,11 @@ impl Theme {
 
   /// Like [`Theme::resolve`] but always returns the raw value, never a
   /// `var(...)` reference.
-  pub fn resolve_value(&self, candidate_value: Option<&str>, theme_keys: &[&str]) -> Option<String> {
+  pub fn resolve_value(
+    &self,
+    candidate_value: Option<&str>,
+    theme_keys: &[&str],
+  ) -> Option<String> {
     let theme_key = self.resolve_key(candidate_value, theme_keys)?;
     self.values.get(&theme_key).map(|v| v.value.clone())
   }
@@ -530,7 +534,10 @@ impl Theme {
         values.insert(None, value.value.clone());
       } else if key.starts_with(&nested_prefix) {
         // Preserve `--` prefix for sub-variables, e.g. `--font-size-sm--line-height`.
-        values.insert(Some(key[namespace.len()..].to_string()), value.value.clone());
+        values.insert(
+          Some(key[namespace.len()..].to_string()),
+          value.value.clone(),
+        );
       } else if key.starts_with(&prefix) {
         values.insert(Some(key[prefix.len()..].to_string()), value.value.clone());
       }

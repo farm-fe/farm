@@ -15,7 +15,8 @@ fn unescape_removes_backslashes() {
 
 #[test]
 fn unescape_replaces_out_of_range_escaped_code_points() {
-  let input = r"--Coding-Projects-CharacterMapper-Master-Workspace\d8819554-4725-4235-9d22-2d0ed572e924";
+  let input =
+    r"--Coding-Projects-CharacterMapper-Master-Workspace\d8819554-4725-4235-9d22-2d0ed572e924";
   // \d88195 is in surrogate range when parsed as 6-hex-digit code-point;
   // upstream behavior: replace with U+FFFD, keep "54-..." remainder.
   assert_eq!(

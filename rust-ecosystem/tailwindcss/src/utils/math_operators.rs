@@ -20,8 +20,8 @@ const SPACE: u8 = 0x20;
 const PERCENT: u8 = 0x25;
 
 pub const MATH_FUNCTIONS: &[&str] = &[
-  "calc", "min", "max", "clamp", "mod", "rem", "sin", "cos", "tan", "asin",
-  "acos", "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "round",
+  "calc", "min", "max", "clamp", "mod", "rem", "sin", "cos", "tan", "asin", "acos", "atan",
+  "atan2", "pow", "sqrt", "hypot", "log", "exp", "round",
 ];
 
 /// Returns true if the input contains a known CSS math function call.
@@ -63,9 +63,7 @@ pub fn add_whitespace_around_math_operators(input: &str) -> String {
     // Track value positions (digit, then unit chars).
     if is_digit(c) {
       value_pos = Some(i);
-    } else if value_pos.is_some()
-      && (c == PERCENT || is_lower(c) || is_upper(c))
-    {
+    } else if value_pos.is_some() && (c == PERCENT || is_lower(c) || is_upper(c)) {
       value_pos = Some(i);
     } else {
       last_value_pos = value_pos;
@@ -91,8 +89,7 @@ pub fn add_whitespace_around_math_operators(input: &str) -> String {
 
       if MATH_FUNCTIONS.contains(&fn_name) {
         formattable.insert(0, true);
-      } else if formattable.first().copied().unwrap_or(false) && fn_name.is_empty()
-      {
+      } else if formattable.first().copied().unwrap_or(false) && fn_name.is_empty() {
         // Nested parens inside a math function: keep formatting.
         formattable.insert(0, true);
       } else {
@@ -122,8 +119,16 @@ pub fn add_whitespace_around_math_operators(input: &str) -> String {
     {
       // Determine context.
       let trimmed_len = trim_end_len(&result);
-      let prev = if trimmed_len > 0 { result[trimmed_len - 1] } else { 0 };
-      let prev_prev = if trimmed_len > 1 { result[trimmed_len - 2] } else { 0 };
+      let prev = if trimmed_len > 0 {
+        result[trimmed_len - 1]
+      } else {
+        0
+      };
+      let prev_prev = if trimmed_len > 1 {
+        result[trimmed_len - 2]
+      } else {
+        0
+      };
       let next = bytes.get(i + 1).copied().unwrap_or(0);
 
       // Scientific notation: `-3.4e-2`.

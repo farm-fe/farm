@@ -3,8 +3,8 @@
 //! from upstream comments.
 
 use farmfe_ecosystem_tailwindcss::utils::infer_data_type::{
-  infer_data_type, is_angle, is_fraction, is_length, is_number, is_percentage,
-  is_positive_integer, is_vector, DataType,
+  infer_data_type, is_angle, is_fraction, is_length, is_number, is_percentage, is_positive_integer,
+  is_vector, DataType,
 };
 
 #[test]
@@ -76,7 +76,10 @@ fn recognises_positive_integer() {
 fn type_priority_is_respected() {
   // First matching type wins.
   assert_eq!(
-    infer_data_type("16px", &[DataType::Color, DataType::Length, DataType::Number]),
+    infer_data_type(
+      "16px",
+      &[DataType::Color, DataType::Length, DataType::Number]
+    ),
     Some(DataType::Length)
   );
 }

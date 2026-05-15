@@ -124,7 +124,9 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
   // The inner value MUST start with `--`; the result is `var(<inner>)`.
   if base_no_modifier.ends_with(')') {
     if let Some(paren_start) = find_opening_paren(&base_no_modifier) {
-      let root = base_no_modifier[..paren_start].trim_end_matches('-').to_string();
+      let root = base_no_modifier[..paren_start]
+        .trim_end_matches('-')
+        .to_string();
       let raw_inner = &base_no_modifier[paren_start + 1..base_no_modifier.len() - 1];
 
       // Optional type hint inside the parens, e.g. `bg-(color:--my-color)`
@@ -159,7 +161,9 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
   // Arbitrary value: something-[value]
   if base_no_modifier.ends_with(']') {
     if let Some(bracket_start) = find_opening_bracket(&base_no_modifier) {
-      let root = base_no_modifier[..bracket_start].trim_end_matches('-').to_string();
+      let root = base_no_modifier[..bracket_start]
+        .trim_end_matches('-')
+        .to_string();
       let raw_value = &base_no_modifier[bracket_start + 1..base_no_modifier.len() - 1];
 
       // Split type hint if present: "color:var(--x)" -> hint="color", value="var(--x)"

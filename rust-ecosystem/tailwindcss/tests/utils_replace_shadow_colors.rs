@@ -48,13 +48,15 @@ fn handles_three_values_with_currentcolor() {
 #[test]
 fn handles_four_values_with_currentcolor() {
   let parsed = replace_shadow_colors("1px 2px 3px 4px", replacer);
-  assert_eq!(parsed, "1px 2px 3px 4px var(--tw-shadow-color, currentcolor)");
+  assert_eq!(
+    parsed,
+    "1px 2px 3px 4px var(--tw-shadow-color, currentcolor)"
+  );
 }
 
 #[test]
 fn handles_multiple_shadows() {
-  let input =
-    "var(--my-shadow), 1px 1px var(--my-color), 0 0 1px var(--my-color)";
+  let input = "var(--my-shadow), 1px 1px var(--my-color), 0 0 1px var(--my-color)";
   let parsed = replace_shadow_colors(input, replacer);
   assert_eq!(
     parsed,

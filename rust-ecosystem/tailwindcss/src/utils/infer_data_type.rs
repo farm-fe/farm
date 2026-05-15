@@ -80,15 +80,13 @@ fn is_percentage_re() -> &'static Regex {
 }
 fn is_fraction_re() -> &'static Regex {
   static RE: OnceLock<Regex> = OnceLock::new();
-  RE.get_or_init(|| {
-    Regex::new(&format!(r"^{HAS_NUMBER_SRC}\s*/\s*{HAS_NUMBER_SRC}$")).unwrap()
-  })
+  RE.get_or_init(|| Regex::new(&format!(r"^{HAS_NUMBER_SRC}\s*/\s*{HAS_NUMBER_SRC}$")).unwrap())
 }
 
 const LENGTH_UNITS: &[&str] = &[
-  "cm", "mm", "Q", "in", "pc", "pt", "px", "em", "ex", "ch", "rem", "lh",
-  "rlh", "vw", "vh", "vmin", "vmax", "vb", "vi", "svw", "svh", "lvw", "lvh",
-  "dvw", "dvh", "cqw", "cqh", "cqi", "cqb", "cqmin", "cqmax",
+  "cm", "mm", "Q", "in", "pc", "pt", "px", "em", "ex", "ch", "rem", "lh", "rlh", "vw", "vh",
+  "vmin", "vmax", "vb", "vi", "svw", "svh", "lvw", "lvh", "dvw", "dvh", "cqw", "cqh", "cqi", "cqb",
+  "cqmin", "cqmax",
 ];
 
 fn is_length_re() -> &'static Regex {
@@ -238,14 +236,7 @@ fn is_generic_name(value: &str) -> bool {
 fn is_absolute_size(value: &str) -> bool {
   matches!(
     value,
-    "xx-small"
-      | "x-small"
-      | "small"
-      | "medium"
-      | "large"
-      | "x-large"
-      | "xx-large"
-      | "xxx-large"
+    "xx-small" | "x-small" | "small" | "medium" | "large" | "x-large" | "xx-large" | "xxx-large"
   )
 }
 

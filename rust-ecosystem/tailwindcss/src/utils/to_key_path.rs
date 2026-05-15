@@ -54,5 +54,8 @@ fn find_byte_from(haystack: &[u8], needle: u8, start: usize) -> Option<usize> {
   if start >= haystack.len() {
     return None;
   }
-  haystack[start..].iter().position(|&b| b == needle).map(|p| p + start)
+  haystack[start..]
+    .iter()
+    .position(|&b| b == needle)
+    .map(|p| p + start)
 }

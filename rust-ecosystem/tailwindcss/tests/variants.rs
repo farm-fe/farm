@@ -18,7 +18,13 @@ fn candidate_with_variants(variants: &[&str]) -> ParsedCandidate {
     important: false,
     negative: false,
     is_static: true,
-    raw: format!("{}flex", variants.iter().map(|v| format!("{}:", v)).collect::<String>()),
+    raw: format!(
+      "{}flex",
+      variants
+        .iter()
+        .map(|v| format!("{}:", v))
+        .collect::<String>()
+    ),
   }
 }
 
@@ -309,4 +315,3 @@ fn starting_style_at_rule() {
   let candidate = candidate_with_variants(&["starting"]);
   let _ = registry.generate(&candidate, &theme);
 }
-

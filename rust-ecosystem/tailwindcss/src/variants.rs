@@ -39,29 +39,89 @@ impl VariantRegistry {
   pub fn builtin() -> Self {
     let variants: HashSet<&'static str> = [
       // Pseudo-classes
-      "hover", "focus", "active", "disabled", "enabled", "visited", "target",
-      "first", "last", "only", "odd", "even", "first-of-type", "last-of-type",
-      "only-of-type", "empty", "required", "valid", "invalid", "checked",
-      "indeterminate", "default", "optional", "in-range", "out-of-range",
-      "read-only", "read-write", "placeholder-shown", "autofill",
-      "focus-within", "focus-visible", "open", "inert",
+      "hover",
+      "focus",
+      "active",
+      "disabled",
+      "enabled",
+      "visited",
+      "target",
+      "first",
+      "last",
+      "only",
+      "odd",
+      "even",
+      "first-of-type",
+      "last-of-type",
+      "only-of-type",
+      "empty",
+      "required",
+      "valid",
+      "invalid",
+      "checked",
+      "indeterminate",
+      "default",
+      "optional",
+      "in-range",
+      "out-of-range",
+      "read-only",
+      "read-write",
+      "placeholder-shown",
+      "autofill",
+      "focus-within",
+      "focus-visible",
+      "open",
+      "inert",
       // Pseudo-elements
-      "before", "after", "first-letter", "first-line", "marker", "selection",
-      "file", "placeholder", "backdrop",
+      "before",
+      "after",
+      "first-letter",
+      "first-line",
+      "marker",
+      "selection",
+      "file",
+      "placeholder",
+      "backdrop",
       // Directional
-      "ltr", "rtl",
+      "ltr",
+      "rtl",
       // Media / responsive
-      "dark", "print", "motion-safe", "motion-reduce", "portrait", "landscape",
-      "contrast-more", "contrast-less", "starting",
+      "dark",
+      "print",
+      "motion-safe",
+      "motion-reduce",
+      "portrait",
+      "landscape",
+      "contrast-more",
+      "contrast-less",
+      "starting",
       // Breakpoints (Tailwind v4 defaults)
-      "sm", "md", "lg", "xl", "2xl",
+      "sm",
+      "md",
+      "lg",
+      "xl",
+      "2xl",
       // Max-width counterparts
-      "max-sm", "max-md", "max-lg", "max-xl", "max-2xl",
+      "max-sm",
+      "max-md",
+      "max-lg",
+      "max-xl",
+      "max-2xl",
       // Container queries
-      "@container", "@sm", "@md", "@lg", "@xl", "@2xl", "@3xl", "@4xl", "@5xl",
-      "@6xl", "@7xl",
+      "@container",
+      "@sm",
+      "@md",
+      "@lg",
+      "@xl",
+      "@2xl",
+      "@3xl",
+      "@4xl",
+      "@5xl",
+      "@6xl",
+      "@7xl",
       // Group / peer
-      "group", "peer",
+      "group",
+      "peer",
     ]
     .into_iter()
     .collect();
@@ -170,7 +230,9 @@ fn resolve_variant(
 
   // 1. Arbitrary selector variant: `[&_p]`, `[&:hover]`, `[&>div]`, …
   if let Some(body) = variant.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
-    return Some(VariantStep::Selector(apply_arbitrary_selector(selector, body)));
+    return Some(VariantStep::Selector(apply_arbitrary_selector(
+      selector, body,
+    )));
   }
 
   // 2. Container-query variants (start with `@`).
@@ -431,10 +493,7 @@ fn resolve_functional(selector: &str, variant: &str) -> Option<VariantStep> {
   if let Some(rest) = variant.strip_prefix("has-") {
     // Arbitrary form `has-[input]` keeps the body as-is.
     if let Some(body) = arbitrary_body(rest) {
-      return Some(VariantStep::Selector(format!(
-        "{}:has({})",
-        selector, body
-      )));
+      return Some(VariantStep::Selector(format!("{}:has({})", selector, body)));
     }
     let inner = lookup_pseudo_body(rest)?;
     return Some(VariantStep::Selector(format!(
@@ -447,10 +506,7 @@ fn resolve_functional(selector: &str, variant: &str) -> Option<VariantStep> {
   if let Some(rest) = variant.strip_prefix("data-") {
     if let Some(body) = arbitrary_body(rest) {
       let attr = format_data_aria_attr("data", body);
-      return Some(VariantStep::Selector(format!(
-        "{}{}",
-        selector, attr
-      )));
+      return Some(VariantStep::Selector(format!("{}{}", selector, attr)));
     }
     // Named: `data-open` → `[data-open]`.
     return Some(VariantStep::Selector(format!(
@@ -463,10 +519,7 @@ fn resolve_functional(selector: &str, variant: &str) -> Option<VariantStep> {
   if let Some(rest) = variant.strip_prefix("aria-") {
     if let Some(body) = arbitrary_body(rest) {
       let attr = format_data_aria_attr("aria", body);
-      return Some(VariantStep::Selector(format!(
-        "{}{}",
-        selector, attr
-      )));
+      return Some(VariantStep::Selector(format!("{}{}", selector, attr)));
     }
     // Named: `aria-checked` → `[aria-checked="true"]`.
     return Some(VariantStep::Selector(format!(

@@ -80,11 +80,7 @@ fn build_inlines_import_tailwindcss_marker() {
 
 #[test]
 fn build_substitutes_at_apply_in_user_css() {
-  let mut compiler = compile(
-    ".btn {\n  @apply flex;\n}\n",
-    CompilerOptions::default(),
-  )
-  .unwrap();
+  let mut compiler = compile(".btn {\n  @apply flex;\n}\n", CompilerOptions::default()).unwrap();
 
   let css = compiler.build(&[]);
   assert!(css.contains(".btn"), "expected .btn rule: {css}");

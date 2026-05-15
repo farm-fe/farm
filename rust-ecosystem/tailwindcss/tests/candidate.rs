@@ -188,4 +188,3 @@ fn test_paren_shorthand_escaped_underscore_decoded() {
 fn test_paren_shorthand_empty_is_rejected() {
   assert!(parse_candidate("bg-()").is_none());
 }
-

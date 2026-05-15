@@ -154,11 +154,7 @@ math_case!(
   "calc((704-320)/(1400-782))",
   "calc((704 - 320) / (1400 - 782))"
 );
-math_case!(
-  math_calc_neg_rem,
-  "calc(24px+-1rem)",
-  "calc(24px + -1rem)"
-);
+math_case!(math_calc_neg_rem, "calc(24px+-1rem)", "calc(24px + -1rem)");
 math_case!(
   math_calc_neg_paren,
   "calc(24px+(-1rem))",
@@ -184,7 +180,11 @@ math_case!(
   "calc(theme(spacing.1-bar))",
   "calc(theme(spacing.1-bar))"
 );
-math_case!(theme_bar_top, "theme(spacing.1-bar)", "theme(spacing.1-bar)");
+math_case!(
+  theme_bar_top,
+  "theme(spacing.1-bar)",
+  "theme(spacing.1-bar)"
+);
 math_case!(
   math_calc_1rem_minus_theme,
   "calc(1rem-theme(spacing.1-bar))",
@@ -201,7 +201,11 @@ math_case!(
   "calc(theme(spacing.foo-bar))"
 );
 
-math_case!(math_pct_with_var, "calc(100%-var(--foo))", "calc(100% - var(--foo))");
+math_case!(
+  math_pct_with_var,
+  "calc(100%-var(--foo))",
+  "calc(100% - var(--foo))"
+);
 
 math_case!(
   math_uppercase_units,
@@ -271,7 +275,11 @@ math_case!(
   "calc(env(safe-area-inset-bottom,calc(10px + 20px)) + 5px)"
 );
 
-math_case!(math_minmax, "minmax(min-content,25%)", "minmax(min-content,25%)");
+math_case!(
+  math_minmax,
+  "minmax(min-content,25%)",
+  "minmax(min-content,25%)"
+);
 
 math_case!(
   math_radial_gradients,

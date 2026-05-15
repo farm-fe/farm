@@ -11,7 +11,10 @@ fn sep(v: &str) -> N {
   N::Separator(v.to_string())
 }
 fn func(name: &str, nodes: Vec<N>) -> N {
-  N::Function { value: name.to_string(), nodes }
+  N::Function {
+    value: name.to_string(),
+    nodes,
+  }
 }
 
 // ----- parse ------------------------------------------------------------------
@@ -28,7 +31,10 @@ fn parse_a_string_value() {
 
 #[test]
 fn parse_a_list() {
-  assert_eq!(parse("hello world"), vec![word("hello"), sep(" "), word("world")]);
+  assert_eq!(
+    parse("hello world"),
+    vec![word("hello"), sep(" "), word("world")]
+  );
 }
 
 #[test]
@@ -48,7 +54,10 @@ fn parse_function_single_arg() {
 
 #[test]
 fn parse_function_single_string_arg() {
-  assert_eq!(parse("theme('foo')"), vec![func("theme", vec![word("'foo'")])]);
+  assert_eq!(
+    parse("theme('foo')"),
+    vec![func("theme", vec![word("'foo'")])]
+  );
 }
 
 #[test]
@@ -111,13 +120,7 @@ fn parse_calculations() {
       vec![
         func(
           "",
-          vec![
-            word("1"),
-            sep(" "),
-            word("+"),
-            sep(" "),
-            word("2"),
-          ]
+          vec![word("1"), sep(" "), word("+"), sep(" "), word("2"),]
         ),
         sep(" "),
         word("*"),
@@ -176,13 +179,18 @@ fn to_css_pretty_prints_calculations() {
 
 #[test]
 fn to_css_pretty_prints_nested_function_calls() {
-  assert_eq!(to_css(&parse("theme(foo, theme(bar))")), "theme(foo, theme(bar))");
+  assert_eq!(
+    to_css(&parse("theme(foo, theme(bar))")),
+    "theme(foo, theme(bar))"
+  );
 }
 
 #[test]
 fn to_css_pretty_prints_media_query_params() {
   assert_eq!(
-    to_css(&parse("(min-width: 600px) and (max-width:theme(colors.red.500))")),
+    to_css(&parse(
+      "(min-width: 600px) and (max-width:theme(colors.red.500))"
+    )),
     "(min-width: 600px) and (max-width:theme(colors.red.500))"
   );
 }

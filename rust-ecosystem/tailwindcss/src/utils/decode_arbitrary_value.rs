@@ -66,11 +66,11 @@ fn recursively_decode_arbitrary_values(ast: &mut Vec<ValueAstNode>) {
               }
             }
             // Recurse on a single-element slice via temporary vec swap.
-            let mut tmp = std::mem::replace(
-              child,
+            let mut tmp = std::mem::replace(child, ValueAstNode::Word(String::new()));
+            let mut wrapped = vec![std::mem::replace(
+              &mut tmp,
               ValueAstNode::Word(String::new()),
-            );
-            let mut wrapped = vec![std::mem::replace(&mut tmp, ValueAstNode::Word(String::new()))];
+            )];
             recursively_decode_arbitrary_values(&mut wrapped);
             *child = wrapped.into_iter().next().unwrap();
             let _ = idx;

@@ -18,9 +18,7 @@ pub struct Dimension {
 
 fn re() -> &'static Regex {
   static RE: OnceLock<Regex> = OnceLock::new();
-  RE.get_or_init(|| {
-    Regex::new(r"^(?P<value>[-+]?(?:\d*\.)?\d+)(?P<unit>[a-zA-Z]+|%)?$").unwrap()
-  })
+  RE.get_or_init(|| Regex::new(r"^(?P<value>[-+]?(?:\d*\.)?\d+)(?P<unit>[a-zA-Z]+|%)?$").unwrap())
 }
 
 /// Parse a dimension such as `64rem` into a [`Dimension`].

@@ -354,7 +354,11 @@ fn unknown_root_returns_empty() {
 fn spacing_decimal() {
   let t = Theme::with_defaults();
   let css = render("m-1.5", &t);
-  assert!(css.contains("margin: calc(var(--spacing) * 1.5)"), "got: {}", css);
+  assert!(
+    css.contains("margin: calc(var(--spacing) * 1.5)"),
+    "got: {}",
+    css
+  );
 }
 
 #[test]
