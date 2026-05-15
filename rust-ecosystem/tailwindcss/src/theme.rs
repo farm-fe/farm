@@ -98,6 +98,156 @@ impl Theme {
     Self::default()
   }
 
+  /// Create a theme seeded with Tailwind v4's default theme tokens. This is a
+  /// minimal but representative slice intended to make built-in functional
+  /// utilities (spacing, colors, radius, font-size, etc.) produce sensible
+  /// output without an external configuration. Mirrors the most commonly used
+  /// values from upstream `tailwindcss/preflight.css` / `theme.css`.
+  pub fn with_defaults() -> Self {
+    let mut t = Self::new();
+    let d = ThemeOptions::DEFAULT;
+
+    // ── Spacing base ────────────────────────────────────────────────────
+    t.add("--spacing", "0.25rem", d);
+
+    // ── Color palette (slate / gray / red / orange / yellow / green / blue / indigo / purple / pink / black / white / transparent / current) ──
+    let palette: &[(&str, &str)] = &[
+      ("--color-black", "#000"),
+      ("--color-white", "#fff"),
+      ("--color-transparent", "transparent"),
+      ("--color-current", "currentColor"),
+      // Slate
+      ("--color-slate-50", "oklch(98.4% 0.003 247.858)"),
+      ("--color-slate-100", "oklch(96.8% 0.007 247.896)"),
+      ("--color-slate-200", "oklch(92.9% 0.013 255.508)"),
+      ("--color-slate-300", "oklch(86.9% 0.022 252.894)"),
+      ("--color-slate-400", "oklch(70.4% 0.04 256.788)"),
+      ("--color-slate-500", "oklch(55.4% 0.046 257.417)"),
+      ("--color-slate-600", "oklch(44.6% 0.043 257.281)"),
+      ("--color-slate-700", "oklch(37.2% 0.044 257.287)"),
+      ("--color-slate-800", "oklch(27.9% 0.041 260.031)"),
+      ("--color-slate-900", "oklch(20.8% 0.042 265.755)"),
+      // Gray
+      ("--color-gray-50", "oklch(98.5% 0.002 247.839)"),
+      ("--color-gray-100", "oklch(96.7% 0.003 264.542)"),
+      ("--color-gray-200", "oklch(92.8% 0.006 264.531)"),
+      ("--color-gray-300", "oklch(87.2% 0.01 258.338)"),
+      ("--color-gray-400", "oklch(70.7% 0.022 261.325)"),
+      ("--color-gray-500", "oklch(55.1% 0.027 264.364)"),
+      ("--color-gray-600", "oklch(44.6% 0.03 256.802)"),
+      ("--color-gray-700", "oklch(37.3% 0.034 259.733)"),
+      ("--color-gray-800", "oklch(27.8% 0.033 256.848)"),
+      ("--color-gray-900", "oklch(21% 0.034 264.665)"),
+      // Red
+      ("--color-red-50", "oklch(97.1% 0.013 17.38)"),
+      ("--color-red-100", "oklch(93.6% 0.032 17.717)"),
+      ("--color-red-200", "oklch(88.5% 0.062 18.334)"),
+      ("--color-red-300", "oklch(80.8% 0.114 19.571)"),
+      ("--color-red-400", "oklch(70.4% 0.191 22.216)"),
+      ("--color-red-500", "oklch(63.7% 0.237 25.331)"),
+      ("--color-red-600", "oklch(57.7% 0.245 27.325)"),
+      ("--color-red-700", "oklch(50.5% 0.213 27.518)"),
+      ("--color-red-800", "oklch(44.4% 0.177 26.899)"),
+      ("--color-red-900", "oklch(39.6% 0.141 25.723)"),
+      // Blue
+      ("--color-blue-50", "oklch(97% 0.014 254.604)"),
+      ("--color-blue-100", "oklch(93.2% 0.032 255.585)"),
+      ("--color-blue-200", "oklch(88.2% 0.059 254.128)"),
+      ("--color-blue-300", "oklch(80.9% 0.105 251.813)"),
+      ("--color-blue-400", "oklch(70.7% 0.165 254.624)"),
+      ("--color-blue-500", "oklch(62.3% 0.214 259.815)"),
+      ("--color-blue-600", "oklch(54.6% 0.245 262.881)"),
+      ("--color-blue-700", "oklch(48.8% 0.243 264.376)"),
+      ("--color-blue-800", "oklch(42.4% 0.199 265.638)"),
+      ("--color-blue-900", "oklch(37.9% 0.146 265.522)"),
+      // Green
+      ("--color-green-50", "oklch(98.2% 0.018 155.826)"),
+      ("--color-green-100", "oklch(96.2% 0.044 156.743)"),
+      ("--color-green-200", "oklch(92.5% 0.084 155.995)"),
+      ("--color-green-300", "oklch(87.1% 0.15 154.449)"),
+      ("--color-green-400", "oklch(79.2% 0.209 151.711)"),
+      ("--color-green-500", "oklch(72.3% 0.219 149.579)"),
+      ("--color-green-600", "oklch(62.7% 0.194 149.214)"),
+      ("--color-green-700", "oklch(52.7% 0.154 150.069)"),
+      ("--color-green-800", "oklch(44.8% 0.119 151.328)"),
+      ("--color-green-900", "oklch(39.3% 0.095 152.535)"),
+      // Yellow
+      ("--color-yellow-50", "oklch(98.7% 0.026 102.212)"),
+      ("--color-yellow-100", "oklch(97.3% 0.071 103.193)"),
+      ("--color-yellow-200", "oklch(94.5% 0.129 101.54)"),
+      ("--color-yellow-300", "oklch(90.5% 0.182 98.111)"),
+      ("--color-yellow-400", "oklch(85.2% 0.199 91.936)"),
+      ("--color-yellow-500", "oklch(79.5% 0.184 86.047)"),
+      ("--color-yellow-600", "oklch(68.1% 0.162 75.834)"),
+      ("--color-yellow-700", "oklch(55.4% 0.135 66.442)"),
+      ("--color-yellow-800", "oklch(47.6% 0.114 61.907)"),
+      ("--color-yellow-900", "oklch(42.1% 0.095 57.708)"),
+      // Indigo
+      ("--color-indigo-50", "oklch(96.2% 0.018 272.314)"),
+      ("--color-indigo-100", "oklch(93% 0.034 272.788)"),
+      ("--color-indigo-200", "oklch(87% 0.065 274.039)"),
+      ("--color-indigo-300", "oklch(78.5% 0.115 274.713)"),
+      ("--color-indigo-400", "oklch(67.3% 0.182 276.935)"),
+      ("--color-indigo-500", "oklch(58.5% 0.233 277.117)"),
+      ("--color-indigo-600", "oklch(51.1% 0.262 276.966)"),
+      ("--color-indigo-700", "oklch(45.7% 0.24 277.023)"),
+      ("--color-indigo-800", "oklch(39.8% 0.195 277.366)"),
+      ("--color-indigo-900", "oklch(35.9% 0.144 278.697)"),
+    ];
+    for (k, v) in palette {
+      t.add(k, v, d);
+    }
+
+    // ── Border radius ───────────────────────────────────────────────────
+    t.add("--radius-xs", "0.125rem", d);
+    t.add("--radius-sm", "0.25rem", d);
+    t.add("--radius-md", "0.375rem", d);
+    t.add("--radius-lg", "0.5rem", d);
+    t.add("--radius-xl", "0.75rem", d);
+    t.add("--radius-2xl", "1rem", d);
+    t.add("--radius-3xl", "1.5rem", d);
+    t.add("--radius-4xl", "2rem", d);
+
+    // ── Font size with nested line-height ───────────────────────────────
+    let text: &[(&str, &str, &str)] = &[
+      ("--text-xs", "0.75rem", "calc(1 / 0.75)"),
+      ("--text-sm", "0.875rem", "calc(1.25 / 0.875)"),
+      ("--text-base", "1rem", "calc(1.5 / 1)"),
+      ("--text-lg", "1.125rem", "calc(1.75 / 1.125)"),
+      ("--text-xl", "1.25rem", "calc(1.75 / 1.25)"),
+      ("--text-2xl", "1.5rem", "calc(2 / 1.5)"),
+      ("--text-3xl", "1.875rem", "calc(2.25 / 1.875)"),
+      ("--text-4xl", "2.25rem", "calc(2.5 / 2.25)"),
+      ("--text-5xl", "3rem", "1"),
+      ("--text-6xl", "3.75rem", "1"),
+      ("--text-7xl", "4.5rem", "1"),
+      ("--text-8xl", "6rem", "1"),
+      ("--text-9xl", "8rem", "1"),
+    ];
+    for (k, size, lh) in text {
+      t.add(k, size, d);
+      t.add(&format!("{k}--line-height"), lh, d);
+    }
+
+    // ── Font weight ─────────────────────────────────────────────────────
+    let weight: &[(&str, &str)] = &[
+      ("--font-weight-thin", "100"),
+      ("--font-weight-extralight", "200"),
+      ("--font-weight-light", "300"),
+      ("--font-weight-normal", "400"),
+      ("--font-weight-medium", "500"),
+      ("--font-weight-semibold", "600"),
+      ("--font-weight-bold", "700"),
+      ("--font-weight-extrabold", "800"),
+      ("--font-weight-black", "900"),
+    ];
+    for (k, v) in weight {
+      t.add(k, v, d);
+    }
+
+    t
+  }
+
   /// Total number of theme entries.
   pub fn size(&self) -> usize {
     self.values.len()
