@@ -15,6 +15,7 @@ pub mod scanner;
 pub mod theme;
 pub mod utilities;
 pub mod utils;
+pub mod value_parser;
 pub mod variants;
 pub mod walk;
 
