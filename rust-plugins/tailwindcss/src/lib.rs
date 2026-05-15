@@ -44,6 +44,22 @@ struct TailwindCSSOptions {
   config: Option<serde_json::Value>,
 }
 
+/// Returns `true` if `content` contains any TailwindCSS root directive.
+///
+/// We look for `@tailwind`, `@apply ` (note the space — guards against
+/// `@applyXyz` identifiers), and quoted `@import "tailwindcss"` /
+/// `@import 'tailwindcss'`. Each check is a single-pass substring search;
+/// the early-exit on `@tailwind` covers the most common case first.
+fn has_tailwind_directive(content: &str) -> bool {
+  if content.contains("@tailwind") {
+    return true;
+  }
+  if content.contains("@apply ") {
+    return true;
+  }
+  content.contains("@import \"tailwindcss\"") || content.contains("@import 'tailwindcss'")
+}
+
 #[farm_plugin]
 pub struct FarmPluginTailwindCSS {
   _options: TailwindCSSOptions,
@@ -145,12 +161,7 @@ impl Plugin for FarmPluginTailwindCSS {
     }
 
     // Check if this CSS file contains a tailwindcss directive
-    let has_tailwind_directive = param.content.contains("@import \"tailwindcss\"")
-      || param.content.contains("@import 'tailwindcss'")
-      || param.content.contains("@tailwind")
-      || param.content.contains("@apply ");
-
-    if !has_tailwind_directive {
+    if !has_tailwind_directive(&param.content) {
       return Ok(None);
     }
 
@@ -306,5 +317,18 @@ mod tests {
     let plugin = FarmPluginTailwindCSS::new(&config, "{}".to_string());
     assert_eq!(plugin.name(), "FarmPluginTailwindCSS");
     assert_eq!(plugin.priority(), 101);
+  }
+
+  #[test]
+  fn has_tailwind_directive_detects_all_forms() {
+    assert!(has_tailwind_directive("@tailwind utilities;"));
+    assert!(has_tailwind_directive("@tailwind base;\n@tailwind components;"));
+    assert!(has_tailwind_directive(".btn { @apply px-4; }"));
+    assert!(has_tailwind_directive("@import \"tailwindcss\";"));
+    assert!(has_tailwind_directive("@import 'tailwindcss';"));
+    assert!(!has_tailwind_directive(".btn { color: red; }"));
+    assert!(!has_tailwind_directive("@import \"./theme.css\";"));
+    // Guard against false positives on identifiers that share a prefix.
+    assert!(!has_tailwind_directive(".btn { @applyXyz: 1; }"));
   }
 }
