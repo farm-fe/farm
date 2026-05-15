@@ -1,5 +1,6 @@
 use serde_json::Value;
 
+use crate::apply::substitute_at_apply;
 use crate::ast::{self, AstNode};
 use crate::design_system::DesignSystem;
 use crate::parser::parse;
@@ -114,6 +115,7 @@ impl Default for CompilerOptions {
 /// Compiled core state.
 pub struct Compiler {
   design_system: DesignSystem,
+  ast: Vec<AstNode>,
   pub features: Features,
   pub polyfills: Polyfills,
   dependencies: Vec<String>,
@@ -122,9 +124,15 @@ pub struct Compiler {
 }
 
 impl Compiler {
-  fn new(design_system: DesignSystem, features: Features, options: CompilerOptions) -> Self {
+  fn new(
+    design_system: DesignSystem,
+    ast: Vec<AstNode>,
+    features: Features,
+    options: CompilerOptions,
+  ) -> Self {
     Self {
       design_system,
+      ast,
       features,
       polyfills: options.polyfills,
       dependencies: options.dependencies,
@@ -133,10 +141,36 @@ impl Compiler {
     }
   }
 
-  /// Build final CSS from the given candidate list.
+  /// Build final CSS for the given candidate list.
+  ///
+  /// The compiler weaves the user CSS AST together with generated utility
+  /// declarations:
+  ///   1. `@apply` at-rules in the user AST are substituted against the
+  ///      design system (Phase 17).
+  ///   2. `@tailwind utilities` / `@tailwind components` / `@tailwind base`
+  ///      and `@import "tailwindcss"`-style markers are replaced inline with
+  ///      the CSS generated from the supplied candidate list.
+  ///   3. The combined AST is optimised (adjacent at-rule merging, ...) and
+  ///      serialised to CSS.
   pub fn build(&mut self, candidates: &[String]) -> String {
-    let nodes = self.design_system.compile_candidates(candidates);
-    let optimized = ast::optimize_ast(nodes);
+    let mut ast = self.ast.clone();
+
+    // 1. Substitute @apply against the design system. If substitution fails
+    //    (unknown utility / @apply inside @keyframes), fall back to the
+    //    unmodified AST so the compiler is still infallible at this stage —
+    //    upstream surfaces these errors separately.
+    if let Ok(replaced) = substitute_at_apply(ast, &self.design_system) {
+      ast = replaced;
+    } else {
+      ast = self.ast.clone();
+    }
+
+    // 2. Inline generated utilities at every Tailwind marker.
+    let utilities = self.design_system.compile_candidates(candidates);
+    ast = inline_tailwind_markers(ast, &utilities);
+
+    // 3. Optimise + serialise.
+    let optimized = ast::optimize_ast(ast);
     ast::to_css(&optimized)
   }
 
@@ -154,6 +188,41 @@ impl Compiler {
   pub fn config(&self) -> Option<&TailwindConfig> {
     self.config.as_ref()
   }
+}
+
+/// Return `true` if the given at-rule is a Tailwind injection marker — i.e.
+/// `@tailwind utilities|components|base|screens` or
+/// `@import "tailwindcss"…`.
+fn is_tailwind_marker(name: &str, params: &str) -> bool {
+  match name {
+    "@tailwind" => true,
+    "@import" => params.contains("tailwindcss"),
+    _ => false,
+  }
+}
+
+/// Walk the AST and replace every Tailwind marker at-rule (see
+/// [`is_tailwind_marker`]) with a clone of `utilities`. Nested rules are
+/// recursed into so markers inside `@layer` / `@media` are also handled.
+fn inline_tailwind_markers(nodes: Vec<AstNode>, utilities: &[AstNode]) -> Vec<AstNode> {
+  let mut out = Vec::with_capacity(nodes.len());
+  for node in nodes {
+    match node {
+      AstNode::AtRule(at) if is_tailwind_marker(&at.name, &at.params) => {
+        out.extend(utilities.iter().cloned());
+      }
+      AstNode::AtRule(mut at) => {
+        at.nodes = inline_tailwind_markers(at.nodes, utilities);
+        out.push(AstNode::AtRule(at));
+      }
+      AstNode::Rule(mut rule) => {
+        rule.nodes = inline_tailwind_markers(rule.nodes, utilities);
+        out.push(AstNode::Rule(rule));
+      }
+      other => out.push(other),
+    }
+  }
+  out
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
@@ -183,7 +252,7 @@ pub fn compile(css: &str, options: CompilerOptions) -> Result<Compiler, CompileE
   let theme = Theme::default();
   let design_system = DesignSystem::build(&ast, theme);
 
-  Ok(Compiler::new(design_system, features, options))
+  Ok(Compiler::new(design_system, ast, features, options))
 }
 
 // ── feature detection ─────────────────────────────────────────────────────────

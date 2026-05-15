@@ -2,7 +2,10 @@
 source: rust-ecosystem/tailwindcss/tests/compiler.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-css: 
+css: .foo {
+  color: red;
+}
+
 map: {"version":3,"sources":[],"names":[],"mappings":""}
 deps: /tmp/input.css
 has_config: true
