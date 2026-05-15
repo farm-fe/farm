@@ -110,3 +110,83 @@ fn build_drops_marker_when_no_candidates() {
   assert!(css.contains(".foo"));
   assert!(!css.contains("@tailwind"));
 }
+
+#[test]
+fn build_registers_user_at_utility_block() {
+  let mut compiler = compile(
+    "@utility tab-4 {\n  tab-size: 4;\n}\n@tailwind utilities;\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["tab-4".to_string()]);
+  assert!(
+    css.contains("tab-size: 4") || css.contains("tab-size:4"),
+    "expected user @utility tab-4 to emit tab-size: 4, got: {css}"
+  );
+  assert!(
+    css.contains(".tab-4"),
+    "expected .tab-4 class selector to be emitted: {css}"
+  );
+  assert!(
+    !css.contains("@utility"),
+    "expected @utility rule to be stripped from output: {css}"
+  );
+}
+
+#[test]
+fn build_user_utility_can_override_builtin() {
+  let mut compiler = compile(
+    "@utility block {\n  display: grid;\n}\n@tailwind utilities;\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["block".to_string()]);
+  assert!(
+    css.contains("display: grid") || css.contains("display:grid"),
+    "user @utility block should override built-in to emit display: grid: {css}"
+  );
+  assert!(
+    !css.contains("display: block") && !css.contains("display:block"),
+    "built-in display: block should not be emitted when overridden: {css}"
+  );
+}
+
+#[test]
+fn build_registers_custom_variant_selector_form() {
+  let mut compiler = compile(
+    "@custom-variant pointer-coarse (&:hover);\n@tailwind utilities;\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["pointer-coarse:flex".to_string()]);
+  assert!(
+    css.contains(":hover"),
+    "expected custom variant body `&:hover` to produce `:hover`, got: {css}"
+  );
+  assert!(
+    css.contains("display: flex") || css.contains("display:flex"),
+    "expected display: flex from utility: {css}"
+  );
+  assert!(
+    !css.contains("@custom-variant"),
+    "expected @custom-variant rule to be stripped from output: {css}"
+  );
+}
+
+#[test]
+fn build_registers_custom_variant_at_rule_form() {
+  let mut compiler = compile(
+    "@custom-variant pointer-coarse (@media (pointer: coarse));\n@tailwind utilities;\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["pointer-coarse:flex".to_string()]);
+  assert!(
+    css.contains("@media") && css.contains("pointer: coarse"),
+    "expected custom variant @media wrapper, got: {css}"
+  );
+}

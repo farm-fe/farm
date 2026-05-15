@@ -155,14 +155,20 @@ impl Compiler {
   pub fn build(&mut self, candidates: &[String]) -> String {
     let mut ast = self.ast.clone();
 
+    // 0. Strip `@utility` / `@custom-variant` rules — they have been consumed
+    //    by the design system during `compile` and should not appear in the
+    //    serialised output.
+    ast = strip_user_definitions(ast);
+
     // 1. Substitute @apply against the design system. If substitution fails
     //    (unknown utility / @apply inside @keyframes), fall back to the
     //    unmodified AST so the compiler is still infallible at this stage —
     //    upstream surfaces these errors separately.
+    let pre_apply = ast.clone();
     if let Ok(replaced) = substitute_at_apply(ast, &self.design_system) {
       ast = replaced;
     } else {
-      ast = self.ast.clone();
+      ast = pre_apply;
     }
 
     // 2. Inline generated utilities at every Tailwind marker.
@@ -217,6 +223,30 @@ fn inline_tailwind_markers(nodes: Vec<AstNode>, utilities: &[AstNode]) -> Vec<As
       }
       AstNode::Rule(mut rule) => {
         rule.nodes = inline_tailwind_markers(rule.nodes, utilities);
+        out.push(AstNode::Rule(rule));
+      }
+      other => out.push(other),
+    }
+  }
+  out
+}
+
+/// Recursively remove `@utility` and `@custom-variant` rules from the AST.
+/// These are consumed during design-system construction and must not appear
+/// in the serialised CSS output.
+fn strip_user_definitions(nodes: Vec<AstNode>) -> Vec<AstNode> {
+  let mut out = Vec::with_capacity(nodes.len());
+  for node in nodes {
+    match node {
+      AstNode::AtRule(at) if at.name == "@utility" || at.name == "@custom-variant" => {
+        // drop
+      }
+      AstNode::AtRule(mut at) => {
+        at.nodes = strip_user_definitions(at.nodes);
+        out.push(AstNode::AtRule(at));
+      }
+      AstNode::Rule(mut rule) => {
+        rule.nodes = strip_user_definitions(rule.nodes);
         out.push(AstNode::Rule(rule));
       }
       other => out.push(other),

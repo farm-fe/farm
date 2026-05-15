@@ -80,7 +80,11 @@ fn process_nodes(
             ApplyError::UnknownUtility(name.to_string())
           })?;
 
-          let generated = ds.utilities.generate(&candidate, &ds.theme);
+          let generated = ds.utilities.generate_with_variants(
+            &candidate,
+            &ds.theme,
+            Some(&ds.variants),
+          );
           if generated.is_empty() {
             return Err(ApplyError::UnknownUtility(name.to_string()));
           }

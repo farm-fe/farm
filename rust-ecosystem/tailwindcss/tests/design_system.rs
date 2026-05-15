@@ -1,4 +1,4 @@
-use farmfe_ecosystem_tailwindcss::{compile, CompilerOptions, Features, Polyfills};
+use farmfe_ecosystem_tailwindcss::{compile, CompilerOptions, Features};
 
 #[test]
 fn test_compiler_build_processes_candidates() {

@@ -17,6 +17,9 @@ pub type FunctionalHandler = fn(&ParsedCandidate, &Theme) -> Option<Vec<(String,
 pub struct UtilityRegistry {
   static_utilities: HashMap<&'static str, DeclList>,
   functional: HashMap<&'static str, FunctionalHandler>,
+  /// User-defined static utilities registered from `@utility` blocks in the
+  /// source CSS. Looked up before the built-ins so users may override.
+  user_static_utilities: HashMap<String, Vec<(String, String)>>,
 }
 
 impl UtilityRegistry {
@@ -354,16 +357,37 @@ impl UtilityRegistry {
     Self {
       static_utilities: m,
       functional: f,
+      user_static_utilities: HashMap::new(),
     }
+  }
+
+  /// Register a user-defined static utility (typically discovered from an
+  /// `@utility name { … }` block in the source CSS). User utilities are
+  /// looked up before the built-ins, allowing overrides.
+  pub fn register_static_utility(&mut self, name: String, declarations: Vec<(String, String)>) {
+    self.user_static_utilities.insert(name, declarations);
   }
 
   /// Returns `true` if a utility root exists in the registry.
   pub fn has(&self, name: &str) -> bool {
-    self.static_utilities.contains_key(name) || self.functional.contains_key(name)
+    self.user_static_utilities.contains_key(name)
+      || self.static_utilities.contains_key(name)
+      || self.functional.contains_key(name)
   }
 
   /// Generate CSS AST nodes for a parsed candidate.
   pub fn generate(&self, candidate: &ParsedCandidate, theme: &Theme) -> Vec<AstNode> {
+    self.generate_with_variants(candidate, theme, None)
+  }
+
+  /// Generate CSS AST nodes for a parsed candidate, consulting an optional
+  /// [`crate::variants::VariantRegistry`] for user-defined custom variants.
+  pub fn generate_with_variants(
+    &self,
+    candidate: &ParsedCandidate,
+    theme: &Theme,
+    variant_registry: Option<&crate::variants::VariantRegistry>,
+  ) -> Vec<AstNode> {
     // Arbitrary property: [color:red]
     if let Some((ref property, ref value)) = candidate.arbitrary_property {
       let class_name = format!("[{}:{}]", property, value);
@@ -376,6 +400,7 @@ impl UtilityRegistry {
         &class_name,
         &candidate.variants,
         vec![AstNode::Declaration(decl)],
+        variant_registry,
       );
     }
 
@@ -394,6 +419,28 @@ impl UtilityRegistry {
       },
     };
 
+    // User-defined static utilities take precedence over built-ins so
+    // `@utility` blocks may override built-in classes.
+    if let Some(declarations) = self.user_static_utilities.get(compound_key.as_str()) {
+      let class_name = build_class_name(candidate);
+      let decl_nodes: Vec<AstNode> = declarations
+        .iter()
+        .map(|(prop, val)| {
+          AstNode::Declaration(Declaration {
+            property: prop.clone(),
+            value: Some(val.clone()),
+            important: candidate.important,
+          })
+        })
+        .collect();
+      return wrap_with_variants(
+        &class_name,
+        &candidate.variants,
+        decl_nodes,
+        variant_registry,
+      );
+    }
+
     if let Some(declarations) = self.static_utilities.get(compound_key.as_str()) {
       let class_name = build_class_name(candidate);
       let decl_nodes: Vec<AstNode> = declarations
@@ -406,7 +453,12 @@ impl UtilityRegistry {
           })
         })
         .collect();
-      return wrap_with_variants(&class_name, &candidate.variants, decl_nodes);
+      return wrap_with_variants(
+        &class_name,
+        &candidate.variants,
+        decl_nodes,
+        variant_registry,
+      );
     }
 
     // Functional utilities — match the compound key first, then the root.
@@ -434,7 +486,12 @@ impl UtilityRegistry {
             })
           })
           .collect();
-        return wrap_with_variants(&class_name, &candidate.variants, decl_nodes);
+        return wrap_with_variants(
+          &class_name,
+          &candidate.variants,
+          decl_nodes,
+          variant_registry,
+        );
       }
     }
 
@@ -482,6 +539,7 @@ fn wrap_with_variants(
   class_name: &str,
   variants: &[String],
   decl_nodes: Vec<AstNode>,
+  variant_registry: Option<&crate::variants::VariantRegistry>,
 ) -> Vec<AstNode> {
   let escaped = escape_class_name(class_name);
   let base_selector = build_base_selector_with_pseudo_classes(&escaped, variants);
@@ -489,7 +547,7 @@ fn wrap_with_variants(
     return Vec::new();
   }
   let (base_selector, remaining) = base_selector.unwrap();
-  match crate::variants::apply_variants(base_selector, &remaining, decl_nodes) {
+  match crate::variants::apply_variants(base_selector, &remaining, decl_nodes, variant_registry) {
     Some(node) => vec![node],
     None => Vec::new(),
   }

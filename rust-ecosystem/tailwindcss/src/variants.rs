@@ -21,6 +21,11 @@ use crate::ast::{AstNode, AtRule, StyleRule};
 /// in [`apply_variants`] and friends and does **not** consult this registry.
 pub struct VariantRegistry {
   variants: HashSet<&'static str>,
+  /// User-defined custom variants registered from `@custom-variant` rules in
+  /// the source CSS. Maps the variant name to a selector template containing
+  /// `&` (e.g. `&:hover`, `&[data-state="open"]`) or an `@<at-rule>(<params>)`
+  /// form (e.g. `@media (pointer: coarse)`) for at-rule wrappers.
+  user_variants: std::collections::HashMap<String, String>,
 }
 
 impl Default for VariantRegistry {
@@ -61,7 +66,25 @@ impl VariantRegistry {
     .into_iter()
     .collect();
 
-    Self { variants }
+    Self {
+      variants,
+      user_variants: std::collections::HashMap::new(),
+    }
+  }
+
+  /// Register a user-defined custom variant (typically from a
+  /// `@custom-variant name (selector);` rule in the source CSS).
+  ///
+  /// The `body` is either a selector template containing `&` (e.g.
+  /// `&:hover`) which replaces the current selector, or an at-rule form
+  /// `@media (...)` / `@supports (...)` which wraps the rule.
+  pub fn register_custom_variant(&mut self, name: String, body: String) {
+    self.user_variants.insert(name, body);
+  }
+
+  /// Look up a registered custom variant by name.
+  pub fn custom_variant(&self, name: &str) -> Option<&str> {
+    self.user_variants.get(name).map(|s| s.as_str())
   }
 
   /// Returns `true` if the variant name is registered as a built-in.
@@ -71,7 +94,7 @@ impl VariantRegistry {
   /// not by name, so they return `false` here unless they happen to be a
   /// registered alias.
   pub fn has(&self, name: &str) -> bool {
-    self.variants.contains(name)
+    self.variants.contains(name) || self.user_variants.contains_key(name)
   }
 }
 
@@ -95,6 +118,7 @@ pub fn apply_variants(
   class_selector: String,
   variants: &[String],
   nodes: Vec<AstNode>,
+  registry: Option<&VariantRegistry>,
 ) -> Option<AstNode> {
   // Start with a single-rule node carrying the base selector + declarations.
   let mut current_selector = class_selector;
@@ -104,7 +128,7 @@ pub fn apply_variants(
   // (closest to the utility) is applied first. This is the same order as
   // upstream's variant application.
   for variant in variants.iter().rev() {
-    let step = resolve_variant(&current_selector, variant)?;
+    let step = resolve_variant(&current_selector, variant, registry)?;
     match step {
       VariantStep::Selector(new_sel) => current_selector = new_sel,
       VariantStep::AtRule { name, params } => at_rules.push((name, params)),
@@ -131,7 +155,19 @@ pub fn apply_variants(
 
 /// Resolve a single variant against the current selector, producing a
 /// [`VariantStep`]. Returns `None` for unknown variants.
-fn resolve_variant(selector: &str, variant: &str) -> Option<VariantStep> {
+fn resolve_variant(
+  selector: &str,
+  variant: &str,
+  registry: Option<&VariantRegistry>,
+) -> Option<VariantStep> {
+  // 0. User-defined custom variants (registered via `@custom-variant`) take
+  //    precedence over built-ins so users can override.
+  if let Some(reg) = registry {
+    if let Some(body) = reg.custom_variant(variant) {
+      return Some(resolve_custom_variant_body(selector, body));
+    }
+  }
+
   // 1. Arbitrary selector variant: `[&_p]`, `[&:hover]`, `[&>div]`, …
   if let Some(body) = variant.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
     return Some(VariantStep::Selector(apply_arbitrary_selector(selector, body)));
@@ -149,6 +185,30 @@ fn resolve_variant(selector: &str, variant: &str) -> Option<VariantStep> {
 
   // 4. Plain pseudo / at-rule alias.
   resolve_named(selector, variant)
+}
+
+/// Apply a registered `@custom-variant` body. The body is either:
+///   - a selector template containing `&`, e.g. `&:hover` →
+///     [`VariantStep::Selector`]
+///   - an at-rule form `@<name> (<params>)`, e.g. `@media (pointer:coarse)` →
+///     [`VariantStep::AtRule`]
+fn resolve_custom_variant_body(selector: &str, body: &str) -> VariantStep {
+  let trimmed = body.trim();
+  if let Some(rest) = trimmed.strip_prefix('@') {
+    // Split into `<name> <params>` at the first whitespace or `(`.
+    let mut split_at = rest.len();
+    for (i, ch) in rest.char_indices() {
+      if ch == ' ' || ch == '\t' || ch == '(' {
+        split_at = i;
+        break;
+      }
+    }
+    let name = format!("@{}", &rest[..split_at]);
+    let params = rest[split_at..].trim().to_string();
+    return VariantStep::AtRule { name, params };
+  }
+  // Selector template — substitute `&` with the current selector.
+  VariantStep::Selector(trimmed.replace('&', selector))
 }
 
 // ── named (alias) variants ─────────────────────────────────────────────────
@@ -576,13 +636,13 @@ mod tests {
 
   #[test]
   fn hover_appends_pseudo() {
-    let step = resolve_variant(".a", "hover").unwrap();
+    let step = resolve_variant(".a", "hover", None).unwrap();
     assert_eq!(step, VariantStep::Selector(".a:hover".to_string()));
   }
 
   #[test]
   fn sm_wraps_media() {
-    let step = resolve_variant(".a", "sm").unwrap();
+    let step = resolve_variant(".a", "sm", None).unwrap();
     assert!(matches!(
       step,
       VariantStep::AtRule { ref name, ref params }
@@ -592,7 +652,7 @@ mod tests {
 
   #[test]
   fn data_arbitrary_attribute() {
-    let step = resolve_variant(".a", "data-[size=large]").unwrap();
+    let step = resolve_variant(".a", "data-[size=large]", None).unwrap();
     assert_eq!(
       step,
       VariantStep::Selector(".a[data-size=\"large\"]".to_string())
@@ -601,7 +661,7 @@ mod tests {
 
   #[test]
   fn group_hover_compounds() {
-    let step = resolve_variant(".a", "group-hover").unwrap();
+    let step = resolve_variant(".a", "group-hover", None).unwrap();
     assert_eq!(
       step,
       VariantStep::Selector(":where(.group):hover .a".to_string())
@@ -610,13 +670,13 @@ mod tests {
 
   #[test]
   fn arbitrary_selector_replaces_ampersand() {
-    let step = resolve_variant(".a", "[&_p]").unwrap();
+    let step = resolve_variant(".a", "[&_p]", None).unwrap();
     assert_eq!(step, VariantStep::Selector(".a p".to_string()));
   }
 
   #[test]
   fn arbitrary_min_breakpoint() {
-    let step = resolve_variant(".a", "min-[640px]").unwrap();
+    let step = resolve_variant(".a", "min-[640px]", None).unwrap();
     assert!(matches!(
       step,
       VariantStep::AtRule { ref name, ref params }
@@ -626,7 +686,7 @@ mod tests {
 
   #[test]
   fn container_query_named() {
-    let step = resolve_variant(".a", "@md").unwrap();
+    let step = resolve_variant(".a", "@md", None).unwrap();
     assert!(matches!(
       step,
       VariantStep::AtRule { ref name, ref params }
