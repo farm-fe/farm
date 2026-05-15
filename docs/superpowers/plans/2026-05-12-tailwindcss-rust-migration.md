@@ -10,7 +10,7 @@
 
 ---
 
-## Implementation Status (updated 2026-05-13)
+## Implementation Status (updated 2026-05-15)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
@@ -27,13 +27,30 @@
 | Phase 7.1: apply.rs (@apply substitution) | ✅ **Done** | 4 tests pass |
 | Phase 8.1: tailwindcss-node compile() for new Result API | ✅ **Done** | Node crate compiles; .map_err() added |
 | Phase 9: Plugin → oxide Scanner | ✅ **Done** | Rust plugin now uses `tailwindcss-oxide` Scanner from remote package source (git tag `v4.1.12`), extension-aware scanning, and JS-parity candidate file guard |
-| Phase 10: Final verification | ✅ **Done** | All tests pass; clippy clean |
+| Phase 10: Initial verification | ✅ **Done** | All tests pass; clippy clean |
+| **Phase 11: Foundation utils (Plan B alignment)** | 🚧 **In progress** | See sub-tasks below |
+| Phase 11.1: utils/segment.rs | ✅ **Done** | All 12 upstream `segment.test.ts` cases ported and pass |
+| Phase 11.2: utils/escape.rs | ✅ **Done** | All 3 upstream `escape.test.ts` cases ported and pass |
+| Phase 11.3: utils/infer_data_type.rs | ⏳ **Pending** | Port `utils/infer-data-type.ts` (371 LoC) + tests |
+| Phase 11.4: utils/decode_arbitrary_value.rs | ⏳ **Pending** | Port `utils/decode-arbitrary-value.ts` (93 LoC) + tests |
+| Phase 11.5: value_parser.rs | ⏳ **Pending** | Port `value-parser.ts` (279 LoC) + tests (219 LoC) |
+| Phase 11.6: selector_parser.rs | ⏳ **Pending** | Port `selector-parser.ts` (421 LoC) + tests |
+| Phase 11.7: attribute_selector_parser.rs | ⏳ **Pending** | Port `attribute-selector-parser.ts` (229 LoC) + tests |
+| Phase 12: AST/parser parity | ⏳ **Pending** | Full `optimize_ast` rules; nested at-rules; escape handling |
+| Phase 13: Candidate parser parity | ⏳ **Pending** | important / negative / modifier / arbitrary |
+| Phase 14: Theme parity | ⏳ **Pending** | Namespaces / key-paths / inline / default theme |
+| Phase 15: Variants parity | ⏳ **Pending** | Functional variants, media/container/supports, data/aria, peer/group |
+| Phase 16: Utilities (~560 registrations) | ⏳ **Pending** | Port all of `utilities.ts` (6751 LoC) |
+| Phase 17: @apply parity | ⏳ **Pending** | Recursive resolution, important propagation |
+| Phase 18: CSS function parity | ⏳ **Pending** | `theme()`, `--spacing()`, etc. |
+| Phase 19: property-order.rs | ⏳ **Pending** | Deterministic output ordering (440 LoC) |
+| Phase 20: compat decision | ⏳ **Pending** | Mark `compat/` out of scope or open Phase 21+ |
+| Phase 21: Final integration | ⏳ **Pending** | E2E snapshot tests against upstream fixtures |
 
 ### Summary
-- **53 new tests** written TDD-style (RED then GREEN) across 10 test files
-- `Compiler::build()` now processes real candidate strings via `DesignSystem`
-- `compile()` returns `Result<Compiler, CompileError>` (breaking change — node crate updated)
-- All existing tests still pass (snapshot updated for new feature detection semantics)
+- **88 tests** (73 prior + 15 new for `utils/segment` and `utils/escape`) pass
+- Plan B (full upstream alignment) opened; Phase 11 foundation utils underway, two of seven sub-modules complete
+- Pure-Rust ports follow upstream test cases verbatim (TDD: tests written first from upstream `*.test.ts`, then implementation)
 
 ---
 
