@@ -145,3 +145,47 @@ fn test_arbitrary_property_value_underscore_becomes_space() {
     Some("Helvetica Neue")
   );
 }
+
+// --- Phase 13 closure: paren-arbitrary CSS variable shorthand ---
+// Ported from upstream tailwindlabs/tailwindcss `candidate.test.ts`.
+
+#[test]
+fn test_paren_shorthand_var_value() {
+  let c = parse_candidate("bg-(--my-color)").expect("should parse");
+  assert_eq!(c.utility_root, "bg");
+  assert_eq!(c.arbitrary_value.as_deref(), Some("var(--my-color)"));
+  assert_eq!(c.type_hint, None);
+}
+
+#[test]
+fn test_paren_shorthand_rejects_non_var_value() {
+  // Upstream: `bg-(my-color)` is invalid because the inner value does not
+  // start with `--`.
+  assert!(parse_candidate("bg-(my-color)").is_none());
+}
+
+#[test]
+fn test_paren_shorthand_with_type_hint() {
+  let c = parse_candidate("bg-(color:--my-color)").expect("should parse");
+  assert_eq!(c.utility_root, "bg");
+  assert_eq!(c.arbitrary_value.as_deref(), Some("var(--my-color)"));
+  assert_eq!(c.type_hint.as_deref(), Some("color"));
+}
+
+#[test]
+fn test_paren_shorthand_escaped_underscore_decoded() {
+  // `\_` inside the paren-shorthand decodes to a literal `_`. Plain `_` is
+  // also preserved as `_` (unlike bracket-arbitrary values which convert
+  // underscores to spaces).
+  let c = parse_candidate(r"flex-(--\_foo)").expect("should parse");
+  assert_eq!(c.arbitrary_value.as_deref(), Some("var(--_foo)"));
+
+  let c2 = parse_candidate("flex-(--_foo)").expect("should parse");
+  assert_eq!(c2.arbitrary_value.as_deref(), Some("var(--_foo)"));
+}
+
+#[test]
+fn test_paren_shorthand_empty_is_rejected() {
+  assert!(parse_candidate("bg-()").is_none());
+}
+

@@ -46,8 +46,8 @@
 | Phase 11.15: selector_parser.rs | ✅ **Done** | Top-level module ported; supports `:not`/`:where`/`:has`/`:is` recursion |
 | Phase 11.16: attribute_selector_parser.rs | ✅ **Done** | Top-level module ported with enums for operator/quote/case-sensitivity |
 | Phase 12: AST/parser parity | ✅ **Done** | Adjacent same-name+same-params `@`-rule merging in `optimize_ast` (recursive); 4 new tests |
-| Phase 13: Candidate parser parity | ✅ **Done** | Negative utilities (`-mt-4`, `hover:-mt-4`, `!-mt-4`); underscore→space normalisation in arbitrary values + arbitrary properties (preserves `\_` escapes and underscores inside `url(...)`); 9 new tests |
-| Phase 14: Theme parity | ⏳ **Pending** | Namespaces / key-paths / inline / default theme |
+| Phase 13: Candidate parser parity | ✅ **Done** | Negative utilities (`-mt-4`, `hover:-mt-4`, `!-mt-4`); underscore→space normalisation in arbitrary values + arbitrary properties (preserves `\_` escapes and underscores inside `url(...)`); paren-arbitrary CSS-variable shorthand `bg-(--my-color)` → `var(--my-color)` (with `\_` decode + optional type hint `bg-(color:--my-color)`); paren-aware `:` variant splitter; 14 new tests |
+| Phase 14: Theme parity | ✅ **Done** | Full upstream `theme.ts` port: `ThemeOptions` bit-flags (`NONE`/`INLINE`/`REFERENCE`/`DEFAULT`/`STATIC`/`USED`), `add()` with namespace wildcards (`--ns-*: initial`, `--*: initial`), `resolve()`/`resolve_value()`/`resolve_with()` (candidate-value + dot-to-underscore fallback + ignored-key map), `keys_in_namespaces`, `clear_namespace`, `namespace`, prefixed `var(--tw-…)` output, `mark_used_variable`, `add_keyframes`/`get_keyframes`; 21 new tests |
 | Phase 15: Variants parity | ⏳ **Pending** | Functional variants, media/container/supports, data/aria, peer/group |
 | Phase 16: Utilities (~560 registrations) | ⏳ **Pending** | Port all of `utilities.ts` (6751 LoC) |
 | Phase 17: @apply parity | ⏳ **Pending** | Recursive resolution, important propagation |
@@ -57,25 +57,25 @@
 | Phase 21: Final integration | ⏳ **Pending** | E2E snapshot tests against upstream fixtures |
 
 ### Summary
-- **267 tests** pass across `farmfe_ecosystem_tailwindcss` (verified 2026-05-15 via `cargo test --tests`; +13 over the 254 baseline).
+- **293 tests** pass across `farmfe_ecosystem_tailwindcss` (verified 2026-05-15 via `cargo test --tests`; +26 over the 267 Phase-13 baseline).
 - **Phase 11 (Plan B foundation utils) is complete**: all 16 sub-modules ported (`segment`, `escape`, `to_key_path`, `brace_expansion`, `compare`, `compare_breakpoints`, `math_operators`, `is_color`, `is_valid_arbitrary`, `dimensions`, `decode_arbitrary_value`, `infer_data_type`, `replace_shadow_colors`, plus top-level `value_parser`, `selector_parser`, `attribute_selector_parser`).
 - **Phase 12 (AST/parser parity)**: `optimize_ast` now merges consecutive `@`-rules with identical name+params recursively, matching upstream behavior (e.g. two `@media (min-width: 640px)` blocks → one merged block, with inner `@media` blocks also coalesced).
-- **Phase 13 (Candidate parser parity)**: `ParsedCandidate` gained a `negative: bool` field; leading `-` after variant stripping is detected (with arbitrary properties left untouched); arbitrary values and arbitrary-property values normalise `_` → space while preserving `\_` escapes and underscores inside `url(...)`.
-- TDD discipline: tests are ported verbatim from upstream `*.test.ts` first, then implementation. Where upstream has no dedicated test file (`compare-breakpoints`), tests are derived from documented behavior in source comments.
+- **Phase 13 (Candidate parser parity)**: `ParsedCandidate` gained a `negative: bool` field; leading `-` after variant stripping is detected (with arbitrary properties left untouched); arbitrary values and arbitrary-property values normalise `_` → space while preserving `\_` escapes and underscores inside `url(...)`. Added paren-arbitrary CSS-variable shorthand (`bg-(--my-var)` → `var(--my-var)`, only inner values starting with `--` are accepted) with `\_` escape decoding and optional type hint (`bg-(color:--my-color)`). The `:` variant splitter is now paren-aware so colons inside `(...)` are not treated as variant separators.
+- **Phase 14 (Theme parity)**: rewrote `theme.rs` to mirror upstream `Theme` class. Theme entries store a value + bit-flag options (`NONE`/`INLINE`/`REFERENCE`/`DEFAULT`/`STATIC`/`USED`). `add()` honours namespace wildcards (`--font-*: initial`, `--*: initial`) and the `DEFAULT` precedence rule (existing user value wins). `resolve()` returns either `var(--…)` (with `REFERENCE` fallback) or the inline value (when entry/options carry `INLINE`); candidate-value fallback retries `1.5` → `1_5`. The upstream `ignoredThemeKeyMap` is ported (so e.g. `--font` does not match `--font-weight-*`/`--font-size-*` keys). Added `keys_in_namespaces`, `clear_namespace`, `namespace`, `mark_used_variable`, `entries_sorted`, prefix support (`prefix_key`/`unprefix_key`), and keyframe collection (`add_keyframes`/`get_keyframes`). Back-compat helpers `lookup_var` and `resolve_by_key_path` preserved so existing callers (`functions.rs`, tests) keep working.
+- TDD discipline: tests are ported verbatim from upstream `*.test.ts` first, then implementation. Where upstream has no dedicated test file (`theme.ts`, `compare-breakpoints`), tests are derived from documented behavior in source comments and from inline test fixtures elsewhere in the codebase.
 - New runtime dep: `thiserror = "1"` for `BraceExpansionError`.
 
-### Remaining work (Phases 12–21)
+### Remaining work (Phases 15–21)
 
-Phases 14 onward target full upstream parity with tailwindcss v4. The aggregate LoC to port is large (~15,000+ upstream TS LoC), so each phase is intended to be its own session/PR. Suggested ordering:
+Phases 15 onward target full upstream parity with tailwindcss v4. The aggregate LoC to port is large (~15,000+ upstream TS LoC), so each phase is intended to be its own session/PR. Suggested ordering:
 
-1. **Phase 14 — Theme parity** (~700 LoC upstream): namespaces, key-paths, `@theme inline`, default theme tokens.
-2. **Phase 15 — Variants parity** (~1500 LoC upstream): functional variants, media/container/supports, data/aria, peer/group.
-3. **Phase 16 — Utilities** (~6751 LoC upstream): port all ~560 utility registrations from `utilities.ts`. Expected to require several sub-phases.
-4. **Phase 17 — @apply parity** (~300 LoC upstream): recursive resolution, important propagation.
-5. **Phase 18 — CSS function parity** (~400 LoC upstream): `theme()`, `--spacing()`, etc.
-6. **Phase 19 — property-order.rs** (~440 LoC upstream): deterministic output ordering.
-7. **Phase 20 — compat decision**: scope ruling on legacy `compat/` directory.
-8. **Phase 21 — Final integration**: E2E snapshot tests against upstream fixtures and lockstep parity verification.
+1. **Phase 15 — Variants parity** (~1500 LoC upstream): functional variants, media/container/supports, data/aria, peer/group.
+2. **Phase 16 — Utilities** (~6751 LoC upstream): port all ~560 utility registrations from `utilities.ts`. Expected to require several sub-phases.
+3. **Phase 17 — @apply parity** (~300 LoC upstream): recursive resolution, important propagation.
+4. **Phase 18 — CSS function parity** (~400 LoC upstream): `theme()`, `--spacing()`, etc.
+5. **Phase 19 — property-order.rs** (~440 LoC upstream): deterministic output ordering.
+6. **Phase 20 — compat decision**: scope ruling on legacy `compat/` directory.
+7. **Phase 21 — Final integration**: E2E snapshot tests against upstream fixtures and lockstep parity verification.
 
 ---
 

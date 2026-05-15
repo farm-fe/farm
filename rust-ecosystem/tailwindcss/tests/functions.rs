@@ -1,16 +1,11 @@
-use std::collections::HashMap;
 use farmfe_ecosystem_tailwindcss::ast::{AstNode, Declaration, StyleRule};
 use farmfe_ecosystem_tailwindcss::functions::substitute_css_functions;
 use farmfe_ecosystem_tailwindcss::theme::Theme;
 
 #[test]
 fn test_substitute_theme_function() {
-  let mut variables = HashMap::new();
-  variables.insert("--color-red-500".to_string(), "#ef4444".to_string());
-  let theme = Theme {
-    variables,
-    keyframes: HashMap::new(),
-  };
+  let mut theme = Theme::new();
+  theme.insert("--color-red-500", "#ef4444");
 
   let decl = Declaration {
     property: "color".to_string(),

@@ -120,6 +120,42 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
     return None;
   }
 
+  // Arbitrary value with parens (CSS-variable shorthand): something-(--my-var)
+  // The inner value MUST start with `--`; the result is `var(<inner>)`.
+  if base_no_modifier.ends_with(')') {
+    if let Some(paren_start) = find_opening_paren(&base_no_modifier) {
+      let root = base_no_modifier[..paren_start].trim_end_matches('-').to_string();
+      let raw_inner = &base_no_modifier[paren_start + 1..base_no_modifier.len() - 1];
+
+      // Optional type hint inside the parens, e.g. `bg-(color:--my-color)`
+      let (type_hint, inner) = extract_type_hint(raw_inner);
+      // Decode escaped underscores (`\_` -> `_`) but DO NOT convert plain `_`
+      // to spaces inside the paren-shorthand: this form represents a CSS
+      // variable reference where underscores are meaningful (e.g. `--_foo`).
+      let inner = decode_escaped_underscores(&inner);
+
+      // Must be non-empty and start with `--` to be a valid var shorthand.
+      if inner.trim().is_empty() || !inner.starts_with("--") {
+        return None;
+      }
+
+      return Some(ParsedCandidate {
+        utility_root: root,
+        utility_value: None,
+        arbitrary_property: None,
+        arbitrary_value: Some(format!("var({inner})")),
+        type_hint,
+        variants,
+        modifier,
+        modifier_is_arbitrary,
+        important,
+        negative,
+        is_static: false,
+        raw,
+      });
+    }
+  }
+
   // Arbitrary value: something-[value]
   if base_no_modifier.ends_with(']') {
     if let Some(bracket_start) = find_opening_bracket(&base_no_modifier) {
@@ -188,11 +224,11 @@ fn split_at_colon(input: &str) -> Vec<String> {
 
   for ch in input.chars() {
     match ch {
-      '[' => {
+      '[' | '(' => {
         depth += 1;
         current.push(ch);
       }
-      ']' => {
+      ']' | ')' => {
         depth -= 1;
         current.push(ch);
       }
@@ -262,6 +298,44 @@ fn find_opening_bracket(input: &str) -> Option<usize> {
     }
   }
   None
+}
+
+/// Walk backwards to find the `(` matching the trailing `)`.
+fn find_opening_paren(input: &str) -> Option<usize> {
+  let bytes = input.as_bytes();
+  let mut depth = 0i32;
+  for i in (0..bytes.len()).rev() {
+    if bytes[i] == b')' {
+      depth += 1;
+    } else if bytes[i] == b'(' {
+      depth -= 1;
+      if depth == 0 {
+        return Some(i);
+      }
+    }
+  }
+  None
+}
+
+/// Decode `\_` escapes to literal underscores. Unlike
+/// [`normalize_arbitrary_value`], lone underscores are preserved as-is — used
+/// for the paren-arbitrary CSS-variable shorthand where `_` is part of the
+/// identifier (e.g. `--_foo`).
+fn decode_escaped_underscores(input: &str) -> String {
+  let bytes = input.as_bytes();
+  let mut out = String::with_capacity(bytes.len());
+  let mut i = 0;
+  while i < bytes.len() {
+    if bytes[i] == b'\\' && i + 1 < bytes.len() && bytes[i + 1] == b'_' {
+      out.push('_');
+      i += 2;
+    } else {
+      let n = utf8_char_len(bytes[i]);
+      out.push_str(&input[i..i + n]);
+      i += n;
+    }
+  }
+  out
 }
 
 /// Extract optional type hint from an arbitrary value like "color:var(--x)".
