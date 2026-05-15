@@ -190,3 +190,92 @@ fn build_registers_custom_variant_at_rule_form() {
     "expected custom variant @media wrapper, got: {css}"
   );
 }
+
+#[test]
+fn build_registers_user_at_theme_color_for_bg_utility() {
+  let mut compiler = compile(
+    "@theme {\n  --color-brand: #123456;\n}\n@tailwind utilities;\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["bg-brand".to_string()]);
+  assert!(
+    css.contains("#123456"),
+    "expected user --color-brand to flow into bg-brand: {css}"
+  );
+  assert!(
+    css.contains(".bg-brand"),
+    "expected .bg-brand class selector: {css}"
+  );
+  assert!(
+    !css.contains("@theme"),
+    "expected @theme rule to be stripped from output: {css}"
+  );
+}
+
+#[test]
+fn build_at_theme_supports_namespace_reset() {
+  // The user resets every `--color-*` token via the `-*: initial` form,
+  // then re-defines a single namespace entry. After the reset, the built-in
+  // `--color-red-500` should no longer resolve, so `bg-red-500` produces
+  // nothing while `bg-brand` still works.
+  let mut compiler = compile(
+    "@theme {\n  --color-*: initial;\n  --color-brand: #abcdef;\n}\n@tailwind utilities;\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["bg-red-500".to_string(), "bg-brand".to_string()]);
+  assert!(
+    css.contains("#abcdef"),
+    "expected --color-brand to resolve after reset: {css}"
+  );
+  assert!(
+    !css.contains(".bg-red-500"),
+    "expected bg-red-500 to be dropped after `--color-*: initial`: {css}"
+  );
+}
+
+#[test]
+fn build_at_theme_default_modifier_does_not_override_existing() {
+  // First block sets the brand colour without any modifier.
+  // Second block redefines it as `default`, which must be ignored because the
+  // existing non-default entry takes precedence (mirrors upstream
+  // `ThemeOptions::DEFAULT` semantics).
+  let mut compiler = compile(
+    concat!(
+      "@theme {\n  --color-brand: #111111;\n}\n",
+      "@theme default {\n  --color-brand: #999999;\n}\n",
+      "@tailwind utilities;\n",
+    ),
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&["bg-brand".to_string()]);
+  assert!(
+    css.contains("#111111"),
+    "expected user value to win over `default` redefinition: {css}"
+  );
+  assert!(
+    !css.contains("#999999"),
+    "default-modifier value should not override prior user value: {css}"
+  );
+}
+
+#[test]
+fn build_strips_at_theme_when_empty() {
+  let mut compiler = compile(
+    "@theme {\n  --color-brand: #321;\n}\n.foo { color: red; }\n",
+    CompilerOptions::default(),
+  )
+  .unwrap();
+
+  let css = compiler.build(&[]);
+  assert!(css.contains(".foo"));
+  assert!(
+    !css.contains("@theme"),
+    "expected @theme to be stripped even with no candidates: {css}"
+  );
+}

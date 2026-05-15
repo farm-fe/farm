@@ -1,16 +1,9 @@
 use farmfe_ecosystem_tailwindcss::apply::substitute_at_apply;
 use farmfe_ecosystem_tailwindcss::ast::{AstNode, AtRule, StyleRule, to_css};
 use farmfe_ecosystem_tailwindcss::design_system::DesignSystem;
-use farmfe_ecosystem_tailwindcss::theme::Theme;
-use farmfe_ecosystem_tailwindcss::utilities::UtilityRegistry;
-use farmfe_ecosystem_tailwindcss::variants::VariantRegistry;
 
 fn make_design_system() -> DesignSystem {
-  DesignSystem {
-    theme: Theme::default(),
-    utilities: UtilityRegistry::builtin(),
-    variants: VariantRegistry::builtin(),
-  }
+  DesignSystem::empty()
 }
 
 #[test]

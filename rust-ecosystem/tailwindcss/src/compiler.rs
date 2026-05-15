@@ -171,8 +171,15 @@ impl Compiler {
       ast = pre_apply;
     }
 
-    // 2. Inline generated utilities at every Tailwind marker.
-    let utilities = self.design_system.compile_candidates(candidates);
+    // 2. Inline generated utilities at every Tailwind marker. A `:root`
+    //    block materialising the user `@theme { … }` custom properties is
+    //    prepended so utilities that resolve to `var(--…)` references have
+    //    a runtime value.
+    let mut utilities = Vec::new();
+    if let Some(root) = self.design_system.user_theme_root_rule() {
+      utilities.push(root);
+    }
+    utilities.extend(self.design_system.compile_candidates(candidates));
     ast = inline_tailwind_markers(ast, &utilities);
 
     // 3. Optimise + serialise.
@@ -231,14 +238,18 @@ fn inline_tailwind_markers(nodes: Vec<AstNode>, utilities: &[AstNode]) -> Vec<As
   out
 }
 
-/// Recursively remove `@utility` and `@custom-variant` rules from the AST.
-/// These are consumed during design-system construction and must not appear
-/// in the serialised CSS output.
+/// Recursively remove `@utility`, `@custom-variant` and `@theme` rules from
+/// the AST. These are consumed during design-system construction and must
+/// not appear in the serialised CSS output.
 fn strip_user_definitions(nodes: Vec<AstNode>) -> Vec<AstNode> {
   let mut out = Vec::with_capacity(nodes.len());
   for node in nodes {
     match node {
-      AstNode::AtRule(at) if at.name == "@utility" || at.name == "@custom-variant" => {
+      AstNode::AtRule(at)
+        if at.name == "@utility"
+          || at.name == "@custom-variant"
+          || at.name == "@theme" =>
+      {
         // drop
       }
       AstNode::AtRule(mut at) => {
@@ -279,7 +290,7 @@ pub fn compile(css: &str, options: CompilerOptions) -> Result<Compiler, CompileE
 
   let features = detect_features(&ast);
 
-  let theme = Theme::default();
+  let theme = Theme::with_defaults();
   let design_system = DesignSystem::build(&ast, theme);
 
   Ok(Compiler::new(design_system, ast, features, options))
