@@ -28,14 +28,23 @@
 | Phase 8.1: tailwindcss-node compile() for new Result API | ✅ **Done** | Node crate compiles; .map_err() added |
 | Phase 9: Plugin → oxide Scanner | ✅ **Done** | Rust plugin now uses `tailwindcss-oxide` Scanner from remote package source (git tag `v4.1.12`), extension-aware scanning, and JS-parity candidate file guard |
 | Phase 10: Initial verification | ✅ **Done** | All tests pass; clippy clean |
-| **Phase 11: Foundation utils (Plan B alignment)** | 🚧 **In progress** | See sub-tasks below |
+| **Phase 11: Foundation utils (Plan B alignment)** | 🚧 **In progress** | 6 of N sub-modules complete |
 | Phase 11.1: utils/segment.rs | ✅ **Done** | All 12 upstream `segment.test.ts` cases ported and pass |
 | Phase 11.2: utils/escape.rs | ✅ **Done** | All 3 upstream `escape.test.ts` cases ported and pass |
-| Phase 11.3: utils/infer_data_type.rs | ⏳ **Pending** | Port `utils/infer-data-type.ts` (371 LoC) + tests |
-| Phase 11.4: utils/decode_arbitrary_value.rs | ⏳ **Pending** | Port `utils/decode-arbitrary-value.ts` (93 LoC) + tests |
-| Phase 11.5: value_parser.rs | ⏳ **Pending** | Port `value-parser.ts` (279 LoC) + tests (219 LoC) |
-| Phase 11.6: selector_parser.rs | ⏳ **Pending** | Port `selector-parser.ts` (421 LoC) + tests |
-| Phase 11.7: attribute_selector_parser.rs | ⏳ **Pending** | Port `attribute-selector-parser.ts` (229 LoC) + tests |
+| Phase 11.3: utils/to_key_path.rs | ✅ **Done** | Upstream `to-key-path.test.ts` ported (1 it-block, 8 assertions) |
+| Phase 11.4: utils/brace_expansion.rs | ✅ **Done** | All upstream `brace-expansion.test.ts` cases ported (9 tests covering groups, ranges, padding, steps, nesting, errors) |
+| Phase 11.5: utils/compare.rs | ✅ **Done** | Full upstream `compare.test.ts` ported (9 tests incl. Heap-permutation stability) |
+| Phase 11.6: utils/compare_breakpoints.rs | ✅ **Done** | Doc-derived smoke tests (5 cases); upstream has no dedicated test file |
+| Phase 11.7: utils/infer_data_type.rs | ⏳ **Pending** | Port `utils/infer-data-type.ts` (371 LoC); requires is-color + math-operators + value-parser first |
+| Phase 11.8: utils/decode_arbitrary_value.rs | ⏳ **Pending** | Port `utils/decode-arbitrary-value.ts` (93 LoC); requires value-parser + math-operators |
+| Phase 11.9: utils/math_operators.rs | ⏳ **Pending** | 205 LoC, prerequisite for 11.7/11.8 |
+| Phase 11.10: utils/is_color.rs | ⏳ **Pending** | 204 LoC, prerequisite for 11.7 |
+| Phase 11.11: utils/is_valid_arbitrary.rs | ⏳ **Pending** | 93 LoC |
+| Phase 11.12: utils/replace_shadow_colors.rs | ⏳ **Pending** | 48 LoC + tests |
+| Phase 11.13: utils/dimensions.rs | ⏳ **Pending** | 20 LoC |
+| Phase 11.14: value_parser.rs | ⏳ **Pending** | Port `value-parser.ts` (279 LoC) + tests (219 LoC) |
+| Phase 11.15: selector_parser.rs | ⏳ **Pending** | Port `selector-parser.ts` (421 LoC) + tests |
+| Phase 11.16: attribute_selector_parser.rs | ⏳ **Pending** | Port `attribute-selector-parser.ts` (229 LoC) + tests |
 | Phase 12: AST/parser parity | ⏳ **Pending** | Full `optimize_ast` rules; nested at-rules; escape handling |
 | Phase 13: Candidate parser parity | ⏳ **Pending** | important / negative / modifier / arbitrary |
 | Phase 14: Theme parity | ⏳ **Pending** | Namespaces / key-paths / inline / default theme |
@@ -48,9 +57,10 @@
 | Phase 21: Final integration | ⏳ **Pending** | E2E snapshot tests against upstream fixtures |
 
 ### Summary
-- **88 tests** (73 prior + 15 new for `utils/segment` and `utils/escape`) pass
-- Plan B (full upstream alignment) opened; Phase 11 foundation utils underway, two of seven sub-modules complete
-- Pure-Rust ports follow upstream test cases verbatim (TDD: tests written first from upstream `*.test.ts`, then implementation)
+- **111 tests** pass (88 prior + 23 new across `to_key_path` / `brace_expansion` / `compare` / `compare_breakpoints`)
+- Plan B continues. Phase 11 has 6 sub-modules complete; remaining sub-modules are larger and have dependency chains (e.g. `infer_data_type` needs `math_operators` + `is_color`).
+- TDD discipline: tests are ported verbatim from upstream `*.test.ts` first, then implementation. Where upstream has no dedicated test file (`compare-breakpoints`), tests are derived from documented behavior in source comments.
+- New runtime dep: `thiserror = "1"` for `BraceExpansionError`.
 
 ---
 

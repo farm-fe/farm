@@ -2062,6 +2062,7 @@ dependencies = [
  "farmfe_testing_helpers",
  "regex",
  "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
