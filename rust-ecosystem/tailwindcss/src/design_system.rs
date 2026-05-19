@@ -197,6 +197,50 @@ impl DesignSystem {
     }))
   }
 
+  /// Materialise a `:root { … }` rule containing the **referenced subset**
+  /// of theme tokens.
+  ///
+  /// Built-in v4 utilities resolve to `var(--color-…)`, `var(--spacing)`,
+  /// `var(--radius-…)`, … expressions, so the compiler must emit the
+  /// matching theme defaults to `:root` for those references to bind at
+  /// runtime. Only keys present in `referenced` are emitted to keep the
+  /// output close to upstream tree-shaken behaviour. Keys already emitted
+  /// via [`user_theme_root_rule`] are skipped to avoid duplicate rules.
+  pub fn theme_root_rule_for(
+    &self,
+    referenced: &std::collections::HashSet<String>,
+  ) -> Option<AstNode> {
+    if referenced.is_empty() {
+      return None;
+    }
+    let user_keys: std::collections::HashSet<&String> = self.user_theme_keys.iter().collect();
+
+    // Stable, deterministic output.
+    let mut sorted: Vec<&String> = referenced.iter().collect();
+    sorted.sort();
+
+    let mut decls = Vec::new();
+    for key in sorted {
+      if user_keys.contains(key) {
+        continue;
+      }
+      if let Some(value) = self.theme.get(&[key.as_str()]) {
+        decls.push(AstNode::Declaration(crate::ast::Declaration {
+          property: key.clone(),
+          value: Some(value.to_string()),
+          important: false,
+        }));
+      }
+    }
+    if decls.is_empty() {
+      return None;
+    }
+    Some(AstNode::Rule(crate::ast::StyleRule {
+      selector: ":root, :host".to_string(),
+      nodes: decls,
+    }))
+  }
+
   /// Every `@source` directive collected from the user AST, in source order.
   ///
   /// The Rust core does not perform filesystem scanning itself — these

@@ -118,3 +118,7 @@ build
 # idea
 .idea
 
+
+# Native artifacts (built locally, do not commit)
+rust-plugins/**/*.node
+rust-plugins/**/npm/*/index.farm

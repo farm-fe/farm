@@ -179,7 +179,19 @@ impl Compiler {
     if let Some(root) = self.design_system.user_theme_root_rule() {
       utilities.push(root);
     }
-    utilities.extend(self.design_system.compile_candidates(candidates));
+    let candidate_nodes = self.design_system.compile_candidates(candidates);
+
+    // Collect every `var(--*)` reference made by the generated utilities so
+    // the matching theme defaults (`--color-blue-500`, `--spacing`, …) can
+    // be materialised on `:root`. Without this, utilities like
+    // `bg-blue-500` would compute to `background-color: var(--color-blue-500)`
+    // with no value bound at runtime.
+    let referenced = collect_var_references(&candidate_nodes);
+    if let Some(root) = self.design_system.theme_root_rule_for(&referenced) {
+      utilities.insert(0, root);
+    }
+
+    utilities.extend(candidate_nodes);
     ast = inline_tailwind_markers(ast, &utilities);
 
     // 3. Optimise + serialise.
@@ -246,6 +258,86 @@ fn inline_tailwind_markers(nodes: Vec<AstNode>, utilities: &[AstNode]) -> Vec<As
     }
   }
   out
+}
+
+/// Walk `nodes` recursively and collect every CSS custom property
+/// referenced via `var(--name, …)`. The leading `--` is preserved so the
+/// result can be looked up directly in the theme.
+fn collect_var_references(nodes: &[AstNode]) -> std::collections::HashSet<String> {
+  let mut out = std::collections::HashSet::new();
+  for node in nodes {
+    collect_var_references_in(node, &mut out);
+  }
+  out
+}
+
+fn collect_var_references_in(node: &AstNode, out: &mut std::collections::HashSet<String>) {
+  match node {
+    AstNode::Declaration(decl) => {
+      if let Some(value) = &decl.value {
+        scan_var_calls(value, out);
+      }
+    }
+    AstNode::AtRule(at) => {
+      scan_var_calls(&at.params, out);
+      for child in &at.nodes {
+        collect_var_references_in(child, out);
+      }
+    }
+    AstNode::Rule(rule) => {
+      for child in &rule.nodes {
+        collect_var_references_in(child, out);
+      }
+    }
+    AstNode::Context(ctx) => {
+      for child in &ctx.nodes {
+        collect_var_references_in(child, out);
+      }
+    }
+    AstNode::AtRoot(at_root) => {
+      for child in &at_root.nodes {
+        collect_var_references_in(child, out);
+      }
+    }
+    AstNode::Comment(_) => {}
+  }
+}
+
+/// Extract `--name` from every `var(--name, …)` call in `value`. Tolerates
+/// nested `var()` calls (e.g. `var(--a, var(--b))`) by scanning the entire
+/// string for `var(` openings rather than parsing a strict expression tree.
+fn scan_var_calls(value: &str, out: &mut std::collections::HashSet<String>) {
+  let bytes = value.as_bytes();
+  let mut i = 0;
+  while i + 4 <= bytes.len() {
+    if &bytes[i..i + 4] == b"var(" {
+      let mut j = i + 4;
+      // Skip whitespace.
+      while j < bytes.len() && bytes[j].is_ascii_whitespace() {
+        j += 1;
+      }
+      // Read the custom-property name (starts with `--`, ends at `,` or `)`
+      // or whitespace).
+      if j + 2 <= bytes.len() && &bytes[j..j + 2] == b"--" {
+        let start = j;
+        while j < bytes.len() {
+          let c = bytes[j];
+          if c == b',' || c == b')' || c.is_ascii_whitespace() {
+            break;
+          }
+          j += 1;
+        }
+        if j > start {
+          if let Ok(name) = std::str::from_utf8(&bytes[start..j]) {
+            out.insert(name.to_string());
+          }
+        }
+      }
+      i = j;
+      continue;
+    }
+    i += 1;
+  }
 }
 
 /// Recursively remove `@utility`, `@custom-variant` and `@theme` rules from

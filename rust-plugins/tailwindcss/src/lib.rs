@@ -1,6 +1,6 @@
 #![deny(clippy::all)]
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path;
 use std::sync::{Arc, Mutex};
 
@@ -8,10 +8,14 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   module::{ModuleId, ModuleType},
-  plugin::{Plugin, PluginTransformHookParam, PluginTransformHookResult},
+  plugin::{
+    hooks::freeze_module::PluginFreezeModuleHookParam, Plugin, PluginTransformHookParam,
+    PluginTransformHookResult,
+  },
   serde_json,
 };
 use farmfe_macro_plugin::farm_plugin;
+use farmfe_toolkit::css::parse_css_stylesheet;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::regex::Regex;
 
@@ -67,6 +71,10 @@ pub struct FarmPluginTailwindCSS {
   candidates: Arc<Mutex<HashSet<String>>>,
   /// Set of module IDs that contributed candidates.
   candidate_sources: Arc<Mutex<HashSet<String>>>,
+  /// Original (untransformed) CSS content for CSS root files that need
+  /// deferred TailwindCSS compilation. The actual compile-and-inline pass
+  /// runs in `freeze_module`, by which time the candidate set is complete.
+  pending_css: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl FarmPluginTailwindCSS {
@@ -77,6 +85,7 @@ impl FarmPluginTailwindCSS {
       _options: parsed,
       candidates: Arc::new(Mutex::new(HashSet::new())),
       candidate_sources: Arc::new(Mutex::new(HashSet::new())),
+      pending_css: Arc::new(Mutex::new(HashMap::new())),
     }
   }
 
@@ -128,7 +137,7 @@ impl Plugin for FarmPluginTailwindCSS {
   fn transform(
     &self,
     param: &PluginTransformHookParam,
-    context: &Arc<CompilationContext>,
+    _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<PluginTransformHookResult>> {
     let resolved_path = param.resolved_path;
 
@@ -151,35 +160,79 @@ impl Plugin for FarmPluginTailwindCSS {
           .insert(resolved_path.to_string());
       }
 
-      // Pass through — we don't modify the source
+      // Pass through — we don't modify the source.
       return Ok(None);
     }
 
-    // ── Step 2: Process CSS files that contain TailwindCSS directives ─
+    // ── Step 2: Defer CSS-root compilation until `freeze_module` ─────
+    //
+    // Compilation has to happen *after* every candidate-source file has
+    // been transformed, otherwise the candidate set is incomplete and
+    // `@tailwind utilities` would expand to nothing. We record the
+    // module's original content here so the deferred pass can re-compile
+    // it once the module graph is built.
     if param.module_type != ModuleType::Css || !Self::is_css_root_file(resolved_path) {
       return Ok(None);
     }
 
-    // Check if this CSS file contains a tailwindcss directive
     if !has_tailwind_directive(&param.content) {
       return Ok(None);
     }
 
-    let base = path::Path::new(resolved_path)
+    self
+      .pending_css
+      .lock()
+      .unwrap()
+      .insert(resolved_path.to_string(), param.content.clone());
+
+    // Also scan the CSS itself for candidates inside string literals / @apply
+    // values — Tailwind's official scanner picks these up.
+    let new_candidates = self.scan_candidates(&param.content, "css");
+    if !new_candidates.is_empty() {
+      let mut candidates = self.candidates.lock().unwrap();
+      for c in new_candidates {
+        candidates.insert(c);
+      }
+    }
+
+    Ok(None)
+  }
+
+  fn freeze_module(
+    &self,
+    param: &mut PluginFreezeModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if param.module.module_type != ModuleType::Css {
+      return Ok(None);
+    }
+
+    let resolved_path = param.module.id.resolved_path(&context.config.root);
+
+    let original = {
+      let mut guard = self.pending_css.lock().unwrap();
+      // Remove so re-compilation never runs twice for the same module.
+      guard.remove(&resolved_path)
+    };
+
+    let Some(original) = original else {
+      return Ok(None);
+    };
+
+    let base = path::Path::new(&resolved_path)
       .parent()
       .unwrap_or(path::Path::new("."))
       .to_string_lossy()
       .into_owned();
 
-    let sourcemap_enabled = context.sourcemap_enabled(&param.module_id.to_string());
+    let sourcemap_enabled = context.sourcemap_enabled(&param.module.id.to_string());
 
-    // Compile the CSS using the ecosystem crate
     let compiler_result = compile::compile(
-      &param.content,
+      &original,
       CompileOptions {
         base,
         from: if sourcemap_enabled {
-          Some(resolved_path.to_string())
+          Some(resolved_path.clone())
         } else {
           None
         },
@@ -191,52 +244,64 @@ impl Plugin for FarmPluginTailwindCSS {
           .cloned()
           .map(TailwindConfig::new),
         on_dependency: Box::new(move |_dep| {
-          // Dependencies are tracked through the module graph
+          // Dependencies are tracked through the module graph.
         }),
         ..Default::default()
       },
     );
 
-    match compiler_result {
-      Ok(mut compiler) => {
-        // Check if the CSS uses Tailwind features
-        if !compiler.features.has_any_output_feature() {
-          return Ok(None);
-        }
-
-        // Gather candidates and build
-        let candidates: Vec<String> = {
-          let guard = self.candidates.lock().unwrap();
-          guard.iter().cloned().collect()
-        };
-
-        let css = compiler.build(&candidates);
-        let source_map = compiler.build_source_map();
-
-        // Add watch files for candidate sources
-        let sources: Vec<String> = {
-          let guard = self.candidate_sources.lock().unwrap();
-          guard.iter().cloned().collect()
-        };
-        for source in &sources {
-          let _ = context.add_watch_files(
-            ModuleId::new(resolved_path, "", &context.config.root),
-            vec![ModuleId::new(source, "", &context.config.root)],
-          );
-        }
-
-        Ok(Some(PluginTransformHookResult {
-          content: css,
-          source_map,
-          module_type: Some(ModuleType::Css),
-          ignore_previous_source_map: false,
-        }))
-      }
+    let mut compiler = match compiler_result {
+      Ok(c) => c,
       Err(e) => {
-        eprintln!("[{PKG_NAME}] Failed to compile TailwindCSS: {e}");
-        Ok(None)
+        eprintln!("[{PKG_NAME}] Failed to compile TailwindCSS for {resolved_path}: {e}");
+        return Ok(None);
       }
+    };
+
+    if !compiler.features.has_any_output_feature() {
+      return Ok(None);
     }
+
+    let candidates: Vec<String> = self
+      .candidates
+      .lock()
+      .unwrap()
+      .iter()
+      .cloned()
+      .collect();
+
+    let css = compiler.build(&candidates);
+
+    // Re-parse the generated CSS so the module AST matches the new content.
+    let module_id_str = param.module.id.to_string();
+    let parsed = match parse_css_stylesheet(&module_id_str, Arc::new(css.clone())) {
+      Ok(p) => p,
+      Err(e) => {
+        eprintln!("[{PKG_NAME}] Failed to re-parse generated CSS for {resolved_path}: {e}");
+        return Ok(None);
+      }
+    };
+
+    // Register watch edges so changes to candidate sources invalidate the
+    // CSS root module on subsequent rebuilds.
+    let sources: Vec<String> = self
+      .candidate_sources
+      .lock()
+      .unwrap()
+      .iter()
+      .cloned()
+      .collect();
+    for source in &sources {
+      let _ = context.add_watch_files(
+        param.module.id.clone(),
+        vec![ModuleId::new(source, "", &context.config.root)],
+      );
+    }
+
+    param.module.meta.as_css_mut().set_ast(parsed.ast);
+    param.module.content = Arc::new(css);
+
+    Ok(Some(()))
   }
 }
 
@@ -244,13 +309,21 @@ impl Plugin for FarmPluginTailwindCSS {
 mod tests {
   use super::*;
 
-  #[test]
-  fn scan_candidates_basic() {
-    let plugin = FarmPluginTailwindCSS {
+  /// Helper for unit tests that construct the plugin without going through
+  /// the JSON-options entry point. Keeps tests insulated from new internal
+  /// fields.
+  fn make_plugin() -> FarmPluginTailwindCSS {
+    FarmPluginTailwindCSS {
       _options: TailwindCSSOptions::default(),
       candidates: Arc::new(Mutex::new(HashSet::new())),
       candidate_sources: Arc::new(Mutex::new(HashSet::new())),
-    };
+      pending_css: Arc::new(Mutex::new(HashMap::new())),
+    }
+  }
+
+  #[test]
+  fn scan_candidates_basic() {
+    let plugin = make_plugin();
 
     let content = r#"<div class="bg-red-500 text-white p-4 hover:bg-blue-500"></div>"#;
     let candidates = plugin.scan_candidates(content, "html");
@@ -261,11 +334,7 @@ mod tests {
 
   #[test]
   fn scan_candidates_ignores_urls() {
-    let plugin = FarmPluginTailwindCSS {
-      _options: TailwindCSSOptions::default(),
-      candidates: Arc::new(Mutex::new(HashSet::new())),
-      candidate_sources: Arc::new(Mutex::new(HashSet::new())),
-    };
+    let plugin = make_plugin();
 
     let content = r#"const url = "https://example.com";"#;
     let candidates = plugin.scan_candidates(content, "js");
