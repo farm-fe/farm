@@ -28,17 +28,6 @@
   "devDependencies": {
     "@farmfe/plugin-tools": "workspace:*"
   },
-  "optionalDependencies": {
-    "@farmfe/plugin-tailwindcss-darwin-arm64": "0.0.1",
-    "@farmfe/plugin-tailwindcss-darwin-x64": "0.0.1",
-    "@farmfe/plugin-tailwindcss-linux-arm64-gnu": "0.0.1",
-    "@farmfe/plugin-tailwindcss-linux-arm64-musl": "0.0.1",
-    "@farmfe/plugin-tailwindcss-linux-x64-gnu": "0.0.1",
-    "@farmfe/plugin-tailwindcss-linux-x64-musl": "0.0.1",
-    "@farmfe/plugin-tailwindcss-win32-arm64-msvc": "0.0.1",
-    "@farmfe/plugin-tailwindcss-win32-ia32-msvc": "0.0.1",
-    "@farmfe/plugin-tailwindcss-win32-x64-msvc": "0.0.1"
-  },
   "files": [
     "index.js",
     "index.d.ts"
