@@ -184,7 +184,8 @@ jobs:
           cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} &&
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../replace-dirname && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
-          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }}
+          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
+          cd ../vue && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
@@ -222,6 +223,12 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Vue
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
+          path: rust-plugins/vue/npm/${{ matrix.settings.abi }}/index.farm
   # Now for create-farm cli only builds
   build-freebsd:
     name: Build and Upload Artifacts - x86_64-unknown-freebsd

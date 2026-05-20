@@ -9,6 +9,7 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 ## Rust Plugins
 
 * **[`@farmfe/plugin-react`](./react)**：Support React `jsx` and `react-refresh`.
+* **[`@farmfe/plugin-vue`](./vue)**：Compile Vue 3 Single-File Components via the `fervid` Rust compiler.
 * **[`@farmfe/plugin-sass`](./sass)**：Support compiling `sass/scss` files.
 * **[`@farmfe/plugin-strip`](./strip)**：A Farm rust plugin to remove `debugger` statements and functions like `assert.equal` and `console.log` from your code.
 * **[`@farmfe/plugin-dsv`](./dsv)**：A Farm plugin which converts `.csv` and `.tsv` files into JavaScript modules.
