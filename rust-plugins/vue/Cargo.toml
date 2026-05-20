@@ -1,0 +1,22 @@
+[package]
+edition = "2021"
+name = "farmfe_plugin_vue"
+version = "0.0.1"
+description = "Farm Rust plugin to compile Vue 3 SFCs, powered by fervid."
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plugin_types" }
+serde = { version = "1.0", features = ["derive"] }
+fxhash = "0.2.1"
+regex = "1"
+fervid = { git = "https://github.com/phoenix-ru/fervid.git", rev = "4f26ab48f81eb9688fb84e9fa14541373d5bca7d" }
+
+[dev-dependencies]
+farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
+farmfe_compiler = { path = "../../crates/compiler" }
