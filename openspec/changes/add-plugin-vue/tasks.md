@@ -1,0 +1,82 @@
+# Tasks — `@farmfe/plugin-vue`
+
+Implementation tasks for shipping `@farmfe/plugin-vue` Phase A and tracking Phase B follow-ups. Tasks are grouped so each group is independently committable.
+
+## Phase A — v0 (ships in the initial PR)
+
+### 1. Crate scaffold
+
+- [ ] 1.1. Create `rust-plugins/vue/` by copying the layout of `rust-plugins/react/` (Cargo.toml, package.json, index.js, func.js, index.d.ts, rustfmt.toml, `npm/<abi>/` placeholders).
+- [ ] 1.2. Rewrite the copied package metadata: crate name `farmfe_plugin_vue`, npm package `@farmfe/plugin-vue`, version `0.0.1`, binary name `farm-plugin-vue`, `build:publish` script targeting `farmfe_plugin_vue`.
+- [ ] 1.3. Rename each `npm/<abi>/package.json` to `@farmfe/plugin-vue-<abi>` and update each `README.md` to reference `@farmfe/plugin-vue`.
+- [ ] 1.4. Correct `libc` field to `["musl"]` in `npm/linux-x64-musl/package.json` and `npm/linux-arm64-musl/package.json` (the react copy has `["glibc"]`).
+- [ ] 1.5. Remove ABI directories Farm doesn't publish (`android-arm-eabi`, `android-arm64`, `linux-arm-gnueabihf`).
+
+### 2. Dependencies
+
+- [ ] 2.1. Add the `fervid` crate as a dependency. Start with `fervid = "0.2"`; if it fails to build against current `serde` (transitive `swc_common 0.33.x` references `serde::__private`), pin to a known-good git rev (`phoenix-ru/fervid@<sha>`) and add a note in `Cargo.toml`.
+- [ ] 2.2. Add `serde`, `regex`, `fxhash` to `[dependencies]`. Re-use workspace `farmfe_core`, `farmfe_macro_plugin`, `farmfe_toolkit_plugin_types` via relative path deps to match the other rust-plugins.
+- [ ] 2.3. Run `cargo gh-advisory-database` on the new dependencies; no known advisories.
+
+### 3. Rust source
+
+- [ ] 3.1. `src/consts.rs` — query-key, module-type and default-pattern constants (`vue`, `.ce.vue`, `\.vue$`, `\.ce\.vue$`).
+- [ ] 3.2. `src/options.rs` — `VuePluginOptions` (and nested `VueFeaturesOptions`) deserialised from a JSON string with `serde(default, rename_all = "camelCase")`. Pattern fields accept `string | { source, flags? } | (string|object)[]`.
+- [ ] 3.3. `src/filter.rs` — `Filter` and `CustomElementFilter` compiled from `Option<PatternList>`. Default include `\.vue$`, default custom-element `\.ce\.vue$`. `matches(path)` semantics match Vite's `createFilter`.
+- [ ] 3.4. `src/styles.rs` — `StyleRegistry` (`Mutex<FxHashMap<String, StyleEntry>>`), `style_virtual_id(module_id, idx, lang, scoped)`, `lang_to_module_type(lang)` (CSS → `ModuleType::Css`, other → `ModuleType::Custom(lang)`).
+- [ ] 3.5. `src/lib.rs` — `FarmPluginVue` declared via `farm_plugin!` macro. Constructor parses options from the forwarded JSON string. Implements `config`, `load`, `transform`. `priority()` returns `101` so we win against generic loaders.
+- [ ] 3.6. `transform` hook calls `fervid::compile(...)`, registers each emitted style block under its virtual id, prepends `import "<resolved>?vue&type=style&idx=…&lang=…&scoped=…";` to the returned code, and appends `__file = "<path>"` in development.
+- [ ] 3.7. `config` hook inserts `__VUE_OPTIONS_API__`/`__VUE_PROD_DEVTOOLS__`/`__VUE_PROD_HYDRATION_MISMATCH_DETAILS__` into `compilation.define` only if absent; pushes `vue` into `resolve.dedupe` when not targeting Node.
+
+### 4. JS surface
+
+- [ ] 4.1. `index.js` — same platform-binary resolver shape as `rust-plugins/react/index.js`, retargeted to `farm-plugin-vue` and `@farmfe/plugin-vue`.
+- [ ] 4.2. `func.js` — `(options) => [binPath, options]`. Farm's `rustPluginResolver` does the JSON.stringify, so we pass the raw object through.
+- [ ] 4.3. `index.d.ts` — typed `VuePluginOptions` and `VueFeaturesOptions` interfaces with JSDoc explaining each field and its default.
+
+### 5. Tests
+
+- [ ] 5.1. `tests/fixtures/` — `basic.vue`, `script-setup.vue`, `scoped-style.vue`, `css-vars.vue`, `custom-element.ce.vue`, `scss-style.vue`.
+- [ ] 5.2. `tests/mod.rs` — hook-level integration suite covering at minimum:
+  - non-vue paths return `None` from `load`;
+  - basic `.vue` is loaded as `ModuleType::Custom("vue")` and transformed to `Some(ModuleType::Ts)`;
+  - scoped style block registers and `load` returns it as `ModuleType::Css`;
+  - `<style lang="scss">` block is served as `ModuleType::Custom("scss")`;
+  - `.ce.vue` triggers custom-element compilation;
+  - `exclude` filter is honoured;
+  - `config` hook injects the three `__VUE_*__` define flags and adds `vue` to `resolve.dedupe`;
+  - `config` hook skips dedupe when targeting Node;
+  - `config` hook preserves user-supplied defines.
+
+### 6. CI / release wiring
+
+- [ ] 6.1. `.github/workflows/rust-build.yaml` — add plugin-vue to the `npm run build` chain in the multi-target build step; add an `actions/upload-artifact` for `rust-plugins/vue/npm/${{ matrix.settings.abi }}/index.farm` under the name `${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue`.
+- [ ] 6.2. `.github/workflows/ci.yaml` — add a `download-plugin-vue` artifact step in both the rust-plugin compile matrix and the per-abi test job, downloading into `./rust-plugins/vue/npm/${{ matrix.settings.abi }}`. Add `plugin-vue` to the rust-plugins compile matrix list.
+- [ ] 6.3. `.github/workflows/release.yaml` — extend the artifact-move and `test -f` existence checks to cover `./rust-plugins/vue/npm/${abi}/index.farm`.
+
+### 7. Docs
+
+- [ ] 7.1. Create `website/docs/plugins/official-plugins/vue.mdx`: installation tabs, basic usage, full options table, define-flag behaviour, style sub-block id format, Phase A / Phase B feature matrix, fervid stability caveat.
+- [ ] 7.2. Add the new page to `website/sidebars.js` (under "Rust Plugins", between `react` and `sass`).
+- [ ] 7.3. Add a bullet to `website/docs/plugins/official-plugins/overview.md`'s "Rust Plugins" list.
+
+### 8. Changeset & validation
+
+- [ ] 8.1. Add `.changeset/farm-plugin-vue.md` declaring a `minor` bump for `@farmfe/plugin-vue` with a one-paragraph description.
+- [ ] 8.2. Run `cargo fmt -p farmfe_plugin_vue --check`, `cargo clippy --no-deps -p farmfe_plugin_vue --all-targets`, and `cargo test -p farmfe_plugin_vue`. All must be green.
+- [ ] 8.3. Run the `parallel_validation` tool to get a code review and CodeQL pass, then address any actionable findings.
+
+## Phase B — follow-up changes (each its own openspec change)
+
+These tasks are listed for traceability; they do **not** ship in the initial PR. File a separate openspec change for each.
+
+- [ ] B.1. **Granular HMR.** Cache the parsed fervid descriptor per resolved path, diff on `update_modules`, decide whether to invalidate script / template-only / styles-only / full. May require a small JS companion to mirror `unplugin-vue/src/core/handleHotUpdate.ts`. Wire `Mutex<FxHashMap<PathBuf, ParsedDescriptor>>` into the plugin state.
+- [ ] B.2. **Preprocessor re-scoping.** After `@farmfe/plugin-sass` (etc.) compiles a `<style lang="scss" scoped>` block, re-apply the scope-id to the resulting CSS. Likely needs a Farm-side `process_module` hook on the plugin-vue side or a fervid feature flag to defer scoping for non-native CSS.
+- [ ] B.3. **`inlineTemplate: false` / external template split.** Emit `?vue&type=template` virtual modules so HMR can swap template code without reloading the script. Requires fervid support for per-block codegen.
+- [ ] B.4. **Custom blocks (`<i18n>`, `<docs>`, …).** Fervid already exposes `other_assets`; wire them to a user-provided block-transformer registration so external tooling can claim them.
+- [ ] B.5. **Type-only `defineProps<…>()` cross-file deps.** Track `typeDepToSFCMap`-style invalidation so a change to a `.ts` type triggers re-compilation of the importing `.vue`. Probably blocked on fervid surface.
+- [ ] B.6. **`componentIdGenerator`.** Expose `unplugin-vue`'s `hash(filepath)` / `hash(filepath+source)` algorithms. Blocked on fervid adding a configurable id generator.
+- [ ] B.7. **`<script src="…">` / `<template src="…">` external blocks.** Verify behaviour in fervid; surface as a plugin feature flag if supported.
+- [ ] B.8. **Full source-map fidelity.** Phase A plumbs the `sourceMap` option but fervid's mapping is "partial". Re-evaluate once fervid lands chunked maps.
+- [ ] B.9. **Bump fervid back to a crates.io version.** Drop the git pin once the published `fervid 0.2.x` builds against current `serde` (i.e. once its transitive `swc_common` is bumped past the `serde::__private` removal).
+- [ ] B.10. **Reference example.** Add `examples/vue/` with router + Pinia + scoped CSS so docs can link to it and CI's `test-examples.mjs` exercises the plugin end-to-end.
