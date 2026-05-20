@@ -1,3 +1,3 @@
-# `@farmfe/plugin-react-linux-arm64-musl`
+# `@farmfe/plugin-vue-linux-arm64-musl`
 
-This is the **aarch64-unknown-linux-musl** binary for `@farmfe/plugin-react`
+This is the **aarch64-unknown-linux-musl** binary for `@farmfe/plugin-vue`

@@ -16,6 +16,6 @@
     "node": ">= 10"
   },
   "libc": [
-    "glibc"
+    "musl"
   ]
 }

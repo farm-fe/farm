@@ -1,3 +1,3 @@
-# `@farmfe/plugin-react-darwin-x64`
+# `@farmfe/plugin-vue-darwin-x64`
 
-This is the **x86_64-apple-darwin** binary for `@farmfe/plugin-react`
+This is the **x86_64-apple-darwin** binary for `@farmfe/plugin-vue`
