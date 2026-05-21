@@ -94,9 +94,11 @@ async function visitPage(url, examplePath, cb, command) {
   logger(`Opening page: ${url}  [${examplePath}]`);
 
   page.on('requestfailed', (req) => {
+    // Request failures don't fail the test by themselves — keep them in the
+    // log file but suppress on the console in quiet mode to avoid noise.
     logger(
       `Request failed  ${examplePath}: ${req.url()} – ${req.failure()?.errorText ?? ''}`,
-      { color: 'red' }
+      { level: 'info' }
     );
   });
 

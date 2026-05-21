@@ -58,10 +58,39 @@ export function closeLogFiles() {
 // ---------------------------------------------------------------------------
 
 /**
- * @param {*} msg
- * @param {{ title?: string, color?: string, file?: string }} [opts]
+ * Quiet mode hides verbose info-level lines on the console while still writing
+ * them to log files. Errors and lines explicitly marked `level: 'progress'`
+ * are always shown so the operator can follow test progress in real time.
+ *
+ * Enabled by default. Opt-out via `FARM_E2E_VERBOSE=1` or `--verbose` / `-v`.
+ *
+ * Note: when `--verbose`/`-v` is passed on the orchestrator CLI we also set
+ * `process.env.FARM_E2E_VERBOSE` so that forked workers (which don't inherit
+ * `process.argv`) honour the flag.
  */
-export function logger(msg, { title = 'FARM INFO', color = 'green', file } = {}) {
+function isQuietMode() {
+  if (process.argv.includes('--verbose') || process.argv.includes('-v')) {
+    process.env.FARM_E2E_VERBOSE = '1';
+  }
+  const v = process.env.FARM_E2E_VERBOSE;
+  if (v === '1' || v === 'true') {
+    return false;
+  }
+  return true;
+}
+
+const _quiet = isQuietMode();
+
+/**
+ * @param {*} msg
+ * @param {{
+ *   title?: string,
+ *   color?: string,
+ *   file?: string,
+ *   level?: 'info' | 'progress' | 'error',
+ * }} [opts]
+ */
+export function logger(msg, { title = 'FARM INFO', color = 'green', file, level } = {}) {
   const COLOR_CODE = [
     'black',
     'red',
@@ -73,6 +102,15 @@ export function logger(msg, { title = 'FARM INFO', color = 'green', file } = {})
     'white'
   ].indexOf(color);
 
+  // Infer level from color when not explicitly provided so legacy call sites
+  // automatically surface error/warning/status output even in quiet mode.
+  const effectiveLevel = level
+    ?? (color === 'red'
+      ? 'error'
+      : (color === 'yellow' || color === 'cyan')
+        ? 'progress'
+        : 'info');
+
   // Format for console (with ANSI)
   let consoleLine;
   if (COLOR_CODE >= 0) {
@@ -81,7 +119,10 @@ export function logger(msg, { title = 'FARM INFO', color = 'green', file } = {})
   } else {
     consoleLine = title ? `${title} ${msg}` : String(msg);
   }
-  console.log(consoleLine);
+
+  if (!_quiet || effectiveLevel !== 'info') {
+    console.log(consoleLine);
+  }
 
   // Format for file (no ANSI, with timestamp)
   const now = new Date().toISOString();

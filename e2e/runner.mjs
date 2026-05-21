@@ -66,7 +66,7 @@ export class SpecRunner {
           await fn();
           const duration = Date.now() - start;
           self.results.push({ fullName, passed: true, skipped: false, duration });
-          logger(`  ✓  ${fullName}  (${duration} ms)`, { title: '', color: 'green' });
+          logger(`  ✓  ${fullName}  (${duration} ms)`, { title: '', color: 'green', level: 'progress' });
         } catch (err) {
           const duration = Date.now() - start;
           const error = err instanceof Error ? err : new Error(String(err));
@@ -123,7 +123,7 @@ export function printSummary(allResults) {
   );
   logger(
     `E2E summary:  ${totalPassed} passed  |  ${totalFailed} failed  |  ${totalSkipped} skipped`,
-    { title: 'RESULT', color: totalFailed > 0 ? 'red' : 'green' }
+    { title: 'RESULT', color: totalFailed > 0 ? 'red' : 'green', level: 'progress' }
   );
 
   if (failedSpecs.length > 0) {

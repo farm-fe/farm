@@ -56,7 +56,7 @@ async function runDefaultTest(examplePath, exampleName) {
       );
 
       const duration = Date.now() - start;
-      logger(`  ✓  ${fullName}  (${duration} ms)`, { title: '', color: 'green' });
+      logger(`  ✓  ${fullName}  (${duration} ms)`, { title: '', color: 'green', level: 'progress' });
       results.push({ fullName, passed: true, skipped: false, duration });
     } catch (reason) {
       const error = reason instanceof Error ? reason : new Error(String(reason ?? 'Unknown error'));
