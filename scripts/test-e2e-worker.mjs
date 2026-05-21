@@ -35,11 +35,14 @@ const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
  */
 async function runDefaultTest(examplePath, exampleName) {
   const commands = /** @type {const} */ (['start', 'preview']);
+  /** @type {import('../e2e/runner.mjs').TestResult[]} */
+  const results = [];
 
-  const settled = await Promise.allSettled(
-    commands.map(async (command) => {
-      const fullName = `${exampleName} › ${command}`;
-      const start = Date.now();
+  for (const command of commands) {
+    const fullName = `${exampleName} › ${command}`;
+    const start = Date.now();
+
+    try {
       await startAndTest(
         examplePath,
         async (page) => {
@@ -51,25 +54,24 @@ async function runDefaultTest(examplePath, exampleName) {
         },
         command
       );
+
       const duration = Date.now() - start;
       logger(`  ✓  ${fullName}  (${duration} ms)`, { title: '', color: 'green' });
-      return { fullName, passed: true, skipped: false, duration };
-    })
-  );
+      results.push({ fullName, passed: true, skipped: false, duration });
+    } catch (reason) {
+      const error = reason instanceof Error ? reason : new Error(String(reason ?? 'Unknown error'));
+      logger(`  ✗  ${fullName}  —  ${error.message}`, { title: '', color: 'red' });
+      results.push({
+        fullName,
+        passed: false,
+        skipped: false,
+        duration: Date.now() - start,
+        error
+      });
+    }
+  }
 
-  return settled.map((r) => {
-    if (r.status === 'fulfilled') return r.value;
-    const reason = r.reason;
-    const error = reason instanceof Error ? reason : new Error(String(reason ?? 'Unknown error'));
-    logger(`  ✗  ${exampleName}  —  ${error.message}`, { title: '', color: 'red' });
-    return {
-      fullName: `${exampleName} (default test error)`,
-      passed: false,
-      skipped: false,
-      duration: 0,
-      error
-    };
-  });
+  return results;
 }
 
 // ---------------------------------------------------------------------------
