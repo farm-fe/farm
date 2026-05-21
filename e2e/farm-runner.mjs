@@ -1,38 +1,35 @@
-/**
- * Farm process management + Playwright page utilities.
- *
- * Replaces the vitest-specific logic in the old vitestSetup.ts.
- * No dependency on vitest at all — uses a browser singleton set by the runner.
- */
 import { execa } from 'execa';
-import type { Browser, BrowserContext, Page } from 'playwright-chromium';
 import getPort from 'get-port';
-import { logger } from './utils.ts';
+import { logger } from './utils.mjs';
 
 // ---------------------------------------------------------------------------
 // Browser singleton
 // ---------------------------------------------------------------------------
 
-let _browser: Browser | null = null;
-let _context: BrowserContext | null = null;
-let _recoverBrowser: (() => Promise<void>) | null = null;
+let _browser = null;
+let _context = null;
+let _recoverBrowser = null;
 
-/** Called once by the test runner before any spec runs. */
-export function initBrowser(browser: Browser): void {
+/** @param {import('playwright-chromium').Browser} browser */
+export function initBrowser(browser) {
   _browser = browser;
 }
 
-/** Called by the runner when rotating contexts between example groups. */
-export function initBrowserContext(context: BrowserContext): void {
+/** @param {import('playwright-chromium').BrowserContext} context */
+export function initBrowserContext(context) {
   _context = context;
 }
 
-/** Optional hook used by the outer runner to recreate browser on crash. */
-export function setBrowserRecoveryHandler(handler: (() => Promise<void>) | null): void {
+/** @param {(null | (() => Promise<void>))} handler */
+export function setBrowserRecoveryHandler(handler) {
   _recoverBrowser = handler;
 }
 
-function isBrowserCrashLikeError(error: unknown): boolean {
+/**
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+function isBrowserCrashLikeError(error) {
   const msg = error instanceof Error ? error.message : String(error ?? '');
   return (
     msg.includes('Target page, context or browser has been closed') ||
@@ -41,19 +38,37 @@ function isBrowserCrashLikeError(error: unknown): boolean {
   );
 }
 
-function requireBrowser(): Browser {
+/**
+ * @returns {import('playwright-chromium').Browser}
+ */
+function requireBrowser() {
   if (!_browser) {
     throw new Error('Browser not initialised. Call initBrowser() before running specs.');
   }
   return _browser;
 }
 
-function requireBrowserContext(): BrowserContext {
-  if (_context) {
+/**
+ * @returns {boolean}
+ */
+function isContextValid(ctx) {
+  if (!ctx) return false;
+  try {
+    const b = ctx.browser();
+    return b != null && b.isConnected();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @returns {import('playwright-chromium').BrowserContext}
+ */
+function requireBrowserContext() {
+  if (isContextValid(_context)) {
     return _context;
   }
 
-  // Keep the error actionable while preserving backwards compatibility with old setup.
   if (_browser) {
     throw new Error(
       'Browser context not initialised. Call initBrowserContext() before running specs.'
@@ -67,12 +82,14 @@ function requireBrowserContext(): BrowserContext {
 // Page visitor
 // ---------------------------------------------------------------------------
 
-async function visitPage(
-  url: string,
-  examplePath: string,
-  cb: (page: Page) => Promise<void>,
-  command: string
-): Promise<void> {
+/**
+ * @param {string} url
+ * @param {string} examplePath
+ * @param {(page: import('playwright-chromium').Page) => Promise<void>} cb
+ * @param {string} command
+ * @returns {Promise<void>}
+ */
+async function visitPage(url, examplePath, cb, command) {
   const page = await requireBrowserContext().newPage();
   logger(`Opening page: ${url}  [${examplePath}]`);
 
@@ -83,9 +100,9 @@ async function visitPage(
     );
   });
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let settled = false;
-    const settle = (fn: () => void): void => {
+    const settle = (fn) => {
       if (!settled) {
         settled = true;
         fn();
@@ -96,6 +113,10 @@ async function visitPage(
       if (page.isClosed()) return;
       const text = msg.text();
       const lower = text.toLocaleLowerCase();
+      const location = msg.location?.();
+      const locationText = location?.url
+        ? ` (${location.url}:${location.lineNumber ?? 0}:${location.columnNumber ?? 0})`
+        : '';
 
       if (
         msg.type() === 'error' &&
@@ -103,32 +124,38 @@ async function visitPage(
         !lower.includes('warning') &&
         !/Parse `.+` failed/.test(text)
       ) {
-        logger(`[console:error] ${command} ${examplePath}: ${text}`, { color: 'red' });
-        settle(() => reject(new Error(`Browser console error: ${text}`)));
+        logger(`[console:error] ${command} ${examplePath}: ${text}${locationText}`, {
+          color: 'red'
+        });
+        settle(() => reject(new Error(`Browser console error: ${text}${locationText}`)));
       } else {
-        logger(`[console] ${command} ${examplePath}: ${text}`);
+        logger(`[console] ${command} ${examplePath}: ${text}${locationText}`);
       }
     });
 
     page.on('pageerror', (error) => {
       if (page.isClosed()) return;
-      logger(`[pageerror] ${command} ${examplePath}: ${error}`, { color: 'red' });
+      const details =
+        error && typeof error === 'object' && 'stack' in error && error.stack
+          ? error.stack
+          : String(error);
+      logger(`[pageerror] ${command} ${examplePath}: ${details}`, { color: 'red' });
       settle(() => reject(error));
     });
 
     page
       .goto(url)
+      .then(() => cb(page))
       .then(() => {
-        cb(page)
-          .then(() => settle(() => resolve()))
-          .catch((e: unknown) => settle(() => reject(e as Error)))
-          .finally(() => {
-            page.close({ reason: 'test finished', runBeforeUnload: false }).catch(() => {});
-          });
+        // Success — close page first, then resolve
+        return page.close({ reason: 'test finished', runBeforeUnload: false }).catch(() => {});
       })
-      .catch((e: unknown) => {
-        page.close().catch(() => {});
-        settle(() => reject(e as Error));
+      .then(() => settle(() => resolve()))
+      .catch((e) => {
+        // Failure — close page first, then reject
+        return page.close({ reason: 'test failed', runBeforeUnload: false }).catch(() => {}).then(() => {
+          settle(() => reject(/** @type {Error} */ (e)));
+        });
       });
   });
 }
@@ -137,11 +164,13 @@ async function visitPage(
 // startAndTest — spawn `npm run <command>`, wait for URL, then run assertions
 // ---------------------------------------------------------------------------
 
-async function startAndTestOnce(
-  examplePath: string,
-  cb: (page: Page) => Promise<void>,
-  command: string
-): Promise<void> {
+/**
+ * @param {string} examplePath
+ * @param {(page: import('playwright-chromium').Page) => Promise<void>} cb
+ * @param {string} command
+ * @returns {Promise<void>}
+ */
+async function startAndTestOnce(examplePath, cb, command) {
   const port = await getPort();
   logger(`Spawning: npm run ${command}  in  ${examplePath}`);
 
@@ -149,6 +178,7 @@ async function startAndTestOnce(
     cwd: examplePath,
     stdin: 'pipe',
     encoding: 'utf8',
+    timeout: 120_000, // 2-minute timeout for dev server startup
     env: {
       ...process.env,
       BROWSER: 'none',
@@ -158,28 +188,48 @@ async function startAndTestOnce(
     }
   });
 
-  // Wait until a URL appears in stdout
-  const pageUrl = await new Promise<string>((resolve, reject) => {
+  // Wait until a URL appears in stdout (60s timeout)
+  const pageUrl = await new Promise((resolve, reject) => {
     let output = '';
+    let settled = false;
     const urlRe =
       /https?:\/\/(localhost|\d{1,3}(?:\.\d{1,3}){3})(:\d+)?(\/[^\s]*)?/g;
 
-    child.stdout?.on('data', (chunk: Buffer) => {
+    const urlTimer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        if (!child.killed) child.kill('SIGTERM');
+        reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after 60s`));
+      }
+    }, 60_000);
+
+    child.stdout?.on('data', (chunk) => {
+      if (settled) return;
       output += chunk.toString();
       const match = output.replace(/\n/g, ' ').match(urlRe);
-      if (match?.[0]) resolve(match[0]);
+      if (match?.[0]) {
+        clearTimeout(urlTimer);
+        settled = true;
+        resolve(match[0]);
+      }
     });
 
-    child.stderr?.on('data', (chunk: Buffer) => {
+    child.stderr?.on('data', (chunk) => {
       logger(chunk.toString().trimEnd(), { color: 'red' });
     });
 
-    child.on('error', (err: Error) => {
-      reject(new Error(`Child process error in ${examplePath} (${command}): ${err.message}`));
+    child.on('error', (err) => {
+      if (!settled) {
+        clearTimeout(urlTimer);
+        settled = true;
+        reject(new Error(`Child process error in ${examplePath} (${command}): ${err.message}`));
+      }
     });
 
-    child.on('exit', (code: number | null) => {
+    child.on('exit', (code) => {
       if (code) {
+        clearTimeout(urlTimer);
+        settled = true;
         reject(
           new Error(
             `${examplePath} '${command}' exited with code ${code}.\n${output}`
@@ -192,24 +242,21 @@ async function startAndTestOnce(
   try {
     await visitPage(pageUrl, examplePath, cb, command);
   } finally {
-    // SIGTERM ensures the spawned dev/preview process is really terminated.
     if (!child.killed) child.kill('SIGTERM');
   }
 }
 
 /**
- * Start the Farm dev/preview server for `examplePath`, open a Playwright
- * page at the emitted URL, and run `cb` against that page.
- *
- * Retries up to `maxRetries` times with a 10 s delay between attempts.
+ * @param {string} examplePath
+ * @param {(page: import('playwright-chromium').Page) => Promise<void>} cb
+ * @param {'start' | 'preview'} [command]
+ * @param {number} [maxRetries]
+ * @returns {Promise<void>}
  */
-export async function startAndTest(
-  examplePath: string,
-  cb: (page: Page) => Promise<void>,
-  command: 'start' | 'preview' = 'start',
-  maxRetries = 3
-): Promise<void> {
-  let lastError: unknown;
+export async function startAndTest(examplePath, cb, command = 'start', maxRetries = 3) {
+  let lastError;
+
+  const delays = [2_000, 5_000, 10_000];
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -232,7 +279,8 @@ export async function startAndTest(
         { color: 'red' }
       );
       if (attempt < maxRetries) {
-        await new Promise((r) => setTimeout(r, 10_000));
+        const delay = delays[attempt - 1] || 10_000;
+        await new Promise((r) => setTimeout(r, delay));
       }
     }
   }
@@ -247,15 +295,12 @@ export async function startAndTest(
 // ---------------------------------------------------------------------------
 
 /**
- * Spawn `npm run <command>` and stream stdout to `cb`.
- * `cb` receives the accumulated output so far and a `done()` callback to
- * signal completion.  Times out after 60 s.
+ * @param {string} examplePath
+ * @param {(log: string, done: () => void) => Promise<void>} cb
+ * @param {string} [command]
+ * @returns {Promise<void>}
  */
-export async function watchAndTest(
-  examplePath: string,
-  cb: (log: string, done: () => void) => Promise<void>,
-  command = 'start'
-): Promise<void> {
+export async function watchAndTest(examplePath, cb, command = 'start') {
   logger(`Spawning (watch): npm run ${command}  in  ${examplePath}`);
 
   const child = execa('npm', ['run', command], {
@@ -269,7 +314,7 @@ export async function watchAndTest(
     }
   });
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let output = '';
 
     const timer = setTimeout(() => {
@@ -277,7 +322,7 @@ export async function watchAndTest(
       reject(new Error(`Watch test timed out after 60 s in ${examplePath}`));
     }, 60_000);
 
-    child.stdout?.on('data', async (chunk: Buffer) => {
+    child.stdout?.on('data', async (chunk) => {
       output += chunk.toString();
       await cb(output, () => {
         clearTimeout(timer);
@@ -286,14 +331,14 @@ export async function watchAndTest(
       });
     });
 
-    child.on('error', (err: Error) => {
+    child.on('error', (err) => {
       clearTimeout(timer);
       reject(
         new Error(`Child process error in ${examplePath} (${command}): ${err.message}`)
       );
     });
 
-    child.on('exit', (code: number | null) => {
+    child.on('exit', (code) => {
       if (code) {
         clearTimeout(timer);
         reject(
@@ -303,5 +348,3 @@ export async function watchAndTest(
     });
   });
 }
-
-export type { Page };

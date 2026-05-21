@@ -1,97 +1,287 @@
 /**
- * LEGACY: This file is no longer used.
+ * Farm E2E test orchestrator.
  *
- * The new standalone E2E runner is: scripts/test-e2e.mts
+ * Distributes examples across N worker processes for parallel execution.
+ * Each worker runs a subset of examples in its own Node.js process with
+ * an isolated browser instance.
  *
- * This was the old vitest-based orchestrator.  All functionality has been
- * ported to the new runner, which:
- *   - Uses subprocess + Playwright (not vitest)
- *   - Supports --example, --from, --start-from, --project flags
- *   - Runs custom spec files (e2e.spec.ts) or default smoke tests
- *   - Manages browser lifecycle directly
- *
- * To run E2E tests:
- *   npm run test-e2e                 # Run all examples
- *   npm run test-e2e -- --example react    # Single example
- *   npm run test-e2e -- --from arco-pro    # From that example onward
- *
- * See scripts/test-e2e.mts for implementation details.
+ * CLI:
+ *   node scripts/test-e2e.mjs
+ *   node scripts/test-e2e.mjs --example react
+ *   node scripts/test-e2e.mjs --from arco-pro
+ *   node scripts/test-e2e.mjs --concurrency 4
+ *   node scripts/test-e2e.mjs -j 2
+ *   FARM_E2E_CONCURRENCY=6 node scripts/test-e2e.mjs
  */
-import { execa } from 'execa';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { fork } from 'node:child_process';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { cpus } from 'node:os';
+import { printSummary } from '../e2e/runner.mjs';
+import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
-function parseE2eArgs(argv) {
+// ---------------------------------------------------------------------------
+// CLI argument parsing
+// ---------------------------------------------------------------------------
+
+const DEFAULT_CONCURRENCY = Math.min(4, cpus().length);
+
+/**
+ * @param {string[]} argv
+ * @returns {{ example?: string, startFrom?: string, concurrency: number }}
+ */
+function parseArgs(argv) {
   let example;
   let startFrom;
-  const passThroughArgs = [];
+  let concurrency = parseInt(process.env.FARM_E2E_CONCURRENCY, 10) || DEFAULT_CONCURRENCY;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
 
     if (arg === '--example' || arg === '--project') {
-      example = argv[i + 1];
-      i += 1;
+      example = argv[++i];
       continue;
     }
-
     if (arg.startsWith('--example=')) {
       example = arg.slice('--example='.length);
       continue;
     }
-
     if (arg.startsWith('--project=')) {
       example = arg.slice('--project='.length);
       continue;
     }
-
     if (arg === '--from' || arg === '--start-from') {
-      startFrom = argv[i + 1];
-      i += 1;
+      startFrom = argv[++i];
       continue;
     }
-
     if (arg.startsWith('--from=')) {
       startFrom = arg.slice('--from='.length);
       continue;
     }
-
     if (arg.startsWith('--start-from=')) {
       startFrom = arg.slice('--start-from='.length);
       continue;
     }
-
-    passThroughArgs.push(arg);
-  }
-
-  return { example, startFrom, passThroughArgs };
-}
-
-const { example, startFrom, passThroughArgs } = parseE2eArgs(
-  process.argv.slice(2)
-);
-
-if (example) {
-  console.log(`Running e2e for example: ${example}`);
-}
-
-if (startFrom) {
-  console.log(`Running e2e from example: ${startFrom}`);
-}
-
-if (example && startFrom) {
-  console.log(
-    `Both --example and --from were provided. --example takes precedence, ignoring --from.`
-  );
-}
-
-await execa(
-  'pnpm',
-  ['exec', 'vitest', 'run', '-c', 'vitest.config.e2e.ts', ...passThroughArgs],
-  {
-    stdio: 'inherit',
-    env: {
-      ...process.env,
-      ...(example ? { FARM_E2E_EXAMPLE: example } : {}),
-      ...(startFrom ? { FARM_EXAMPLE_START_FROM: startFrom } : {})
+    if (arg === '--concurrency' || arg === '-j') {
+      concurrency = parseInt(argv[++i], 10);
+      continue;
+    }
+    if (arg.startsWith('--concurrency=')) {
+      concurrency = parseInt(arg.slice('--concurrency='.length), 10);
+      continue;
+    }
+    if (arg.startsWith('-j')) {
+      concurrency = parseInt(arg.slice(2), 10);
+      continue;
     }
   }
-);
+
+  return { example, startFrom, concurrency };
+}
+
+// ---------------------------------------------------------------------------
+// Example discovery
+// ---------------------------------------------------------------------------
+
+/** @type {ReadonlySet<string>} */
+const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
+
+const EXAMPLES_DIR = resolve(process.cwd(), 'examples');
+
+/**
+ * @param {{ example?: string, startFrom?: string }} args
+ * @returns {string[]}
+ */
+function discoverRunnableExamples(args) {
+  const allNames = readdirSync(EXAMPLES_DIR)
+    .filter((name) => statSync(join(EXAMPLES_DIR, name)).isDirectory())
+    .sort((a, b) => a.localeCompare(b));
+
+  if (args.example) {
+    if (!allNames.includes(args.example)) {
+      throw new Error(
+        `--example '${args.example}' was not found under ./examples`
+      );
+    }
+    return [args.example];
+  }
+
+  let names = allNames;
+
+  if (args.startFrom) {
+    const idx = names.indexOf(args.startFrom);
+    if (idx === -1) {
+      throw new Error(
+        `--from '${args.startFrom}' was not found under ./examples`
+      );
+    }
+    names = names.slice(idx);
+  }
+
+  // Filter to only runnable examples (have spec.mjs or index.html, not excluded)
+  return names.filter((name) => {
+    const hasSpecFile = existsSync(join(EXAMPLES_DIR, name, 'e2e.spec.mjs'));
+    const hasIndexHtml = existsSync(join(EXAMPLES_DIR, name, 'index.html'));
+    return hasSpecFile || (hasIndexHtml && !EXCLUDE_FROM_DEFAULT.has(name));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Worker pool
+// ---------------------------------------------------------------------------
+
+/**
+ * Spawn a worker and run a group of examples. Returns results via IPC.
+ * @param {string[]} examples
+ * @param {number} index
+ * @param {string} workerPath
+ * @param {string} logFile
+ * @returns {Promise<Map<string, import('../e2e/runner.mjs').TestResult[]>>}
+ */
+function runWorker(examples, index, workerPath, logFile) {
+  return new Promise((resolve, reject) => {
+    const worker = fork(workerPath, [], {
+      stdio: 'inherit'
+    });
+
+    /** @type {Map<string, import('../e2e/runner.mjs').TestResult[]>} */
+    const workerResults = new Map();
+    let settled = false;
+
+    const settle = (fn) => {
+      if (!settled) {
+        settled = true;
+        fn();
+      }
+    };
+
+    worker.on('message', (msg) => {
+      if (msg?.type === 'results') {
+        workerResults.set(msg.example, msg.results);
+      } else if (msg?.type === 'skip') {
+        // no-op — example was intentionally skipped
+      } else if (msg?.type === 'error') {
+        workerResults.set(msg.example, [{
+          fullName: msg.example,
+          passed: false,
+          skipped: false,
+          duration: 0,
+          error: new Error(msg.error)
+        }]);
+      } else if (msg?.type === 'done') {
+        settle(() => resolve(workerResults));
+      } else if (msg?.type === 'fatal') {
+        settle(() => reject(new Error(msg.error)));
+      }
+    });
+
+    worker.on('error', (err) => {
+      // Worker spawn errors are fatal for this worker, but we still
+      // resolve with whatever results we already have.
+      settle(() => resolve(workerResults));
+    });
+
+    worker.on('exit', (code) => {
+      if (!settled) {
+        settle(() => resolve(workerResults));
+      }
+    });
+
+    // Send examples and log file path to worker
+    worker.send({ type: 'run', examples, logFile });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+
+  // Set up log directory first so all output is captured
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const logDir = resolve(process.cwd(), 'logs', `e2e-${timestamp}`);
+  const orchLogFile = join(logDir, 'orchestrator.log');
+  setLogFile(orchLogFile);
+
+  if (args.example) {
+    args.concurrency = 1; // single example => no parallelism
+    logger(`Running E2E for single example: ${args.example}`, { color: 'cyan' });
+  } else if (args.startFrom) {
+    logger(`Running E2E from example: ${args.startFrom}`, { color: 'cyan' });
+  }
+
+  const exampleNames = discoverRunnableExamples(args);
+  const concurrency = Math.min(args.concurrency, exampleNames.length);
+
+  logger(`Discovered ${exampleNames.length} runnable example(s)`, { color: 'cyan' });
+  logger(`Running with ${concurrency} worker(s)`, { color: 'cyan' });
+
+  // Distribute examples round-robin across workers
+  /** @type {string[][]} */
+  const groups = Array.from({ length: concurrency }, () => []);
+  exampleNames.forEach((name, i) => groups[i % concurrency].push(name));
+
+  const workerPath = fileURLToPath(new URL('./test-e2e-worker.mjs', import.meta.url));
+
+  // Track active workers for cleanup
+  /** @type {Set<import('child_process').ChildProcess>} */
+  const activeWorkers = new Set();
+
+  const cleanup = () => {
+    logger('\nShutting down workers...', { color: 'yellow' });
+    for (const w of activeWorkers) {
+      if (!w.killed) w.kill('SIGTERM');
+    }
+    process.exit(1);
+  };
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+
+  const startTime = Date.now();
+
+  /** @type {Map<string, import('../e2e/runner.mjs').TestResult[]>} */
+  const allResults = new Map();
+
+  // Launch all workers in parallel
+  const workerPromises = groups.map((group, idx) => {
+    const workerLogFile = join(logDir, `worker-${idx + 1}.log`);
+    const p = runWorker(group, idx, workerPath, workerLogFile).then((workerResults) => {
+      for (const [name, results] of workerResults) {
+        allResults.set(name, results);
+      }
+    });
+    return p;
+  });
+
+  try {
+    await Promise.all(workerPromises);
+  } catch (err) {
+    logger(`Worker failure: ${err}`, { color: 'red' });
+    // Fall through — still print results from workers that completed
+  } finally {
+    process.removeListener('SIGINT', cleanup);
+    process.removeListener('SIGTERM', cleanup);
+  }
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  logger(`\nTotal time: ${elapsed}s`, { color: 'cyan' });
+  logger(`Logs saved to: ${logDir}`, { color: 'cyan' });
+
+  printSummary(allResults);
+
+  const totalFailed = [...allResults.values()]
+    .flat()
+    .filter((r) => !r.passed).length;
+
+  // Close log files synchronously so they flush before exit
+  closeLogFiles();
+  process.exit(totalFailed > 0 ? 1 : 0);
+}
+
+main().catch((err) => {
+  logger(`Fatal error: ${err}`, { color: 'red' });
+  process.exit(1);
+});

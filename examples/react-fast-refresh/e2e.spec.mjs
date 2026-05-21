@@ -1,24 +1,18 @@
-import { startAndTest, editFile, expect } from '../../e2e/index.ts';
-import type { SpecContext, Page } from '../../e2e/index.ts';
-import type { ElementHandle } from 'playwright-chromium';
+import { startAndTest, editFile, expect } from '../../e2e/index.mjs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function waitMatchConsole(
-  page: Page,
-  text: string,
-  timeout = 10_000
-): Promise<void> {
+function waitMatchConsole(page, text, timeout = 10_000) {
   return new Promise((resolve, reject) => {
-    let timer: NodeJS.Timeout | null = setTimeout(() => {
+    let timer = setTimeout(() => {
       reject(new Error('wait match console message timeout'));
     }, timeout);
 
-    const handler = (message: any): void => {
+    const handler = (message) => {
       if (message.text().includes(text)) {
         if (timer) {
           clearTimeout(timer);
@@ -33,13 +27,7 @@ function waitMatchConsole(
   });
 }
 
-async function expectTestFileHmr(
-  page: Page,
-  element: ElementHandle<SVGElement | HTMLElement>,
-  filename: string,
-  originText: string,
-  afterText: string
-): Promise<void> {
+async function expectTestFileHmr(page, element, filename, originText, afterText) {
   const matchUpdateMessage = `[Farm HMR] ${path.posix.normalize(filename)} updated`;
   const waitUpdatePromise = waitMatchConsole(page, matchUpdateMessage);
   const recover = await editFile(path.join(projectPath, filename), originText, afterText);
@@ -54,12 +42,7 @@ async function expectTestFileHmr(
   }
 }
 
-async function expectUpdateError(
-  page: Page,
-  filename: string,
-  originText: string,
-  errorText: string
-): Promise<void> {
+async function expectUpdateError(page, filename, originText, errorText) {
   const errorMessage = '[Farm HMR] Parse `src/index.tsx` failed.';
   const recover = await editFile(path.join(projectPath, filename), originText, errorText);
   try {
@@ -69,13 +52,7 @@ async function expectUpdateError(
   }
 }
 
-async function expectRecoverFromError(
-  page: Page,
-  element: ElementHandle<SVGElement | HTMLElement>,
-  filename: string,
-  errorText: string,
-  recoverText: string
-): Promise<void> {
+async function expectRecoverFromError(page, element, filename, errorText, recoverText) {
   const matchUpdateMessage = 'recovered 123';
   const recover = await editFile(path.join(projectPath, filename), errorText, recoverText);
   try {
@@ -86,10 +63,10 @@ async function expectRecoverFromError(
   }
 }
 
-export default async function (ctx: SpecContext): Promise<void> {
+export default async function (ctx) {
   await ctx.test('run start (HMR)', async () => {
     await startAndTest(projectPath, async (page) => {
-      const root = (await page.$('#root'))!;
+      const root = await page.$('#root');
       expect(root).not.toBeNull();
 
       const content = await root?.textContent();

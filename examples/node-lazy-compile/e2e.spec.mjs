@@ -1,5 +1,4 @@
-import { watchAndTest } from '../../e2e/index.ts';
-import type { SpecContext } from '../../e2e/index.ts';
+import { watchAndTest } from '../../e2e/index.mjs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
@@ -8,7 +7,7 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-export default async function (ctx: SpecContext): Promise<void> {
+export default async function (ctx) {
   await ctx.test('run preview', async () => {
     await watchAndTest(
       projectPath,

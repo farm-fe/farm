@@ -1,16 +1,14 @@
-import { startAndTest } from '../../e2e/index.ts';
-import type { SpecContext } from '../../e2e/index.ts';
+import { startAndTest } from '../../e2e/index.mjs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execa } from 'execa';
 
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-export default async function (ctx: SpecContext): Promise<void> {
-  // Build first before running tests
+export default async function (ctx) {
   await execa('npm', ['run', 'build'], { cwd: projectPath });
 
-  const runTest = (command?: 'start' | 'preview') =>
+  const runTest = (command) =>
     startAndTest(
       projectPath,
       async (page) => {

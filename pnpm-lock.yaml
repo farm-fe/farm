@@ -73,9 +73,6 @@ importers:
       rollup:
         specifier: ^3.29.4
         version: 3.29.4
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.7.26)(@types/node@18.19.67)(typescript@5.6.3)
       typescript:
         specifier: 5.6.3
         version: 5.6.3
@@ -2706,10 +2703,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.4.2(vue@2.6.14)
+        version: 0.4.4(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.14.5(vue@2.6.14)
+        version: 1.15.0(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -2740,10 +2737,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.4.2(vue@2.7.16)
+        version: 0.4.4(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.14.5(vue@2.7.16)
+        version: 1.15.0(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -21320,13 +21317,13 @@ packages:
     engines: {node: '>=18'}
     deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
-  tdesign-icons-vue@0.4.2:
-    resolution: {integrity: sha512-Lgw2O4MtHja/F0rwly8gdy3hNVjY1OGaven+z64rnaM0rzQ3LY3wGGJMeYcVTDMsEI+uuwfdjMTSZxMa2zs7zA==}
+  tdesign-icons-vue@0.4.4:
+    resolution: {integrity: sha512-g5Gmbu34B0KDOlrcZqj3qkAfHYbc7iJWa6wQUV7AAiRQBWKidJWN9fc4uXUsImRfaz0a6F06jsRykdmCmoNrsA==}
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.14.5:
-    resolution: {integrity: sha512-3s/BoG0bleP8pBmdsPth30+SaPDcFfCfsUtZ9ho5bySgYdw5cGZVhIb5GaZt38bqD1mJ+ozd5IDUqjT9cHZYYQ==}
+  tdesign-vue@1.15.0:
+    resolution: {integrity: sha512-qBG6wz/kk1HMj+DxAHF+DszW1V2kVm08CII2iRjS9zaLurXkm9C5dZN7EEXzccxIHNj6kvk2JdyfI2sR6DeTaQ==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -22683,6 +22680,7 @@ packages:
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
+    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
@@ -48350,19 +48348,19 @@ snapshots:
       mkdirp: 3.0.1
       yallist: 5.0.0
 
-  tdesign-icons-vue@0.4.2(vue@2.6.14):
+  tdesign-icons-vue@0.4.4(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
       vue: 2.6.14
 
-  tdesign-icons-vue@0.4.2(vue@2.7.16):
+  tdesign-icons-vue@0.4.4(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.14.5(vue@2.6.14):
+  tdesign-vue@1.15.0(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -48378,12 +48376,12 @@ snapshots:
       mitt: 3.0.1
       raf: 3.4.1
       sortablejs: 1.15.2
-      tdesign-icons-vue: 0.4.2(vue@2.6.14)
+      tdesign-icons-vue: 0.4.4(vue@2.6.14)
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.14.5(vue@2.7.16):
+  tdesign-vue@1.15.0(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -48399,7 +48397,7 @@ snapshots:
       mitt: 3.0.1
       raf: 3.4.1
       sortablejs: 1.15.2
-      tdesign-icons-vue: 0.4.2(vue@2.7.16)
+      tdesign-icons-vue: 0.4.4(vue@2.7.16)
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.7.16
@@ -48754,6 +48752,7 @@ snapshots:
       yn: 3.1.1
     optionalDependencies:
       '@swc/core': 1.7.26(@swc/helpers@0.5.17)
+    optional: true
 
   ts-node@10.9.2(@swc/core@1.7.26)(@types/node@20.5.1)(typescript@5.6.3):
     dependencies:

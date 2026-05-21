@@ -1,15 +1,14 @@
-import { startAndTest, expect } from '../../e2e/index.ts';
-import type { SpecContext } from '../../e2e/index.ts';
+import { startAndTest, expect } from '../../e2e/index.mjs';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { readFileSync, writeFileSync } from 'fs';
 
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export default async function (ctx: SpecContext): Promise<void> {
-  const runTest = (command: 'start' | 'preview' = 'start') =>
+export default async function (ctx) {
+  const runTest = (command = 'start') =>
     startAndTest(
       projectPath,
       async (page) => {

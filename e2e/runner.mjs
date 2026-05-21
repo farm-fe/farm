@@ -1,81 +1,61 @@
+import { logger } from './utils.mjs';
+
 /**
- * Lightweight test-runner framework for Farm's standalone E2E tests.
- *
- * Each spec file exports a `default` async function that receives a
- * `SpecContext`.  Tests run sequentially in the order they are called.
- *
- * Usage in a spec file:
- *
- *   import type { SpecContext } from '../../e2e/runner.ts';
- *
- *   export default async function (ctx: SpecContext): Promise<void> {
- *     await ctx.test('run start', async () => { ... });
- *     await ctx.describe('group', async (g) => {
- *       await g.test('sub-test', async () => { ... });
- *     });
- *   }
+ * @typedef {{
+ *   fullName: string;
+ *   passed: boolean;
+ *   skipped: boolean;
+ *   duration: number;
+ *   error?: Error;
+ * }} TestResult
  */
-import { logger } from './utils.ts';
 
-// ---------------------------------------------------------------------------
-// Public types
-// ---------------------------------------------------------------------------
+/**
+ * @typedef {{
+ *   test(name: string, fn: () => Promise<void>): Promise<void>;
+ *   describe(suiteName: string, fn: (ctx: SpecContext) => Promise<void>): Promise<void>;
+ *   skip(name: string): void;
+ * }} SpecContext
+ */
 
-export interface TestResult {
-  fullName: string;
-  passed: boolean;
-  skipped: boolean;
-  duration: number;
-  error?: Error;
-}
-
-/** Passed to every spec's default export. */
-export interface SpecContext {
-  /** Run a single named test case. */
-  test(name: string, fn: () => Promise<void>): Promise<void>;
-  /** Group related tests under a named suite. */
-  describe(
-    suiteName: string,
-    fn: (ctx: SpecContext) => Promise<void>
-  ): Promise<void>;
-  /** Mark a test as skipped (no-op at runtime). */
-  skip(name: string): void;
-}
-
-/** Shape every spec file's default export must conform to. */
-export type SpecFn = (ctx: SpecContext) => Promise<void>;
-
-// ---------------------------------------------------------------------------
-// Runner
-// ---------------------------------------------------------------------------
+/**
+ * @typedef {(ctx: SpecContext) => Promise<void>} SpecFn
+ */
 
 export class SpecRunner {
-  private results: TestResult[] = [];
+  /** @type {TestResult[]} */
+  results = [];
 
   /**
-   * Import and execute a spec file.
-   * Returns the list of test results for that spec.
+   * @param {string} specPath
+   * @param {string} specLabel
+   * @returns {Promise<TestResult[]>}
    */
-  async run(specPath: string, specLabel: string): Promise<TestResult[]> {
+  async run(specPath, specLabel) {
     this.results = [];
     logger(`\nRunning spec: ${specLabel}`, { title: 'E2E SPEC', color: 'cyan' });
 
-    const mod = await import(specPath) as { default?: SpecFn };
+    /** @type {{ default?: SpecFn }} */
+    const mod = await import(specPath);
     const specFn = mod.default;
 
     if (typeof specFn !== 'function') {
       throw new Error(
         `Spec file "${specPath}" does not export a default function. ` +
-          'Each spec must export: export default async function(ctx: SpecContext) { ... }'
+          'Each spec must export: export default async function(ctx) { ... }'
       );
     }
 
-    const ctx = this.buildContext('');
+    const ctx = this.#buildContext('');
     await specFn(ctx);
     return [...this.results];
   }
 
-  private buildContext(prefix: string): SpecContext {
+  /**
+   * @param {string} prefix
+   * @returns {SpecContext}
+   */
+  #buildContext(prefix) {
     const self = this;
 
     return {
@@ -101,7 +81,7 @@ export class SpecRunner {
       async describe(suiteName, fn) {
         const fullPrefix = prefix ? `${prefix} › ${suiteName}` : suiteName;
         logger(`\n  ⬛  ${fullPrefix}`, { title: '', color: 'cyan' });
-        await fn(self.buildContext(fullPrefix));
+        await fn(self.#buildContext(fullPrefix));
       },
 
       skip(name) {
@@ -113,16 +93,15 @@ export class SpecRunner {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Aggregate reporting helper
-// ---------------------------------------------------------------------------
-
-export function printSummary(allResults: Map<string, TestResult[]>): void {
+/**
+ * @param {Map<string, TestResult[]>} allResults
+ */
+export function printSummary(allResults) {
   let totalPassed = 0;
   let totalFailed = 0;
   let totalSkipped = 0;
 
-  const failedSpecs: { spec: string; result: TestResult }[] = [];
+  const failedSpecs = /** @type {{ spec: string; result: TestResult }[]} */ ([]);
 
   for (const [spec, results] of allResults) {
     const passed = results.filter((r) => r.passed && !r.skipped).length;

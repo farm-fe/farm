@@ -2,21 +2,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
-import { expect } from '../../e2e/index.ts';
-import type { SpecContext } from '../../e2e/index.ts';
+import { expect } from '../../e2e/index.mjs';
 import { _electron as electron } from 'playwright-chromium';
-import type { ElectronApplication } from 'playwright-chromium';
 
 const projectPath = path.dirname(fileURLToPath(import.meta.url));
 
-function cleanOut(): void {
+function cleanOut() {
   for (const dir of ['dist', 'dist-electron']) {
     fs.rmSync(path.join(projectPath, dir), { recursive: true, force: true });
   }
 }
 
-export default async function (ctx: SpecContext): Promise<void> {
-  let app: ElectronApplication | null = null;
+export default async function (ctx) {
+  let app = null;
   let passE2E = false;
 
   try {
@@ -29,7 +27,7 @@ export default async function (ctx: SpecContext): Promise<void> {
         cwd: projectPath,
         env: { ...process.env, NODE_ENV: 'development' }
       });
-    } catch (error: any) {
+    } catch (error) {
       // Linux occasionally fails to launch electron in test environment
       if (process.platform === 'linux') {
         passE2E = true;

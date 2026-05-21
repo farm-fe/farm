@@ -1,12 +1,11 @@
-import { startAndTest, watchAndTest, expect } from '../../e2e/index.ts';
-import type { SpecContext } from '../../e2e/index.ts';
+import { startAndTest, watchAndTest, expect } from '../../e2e/index.mjs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-export default async function (ctx: SpecContext): Promise<void> {
+export default async function (ctx) {
   const runStart = () =>
     startAndTest(
       projectPath,

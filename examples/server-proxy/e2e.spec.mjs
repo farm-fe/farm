@@ -1,16 +1,15 @@
-import { startAndTest, expect } from '../../e2e/index.ts';
-import type { SpecContext } from '../../e2e/index.ts';
+import { startAndTest, expect } from '../../e2e/index.mjs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-let server: any;
+let server;
 
-async function launchServer(): Promise<void> {
+async function launchServer() {
   const { default: express } = await import('express');
   const app = express();
-  app.use((_req: any, res: any) => {
+  app.use((_req, res) => {
     res.json({ hello: 'world' });
   });
 
@@ -26,14 +25,14 @@ async function launchServer(): Promise<void> {
   });
 }
 
-async function closeServer(): Promise<void> {
+async function closeServer() {
   return new Promise((resolve) => {
     server?.close(() => resolve());
   });
 }
 
-export default async function (ctx: SpecContext): Promise<void> {
-  const runTest = (command?: 'start' | 'preview') =>
+export default async function (ctx) {
+  const runTest = (command) =>
     startAndTest(
       projectPath,
       async (page) => {
