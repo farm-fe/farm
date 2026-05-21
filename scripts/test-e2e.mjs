@@ -158,7 +158,24 @@ function runWorker(examples, index, workerPath, logFile) {
 
     worker.on('message', (msg) => {
       if (msg?.type === 'results') {
-        workerResults.set(msg.example, msg.results);
+        // Reconstruct Error instances from the wire format produced by
+        // the worker (see test-e2e-worker.mjs). IPC structured cloning
+        // does not preserve Error subtypes / messages reliably.
+        const results = Array.isArray(msg.results)
+          ? msg.results.map((r) => {
+              const error = r.errorMessage
+                ? Object.assign(new Error(r.errorMessage), r.errorStack ? { stack: r.errorStack } : {})
+                : undefined;
+              return {
+                fullName: r.fullName,
+                passed: r.passed,
+                skipped: r.skipped,
+                duration: r.duration,
+                ...(error ? { error } : {})
+              };
+            })
+          : msg.results;
+        workerResults.set(msg.example, results);
       } else if (msg?.type === 'skip') {
         // no-op — example was intentionally skipped
       } else if (msg?.type === 'error') {

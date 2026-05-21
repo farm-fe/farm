@@ -104,6 +104,7 @@ async function visitPage(url, examplePath, cb, command) {
 
   return new Promise((resolve, reject) => {
     let settled = false;
+    let cbSucceeded = false;
     const settle = (fn) => {
       if (!settled) {
         settled = true;
@@ -129,6 +130,11 @@ async function visitPage(url, examplePath, cb, command) {
         logger(`[console:error] ${command} ${examplePath}: ${text}${locationText}`, {
           color: 'red'
         });
+        // Ignore console errors that arrive after the assertion callback
+        // already succeeded — they typically come from background work
+        // (e.g. workers) racing against page teardown when the dev server
+        // is being shut down, and should not invalidate a passing test.
+        if (cbSucceeded) return;
         settle(() => reject(new Error(`Browser console error: ${text}${locationText}`)));
       } else {
         logger(`[console] ${command} ${examplePath}: ${text}${locationText}`);
@@ -142,6 +148,7 @@ async function visitPage(url, examplePath, cb, command) {
           ? error.stack
           : String(error);
       logger(`[pageerror] ${command} ${examplePath}: ${details}`, { color: 'red' });
+      if (cbSucceeded) return;
       settle(() => reject(error));
     });
 
@@ -149,7 +156,12 @@ async function visitPage(url, examplePath, cb, command) {
       .goto(url)
       .then(() => cb(page))
       .then(() => {
-        // Success — close page first, then resolve
+        // Mark the test as successful *before* we close the page so that
+        // any console.error / pageerror events that fire during teardown
+        // (for example workers losing their connection to a dev server
+        // that's about to be killed) cannot retroactively fail a test
+        // whose assertions have already passed.
+        cbSucceeded = true;
         return page.close({ reason: 'test finished', runBeforeUnload: false }).catch(() => {});
       })
       .then(() => settle(() => resolve()))
