@@ -1,60 +1,62 @@
-# CI 编译时间优化方案
+# CI Compile-Time Optimization Design
 
-> 状态：设计稿（Design Proposal）
-> 范围：`.github/workflows/ci.yaml`、`.github/workflows/rust-build.yaml`
-> 作者：Farm 维护团队
-> 关联问题：CI 端到端耗时过长，PR 反馈慢
+> Status: Design Proposal
+> Scope: `.github/workflows/ci.yaml`, `.github/workflows/rust-build.yaml`
+> Author: Farm maintainers
+> Related issue: PR CI end-to-end time is too long, slowing down feedback
 
-## 1. 背景与现状
+## 1. Background and Current State
 
-Farm 的 PR CI 由两个 workflow 组成：
+Farm's PR CI consists of two workflows:
 
-| Workflow | 触发 | 主要 Job |
+| Workflow | Trigger | Main Jobs |
 | --- | --- | --- |
-| `ci.yaml` (E2E Tests) | `pull_request` → main | `call-rust-build`、`examples-test`、`ts-test`、`type-check`、`check-*-artifacts` |
-| `rust-build.yaml` | 被 `ci.yaml` 通过 `workflow_call` 调用 | 矩阵化的 `build`（12 个 ABI）+ `build-freebsd` |
+| `ci.yaml` (E2E Tests) | `pull_request` → main | `call-rust-build`, `examples-test`, `ts-test`, `type-check`, `check-*-artifacts` |
+| `rust-build.yaml` | Invoked by `ci.yaml` via `workflow_call` | A matrix `build` job (12 ABIs) plus `build-freebsd` |
 
-### 1.1 当前依赖关系
+### 1.1 Current Dependency Graph
 
 ```
                 ┌─────────────────────────────────────────┐
                 │            call-rust-build              │
-                │  (rust-build.yaml, matrix: 12 个 ABI)   │
+                │   (rust-build.yaml, matrix: 12 ABIs)    │
                 └─────────────────────────────────────────┘
                                    │
         ┌──────────────────┬───────┴───────┬───────────────────┐
         ▼                  ▼               ▼                   ▼
   examples-test       ts-test       check-core-artifacts  check-plugin-artifacts
- (matrix: 3 ABI)   (matrix: 3 ABI)
+ (matrix: 3 ABIs)   (matrix: 3 ABIs)
 ```
 
-`examples-test` 与 `ts-test` 通过 `needs: call-rust-build` 等待整个矩阵完成，
-这会让两个相对快速的下游 Job 被最慢的 ABI 拖住。
+`examples-test` and `ts-test` declare `needs: call-rust-build`, so they wait for
+the **entire** matrix to finish. As a result, these two relatively fast
+downstream jobs are blocked by the slowest ABI in the matrix.
 
-### 1.2 ABI 矩阵实测耗时（按经验粗排）
+### 1.2 ABI Matrix — Approximate Build Time
 
-| ABI | 用途 | 预计耗时 | 是否被 `examples-test` / `ts-test` 使用 |
+| ABI | Purpose | Approx. duration | Consumed by `examples-test` / `ts-test`? |
 | --- | --- | --- | --- |
-| `linux-x64-gnu` | examples/ts test、发布 | 中 | ✅ |
-| `darwin-arm64`  | examples/ts test、发布 | 中 | ✅ |
-| `win32-x64-msvc`| examples/ts test、发布 | 中 | ✅ |
-| `linux-x64-musl`| 发布 | 中（docker，启动慢） | ❌ |
-| `darwin-x64`    | 发布（cross-compile） | 较慢 | ❌ |
-| `win32-ia32-msvc` | 发布（xwin 交叉编译，关 LTO） | **慢** | ❌ |
-| `win32-arm64-msvc` | 发布（xwin 交叉编译） | **慢** | ❌ |
-| `linux-arm64-musl` | 发布（zig 交叉编译） | 慢 | ❌ |
-| `linux-arm64-gnu`  | 发布（zig 交叉编译） | 慢 | ❌ |
-| `android-arm-eabi` | 仅 create-farm | 较快 | ❌ |
-| `linux-arm-gnueabihf` | 仅 create-farm | 慢 | ❌ |
-| `android-arm64`    | 仅 create-farm | 较快 | ❌ |
-| `freebsd-x64`      | 仅 create-farm（交叉虚拟机） | **极慢** | ❌ |
+| `linux-x64-gnu` | examples/ts test, publish | Medium | ✅ |
+| `darwin-arm64`  | examples/ts test, publish | Medium | ✅ |
+| `win32-x64-msvc`| examples/ts test, publish | Medium | ✅ |
+| `linux-x64-musl`| publish | Medium (docker, slow startup) | ❌ |
+| `darwin-x64`    | publish (cross-compile) | Slow | ❌ |
+| `win32-ia32-msvc` | publish (xwin cross-compile, LTO off) | **Slow** | ❌ |
+| `win32-arm64-msvc` | publish (xwin cross-compile) | **Slow** | ❌ |
+| `linux-arm64-musl` | publish (zig cross-compile) | Slow | ❌ |
+| `linux-arm64-gnu`  | publish (zig cross-compile) | Slow | ❌ |
+| `android-arm-eabi` | create-farm only | Fast | ❌ |
+| `linux-arm-gnueabihf` | create-farm only | Slow | ❌ |
+| `android-arm64`    | create-farm only | Fast | ❌ |
+| `freebsd-x64`      | create-farm only (cross-compiled inside a VM) | **Very slow** | ❌ |
 
-**关键观察**：`examples-test` 与 `ts-test` 实际只需要 3 个 ABI 的产物
-（`linux-x64-gnu`、`darwin-arm64`、`win32-x64-msvc`），却需要等所有 12+ 个 ABI 都构建完成。
+**Key observation:** `examples-test` and `ts-test` only need the artifacts for
+three ABIs (`linux-x64-gnu`, `darwin-arm64`, `win32-x64-msvc`), yet they wait
+for all 12+ ABIs to finish building.
 
-### 1.3 Rust 编译缓存现状
+### 1.3 Rust Compile Cache — Current Behavior
 
-`rust-build.yaml` 中每个矩阵项使用：
+Each matrix entry in `rust-build.yaml` uses:
 
 ```yaml
 - uses: Swatinem/rust-cache@v2
@@ -62,50 +64,71 @@ Farm 的 PR CI 由两个 workflow 组成：
     shared-key: rust-build-${{ matrix.settings.abi }}
 ```
 
-每个 ABI 有自己独立的缓存（合理，因 target triple 不同）。
-但同一 Job 内的多次 `napi build` 共享 `target/`，理论上应能复用。
-然而以下因素导致**实际缓存命中率不高**：
+Each ABI has its own dedicated cache (correct, since the target triple differs).
+Within a single job, the multiple `napi build` invocations share `target/` and
+in principle should reuse compiled dependencies. In practice, **cache hit rate
+is poor** for the following reasons:
 
-1. **不同 profile 拆分子目录，依赖被重复编译**
-   - `packages/core` 用 `--profile release-publish`（`lto = "fat"`、`codegen-units = 1`）。
-   - `rust-plugins/{react, sass, replace-dirname}` 用 `--release`。
-   - 在 Cargo 中不同 profile 的依赖 crate 会编译两份，因此**整套 swc / rkyv 等重依赖被编译两遍**，
-     是单 Job 内编译时间的最大开销。
-2. **`lto = "fat"` 让任何对核心 crate 的小改动都触发整图重链**。
-   release-publish 的 fat LTO 在 PR 阶段并不需要（PR 只跑测试，不发版）。
-3. **没有跨 Job/跨 PR 的二级缓存**（如 sccache + GitHub Actions Cache backend）。
-   Swatinem/rust-cache 只缓存 `~/.cargo` 与 `target/`，对 LTO bitcode、
-   codegen 单元命中粒度有限。
-4. **Docker 构建路径不被 `Swatinem/rust-cache` 缓存**：`linux-x64-gnu` / `linux-x64-musl` 在
-   `addnab/docker-run-action` 内执行，主机层挂载了 `~/.cargo/{git,registry}`，但
-   `target/` 在容器工作区内，与主机的 rust-cache 仍然能命中（`/build` 即 `${{ github.workspace }}`），
-   不过 `CARGO_INCREMENTAL=0` 关掉了增量。
-5. **缓存写入互斥**：当前每个 ABI 一个 `shared-key`，没有 `restore-keys` fallback。
-   如果某个 ABI 的 toolchain/Cargo.lock 改动，整缓存失效，无法回退到上一个绿 PR 的缓存。
+1. **Different profiles split into different subdirectories, so dependencies
+   are compiled twice.**
+   - `packages/core` uses `--profile release-publish` (`lto = "fat"`,
+     `codegen-units = 1`).
+   - `rust-plugins/{react, sass, replace-dirname}` use `--release`.
+   - Cargo compiles each shared dependency once per profile, so heavy crates
+     such as the entire **swc** stack, **rkyv**, **serde**, etc. are compiled
+     twice. This is the single largest source of wasted time inside a build job.
+2. **`lto = "fat"` forces a full re-link on any change to a core crate.**
+   The fat-LTO link step is unnecessary for PR builds (PRs only run tests; they
+   do not publish artifacts that need maximum runtime performance).
+3. **No second-tier cache shared across jobs / PRs** (e.g. sccache backed by
+   GitHub Actions Cache). `Swatinem/rust-cache` only caches `~/.cargo` and
+   `target/`; its granularity is coarse for LTO bitcode and codegen units.
+4. **The docker build paths are partially excluded from `Swatinem/rust-cache`.**
+   The `linux-x64-gnu` / `linux-x64-musl` jobs run inside
+   `addnab/docker-run-action`. The host mounts `~/.cargo/{git,registry}` into
+   the container, but `target/` lives inside `/build`, which equals
+   `${{ github.workspace }}` and is therefore still cacheable. However,
+   `CARGO_INCREMENTAL=0` is set, disabling incremental compilation entirely.
+5. **No cache fallback key.** Each ABI uses a single `shared-key` with no
+   `restore-keys`. When `Cargo.lock` or the toolchain changes, the whole cache
+   is invalidated and there is no way to fall back to the last green cache.
 
-## 2. 优化目标
+## 2. Optimization Goals
 
-1. **把 PR 反馈关键路径** —— 即“代码提交 → 收到 examples-test/ts-test 结果”的耗时 —— 缩短到
-   3 个用户平台 ABI 完成构建后立即开始，而**不等**任何只用于发布的 ABI。
-2. **单 Job 内消除重复 Rust 依赖编译**，让 core 和 3 个 rust 插件的依赖只编译一次。
-3. **跨 PR 的二级缓存**进一步降低增量构建时间，并保留 fallback 缓存键以避免冷启动。
-4. 不破坏 `release.yaml` / `rust-build.yaml` 既有产物契约（`${{ github.sha }}-${abi}-*` artifact 名称、
-   `check-*-artifacts` 检查）。
+1. **Shorten the PR critical path** — i.e. the wall-clock time from "push
+   commit" to "`examples-test` / `ts-test` results available" — so that those
+   jobs start as soon as the 3 user-platform ABIs are ready and do **not** wait
+   for any publish-only ABI.
+2. **Eliminate duplicate Rust dependency compilation inside a single build
+   job**, so core and the 3 rust plugins compile their shared dependencies
+   only once.
+3. **Add a cross-PR second-tier cache** to reduce incremental build time and
+   keep a fallback cache key so that lockfile churn does not force a cold start.
+4. Do not change the existing contracts of `release.yaml` / `rust-build.yaml`
+   (artifact names of the form `${{ github.sha }}-${abi}-*`, the
+   `check-*-artifacts` validations).
 
-## 3. 优化方案
+## 3. Proposed Design
 
-方案分为两部分，对应问题陈述里的两个思路。两部分**互不阻塞**，可分阶段落地。
+The proposal has two parts, matching the two angles called out in the problem
+statement. The two parts are **independent** and can be rolled out in stages.
 
-### 3.1 思路一：拆分依赖关系，提升下游并发度
+### 3.1 Angle 1 — Decouple Downstream Tests to Increase Parallelism
 
-**目标**：让 `examples-test` 与 `ts-test` 各自只等待“自己用到的那个 ABI”构建完成。
+**Goal:** make `examples-test` and `ts-test` wait only for the ABI they
+actually consume.
 
-#### 方案 A（推荐）：在 `rust-build.yaml` 中按 ABI 分别上传 artifact，并用 job 级 fan-out
+#### Option A (recommended): Split per-ABI artifacts in `rust-build.yaml` and
+#### fan out at the job level
 
-GitHub Actions 的 `needs` 是 job 级的，`needs: matrix-job` 会等待整个矩阵。
-但**单个矩阵 job 内**只要 artifact 上传完毕，下游就可以下载——只是 `needs` 语法本身做不到“按矩阵实例分别等待”。
+GitHub Actions' `needs` operates at the job level. `needs: matrix-job` always
+waits for the entire matrix; the language itself cannot express "wait only for
+one matrix instance." But a downstream job can begin as soon as the upstream
+artifact is uploaded — provided the dependency is expressed at the job level.
 
-解决办法：把 `rust-build.yaml` 中**用户平台**与**纯发布平台**拆成两个独立的可调用 workflow（或两个独立 job）：
+The cleanest way to model this is to split `rust-build.yaml` into two
+independent reusable workflows (or two independent jobs): one for user
+platforms and one for publish-only platforms.
 
 ```yaml
 # .github/workflows/rust-build.yaml
@@ -119,7 +142,7 @@ jobs:
           - { os: ubuntu-latest, abi: linux-x64-gnu, ... }
           - { os: macos-latest,  abi: darwin-arm64,  ... }
           - { os: windows-latest, abi: win32-x64-msvc, ... }
-    steps: [ ... 同现有 build job ... ]
+    steps: [ ... same as today's build job ... ]
 
   build-release-platforms:
     name: Build (Release-only ABI) - ${{ matrix.settings.abi }}
@@ -135,12 +158,12 @@ jobs:
           - { abi: android-arm-eabi, cli_only: true, ... }
           - { abi: linux-arm-gnueabihf, cli_only: true, ... }
           - { abi: android-arm64, cli_only: true, ... }
-    steps: [ ... 同现有 build job ... ]
+    steps: [ ... same as today's build job ... ]
 
-  build-freebsd: { ... 不变 ... }
+  build-freebsd: { ... unchanged ... }
 ```
 
-`ci.yaml` 改造：
+`ci.yaml` would then declare:
 
 ```yaml
 jobs:
@@ -148,23 +171,27 @@ jobs:
     uses: ./.github/workflows/rust-build.yaml
 
   examples-test:
-    # 注意：reusable workflow 作为单一逻辑 job 出现，无法只 needs 其中一部分矩阵。
-    # 因此需要在 reusable workflow 中通过 outputs 暴露 build-user-platforms 的状态，
-    # 或将 examples-test / ts-test 直接放进 rust-build.yaml 中以 job 级 needs 关联，
-    # 或将 reusable workflow 拆成两个文件（见下文 A2，推荐方案）。
+    # Note: a reusable workflow appears as a single logical job to its caller,
+    # so `needs` cannot target a subset of its matrix. To make this work we
+    # must either (a) expose outputs from build-user-platforms in the reusable
+    # workflow, (b) move examples-test / ts-test into rust-build.yaml so they
+    # can `needs: build-user-platforms` at the job level, or (c) split the
+    # reusable workflow into two files (see Option A2 below — recommended).
     needs: call-rust-build
 ```
 
-由于 reusable workflow 对外只能整体作为一个“逻辑 job”来 `needs`，
-推荐两种落地方式之一：
+Two practical landing options:
 
-- **A1. 把 examples-test / ts-test / type-check 也搬进 `rust-build.yaml`**，
-  使下游可以 `needs: build-user-platforms`，`check-*-artifacts` 可以 `needs: [build-user-platforms, build-release-platforms]`。
-  优点：依赖图最干净。缺点：workflow 文件变大。
-- **A2. 不搬动 Job，改为在 `rust-build.yaml` 暴露 outputs**，但 GH 不支持
-  reusable workflow 通过 outputs 表达“矩阵子集完成”这一语义；可行的折衷是把
-  `rust-build.yaml` 拆成 `rust-build-user.yaml` 和 `rust-build-release.yaml`
-  两个文件，`ci.yaml` 中：
+- **A1. Move `examples-test` / `ts-test` / `type-check` into `rust-build.yaml`**,
+  so they can `needs: build-user-platforms`, and
+  `check-*-artifacts` can `needs: [build-user-platforms, build-release-platforms]`.
+  Pros: cleanest dependency graph. Cons: the workflow file grows large.
+- **A2. Expose `outputs` from `rust-build.yaml`** — but GitHub Actions does
+  not allow reusable workflows to express "a subset of the matrix has
+  completed" via outputs. The pragmatic workaround is to split
+  `rust-build.yaml` into two files,
+  `rust-build-user.yaml` and `rust-build-release.yaml`, and have `ci.yaml`
+  call both:
 
   ```yaml
   call-rust-build-user:    { uses: ./.github/workflows/rust-build-user.yaml }
@@ -172,45 +199,49 @@ jobs:
 
   examples-test:           { needs: call-rust-build-user }
   ts-test:                 { needs: call-rust-build-user }
-  type-check:              { needs: [] }  # 不依赖任何 build
+  type-check:              { needs: [] }  # does not need any build
   check-core-artifacts:    { needs: [call-rust-build-user, call-rust-build-release] }
   check-create-farm-rust-artifacts:
                            { needs: [call-rust-build-user, call-rust-build-release] }
   check-plugin-artifacts:  { needs: [call-rust-build-user, call-rust-build-release] }
   ```
 
-  推荐 **A2**，因为：
-  - `release.yaml` 不依赖此拆分（仍可调用任一文件或两者）。
-  - 不需要把测试 Job 的实现从 `ci.yaml` 搬出去。
-  - 两个 reusable workflow 是天然的“环境一致性边界”，便于未来再细分（例如把
-    `linux-x64-gnu` 拎出来作为最快 path）。
+  **A2 is recommended** because:
+  - `release.yaml` is unaffected (it can keep calling either file or both).
+  - We do not have to relocate the test jobs out of `ci.yaml`.
+  - The two reusable workflows form a natural environment boundary for future
+    refinement (e.g. a dedicated fast `linux-x64-gnu` path).
 
-#### 方案 B：保持单一 reusable workflow，按 abi 加速 user 平台
+#### Option B: Keep a single reusable workflow and reorder the matrix
 
-更轻量的另一种做法：把 3 个 user-ABI 抬到矩阵的最前面，并把
-`fail-fast: false` 保持为 false（已是），同时在 `rust-build.yaml` 中
-**让 user-ABI 不依赖任何耗时步骤**（已成立）。
-再加一个 job-level concurrency cancel：当 user-ABI 全部成功，取消尚未完成的发布平台
-对当前 PR 的运行——但要确保 `release.yaml` 的运行不受影响（仅在 push to tag 时运行）。
+A lighter-weight alternative: hoist the 3 user ABIs to the front of the matrix,
+keep `fail-fast: false` (already true), and make sure user ABIs do not depend
+on any slow setup step (already true). Optionally, add a concurrency-cancel
+rule to abort still-running publish ABIs once the 3 user ABIs succeed — being
+careful not to break `release.yaml`, which only runs on tag pushes.
 
-不推荐 B：会牺牲 `check-plugin-artifacts` 的覆盖范围（PR 阶段无法发现某个发布平台的 build 回归）。
+**Not recommended.** This would reduce coverage of `check-plugin-artifacts`
+during PRs, hiding regressions in publish-only platforms until release time.
 
-#### 备注：`type-check` 完全不依赖 native binding
+#### Side note: `type-check` does not need the native binding
 
-`type-check` 当前并未声明 `needs`，但它会触发自己的 `pnpm --filter @farmfe/cli run build`，
-该步骤会**重新走 napi 编译**，与 `call-rust-build` 重复。
-建议改为：要么 `needs: call-rust-build-user` 然后 `download-artifact` 注入 binding（更快），
-要么把 type-check 改成不需要 binding（mock 出 `binding.cjs`）。
+`type-check` currently declares no `needs`, but it runs
+`pnpm --filter @farmfe/cli run build`, which triggers a full napi compile —
+duplicating work already done by `call-rust-build`. Either:
+- Set `needs: call-rust-build-user` and inject a downloaded binding via
+  `download-artifact` (faster), or
+- Refactor `type-check` to not need the binding at all (mock `binding.cjs`).
 
-### 3.2 思路二：core 与 plugin build 共享编译缓存
+### 3.2 Angle 2 — Share Compile Cache Across Core and Plugins
 
-**目标**：在同一个 build job 内，让 `packages/core` + 3 个 rust 插件的 Rust
-依赖只编译一次；并通过二级缓存加速跨 PR 的增量构建。
+**Goal:** within a single build job, make `packages/core` and the 3 rust
+plugins compile their shared Rust dependencies exactly once, and add a
+second-tier cache to speed up incremental builds across PRs.
 
-#### 改动 1：统一 PR 阶段的构建 profile（最大收益）
+#### Change 1 — Unify the PR build profile (biggest win)
 
-PR 阶段不需要 `release-publish` 的 fat LTO 与 `codegen-units = 1`。
-建议在 `Cargo.toml` 中新增一个 `ci` profile：
+PRs do not need `release-publish`'s fat LTO or `codegen-units = 1`. Add a `ci`
+profile to the root `Cargo.toml`:
 
 ```toml
 [profile.ci]
@@ -221,36 +252,40 @@ debug = false
 strip = "debuginfo"
 ```
 
-并在 `packages/core/package.json` 中新增脚本：
+Add a new script in `packages/core/package.json`:
 
 ```json
 "build:rs:ci": "napi build --platform -p farmfe_node --manifest-path ../../crates/node/Cargo.toml -o binding --js binding.cjs --dts binding.d.ts --profile ci"
 ```
 
-`rust-build.yaml` 中：
+In `rust-build.yaml`:
 
-- **PR 触发**（`on: workflow_call` 由 `ci.yaml` 调用）→ 用 `--profile ci`。
-- **release 触发** → 维持 `--profile release-publish`。
+- **PR trigger** (invoked via `workflow_call` from `ci.yaml`) → use `--profile ci`.
+- **Release trigger** → keep `--profile release-publish`.
 
-这样 core 和所有 rust 插件**统一使用同一个 profile**（plugins 改用 `cargo build --profile ci`，
-通过 `farm-plugin-tools build --profile ci` 或类似 flag 透传），
-Cargo 在同一 `target/ci/` 子目录里只编译一次共享依赖，
-共享 swc / rkyv / serde 等大依赖（这些是当前耗时的主要来源）。
+This way core and every rust plugin use the **same profile**, so Cargo places
+all shared dependencies under one `target/ci/` subdirectory and compiles them
+once. Heavy shared dependencies (swc, rkyv, serde, …) — which dominate today's
+job time — are no longer compiled twice.
 
-落地点：
-- `crates/Cargo.toml` 顶层 `[profile.ci]`。
-- `packages/core/package.json`：新增 `build:rs:ci`。
-- `rust-plugins/*/package.json`：build 脚本支持 `--profile ci`（或新增 `build:ci`）。
-- `rust-build.yaml`：在 PR workflow 中调用 `build:ci`。
+Concrete touch points:
+- Top-level `Cargo.toml`: add `[profile.ci]`.
+- `packages/core/package.json`: add `build:rs:ci`.
+- `rust-plugins/*/package.json`: build script accepts `--profile ci` (or add a
+  `build:ci` script).
+- `rust-build.yaml`: PR path calls the `build:ci` variant; plugins build with
+  `--profile ci`.
 
-预期收益：
-- 单 Job 内 Rust 依赖**编译次数从 2 次（release + release-publish）降到 1 次**。
-- 每个 napi 构建本身因关掉 LTO 也加快 30%–50%。
-- 仅 PR 路径受影响，不影响发布产物体积/性能。
+Expected gains:
+- Number of times shared Rust deps are compiled within a job drops from
+  **2 → 1**.
+- Each napi build itself is 30–50% faster thanks to disabling LTO.
+- Only the PR path is affected; published artifact size and runtime are
+  unchanged.
 
-#### 改动 2：用 sccache 做二级缓存
+#### Change 2 — Add sccache as a second-tier cache
 
-在所有 build job 中接入 sccache + GitHub Actions Cache backend：
+Wire sccache backed by GitHub Actions Cache into every build job:
 
 ```yaml
 - uses: mozilla-actions/sccache-action@v0.0.5
@@ -259,16 +294,18 @@ Cargo 在同一 `target/ci/` 子目录里只编译一次共享依赖，
     echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 ```
 
-注意事项：
-- sccache 与 `CARGO_INCREMENTAL=1` 不兼容，需保持 `CARGO_INCREMENTAL=0`（与现状一致）。
-- proc-macro crate 不会被 sccache 缓存——对 napi 来说影响有限。
-- 在 docker job（`linux-x64-gnu` / `linux-x64-musl`）中需要把 sccache 二进制和
-  `SCCACHE_*` env 透传进容器（`-e SCCACHE_GHA_ENABLED=true -e ACTIONS_CACHE_URL ...
-  -v $(which sccache):/usr/local/bin/sccache`）。
-- 与 `Swatinem/rust-cache` 并存：rust-cache 仍负责 registry/git 下载缓存，
-  sccache 负责对象级编译缓存。
+Caveats:
+- sccache is incompatible with `CARGO_INCREMENTAL=1`; keep `CARGO_INCREMENTAL=0`
+  (already the case).
+- proc-macro crates are not cached by sccache — limited impact for napi.
+- Docker jobs (`linux-x64-gnu` / `linux-x64-musl`) must propagate the sccache
+  binary and `SCCACHE_*` env vars into the container, e.g.
+  `-e SCCACHE_GHA_ENABLED=true -e ACTIONS_CACHE_URL=... -v $(which sccache):/usr/local/bin/sccache`.
+- Coexists with `Swatinem/rust-cache`: rust-cache continues to cache the
+  registry / git downloads, while sccache covers object-level compilation
+  results.
 
-#### 改动 3：保留 cache fallback key
+#### Change 3 — Keep a cache fallback key
 
 ```yaml
 - uses: Swatinem/rust-cache@v2
@@ -278,49 +315,60 @@ Cargo 在同一 `target/ci/` 子目录里只编译一次共享依赖，
       rust-build-${{ matrix.settings.abi }}-
 ```
 
-让 `Cargo.lock` 改动不至于让缓存完全失效，能回退到最近的同 ABI 缓存。
+A `Cargo.lock` change no longer fully invalidates the cache; the job can fall
+back to the most recent cache for the same ABI.
 
-#### 改动 4（可选，长期）：拆分 napi build 与 cargo build
+#### Change 4 (optional, long term) — Decouple `napi build` from `cargo build`
 
-`napi build` 包装层会注入 `--target`、`-Z…` 等参数，不利于自定义 profile。
-长期可考虑：
-1. 用 `cargo build --profile ci -p farmfe_node …` 直接产出 `.node` 二进制。
-2. 再用 `napi build --no-build` 或独立脚本完成 `binding.{js,d.ts}` 生成。
-这样 4 个 napi 项目可以共用同一次 `cargo build` 调用（`-p farmfe_node -p farmfe_plugin_react -p
-farmfe_plugin_sass -p farmfe_plugin_replace_dirname -p create_farm`），
-**单次 cargo invoke 自然共享 `target/` 与 build graph**，比同 profile 多次串行 invoke 进一步省时。
+The `napi build` wrapper injects `--target`, `-Z…` and other flags, which makes
+custom profiles awkward. Longer term, consider:
+1. Run `cargo build --profile ci -p farmfe_node …` directly to produce the
+   `.node` binary.
+2. Use `napi build --no-build` (or a small standalone script) to emit
+   `binding.{js,d.ts}`.
 
-## 4. 落地路线
+This lets all four napi projects share a single `cargo build` invocation
+(`-p farmfe_node -p farmfe_plugin_react -p farmfe_plugin_sass -p
+farmfe_plugin_replace_dirname -p create_farm`), so `target/` and the build
+graph are shared natively, saving even more time than serial same-profile
+invocations.
 
-| 阶段 | 内容 | 风险 | 预期收益 |
+## 4. Rollout Plan
+
+| Phase | Content | Risk | Expected gain |
 | --- | --- | --- | --- |
-| P0 | 拆分 `rust-build.yaml` → `rust-build-user.yaml` + `rust-build-release.yaml`；`examples-test` / `ts-test` 只依赖 user | 低，仅工作流改动 | PR 关键路径减去最慢 ABI（≈节省 5–15 min） |
-| P1 | 新增 `[profile.ci]`，core + plugins 在 PR 中统一用该 profile | 中，需要 plugin-tools 支持 `--profile`；产物功能不变 | 单 Job 编译时间下降 30–50% |
-| P2 | 引入 sccache（GHA backend）+ rust-cache `restore-keys` | 中，需要 docker job 透传 | 跨 PR 二次构建再省 20–40% |
-| P3 | 单次 `cargo build` 多 `-p` 出全部 napi crate | 高，需重构 napi 调用方式 | 单 Job 再省 5–15% |
+| P0 | Split `rust-build.yaml` → `rust-build-user.yaml` + `rust-build-release.yaml`; `examples-test` / `ts-test` depend only on user | Low — workflow files only | PR critical path no longer includes the slowest ABI (≈ 5–15 min saved) |
+| P1 | Add `[profile.ci]`; core and all plugins use it on the PR path | Medium — plugin-tools must accept `--profile`; artifact behavior unchanged | 30–50% reduction in single-job build time |
+| P2 | Add sccache (GHA backend) + rust-cache `restore-keys` | Medium — docker jobs must propagate env | 20–40% further reduction on warm runs |
+| P3 | Single `cargo build` with multiple `-p` for all napi crates | High — requires restructuring how napi is invoked | 5–15% additional saving per job |
 
-## 5. 验证与回滚
+## 5. Validation and Rollback
 
-- **指标**：
-  - `examples-test` 平均开始时间（`needs` 满足时刻）。
-  - `examples-test` / `ts-test` 端到端耗时。
-  - `rust-build` 单 job 耗时（按 ABI）。
-  - sccache hit rate（通过 `sccache --show-stats`）。
-- **回滚策略**：
-  - P0 完全是 workflow 层拆分，回滚即恢复单文件。
-  - P1 通过 env/profile 名切换；release 路径保持 `release-publish` 不动。
-  - P2 通过移除 `RUSTC_WRAPPER=sccache` 即可回滚。
-- **不受影响**：
-  - `release.yaml` 的发布产物（继续走 `release-publish`）。
-  - `check-*-artifacts` 仍验证全 ABI（依赖 release platforms job）。
-  - `rust-test.yaml`、`lint.yaml`、`code-spell-check.yaml` 等独立 workflow。
+- **Metrics:**
+  - Time at which `examples-test` becomes runnable (i.e. its `needs` are
+    satisfied).
+  - End-to-end duration of `examples-test` / `ts-test`.
+  - Duration of each `rust-build` matrix job (per ABI).
+  - sccache hit rate (via `sccache --show-stats`).
+- **Rollback strategy:**
+  - P0 is a pure workflow refactor; reverting it restores the single file.
+  - P1 is gated on a profile name / env var; the release path keeps
+    `release-publish` untouched.
+  - P2 can be disabled by removing `RUSTC_WRAPPER=sccache`.
+- **Not affected:**
+  - `release.yaml` publish artifacts (still built with `release-publish`).
+  - `check-*-artifacts` still cover every ABI (via the release-platforms job).
+  - Independent workflows: `rust-test.yaml`, `lint.yaml`,
+    `code-spell-check.yaml`, etc.
 
-## 6. 开放问题
+## 6. Open Questions
 
-1. `farm-plugin-tools build` 当前是否原生支持 `--profile <name>`？若不支持需要先在
-   `packages/plugin-tools` 中加上参数透传（直接转发到底层 `napi build` /
-   `cargo build`）。
-2. 是否需要为 `linux-x64-gnu` 在 PR 阶段增加“最快 path”——把它从 docker 中移出，
-   只在 release 时走 docker？需评估 musl 兼容矩阵。
-3. sccache 在 macos arm64 runner 上的 GHA cache 写入限制（GitHub Actions cache
-   总配额 10 GB/repo）需要观察并设置 `SCCACHE_GHA_VERSION` 做隔离。
+1. Does `farm-plugin-tools build` already accept `--profile <name>`? If not,
+   we need to thread the flag through in `packages/plugin-tools` first
+   (forwarding it to the underlying `napi build` / `cargo build`).
+2. Should we add an even faster "hot path" by moving `linux-x64-gnu` off
+   docker on the PR path and running it directly on the host, only using
+   docker for releases? Needs an evaluation of musl/glibc compatibility.
+3. sccache writes against the GitHub Actions cache quota (10 GB per repo).
+   We should monitor usage and possibly set `SCCACHE_GHA_VERSION` for
+   isolation between branches.
