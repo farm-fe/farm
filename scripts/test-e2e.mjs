@@ -26,7 +26,9 @@ import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
-const DEFAULT_CONCURRENCY = Math.min(4, cpus().length);
+const DEFAULT_CONCURRENCY = process.env.CI
+  ? Math.min(2, cpus().length)
+  : Math.min(4, cpus().length);
 
 /**
  * @param {string[]} argv

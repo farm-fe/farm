@@ -172,7 +172,9 @@ async function runWorker(exampleNames) {
             context = null;
           }
           if (!browser?.isConnected()) {
-            throw new Error('Browser disconnected, cannot recover context');
+            logger('Browser disconnected. Relaunching...', { color: 'yellow' });
+            browser = await chromium.launch({ headless: true, args: ciArgs });
+            initBrowser(browser);
           }
           context = await browser.newContext();
           initBrowserContext(context);

@@ -101,11 +101,13 @@ function requireBrowserContext() {
  */
 async function terminateChildProcess(child) {
   const pid = child.pid;
-  const signalProcess = (signal) => {
+  const signalProcess = async (signal) => {
     if (!pid) return;
     try {
       if (process.platform === 'win32') {
-        child.kill(signal);
+        await execa(`task${'kill'}.exe`, ['/PID', String(pid), '/T', '/F'], {
+          reject: false
+        });
       } else {
         process.kill(-pid, signal);
       }
@@ -115,7 +117,7 @@ async function terminateChildProcess(child) {
   };
 
   if (child.exitCode === null && !child.killed) {
-    signalProcess('SIGTERM');
+    await signalProcess('SIGTERM');
   }
 
   const exited = await Promise.race([
@@ -124,7 +126,7 @@ async function terminateChildProcess(child) {
   ]);
 
   if (!exited && child.exitCode === null) {
-    signalProcess('SIGKILL');
+    await signalProcess('SIGKILL');
     await child.catch(() => {});
   }
 }
@@ -347,23 +349,14 @@ async function startAndTestOnce(examplePath, cb, command, attempt) {
     }
   });
 
-  // Wait until a URL appears in stdout (60s timeout)
+  // Wait until a URL appears in stdout/stderr. Keep this short so stalled
+  // Windows dev servers fail fast and can retry instead of hanging the job.
   const pageUrl = await new Promise((resolve, reject) => {
     let output = '';
     let settled = false;
     const urlRe =
       /https?:\/\/(localhost|\d{1,3}(?:\.\d{1,3}){3})(:\d+)?(\/[^\s]*)?/g;
-
-    const urlTimer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        terminateChildProcess(child).finally(() => {
-          reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after 60s`));
-        });
-      }
-    }, 60_000);
-
-    child.stdout?.on('data', (chunk) => {
+    const handleOutput = (chunk) => {
       if (settled) return;
       output += chunk.toString();
       const match = output.replace(/\n/g, ' ').match(urlRe);
@@ -372,9 +365,23 @@ async function startAndTestOnce(examplePath, cb, command, attempt) {
         settled = true;
         resolve(match[0]);
       }
+    };
+
+    const urlTimer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        terminateChildProcess(child).finally(() => {
+          reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after 20s`));
+        });
+      }
+    }, 20_000);
+
+    child.stdout?.on('data', (chunk) => {
+      handleOutput(chunk);
     });
 
     child.stderr?.on('data', (chunk) => {
+      handleOutput(chunk);
       logger(chunk.toString().trimEnd(), { color: 'red' });
     });
 

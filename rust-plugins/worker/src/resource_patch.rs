@@ -65,7 +65,7 @@ pub fn patch_inline_worker_resources(context: &Arc<CompilationContext>) {
   for (resource_name, placeholder, entry_name) in &patches_needed {
     if let Some(base64) = entry_to_base64.get(entry_name.as_str()) {
       if let Some(resource) = resources_map.get_mut(resource_name.as_str()) {
-        let content = String::from_utf8(resource.bytes.clone()).unwrap_or_default();
+        let content = String::from_utf8_lossy(&resource.bytes);
         resource.bytes = content
           .replace(placeholder.as_str(), base64.as_str())
           .into_bytes();
