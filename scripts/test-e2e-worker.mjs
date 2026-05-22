@@ -8,10 +8,9 @@
  *   - Creates a fresh context per example
  *   - Reports results back to the orchestrator via IPC
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { execa } from 'execa';
 import { chromium } from 'playwright-chromium';
 import {
   initBrowser,
@@ -24,52 +23,6 @@ import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
 const EXAMPLES_DIR = resolve(process.cwd(), 'examples');
 const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
-
-/**
- * Some examples opt into `server.writeToDisk: true` in their farm config,
- * which makes `farm start` (dev mode) overwrite the production `dist/`
- * artifacts with dev-mode bundles containing a hard-coded HMR port. When
- * `start` and `preview` run sequentially, the subsequent `farm preview`
- * would otherwise serve those stale dev artifacts and the browser's HMR
- * client would try to connect to a closed dev-server port, failing the
- * test. Detect this case by scanning the farm config for `writeToDisk`
- * set truthy, so we can rebuild `dist/` before running `preview`.
- *
- * @param {string} examplePath
- * @returns {boolean}
- */
-function exampleWritesToDiskInDev(examplePath) {
-  for (const file of ['farm.config.ts', 'farm.config.js', 'farm.config.mjs', 'farm.config.cjs']) {
-    const p = join(examplePath, file);
-    if (!existsSync(p)) continue;
-    try {
-      const src = readFileSync(p, 'utf8');
-      // Match writeToDisk: true (allowing whitespace). Strings/false are ignored.
-      if (/writeToDisk\s*:\s*true\b/.test(src)) return true;
-    } catch {
-      // ignore — treat as not writing to disk
-    }
-  }
-  return false;
-}
-
-/**
- * Rebuild the example's `dist/` so that the subsequent `preview` command
- * serves a fresh production bundle (used when `start` may have polluted
- * `dist/` via `server.writeToDisk: true`).
- *
- * @param {string} examplePath
- * @param {string} exampleName
- * @returns {Promise<void>}
- */
-async function rebuildExampleDist(examplePath, exampleName) {
-  logger(`Rebuilding dist for ${exampleName} before preview...`, { color: 'cyan' });
-  await execa('npm', ['run', 'build'], {
-    cwd: examplePath,
-    timeout: 180_000,
-    env: { ...process.env, BROWSER: 'none', NO_COLOR: 'true' }
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Default smoke test (start + preview in parallel)
@@ -85,30 +38,9 @@ async function runDefaultTest(examplePath, exampleName) {
   /** @type {import('../e2e/runner.mjs').TestResult[]} */
   const results = [];
 
-  // If `start` (dev mode) might overwrite `dist/` with stale HMR-bearing
-  // artifacts, plan a rebuild step before running `preview`.
-  const needsRebuildBeforePreview = exampleWritesToDiskInDev(examplePath);
-
   for (const command of commands) {
     const fullName = `${exampleName} › ${command}`;
     const start = Date.now();
-
-    if (command === 'preview' && needsRebuildBeforePreview) {
-      try {
-        await rebuildExampleDist(examplePath, exampleName);
-      } catch (reason) {
-        const error = reason instanceof Error ? reason : new Error(String(reason ?? 'Unknown error'));
-        logger(`  ✗  ${fullName}  —  rebuild failed: ${error.message}`, { title: '', color: 'red' });
-        results.push({
-          fullName,
-          passed: false,
-          skipped: false,
-          duration: Date.now() - start,
-          error
-        });
-        continue;
-      }
-    }
 
     try {
       await startAndTest(
@@ -158,7 +90,19 @@ async function runExample(exampleName) {
   const shouldRunDefault = hasIndexHtml && !EXCLUDE_FROM_DEFAULT.has(exampleName);
 
   if (!hasSpecFile && !shouldRunDefault) {
-    return { name: exampleName, results: [] };
+    const skipReason = EXCLUDE_FROM_DEFAULT.has(exampleName)
+      ? 'excluded from default browser smoke test'
+      : 'no e2e.spec.mjs or index.html';
+    logger(`Skipping example: ${exampleName} (${skipReason})`, { color: 'yellow' });
+    return {
+      name: exampleName,
+      results: [{
+        fullName: `${exampleName} (${skipReason})`,
+        passed: true,
+        skipped: true,
+        duration: 0
+      }]
+    };
   }
 
   logger(`\nRunning example: ${exampleName}`, {
@@ -284,6 +228,7 @@ async function runWorker(exampleNames) {
     if (process.send) {
       process.send({ type: 'done' });
     }
+    process.disconnect?.();
   }
 }
 

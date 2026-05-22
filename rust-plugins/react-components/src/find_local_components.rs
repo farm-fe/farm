@@ -222,7 +222,8 @@ impl Visit for ExportComponentsFinder {
   fn visit_export_decl(&mut self, n: &ExportDecl) {
     match &n.decl {
       Decl::Fn(fn_decl)
-        if is_uppercase(&fn_decl.ident) && is_jsx_return_with_block_stmt(&fn_decl.function.body) =>
+        if is_uppercase(&fn_decl.ident)
+          && is_jsx_return_with_block_stmt(&fn_decl.function.body) =>
       {
         let sym = &fn_decl.ident.sym;
         self.add_exported_components(sym.as_ref(), ExportType::Named);

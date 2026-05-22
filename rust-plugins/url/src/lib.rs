@@ -10,15 +10,9 @@ use farmfe_core::{
 };
 
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::{
-  fs::read_file_raw,
-  plugin_utils::path_filter::PathFilter,
-};
+use farmfe_toolkit::{fs::read_file_raw, plugin_utils::path_filter::PathFilter};
 use mime_guess::{from_path, mime::IMAGE};
-use std::{
-  fs::metadata,
-  path::Path,
-};
+use std::{fs::metadata, path::Path};
 
 #[farm_plugin]
 pub struct FarmfePluginUrl {
@@ -68,7 +62,6 @@ impl FarmfePluginUrl {
     }
     Self { options }
   }
-
 }
 
 impl Plugin for FarmfePluginUrl {

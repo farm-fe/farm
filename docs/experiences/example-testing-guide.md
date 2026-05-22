@@ -61,3 +61,43 @@ If the example does not exist:
   - `<name>` exactly matches a directory under `examples/`.
 - If command exits with non-zero, inspect the first failed example build log to
   determine whether it is an example issue or orchestration issue.
+
+## E2E Preview Freshness
+
+`scripts/test-e2e.mjs` can be run standalone, without a preceding
+`scripts/test-examples.mjs` build. For `startAndTest(..., 'preview')`, the runner
+only runs `npm run build` first when the example's Farm config enables
+`server.writeToDisk: true`. Those examples write production-like files during dev
+server runs, so preview needs a fresh production build to avoid serving stale dev
+artifacts. Other examples skip this pre-preview build to keep E2E fast and avoid
+duplicating the example build pipeline.
+
+Pre-preview builds use the example's normal persistent-cache setting so E2E can
+cover cached production builds. Do not serialize these builds in the E2E runner:
+independent worker processes should be able to build concurrently, and that
+concurrency is part of the cache coverage this suite is meant to exercise.
+
+The E2E orchestrator also scans for stale Farm E2E processes before and after
+each run on Linux, macOS, and Windows. Processes older than five minutes that
+belong to a previous `test-e2e` tree are terminated, including orphaned worker,
+dev-server, build, and Playwright Chromium children. Unix platforms clean process
+groups; Windows cleans process trees. Stale orphaned Playwright Chromium
+processes are also cleaned when they no longer have an owning parent. This keeps
+each run independent without killing the current run. The stale threshold
+defaults to five minutes and can be overridden with
+`FARM_E2E_STALE_PROCESS_SECONDS` for local diagnostics.
+
+This avoids a subtle stale-artifact failure mode: `farm start` serves current
+source, while `farm preview` serves the existing production output directory.
+If that directory was produced by an older source/config/cache state, preview
+can fail with misleading browser runtime errors even though dev-server mode
+passes. Before debugging module concatenation, tree shaking, or minification,
+compare normal cached builds with `FARM_DISABLE_CACHE=1` builds. If disabling
+persistent cache fixes errors such as `e.replace is not a function`, inspect the
+module cache restore path before changing example source. In particular, cached
+script modules must restore SWC marks to the matching fields: `top_level_mark`
+from the resolver's `top_level_mark`, and `unresolved_mark` from
+`unresolved_mark`. Swapping them can make cached builds generate runtime export
+or helper mismatches that look like minify or module-concatenation bugs. Keep the
+normal cached, concurrent preview builds enabled in E2E so this class of cache
+regression remains observable.

@@ -45,7 +45,11 @@ impl FarmfePluginIcons {
     );
 
     let cache_dir = if config.persistent_cache.enabled() {
-      config.persistent_cache.as_obj(&config.root).cache_dir.unwrap()
+      config
+        .persistent_cache
+        .as_obj(&config.root)
+        .cache_dir
+        .unwrap()
     } else {
       PersistentCacheConfig::get_default_config(&config.root)
         .as_obj(&config.root)

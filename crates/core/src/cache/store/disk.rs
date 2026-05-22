@@ -332,11 +332,7 @@ mod profile {
   use std::sync::Arc;
 
   use crate::cache::{
-    store::{
-      constant::CacheStoreItemRef,
-      error::CacheError,
-      CacheStoreKey,
-    },
+    store::{constant::CacheStoreItemRef, error::CacheError, CacheStoreKey},
     CacheStoreTrait,
   };
 
@@ -405,7 +401,11 @@ mod profile {
     }
 
     fn remove_cache_only(&self, name: &str) {
-      time!("remove_cache_only", name, self.store.remove_cache_only(name))
+      time!(
+        "remove_cache_only",
+        name,
+        self.store.remove_cache_only(name)
+      )
     }
   }
 }

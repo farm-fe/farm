@@ -95,7 +95,6 @@ pub enum PartialBundlingGroupConfigResourceType {
   Async,
 }
 
-
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PartialBundlingEnforceResourceConfig {

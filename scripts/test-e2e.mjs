@@ -19,6 +19,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cpus } from 'node:os';
 import { printSummary } from '../e2e/runner.mjs';
+import { cleanupStaleE2EProcesses } from '../e2e/process-cleanup.mjs';
 import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
 // ---------------------------------------------------------------------------
@@ -90,10 +91,20 @@ const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
 const EXAMPLES_DIR = resolve(process.cwd(), 'examples');
 
 /**
+ * @param {string} name
+ * @returns {boolean}
+ */
+function isRunnableExample(name) {
+  const hasSpecFile = existsSync(join(EXAMPLES_DIR, name, 'e2e.spec.mjs'));
+  const hasIndexHtml = existsSync(join(EXAMPLES_DIR, name, 'index.html'));
+  return hasSpecFile || (hasIndexHtml && !EXCLUDE_FROM_DEFAULT.has(name));
+}
+
+/**
  * @param {{ example?: string, startFrom?: string }} args
  * @returns {string[]}
  */
-function discoverRunnableExamples(args) {
+function discoverExamples(args) {
   const allNames = readdirSync(EXAMPLES_DIR)
     .filter((name) => statSync(join(EXAMPLES_DIR, name)).isDirectory())
     .sort((a, b) => a.localeCompare(b));
@@ -119,12 +130,7 @@ function discoverRunnableExamples(args) {
     names = names.slice(idx);
   }
 
-  // Filter to only runnable examples (have spec.mjs or index.html, not excluded)
-  return names.filter((name) => {
-    const hasSpecFile = existsSync(join(EXAMPLES_DIR, name, 'e2e.spec.mjs'));
-    const hasIndexHtml = existsSync(join(EXAMPLES_DIR, name, 'index.html'));
-    return hasSpecFile || (hasIndexHtml && !EXCLUDE_FROM_DEFAULT.has(name));
-  });
+  return names;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,17 +143,24 @@ function discoverRunnableExamples(args) {
  * @param {number} index
  * @param {string} workerPath
  * @param {string} logFile
+ * @param {Set<import('child_process').ChildProcess>} activeWorkers
  * @returns {Promise<Map<string, import('../e2e/runner.mjs').TestResult[]>>}
  */
-function runWorker(examples, index, workerPath, logFile) {
+function runWorker(examples, index, workerPath, logFile, activeWorkers) {
   return new Promise((resolve, reject) => {
     const worker = fork(workerPath, [], {
-      stdio: 'inherit'
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        FARM_E2E_WORKER_INDEX: String(index)
+      }
     });
+    activeWorkers.add(worker);
 
     /** @type {Map<string, import('../e2e/runner.mjs').TestResult[]>} */
     const workerResults = new Map();
     let settled = false;
+    let shutdownTimer;
 
     const settle = (fn) => {
       if (!settled) {
@@ -187,8 +200,12 @@ function runWorker(examples, index, workerPath, logFile) {
           error: new Error(msg.error)
         }]);
       } else if (msg?.type === 'done') {
-        settle(() => resolve(workerResults));
+        if (worker.connected) worker.disconnect();
+        shutdownTimer = setTimeout(() => {
+          if (!worker.killed) worker.kill('SIGTERM');
+        }, 5_000);
       } else if (msg?.type === 'fatal') {
+        if (!worker.killed) worker.kill('SIGTERM');
         settle(() => reject(new Error(msg.error)));
       }
     });
@@ -200,6 +217,8 @@ function runWorker(examples, index, workerPath, logFile) {
     });
 
     worker.on('exit', (code) => {
+      if (shutdownTimer) clearTimeout(shutdownTimer);
+      activeWorkers.delete(worker);
       if (!settled) {
         settle(() => resolve(workerResults));
       }
@@ -223,6 +242,8 @@ async function main() {
   const orchLogFile = join(logDir, 'orchestrator.log');
   setLogFile(orchLogFile);
 
+  await cleanupStaleE2EProcesses({ stage: 'before' });
+
   if (args.example) {
     args.concurrency = 1; // single example => no parallelism
     logger(`Running E2E for single example: ${args.example}`, { color: 'cyan' });
@@ -230,10 +251,12 @@ async function main() {
     logger(`Running E2E from example: ${args.startFrom}`, { color: 'cyan' });
   }
 
-  const exampleNames = discoverRunnableExamples(args);
+  const exampleNames = discoverExamples(args);
+  const runnableCount = exampleNames.filter(isRunnableExample).length;
   const concurrency = Math.min(args.concurrency, exampleNames.length);
 
-  logger(`Discovered ${exampleNames.length} runnable example(s)`, { color: 'cyan' });
+  logger(`Discovered ${exampleNames.length} example(s)`, { color: 'cyan' });
+  logger(`Runnable: ${runnableCount}  |  skipped: ${exampleNames.length - runnableCount}`, { color: 'cyan' });
   logger(`Running with ${concurrency} worker(s)`, { color: 'cyan' });
 
   // Distribute examples round-robin across workers
@@ -265,7 +288,7 @@ async function main() {
   // Launch all workers in parallel
   const workerPromises = groups.map((group, idx) => {
     const workerLogFile = join(logDir, `worker-${idx + 1}.log`);
-    const p = runWorker(group, idx, workerPath, workerLogFile).then((workerResults) => {
+    const p = runWorker(group, idx, workerPath, workerLogFile, activeWorkers).then((workerResults) => {
       for (const [name, results] of workerResults) {
         allResults.set(name, results);
       }
@@ -282,6 +305,8 @@ async function main() {
     process.removeListener('SIGINT', cleanup);
     process.removeListener('SIGTERM', cleanup);
   }
+
+  await cleanupStaleE2EProcesses({ stage: 'after' });
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   logger(`\nTotal time: ${elapsed}s`, { color: 'cyan' });

@@ -1,5 +1,7 @@
 import { execa } from 'execa';
-import getPort from 'get-port';
+import getPort, { portNumbers } from 'get-port';
+import { readFile } from 'node:fs/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { logger } from './utils.mjs';
 
 // ---------------------------------------------------------------------------
@@ -9,6 +11,21 @@ import { logger } from './utils.mjs';
 let _browser = null;
 let _context = null;
 let _recoverBrowser = null;
+
+const E2E_PORT_BASE = 41_000;
+const E2E_WORKER_PORT_BLOCK_SIZE = 200;
+const E2E_RETRY_PORT_BLOCK_SIZE = 20;
+const E2E_PORT_CANDIDATE_COUNT = 10;
+const FARM_CONFIG_FILES = [
+  'farm.config.ts',
+  'farm.config.mts',
+  'farm.config.cts',
+  'farm.config.js',
+  'farm.config.mjs',
+  'farm.config.cjs'
+];
+
+const workerIndex = Number.parseInt(process.env.FARM_E2E_WORKER_INDEX ?? '0', 10) || 0;
 
 /** @param {import('playwright-chromium').Browser} browser */
 export function initBrowser(browser) {
@@ -76,6 +93,132 @@ function requireBrowserContext() {
   }
 
   throw new Error('Browser not initialised. Call initBrowser() before running specs.');
+}
+
+/**
+ * @param {import('execa').ExecaChildProcess<string>} child
+ * @returns {Promise<void>}
+ */
+async function terminateChildProcess(child) {
+  const pid = child.pid;
+  const signalProcess = (signal) => {
+    if (!pid) return;
+    try {
+      if (process.platform === 'win32') {
+        child.kill(signal);
+      } else {
+        process.kill(-pid, signal);
+      }
+    } catch {
+      child.kill(signal);
+    }
+  };
+
+  if (child.exitCode === null && !child.killed) {
+    signalProcess('SIGTERM');
+  }
+
+  const exited = await Promise.race([
+    child.catch(() => {}).then(() => true),
+    delay(5_000).then(() => false)
+  ]);
+
+  if (!exited && child.exitCode === null) {
+    signalProcess('SIGKILL');
+    await child.catch(() => {});
+  }
+}
+
+/**
+ * @param {string} value
+ * @returns {number}
+ */
+function stableHash(value) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+/**
+ * @param {string} command
+ * @param {number} attempt
+ * @returns {Promise<number>}
+ */
+async function getE2EPort(command, attempt) {
+  const commandOffset = command === 'preview' ? E2E_PORT_CANDIDATE_COUNT : 0;
+  const workerOffset = workerIndex * E2E_WORKER_PORT_BLOCK_SIZE;
+  const retryOffset = (attempt - 1) * E2E_RETRY_PORT_BLOCK_SIZE;
+  const startPort = E2E_PORT_BASE + workerOffset + retryOffset + commandOffset;
+  const endPort = startPort + E2E_PORT_CANDIDATE_COUNT - 1;
+  return getPort({ port: portNumbers(startPort, endPort) });
+}
+
+/**
+ * @param {string} examplePath
+ * @returns {Promise<boolean>}
+ */
+async function shouldBuildBeforePreview(examplePath) {
+  for (const configFile of FARM_CONFIG_FILES) {
+    try {
+      const config = await readFile(`${examplePath}/${configFile}`, 'utf8');
+      if (/server\s*:\s*{[\s\S]*?writeToDisk\s*:\s*true/.test(config)) {
+        return true;
+      }
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * @param {string} examplePath
+ * @returns {Promise<void>}
+ */
+async function buildBeforePreview(examplePath) {
+  logger(`Building before preview: npm run build  in  ${examplePath}`, { color: 'cyan' });
+
+  const child = execa('npm', ['run', 'build'], {
+    cwd: examplePath,
+    detached: process.platform !== 'win32',
+    stdin: 'pipe',
+    encoding: 'utf8',
+    timeout: 180_000,
+    env: {
+      ...process.env,
+      BROWSER: 'none',
+      NO_COLOR: 'true'
+    }
+  });
+
+  child.stderr?.on('data', (chunk) => {
+    logger(chunk.toString().trimEnd(), { color: 'red' });
+  });
+
+  try {
+    await child;
+  } finally {
+    await terminateChildProcess(child);
+  }
+}
+
+/**
+ * @param {number} attempt
+ * @param {string} examplePath
+ * @returns {number}
+ */
+function getRetryDelay(attempt, examplePath) {
+  const retryDelays = [5_000, 15_000, 30_000];
+  const baseDelay = retryDelays[attempt - 1] ?? retryDelays.at(-1);
+  const workerStagger = workerIndex * 750;
+  const exampleStagger = stableHash(examplePath) % 3_000;
+  return baseDelay + workerStagger + exampleStagger;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,14 +325,16 @@ async function visitPage(url, examplePath, cb, command) {
  * @param {string} examplePath
  * @param {(page: import('playwright-chromium').Page) => Promise<void>} cb
  * @param {string} command
+ * @param {number} attempt
  * @returns {Promise<void>}
  */
-async function startAndTestOnce(examplePath, cb, command) {
-  const port = await getPort();
-  logger(`Spawning: npm run ${command}  in  ${examplePath}`);
+async function startAndTestOnce(examplePath, cb, command, attempt) {
+  const port = await getE2EPort(command, attempt);
+  logger(`Spawning: npm run ${command}  in  ${examplePath}  on port ${port}`);
 
   const child = execa('npm', ['run', command], {
     cwd: examplePath,
+    detached: process.platform !== 'win32',
     stdin: 'pipe',
     encoding: 'utf8',
     timeout: 120_000, // 2-minute timeout for dev server startup
@@ -212,8 +357,9 @@ async function startAndTestOnce(examplePath, cb, command) {
     const urlTimer = setTimeout(() => {
       if (!settled) {
         settled = true;
-        if (!child.killed) child.kill('SIGTERM');
-        reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after 60s`));
+        terminateChildProcess(child).finally(() => {
+          reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after 60s`));
+        });
       }
     }, 60_000);
 
@@ -256,7 +402,7 @@ async function startAndTestOnce(examplePath, cb, command) {
   try {
     await visitPage(pageUrl, examplePath, cb, command);
   } finally {
-    if (!child.killed) child.kill('SIGTERM');
+    await terminateChildProcess(child);
   }
 }
 
@@ -270,11 +416,13 @@ async function startAndTestOnce(examplePath, cb, command) {
 export async function startAndTest(examplePath, cb, command = 'start', maxRetries = 3) {
   let lastError;
 
-  const delays = [2_000, 5_000, 10_000];
+  if (command === 'preview' && await shouldBuildBeforePreview(examplePath)) {
+    await buildBeforePreview(examplePath);
+  }
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await startAndTestOnce(examplePath, cb, command);
+      return await startAndTestOnce(examplePath, cb, command, attempt);
     } catch (e) {
       if (_recoverBrowser && isBrowserCrashLikeError(e)) {
         logger('Detected browser crash/close. Recreating browser before retry...', {
@@ -293,8 +441,11 @@ export async function startAndTest(examplePath, cb, command = 'start', maxRetrie
         { color: 'red' }
       );
       if (attempt < maxRetries) {
-        const delay = delays[attempt - 1] || 10_000;
-        await new Promise((r) => setTimeout(r, delay));
+        const retryDelay = getRetryDelay(attempt, examplePath);
+        logger(`Retrying after ${retryDelay} ms to avoid concurrent E2E conflicts...`, {
+          color: 'yellow'
+        });
+        await delay(retryDelay);
       }
     }
   }
@@ -319,6 +470,7 @@ export async function watchAndTest(examplePath, cb, command = 'start') {
 
   const child = execa('npm', ['run', command], {
     cwd: examplePath,
+    detached: process.platform !== 'win32',
     stdin: 'pipe',
     encoding: 'utf8',
     env: {
@@ -332,16 +484,16 @@ export async function watchAndTest(examplePath, cb, command = 'start') {
     let output = '';
 
     const timer = setTimeout(() => {
-      if (!child.killed) child.kill('SIGTERM');
-      reject(new Error(`Watch test timed out after 60 s in ${examplePath}`));
+      terminateChildProcess(child).finally(() => {
+        reject(new Error(`Watch test timed out after 60 s in ${examplePath}`));
+      });
     }, 60_000);
 
     child.stdout?.on('data', async (chunk) => {
       output += chunk.toString();
       await cb(output, () => {
         clearTimeout(timer);
-        if (!child.killed) child.kill('SIGTERM');
-        resolve();
+        terminateChildProcess(child).then(resolve, reject);
       });
     });
 

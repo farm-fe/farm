@@ -325,7 +325,10 @@ pub fn render_resource_pot_generate_resources(
 
 /// Replace FARM_BUNDLE_PLACEHOLDER:: markers in JS resource bytes with actual
 /// relative paths to the target resource files.
-fn replace_bundle_placeholders(resource: &mut Resource, module_to_resource: &HashMap<String, String>) {
+fn replace_bundle_placeholders(
+  resource: &mut Resource,
+  module_to_resource: &HashMap<String, String>,
+) {
   let content = String::from_utf8_lossy(&resource.bytes);
   if !content.contains(FARM_BUNDLE_PLACEHOLDER_PREFIX) {
     return;
