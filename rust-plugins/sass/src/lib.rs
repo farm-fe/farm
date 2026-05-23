@@ -153,8 +153,8 @@ impl Fs for FarmFs {
 
     let resolved_path_string = resolved_path.to_string_lossy().to_string();
     let root_file_string = self.root_file.to_string_lossy().to_string();
-    let content = read_file_utf8(&resolved_path_string)
-      .map_err(|error| io::Error::new(io::ErrorKind::Other, error.to_string()))?;
+    let content =
+      read_file_utf8(&resolved_path_string).map_err(|error| io::Error::other(error.to_string()))?;
 
     rebase_urls(
       &resolved_path_string,
@@ -163,7 +163,7 @@ impl Fs for FarmFs {
       &self.context,
     )
     .map(String::into_bytes)
-    .map_err(|error| io::Error::new(io::ErrorKind::Other, error.to_string()))
+    .map_err(|error| io::Error::other(error.to_string()))
   }
 
   fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
