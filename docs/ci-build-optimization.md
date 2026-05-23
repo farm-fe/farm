@@ -216,6 +216,9 @@ Two practical landing options:
     can inherit the caller workflow name in `${{ github.workflow }}`, so hardcode
     a `rust-build-user-*` / `rust-build-release-*` prefix to avoid one split
     cancelling the other.
+  - The split workflows intentionally avoid sccache/GitHub Actions sccache
+    storage; stale or cross-target compiler cache entries can make CI failures
+    harder to diagnose across the target matrix.
 
 #### Option B: Keep a single reusable workflow and reorder the matrix
 

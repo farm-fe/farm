@@ -39,14 +39,6 @@ jobs:
         with:
           prefix-key: rust-build-${{ inputs.profile }}-${{ matrix.settings.abi }}
           shared-key: rust-build-${{ matrix.settings.abi }}
-      - uses: mozilla-actions/sccache-action@v0.0.5
-      - name: Configure sccache
-        id: sccache
-        shell: bash
-        run: |
-          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
-          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
-          echo "path=$(command -v sccache)" >> "$GITHUB_OUTPUT"
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -93,23 +85,16 @@ jobs:
         with:
           image: ${{ matrix.settings.docker }}
           options: >-
-            -e RUSTC_WRAPPER=sccache
-            -e SCCACHE_GHA_ENABLED=true
-            -e ACTIONS_CACHE_URL
-            -e ACTIONS_RUNTIME_TOKEN
-            -e ACTIONS_RESULTS_URL
-            -v ${{ steps.sccache.outputs.path }}:/usr/local/bin/sccache
+            -e FARM_BUILD_PROFILE=${{ inputs.profile }}
+            -e FARM_BUILD_ABI=${{ matrix.settings.abi }}
+            -e FARM_BUILD_TARGET=${{ matrix.settings.target || '' }}
+            -e FARM_BUILD_ZIG=${{ matrix.settings.zig || false }}
+            -e FARM_BUILD_CLI_ONLY=${{ matrix.settings.cli_only || false }}
             -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git
             -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry
             -v ${{ github.workspace }}:/build
             -w /build
           run: ./scripts/ci-build-rust-artifacts.sh
-        env:
-          FARM_BUILD_PROFILE: ${{ inputs.profile }}
-          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
-          FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
-          FARM_BUILD_ZIG: ${{ matrix.settings.zig || false }}
-          FARM_BUILD_CLI_ONLY: ${{ matrix.settings.cli_only || false }}
       - name: Build
         if: ${{ !matrix.settings.docker }}
         run: ./scripts/ci-build-rust-artifacts.sh
@@ -248,7 +233,3 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
           path: rust-plugins/yaml/npm/${{ matrix.settings.abi }}/index.farm
-      - name: Show sccache stats
-        if: always()
-        run: sccache --show-stats
-        shell: bash
