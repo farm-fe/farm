@@ -1,0 +1,52 @@
+{
+  "name": "@farmfe/plugin-worker",
+  "version": "2.0.0-beta.1",
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "napi": {
+    "name": "farmfe_plugin_worker",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
+    },
+    "./package.json": "./package.json",
+    "./types": "./types/index.d.ts"
+  },
+  "scripts": {
+    "dev": "cargo watch -w src -s 'scripts/watch.sh'",
+    "bump": "npx changeset version",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_worker --release",
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  "files": [
+    "scripts",
+    "types",
+    "options.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/farm.git"
+  },
+  "homepage": "https://github.com/farm-fe/farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  }
+}

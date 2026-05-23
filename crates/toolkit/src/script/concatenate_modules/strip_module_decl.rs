@@ -207,7 +207,8 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           source_module_script_meta,
           &mut rename_handler,
         ) {
-          if let Some(module_export_ident) = source_module_script_meta.export_ident_map.get(export_str)
+          if let Some(module_export_ident) =
+            source_module_script_meta.export_ident_map.get(export_str)
           {
             strip_context
               .cyclic_idents

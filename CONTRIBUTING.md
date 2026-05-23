@@ -121,6 +121,13 @@ INSTA_UPDATE=always cargo test
 pnpm test
 ```
 
+### E2E Testing for Examples
+
+- Add or modify example-specific E2E tests in `examples/<name>/e2e.spec.ts`.
+- Before and after changing E2E tests, invoke the `/e2e-example-acceptance` skill.
+- Follow the E2E authoring guide in [`e2e/README.md`](./e2e/README.md).
+- For affected examples, verify `start`, `build`, and `preview` behaviors.
+
 ## Quickly create plugins through scaffold
 
 If you want to develop a plugin for farm, farm provides a scaffolding to help you quickly create a plugin, which you can create with the following command.
@@ -154,14 +161,15 @@ The [`AGENTS.md`](./AGENTS.md) file at the repository root provides project-leve
 
 Type `/` in Copilot Chat to access workflow-specific slash commands:
 
-| Command | What it does |
-|---------|--------------|
-| `/git-commit-push` | Safely stages, commits, and pushes changes with guardrails |
-| `/farm-ready-gate` | Runs `pnpm run ready` — the full CI gate — and reports any failing step |
-| `/opsx:propose` | Drafts a new change proposal with design and task artifacts |
-| `/opsx:apply` | Implements tasks from an OpenSpec change |
-| `/opsx:explore` | Opens a thinking-partner explore session (read-only) |
-| `/opsx:archive` | Archives a completed change |
+| Command                   | What it does                                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------------------------- |
+| `/git-commit-push`        | Safely stages, commits, and pushes changes with guardrails                                      |
+| `/farm-ready-gate`        | Runs `pnpm run ready` — the full CI gate — and reports any failing step                         |
+| `/e2e-example-acceptance` | Validates affected examples with start/build/preview and browser console/request/content checks |
+| `/opsx:propose`           | Drafts a new change proposal with design and task artifacts                                     |
+| `/opsx:apply`             | Implements tasks from an OpenSpec change                                                        |
+| `/opsx:explore`           | Opens a thinking-partner explore session (read-only)                                            |
+| `/opsx:archive`           | Archives a completed change                                                                     |
 
 Skills live in `.github/skills/` (project-shared) and `.agents/skills/` (agent utilities). See [AGENTS.md §Skills](./AGENTS.md#available-skills-slash-commands) for the full list and instructions for creating new ones.
 

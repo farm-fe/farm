@@ -193,7 +193,10 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
         }
 
         export_info = Some(ExportInfo {
-          source: export_named.src.as_ref().map(|s| s.value.to_string_lossy().into_owned()),
+          source: export_named
+            .src
+            .as_ref()
+            .map(|s| s.value.to_string_lossy().into_owned()),
           specifiers,
           stmt_id: *id,
         });

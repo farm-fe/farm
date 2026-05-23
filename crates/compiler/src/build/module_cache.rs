@@ -279,8 +279,8 @@ pub fn handle_cached_modules(
         context.meta.get_globals(&cached_module.module.id).value(),
       );
 
-      script.top_level_mark = unresolved_mark.as_u32();
-      script.unresolved_mark = top_level_mark.as_u32();
+      script.top_level_mark = top_level_mark.as_u32();
+      script.unresolved_mark = unresolved_mark.as_u32();
       script.statements = analyze_statements(&script.ast);
     }
     box farmfe_core::module::ModuleMetaData::Css(_)

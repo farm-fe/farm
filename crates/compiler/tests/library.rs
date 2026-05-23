@@ -160,10 +160,7 @@ fn test_bundle_type(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
     file_path_buf.to_string_lossy().to_string(),
   )]);
 
-  let has_config_input = config_json
-    .as_ref()
-    .and_then(|v| v.get("input"))
-    .is_some();
+  let has_config_input = config_json.as_ref().and_then(|v| v.get("input")).is_some();
 
   let compiler = create_compiler_with_args(
     cwd.to_path_buf(),
@@ -189,11 +186,12 @@ fn test_bundle_type(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
       let mut resolved_input: HashMap<String, String> = HashMap::default();
       for (key, value) in config.input.iter() {
         let path_buf = PathBuf::from(value);
-        let path = if path_buf.is_relative() && (value.starts_with("./") || value.starts_with("../")) {
-          cwd.join(value).to_string_lossy().to_string()
-        } else {
-          value.clone()
-        };
+        let path =
+          if path_buf.is_relative() && (value.starts_with("./") || value.starts_with("../")) {
+            cwd.join(value).to_string_lossy().to_string()
+          } else {
+            value.clone()
+          };
         resolved_input.insert(key.clone(), path);
       }
       config.input = resolved_input;

@@ -108,6 +108,22 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-auto-import/* ./rust-plugins/auto-import/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-compress/* ./rust-plugins/compress/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dsv/* ./rust-plugins/dsv/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dts/* ./rust-plugins/dts/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-icons/* ./rust-plugins/icons/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-image/* ./rust-plugins/image/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-mdx/* ./rust-plugins/mdx/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-modular-import/* ./rust-plugins/modular-import/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react-components/* ./rust-plugins/react-components/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-strip/* ./rust-plugins/strip/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-svgr/* ./rust-plugins/svgr/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-url/* ./rust-plugins/url/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-virtual/* ./rust-plugins/virtual/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-wasm/* ./rust-plugins/wasm/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-worker/* ./rust-plugins/worker/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-yaml/* ./rust-plugins/yaml/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
@@ -115,6 +131,22 @@ jobs:
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
+            test -f ./rust-plugins/auto-import/npm/${abi}/index.farm
+            test -f ./rust-plugins/compress/npm/${abi}/index.farm
+            test -f ./rust-plugins/dsv/npm/${abi}/index.farm
+            test -f ./rust-plugins/dts/npm/${abi}/index.farm
+            test -f ./rust-plugins/icons/npm/${abi}/index.farm
+            test -f ./rust-plugins/image/npm/${abi}/index.farm
+            test -f ./rust-plugins/mdx/npm/${abi}/index.farm
+            test -f ./rust-plugins/modular-import/npm/${abi}/index.farm
+            test -f ./rust-plugins/react-components/npm/${abi}/index.farm
+            test -f ./rust-plugins/strip/npm/${abi}/index.farm
+            test -f ./rust-plugins/svgr/npm/${abi}/index.farm
+            test -f ./rust-plugins/url/npm/${abi}/index.farm
+            test -f ./rust-plugins/virtual/npm/${abi}/index.farm
+            test -f ./rust-plugins/wasm/npm/${abi}/index.farm
+            test -f ./rust-plugins/worker/npm/${abi}/index.farm
+            test -f ./rust-plugins/yaml/npm/${abi}/index.farm
           done
           for abi in android-arm-eabi linux-arm-gnueabihf android-arm64 freebsd-x64
           do
