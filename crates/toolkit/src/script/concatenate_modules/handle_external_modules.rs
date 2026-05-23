@@ -106,8 +106,7 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
 
   // if the external module has been imported, we should reuse the import statement to avoid duplicate imports
   if !is_namespace_import {
-    if let Some(preserved_item) =
-      find_preserved_import_named_stmt(strip_context, source_module_id)
+    if let Some(preserved_item) = find_preserved_import_named_stmt(strip_context, source_module_id)
     {
       for sp in &statement.import_info.as_ref().unwrap().specifiers {
         if let Some((existing_ident, sp_ident)) =

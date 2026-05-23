@@ -29,7 +29,8 @@ jobs:
               apt-get update &&
               apt-get install -y protobuf-compiler --fix-missing &&
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
-              cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu
+              cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu || exit 1; done
 
           - os: ubuntu-latest
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
@@ -50,7 +51,8 @@ jobs:
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               apk add protobuf &&
-              cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl
+              cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl || exit 1; done
 
           - os: windows-latest
             abi: win32-x64-msvc
@@ -76,6 +78,9 @@ jobs:
               cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
               cd ../replace-dirname && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
               cd ../sass && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
+                cd ../$plugin && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc || exit 1
+              done
           - os: windows-latest
             abi: win32-arm64-msvc
             target: aarch64-pc-windows-msvc
@@ -88,6 +93,9 @@ jobs:
               cd ../../rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../replace-dirname && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../sass && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
+              for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
+                cd ../$plugin && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc || exit 1
+              done
           # linux
           - os: ubuntu-latest
             abi: linux-arm64-musl
@@ -179,12 +187,14 @@ jobs:
           run: ${{ matrix.settings.build }}
       - name: Default Build
         if: ${{ !matrix.settings.docker && !matrix.settings.build }}
-        run: >-
-          cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} &&
-          cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} &&
-          cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
-          cd ../replace-dirname && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
-          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }}
+        run: |
+          cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }}
+          cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }}
+          cd ../../rust-plugins
+          for plugin in react replace-dirname sass auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do
+            cd $plugin && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} || exit 1
+            cd ..
+          done
         shell: bash
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
@@ -222,6 +232,102 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Auto Import
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
+          path: rust-plugins/auto-import/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Compress
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
+          path: rust-plugins/compress/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Dsv
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
+          path: rust-plugins/dsv/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Dts
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
+          path: rust-plugins/dts/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Icons
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
+          path: rust-plugins/icons/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Image
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
+          path: rust-plugins/image/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Mdx
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
+          path: rust-plugins/mdx/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Modular Import
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
+          path: rust-plugins/modular-import/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin React Components
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
+          path: rust-plugins/react-components/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Strip
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
+          path: rust-plugins/strip/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Svgr
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
+          path: rust-plugins/svgr/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Url
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
+          path: rust-plugins/url/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Virtual
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
+          path: rust-plugins/virtual/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Wasm
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
+          path: rust-plugins/wasm/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Worker
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
+          path: rust-plugins/worker/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Yaml
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
+          path: rust-plugins/yaml/npm/${{ matrix.settings.abi }}/index.farm
   # Now for create-farm cli only builds
   build-freebsd:
     name: Build and Upload Artifacts - x86_64-unknown-freebsd

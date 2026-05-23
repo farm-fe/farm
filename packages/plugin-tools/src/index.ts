@@ -22,6 +22,29 @@ const getArg = (argsObj: any, args: string[], name: string) => {
   }
 };
 
+const removeArg = (args: string[], name: string) => {
+  const index = args.findIndex(
+    (arg) => arg === name || arg.startsWith(`${name}=`)
+  );
+
+  if (index === -1) {
+    return;
+  }
+
+  if (args[index] === name) {
+    const value = args[index + 1];
+
+    if (typeof value !== 'string' || value.startsWith('-')) {
+      throw new Error(`Missing ${name}`);
+    }
+
+    args.splice(index, 2);
+    return;
+  }
+
+  args.splice(index, 1);
+};
+
 const cli = cac('farm-plugin-tools');
 
 cli
@@ -31,6 +54,7 @@ cli
     const cliPath = resolveNapiRsCli();
     const args = process.argv.slice(3);
     const abi = getArg(argsObj, args, '--abi');
+    removeArg(args, '--cargo-name');
 
     // all args are passed to napi-rs directly
     // 1. build with napi-rs

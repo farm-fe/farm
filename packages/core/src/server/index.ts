@@ -68,6 +68,29 @@ export type ServerConfig = CommonServerOptions & NormalizedServerConfig;
 
 export const debugServer = createDebugger('farm:server');
 
+export function shouldAutoSyncHmrPort(
+  server: Pick<ServerConfig, 'port' | 'hmr'>
+) {
+  return (
+    isObject(server.hmr) &&
+    !server.hmr.server &&
+    server.hmr.port === server.port
+  );
+}
+
+export function syncServerPort(
+  config: ResolvedUserConfig,
+  serverPort: number,
+  shouldSyncHmrPort = shouldAutoSyncHmrPort(config.server)
+) {
+  if (shouldSyncHmrPort) {
+    config.server.hmr.port = serverPort;
+    config.compilation.define.FARM_HMR_PORT = serverPort.toString();
+  }
+
+  config.server.port = serverPort;
+}
+
 /**
  * Represents a Farm development server.
  * @class
@@ -76,6 +99,7 @@ export class Server extends httpServer {
   ws: WsServer;
   serverOptions: ServerConfig;
   httpsOptions: HttpsServerOptions;
+  shouldSyncHmrPort = false;
   publicDir: string | undefined;
   publicPath?: string;
   publicFiles?: Set<string>;
@@ -312,13 +336,7 @@ export class Server extends httpServer {
   }
 
   #updateServerPort(serverPort: number, command: 'START' | 'WATCH') {
-    if (this.config.server.hmr?.port === this.config.server?.port) {
-      this.config.server.hmr ??= {};
-      this.config.server.hmr.port = serverPort;
-      this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
-    }
-
-    this.config.server.port = serverPort;
+    syncServerPort(this.config, serverPort, this.shouldSyncHmrPort);
 
     this.serverOptions.port = serverPort;
 
@@ -534,6 +552,7 @@ export class Server extends httpServer {
       );
     }
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
+    this.shouldSyncHmrPort = shouldAutoSyncHmrPort(this.serverOptions);
     this.root = root;
   }
 

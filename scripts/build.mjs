@@ -69,12 +69,128 @@ export const executeStartProject = async () =>
     stdio: "inherit",
   });
 
-export const buildExamples = async () => {
-  const examples = fs.readdirSync("./examples");
-  console.log("Building", examples.length, "examples...");
+export const buildExamples = async ({ startFrom, example } = {}) => {
+  const examples = fs.readdirSync("./examples").sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const builtRustPlugins = new Set();
+  const hasPrebuiltRustPluginArtifact = (rustPluginPath) => {
+    const npmPath = join(rustPluginPath, "npm");
 
-  for (const example of examples) {
+    if (!existsSync(npmPath)) {
+      return false;
+    }
+
+    for (const dirent of fs.readdirSync(npmPath, { withFileTypes: true })) {
+      if (!dirent.isDirectory()) {
+        continue;
+      }
+
+      if (existsSync(join(npmPath, dirent.name, "index.farm"))) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  const resolveRustPluginsForExample = (example, examplePath) => {
+    const result = new Set();
+
+    if (example.startsWith("rust-plugin-")) {
+      result.add(example.slice("rust-plugin-".length));
+    }
+
+    const pkgJsonPath = join(examplePath, "package.json");
+    if (!existsSync(pkgJsonPath)) {
+      return [...result];
+    }
+
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, "utf8"));
+      const depNames = [
+        ...Object.keys(pkg.dependencies || {}),
+        ...Object.keys(pkg.devDependencies || {}),
+      ];
+
+      for (const depName of depNames) {
+        if (!depName.startsWith("@farmfe/plugin-")) {
+          continue;
+        }
+
+        const pluginName = depName.slice("@farmfe/plugin-".length);
+        const pluginPath = resolve(PKG_RUST_PLUGIN, pluginName);
+
+        if (existsSync(join(pluginPath, "package.json"))) {
+          result.add(pluginName);
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to parse ${pkgJsonPath}: ${error}`);
+    }
+
+    return [...result];
+  };
+
+  const examplesToBuild = example
+    ? (() => {
+        const exampleIndex = examples.indexOf(example);
+
+        if (exampleIndex === -1) {
+          throw new Error(`Example '${example}' was not found under ./examples`);
+        }
+
+        return [examples[exampleIndex]];
+      })()
+    : startFrom
+      ? (() => {
+        const startIndex = examples.indexOf(startFrom);
+
+        if (startIndex === -1) {
+          throw new Error(
+            `Example '${startFrom}' was not found under ./examples`,
+          );
+        }
+
+        return examples.slice(startIndex);
+        })()
+      : examples;
+  console.log("Building", examplesToBuild.length, "examples...");
+
+  for (const example of examplesToBuild) {
     const examplePath = join("./examples", example);
+    const rustPluginNames = resolveRustPluginsForExample(example, examplePath);
+
+    for (const rustPluginName of rustPluginNames) {
+      if (builtRustPlugins.has(rustPluginName)) {
+        continue;
+      }
+
+      const rustPluginPath = resolve(PKG_RUST_PLUGIN, rustPluginName);
+
+      if (!existsSync(join(rustPluginPath, "package.json"))) {
+        continue;
+      }
+
+      console.log(
+        `Building rust plugin ${rustPluginName} for example ${examplePath}`,
+      );
+
+      if (process.env.CI && hasPrebuiltRustPluginArtifact(rustPluginPath)) {
+        console.log(
+          `Skipping rust plugin ${rustPluginName} build in CI because prebuilt artifact is available`,
+        );
+        builtRustPlugins.add(rustPluginName);
+        continue;
+      }
+
+      await execa("npm", ["run", "build"], {
+        cwd: rustPluginPath,
+        stdio: isVerbose ? "inherit" : "ignore",
+      });
+
+      builtRustPlugins.add(rustPluginName);
+    }
 
     if (!existsSync(join(examplePath, "package.json"))) {
       continue;

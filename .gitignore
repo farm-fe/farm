@@ -1,3 +1,6 @@
+**/*.farm
+**/*.node
+
 # Logs
 logs
 *.log

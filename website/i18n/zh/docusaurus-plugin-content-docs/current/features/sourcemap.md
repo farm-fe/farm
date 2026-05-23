@@ -1,5 +1,5 @@
 # Source Map
-Farm 支持 Source Map，默认情况下自动启用。 可以通过选项启用或禁用 sourcemap。
+Farm 支持 Source Map。在 development 模式下默认启用，在 build/production 模式下默认关闭。可以通过配置项启用或禁用 sourcemap。
 
 :::note
 Farm 默认不会为 node_modules 下的文件生成 sourcemap，如果你想为 node_modules 下的文件生成 sourcemap，请将 `compilation.sourcemap` 配置为`all`。

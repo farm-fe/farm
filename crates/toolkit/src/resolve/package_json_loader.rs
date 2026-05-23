@@ -4,7 +4,8 @@ use farmfe_core::{
   common::PackageJsonInfo,
   dashmap::DashMap,
   error::{CompilationError, Result},
-  serde_json::{from_str, Value}, HashMap,
+  serde_json::{from_str, Value},
+  HashMap,
 };
 
 use crate::fs::read_file_utf8;

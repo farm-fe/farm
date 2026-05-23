@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{mem::ManuallyDrop, sync::Arc};
 
 use farmfe_core::{
   config::Config,
@@ -23,8 +23,13 @@ pub mod plugin_loader;
 pub struct RustPluginAdapter {
   /// plugin instance
   plugin: Arc<dyn Plugin>,
-  /// dynamic lib of this plugin, this lib should created and destroyed with the plugin instance as the same time
-  _lib: Library,
+  /// Keep the dynamic library loaded for the full process lifetime.
+  ///
+  /// Several rust plugins execute code on shared worker threads managed outside the
+  /// plugin boundary. Explicitly unloading the library during process teardown can
+  /// race with those threads and cause native crashes after builds have already
+  /// completed successfully.
+  _lib: ManuallyDrop<Library>,
 }
 
 impl RustPluginAdapter {
@@ -35,7 +40,10 @@ impl RustPluginAdapter {
       })?
     };
 
-    Ok(Self { plugin, _lib })
+    Ok(Self {
+      plugin,
+      _lib: ManuallyDrop::new(_lib),
+    })
   }
 }
 
