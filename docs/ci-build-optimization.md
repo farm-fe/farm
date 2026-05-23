@@ -100,8 +100,8 @@ is poor** for the following reasons:
    jobs start as soon as the 3 user-platform ABIs are ready and do **not** wait
    for any publish-only ABI.
 2. **Eliminate duplicate Rust dependency compilation inside a single build
-   job**, so core and the 3 rust plugins compile their shared dependencies
-   only once.
+   job**, so core, `create-farm`, and all Rust plugins compile their shared
+   dependencies only once.
 3. **Add a cross-PR second-tier cache** to reduce incremental build time and
    keep a fallback cache key so that lockfile churn does not force a cold start.
 4. Do not change the existing contracts of `release.yaml` / `rust-build.yaml`
@@ -234,9 +234,9 @@ duplicating work already done by `call-rust-build`. Either:
 
 ### 3.2 Angle 2 — Share Compile Cache Across Core and Plugins
 
-**Goal:** within a single build job, make `packages/core` and the 3 rust
-plugins compile their shared Rust dependencies exactly once, and add a
-second-tier cache to speed up incremental builds across PRs.
+**Goal:** within a single build job, make `packages/core`, `packages/create-farm`,
+and all Rust plugins compile their shared Rust dependencies exactly once, and
+add a second-tier cache to speed up incremental builds across PRs.
 
 #### Change 1 — Unify the PR build profile (biggest win)
 
@@ -263,7 +263,7 @@ In `rust-build.yaml`:
 - **PR trigger** (invoked via `workflow_call` from `ci.yaml`) → use `--profile ci`.
 - **Release trigger** → keep `--profile release-publish`.
 
-This way core and every rust plugin use the **same profile**, so Cargo places
+This way core, `create-farm`, and every Rust plugin use the **same profile**, so Cargo places
 all shared dependencies under one `target/ci/` subdirectory and compiles them
 once. Heavy shared dependencies (swc, rkyv, serde, …) — which dominate today's
 job time — are no longer compiled twice.
@@ -271,10 +271,10 @@ job time — are no longer compiled twice.
 Concrete touch points:
 - Top-level `Cargo.toml`: add `[profile.ci]`.
 - `packages/core/package.json`: add `build:rs:ci`.
-- `rust-plugins/*/package.json`: build script accepts `--profile ci` (or add a
-  `build:ci` script).
-- `rust-build.yaml`: PR path calls the `build:ci` variant; plugins build with
-  `--profile ci`.
+- `packages/create-farm/package.json` and `rust-plugins/*/package.json`: build
+  scripts accept `--profile ci` (or add a `build:ci` script).
+- `rust-build.yaml`: PR path calls the `build:ci` variant; `create-farm` and
+  plugins build with `--profile ci`.
 
 Expected gains:
 - Number of times shared Rust deps are compiled within a job drops from
@@ -327,20 +327,26 @@ custom profiles awkward. Longer term, consider:
 2. Use `napi build --no-build` (or a small standalone script) to emit
    `binding.{js,d.ts}`.
 
-This lets all four napi projects share a single `cargo build` invocation
-(`-p farmfe_node -p farmfe_plugin_react -p farmfe_plugin_sass -p
-farmfe_plugin_replace_dirname -p create_farm`), so `target/` and the build
-graph are shared natively, saving even more time than serial same-profile
-invocations.
+This lets the core binding, `create-farm`, and plugin bindings share a single
+`cargo build` invocation (`-p farmfe_node -p create_farm -p ...`), so
+`target/` and the build graph are shared natively, saving even more time than
+serial same-profile invocations.
 
 ## 4. Rollout Plan
 
 | Phase | Content | Risk | Expected gain |
 | --- | --- | --- | --- |
-| P0 | Split `rust-build.yaml` → `rust-build-user.yaml` + `rust-build-release.yaml`; `examples-test` / `ts-test` depend only on user | Low — workflow files only | PR critical path no longer includes the slowest ABI (≈ 5–15 min saved) |
-| P1 | Add `[profile.ci]`; core and all plugins use it on the PR path | Medium — plugin-tools must accept `--profile`; artifact behavior unchanged | 30–50% reduction in single-job build time |
-| P2 | Add sccache (GHA backend) + rust-cache `restore-keys` | Medium — docker jobs must propagate env | 20–40% further reduction on warm runs |
-| P3 | Single `cargo build` with multiple `-p` for all napi crates | High — requires restructuring how napi is invoked | 5–15% additional saving per job |
+| P0a | Extract the common Rust artifact build steps into a reusable composite action or script so the user-platform and release-platform workflows cannot drift. | Low — mechanical workflow refactor | Safer split with no behavior change. |
+| P0b | Split `rust-build.yaml` into `rust-build-user.yaml` (`linux-x64-gnu`, `darwin-arm64`, `win32-x64-msvc`) and `rust-build-release.yaml` (publish-only and CLI-only ABIs, including FreeBSD). | Low — workflow files only | Establishes job-level dependencies for the fast path. |
+| P0c | Update `ci.yaml` so `examples-test` and `ts-test` depend only on `call-rust-build-user`, while `check-core-artifacts`, `check-create-farm-rust-artifacts`, and `check-plugin-artifacts` depend on both user and release builds. | Low — dependency graph only | PR critical path no longer includes the slowest ABI (≈ 5–15 min saved). |
+| P1 | Add `[profile.ci]`; `packages/core`, `packages/create-farm`, and all Rust plugins use it on the PR path. | Medium — plugin-tools and create-farm scripts must accept `--profile`; artifact behavior unchanged | 30–50% reduction in single-job build time. |
+| P2 | Add sccache (GHA backend) and rust-cache `restore-keys`; propagate sccache into docker builds. | Medium — docker jobs must receive the binary and cache env | 20–40% further reduction on warm runs. |
+| P3 | Replace serial `napi build` invocations with one multi-package `cargo build`, then emit napi JS/DTS wrappers separately. | High — requires restructuring how napi is invoked | 5–15% additional saving per job. |
+
+Recommended implementation order: land P0a first as a no-op refactor, then P0b
+and P0c together so the dependency graph changes in one PR. P1 and P2 are
+independent after the split and can be measured separately. Keep P3 as a
+long-term cleanup after the faster PR path is stable.
 
 ## 5. Validation and Rollback
 
