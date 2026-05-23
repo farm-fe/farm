@@ -169,32 +169,6 @@ function requireNative() {
     } else {
       loadErrors.push(new Error(`Unsupported architecture on macOS: ${process.arch}`))
     }
-  } else if (process.platform === 'freebsd') {
-    if (process.arch === 'x64') {
-      try {
-        return require('./create-farm.freebsd-x64.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-freebsd-x64')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else if (process.arch === 'arm64') {
-      try {
-        return require('./create-farm.freebsd-arm64.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-freebsd-arm64')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else {
-      loadErrors.push(new Error(`Unsupported architecture on FreeBSD: ${process.arch}`))
-    }
   } else if (process.platform === 'linux') {
     if (process.arch === 'x64') {
       if (isMusl()) {
