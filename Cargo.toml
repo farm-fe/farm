@@ -53,6 +53,13 @@ opt-level = 3
 strip = true
 panic = "abort"
 
+[profile.ci]
+inherits = "release"
+lto = false
+codegen-units = 16
+debug = false
+strip = "debuginfo"
+
 [profile.ci-test]
 inherits = "release"
 # opt-level = 0

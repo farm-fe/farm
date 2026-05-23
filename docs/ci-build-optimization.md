@@ -1,7 +1,7 @@
 # CI Compile-Time Optimization Design
 
-> Status: Design Proposal
-> Scope: `.github/workflows/ci.yaml`, `.github/workflows/rust-build.yaml`
+> Status: P0–P2 Implemented; P3 Deferred
+> Scope: `.github/workflows/ci.yaml`, `.github/workflows/rust-build*.yaml`, `scripts/ci-build-rust-artifacts.sh`
 > Author: Farm maintainers
 > Related issue: PR CI end-to-end time is too long, slowing down feedback
 
@@ -110,8 +110,9 @@ is poor** for the following reasons:
 
 ## 3. Proposed Design
 
-The proposal has two parts, matching the two angles called out in the problem
-statement. The two parts are **independent** and can be rolled out in stages.
+The implementation has two parts, matching the two angles called out in the
+problem statement. P0–P2 are implemented; P3 remains deferred as the optional
+long-term restructuring.
 
 ### 3.1 Angle 1 — Decouple Downstream Tests to Increase Parallelism
 
@@ -305,18 +306,21 @@ Caveats:
   registry / git downloads, while sccache covers object-level compilation
   results.
 
-#### Change 3 — Keep a cache fallback key
+#### Change 3 — Keep a cache fallback prefix
+
+`Swatinem/rust-cache@v2` does not expose the same `restore-keys` input as
+`actions/cache`, so the workflows use an ABI/profile-specific `prefix-key` plus
+the stable ABI `shared-key` supported by that action:
 
 ```yaml
 - uses: Swatinem/rust-cache@v2
   with:
+    prefix-key: rust-build-${{ inputs.profile }}-${{ matrix.settings.abi }}
     shared-key: rust-build-${{ matrix.settings.abi }}
-    restore-keys: |
-      rust-build-${{ matrix.settings.abi }}-
 ```
 
-A `Cargo.lock` change no longer fully invalidates the cache; the job can fall
-back to the most recent cache for the same ABI.
+This keeps cache entries separated by build profile while still using the
+action-supported fallback prefix behavior for the same ABI.
 
 #### Change 4 (optional, long term) — Decouple `napi build` from `cargo build`
 
@@ -336,17 +340,16 @@ serial same-profile invocations.
 
 | Phase | Content | Risk | Expected gain |
 | --- | --- | --- | --- |
-| P0a | Extract the common Rust artifact build steps into a reusable composite action or script so the user-platform and release-platform workflows cannot drift. | Low — mechanical workflow refactor | Safer split with no behavior change. |
-| P0b | Split `rust-build.yaml` into `rust-build-user.yaml` (`linux-x64-gnu`, `darwin-arm64`, `win32-x64-msvc`) and `rust-build-release.yaml` (publish-only and CLI-only ABIs, including FreeBSD). | Low — workflow files only | Establishes job-level dependencies for the fast path. |
-| P0c | Update `ci.yaml` so `examples-test` and `ts-test` depend only on `call-rust-build-user`, while `check-core-artifacts`, `check-create-farm-rust-artifacts`, and `check-plugin-artifacts` depend on both user and release builds. | Low — dependency graph only | PR critical path no longer includes the slowest ABI (≈ 5–15 min saved). |
-| P1 | Add `[profile.ci]`; `packages/core`, `packages/create-farm`, and all Rust plugins use it on the PR path. | Medium — plugin-tools and create-farm scripts must accept `--profile`; artifact behavior unchanged | 30–50% reduction in single-job build time. |
-| P2 | Add sccache (GHA backend) and rust-cache `restore-keys`; propagate sccache into docker builds. | Medium — docker jobs must receive the binary and cache env | 20–40% further reduction on warm runs. |
-| P3 | Replace serial `napi build` invocations with one multi-package `cargo build`, then emit napi JS/DTS wrappers separately. | High — requires restructuring how napi is invoked | 5–15% additional saving per job. |
+| P0a | ✅ Extract the common Rust artifact build steps into `scripts/ci-build-rust-artifacts.sh` so the user-platform and release-platform workflows cannot drift. | Low — mechanical workflow refactor | Safer split with no behavior change. |
+| P0b | ✅ Split `rust-build.yaml` into `rust-build-user.yaml` (`linux-x64-gnu`, `darwin-arm64`, `win32-x64-msvc`) and `rust-build-release.yaml` (publish-only and CLI-only ABIs, including FreeBSD). `rust-build.yaml` remains as a release-compatible wrapper. | Low — workflow files only | Establishes job-level dependencies for the fast path. |
+| P0c | ✅ Update `ci.yaml` so `examples-test` and `ts-test` depend only on `call-rust-build-user`, while `check-core-artifacts`, `check-create-farm-rust-artifacts`, and `check-plugin-artifacts` depend on both user and release builds. | Low — dependency graph only | PR critical path no longer includes the slowest ABI (≈ 5–15 min saved). |
+| P1 | ✅ Add `[profile.ci]`; `packages/core`, `packages/create-farm`, and all Rust plugins use it on the PR path. `farm-plugin-tools build` forwards `--profile` to napi and now removes the script-level `--release` flag when a profile is supplied. | Medium — plugin-tools and create-farm scripts must accept `--profile`; artifact behavior unchanged | 30–50% reduction in single-job build time. |
+| P2 | ✅ Add sccache (GHA backend) and rust-cache fallback prefixes; propagate the sccache binary and cache env into docker builds. | Medium — docker jobs must receive the binary and cache env | 20–40% further reduction on warm runs. |
+| P3 | Deferred: replace serial `napi build` invocations with one multi-package `cargo build`, then emit napi JS/DTS wrappers separately. | High — requires restructuring how napi is invoked | 5–15% additional saving per job. |
 
-Recommended implementation order: land P0a first as a no-op refactor, then P0b
-and P0c together so the dependency graph changes in one PR. P1 and P2 are
-independent after the split and can be measured separately. Keep P3 as a
-long-term cleanup after the faster PR path is stable.
+P0–P2 are now implemented together because P1/P2 depend on the shared build
+script introduced by P0a. Keep P3 as a long-term cleanup after the faster PR
+path is stable and CI metrics confirm the split is working as expected.
 
 ## 5. Validation and Rollback
 
@@ -369,9 +372,10 @@ long-term cleanup after the faster PR path is stable.
 
 ## 6. Open Questions
 
-1. Does `farm-plugin-tools build` already accept `--profile <name>`? If not,
-   we need to thread the flag through in `packages/plugin-tools` first
-   (forwarding it to the underlying `napi build` / `cargo build`).
+1. Answered: `@napi-rs/cli` supports `--profile`; `farm-plugin-tools build`
+   already forwards unknown args, and now explicitly removes the default
+   `--release` flag when `--profile <name>` is supplied so Cargo receives a
+   single profile selector.
 2. Should we add an even faster "hot path" by moving `linux-x64-gnu` off
    docker on the PR path and running it directly on the host, only using
    docker for releases? Needs an evaluation of musl/glibc compatibility.

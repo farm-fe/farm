@@ -9,13 +9,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-rust-build:
-    uses: ./.github/workflows/rust-build.yaml
+  call-rust-build-user:
+    uses: ./.github/workflows/rust-build-user.yaml
+    secrets: inherit
+
+  call-rust-build-release:
+    uses: ./.github/workflows/rust-build-release.yaml
+    secrets: inherit
 
   examples-test:
     name: Examples Test
     runs-on: ${{ matrix.settings.os }}
-    needs: [call-rust-build]
+    needs: [call-rust-build-user]
     strategy:
       fail-fast: false
       matrix:
@@ -173,7 +178,7 @@ jobs:
       - uses: actions/download-artifact@v4
         id: download-create-farm-rust
         with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm
 
       - name: Build Examples - ${{ matrix.settings.abi }}
@@ -242,7 +247,7 @@ jobs:
   ts-test:
     name: Typescript Test
     runs-on: ${{ matrix.settings.os }}
-    needs: call-rust-build
+    needs: call-rust-build-user
     strategy:
       fail-fast: false
       matrix:
@@ -301,7 +306,7 @@ jobs:
   check-core-artifacts:
     name: Check Core Artifacts
     runs-on: ubuntu-latest
-    needs: call-rust-build
+    needs: [call-rust-build-user, call-rust-build-release]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -316,7 +321,7 @@ jobs:
   check-create-farm-rust-artifacts:
     name: Check Create Farm Rust Artifacts
     runs-on: ubuntu-latest
-    needs: call-rust-build
+    needs: [call-rust-build-user, call-rust-build-release]
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -332,7 +337,7 @@ jobs:
   check-plugin-artifacts:
     name: Check ${{ matrix.settings.name }} Artifacts
     runs-on: ubuntu-latest
-    needs: call-rust-build
+    needs: [call-rust-build-user, call-rust-build-release]
     strategy:
       fail-fast: false
       matrix:

@@ -42,7 +42,8 @@
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
-    "version": "napi version"
+    "version": "napi version",
+    "build:ci": "napi build --platform --profile ci"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.0.4"
