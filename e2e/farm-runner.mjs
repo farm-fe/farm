@@ -1,6 +1,7 @@
 import { execa } from 'execa';
 import getPort, { portNumbers } from 'get-port';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { logger } from './utils.mjs';
 
@@ -53,6 +54,65 @@ function isBrowserCrashLikeError(error) {
     msg.includes('Target crashed') ||
     msg.includes('Page crashed')
   );
+}
+
+/**
+ * @param {string} text
+ * @param {string} examplePath
+ * @returns {boolean}
+ */
+function isIgnorableConsoleError(text, examplePath) {
+  return (
+    /(?:^|[/\\])arcgis(?:[/\\]|$)/.test(examplePath) &&
+    text.includes('Failed to load resource') &&
+    text.includes('https://js.arcgis.com/4.30/@arcgis/core/assets/')
+  );
+}
+
+/**
+ * @param {import('playwright-chromium').Page} page
+ * @param {string} examplePath
+ * @returns {Promise<void>}
+ */
+async function installExampleRequestRoutes(page, examplePath) {
+  if (!/(?:^|[/\\])arcgis(?:[/\\]|$)/.test(examplePath)) {
+    return;
+  }
+
+  await page.route('https://js.arcgis.com/4.30/@arcgis/core/assets/**', async (route) => {
+    const url = new URL(route.request().url());
+    const prefix = '/4.30/@arcgis/core/assets/';
+    const assetPath = decodeURIComponent(url.pathname.slice(prefix.length));
+
+    if (!assetPath || assetPath.includes('..')) {
+      await route.abort();
+      return;
+    }
+
+    const localPath = join(
+      examplePath,
+      'node_modules',
+      '@arcgis',
+      'core',
+      'assets',
+      assetPath
+    );
+    const contentType = assetPath.endsWith('.css')
+      ? 'text/css'
+      : assetPath.endsWith('.json')
+        ? 'application/json'
+        : 'application/octet-stream';
+
+    try {
+      await route.fulfill({
+        status: 200,
+        contentType,
+        body: await readFile(localPath)
+      });
+    } catch {
+      await route.abort();
+    }
+  });
 }
 
 /**
@@ -236,6 +296,7 @@ function getRetryDelay(attempt, examplePath) {
  */
 async function visitPage(url, examplePath, cb, command) {
   const page = await requireBrowserContext().newPage();
+  await installExampleRequestRoutes(page, examplePath);
   logger(`Opening page: ${url}  [${examplePath}]`);
 
   page.on('requestfailed', (req) => {
@@ -272,9 +333,11 @@ async function visitPage(url, examplePath, cb, command) {
         !lower.includes('warning') &&
         !/Parse `.+` failed/.test(text)
       ) {
-        logger(`[console:error] ${command} ${examplePath}: ${text}${locationText}`, {
+        const ignored = isIgnorableConsoleError(`${text}${locationText}`, examplePath);
+        logger(`[console:${ignored ? 'ignored-error' : 'error'}] ${command} ${examplePath}: ${text}${locationText}`, {
           color: 'red'
         });
+        if (ignored) return;
         // Ignore console errors that arrive after the assertion callback
         // already succeeded — they typically come from background work
         // (e.g. workers) racing against page teardown when the dev server
@@ -431,8 +494,12 @@ export async function startAndTest(examplePath, cb, command = 'start', maxRetrie
     try {
       return await startAndTestOnce(examplePath, cb, command, attempt);
     } catch (e) {
-      if (_recoverBrowser && isBrowserCrashLikeError(e)) {
-        logger('Detected browser crash/close. Recreating browser before retry...', {
+      if (_recoverBrowser) {
+        const reason = isBrowserCrashLikeError(e)
+          ? 'browser crash/close'
+          : 'failed attempt';
+        const nextStep = attempt < maxRetries ? 'before retry' : 'after final attempt';
+        logger(`Detected ${reason}. Recreating browser context ${nextStep}...`, {
           color: 'yellow'
         });
         try {

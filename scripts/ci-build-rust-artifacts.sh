@@ -8,6 +8,10 @@ TARGET="${FARM_BUILD_TARGET:-}"
 ZIG="${FARM_BUILD_ZIG:-false}"
 CLI_ONLY="${FARM_BUILD_CLI_ONLY:-false}"
 
+if [ -z "${CARGO_TARGET_DIR:-}" ]; then
+  export CARGO_TARGET_DIR="$(pwd)/target"
+fi
+
 if [ "$PROFILE" = "ci" ]; then
   CORE_BUILD_SCRIPT="build:rs:ci"
   CREATE_FARM_BUILD_SCRIPT="build:ci"
