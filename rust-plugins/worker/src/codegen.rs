@@ -21,23 +21,24 @@ pub const INLINE_PLACEHOLDER_SUFFIX: &str = ":END__";
 /// Compute a deterministic DynamicEntry name for a worker source file.
 ///
 /// The name is used as `[entryName]` in `output.entry_filename`.  It is derived from
-/// `output.assets_filename` applied to the worker source file, using `module_id` bytes
+/// `output.assets_filename` applied to the worker source file, using `resolved_path` bytes
 /// as the hash source (to disambiguate files with identical base names), then the file
 /// extension is stripped.
 ///
 /// Example with `assets_filename = "[name].[hash].[ext]"`:
 ///   resolved_path  = "/src/workers/upload.ts"
-///   module_id      = "workers/upload.ts?worker"
 ///   → `"upload.abc12345"`  (extension stripped)
 pub fn compute_worker_entry_name(
   resolved_path: &str,
-  module_id: &str,
+  _module_id: &str,
   compiler_config: &Config,
 ) -> String {
-  let file_name_ext = Path::new(resolved_path)
-    .file_name()
-    .map(|x| x.to_string_lossy().to_string())
-    .unwrap_or_default();
+  let normalized_resolved_path = resolved_path.replace('\\', "/");
+  let file_name_ext = normalized_resolved_path
+    .rsplit('/')
+    .next()
+    .unwrap_or_default()
+    .to_string();
   let (stem, ext) = file_name_ext
     .split_once('.')
     .unwrap_or((&file_name_ext, "js"));
@@ -45,7 +46,7 @@ pub fn compute_worker_entry_name(
     filename_config: compiler_config.output.assets_filename.clone(),
     name: stem,
     name_hash: "",
-    bytes: module_id.as_bytes(),
+    bytes: normalized_resolved_path.as_bytes(),
     ext,
     special_placeholders: &Default::default(),
   });
@@ -156,4 +157,47 @@ pub fn get_worker_module_code(module_id: &str, worker_url: &str, is_url: bool) -
   return new {constructor}("{worker_url}", options);
 }}"#
   )
+}
+
+#[cfg(test)]
+mod tests {
+  use farmfe_core::config::Config;
+
+  use super::compute_worker_entry_name;
+
+  #[test]
+  fn worker_entry_name_is_stable_for_same_source_with_different_queries() {
+    let mut config = Config::default();
+    config.output.assets_filename = "asserts/[resourceName].[hash].[ext]".to_string();
+    let resolved_path = "C:\\project\\src\\worker\\vue.worker.ts";
+
+    let worker_entry =
+      compute_worker_entry_name(resolved_path, "src/worker/vue.worker.ts?worker", &config);
+    let worker_url_entry = compute_worker_entry_name(
+      resolved_path,
+      "src/worker/vue.worker.ts?worker&url",
+      &config,
+    );
+
+    assert_eq!(worker_entry, worker_url_entry);
+  }
+
+  #[test]
+  fn worker_entry_name_is_stable_for_same_source_with_different_path_separators() {
+    let mut config = Config::default();
+    config.output.assets_filename = "asserts/[resourceName].[hash].[ext]".to_string();
+
+    let backslash_entry = compute_worker_entry_name(
+      "C:\\project\\src\\worker\\vue.worker.ts",
+      "src/worker/vue.worker.ts?worker",
+      &config,
+    );
+    let slash_entry = compute_worker_entry_name(
+      "C:/project/src/worker/vue.worker.ts",
+      "src/worker/vue.worker.ts?worker",
+      &config,
+    );
+
+    assert_eq!(backslash_entry, slash_entry);
+  }
 }

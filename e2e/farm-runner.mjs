@@ -489,8 +489,25 @@ export async function watchAndTest(examplePath, cb, command = 'start') {
 
   return new Promise((resolve, reject) => {
     let output = '';
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      terminateChildProcess(child).then(resolve, reject);
+    };
+
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(error);
+    };
 
     const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
       terminateChildProcess(child).finally(() => {
         reject(new Error(`Watch test timed out after 60 s in ${examplePath}`));
       });
@@ -498,23 +515,19 @@ export async function watchAndTest(examplePath, cb, command = 'start') {
 
     child.stdout?.on('data', async (chunk) => {
       output += chunk.toString();
-      await cb(output, () => {
-        clearTimeout(timer);
-        terminateChildProcess(child).then(resolve, reject);
-      });
+      await cb(output, finish);
     });
 
     child.on('error', (err) => {
-      clearTimeout(timer);
-      reject(
+      fail(
         new Error(`Child process error in ${examplePath} (${command}): ${err.message}`)
       );
     });
 
     child.on('exit', (code) => {
+      if (settled) return;
       if (code) {
-        clearTimeout(timer);
-        reject(
+        fail(
           new Error(`${examplePath} '${command}' exited with code ${code}.\n${output}`)
         );
       }
