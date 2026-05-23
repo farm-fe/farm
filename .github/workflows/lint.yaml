@@ -14,10 +14,6 @@ jobs:
         with:
           shared-key: cargo-clippy
 
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run cargo fmt
         run: cargo fmt
       - name: Run cargo clippy

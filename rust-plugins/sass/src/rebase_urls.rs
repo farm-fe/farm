@@ -11,10 +11,8 @@ use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_utils::relative;
 
 lazy_static! {
-  pub static ref CSS_URL_RE: Regex =
-    Regex::new(r#"url\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)"#).unwrap();
-  pub static ref CSS_DATA_URI_RE: Regex =
-    Regex::new(r#"data-uri\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)"#).unwrap();
+  pub static ref CSS_URL_RE: Regex = Regex::new(r#"url\(([^)]+)\)"#).unwrap();
+  pub static ref CSS_DATA_URI_RE: Regex = Regex::new(r#"data-uri\(([^)]+)\)"#).unwrap();
   pub static ref IMPORT_CSS_RE: Regex =
     Regex::new(r#"@import ('[^']+\.css'|"[^"]+\.css"|[^'")]+\.css)"#).unwrap();
   pub static ref FUNCTION_CALL_RE: Regex = Regex::new(r#"^[A-Za-z_][\w-]*\("#).unwrap();
@@ -38,11 +36,11 @@ pub fn rebase_urls(
     return Ok(content);
   }
 
-  if CSS_URL_RE.is_match(&content) {
+  if content.contains("url(") {
     content = replace_url(file, root_file, content, "url", context)?;
   }
 
-  if CSS_DATA_URI_RE.is_match(&content) {
+  if content.contains("data-uri(") {
     content = replace_url(file, root_file, content, "data-uri", context)?;
   }
 
@@ -60,7 +58,7 @@ fn replace_url(
   func_name: &str,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<String> {
-  replace(content, &IMPORT_CSS_RE, |_, matched| {
+  replace_function(content, func_name, |matched| {
     let (wrap, raw_url) = if matched.starts_with('\'') {
       ("'", matched.trim_matches('\''))
     } else if matched.starts_with('\"') {
@@ -69,7 +67,7 @@ fn replace_url(
       ("", matched)
     };
 
-    let new_url = resolve(raw_url, file, root_file, context)?;
+    let new_url = resolve(raw_url.trim(), file, root_file, context)?;
     Ok(format!("{func_name}({wrap}{new_url}{wrap})"))
   })
 }
@@ -80,7 +78,7 @@ fn replace_import(
   content: String,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<String> {
-  replace(content, &CSS_URL_RE, |_, matched| {
+  replace(content, &IMPORT_CSS_RE, |_, matched| {
     let (wrap, raw_url) = if matched.starts_with('\'') {
       ("'", matched.trim_matches('\''))
     } else if matched.starts_with('"') {
@@ -89,7 +87,7 @@ fn replace_import(
       ("", matched)
     };
 
-    let new_url = resolve(raw_url, file, root_file, context)?;
+    let new_url = resolve(raw_url.trim(), file, root_file, context)?;
 
     Ok(format!("@import {wrap}{new_url}{wrap}"))
   })
@@ -110,6 +108,36 @@ fn resolve(
 ) -> farmfe_core::error::Result<String> {
   if ignore_url(url) {
     return Ok(url.to_string());
+  }
+
+  let root_relative_path = PathBuf::from(root_file).parent().map(|dir| dir.join(url));
+  if root_relative_path
+    .as_ref()
+    .is_some_and(|path| path.exists())
+  {
+    return Ok(url.to_string());
+  }
+
+  let local_path = PathBuf::from(file)
+    .parent()
+    .map(|dir| dir.join(url))
+    .filter(|path| path.exists());
+
+  if let Some(resolved_path) = local_path {
+    let root_dir = PathBuf::from(root_file)
+      .parent()
+      .unwrap()
+      .canonicalize()
+      .unwrap_or_else(|_| PathBuf::from(root_file).parent().unwrap().to_path_buf());
+    let resolved_path = resolved_path.canonicalize().unwrap_or(resolved_path);
+    if let Ok(path) = resolved_path.strip_prefix(&root_dir) {
+      return Ok(path.to_string_lossy().replace('\\', "/"));
+    }
+
+    return Ok(relative(
+      &root_dir.to_string_lossy(),
+      &resolved_path.to_string_lossy(),
+    ));
   }
 
   let (resolved_path, external) = context
@@ -158,6 +186,34 @@ where
   Ok(result)
 }
 
+fn replace_function<R>(
+  content: String,
+  func_name: &str,
+  replacer: R,
+) -> farmfe_core::error::Result<String>
+where
+  R: Fn(&str) -> farmfe_core::error::Result<String>,
+{
+  let pattern = format!("{func_name}(");
+  let mut content_left = content.as_str();
+  let mut result = String::new();
+
+  while let Some(index) = content_left.find(&pattern) {
+    result.push_str(&content_left[..index]);
+    let value_start = index + pattern.len();
+    let Some(value_end) = content_left[value_start..].find(')') else {
+      result.push_str(&content_left[index..]);
+      return Ok(result);
+    };
+    let value_end = value_start + value_end;
+    result.push_str(&replacer(&content_left[value_start..value_end])?);
+    content_left = &content_left[value_end + 1..];
+  }
+
+  result.push_str(content_left);
+  Ok(result)
+}
+
 #[cfg(test)]
 mod tests {
   use super::CSS_URL_RE;
@@ -174,5 +230,16 @@ mod tests {
       result,
       "a { b: url('matched'); d: url('matched');".to_string()
     )
+  }
+
+  #[test]
+  fn replace_unquoted() {
+    let content = "a { b: url(../assets/logo.png); }".to_string();
+    let result = super::replace(content, &CSS_URL_RE, |raw, matched| {
+      Ok(raw.replace(matched, "assets/logo.png"))
+    })
+    .unwrap();
+
+    assert_eq!(result, "a { b: url(assets/logo.png); }".to_string())
   }
 }

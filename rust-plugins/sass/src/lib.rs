@@ -111,6 +111,17 @@ impl FarmFs {
       .map(|path| ModuleId::new(&path.to_string_lossy(), "", &self.context.config.root))
       .collect()
   }
+
+  fn watched_paths(&self) -> Vec<PathBuf> {
+    self
+      .watched_files
+      .lock()
+      .expect("cannot lock sass watched files")
+      .iter()
+      .filter(|path| !same_path(path, &self.root_file))
+      .cloned()
+      .collect()
+  }
 }
 
 impl Fs for FarmFs {
@@ -305,12 +316,21 @@ impl Plugin for FarmPluginSass {
         context.clone(),
       );
       let grass_options = get_options(options, param.resolved_path, &fs);
-      let compile_result = grass::from_path(param.resolved_path, &grass_options).map_err(|e| {
-        farmfe_core::error::CompilationError::TransformError {
-          resolved_path: param.resolved_path.to_string(),
-          msg: e.to_string(),
-        }
-      })?;
+      let mut compile_result =
+        grass::from_path(param.resolved_path, &grass_options).map_err(|e| {
+          farmfe_core::error::CompilationError::TransformError {
+            resolved_path: param.resolved_path.to_string(),
+            msg: e.to_string(),
+          }
+        })?;
+      for path in fs.watched_paths() {
+        compile_result = rebase_urls(
+          &path.to_string_lossy(),
+          param.resolved_path,
+          compile_result,
+          context,
+        )?;
+      }
       let watched_files = fs.watched_module_ids();
 
       context

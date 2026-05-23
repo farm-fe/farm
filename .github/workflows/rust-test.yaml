@@ -21,10 +21,6 @@ jobs:
         with:
           shared-key: cargo-check
 
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run cargo check
         run: cargo check --color always --all --all-targets
   cargo-test:
@@ -66,10 +62,6 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 60
           command: pnpm i --frozen-lockfile
-
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run cargo test
         run: cargo test --profile ci-test --tests

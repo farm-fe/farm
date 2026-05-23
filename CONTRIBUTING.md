@@ -63,9 +63,7 @@ You can install them in the extension
 
 ### Setup Other Dependencies
 
-- Install [protoc](https://grpc.io/docs/protoc-installation/) for building `sass-embedded`.
 
-**TIP:** When you run `pnpm bootstrap` and you use mac or linux systems, farm will automatically install protoc for you system
 
 ## Start running
 

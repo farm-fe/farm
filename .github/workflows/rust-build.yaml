@@ -26,8 +26,6 @@ jobs:
               cd ../create-farm &&
               npm run build -- --target x86_64-unknown-linux-gnu &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
-              apt-get update &&
-              apt-get install -y protobuf-compiler --fix-missing &&
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu || exit 1; done
@@ -50,7 +48,6 @@ jobs:
               npm run build -- --target x86_64-unknown-linux-musl &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
-              apk add protobuf &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               for plugin in auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml; do cd ../$plugin && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl || exit 1; done
 
@@ -154,9 +151,6 @@ jobs:
         run: pnpm --filter @farmfe/plugin-tools run build
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Use the v1 of this action
       - uses: mbround18/setup-osxcross@v1
         if: ${{ matrix.settings.osxcross }}
