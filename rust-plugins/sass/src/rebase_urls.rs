@@ -9,7 +9,6 @@ use farmfe_core::{
 };
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_utils::relative;
-use sass_embedded::Exception;
 
 lazy_static! {
   pub static ref CSS_URL_RE: Regex =
@@ -28,7 +27,7 @@ pub fn rebase_urls(
   root_file: &str,
   mut content: String,
   context: &Arc<CompilationContext>,
-) -> sass_embedded::Result<String> {
+) -> farmfe_core::error::Result<String> {
   let file_path = PathBuf::from(file);
   let root_path = PathBuf::from(root_file);
 
@@ -60,8 +59,8 @@ fn replace_url(
   content: String,
   func_name: &str,
   context: &Arc<CompilationContext>,
-) -> sass_embedded::Result<String> {
-  replace(content, &CSS_URL_RE, |_, matched| {
+) -> farmfe_core::error::Result<String> {
+  replace(content, &IMPORT_CSS_RE, |_, matched| {
     let (wrap, raw_url) = if matched.starts_with('\'') {
       ("'", matched.trim_matches('\''))
     } else if matched.starts_with('\"') {
@@ -73,7 +72,6 @@ fn replace_url(
     let new_url = resolve(raw_url, file, root_file, context)?;
     Ok(format!("{func_name}({wrap}{new_url}{wrap})"))
   })
-  .map_err(|e| Box::new(Exception::new(e.to_string())))
 }
 
 fn replace_import(
@@ -81,7 +79,7 @@ fn replace_import(
   root_file: &str,
   content: String,
   context: &Arc<CompilationContext>,
-) -> sass_embedded::Result<String> {
+) -> farmfe_core::error::Result<String> {
   replace(content, &CSS_URL_RE, |_, matched| {
     let (wrap, raw_url) = if matched.starts_with('\'') {
       ("'", matched.trim_matches('\''))
@@ -95,7 +93,6 @@ fn replace_import(
 
     Ok(format!("@import {wrap}{new_url}{wrap}"))
   })
-  .map_err(|e| Box::new(Exception::new(e.to_string())))
 }
 
 fn ignore_url(url: &str) -> bool {
