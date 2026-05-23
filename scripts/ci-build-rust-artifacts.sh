@@ -6,7 +6,6 @@ PROFILE="${FARM_BUILD_PROFILE:-ci}"
 ABI="${FARM_BUILD_ABI:?FARM_BUILD_ABI is required}"
 TARGET="${FARM_BUILD_TARGET:-}"
 ZIG="${FARM_BUILD_ZIG:-false}"
-CLI_ONLY="${FARM_BUILD_CLI_ONLY:-false}"
 
 if [ -z "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR="$(pwd)/target"
@@ -64,10 +63,6 @@ case "$ABI" in
       fi
     fi
     ;;
-  linux-arm-gnueabihf)
-    sudo apt-get update
-    sudo apt-get install gcc-arm-linux-gnueabihf -y
-    ;;
 esac
 
 build_create_farm() {
@@ -75,11 +70,6 @@ build_create_farm() {
   npm run "$CREATE_FARM_BUILD_SCRIPT" -- $TARGET_ARGS $ZIG_ARGS
   cd ../..
 }
-
-if [ "$CLI_ONLY" = "true" ]; then
-  build_create_farm
-  exit 0
-fi
 
 CORE_EXTRA_ARGS=""
 case "$ABI" in

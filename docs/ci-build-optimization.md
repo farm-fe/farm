@@ -12,14 +12,14 @@ Farm's PR CI consists of two workflows:
 | Workflow | Trigger | Main Jobs |
 | --- | --- | --- |
 | `ci.yaml` (E2E Tests) | `pull_request` → main | `call-rust-build`, `examples-test`, `ts-test`, `type-check`, `check-*-artifacts` |
-| `rust-build.yaml` | Invoked by `ci.yaml` via `workflow_call` | A matrix `build` job (12 ABIs) plus `build-freebsd` |
+| `rust-build-user.yaml` / `rust-build-release.yaml` | Invoked by `ci.yaml` via `workflow_call` | Split matrix build jobs for user-tested and release-only ABIs |
 
 ### 1.1 Current Dependency Graph
 
 ```
                 ┌─────────────────────────────────────────┐
-                │            call-rust-build              │
-                │   (rust-build.yaml, matrix: 12 ABIs)    │
+                │       call-rust-build-user/release      │
+                │       (split rust-build matrices)       │
                 └─────────────────────────────────────────┘
                                    │
         ┌──────────────────┬───────┴───────┬───────────────────┐
@@ -45,14 +45,10 @@ downstream jobs are blocked by the slowest ABI in the matrix.
 | `win32-arm64-msvc` | publish (xwin cross-compile) | **Slow** | ❌ |
 | `linux-arm64-musl` | publish (zig cross-compile) | Slow | ❌ |
 | `linux-arm64-gnu`  | publish (zig cross-compile) | Slow | ❌ |
-| `android-arm-eabi` | create-farm only | Fast | ❌ |
-| `linux-arm-gnueabihf` | create-farm only | Slow | ❌ |
-| `android-arm64`    | create-farm only | Fast | ❌ |
-| `freebsd-x64`      | create-farm only (cross-compiled inside a VM) | **Very slow** | ❌ |
 
 **Key observation:** `examples-test` and `ts-test` only need the artifacts for
-three ABIs (`linux-x64-gnu`, `darwin-arm64`, `win32-x64-msvc`), yet they wait
-for all 12+ ABIs to finish building.
+three ABIs (`linux-x64-gnu`, `darwin-arm64`, `win32-x64-msvc`), so the release-only
+ABI builds run in a separate reusable workflow.
 
 ### 1.3 Rust Compile Cache — Current Behavior
 
@@ -156,12 +152,7 @@ jobs:
           - { abi: win32-arm64-msvc, ... }
           - { abi: linux-arm64-musl, ... }
           - { abi: linux-arm64-gnu,  ... }
-          - { abi: android-arm-eabi, cli_only: true, ... }
-          - { abi: linux-arm-gnueabihf, cli_only: true, ... }
-          - { abi: android-arm64, cli_only: true, ... }
     steps: [ ... same as today's build job ... ]
-
-  build-freebsd: { ... unchanged ... }
 ```
 
 `ci.yaml` would then declare:

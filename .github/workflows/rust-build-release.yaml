@@ -43,19 +43,6 @@ jobs:
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true
-          - os: ubuntu-latest
-            abi: android-arm-eabi
-            target: armv7-linux-androideabi
-            cli_only: true
-          - os: ubuntu-latest
-            abi: linux-arm-gnueabihf
-            target: armv7-unknown-linux-gnueabihf
-            cli_only: true
-            zig: true
-          - os: ubuntu-latest
-            abi: android-arm64
-            target: aarch64-linux-android
-            cli_only: true
     steps:
       - uses: actions/checkout@v4
       - name: Cache rust artifacts
@@ -113,7 +100,6 @@ jobs:
             -e FARM_BUILD_ABI=${{ matrix.settings.abi }}
             -e FARM_BUILD_TARGET=${{ matrix.settings.target || '' }}
             -e FARM_BUILD_ZIG=${{ matrix.settings.zig || false }}
-            -e FARM_BUILD_CLI_ONLY=${{ matrix.settings.cli_only || false }}
             -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git
             -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry
             -v ${{ github.workspace }}:/build
@@ -128,12 +114,7 @@ jobs:
           FARM_BUILD_ABI: ${{ matrix.settings.abi }}
           FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
           FARM_BUILD_ZIG: ${{ matrix.settings.zig || false }}
-          FARM_BUILD_CLI_ONLY: ${{ matrix.settings.cli_only || false }}
-      - name: LS Create Farm Rust
-        if: ${{ matrix.settings.cli_only }}
-        run: ls -la ./packages/create-farm/
       - name: Upload Core
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -144,115 +125,96 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm/create-farm.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Replace Dirname
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
           path: rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Sass
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Auto Import
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
           path: rust-plugins/auto-import/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Compress
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
           path: rust-plugins/compress/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Dsv
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
           path: rust-plugins/dsv/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Dts
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
           path: rust-plugins/dts/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Icons
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
           path: rust-plugins/icons/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Image
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
           path: rust-plugins/image/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Mdx
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
           path: rust-plugins/mdx/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Modular Import
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
           path: rust-plugins/modular-import/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin React Components
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
           path: rust-plugins/react-components/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Strip
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
           path: rust-plugins/strip/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Svgr
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
           path: rust-plugins/svgr/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Url
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
           path: rust-plugins/url/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Virtual
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
           path: rust-plugins/virtual/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Wasm
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
           path: rust-plugins/wasm/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Worker
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
           path: rust-plugins/worker/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Yaml
-        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml

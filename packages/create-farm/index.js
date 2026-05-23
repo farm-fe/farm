@@ -70,32 +70,6 @@ function requireNative() {
     } catch (err) {
       loadErrors.push(err)
     }
-  } else if (process.platform === 'android') {
-    if (process.arch === 'arm64') {
-      try {
-        return require('./create-farm.android-arm64.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-android-arm64')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else if (process.arch === 'arm') {
-      try {
-        return require('./create-farm.android-arm-eabi.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-android-arm-eabi')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else {
-      loadErrors.push(new Error(`Unsupported architecture on Android ${process.arch}`))
-    }
   } else if (process.platform === 'win32') {
     if (process.arch === 'x64') {
       try {
@@ -218,115 +192,8 @@ function requireNative() {
           loadErrors.push(e)
         }
       }
-    } else if (process.arch === 'arm') {
-      if (isMusl()) {
-        try {
-          return require('./create-farm.linux-arm-musleabihf.node')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-        try {
-          return require('create-farm-linux-arm-musleabihf')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-      } else {
-        try {
-          return require('./create-farm.linux-arm-gnueabihf.node')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-        try {
-          return require('create-farm-linux-arm-gnueabihf')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-      }
-    } else if (process.arch === 'riscv64') {
-      if (isMusl()) {
-        try {
-          return require('./create-farm.linux-riscv64-musl.node')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-        try {
-          return require('create-farm-linux-riscv64-musl')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-      } else {
-        try {
-          return require('./create-farm.linux-riscv64-gnu.node')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-        try {
-          return require('create-farm-linux-riscv64-gnu')
-        } catch (e) {
-          loadErrors.push(e)
-        }
-      }
-    } else if (process.arch === 'ppc64') {
-      try {
-        return require('./create-farm.linux-ppc64-gnu.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-linux-ppc64-gnu')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else if (process.arch === 's390x') {
-      try {
-        return require('./create-farm.linux-s390x-gnu.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-linux-s390x-gnu')
-      } catch (e) {
-        loadErrors.push(e)
-      }
     } else {
       loadErrors.push(new Error(`Unsupported architecture on Linux: ${process.arch}`))
-    }
-  } else if (process.platform === 'openharmony') {
-    if (process.arch === 'arm64') {
-      try {
-        return require('./create-farm.linux-arm64-ohos.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-linux-arm64-ohos')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else if (process.arch === 'x64') {
-      try {
-        return require('./create-farm.linux-x64-ohos.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-linux-x64-ohos')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else if (process.arch === 'arm') {
-      try {
-        return require('./create-farm.linux-arm-ohos.node')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-      try {
-        return require('create-farm-linux-arm-ohos')
-      } catch (e) {
-        loadErrors.push(e)
-      }
-    } else {
-      loadErrors.push(new Error(`Unsupported architecture on OpenHarmony: ${process.arch}`))
     }
   } else {
     loadErrors.push(new Error(`Unsupported OS: ${process.platform}, architecture: ${process.arch}`))
