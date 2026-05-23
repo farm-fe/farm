@@ -7,6 +7,9 @@ on:
         type: string
         default: ci
 
+permissions:
+  contents: read
+
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
