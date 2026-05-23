@@ -96,19 +96,19 @@ mod tests {
     n1.write_single_cache(("name1", "hash").into(), data.clone())
       .unwrap();
 
-    assert_eq!(n1.has_cache("name1"), true);
+    assert!(n1.has_cache("name1"));
     assert_eq!(n1.read_cache("name1").unwrap(), data);
 
-    assert_eq!(n2.has_cache("name1"), false);
+    assert!(!n2.has_cache("name1"));
     assert_eq!(n2.read_cache("name1"), None);
 
     n2.write_single_cache(("name2", "hash").into(), data.clone())
       .unwrap();
 
-    assert_eq!(n2.has_cache("name2"), true);
+    assert!(n2.has_cache("name2"));
     assert_eq!(n2.read_cache("name2").unwrap(), data);
 
-    assert_eq!(store.has_cache("n1|name1"), true);
-    assert_eq!(store.has_cache("n2|name2"), true);
+    assert!(store.has_cache("n1|name1"));
+    assert!(store.has_cache("n2|name2"));
   }
 }

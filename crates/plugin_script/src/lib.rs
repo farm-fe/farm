@@ -307,6 +307,7 @@ impl Plugin for FarmPluginScript {
           .collect::<Vec<_>>();
 
         // add @farm-runtime/module-system and @farm-runtime/module-helper as dependency of cjs modules
+        let has_cjs_modules = !cjs_module_ids.is_empty();
         for cjs_module_id in cjs_module_ids {
           let mut add_edge_item = |dep_id: &ModuleId, source: String, order: usize| {
             module_graph
@@ -332,6 +333,23 @@ impl Plugin for FarmPluginScript {
             FARM_RUNTIME_MODULE_HELPER_ID.to_string(),
             1,
           );
+        }
+
+        // For DynamicEntry resource pots (e.g. web workers) containing CJS modules,
+        // add the runtime module-system and module-helper directly to this resource pot
+        // so they are inlined by concatenate_modules_ast instead of left as unresolvable
+        // Farm-internal ".farm-runtime" external imports (which are not valid URLs in workers).
+        if has_cjs_modules {
+          let resource_pot_id = resource_pot.id.clone();
+          for runtime_id_str in [FARM_RUNTIME_MODULE_SYSTEM_ID, FARM_RUNTIME_MODULE_HELPER_ID] {
+            let runtime_id: ModuleId = runtime_id_str.into();
+            if !resource_pot.modules.contains(&runtime_id) {
+              resource_pot.add_module(runtime_id.clone());
+              if let Some(m) = module_graph.module_mut(&runtime_id) {
+                m.resource_pots.insert(resource_pot_id.clone());
+              }
+            }
+          }
         }
 
         module_graph

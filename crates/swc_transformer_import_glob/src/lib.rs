@@ -854,13 +854,17 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
                     })) => {
                       let k = match key {
                         swc_ecma_ast::PropName::Ident(i) => Some(i.sym.to_string()),
-                        swc_ecma_ast::PropName::Str(str) => Some(str.value.to_string_lossy().into_owned()),
+                        swc_ecma_ast::PropName::Str(str) => {
+                          Some(str.value.to_string_lossy().into_owned())
+                        }
                         swc_ecma_ast::PropName::Num(_)
                         | swc_ecma_ast::PropName::Computed(_)
                         | swc_ecma_ast::PropName::BigInt(_) => None,
                       };
                       let v = match value {
-                        box Expr::Lit(Lit::Str(str)) => Some(str.value.to_string_lossy().into_owned()),
+                        box Expr::Lit(Lit::Str(str)) => {
+                          Some(str.value.to_string_lossy().into_owned())
+                        }
                         box Expr::Lit(Lit::Bool(b)) => Some(if b.value {
                           "true".to_string()
                         } else {

@@ -1,0 +1,24 @@
+{
+  "name": "@farmfe-examples/rust-plugin-auto-import-vue",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "@vueuse/core": "^11.0.3",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-visualizer": "workspace:*",
+    "@farmfe/plugin-auto-import": "workspace:*",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "core-js": "^3.30.1"
+  }
+}

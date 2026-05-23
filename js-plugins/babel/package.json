@@ -1,0 +1,58 @@
+{
+  "name": "@farmfe/js-plugin-babel",
+  "version": "0.0.3",
+  "description": "",
+  "scripts": {
+    "build": "npm run build:cjs",
+    "build:cjs": "cross-env FARM_FORMAT=cjs farm build",
+    "dev": "npm run build:cjs -- --watch"
+  },
+  "keywords": [
+    "babel",
+    "plugin",
+    "farm",
+    "farmfe",
+    "js",
+    "transform",
+    "bundler",
+    "compiler"
+  ],
+  "author": {
+    "name": "shulandmimi",
+    "email": "sshuang141@163.com",
+    "url": "https://github.com/shulandmimi"
+  },
+  "license": "MIT",
+  "exports": {
+    "require": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "dependencies": {
+    "@babel/core": "^7.26.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-dts": "workspace:*",
+    "@types/babel__core": "^7.20.5",
+    "@types/node": "^22.7.4",
+    "cross-env": "^7.0.3"
+  },
+  "peerDependencies": {
+    "@farmfe/core": "^1.6.0"
+  },
+  "files": [
+    "package.json",
+    "README.md",
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farm-fe/farm.git"
+  },
+  "homepage": "https://github.com/farm-fe/farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  }
+}

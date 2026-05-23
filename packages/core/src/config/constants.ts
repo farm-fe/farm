@@ -89,7 +89,6 @@ export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
   output: {
     path: './dist'
   },
-  sourcemap: true,
   resolve: {
     extensions: [
       'tsx',

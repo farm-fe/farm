@@ -151,7 +151,7 @@ fn test_generate_and_diff_resource_pots() {
 
   impl PartialOrd for GroupResourcePotsSnapshotItem {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-      self.id.partial_cmp(&other.id)
+      Some(self.cmp(other))
     }
   }
   impl Ord for GroupResourcePotsSnapshotItem {
@@ -196,7 +196,7 @@ fn test_generate_and_diff_resource_pots() {
   }
   impl PartialOrd for ModuleResourcePotSnapshotItem {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-      self.id.partial_cmp(&other.id)
+      Some(self.cmp(other))
     }
   }
   impl Ord for ModuleResourcePotSnapshotItem {

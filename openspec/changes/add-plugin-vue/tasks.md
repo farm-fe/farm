@@ -2,42 +2,44 @@
 
 Implementation tasks for shipping `@farmfe/plugin-vue` Phase A and tracking Phase B follow-ups. Tasks are grouped so each group is independently committable.
 
+Regenerated after merging `origin/main`: conflicts in `Cargo.lock` and `.github/workflows/{ci,release,rust-build}.yaml` were resolved by preserving main's versions. The plugin implementation, docs, changeset, and OpenSpec artifacts remain on this branch; workflow integration remains listed until it is reapplied on top of main's current CI layout.
+
 ## Phase A — v0 (ships in the initial PR)
 
 ### 1. Crate scaffold
 
-- [ ] 1.1. Create `rust-plugins/vue/` by copying the layout of `rust-plugins/react/` (Cargo.toml, package.json, index.js, func.js, index.d.ts, rustfmt.toml, `npm/<abi>/` placeholders).
-- [ ] 1.2. Rewrite the copied package metadata: crate name `farmfe_plugin_vue`, npm package `@farmfe/plugin-vue`, version `0.0.1`, binary name `farm-plugin-vue`, `build:publish` script targeting `farmfe_plugin_vue`.
-- [ ] 1.3. Rename each `npm/<abi>/package.json` to `@farmfe/plugin-vue-<abi>` and update each `README.md` to reference `@farmfe/plugin-vue`.
-- [ ] 1.4. Correct `libc` field to `["musl"]` in `npm/linux-x64-musl/package.json` and `npm/linux-arm64-musl/package.json` (the react copy has `["glibc"]`).
-- [ ] 1.5. Remove ABI directories Farm doesn't publish (`android-arm-eabi`, `android-arm64`, `linux-arm-gnueabihf`).
+- [x] 1.1. Create `rust-plugins/vue/` by copying the layout of `rust-plugins/react/` (Cargo.toml, package.json, index.js, func.js, index.d.ts, rustfmt.toml, `npm/<abi>/` placeholders).
+- [x] 1.2. Rewrite the copied package metadata: crate name `farmfe_plugin_vue`, npm package `@farmfe/plugin-vue`, version `0.0.1`, binary name `farm-plugin-vue`, `build:publish` script targeting `farmfe_plugin_vue`.
+- [x] 1.3. Rename each `npm/<abi>/package.json` to `@farmfe/plugin-vue-<abi>` and update each `README.md` to reference `@farmfe/plugin-vue`.
+- [x] 1.4. Correct `libc` field to `["musl"]` in `npm/linux-x64-musl/package.json` and `npm/linux-arm64-musl/package.json` (the react copy has `["glibc"]`).
+- [x] 1.5. Remove ABI directories Farm doesn't publish (`android-arm-eabi`, `android-arm64`, `linux-arm-gnueabihf`).
 
 ### 2. Dependencies
 
-- [ ] 2.1. Add the `fervid` crate as a dependency. Start with `fervid = "0.2"`; if it fails to build against current `serde` (transitive `swc_common 0.33.x` references `serde::__private`), pin to a known-good git rev (`phoenix-ru/fervid@<sha>`) and add a note in `Cargo.toml`.
-- [ ] 2.2. Add `serde`, `regex`, `fxhash` to `[dependencies]`. Re-use workspace `farmfe_core`, `farmfe_macro_plugin`, `farmfe_toolkit_plugin_types` via relative path deps to match the other rust-plugins.
-- [ ] 2.3. Run `cargo gh-advisory-database` on the new dependencies; no known advisories.
+- [x] 2.1. Add the `fervid` crate as a dependency. Start with `fervid = "0.2"`; if it fails to build against current `serde` (transitive `swc_common 0.33.x` references `serde::__private`), pin to a known-good git rev (`phoenix-ru/fervid@<sha>`) and add a note in `Cargo.toml`.
+- [x] 2.2. Add `serde`, `regex`, `fxhash` to `[dependencies]`. Re-use workspace `farmfe_core`, `farmfe_macro_plugin`, `farmfe_toolkit_plugin_types` via relative path deps to match the other rust-plugins.
+- [x] 2.3. Run `cargo gh-advisory-database` on the new dependencies; no known advisories.
 
 ### 3. Rust source
 
-- [ ] 3.1. `src/consts.rs` — query-key, module-type and default-pattern constants (`vue`, `.ce.vue`, `\.vue$`, `\.ce\.vue$`).
-- [ ] 3.2. `src/options.rs` — `VuePluginOptions` (and nested `VueFeaturesOptions`) deserialised from a JSON string with `serde(default, rename_all = "camelCase")`. Pattern fields accept `string | { source, flags? } | (string|object)[]`.
-- [ ] 3.3. `src/filter.rs` — `Filter` and `CustomElementFilter` compiled from `Option<PatternList>`. Default include `\.vue$`, default custom-element `\.ce\.vue$`. `matches(path)` semantics match Vite's `createFilter`.
-- [ ] 3.4. `src/styles.rs` — `StyleRegistry` (`Mutex<FxHashMap<String, StyleEntry>>`), `style_virtual_id(module_id, idx, lang, scoped)`, `lang_to_module_type(lang)` (CSS → `ModuleType::Css`, other → `ModuleType::Custom(lang)`).
-- [ ] 3.5. `src/lib.rs` — `FarmPluginVue` declared via `farm_plugin!` macro. Constructor parses options from the forwarded JSON string. Implements `config`, `load`, `transform`. `priority()` returns `101` so we win against generic loaders.
-- [ ] 3.6. `transform` hook calls `fervid::compile(...)`, registers each emitted style block under its virtual id, prepends `import "<resolved>?vue&type=style&idx=…&lang=…&scoped=…";` to the returned code, and appends `__file = "<path>"` in development.
-- [ ] 3.7. `config` hook inserts `__VUE_OPTIONS_API__`/`__VUE_PROD_DEVTOOLS__`/`__VUE_PROD_HYDRATION_MISMATCH_DETAILS__` into `compilation.define` only if absent; pushes `vue` into `resolve.dedupe` when not targeting Node.
+- [x] 3.1. `src/consts.rs` — query-key, module-type and default-pattern constants (`vue`, `.ce.vue`, `\.vue$`, `\.ce\.vue$`).
+- [x] 3.2. `src/options.rs` — `VuePluginOptions` (and nested `VueFeaturesOptions`) deserialised from a JSON string with `serde(default, rename_all = "camelCase")`. Pattern fields accept `string | { source, flags? } | (string|object)[]`.
+- [x] 3.3. `src/filter.rs` — `Filter` and `CustomElementFilter` compiled from `Option<PatternList>`. Default include `\.vue$`, default custom-element `\.ce\.vue$`. `matches(path)` semantics match Vite's `createFilter`.
+- [x] 3.4. `src/styles.rs` — `StyleRegistry` (`Mutex<FxHashMap<String, StyleEntry>>`), `style_virtual_id(module_id, idx, lang, scoped)`, `lang_to_module_type(lang)` (CSS → `ModuleType::Css`, other → `ModuleType::Custom(lang)`).
+- [x] 3.5. `src/lib.rs` — `FarmPluginVue` declared via `farm_plugin!` macro. Constructor parses options from the forwarded JSON string. Implements `config`, `load`, `transform`. `priority()` returns `101` so we win against generic loaders.
+- [x] 3.6. `transform` hook calls `fervid::compile(...)`, registers each emitted style block under its virtual id, prepends `import "<resolved>?vue&type=style&idx=…&lang=…&scoped=…";` to the returned code, and appends `__file = "<path>"` in development.
+- [x] 3.7. `config` hook inserts `__VUE_OPTIONS_API__`/`__VUE_PROD_DEVTOOLS__`/`__VUE_PROD_HYDRATION_MISMATCH_DETAILS__` into `compilation.define` only if absent; pushes `vue` into `resolve.dedupe` when not targeting Node.
 
 ### 4. JS surface
 
-- [ ] 4.1. `index.js` — same platform-binary resolver shape as `rust-plugins/react/index.js`, retargeted to `farm-plugin-vue` and `@farmfe/plugin-vue`.
-- [ ] 4.2. `func.js` — `(options) => [binPath, options]`. Farm's `rustPluginResolver` does the JSON.stringify, so we pass the raw object through.
-- [ ] 4.3. `index.d.ts` — typed `VuePluginOptions` and `VueFeaturesOptions` interfaces with JSDoc explaining each field and its default.
+- [x] 4.1. `index.js` — same platform-binary resolver shape as `rust-plugins/react/index.js`, retargeted to `farm-plugin-vue` and `@farmfe/plugin-vue`.
+- [x] 4.2. `func.js` — `(options) => [binPath, options]`. Farm's `rustPluginResolver` does the JSON.stringify, so we pass the raw object through.
+- [x] 4.3. `index.d.ts` — typed `VuePluginOptions` and `VueFeaturesOptions` interfaces with JSDoc explaining each field and its default.
 
 ### 5. Tests
 
-- [ ] 5.1. `tests/fixtures/` — `basic.vue`, `script-setup.vue`, `scoped-style.vue`, `css-vars.vue`, `custom-element.ce.vue`, `scss-style.vue`.
-- [ ] 5.2. `tests/mod.rs` — hook-level integration suite covering at minimum:
+- [x] 5.1. `tests/fixtures/` — `basic.vue`, `script-setup.vue`, `scoped-style.vue`, `css-vars.vue`, `custom-element.ce.vue`, `scss-style.vue`.
+- [x] 5.2. `tests/mod.rs` — hook-level integration suite covering at minimum:
   - non-vue paths return `None` from `load`;
   - basic `.vue` is loaded as `ModuleType::Custom("vue")` and transformed to `Some(ModuleType::Ts)`;
   - scoped style block registers and `load` returns it as `ModuleType::Css`;
@@ -50,19 +52,19 @@ Implementation tasks for shipping `@farmfe/plugin-vue` Phase A and tracking Phas
 
 ### 6. CI / release wiring
 
-- [ ] 6.1. `.github/workflows/rust-build.yaml` — add plugin-vue to the `npm run build` chain in the multi-target build step; add an `actions/upload-artifact` for `rust-plugins/vue/npm/${{ matrix.settings.abi }}/index.farm` under the name `${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue`.
-- [ ] 6.2. `.github/workflows/ci.yaml` — add a `download-plugin-vue` artifact step in both the rust-plugin compile matrix and the per-abi test job, downloading into `./rust-plugins/vue/npm/${{ matrix.settings.abi }}`. Add `plugin-vue` to the rust-plugins compile matrix list.
-- [ ] 6.3. `.github/workflows/release.yaml` — extend the artifact-move and `test -f` existence checks to cover `./rust-plugins/vue/npm/${abi}/index.farm`.
+- [ ] 6.1. `.github/workflows/rust-build.yaml` — add plugin-vue to the `npm run build` chain in the multi-target build step; add an `actions/upload-artifact` for `rust-plugins/vue/npm/${{ matrix.settings.abi }}/index.farm` under the name `${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue`. Deferred after preserving main's workflow version during the merge.
+- [ ] 6.2. `.github/workflows/ci.yaml` — add a `download-plugin-vue` artifact step in both the rust-plugin compile matrix and the per-abi test job, downloading into `./rust-plugins/vue/npm/${{ matrix.settings.abi }}`. Add `plugin-vue` to the rust-plugins compile matrix list. Deferred after preserving main's workflow version during the merge.
+- [ ] 6.3. `.github/workflows/release.yaml` — extend the artifact-move and `test -f` existence checks to cover `./rust-plugins/vue/npm/${abi}/index.farm`. Deferred after preserving main's workflow version during the merge.
 
 ### 7. Docs
 
-- [ ] 7.1. Create `website/docs/plugins/official-plugins/vue.mdx`: installation tabs, basic usage, full options table, define-flag behaviour, style sub-block id format, Phase A / Phase B feature matrix, fervid stability caveat.
-- [ ] 7.2. Add the new page to `website/sidebars.js` (under "Rust Plugins", between `react` and `sass`).
-- [ ] 7.3. Add a bullet to `website/docs/plugins/official-plugins/overview.md`'s "Rust Plugins" list.
+- [x] 7.1. Create `website/docs/plugins/official-plugins/vue.mdx`: installation tabs, basic usage, full options table, define-flag behaviour, style sub-block id format, Phase A / Phase B feature matrix, fervid stability caveat.
+- [x] 7.2. Add the new page to `website/sidebars.js` (under "Rust Plugins", between `react` and `sass`).
+- [x] 7.3. Add a bullet to `website/docs/plugins/official-plugins/overview.md`'s "Rust Plugins" list.
 
 ### 8. Changeset & validation
 
-- [ ] 8.1. Add `.changeset/farm-plugin-vue.md` declaring a `minor` bump for `@farmfe/plugin-vue` with a one-paragraph description.
+- [x] 8.1. Add `.changeset/farm-plugin-vue.md` declaring a `minor` bump for `@farmfe/plugin-vue` with a one-paragraph description.
 - [ ] 8.2. Run `cargo fmt -p farmfe_plugin_vue --check`, `cargo clippy --no-deps -p farmfe_plugin_vue --all-targets`, and `cargo test -p farmfe_plugin_vue`. All must be green.
 - [ ] 8.3. Run the `parallel_validation` tool to get a code review and CodeQL pass, then address any actionable findings.
 
