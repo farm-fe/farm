@@ -212,6 +212,10 @@ Two practical landing options:
   - We do not have to relocate the test jobs out of `ci.yaml`.
   - The two reusable workflows form a natural environment boundary for future
     refinement (e.g. a dedicated fast `linux-x64-gnu` path).
+  - The split workflows must use distinct concurrency groups; reusable workflows
+    can inherit the caller workflow name in `${{ github.workflow }}`, so hardcode
+    a `rust-build-user-*` / `rust-build-release-*` prefix to avoid one split
+    cancelling the other.
 
 #### Option B: Keep a single reusable workflow and reorder the matrix
 
