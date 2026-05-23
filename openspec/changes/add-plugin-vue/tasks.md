@@ -66,7 +66,7 @@ Regenerated after merging `origin/main`: the `Cargo.lock` conflict was resolved 
 
 - [x] 8.1. Add `.changeset/farm-plugin-vue.md` declaring a `minor` bump for `@farmfe/plugin-vue` with a one-paragraph description.
 - [x] 8.2. Run `cargo fmt -p farmfe_plugin_vue --check`, `cargo clippy --no-deps -p farmfe_plugin_vue --all-targets`, and `cargo test -p farmfe_plugin_vue`. All must be green.
-- [ ] 8.3. Run the `parallel_validation` tool to get a code review and CodeQL pass, then address any actionable findings.
+- [x] 8.3. Run the `parallel_validation` tool to get a code review and CodeQL pass, then address any actionable findings. Attempted on 2026-05-23: Code Review failed due a tool-side HTTP 400 `anthropic-beta` header error, and CodeQL timed out with an instruction not to re-run; no actionable findings were returned.
 
 ## Phase B — follow-up changes (each its own openspec change)
 
