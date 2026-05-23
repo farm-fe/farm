@@ -266,7 +266,8 @@ impl Theme for ColorfulTheme {
         f,
         "{} {}",
         self.active_item_prefix,
-        self.active_item_style.apply_to(&format!("{}{}", 
+        self.active_item_style.apply_to(&format!(
+          "{}{}",
           text.trim(),
           if !desc.is_empty() {
             format!(" - {}", desc.trim())

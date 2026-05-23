@@ -46,6 +46,11 @@ import { genFileTree } from '../../utils/file';
 import FileTree from '../../components/FileTree.vue';
 import CodeViewer from '../../components/CodeViewer.vue';
 
+type BufferLikePayload = {
+  type?: string;
+  data?: number[];
+};
+
 export default defineComponent({
   name: 'BundleAnalyze',
   components: { Card, Tree, ResourcePots, FileTree, CodeViewer, Drawer },
@@ -66,13 +71,30 @@ export default defineComponent({
       return genFileTree(moduleIds);
     });
 
+    function normalizeViewerCode(code: unknown) {
+      if (typeof code === 'string') {
+        return code;
+      }
+
+      const bufferLike = code as BufferLikePayload | undefined;
+      if (bufferLike?.type === 'Buffer' && Array.isArray(bufferLike.data)) {
+        return new TextDecoder().decode(new Uint8Array(bufferLike.data));
+      }
+
+      if (code == null) {
+        return '';
+      }
+
+      return JSON.stringify(code, null, 2);
+    }
+
     function handleViewCode(data: {
       name: string;
-      code: string;
+      code: unknown;
       language?: string;
     }) {
       sourceFile.name = data.name;
-      sourceFile.code = data.code;
+      sourceFile.code = normalizeViewerCode(data.code);
       sourceFile.language = data.language || 'javascript';
       isOpened.value = true;
     }

@@ -17,7 +17,7 @@ pub trait CacheStoreTrait: Send + Sync {
   fn shutdown(&self) {}
 }
 
-pub const FARM_CACHE_VERSION: &str = "0.9.0";
+pub const FARM_CACHE_VERSION: &str = "0.9.1";
 pub const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 pub trait CacheStoreFactory: Send + Sync {

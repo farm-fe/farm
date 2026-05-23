@@ -339,12 +339,10 @@ impl Plugin for FarmPluginLibrary {
             .iter()
             .any(|(dep_id, _)| modules_set.contains(dep_id))
         })
-        .unwrap_or(modules.first().expect(
-          &format!(
-            "resource pot {:?} has no modules, cannot determine entry module for rendering",
-            resource_pot.id
-          ),
-        ))
+        .unwrap_or(modules.first().expect(&format!(
+          "resource pot {:?} has no modules, cannot determine entry module for rendering",
+          resource_pot.id
+        )))
         .to_owned()
         .clone()
     };
@@ -372,11 +370,7 @@ impl Plugin for FarmPluginLibrary {
     // Replace import sources for internal modules (modules in other resource pots,
     // not truly external packages) with placeholders. These will be replaced with
     // actual relative paths to the output resource files after resources are generated.
-    replace_internal_import_sources_with_placeholders(
-      &mut ast,
-      &external_modules,
-      &module_graph,
-    );
+    replace_internal_import_sources_with_placeholders(&mut ast, &external_modules, &module_graph);
 
     context
       .meta
@@ -467,7 +461,12 @@ fn replace_internal_import_sources_with_placeholders(
         if let Some(module_id) = source_to_internal_module.get(&source) {
           import_decl.src = Box::new(Str {
             span: DUMMY_SP,
-            value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+            value: format!(
+              "{}{}",
+              FARM_BUNDLE_PLACEHOLDER_PREFIX,
+              module_id.to_string()
+            )
+            .into(),
             raw: None,
           });
         }
@@ -478,7 +477,12 @@ fn replace_internal_import_sources_with_placeholders(
           if let Some(module_id) = source_to_internal_module.get(&source) {
             *src = Box::new(Str {
               span: DUMMY_SP,
-              value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+              value: format!(
+                "{}{}",
+                FARM_BUNDLE_PLACEHOLDER_PREFIX,
+                module_id.to_string()
+              )
+              .into(),
               raw: None,
             });
           }
@@ -489,7 +493,12 @@ fn replace_internal_import_sources_with_placeholders(
         if let Some(module_id) = source_to_internal_module.get(&source) {
           export_all.src = Box::new(Str {
             span: DUMMY_SP,
-            value: format!("{}{}", FARM_BUNDLE_PLACEHOLDER_PREFIX, module_id.to_string()).into(),
+            value: format!(
+              "{}{}",
+              FARM_BUNDLE_PLACEHOLDER_PREFIX,
+              module_id.to_string()
+            )
+            .into(),
             raw: None,
           });
         }

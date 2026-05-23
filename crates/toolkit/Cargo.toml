@@ -21,37 +21,37 @@ documentation = "https://docs.rs/farmfe_toolkit"
 farmfe_core = { path = "../core", version = "2.1.0" }
 farmfe_utils = { path = "../utils", version = "2.1.0" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
-swc_ecma_parser = { version = "39.0.2" }
-swc_ecma_visit = { version = "23.0.0" }
-swc_ecma_codegen = { version = "26.0.1" }
-swc_typescript = { version = "28.0.0" }
-swc_ecma_transforms = { version = "52.0.0", features = [
+swc_ecma_parser = { workspace = true }
+swc_ecma_visit = { workspace = true }
+swc_ecma_codegen = { workspace = true }
+swc_typescript = { workspace = true }
+swc_ecma_transforms = { workspace = true, features = [
   "module",
   "typescript",
   "react",
   "concurrent",
 ] }
-swc_ecma_preset_env = { version = "53.0.0" }
+swc_ecma_preset_env = { workspace = true }
 preset_env_base = { version = "7.0.0" }
-swc_css_parser = { version = "21.0.0" }
-swc_css_visit = { version = "21.0.0" }
-swc_css_codegen = { version = "21.0.0" }
-swc_css_minifier = { version = "21.0.0" }
-swc_css_modules = { version = "21.0.0" }
-swc_css_prefixer = { version = "25.0.0" }
-swc_html_parser = { version = "21.0.0" }
-swc_html_visit = { version = "21.0.0" }
-swc_html_codegen = { version = "22.0.0" }
-swc_html_minifier = { version = "52.0.0" }
-swc_error_reporters = { version = "23.0.0" }
-swc_atoms = { version = "9.0.0" }
-swc_ecma_transforms_base = { version = "42.0.0", features = [
+swc_css_parser = { workspace = true }
+swc_css_visit = { workspace = true }
+swc_css_codegen = { workspace = true }
+swc_css_minifier = { workspace = true }
+swc_css_modules = { workspace = true }
+swc_css_prefixer = { workspace = true }
+swc_html_parser = { workspace = true }
+swc_html_visit = { workspace = true }
+swc_html_codegen = { workspace = true }
+swc_html_minifier = { workspace = true }
+swc_error_reporters = { workspace = true }
+swc_atoms = { workspace = true }
+swc_ecma_transforms_base = { workspace = true, features = [
   "concurrent",
   "inline-helpers",
 ] }
-swc_ecma_minifier = { version = "52.0.4", features = ["concurrent"] }
-swc_ecma_utils = { version = "29.1.0", features = ["concurrent"] }
-swc_sourcemap = "10.0.2"
+swc_ecma_minifier = { workspace = true, features = ["concurrent"] }
+swc_ecma_utils = { workspace = true, features = ["concurrent"] }
+swc_sourcemap = { workspace = true }
 anyhow = { version = "1.0.90", features = ["backtrace"] }
 itertools = "0.14.0"
 par-core = { version = "2.0.0", features = ["chili"] }

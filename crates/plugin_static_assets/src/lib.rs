@@ -263,11 +263,6 @@ impl Plugin for FarmPluginStaticAssets {
           }
         };
 
-        println!(
-          "transform asset: {} {resource_name} {assets_path}",
-          param.module_id
-        );
-
         context.emit_file(EmitFileParams {
           resolved_path: param.module_id.clone(),
           name: resource_name,

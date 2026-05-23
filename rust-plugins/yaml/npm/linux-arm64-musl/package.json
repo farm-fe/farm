@@ -1,0 +1,21 @@
+{
+  "name": "@farmfe/plugin-yaml-linux-arm64-musl",
+  "version": "0.0.2",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "index.farm",
+  "files": [
+    "index.farm"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "libc": [
+    "glibc"
+  ]
+}
