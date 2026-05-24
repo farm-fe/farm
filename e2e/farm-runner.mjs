@@ -17,6 +17,8 @@ const E2E_PORT_BASE = 41_000;
 const E2E_WORKER_PORT_BLOCK_SIZE = 200;
 const E2E_RETRY_PORT_BLOCK_SIZE = 20;
 const E2E_PORT_CANDIDATE_COUNT = 10;
+const E2E_TIMEOUT_MS = 120_000;
+const E2E_TIMEOUT_SECONDS = E2E_TIMEOUT_MS / 1000;
 const FARM_CONFIG_FILES = [
   'farm.config.ts',
   'farm.config.mts',
@@ -380,7 +382,7 @@ async function startAndTestOnce(examplePath, cb, command, attempt) {
     detached: process.platform !== 'win32',
     stdin: 'pipe',
     encoding: 'utf8',
-    timeout: 120_000, // 2-minute timeout for dev server startup
+    timeout: E2E_TIMEOUT_MS,
     env: {
       ...process.env,
       BROWSER: 'none',
@@ -412,10 +414,10 @@ async function startAndTestOnce(examplePath, cb, command, attempt) {
       if (!settled) {
         settled = true;
         terminateChildProcess(child).finally(() => {
-          reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after 20s`));
+          reject(new Error(`Timeout waiting for dev server URL in ${examplePath} (${command}) after ${E2E_TIMEOUT_SECONDS}s`));
         });
       }
-    }, 20_000);
+    }, E2E_TIMEOUT_MS);
 
     child.stdout?.on('data', (chunk) => {
       handleOutput(chunk);
@@ -554,9 +556,9 @@ export async function watchAndTest(examplePath, cb, command = 'start') {
       if (settled) return;
       settled = true;
       terminateChildProcess(child).finally(() => {
-        reject(new Error(`Watch test timed out after 60 s in ${examplePath}`));
+        reject(new Error(`Watch test timed out after ${E2E_TIMEOUT_SECONDS} s in ${examplePath}`));
       });
-    }, 60_000);
+    }, E2E_TIMEOUT_MS);
 
     child.stdout?.on('data', async (chunk) => {
       output += chunk.toString();
