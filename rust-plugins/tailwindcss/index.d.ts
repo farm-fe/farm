@@ -3,7 +3,15 @@ export interface TailwindCSSOptions {
    * Paths or patterns to scan for TailwindCSS candidates.
    */
   content?: string[];
+  /**
+   * JSON-serializable TailwindCSS configuration.
+   *
+   * When omitted, the plugin loads `tailwind.config.js` from the current
+   * working directory if it exists.
+   */
+  config?: Record<string, unknown>;
 }
 
-declare const binPath: (options?: TailwindCSSOptions) => [string, typeof options];
-export default binPath;
+export default function tailwindcss(
+  options?: TailwindCSSOptions
+): [string, TailwindCSSOptions];

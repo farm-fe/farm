@@ -9,6 +9,7 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 let binPath = null;
 
 const require = createRequire(import.meta.url);
+const TAILWIND_CONFIG_FILE = 'tailwind.config.js';
 
 function isMusl() {
   if (!process.report || typeof process.report.getReport !== 'function') {
@@ -135,4 +136,64 @@ switch (platform) {
     throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
-export default binPath;
+function isJsonSerializable(value, seen = new WeakSet()) {
+  if (value == null) {
+    return true;
+  }
+
+  const valueType = typeof value;
+  if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
+    return true;
+  }
+
+  if (valueType !== 'object') {
+    return false;
+  }
+
+  if (seen.has(value)) {
+    return false;
+  }
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value.every((item) => isJsonSerializable(item, seen));
+  }
+
+  return Object.values(value).every((item) => isJsonSerializable(item, seen));
+}
+
+function loadTailwindConfig() {
+  const configPath = join(process.cwd(), TAILWIND_CONFIG_FILE);
+  if (!existsSync(configPath)) {
+    return undefined;
+  }
+
+  const config = require(configPath);
+  const resolvedConfig =
+    config && typeof config === 'object' && 'default' in config
+      ? config.default
+      : config;
+
+  if (!isJsonSerializable(resolvedConfig)) {
+    throw new Error(
+      `@farmfe/plugin-tailwindcss only supports JSON-serializable ${TAILWIND_CONFIG_FILE} exports`
+    );
+  }
+
+  return JSON.parse(JSON.stringify(resolvedConfig));
+}
+
+export default function tailwindcss(options = {}) {
+  const loadedConfig =
+    options.config === undefined ? loadTailwindConfig() : undefined;
+
+  return [
+    binPath,
+    loadedConfig === undefined
+      ? options
+      : {
+          ...options,
+          config: loadedConfig
+        }
+  ];
+}
