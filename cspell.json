@@ -524,6 +524,13 @@
     "Workstream",
     "workstreams",
     "yellowgreen",
+    "addnab",
+    "bitcode",
+    "debuginfo",
+    "sccache",
+    "SCCACHE",
+    "Swatinem",
+    "xwin",
     "xmltree"
   ],
   "ignorePaths": [
