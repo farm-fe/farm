@@ -1,0 +1,80 @@
+{
+  "url": "https://www.arcgis.com/sharing/rest/content/items/9c86eeb5ddac4e6a9f6684539222dfd0?f=json",
+  "status": 200,
+  "data": {
+    "id": "9c86eeb5ddac4e6a9f6684539222dfd0",
+    "owner": "lisa_berry",
+    "orgId": "jIL9msH9OI208GCb",
+    "created": 1513195628000,
+    "modified": 1541610433000,
+    "guid": null,
+    "name": "ACS_Income_2016_5yr",
+    "title": "2016 ACS Household Income Attributes - Tract",
+    "type": "Feature Service",
+    "typeKeywords": [
+      "ArcGIS Server",
+      "Data",
+      "Feature Access",
+      "Feature Service",
+      "Service",
+      "Singlelayer",
+      "Hosted Service"
+    ],
+    "description": "<div>This layer contains census tract centroids with attributes about household income in the past 12 months (in 2016 inflation-adjusted dollars). These are from the American Community Survey (ACS) 2016 5-year estimates. Table B19001. <br /></div><div><br /></div><div>Map is rendered to show the quantity of households within each area. <br /></div><div><br /></div><div>Data downloaded from the US Census <a href='https://factfinder.census.gov/faces/nav/jsf/pages/download_center.xhtml#' target='_blank'>American Fact Finder</a>.<br /></div><div><br /></div><div>The data is provided in the following income ranges. The national figure and margin of error are also provided (also from ACS):</div><div><table border='0' cellpadding='0' cellspacing='0' style='border-collapse:\n collapse;width:303pt' width='403'>\n \n \n \n <tbody><tr height='21' style='height:15.75pt'>\n  <td height='21' style='height:15.75pt;width:143pt' width='190'>Income\n  Ranges</td>\n  <td style='width:80pt' width='106'>National Figure</td>\n  <td style='width:80pt' width='107'>Margin of Error</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt'>Total (USA)</td>\n  <td>117,716,237</td>\n  <td>+/-222,078</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>Less\n  than $10,000</td>\n  <td>8,243,664</td>\n  <td>+/-18,695</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$10,000\n  to $14,999</td>\n  <td>6,000,362</td>\n  <td>+/-20,040</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$15,000\n  to $19,999</td>\n  <td>5,958,713</td>\n  <td>+/-16,104</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$20,000\n  to $24,999</td>\n  <td>6,094,929</td>\n  <td>+/-15,803</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$25,000\n  to $29,999</td>\n  <td>5,771,744</td>\n  <td>+/-15,216</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$30,000\n  to $34,999</td>\n  <td>5,856,803</td>\n  <td>+/-14,451</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$35,000\n  to $39,999</td>\n  <td>5,404,041</td>\n  <td>+/-15,856</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$40,000\n  to $44,999</td>\n  <td>5,408,687</td>\n  <td>+/-15,420</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$45,000\n  to $49,999</td>\n  <td>4,775,997</td>\n  <td>+/-15,271</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$50,000\n  to $59,999</td>\n  <td>9,199,672</td>\n  <td>+/-22,260</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$60,000\n  to $74,999</td>\n  <td>11,714,107</td>\n  <td>+/-31,281</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$75,000\n  to $99,999</td>\n  <td>14,361,853</td>\n  <td>+/-53,518</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$100,000\n  to $124,999</td>\n  <td>9,856,915</td>\n  <td>+/-44,470</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$125,000\n  to $149,999</td>\n  <td>6,028,908</td>\n  <td>+/-33,311</td>\n </tr>\n <tr height='20' style='height:15.0pt'>\n  <td height='20' style='height:15.0pt;width:143pt' width='190'>$150,000\n  to $199,999</td>\n  <td>6,369,156</td>\n  <td>+/-36,256</td>\n </tr>\n <tr height='21' style='height:15.75pt'>\n  <td height='21' style='height:15.75pt;width:143pt' width='190'>$200,000\n  or more</td>\n  <td>6,670,686</td>\n  <td>+/-37,386</td></tr></tbody></table></div>",
+    "tags": [
+      "ACS",
+      "American Community Survey",
+      "Census",
+      "US Census Bureau",
+      "demographics",
+      "income",
+      "wealth",
+      "poverty",
+      "firefly",
+      "firefly cartography"
+    ],
+    "snippet": "US census tract centroids with data from the American Community Survey (ACS) 2016 5-year estimates. Attributes include the count of households within various income ranges for the past 12 months, along with their margin of error.",
+    "thumbnail": "thumbnail/Tract_thumb.jpg",
+    "documentation": null,
+    "extent": [
+      [
+        -171.73333111361262,
+        19.11323578619027
+      ],
+      [
+        -66.99846964311357,
+        71.29674288086012
+      ]
+    ],
+    "categories": [],
+    "spatialReference": "WGS_1984_Web_Mercator_Auxiliary_Sphere",
+    "accessInformation": "U.S. Census Bureau, American Community Survey (ACS)",
+    "classification": null,
+    "licenseInfo": "<img src='http://downloads.esri.com/blogs/arcgisonline/esrilogo_new.png' style='max-width: 100%; height: auto; border: 0px none; font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);' /><span style='font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);'>This work is licensed under the Web Services and API Terms of Use.   </span><br /><span style='font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);'>                               </span><a href='http://links.esri.com/e800-summary' style='color: rgb(33, 117, 155); text-decoration-line: none; font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255); outline: none !important;' target='_blank'>View Summary</a><span style='font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);'>  |  </span><a href='http://links.esri.com/agol_tou' style='color: rgb(33, 117, 155); text-decoration-line: none; font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255); outline: none !important;' target='_blank'>View Terms of Use</a><span style='font-family: Verdana, Helvetica, sans-serif; font-size: 12px; background-color: rgb(255, 255, 255);'> </span>",
+    "culture": "en-us",
+    "properties": null,
+    "advancedSettings": null,
+    "url": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/ACS_Income_2016_5yr/FeatureServer",
+    "proxyFilter": null,
+    "access": "public",
+    "size": 42278912,
+    "subInfo": 0,
+    "appCategories": [],
+    "industries": [],
+    "languages": [],
+    "largeThumbnail": "largethumbnail/Tract_largethumb.jpg",
+    "banner": null,
+    "screenshots": [],
+    "listed": false,
+    "commentsEnabled": true,
+    "numComments": 0,
+    "numRatings": 0,
+    "avgRating": 0,
+    "numViews": 2422630,
+    "scoreCompleteness": 100,
+    "groupDesignations": null,
+    "apiToken1ExpirationDate": -1,
+    "apiToken2ExpirationDate": -1,
+    "lastViewed": 1779580800000
+  }
+}

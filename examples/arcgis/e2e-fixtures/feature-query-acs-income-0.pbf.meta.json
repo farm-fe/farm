@@ -1,0 +1,6 @@
+{
+  "url": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/ACS_Income_2016_5yr/FeatureServer/0/query?f=pbf&geometry=-13227886.366918996%2C4030983.123648988%2C-13188750.608436994%2C4070118.882130988&maxRecordCountFactor=4&resultOffset=0&resultRecordCount=8000&where=1%3D1&orderByFields=OBJECTID&outFields=Estimate_Total%2CEstimate_Total_100000to124999%2CEstimate_Total_10000to14999%2CEstimate_Total_125000to149999%2CEstimate_Total_150000to199999%2CEstimate_Total_15000to19999%2CEstimate_Total_200000ormore%2CEstimate_Total_20000to24999%2CEstimate_Total_25000to29999%2CEstimate_Total_30000to34999%2CEstimate_Total_35000to39999%2CEstimate_Total_40000to44999%2CEstimate_Total_45000to49999%2CEstimate_Total_50000to59999%2CEstimate_Total_60000to74999%2CEstimate_Total_75000to99999%2CEstimate_Total_Lessthan10000%2COBJECTID&quantizationParameters=%7B%22extent%22%3A%7B%22xmin%22%3A-13227886.366918996%2C%22ymin%22%3A4030983.123648988%2C%22xmax%22%3A-13188750.608436994%2C%22ymax%22%3A4070118.882130988%7D%2C%22mode%22%3A%22view%22%2C%22originPosition%22%3A%22upperLeft%22%2C%22tolerance%22%3A76.43702828515632%7D&resultType=tile&spatialRel=esriSpatialRelIntersects&geometryType=esriGeometryEnvelope&defaultSR=102100",
+  "status": 200,
+  "contentType": "application/x-protobuf",
+  "length": 22191
+}
