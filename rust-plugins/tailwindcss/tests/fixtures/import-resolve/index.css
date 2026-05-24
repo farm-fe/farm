@@ -1,0 +1,6 @@
+@import "./links.css";
+
+.wrapper {
+  display: flex;
+  gap: 16px;
+}

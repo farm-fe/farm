@@ -1,0 +1,17 @@
+[package]
+name = "farmfe_ecosystem_tailwindcss_node"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+description = "Rust implementation of @tailwindcss/node compile utilities for Farm."
+
+[dependencies]
+base64 = "0.22"
+farmfe_ecosystem_tailwindcss = { path = "../tailwindcss" }
+lightningcss = { version = "1.0.0-alpha.71", features = ["serde"] }
+regex = "1"
+
+[dev-dependencies]
+farmfe_testing_helpers = { path = "../../crates/testing_helpers" }

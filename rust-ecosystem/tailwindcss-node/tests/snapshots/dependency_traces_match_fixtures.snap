@@ -1,0 +1,25 @@
+---
+source: rust-ecosystem/tailwindcss-node/tests/get_module_dependencies.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+single:
+  tests/fixtures/get_module_dependencies/single/main.js
+
+relative import:
+  tests/fixtures/get_module_dependencies/follows_relative_import/./helper.js
+  tests/fixtures/get_module_dependencies/follows_relative_import/main.js
+
+non relative:
+  tests/fixtures/get_module_dependencies/ignores_non_relative/main.js
+
+circular:
+  tests/fixtures/get_module_dependencies/handles_circular/./b.js
+  tests/fixtures/get_module_dependencies/handles_circular/a.js
+
+no extension:
+  tests/fixtures/get_module_dependencies/resolves_without_extension/./helper.ts
+  tests/fixtures/get_module_dependencies/resolves_without_extension/main.ts
+
+require:
+  tests/fixtures/get_module_dependencies/follows_require/./helper.js
+  tests/fixtures/get_module_dependencies/follows_require/main.js

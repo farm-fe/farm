@@ -2292,6 +2292,37 @@ importers:
         specifier: 4.0.0-alpha.26
         version: 4.0.0-alpha.26
 
+  examples/tailwindcss-rust-plugin:
+    dependencies:
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/plugin-react':
+        specifier: workspace:*
+        version: link:../../rust-plugins/react
+      '@farmfe/plugin-tailwindcss':
+        specifier: workspace:*
+        version: link:../../rust-plugins/tailwindcss
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.2
+
   examples/target-env:
     dependencies:
       clsx:
@@ -3578,6 +3609,12 @@ importers:
         version: link:../../packages/plugin-tools
 
   rust-plugins/svgr:
+    devDependencies:
+      '@farmfe/plugin-tools':
+        specifier: workspace:*
+        version: link:../../packages/plugin-tools
+
+  rust-plugins/tailwindcss:
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*

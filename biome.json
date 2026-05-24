@@ -19,6 +19,7 @@
       "!**/packages/create-farm/templates/**",
       "!**/packages/create-farm-plugin/templates/**",
       "!**/rust-plugins/**",
+      "!**/rust-ecosystem/**/tests/fixtures/**",
       "!**/examples/**",
       "!**/*.{js,mjs,cjs}",
       "!cspell.json",
