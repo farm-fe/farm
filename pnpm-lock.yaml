@@ -3597,28 +3597,6 @@ importers:
         version: link:../../packages/plugin-tools
 
   rust-plugins/sass:
-    optionalDependencies:
-      sass-embedded-darwin-arm64:
-        specifier: 1.62.0
-        version: 1.62.0
-      sass-embedded-darwin-x64:
-        specifier: 1.62.0
-        version: 1.62.0
-      sass-embedded-linux-arm64:
-        specifier: 1.62.0
-        version: 1.62.0
-      sass-embedded-linux-ia32:
-        specifier: 1.62.0
-        version: 1.62.0
-      sass-embedded-linux-x64:
-        specifier: 1.62.0
-        version: 1.62.0
-      sass-embedded-win32-ia32:
-        specifier: 1.62.0
-        version: 1.62.0
-      sass-embedded-win32-x64:
-        specifier: 1.62.0
-        version: 1.62.0
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -20367,12 +20345,6 @@ packages:
     os: [android]
     hasBin: true
 
-  sass-embedded-darwin-arm64@1.62.0:
-    resolution: {integrity: sha512-bYEM6DY7kteOd/aJXUisiavm8B1acRhpIn+rhzKZeTn87kUW5RzZv2nKaSmb1vUd4ZptDGaJ144qz/d20rnogQ==}
-    engines: {node: '>=14.0.0'}
-    cpu: [arm64]
-    os: [darwin]
-
   sass-embedded-darwin-arm64@1.74.1:
     resolution: {integrity: sha512-DyYmU8qQ7QGGB0RvPUabOsU5YxGxdZd6X3IwyM6KIqziPtjrafoBtcMuWK9o3jg3NE9tL4SUlDezo8VJ87lJ/g==}
     engines: {node: '>=14.0.0'}
@@ -20380,24 +20352,12 @@ packages:
     os: [darwin]
     hasBin: true
 
-  sass-embedded-darwin-x64@1.62.0:
-    resolution: {integrity: sha512-2sBQ4uWjZbf8TKXF8Aq7N0p5V2tKUr4zX9gQAiKvm1NBYwsW22+m8D34heOWu50ikpIxebvt7i/z7hafH5kzKg==}
-    engines: {node: '>=14.0.0'}
-    cpu: [x64]
-    os: [darwin]
-
   sass-embedded-darwin-x64@1.74.1:
     resolution: {integrity: sha512-SO3VbGaa/zGzuibiNocSScnS9VZxFY6lULZMfkS6+Sgd3YQgnbvKLaMmfb6kUnETA11rO7jVOTfoNHPtG8n9NA==}
     engines: {node: '>=14.0.0'}
     cpu: [x64]
     os: [darwin]
     hasBin: true
-
-  sass-embedded-linux-arm64@1.62.0:
-    resolution: {integrity: sha512-FexUt8aE7I7fJub3N6+NsDdbPRP/O8o400qpbEbY7BWgiWEdpr81OBulQZY/2LzZUnz9keUhfpmltNY3SNg3kg==}
-    engines: {node: '>=14.0.0'}
-    cpu: [arm64]
-    os: [linux]
 
   sass-embedded-linux-arm64@1.74.1:
     resolution: {integrity: sha512-sXmREHeqAYwAi71DfnlvyEj0w3B+xMA6C8cIbM4VNP5FCVv4QkIeGCuTH0s/vyBwFKD9+cj9EhQ3UmUUgVP3kg==}
@@ -20412,12 +20372,6 @@ packages:
     cpu: [arm]
     os: [linux]
     hasBin: true
-
-  sass-embedded-linux-ia32@1.62.0:
-    resolution: {integrity: sha512-VpDHtMIwcoWqDsiskjhDYAle0SJV4mUiZJTXg5RkMzoX1ZyNiVz+uNaZ88kDqcGXsWpe2i0sIlljD4ryaiMAhA==}
-    engines: {node: '>=14.0.0'}
-    cpu: [ia32]
-    os: [linux]
 
   sass-embedded-linux-ia32@1.74.1:
     resolution: {integrity: sha512-59n5kFmKcPObQjpK35ww+Fq9FonwZMj3khyl5Cdz2HERdq8nE7JltjdquBNkqp4vSvu7qqnErxFdcZNI1X4LUg==}
@@ -20450,12 +20404,6 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  sass-embedded-linux-x64@1.62.0:
-    resolution: {integrity: sha512-dntYMsu0QonlerFB8VDlzxoJcpMEtN9lPHstKOQ6rk6hbSFPvcI8MqqUomlOjmpakKeVrpyZ04nm9jHrzlFmYg==}
-    engines: {node: '>=14.0.0'}
-    cpu: [x64]
-    os: [linux]
-
   sass-embedded-linux-x64@1.74.1:
     resolution: {integrity: sha512-2o6DL/NPLvf7AgNOpq12txhH+s17qlbqCw/BeNFMk9z50LdWkcQZXkDB4R9EA8CwPv65e84/j4+rrxVo8DB1iA==}
     engines: {node: '>=14.0.0'}
@@ -20470,24 +20418,12 @@ packages:
     os: [win32]
     hasBin: true
 
-  sass-embedded-win32-ia32@1.62.0:
-    resolution: {integrity: sha512-rTCZCVkQa6XcreyQ8gYqnsEG13HCzqKoN2mCvIuGwJro8IjyT2PzWauouO0M06T0FLH0pc3EvKdKaLdtijf9AQ==}
-    engines: {node: '>=14.0.0'}
-    cpu: [ia32]
-    os: [win32]
-
   sass-embedded-win32-ia32@1.74.1:
     resolution: {integrity: sha512-DgaxdgdI6hl8X4cCR0C/8ksGgzA9asvJE3JEZqqmli+cg3QO8om2q3qkJi+3HLuhT3qAzWlGJwlvxm2L5toR3A==}
     engines: {node: '>=14.0.0'}
     cpu: [ia32]
     os: [win32]
     hasBin: true
-
-  sass-embedded-win32-x64@1.62.0:
-    resolution: {integrity: sha512-g6DZBPGfIDKLBarvYRVKJ+7rJAHJXkOQQVrYSWm22klA9ZNZ0CaVyqLqejttZPKGreD8h/xh2uz/s6w/P900Sw==}
-    engines: {node: '>=14.0.0'}
-    cpu: [x64]
-    os: [win32]
 
   sass-embedded-win32-x64@1.74.1:
     resolution: {integrity: sha512-4FXBj73rWlzOXQMBtl58F2qjXD2hdO33ozQlY2AviiJfAhdh4lxsuusDn1rLH0ECzoDsIdbDGQdhZ5/n3C8djQ==}
@@ -47208,28 +47144,16 @@ snapshots:
   sass-embedded-android-x64@1.74.1:
     optional: true
 
-  sass-embedded-darwin-arm64@1.62.0:
-    optional: true
-
   sass-embedded-darwin-arm64@1.74.1:
     optional: true
 
-  sass-embedded-darwin-x64@1.62.0:
-    optional: true
-
   sass-embedded-darwin-x64@1.74.1:
-    optional: true
-
-  sass-embedded-linux-arm64@1.62.0:
     optional: true
 
   sass-embedded-linux-arm64@1.74.1:
     optional: true
 
   sass-embedded-linux-arm@1.74.1:
-    optional: true
-
-  sass-embedded-linux-ia32@1.62.0:
     optional: true
 
   sass-embedded-linux-ia32@1.74.1:
@@ -47247,22 +47171,13 @@ snapshots:
   sass-embedded-linux-musl-x64@1.74.1:
     optional: true
 
-  sass-embedded-linux-x64@1.62.0:
-    optional: true
-
   sass-embedded-linux-x64@1.74.1:
     optional: true
 
   sass-embedded-win32-arm64@1.74.1:
     optional: true
 
-  sass-embedded-win32-ia32@1.62.0:
-    optional: true
-
   sass-embedded-win32-ia32@1.74.1:
-    optional: true
-
-  sass-embedded-win32-x64@1.62.0:
     optional: true
 
   sass-embedded-win32-x64@1.74.1:

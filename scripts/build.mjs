@@ -1,5 +1,4 @@
 import fs, { existsSync } from "node:fs";
-import os from "node:os";
 import { join, resolve } from "node:path";
 
 import { logger } from "./logger.mjs";
@@ -9,8 +8,6 @@ const isVerbose =
   process.argv.includes("--verbose") || process.argv.includes("-v");
 
 export const DEFAULT_PACKAGE_MANAGER = "pnpm";
-const DEFAULT_HOMEBREW_PACKAGE_MANAGER = "brew";
-const DEFAULT_LINUX_PACKAGE_MANAGER = "apt";
 const CWD = process.cwd();
 
 // Build the compiler binary
@@ -206,8 +203,6 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
 };
 
 export async function runTaskQueue() {
-  // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
-  await installProtoBuf();
   await runTask("Cli", buildCli);
   await runTask("Runtime", buildRuntime);
   await runTask("PluginTools", buildPluginTools);
@@ -215,73 +210,6 @@ export async function runTaskQueue() {
   await runTask("RustPlugins", buildRustPlugins);
   await runTask("JsPlugins", buildJsPlugins);
 }
-
-// install mac protobuf
-export const installMacProtobuf = () =>
-  execa(DEFAULT_HOMEBREW_PACKAGE_MANAGER, ["install", "protobuf"], {
-    cwd: CWD,
-  });
-
-// install linux protobuf
-export const installLinuxProtobuf = async (spinner) => {
-  if (isDebianSeries()) {
-    try {
-      await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
-      return execa(
-        DEFAULT_LINUX_PACKAGE_MANAGER,
-        ["install", "-y", "protobuf-compiler"],
-        {
-          cwd: CWD,
-        },
-      );
-    } catch {
-      return Promise.reject(
-        `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`,
-      );
-    }
-  } else if (isArchLinux()) {
-    try {
-      await execa("which", ["pacman"]);
-      let result;
-      if (process.getuid() == 0) {
-        result = execa("pacman", ["-Sy", "protobuf"], {
-          cwd: CWD,
-          input: "y\n",
-        });
-      } else {
-        spinner.stop();
-        result = await execa("sudo", ["pacman", "-Sy", "protobuf"], {
-          cwd: CWD,
-          stdin: "inherit",
-          stdout: "inherit",
-          stderr: "inherit",
-        });
-        spinner.start();
-      }
-      return result;
-    } catch {
-      return Promise.reject(
-        `not found "pacman", if it's not your package manager, please install "protobuf" manually.`,
-      );
-    }
-  } else {
-    spinner.warn({
-      text: `Unknown Linux distribution, trying to use "apt"...`,
-    });
-    try {
-      await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
-      return execa(
-        DEFAULT_LINUX_PACKAGE_MANAGER,
-        ["install", "-y", "protobuf-compiler"],
-        {
-          cwd: CWD,
-        },
-      );
-    } catch {
-      return Promise.reject(``);
-    }
-  }
-};
 
 // build core command
 export const buildCore = () =>
@@ -491,109 +419,6 @@ export function batchBuildPlugins(
   return path.map((item) => {
     return execa(packageManager, [command], { cwd: item });
   });
-}
-
-export function isMac() {
-  const platform = os.platform();
-  return platform === "darwin";
-}
-
-export function isLinux() {
-  const platform = os.platform();
-  return platform === "linux";
-}
-
-export function isWindows() {
-  const platform = os.platform();
-  return platform === "win32";
-}
-
-export function getLinuxDistribution() {
-  const data = fs.readFileSync("/etc/os-release", {
-    encoding: "utf8",
-  });
-
-  const config = {};
-  const lines = data.split("\n");
-
-  lines.forEach((line) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine && !trimmedLine.startsWith("#")) {
-      const [key, value] = trimmedLine.split("=");
-      const cleanKey = key.trim();
-      const cleanValue = value.trim().replace(/"/g, "");
-
-      config[cleanKey] = cleanValue;
-    }
-  });
-
-  return config.ID;
-}
-
-export function isArchLinux() {
-  return getLinuxDistribution() === "arch";
-}
-
-export function isDebianSeries() {
-  const distro = getLinuxDistribution().toLowerCase();
-  return (
-    distro === "debian" ||
-    distro === "ubuntu" ||
-    distro === "linuxmint" ||
-    distro === "raspbian" ||
-    distro === "kali" ||
-    distro === "deepin" ||
-    distro === "pop"
-  );
-}
-
-export async function checkProtobuf() {
-  const isWindowsFlag = isWindows();
-  const isMacFlag = isMac();
-  const isLinuxFlag = isLinux();
-  try {
-    if (isWindowsFlag) {
-      await execa("where", ["protoc"]);
-    } else if (isMacFlag || isLinuxFlag) {
-      await execa("which", ["protoc"]);
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function installProtoBuf() {
-  const installFlag = await checkProtobuf();
-  if (!installFlag) {
-    logger(
-      "Due to the use of protoc in the project, we currently judge that you have not installed. " +
-        "We need to install protobuf locally to make the project start successfully. \n\n" +
-        "- For MacOS users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n" +
-        "- For Debian-based Linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n" +
-        "- For Arch Linux users, we will use your local `pacman` tool for installation. (First, Make sure your computer has `pacman` installed) \n" +
-        "- For other Linux users, we will try to use your local `apt` tool for installation. (If exists) \n" +
-        "- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n",
-      { title: "FARM WARN", color: "yellow" },
-    );
-
-    if (isMac()) {
-      await runTask("Protobuf", installMacProtobuf, "Installing", "Install");
-    } else if (isLinux()) {
-      await runTask("Protobuf", installLinuxProtobuf, "Installing", "Install");
-    }
-
-    if (isWindows()) {
-      logger(
-        "If you are using a windows system, you can install it in the following ways:\n\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/",
-        { title: "FARM TIPS", color: "yellow" },
-      );
-      process.exit(1);
-    }
-  } else {
-    console.log("");
-    logger("Protobuf has been installed, skipping installation. \n");
-  }
 }
 
 export async function cleanBundleCommand() {
