@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.0
+
+### Major Changes
+
+- 46bf9fd: Remove FreeBSD binary support from create-farm.
+
+### Patch Changes
+
+- 338262c: 1. fix deno create 2. add dry-run flag
+- e560875: Upgrade all templates of create-farm to v2 beta
+- e0db4b0: discern deno
+- e0db4b0: node args parse
+
 ## 2.0.0-beta.3
 
 ### Patch Changes

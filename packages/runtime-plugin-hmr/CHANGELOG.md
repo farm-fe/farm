@@ -1,5 +1,12 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0
+
+### Patch Changes
+
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+
 ## 4.0.0-beta.2
 
 ### Patch Changes

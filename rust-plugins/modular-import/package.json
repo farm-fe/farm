@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-modular-import",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0",
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",

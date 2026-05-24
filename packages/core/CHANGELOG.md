@@ -1,5 +1,37 @@
 # @farmfe/core
 
+## 2.0.0
+
+### Patch Changes
+
+- 9021edf: improve cache perf, support js cache api
+- 7266d47: Fix: cjs require doesn't be handled correctly when targetEnv is library
+- 23b6fc9: Fix unexpected process exit when hmr failed with syntax error
+- e560875: Fix issues:
+
+  1. Move all custom config from `config.custom` to the corresponding config field. For example, move `config.custom.external` to `config.external`.
+  2. Fix visualizer plugin not working issue.
+  3. `?url` does not be removed in plugin static asset
+
+- 874f034: feat: add env manual control thread max nums
+- 4ef38cd: Feat(core): Support output.format=umd
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- ba8bf31: Fixed the issue of nested public and output config
+- c4e6901: Fix: incorrect html fallback and hmr port doesn't work as expected
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+- 38b9673: Fix(v2-beta): tailwindcss next bugs
+- 2f9ef0e: Update all SWC related crates to latest versions (swc_core v59.0.1)
+- 4ef38cd: Feat(core): support css.transformToScript
+- Updated dependencies [5cf6af9]
+- Updated dependencies [47d569d]
+- Updated dependencies [61aae5b]
+- Updated dependencies [6fafa25]
+  - @farmfe/plugin-replace-dirname@2.0.0
+  - @farmfe/utils@2.0.0
+  - @farmfe/runtime-plugin-hmr@4.0.0
+  - @farmfe/runtime@2.0.0
+  - @farmfe/runtime-plugin-import-meta@2.0.0
+
 ## 2.0.0-beta.10
 
 ### Patch Changes
