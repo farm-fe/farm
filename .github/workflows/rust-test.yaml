@@ -58,9 +58,5 @@ jobs:
           retry_wait_seconds: 60
           command: pnpm i --frozen-lockfile
 
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run cargo test
         run: cargo test --profile ci-test --tests

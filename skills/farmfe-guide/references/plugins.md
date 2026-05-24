@@ -134,7 +134,7 @@ export default defineConfig({
 | Package | Description | Install |
 |---------|-------------|---------|
 | `@farmfe/plugin-react` | React JSX + react-refresh | `pnpm add -D @farmfe/plugin-react` |
-| `@farmfe/plugin-sass` | Sass/SCSS (sass-embedded) | `pnpm add -D @farmfe/plugin-sass` |
+| `@farmfe/plugin-sass` | Sass/SCSS (grass) | `pnpm add -D @farmfe/plugin-sass` |
 | `@farmfe/plugin-strip` | Remove debugger/console/assert | `pnpm add -D @farmfe/plugin-strip` |
 | `@farmfe/plugin-dsv` | `.csv`/`.tsv` → JS modules | `pnpm add -D @farmfe/plugin-dsv` |
 | `@farmfe/plugin-yaml` | YAML → ES modules | `pnpm add -D @farmfe/plugin-yaml` |
