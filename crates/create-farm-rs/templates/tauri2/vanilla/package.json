@@ -10,14 +10,14 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-opener": "^2"
   },
   "devDependencies": {
     "@farmfe/cli": "beta",
     "@farmfe/core": "beta",
-    "@tauri-apps/cli": "^2",
-    "core-js": "^3.40.0",
-    "typescript": "^5.7.2"
+    "@tauri-apps/cli": "^2.11.2",
+    "core-js": "^3.49.0",
+    "typescript": "^6.0.3"
   }
 }

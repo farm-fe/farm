@@ -11,15 +11,15 @@
   },
   "license": "MIT",
   "dependencies": {
-    "solid-js": "^1.7.8",
-    "@tauri-apps/api": "^1"
+    "solid-js": "^1.9.13",
+    "@tauri-apps/api": "^1.6.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.2",
+    "typescript": "^6.0.3",
     "@farmfe/cli": "beta",
     "@farmfe/core": "beta",
-    "solid-refresh": "^0.7.5",
-    "vite-plugin-solid": "^2.8.0",
-    "@tauri-apps/cli": "^1"
+    "solid-refresh": "^0.7.8",
+    "vite-plugin-solid": "^2.11.12",
+    "@tauri-apps/cli": "^1.6.3"
   }
 }

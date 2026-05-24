@@ -10,23 +10,23 @@
     "farm": "farm"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.4.0",
-    "@electron-forge/maker-deb": "^7.4.0",
-    "@electron-forge/maker-rpm": "^7.4.0",
-    "@electron-forge/maker-squirrel": "^7.4.0",
-    "@electron-forge/maker-zip": "^7.4.0",
-    "@electron-forge/shared-types": "^7.4.0",
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-deb": "^7.11.2",
+    "@electron-forge/maker-rpm": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@electron-forge/shared-types": "^7.11.2",
     "@farmfe/core": "beta",
     "@farmfe/cli": "beta",
     "@farmfe/js-plugin-electron": "beta",
-    "core-js": "^3.36.1",
-    "electron": "^30.0.9",
-    "fs-extra": "^11.2.0",
-    "typescript": "^5.0.2",
-    "@sveltejs/vite-plugin-svelte": "^3.0.2",
-    "@tsconfig/svelte": "^5.0.4",
-    "svelte": "^4.2.12",
-    "svelte-check": "^3.6.8",
-    "tslib": "^2.6.2"
+    "core-js": "^3.49.0",
+    "electron": "^42.2.0",
+    "fs-extra": "^11.3.5",
+    "typescript": "^6.0.3",
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@tsconfig/svelte": "^5.0.8",
+    "svelte": "^5.55.9",
+    "svelte-check": "^4.4.8",
+    "tslib": "^2.8.1"
   }
 }
