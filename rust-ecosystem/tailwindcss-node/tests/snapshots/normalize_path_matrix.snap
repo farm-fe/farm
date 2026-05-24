@@ -1,0 +1,16 @@
+---
+source: rust-ecosystem/tailwindcss-node/tests/normalize_path.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+forward: "foo/bar/baz" -> "foo/bar/baz"
+backslashes: "foo\\bar\\baz" -> "foo/bar/baz"
+mixed: "foo/bar\\baz" -> "foo/bar/baz"
+trailing: "foo/bar/" -> "foo/bar"
+root-slash: "/" -> "/"
+root-backslash: "\\" -> "/"
+single: "a" -> "a"
+empty: "" -> ""
+unc: "\\\\server\\share" -> "//server/share"
+namespace-question: "\\\\?\\C:\\foo\\bar" -> "//?/C:/foo/bar"
+namespace-dot: "\\\\.\\C:\\foo\\bar" -> "//./C:/foo/bar"
+consecutive: "foo//bar///baz" -> "foo/bar/baz"

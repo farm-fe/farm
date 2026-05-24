@@ -178,10 +178,10 @@ jobs:
           path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
-        id: download-create-farm-rust
+        id: download-plugin-tailwindcss
         with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
-          path: ./packages/create-farm
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
+          path: ./rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}
 
       - name: Build Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
@@ -195,8 +195,11 @@ jobs:
           command: npm run test-e2e
 
       # test create farm
-      - name: Build Create Farm
-        run: cd packages/create-farm && npm run build
+      - name: Download Create Farm Rust - ${{ matrix.settings.abi }}
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
+          path: ./packages/create-farm
       - name: Test Create Farm React - ${{ matrix.settings.abi }}
         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
       - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
