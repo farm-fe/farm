@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "farmfe_node"
-version = "0.0.0"
+version = "2.0.0"
 
 [lib]
 crate-type = ["cdylib"]

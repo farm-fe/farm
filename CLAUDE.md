@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Farm is an extremely fast, Vite-compatible web build tool written in Rust (v2.x beta). It is a hybrid Rust + TypeScript monorepo using pnpm workspaces and Cargo workspace. The Rust compiler is exposed to Node.js via napi-rs.
+Farm is an extremely fast, Vite-compatible web build tool written in Rust (v2.x). It is a hybrid Rust + TypeScript monorepo using pnpm workspaces and Cargo workspace. The Rust compiler is exposed to Node.js via napi-rs.
 
 ## Key Commands
 

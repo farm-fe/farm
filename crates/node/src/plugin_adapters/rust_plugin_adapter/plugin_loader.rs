@@ -24,8 +24,7 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr> + std::fmt::Display>(
     panic!(
       "\nIncompatible Rust Plugin: Current core's version({}) is not compatible with the plugin version(`{:?}`), plugin path: ({}).
 Please upgrade or downgrade the plugin or @farmfe/core to make the versions match. Version maps:
-  plugin core 0.4 -> @farmfe/core < 1.3.0
-  plugin core 0.5 -> @farmfe/core >= 1.3.0
+  plugin core 2.0 -> @farmfe/core 2.x
 
 If you are plugin author, please build your plugin with rust toolchain `nightly-2024-10-07`\n",
       VERSION, core_version, filename

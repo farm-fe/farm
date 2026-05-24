@@ -1,14 +1,14 @@
 [package]
 edition = "2021"
 name = "farmfe_plugin_tailwindcss"
-version = "0.0.1"
+version = "2.0.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-farmfe_core = { version = "*", path = "../../crates/core" }
-farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+farmfe_core = { version = "2.0.0", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "2.0.0", path = "../../crates/macro_plugin" }
 farmfe_toolkit = { path = "../../crates/toolkit" }
 farmfe_utils = { path = "../../crates/utils" }
 farmfe_ecosystem_tailwindcss = { path = "../../rust-ecosystem/tailwindcss" }
