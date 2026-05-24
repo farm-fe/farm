@@ -6,7 +6,7 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://www.farmfe.org/docs/config/configuring-farm
 export default defineConfig({
-  plugins: [preact()],
+  vitePlugins: [preact()],
 
   clearScreen: false,
   server: {
@@ -20,7 +20,7 @@ export default defineConfig({
           port: 1421,
           watchOptions: {
             ignored: ["**/node_modules/**"],
-          }
+          },
         }
       : undefined,
   },
