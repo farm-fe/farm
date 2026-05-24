@@ -213,3 +213,8 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
           path: rust-plugins/yaml/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin TailwindCSS
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
+          path: rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}/index.farm

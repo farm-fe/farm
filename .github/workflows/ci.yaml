@@ -177,6 +177,12 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
           path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
 
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-tailwindcss
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
+          path: ./rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}
+
       - name: Build Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
 
