@@ -44,7 +44,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: "pnpm"
 
       - name: Install Dependencies
         uses: nick-fields/retry@v3
@@ -230,7 +229,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: "pnpm"
       - name: Install Dependencies
         uses: nick-fields/retry@v3
         with:
@@ -273,7 +271,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: "pnpm"
       - uses: actions/download-artifact@v4.1.3
         id: download-plugin-replace-dirname
         with:

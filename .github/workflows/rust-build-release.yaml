@@ -45,11 +45,6 @@ jobs:
             zig: true
     steps:
       - uses: actions/checkout@v4
-      - name: Cache rust artifacts
-        uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: rust-build-${{ inputs.profile }}-${{ matrix.settings.abi }}
-          shared-key: rust-build-${{ matrix.settings.abi }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -59,7 +54,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
       - name: Install Dependencies
         uses: nick-fields/retry@v3
         with:

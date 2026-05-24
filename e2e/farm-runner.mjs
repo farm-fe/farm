@@ -1,8 +1,8 @@
 import { execa } from 'execa';
 import getPort, { portNumbers } from 'get-port';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { access, readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
+import { pathToFileURL } from 'node:url';
 import { logger } from './utils.mjs';
 
 // ---------------------------------------------------------------------------
@@ -57,62 +57,38 @@ function isBrowserCrashLikeError(error) {
 }
 
 /**
- * @param {string} text
- * @param {string} examplePath
- * @returns {boolean}
- */
-function isIgnorableConsoleError(text, examplePath) {
-  return (
-    /(?:^|[/\\])arcgis(?:[/\\]|$)/.test(examplePath) &&
-    text.includes('Failed to load resource') &&
-    text.includes('https://js.arcgis.com/4.30/@arcgis/core/assets/')
-  );
-}
-
-/**
  * @param {import('playwright-chromium').Page} page
  * @param {string} examplePath
- * @returns {Promise<void>}
+ * @returns {Promise<() => Promise<void>>}
  */
 async function installExampleRequestRoutes(page, examplePath) {
-  if (!/(?:^|[/\\])arcgis(?:[/\\]|$)/.test(examplePath)) {
-    return;
+  const mockFile = `${examplePath}/e2e.mock.mjs`;
+
+  try {
+    await access(mockFile);
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      return async () => {};
+    }
+
+    throw error;
   }
 
-  await page.route('https://js.arcgis.com/4.30/@arcgis/core/assets/**', async (route) => {
-    const url = new URL(route.request().url());
-    const prefix = '/4.30/@arcgis/core/assets/';
-    const assetPath = decodeURIComponent(url.pathname.slice(prefix.length));
+  /** @type {{ default?: Function, installMockRoutes?: Function }} */
+  const mod = await import(pathToFileURL(mockFile).href);
+  const install = mod.installMockRoutes ?? mod.default;
 
-    if (!assetPath || assetPath.includes('..')) {
-      await route.abort();
-      return;
-    }
+  if (typeof install !== 'function') {
+    throw new Error(`Example mock file "${mockFile}" must export a mock route installer.`);
+  }
 
-    const localPath = join(
-      examplePath,
-      'node_modules',
-      '@arcgis',
-      'core',
-      'assets',
-      assetPath
-    );
-    const contentType = assetPath.endsWith('.css')
-      ? 'text/css'
-      : assetPath.endsWith('.json')
-        ? 'application/json'
-        : 'application/octet-stream';
+  const cleanup = await install({ page, examplePath });
 
-    try {
-      await route.fulfill({
-        status: 200,
-        contentType,
-        body: await readFile(localPath)
-      });
-    } catch {
-      await route.abort();
-    }
-  });
+  if (typeof cleanup !== 'function') {
+    return async () => {};
+  }
+
+  return cleanup;
 }
 
 /**
@@ -296,7 +272,7 @@ function getRetryDelay(attempt, examplePath) {
  */
 async function visitPage(url, examplePath, cb, command) {
   const page = await requireBrowserContext().newPage();
-  await installExampleRequestRoutes(page, examplePath);
+  const cleanupRoutes = await installExampleRequestRoutes(page, examplePath);
   logger(`Opening page: ${url}  [${examplePath}]`);
 
   page.on('requestfailed', (req) => {
@@ -308,78 +284,80 @@ async function visitPage(url, examplePath, cb, command) {
     );
   });
 
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    let cbSucceeded = false;
-    const settle = (fn) => {
-      if (!settled) {
-        settled = true;
-        fn();
-      }
-    };
+  try {
+    return await new Promise((resolve, reject) => {
+      let settled = false;
+      let cbSucceeded = false;
+      const settle = (fn) => {
+        if (!settled) {
+          settled = true;
+          fn();
+        }
+      };
 
-    page.on('console', (msg) => {
-      if (page.isClosed()) return;
-      const text = msg.text();
-      const lower = text.toLocaleLowerCase();
-      const location = msg.location?.();
-      const locationText = location?.url
-        ? ` (${location.url}:${location.lineNumber ?? 0}:${location.columnNumber ?? 0})`
-        : '';
+      page.on('console', (msg) => {
+        if (page.isClosed()) return;
+        const text = msg.text();
+        const lower = text.toLocaleLowerCase();
+        const location = msg.location?.();
+        const locationText = location?.url
+          ? ` (${location.url}:${location.lineNumber ?? 0}:${location.columnNumber ?? 0})`
+          : '';
 
-      if (
-        msg.type() === 'error' &&
-        !lower.includes('warn') &&
-        !lower.includes('warning') &&
-        !/Parse `.+` failed/.test(text)
-      ) {
-        const ignored = isIgnorableConsoleError(`${text}${locationText}`, examplePath);
-        logger(`[console:${ignored ? 'ignored-error' : 'error'}] ${command} ${examplePath}: ${text}${locationText}`, {
-          color: 'red'
-        });
-        if (ignored) return;
-        // Ignore console errors that arrive after the assertion callback
-        // already succeeded — they typically come from background work
-        // (e.g. workers) racing against page teardown when the dev server
-        // is being shut down, and should not invalidate a passing test.
-        if (cbSucceeded) return;
-        settle(() => reject(new Error(`Browser console error: ${text}${locationText}`)));
-      } else {
-        logger(`[console] ${command} ${examplePath}: ${text}${locationText}`);
-      }
-    });
-
-    page.on('pageerror', (error) => {
-      if (page.isClosed()) return;
-      const details =
-        error && typeof error === 'object' && 'stack' in error && error.stack
-          ? error.stack
-          : String(error);
-      logger(`[pageerror] ${command} ${examplePath}: ${details}`, { color: 'red' });
-      if (cbSucceeded) return;
-      settle(() => reject(error));
-    });
-
-    page
-      .goto(url)
-      .then(() => cb(page))
-      .then(() => {
-        // Mark the test as successful *before* we close the page so that
-        // any console.error / pageerror events that fire during teardown
-        // (for example workers losing their connection to a dev server
-        // that's about to be killed) cannot retroactively fail a test
-        // whose assertions have already passed.
-        cbSucceeded = true;
-        return page.close({ reason: 'test finished', runBeforeUnload: false }).catch(() => {});
-      })
-      .then(() => settle(() => resolve()))
-      .catch((e) => {
-        // Failure — close page first, then reject
-        return page.close({ reason: 'test failed', runBeforeUnload: false }).catch(() => {}).then(() => {
-          settle(() => reject(/** @type {Error} */ (e)));
-        });
+        if (
+          msg.type() === 'error' &&
+          !lower.includes('warn') &&
+          !lower.includes('warning') &&
+          !/Parse `.+` failed/.test(text)
+        ) {
+          logger(`[console:error] ${command} ${examplePath}: ${text}${locationText}`, {
+            color: 'red'
+          });
+          // Ignore console errors that arrive after the assertion callback
+          // already succeeded — they typically come from background work
+          // (e.g. workers) racing against page teardown when the dev server
+          // is being shut down, and should not invalidate a passing test.
+          if (cbSucceeded) return;
+          settle(() => reject(new Error(`Browser console error: ${text}${locationText}`)));
+        } else {
+          logger(`[console] ${command} ${examplePath}: ${text}${locationText}`);
+        }
       });
-  });
+
+      page.on('pageerror', (error) => {
+        if (page.isClosed()) return;
+        const details =
+          error && typeof error === 'object' && 'stack' in error && error.stack
+            ? error.stack
+            : String(error);
+        logger(`[pageerror] ${command} ${examplePath}: ${details}`, { color: 'red' });
+        if (cbSucceeded) return;
+        settle(() => reject(error));
+      });
+
+      page
+        .goto(url)
+        .then(() => cb(page))
+        .then(() => {
+          // Mark the test as successful *before* we close the page so that
+          // any console.error / pageerror events that fire during teardown
+          // (for example workers losing their connection to a dev server
+          // that's about to be killed) cannot retroactively fail a test
+          // whose assertions have already passed.
+          cbSucceeded = true;
+          return page.close({ reason: 'test finished', runBeforeUnload: false }).catch(() => {});
+        })
+        .then(() => settle(() => resolve()))
+        .catch((e) => {
+          // Failure — close page first, then reject
+          return page.close({ reason: 'test failed', runBeforeUnload: false }).catch(() => {}).then(() => {
+            settle(() => reject(/** @type {Error} */ (e)));
+          });
+        });
+    });
+  } finally {
+    await cleanupRoutes();
+  }
 }
 
 // ---------------------------------------------------------------------------

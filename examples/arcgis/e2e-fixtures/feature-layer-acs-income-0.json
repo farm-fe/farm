@@ -1,0 +1,863 @@
+{
+  "url": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/ACS_Income_2016_5yr/FeatureServer/0?f=json",
+  "status": 200,
+  "data": {
+    "currentVersion": 12,
+    "id": 0,
+    "name": "Tract Centroids ",
+    "type": "Feature Layer",
+    "serviceItemId": "9c86eeb5ddac4e6a9f6684539222dfd0",
+    "cacheMaxAge": 3600,
+    "displayField": "NAME",
+    "description": "",
+    "copyrightText": "",
+    "defaultVisibility": true,
+    "editingInfo": {
+      "lastEditDate": 1541610432670,
+      "schemaLastEditDate": 1541610432670,
+      "dataLastEditDate": 1541610432670
+    },
+    "relationships": [],
+    "isDataVersioned": false,
+    "hasContingentValuesDefinition": false,
+    "supportsAppend": true,
+    "supportsCalculate": true,
+    "supportsASyncCalculate": true,
+    "supportsTruncate": true,
+    "supportsAttachmentsByUploadId": true,
+    "supportsAttachmentsResizing": true,
+    "supportsRollbackOnFailureParameter": true,
+    "supportsStatistics": true,
+    "supportsExceedsLimitStatistics": true,
+    "supportsAdvancedQueries": true,
+    "supportsValidateSql": true,
+    "supportsCoordinatesQuantization": true,
+    "supportsLayerOverrides": true,
+    "supportsTilesAndBasicQueriesMode": true,
+    "supportsFieldDescriptionProperty": true,
+    "supportsQuantizationEditMode": true,
+    "supportsColumnStoreIndex": true,
+    "supportsApplyEditsWithGlobalIds": false,
+    "supportsReturningQueryGeometry": true,
+    "enableNullGeometry": false,
+    "advancedQueryCapabilities": {
+      "supportsPagination": true,
+      "supportsPaginationOnAggregatedQueries": true,
+      "supportsQueryRelatedPagination": true,
+      "supportsQueryWithDistance": true,
+      "supportsOutDistance": true,
+      "supportsReturningQueryExtent": true,
+      "supportsStatistics": true,
+      "supportsOrderBy": true,
+      "supportsDistinct": true,
+      "supportsQueryWithResultType": true,
+      "supportsSqlExpression": true,
+      "supportsTimeRelation": true,
+      "supportsAdvancedQueryRelated": true,
+      "supportsCountDistinct": true,
+      "supportsPercentileStatistics": true,
+      "supportsApproxPercentileStatistics": true,
+      "supportsSpatialAggregationStatistics": true,
+      "supportedSpatialAggregationStatistics": [
+        "EnvelopeAggregate",
+        "CentroidAggregate",
+        "ConvexHullAggregate"
+      ],
+      "supportsLod": true,
+      "supportsQueryWithLodSR": false,
+      "supportedLodTypes": [
+        "geohash"
+      ],
+      "supportsReturningGeometryCentroid": false,
+      "supportsReturningGeometryEnvelope": false,
+      "supportsQueryWithDatumTransformation": true,
+      "supportsCurrentUserQueries": true,
+      "supportsHavingClause": true,
+      "supportsOutFieldSQLExpression": true,
+      "supportsMaxRecordCountFactor": true,
+      "supportsTopFeaturesQuery": true,
+      "supportsDisjointSpatialRel": true,
+      "supportsQueryWithCacheHint": true,
+      "supportedOperationsWithCacheHint": [
+        "query",
+        "queryTopFilter",
+        "queryAnalytics",
+        "queryAttachments",
+        "queryRelated",
+        "queryBins",
+        "queryPivot"
+      ],
+      "supportsQueryAnalytic": true,
+      "supportsQueryPivot": true,
+      "supportsQueryBins": true,
+      "supportsDefaultSR": true,
+      "supportsTranslations": false,
+      "supportsAggIds": true,
+      "supportsQueryWithCollation": true,
+      "supportsISODOW": true,
+      "supportsISOWeek": true,
+      "supportsFullTextSearch": true,
+      "fullTextSearchCapabilities": {
+        "supportsAccentSensitivity": true,
+        "supportsStopWords": true,
+        "supportsSearchOperator": true,
+        "supportsOperator": true
+      }
+    },
+    "advancedQueryAnalyticCapabilities": {
+      "supportsLinearRegression": true,
+      "supportsTrendlineRegression": true,
+      "supportsAsync": true,
+      "supportsPercentileAnalytic": true
+    },
+    "queryBinsCapabilities": {
+      "supportsAsync": true,
+      "supportsAutoIntervalBin": true,
+      "supportsFixedIntervalBin": true,
+      "supportsFixedBoundariesBin": true,
+      "supportsDateBin": true,
+      "supportsClassificationBin": true,
+      "supportsStackBy": true,
+      "supportsSplitBy": true,
+      "supportsFirstDayOfWeek": true,
+      "supportsSnapToData": true,
+      "supportsReturnFullIntervalBin": true,
+      "supportsReturnStackValueRange": true,
+      "supportsNormalization": true,
+      "supportedStatisticTypes": [
+        "COUNT",
+        "SUM",
+        "AVG",
+        "VAR",
+        "STDDEV",
+        "MIN",
+        "MAX",
+        "PERCENTILE_CONT",
+        "PERCENTILE_DISC",
+        "APPROX_PERCENTILE_CONT",
+        "APPROX_PERCENTILE_DISC",
+        "CentroidAggregate",
+        "EnvelopeAggregate",
+        "ConvexHullAggregate"
+      ],
+      "supportedNormalizationTypes": [
+        "boxCox",
+        "field",
+        "inverse",
+        "log",
+        "naturalLog",
+        "percentOfTotal",
+        "squareRoot"
+      ]
+    },
+    "supportedOperationsWithCollation": "query,addField,updateField",
+    "advancedEditingCapabilities": {
+      "supportedSqlFormatsInCalculate": [
+        "standard"
+      ],
+      "supportsAsyncApplyEdits": true,
+      "supportsReturnEditResults": true,
+      "supportsApplyEditsbyUploadID": true,
+      "supportedApplyEditsUploadIDFormats": "JSON,PBF",
+      "supportsTranslation": false,
+      "supportsMaxTranslations": 10
+    },
+    "infoInEstimates": [
+      "extent",
+      "count"
+    ],
+    "useStandardizedQueries": true,
+    "geometryType": "esriGeometryPoint",
+    "minScale": 0,
+    "maxScale": 0,
+    "extent": {
+      "xmin": -19117266.9718,
+      "ymin": 2168272.140900001,
+      "xmax": -7458235.5246,
+      "ymax": 11504506.877099998,
+      "spatialReference": {
+        "wkid": 102100,
+        "latestWkid": 3857
+      }
+    },
+    "spatialReference": {
+      "wkid": 102100,
+      "latestWkid": 3857
+    },
+    "drawingInfo": {
+      "renderer": {
+        "visualVariables": [
+          {
+            "type": "sizeInfo",
+            "field": "Estimate_Total",
+            "valueExpression": null,
+            "valueUnit": "unknown",
+            "minSize": 3.75,
+            "maxSize": 37.5,
+            "minDataValue": 1500,
+            "maxDataValue": 5000
+          }
+        ],
+        "authoringInfo": {
+          "visualVariables": [
+            {
+              "type": "sizeInfo",
+              "minSliderValue": 0,
+              "maxSliderValue": 20474
+            }
+          ]
+        },
+        "type": "classBreaks",
+        "field": "Estimate_Total",
+        "minValue": -9007199254740991,
+        "classBreakInfos": [
+          {
+            "symbol": {
+              "angle": 0,
+              "xoffset": 0,
+              "yoffset": 0,
+              "type": "esriPMS",
+              "url": "0d067e41-f830-4e39-805a-0c50abcdaec6",
+              "imageData": "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",
+              "contentType": "image/png",
+              "width": 9,
+              "height": 9
+            },
+            "classMaxValue": 9007199254740991
+          }
+        ]
+      },
+      "transparency": 0
+    },
+    "allowGeometryUpdates": true,
+    "hasAttachments": false,
+    "htmlPopupType": "esriServerHTMLPopupTypeAsHTMLText",
+    "hasM": false,
+    "hasZ": false,
+    "objectIdField": "OBJECTID",
+    "uniqueIdField": {
+      "name": "OBJECTID",
+      "isSystemMaintained": true
+    },
+    "globalIdField": "",
+    "typeIdField": "",
+    "collation": {
+      "locale": "neutral",
+      "caseSensitive": false,
+      "accentSensitive": true
+    },
+    "fields": [
+      {
+        "name": "OBJECTID",
+        "type": "esriFieldTypeOID",
+        "alias": "OBJECTID",
+        "sqlType": "sqlTypeOther",
+        "nullable": false,
+        "editable": false,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "ID",
+        "type": "esriFieldTypeString",
+        "alias": "ID",
+        "sqlType": "sqlTypeOther",
+        "length": 11,
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "NAME",
+        "type": "esriFieldTypeString",
+        "alias": "NAME",
+        "sqlType": "sqlTypeOther",
+        "length": 12,
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "STATE_NAME",
+        "type": "esriFieldTypeString",
+        "alias": "STATE_NAME",
+        "sqlType": "sqlTypeOther",
+        "length": 20,
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "ST_ABBREV",
+        "type": "esriFieldTypeString",
+        "alias": "ST_ABBREV",
+        "sqlType": "sqlTypeOther",
+        "length": 2,
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "AREA",
+        "type": "esriFieldTypeDouble",
+        "alias": "AREA",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "ID_2",
+        "type": "esriFieldTypeDouble",
+        "alias": "ID_2",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Id_1",
+        "type": "esriFieldTypeString",
+        "alias": "Id",
+        "sqlType": "sqlTypeOther",
+        "length": 8000,
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Id2",
+        "type": "esriFieldTypeDouble",
+        "alias": "Id2",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Geography",
+        "type": "esriFieldTypeString",
+        "alias": "Geography",
+        "sqlType": "sqlTypeOther",
+        "length": 8000,
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_Lessthan10000",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_Lessthan10000",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_Lessthan100",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_Lessthan10000",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_10000to14999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_10000to14999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_10000to1499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_10000to14999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_15000to19999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_15000to19999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_15000to1999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_15000to19999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_20000to24999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_20000to24999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_20000to2499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_20000to24999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_25000to29999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_25000to29999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_25000to2999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_25000to29999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_30000to34999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_30000to34999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_30000to3499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_30000to34999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_35000to39999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_35000to39999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_35000to3999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_35000to39999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_40000to44999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_40000to44999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_40000to4499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_40000to44999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_45000to49999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_45000to49999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_45000to4999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_45000to49999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_50000to59999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_50000to59999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_50000to5999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_50000to59999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_60000to74999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_60000to74999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_60000to7499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_60000to74999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_75000to99999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_75000to99999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_75000to9999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_75000to99999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_100000to124999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_100000to124999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_100000to124",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_100000to124999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_125000to149999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_125000to149999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_125000to149",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_125000to149999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_150000to199999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_150000to199999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_150000to199",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_150000to199999",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_200000ormore",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_200000ormore",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_200000ormor",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_200000ormore",
+        "sqlType": "sqlTypeOther",
+        "nullable": true,
+        "editable": true,
+        "domain": null,
+        "defaultValue": null
+      }
+    ],
+    "indexes": [
+      {
+        "name": "PK__ACS_INCO__F4B70D85DDB2FDA8",
+        "fields": "OBJECTID",
+        "isAscending": true,
+        "isUnique": true,
+        "description": "",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "user_63.ACS_INCOME_2016_5YR_TRACT_CENTROIDS__Shape_sidx",
+        "fields": "Shape",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "",
+        "indexType": "Spatial"
+      },
+      {
+        "name": "Estimate_Total_Lessthan10000_Index",
+        "fields": "Estimate_Total_Lessthan10000",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "Estimate_Total_Lessthan10000_Index",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "Estimate_Total_Index",
+        "fields": "Estimate_Total",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "Estimate_Total_Index",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "Estimate_Total_200000ormore_Index",
+        "fields": "Estimate_Total_200000ormore",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "Estimate_Total_200000ormore_Index",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "AREA_Index",
+        "fields": "AREA",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "AREA_Index",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "MarginofError_Total_10000to1499_Index",
+        "fields": "MarginofError_Total_10000to1499",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "MarginofError_Total_10000to1499_Index",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "Estimate_Total_10000to14999_Index",
+        "fields": "Estimate_Total_10000to14999",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "Estimate_Total_10000to14999_Index",
+        "indexType": "Attribute"
+      },
+      {
+        "name": "Estimate_Total_50000to59999_Index",
+        "fields": "Estimate_Total_50000to59999",
+        "isAscending": true,
+        "isUnique": false,
+        "description": "Estimate_Total_50000to59999_Index",
+        "indexType": "Attribute"
+      }
+    ],
+    "dateFieldsTimeReference": {
+      "timeZone": "UTC",
+      "timeZoneIANA": "Etc/UTC",
+      "respectsDaylightSaving": false
+    },
+    "preferredTimeReference": null,
+    "types": [],
+    "templates": [
+      {
+        "name": "Tract Centroids ",
+        "description": "",
+        "drawingTool": "esriFeatureEditToolPoint",
+        "prototype": {
+          "attributes": {
+            "Estimate_Total_200000ormore": null,
+            "MarginofError_Total_200000ormor": null,
+            "ID": null,
+            "NAME": null,
+            "STATE_NAME": null,
+            "ST_ABBREV": null,
+            "AREA": null,
+            "ID_2": null,
+            "Id_1": null,
+            "Id2": null,
+            "Geography": null,
+            "Estimate_Total": null,
+            "MarginofError_Total": null,
+            "Estimate_Total_Lessthan10000": null,
+            "MarginofError_Total_Lessthan100": null,
+            "Estimate_Total_10000to14999": null,
+            "MarginofError_Total_10000to1499": null,
+            "Estimate_Total_15000to19999": null,
+            "MarginofError_Total_15000to1999": null,
+            "Estimate_Total_20000to24999": null,
+            "MarginofError_Total_20000to2499": null,
+            "Estimate_Total_25000to29999": null,
+            "MarginofError_Total_25000to2999": null,
+            "Estimate_Total_30000to34999": null,
+            "MarginofError_Total_30000to3499": null,
+            "Estimate_Total_35000to39999": null,
+            "MarginofError_Total_35000to3999": null,
+            "Estimate_Total_40000to44999": null,
+            "MarginofError_Total_40000to4499": null,
+            "Estimate_Total_45000to49999": null,
+            "MarginofError_Total_45000to4999": null,
+            "Estimate_Total_50000to59999": null,
+            "MarginofError_Total_50000to5999": null,
+            "Estimate_Total_60000to74999": null,
+            "MarginofError_Total_60000to7499": null,
+            "Estimate_Total_75000to99999": null,
+            "MarginofError_Total_75000to9999": null,
+            "Estimate_Total_100000to124999": null,
+            "MarginofError_Total_100000to124": null,
+            "Estimate_Total_125000to149999": null,
+            "MarginofError_Total_125000to149": null,
+            "Estimate_Total_150000to199999": null,
+            "MarginofError_Total_150000to199": null
+          }
+        }
+      }
+    ],
+    "supportedQueryFormats": "JSON, geoJSON, PBF",
+    "supportedAppendFormats": "sqlite,geoPackage,shapefile,filegdb,featureCollection,geojson,csv,excel,jsonl,featureService,pbf",
+    "supportedAppendSourceFilterFormats": "sqlite,geoPackage,shapefile,filegdb,featureService",
+    "supportedExportFormats": "csv,shapefile,sqlite,geoPackage,filegdb,featureCollection,geojson,kml,excel",
+    "supportedConvertFileFormats": "JSON,PBF",
+    "supportedConvertContentFormats": "LayerEditCollection,FeatureCollection",
+    "supportedSpatialRelationships": [
+      "esriSpatialRelIntersects",
+      "esriSpatialRelContains",
+      "esriSpatialRelCrosses",
+      "esriSpatialRelEnvelopeIntersects",
+      "esriSpatialRelIndexIntersects",
+      "esriSpatialRelOverlaps",
+      "esriSpatialRelTouches",
+      "esriSpatialRelWithin",
+      "esriSpatialRelDisjoint",
+      "esriSpatialRelRelation"
+    ],
+    "guidFormat": "",
+    "supportsContingentValues": true,
+    "supportedContingentValuesFormats": "JSON, PBF",
+    "supportsFieldGroups": true,
+    "supportedSyncDataOptions": 260,
+    "hasStaticData": true,
+    "maxRecordCount": 3500,
+    "standardMaxRecordCount": 16000,
+    "standardMaxRecordCountNoGeometry": 32000,
+    "tileMaxRecordCount": 8000,
+    "maxRecordCountFactor": 1,
+    "capabilities": "Query,Extract"
+  }
+}

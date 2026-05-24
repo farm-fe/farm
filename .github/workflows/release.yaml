@@ -55,7 +55,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: "pnpm"
 
       - name: Install Dependencies
         uses: nick-fields/retry@v3
@@ -93,7 +92,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: "pnpm"
 
       # batch download artifacts
       - uses: actions/download-artifact@v4.1.3
