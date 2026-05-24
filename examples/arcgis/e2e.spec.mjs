@@ -9,12 +9,7 @@ export default async function (ctx) {
     startAndTest(
       projectPath,
       async (page) => {
-        await page.waitForSelector('arcgis-map');
-        await new Promise((resolve, reject) => {
-          page.on('console', (msg) => {
-            if (msg.text().includes('arcgis all ready')) resolve();
-          });
-        });
+        await page.waitForSelector('arcgis-map[data-ready="true"]', { timeout: 30_000 });
       },
       command
     );

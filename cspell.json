@@ -366,6 +366,13 @@
     "upath",
     "vueuse",
     "wasmparser",
+    "addnab",
+    "bitcode",
+    "debuginfo",
+    "sccache",
+    "SCCACHE",
+    "Swatinem",
+    "xwin",
     "xmltree"
   ],
   "ignorePaths": [

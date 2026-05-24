@@ -1,0 +1,708 @@
+{
+  "url": "https://www.arcgis.com/sharing/rest/portals/self?f=json&culture=zh-cn",
+  "status": 200,
+  "data": {
+    "2DSketchStylesGroupQuery": "title:\"Esri Sketch Styles\" AND owner:esri_en",
+    "2DStylesGroupQuery": "title:\"Esri 2D Styles\" AND owner:esri_en",
+    "3DBasemapGalleryGroupQuery": "title:\"ArcGIS Online 3D Basemaps\" AND owner:esri_zh",
+    "analysisLayersGroupQuery": "title:\"Living Atlas Analysis Layers\" AND owner:esri",
+    "basemapGalleryGroupQuery": "title:\"Japan Basemaps\" AND owner:Esri_cy_JP",
+    "cdnUrl": "https://cdn.arcgis.com",
+    "colorSetsGroupQuery": "title:\"Esri Colors\" AND owner:esri_zh",
+    "contentCategorySetsGroupQuery": "title:\"ArcGIS Online Content Category Sets\" AND owner:esri_zh",
+    "customBaseUrl": "maps.arcgis.com",
+    "default3DBasemapQuery": "typekeywords:\"sourceId#topographic\" AND type:\"Web Scene\" AND owner:esri_zh",
+    "defaultBasemap": {
+      "baseMapLayers": [
+        {
+          "opacity": 1,
+          "visibility": true,
+          "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer",
+          "layerType": "ArcGISTiledMapServiceLayer",
+          "title": "地形図 (World Topographic Map)",
+          "resourceInfo": {
+            "currentVersion": 10.3,
+            "mapName": "Layers",
+            "copyrightText": "Sources: Esri, HERE, DeLorme, Intermap, increment P Corp., GEBCO, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), swisstopo, MapmyIndia, © OpenStreetMap contributors, and the GIS User Community",
+            "supportsDynamicLayers": false,
+            "layers": [
+              {
+                "id": 0,
+                "name": "Citations",
+                "parentLayerId": -1,
+                "defaultVisibility": false,
+                "subLayerIds": null,
+                "minScale": 0,
+                "maxScale": 0
+              }
+            ],
+            "tables": [],
+            "spatialReference": {
+              "wkid": 102100,
+              "latestWkid": 3857
+            },
+            "singleFusedMapCache": true,
+            "tileInfo": {
+              "rows": 256,
+              "cols": 256,
+              "dpi": 96,
+              "format": "JPEG",
+              "compressionQuality": 90,
+              "origin": {
+                "x": -20037508.342787,
+                "y": 20037508.342787
+              },
+              "spatialReference": {
+                "wkid": 102100,
+                "latestWkid": 3857
+              },
+              "lods": [
+                {
+                  "level": 0,
+                  "resolution": 156543.03392800014,
+                  "scale": 591657527.591555
+                },
+                {
+                  "level": 1,
+                  "resolution": 78271.51696399994,
+                  "scale": 295828763.795777
+                },
+                {
+                  "level": 2,
+                  "resolution": 39135.75848200009,
+                  "scale": 147914381.897889
+                },
+                {
+                  "level": 3,
+                  "resolution": 19567.87924099992,
+                  "scale": 73957190.948944
+                },
+                {
+                  "level": 4,
+                  "resolution": 9783.93962049996,
+                  "scale": 36978595.474472
+                },
+                {
+                  "level": 5,
+                  "resolution": 4891.96981024998,
+                  "scale": 18489297.737236
+                },
+                {
+                  "level": 6,
+                  "resolution": 2445.98490512499,
+                  "scale": 9244648.868618
+                },
+                {
+                  "level": 7,
+                  "resolution": 1222.992452562495,
+                  "scale": 4622324.434309
+                },
+                {
+                  "level": 8,
+                  "resolution": 611.4962262813797,
+                  "scale": 2311162.217155
+                },
+                {
+                  "level": 9,
+                  "resolution": 305.74811314055756,
+                  "scale": 1155581.108577
+                },
+                {
+                  "level": 10,
+                  "resolution": 152.87405657041106,
+                  "scale": 577790.554289
+                },
+                {
+                  "level": 11,
+                  "resolution": 76.43702828507324,
+                  "scale": 288895.277144
+                },
+                {
+                  "level": 12,
+                  "resolution": 38.21851414253662,
+                  "scale": 144447.638572
+                },
+                {
+                  "level": 13,
+                  "resolution": 19.10925707126831,
+                  "scale": 72223.819286
+                },
+                {
+                  "level": 14,
+                  "resolution": 9.554628535634155,
+                  "scale": 36111.909643
+                },
+                {
+                  "level": 15,
+                  "resolution": 4.77731426794937,
+                  "scale": 18055.954822
+                },
+                {
+                  "level": 16,
+                  "resolution": 2.388657133974685,
+                  "scale": 9027.977411
+                },
+                {
+                  "level": 17,
+                  "resolution": 1.1943285668550503,
+                  "scale": 4513.988705
+                },
+                {
+                  "level": 18,
+                  "resolution": 0.5971642835598172,
+                  "scale": 2256.994353
+                },
+                {
+                  "level": 19,
+                  "resolution": 0.29858214164761665,
+                  "scale": 1128.497176
+                },
+                {
+                  "level": 20,
+                  "resolution": 0.14929107082380833,
+                  "scale": 564.248588
+                },
+                {
+                  "level": 21,
+                  "resolution": 0.07464553541190416,
+                  "scale": 282.124294
+                },
+                {
+                  "level": 22,
+                  "resolution": 0.03732276770595208,
+                  "scale": 141.062147
+                },
+                {
+                  "level": 23,
+                  "resolution": 0.01866138385297604,
+                  "scale": 70.5310735
+                }
+              ]
+            },
+            "initialExtent": {
+              "xmin": -28848255.049479112,
+              "ymin": -2077452.082122866,
+              "xmax": 28848255.049479112,
+              "ymax": 16430757.376790084,
+              "spatialReference": {
+                "wkid": 102100,
+                "latestWkid": 3857
+              }
+            },
+            "fullExtent": {
+              "xmin": -20037507.067161843,
+              "ymin": -19971868.880408604,
+              "xmax": 20037507.067161843,
+              "ymax": 19971868.88040863,
+              "spatialReference": {
+                "wkid": 102100,
+                "latestWkid": 3857
+              }
+            },
+            "minScale": 591657527.591555,
+            "maxScale": 70.5310735,
+            "units": "esriMeters",
+            "supportedImageFormatTypes": "PNG32,PNG24,PNG,JPG,DIB,TIFF,EMF,PS,PDF,GIF,SVG,SVGZ,BMP",
+            "documentInfo": {
+              "Title": "World Topographic Map",
+              "Author": "Esri",
+              "Comments": "",
+              "Subject": "topographic, topography, administrative boundaries, cities, water features, physiographic features, parks, landmarks, highways, roads, railways, airports, land cover, shaded relief imagery",
+              "Category": "imageryBaseMapsEarthCover (Imagery, basemaps, and land cover)",
+              "AntialiasingMode": "None",
+              "TextAntialiasingMode": "Force",
+              "Keywords": "World,Global,Europe,North America,South America,Southern Africa,Australia,New Zealand,India"
+            },
+            "capabilities": "Map,Tilemap,Query,Data",
+            "supportedQueryFormats": "JSON, AMF",
+            "exportTilesAllowed": false,
+            "maxRecordCount": 100,
+            "maxImageHeight": 4096,
+            "maxImageWidth": 4096,
+            "supportedExtensions": "KmlServer"
+          }
+        },
+        {
+          "layerType": "ArcGISTiledMapServiceLayer",
+          "url": "https://tiles.arcgis.com/tiles/wlVTGRSYTzAbjjiC/arcgis/rest/services/Anno_Topo_v3/MapServer",
+          "visibility": true,
+          "opacity": 1,
+          "title": "注記（地形図）",
+          "maxScale": 10000,
+          "resourceInfo": {
+            "id": "a96b0e73d2a16ed5",
+            "name": "Anno_Topo_JP",
+            "capabilities": "Map,TilesOnly",
+            "description": "<span style='font-family: &quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, Helvetica, Arial, sans-serif; font-size: 17px;'>ベースマップ「地形図」に重ねてご利用いただくための注記レイヤーです。</span>",
+            "serviceDescription": "",
+            "server": "wlVTGRSYTzAbjjiC",
+            "type": "MapServer",
+            "access": "SECURE",
+            "status": "created",
+            "initialExtent": {
+              "xmin": 13604922.852106074,
+              "ymin": 2827623.332984121,
+              "xmax": 16688581.36567484,
+              "ymax": 5844446.861667915,
+              "spatialReference": {
+                "wkid": 102100,
+                "wkt": null
+              }
+            },
+            "fullExtent": {
+              "xmin": 13745089.148177382,
+              "ymin": 2964751.6751970206,
+              "xmax": 16548415.069603533,
+              "ymax": 5707318.519455016,
+              "spatialReference": {
+                "wkid": 102100,
+                "wkt": null
+              }
+            },
+            "spatialReference": {
+              "wkid": 102100,
+              "wkt": null
+            },
+            "minScale": 36978595.474472,
+            "maxScale": 18055.954822,
+            "singleFusedMapCache": true,
+            "tileInfo": {
+              "rows": 256,
+              "cols": 256,
+              "dpi": 96,
+              "format": "PNG",
+              "compressionQuality": 0,
+              "storageFormat": "esriMapCacheStorageModeCompact",
+              "origin": {
+                "x": -20037508.342787,
+                "y": 20037508.342787
+              },
+              "spatialReference": {
+                "wkid": 102100,
+                "wkt": "PROJCS[\"WGS_1984_Web_Mercator_Auxiliary_Sphere\",GEOGCS[\"GCS_WGS_1984\",DATUM[\"D_WGS_1984\",SPHEROID[\"WGS_1984\",6378137.0,298.257223563]],PRIMEM[\"Greenwich\",0.0],UNIT[\"Degree\",0.0174532925199433]],PROJECTION[\"Mercator_Auxiliary_Sphere\"],PARAMETER[\"False_Easting\",0.0],PARAMETER[\"False_Northing\",0.0],PARAMETER[\"Central_Meridian\",0.0],PARAMETER[\"Standard_Parallel_1\",0.0],PARAMETER[\"Auxiliary_Sphere_Type\",0.0],UNIT[\"Meter\",1.0],AUTHORITY[\"EPSG\",3857]]"
+              },
+              "lods": [
+                {
+                  "level": 0,
+                  "resolution": 156543.03392800014,
+                  "scale": 591657527.591555
+                },
+                {
+                  "level": 1,
+                  "resolution": 78271.51696399994,
+                  "scale": 295828763.795777
+                },
+                {
+                  "level": 2,
+                  "resolution": 39135.75848200009,
+                  "scale": 147914381.897889
+                },
+                {
+                  "level": 3,
+                  "resolution": 19567.87924099992,
+                  "scale": 73957190.948944
+                },
+                {
+                  "level": 4,
+                  "resolution": 9783.93962049996,
+                  "scale": 36978595.474472
+                },
+                {
+                  "level": 5,
+                  "resolution": 4891.96981024998,
+                  "scale": 18489297.737236
+                },
+                {
+                  "level": 6,
+                  "resolution": 2445.98490512499,
+                  "scale": 9244648.868618
+                },
+                {
+                  "level": 7,
+                  "resolution": 1222.992452562495,
+                  "scale": 4622324.434309
+                },
+                {
+                  "level": 8,
+                  "resolution": 611.4962262813797,
+                  "scale": 2311162.217155
+                },
+                {
+                  "level": 9,
+                  "resolution": 305.74811314055756,
+                  "scale": 1155581.108577
+                },
+                {
+                  "level": 10,
+                  "resolution": 152.87405657041106,
+                  "scale": 577790.554289
+                },
+                {
+                  "level": 11,
+                  "resolution": 76.43702828507324,
+                  "scale": 288895.277144
+                },
+                {
+                  "level": 12,
+                  "resolution": 38.21851414253662,
+                  "scale": 144447.638572
+                },
+                {
+                  "level": 13,
+                  "resolution": 19.10925707126831,
+                  "scale": 72223.819286
+                },
+                {
+                  "level": 14,
+                  "resolution": 9.554628535634155,
+                  "scale": 36111.909643
+                },
+                {
+                  "level": 15,
+                  "resolution": 4.77731426794937,
+                  "scale": 18055.954822
+                },
+                {
+                  "level": 16,
+                  "resolution": 2.388657133974685,
+                  "scale": 9027.977411
+                },
+                {
+                  "level": 17,
+                  "resolution": 1.1943285668550503,
+                  "scale": 4513.988705
+                },
+                {
+                  "level": 18,
+                  "resolution": 0.5971642835598172,
+                  "scale": 2256.994353
+                },
+                {
+                  "level": 19,
+                  "resolution": 0.29858214164761665,
+                  "scale": 1128.497176
+                }
+              ]
+            },
+            "documentInfo": {
+              "title": "注記（地形図）",
+              "author": "csekiguc",
+              "comments": "",
+              "subject": "地形図用注記レイヤー",
+              "category": "",
+              "keywords": "basemap, Japan",
+              "credits": "",
+              "Title": "",
+              "Author": "",
+              "Comments": "",
+              "Subject": "",
+              "Category": "",
+              "AntialiasingMode": "Best",
+              "TextAntialiasingMode": "Force",
+              "Keywords": ""
+            },
+            "copyrightText": "",
+            "tileServers": [
+              "https://tiles1.arcgis.com/tiles/wlVTGRSYTzAbjjiC/arcgis/rest/services/Anno_Topo_JP/MapServer",
+              "https://tiles2.arcgis.com/tiles/wlVTGRSYTzAbjjiC/arcgis/rest/services/Anno_Topo_JP/MapServer",
+              "https://tiles3.arcgis.com/tiles/wlVTGRSYTzAbjjiC/arcgis/rest/services/Anno_Topo_JP/MapServer",
+              "https://tiles4.arcgis.com/tiles/wlVTGRSYTzAbjjiC/arcgis/rest/services/Anno_Topo_JP/MapServer"
+            ],
+            "maxExportTilesCount": 100000,
+            "exportTilesAllowed": false,
+            "mapName": "マップ25",
+            "units": "esriMeters",
+            "supportedImageFormatTypes": "PNG",
+            "layers": [
+              {
+                "id": 0,
+                "name": "Anno_Topo",
+                "parentLayerId": -1,
+                "defaultVisibility": true,
+                "subLayerIds": null,
+                "minScale": 0,
+                "maxScale": 0
+              }
+            ],
+            "tables": [],
+            "resampling": false,
+            "currentVersion": 10.5
+          }
+        }
+      ],
+      "title": "地形図"
+    },
+    "defaultDevBasemap": {
+      "baseMapLayers": [
+        {
+          "id": "World_Hillshade_2559",
+          "layerType": "ArcGISTiledMapServiceLayer",
+          "url": "https://ibasemaps-api.arcgis.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer",
+          "visibility": true,
+          "opacity": 1,
+          "title": "World Hillshade"
+        },
+        {
+          "id": "VectorTile_9568",
+          "type": "VectorTileLayer",
+          "layerType": "VectorTileLayer",
+          "title": "World Topographic Map",
+          "styleUrl": "https://cdn.arcgis.com/sharing/rest/content/items/42df0d22517e49ad84edcee4c093857d/resources/styles/root.json",
+          "visibility": true,
+          "opacity": 1
+        }
+      ],
+      "title": "Topographic"
+    },
+    "defaultExtent": {
+      "xmin": 13684866,
+      "ymin": 2322085,
+      "xmax": 17141728,
+      "ymax": 5704202,
+      "spatialReference": {
+        "wkid": 102100
+      }
+    },
+    "defaultVectorBasemap": {
+      "baseMapLayers": [
+        {
+          "id": "World_Hillshade_3805",
+          "layerType": "ArcGISTiledMapServiceLayer",
+          "url": "https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer",
+          "visibility": true,
+          "opacity": 1,
+          "title": "陰影起伏図 (World Hillshade)"
+        },
+        {
+          "id": "VectorTile_2333",
+          "type": "VectorTileLayer",
+          "layerType": "VectorTileLayer",
+          "title": "地形図 (World Topographic Map)",
+          "styleUrl": "https://cdn.arcgis.com/sharing/rest/content/items/97b0ea1cc8ca41028420dd4067873c53/resources/styles/root.json",
+          "visibility": true,
+          "opacity": 1
+        }
+      ],
+      "title": "地形図"
+    },
+    "description": null,
+    "dev3DBasemapGalleryGroupQuery": "title:\"World 3D Basemaps for Developers\" AND owner:esri_en",
+    "devBasemapGalleryGroupQuery": "title:\"China Basemaps for Developers\" AND owner:esri",
+    "featuredGroups": [
+      {
+        "owner": "esri_en",
+        "title": "Web Application Templates"
+      },
+      {
+        "owner": "esri",
+        "title": "Esri vector basemaps"
+      },
+      {
+        "owner": "esri_livefeeds",
+        "title": "Live Feeds"
+      },
+      {
+        "owner": "esri_imagery",
+        "title": "Wayback imagery"
+      }
+    ],
+    "featuredItemsGroupQuery": "title:\"注目のコンテンツ\" AND owner:Esri_cy_JP",
+    "fontManifestUrl": "https://static.arcgis.com/fonts/fontManifestUrl.json",
+    "g3DTilesGalleryGroupQuery": "title:\"ArcGIS Online Google 3D Basemaps\" AND owner:esri_en",
+    "galleryTemplatesGroupQuery": "title:\"Gallery Templates\" AND owner:esri_zh",
+    "helpBase": "https://doc.arcgis.com/zh-cn/arcgis-online/",
+    "helperServices": {
+      "geocode": [
+        {
+          "url": "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer",
+          "northLat": "Ymax",
+          "southLat": "Ymin",
+          "eastLon": "Xmax",
+          "westLon": "Xmin",
+          "name": "ArcGIS World Geocoding Service",
+          "batch": true,
+          "placefinding": true,
+          "suggest": true
+        }
+      ],
+      "defaultElevationLayers": [
+        {
+          "url": "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer",
+          "id": "globalElevation",
+          "layerType": "ArcGISTiledElevationServiceLayer",
+          "units": "esriMeters"
+        }
+      ],
+      "route": {
+        "url": "https://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "geometry": {
+        "url": "https://utility.arcgisonline.com/arcgis/rest/services/Geometry/GeometryServer"
+      },
+      "printTask": {
+        "url": "https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task"
+      },
+      "asyncPrintTask": {
+        "url": "https://print.arcgis.com/arcgis/rest/services/PrintingToolsAsync/GPServer/Export%20Web%20Map%20Task"
+      },
+      "layoutInfoTask": {
+        "url": "https://print.arcgis.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Get%20Layout%20Templates%20Info%20Task"
+      },
+      "closestFacility": {
+        "url": "https://route.arcgis.com/arcgis/rest/services/World/ClosestFacility/NAServer/ClosestFacility_World",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "asyncClosestFacility": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/ClosestFacility/GPServer/FindClosestFacilities",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "traffic": {
+        "url": "https://traffic.arcgis.com/arcgis/rest/services/World/Traffic/MapServer"
+      },
+      "trafficData": {
+        "url": "https://traffic.arcgis.com/arcgis/rest/services/World/TrafficFeeds/GPServer"
+      },
+      "serviceArea": {
+        "url": "https://route.arcgis.com/arcgis/rest/services/World/ServiceAreas/NAServer/ServiceArea_World",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "asyncServiceArea": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/ServiceAreas/GPServer/GenerateServiceAreas",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "syncVRP": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/VehicleRoutingProblemSync/GPServer/EditVehicleRoutingProblem",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "asyncVRP": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/VehicleRoutingProblem/GPServer/SolveVehicleRoutingProblem",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "asyncLocationAllocation": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/LocationAllocation/GPServer",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "elevation": {
+        "url": "https://elevation.arcgis.com/arcgis/rest/services/Tools/Elevation/GPServer"
+      },
+      "hydrology": {
+        "url": "https://hydro.arcgis.com/arcgis/rest/services/Tools/Hydrology/GPServer"
+      },
+      "elevationSync": {
+        "url": "https://elevation.arcgis.com/arcgis/rest/services/Tools/ElevationSync/GPServer"
+      },
+      "asyncRoute": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/Route/GPServer",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "routingUtilities": {
+        "url": "https://route.arcgis.com/arcgis/rest/services/World/Utilities/GPServer"
+      },
+      "asyncODCostMatrix": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/OriginDestinationCostMatrix/GPServer",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "odCostMatrix": {
+        "url": "https://route.arcgis.com/arcgis/rest/services/World/OriginDestinationCostMatrix/NAServer/OriginDestinationCostMatrix_World",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "asyncFleetRouting": {
+        "url": "https://logistics.arcgis.com/arcgis/rest/services/World/VehicleRoutingProblem/GPServer",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "packaging": {
+        "url": "https://packaging.arcgis.com/arcgis/rest/services/OfflinePackaging/GPServer",
+        "maxMapAreaItemsLimit": 16,
+        "exportTilesMap": [
+          {
+            "source": "https://services.arcgisonline.com",
+            "export": "https://tiledbasemaps.arcgis.com"
+          },
+          {
+            "source": "https://basemaps-api.arcgis.com",
+            "export": "https://basemaps.arcgis.com"
+          },
+          {
+            "source": "https://ibasemaps-api.arcgis.com",
+            "export": "https://tiledbasemaps.arcgis.com"
+          }
+        ]
+      },
+      "symbols": {
+        "url": "https://utility.arcgisonline.com/arcgis/rest/services/Utilities/Symbols/SymbolServer"
+      },
+      "orthomappingElevation": {
+        "url": "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer"
+      },
+      "workflowManager": {
+        "url": "https://workflow.arcgis.com"
+      },
+      "snapToRoads": {
+        "url": "https://route.arcgis.com/arcgis/rest/services/World/SnapToRoadsSync/GPServer",
+        "defaultTravelMode": "FEgifRtFndKNcJMJ"
+      },
+      "dashboardsUtility": {
+        "url": "https://dashboards-api.arcgis.com"
+      },
+      "aiAssistantServices": {
+        "url": "https://aiservices-beta.arcgis.com",
+        "docChatAssistant": "/skills/doc_chat",
+        "sqlGenerationAssistant": "/skills/sqlGeneration",
+        "graphQueryAssistant": "/skills/graphQueryGeneration",
+        "arcadeGenerationAssistant": "/skills/arcade_generation",
+        "discoveryAssistant": "/skills/discovery",
+        "itemInformationAssistant": "/skills/item_information_suggester",
+        "pythonAssistant": "/skills/python_code_suggester/chat"
+      },
+      "aiUtilityServices": {
+        "url": "https://aiutils.arcgis.com",
+        "api": {
+          "text_translate": "/api/text/translate",
+          "text_analyze": "/api/text/analyze",
+          "image_analyze": "/api/image/analyze",
+          "image_extract": "/api/image/extractText",
+          "embeddings": "/api/embeddings",
+          "audio_transcribe": "/api/audio/transcribe"
+        },
+        "translateUtility": "/api/translate",
+        "imageExtractTextUtility": "/api/assistant/imageExtractText"
+      },
+      "aiModels": {
+        "url": "https://aimodels.arcgis.com"
+      },
+      "geoenrichment": {
+        "url": "https://geoenrich.arcgis.com/arcgis/rest/services/World/GeoenrichmentServer"
+      }
+    },
+    "homePageFeaturedContent": "title:\"注目のマップ\" AND owner:Esri_cy_JP",
+    "homePageFeaturedContentCount": 12,
+    "isPortal": false,
+    "layerTemplatesGroupQuery": "title:\"Esri Layer Templates\" AND owner:esri_zh",
+    "livingAtlasGroupQuery": "title:\"LAW Search\" AND owner:Esri_LivingAtlas",
+    "name": null,
+    "portalHostname": "www.arcgis.com",
+    "portalMode": "multitenant",
+    "portalName": "ArcGIS Online",
+    "portalThumbnail": null,
+    "rasterFunctionTemplatesGroupQuery": "title:\"Raster Function Templates\" AND owner:esri_zh",
+    "rotatorPanels": [],
+    "staticImagesUrl": "https://static.arcgis.com/images",
+    "stylesGroupQuery": "title:\"Esri Styles\" AND owner:esri_zh",
+    "supports3DTilesServices": true,
+    "supportsHostedServices": true,
+    "symbolSetsGroupQuery": "title:\"Esri Symbols\" AND owner:esri_zh",
+    "templatesGroupQuery": "title:\"Web Application Templates\" AND owner:esri_zh",
+    "thumbnail": null,
+    "use3dBasemaps": true,
+    "useDefault3dBasemap": true,
+    "useVectorBasemaps": true,
+    "vectorBasemapGalleryGroupQuery": "title:\"Japan Vector Basemaps\" AND owner:Esri_cy_JP",
+    "httpPort": 80,
+    "httpsPort": 443,
+    "ipCntryCode": "JP",
+    "supportsOAuth": true,
+    "isReadOnly": false,
+    "currentVersion": "2026.1"
+  }
+}

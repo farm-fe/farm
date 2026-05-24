@@ -21,16 +21,12 @@
       "x86_64-unknown-linux-gnu",
       "x86_64-pc-windows-msvc",
       "x86_64-apple-darwin",
-      "x86_64-unknown-linux-musl",
-      "aarch64-unknown-linux-gnu",
-      "i686-pc-windows-msvc",
-      "armv7-unknown-linux-gnueabihf",
       "aarch64-apple-darwin",
-      "aarch64-linux-android",
-      "x86_64-unknown-freebsd",
+      "aarch64-unknown-linux-gnu",
       "aarch64-unknown-linux-musl",
-      "aarch64-pc-windows-msvc",
-      "armv7-linux-androideabi"
+      "x86_64-unknown-linux-musl",
+      "i686-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
     ]
   },
   "bin": {
@@ -42,7 +38,8 @@
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
-    "version": "napi version"
+    "version": "napi version",
+    "build:ci": "napi build --platform --profile ci"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.0.4"

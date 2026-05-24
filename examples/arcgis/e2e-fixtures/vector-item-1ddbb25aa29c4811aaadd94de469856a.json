@@ -1,0 +1,76 @@
+{
+  "url": "https://www.arcgis.com/sharing/rest/content/items/1ddbb25aa29c4811aaadd94de469856a?f=json",
+  "status": 200,
+  "data": {
+    "id": "1ddbb25aa29c4811aaadd94de469856a",
+    "owner": "esri_vector",
+    "orgId": "P3ePLMYs2RVChkJx",
+    "created": 1509719547000,
+    "modified": 1777603115000,
+    "guid": null,
+    "name": null,
+    "title": "Human Geography Dark Detail",
+    "type": "Vector Tile Service",
+    "typeKeywords": [
+      "Data",
+      "Service",
+      "Vector Tile Service"
+    ],
+    "description": "This vector tile layer presents the <b>Human Geography Dark Detail </b>style (World Edition) and provides a detailed vector basemap for the world with a dark monochromatic style and content adjusted to support Human Geography information. This layer is a detailed reference layer including administrative boundaries, roads and highways. The map includes highways, major roads, minor roads, railways, water features, building footprints, and administrative boundaries. It is designed to be used with the <a href='https://www.arcgis.com/home/item.html?id=4a3922d6d15f405d8c2b7a448a7fbad2' target='_blank' rel='nofollow ugc noopener noreferrer'>Human Geography Dark Label</a> and <a href='https://www.arcgis.com/home/item.html?id=d7397603e9274052808839b70812be50' style='color:rgb(0, 97, 155); text-decoration-line:none; font-family:&quot;Avenir Next W01&quot;, &quot;Avenir Next W00&quot;, &quot;Avenir Next&quot;, Avenir, &quot;Helvetica Neue&quot;, sans-serif;' target='_blank' rel='nofollow ugc noopener noreferrer'>Human Geography Dark Base</a> layers. This vector tile layer provides unique capabilities for customization, high-resolution display, and use in mobile devices.<div><div style='max-width:100%;'><br /></div><div style='max-width:100%;'><div>This vector tile layer is built using the same data sources used for other Esri Vector Basemaps. For details on data sources contributed by the GIS community, view the map of <a href='https://goto.arcgis.com/vectorbasemaps/community' target='_blank' rel='nofollow ugc noopener noreferrer'>Community Maps Basemap Contributors</a>. Esri Vector Basemaps are updated monthly.</div><div><br /></div><div>This layer is used in the <a href='https://www.arcgis.com/home/item.html?id=4f2e99ba65e34bb8af49733d9778fb8e' target='_blank' rel='nofollow ugc noopener noreferrer'>Human Geography Dark Map</a> web map included in ArcGIS Living Atlas of the World.</div><div><div style='margin:0px; padding:0px;'><span style='line-height:1.38462;'><div style='margin:0px; padding:0px;'><br /></div><div style='margin:0px; padding:0px;'>See the <a href='https://www.arcgis.com/home/group.html?id=30de8da907d240a0bccd5ad3ff25ef4a' target='_blank' rel='nofollow ugc noopener noreferrer'>Vector Basemaps</a> group for other vector tile layers. </div></span></div></div></div><div style='max-width:100%; overflow:auto; padding-bottom:0.375rem; display:inherit;'><div style='max-width:100%;'><br /></div><div style='max-width:100%;'><div style='margin:0px; padding:0px;'><div><font size='4'>Customize this Style</font></div><div><br /></div><div>Learn more about customizing this vector basemap style using the <a href='https://vtse.arcgis.com/' target='_blank' rel='nofollow ugc noopener noreferrer'>Vector Tile Style Editor</a>. Additional details are available in <a href='https://www.esri.com/arcgis-blog/?s=#&amp;tag=basemaps' target='_blank' rel='nofollow ugc noopener noreferrer'>ArcGIS Online Blogs</a> and the <a href='https://www.arcgis.com/home/item.html?id=c908722b0841404ba6a87d6221f201e4' target='_blank' rel='nofollow ugc noopener noreferrer'>Esri Vector Basemaps Reference Document</a>.</div></div></div></div></div>",
+    "tags": [
+      "basemap",
+      "Esri Basemaps",
+      "Human Geography Dark",
+      "esriHumangeographydarkdetail",
+      "wma",
+      "vector",
+      "World"
+    ],
+    "snippet": "This vector tile layer provides a dark monochromatic world map style with content to support human geography information. (World Edition)",
+    "thumbnail": "thumbnail/thumbnail1579130620006.jpeg",
+    "documentation": null,
+    "extent": [
+      [
+        -180,
+        -85
+      ],
+      [
+        180,
+        85
+      ]
+    ],
+    "categories": [
+      "/Categories/Status/General Availability"
+    ],
+    "spatialReference": null,
+    "accessInformation": "Sources: Esri, TomTom, Garmin, FAO, NOAA, USGS, © OpenStreetMap contributors, and the GIS User Community",
+    "classification": null,
+    "licenseInfo": "<div><img src='https://downloads.esri.com/blogs/arcgisonline/esrilogo_new.png' /> This work is licensed under the Esri Master License Agreement.<br /><div><a href='https://goto.arcgis.com/termsofuse/viewsummary' target='_blank' rel='nofollow ugc noopener noreferrer'><b>View Summary</b></a> | <b><a href='https://goto.arcgis.com/termsofuse/viewtermsofuse' target='_blank' rel='nofollow ugc noopener noreferrer'>View Terms of Use</a></b></div><div><br /></div><div>Alignment of boundaries is a presentation of the feature provided by our data vendors and does not imply endorsement by Esri or any governing authority.<br /></div><div><br /></div><div>For details on data sources contributed by the GIS community, view the map of <a href='https://goto.arcgis.com/vectorbasemaps/community' target='_blank' rel='nofollow ugc noopener noreferrer'>Community Maps Basemap Contributors</a>.<br /></div><div><br /></div><div><span style='line-height:1.38462;'>Fonts available for use in the style resource directory are under the </span><a href='https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&amp;id=OFL_web' style='line-height:26.35px;' target='_blank' rel='nofollow ugc noopener noreferrer'>OFL, Open Font License.</a></div></div>",
+    "culture": "english (united states)",
+    "properties": null,
+    "advancedSettings": null,
+    "url": "https://basemaps.arcgis.com/arcgis/rest/services/World_Basemap_v2/VectorTileServer",
+    "proxyFilter": null,
+    "access": "public",
+    "size": 322604,
+    "subInfo": 0,
+    "appCategories": [],
+    "industries": [],
+    "languages": [],
+    "largeThumbnail": null,
+    "banner": null,
+    "screenshots": [],
+    "listed": false,
+    "commentsEnabled": true,
+    "numComments": 0,
+    "numRatings": 0,
+    "avgRating": 0,
+    "numViews": 3674,
+    "contentStatus": "public_authoritative",
+    "scoreCompleteness": 100,
+    "groupDesignations": "livingatlas",
+    "apiToken1ExpirationDate": -1,
+    "apiToken2ExpirationDate": -1,
+    "lastViewed": 1779530400000
+  }
+}
