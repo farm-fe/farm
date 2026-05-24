@@ -259,7 +259,8 @@ impl Plugin for FarmPluginSass {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if param.module_type == ModuleType::Custom(String::from("sass")) {
+    if matches!(&param.module_type, ModuleType::Custom(module_type) if module_type == "sass" || module_type == "scss")
+    {
       let exe_path: PathBuf = get_exe_path(context);
       let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
         panic!(
