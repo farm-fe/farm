@@ -11,9 +11,9 @@
 //!   `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__` define flags;
 //! - append `__file` / `__hmrId` devtools metadata in development.
 //!
-//! Granular HMR, preprocessor re-scoping, custom blocks, type-dep
-//! tracking and `inlineTemplate: false` are intentionally out of scope
-//! for Phase A and are tracked as follow-up work upstream of fervid.
+//! Phase 2 adds a descriptor cache and custom-block virtual modules as
+//! foundations for granular HMR. Preprocessor re-scoping, type-dep tracking
+//! and `inlineTemplate: false` remain gated on Farm/fervid hook support.
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -35,14 +35,20 @@ use farmfe_macro_plugin::farm_plugin;
 use fervid::{CompileOptions, PropsDestructureConfig};
 
 mod consts;
+pub mod descriptor;
 mod filter;
 mod options;
 mod styles;
 
 use crate::consts::{CE_VUE_SUFFIX, VUE_MODULE_TYPE, VUE_QUERY_KEY};
+use crate::descriptor::{
+  content_hash, CustomBlockDescriptor, DescriptorCache, SfcDescriptor, StyleDescriptor,
+};
 use crate::filter::{CustomElementFilter, Filter};
 use crate::options::VuePluginOptions;
-use crate::styles::{lang_to_module_type, style_virtual_id, StyleEntry, StyleRegistry};
+use crate::styles::{
+  custom_block_virtual_id, lang_to_module_type, style_virtual_id, StyleEntry, StyleRegistry,
+};
 
 #[farm_plugin]
 pub struct FarmPluginVue {
@@ -53,6 +59,7 @@ pub struct FarmPluginVue {
   source_map: bool,
   props_destructure: Option<bool>,
   styles: StyleRegistry,
+  descriptors: DescriptorCache,
 }
 
 impl FarmPluginVue {
@@ -81,6 +88,7 @@ impl FarmPluginVue {
       source_map: opts.source_map.unwrap_or(true),
       props_destructure: features.props_destructure,
       styles: StyleRegistry::default(),
+      descriptors: DescriptorCache::default(),
     }
   }
 
@@ -93,6 +101,11 @@ impl FarmPluginVue {
 
   fn matches_filter(&self, resolved_path: &str) -> bool {
     self.filter.matches(resolved_path)
+  }
+
+  #[doc(hidden)]
+  pub fn cached_descriptor_for_test(&self, module_id: &str) -> Option<SfcDescriptor> {
+    self.descriptors.get(module_id)
   }
 }
 
@@ -219,13 +232,15 @@ impl Plugin for FarmPluginVue {
       msg: format!("[plugin-vue] fervid failed to compile SFC: {e:?}"),
     })?;
 
-    // Register each emitted style block under its virtual id and prepend
-    // an `import` so it participates in the module graph.
+    // Register each emitted style/custom block under its virtual id and
+    // prepend an `import` so it participates in the module graph.
     let mut prepend = String::new();
+    let mut style_descriptors = Vec::new();
     if !compile_result.styles.is_empty() {
       for (idx, style) in compile_result.styles.into_iter().enumerate() {
         let virtual_id = style_virtual_id(&param.module_id, idx, &style.lang, style.is_scoped);
         let module_type = lang_to_module_type(&style.lang);
+        let style_content_hash = content_hash(&style.code);
         // The first `?` in the import path is the start of the query; the
         // rest is `vue&type=style&…`. Farm preserves the entire query on
         // both load and transform sides.
@@ -236,14 +251,58 @@ impl Plugin for FarmPluginVue {
           query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
         ));
         self.styles.insert(
-          virtual_id,
+          virtual_id.clone(),
           StyleEntry {
             content: style.code,
             module_type,
           },
         );
+        style_descriptors.push(StyleDescriptor {
+          index: idx,
+          lang: style.lang.trim().to_ascii_lowercase(),
+          scoped: style.is_scoped,
+          content_hash: style_content_hash,
+          virtual_id,
+        });
       }
     }
+
+    let mut custom_block_descriptors = Vec::new();
+    if !compile_result.other_assets.is_empty() {
+      for (idx, asset) in compile_result.other_assets.into_iter().enumerate() {
+        let virtual_id = custom_block_virtual_id(&param.module_id, idx, &asset.tag_name);
+        let module_type = ModuleType::Custom(asset.tag_name.trim().to_ascii_lowercase());
+        prepend.push_str(&format!(
+          "import {q}{base}?{query}{q};\n",
+          q = '"',
+          base = param.resolved_path,
+          query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
+        ));
+        custom_block_descriptors.push(CustomBlockDescriptor {
+          index: idx,
+          tag_name: asset.tag_name.trim().to_ascii_lowercase(),
+          content_hash: content_hash(&asset.content),
+          virtual_id: virtual_id.clone(),
+        });
+        self.styles.insert(
+          virtual_id,
+          StyleEntry {
+            content: asset.content,
+            module_type,
+          },
+        );
+      }
+    }
+
+    self.descriptors.insert(
+      param.module_id.clone(),
+      SfcDescriptor {
+        source_hash: compile_result.file_hash,
+        is_custom_element: is_ce,
+        styles: style_descriptors,
+        custom_blocks: custom_block_descriptors,
+      },
+    );
 
     let mut code = compile_result.code;
     if !prepend.is_empty() {

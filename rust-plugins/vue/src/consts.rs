@@ -1,6 +1,14 @@
 // Pattern matched against module ids; if a module id has a `?vue` query, it is a
-// virtual sub-module (currently only style blocks; see `styles.rs`).
+// virtual sub-module (style and custom blocks; see `styles.rs`).
 pub const VUE_QUERY_KEY: &str = "vue";
+pub const VUE_QUERY_TYPE_KEY: &str = "type";
+pub const VUE_QUERY_INDEX_KEY: &str = "idx";
+pub const VUE_QUERY_LANG_KEY: &str = "lang";
+pub const VUE_QUERY_SCOPED_KEY: &str = "scoped";
+pub const VUE_QUERY_BLOCK_KEY: &str = "block";
+
+pub const VUE_QUERY_TYPE_STYLE: &str = "style";
+pub const VUE_QUERY_TYPE_CUSTOM: &str = "custom";
 
 /// Module type tag used in the load hook for the main `.vue` file so the
 /// transform hook can pick it up.

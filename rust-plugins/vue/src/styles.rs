@@ -1,14 +1,20 @@
-//! Style sub-block virtual module registry.
+//! SFC block virtual module registry.
 //!
 //! For every `<style>` block returned by fervid we synthesise an `id` of
 //! the form `<module_id>?vue&type=style&idx=<N>&lang=<lang>&scoped=<bool>`
-//! and remember its compiled (or raw) content. The `load` hook serves these
-//! ids directly so downstream CSS plugins (`@farmfe/plugin-sass`,
-//! `postcss`, …) can pick them up by `module_type`.
+//! and remember its compiled (or raw) content. Custom blocks are exposed as
+//! `<module_id>?vue&type=custom&idx=<N>&block=<tag>&lang=<tag>`. The `load`
+//! hook serves these ids directly so downstream plugins can pick them up by
+//! `module_type`.
 
 use farmfe_core::module::ModuleType;
 use farmfe_core::parking_lot::Mutex;
 use fxhash::FxHashMap;
+
+use crate::consts::{
+  VUE_QUERY_BLOCK_KEY, VUE_QUERY_INDEX_KEY, VUE_QUERY_LANG_KEY, VUE_QUERY_SCOPED_KEY,
+  VUE_QUERY_TYPE_CUSTOM, VUE_QUERY_TYPE_KEY, VUE_QUERY_TYPE_STYLE,
+};
 
 /// Lowercase comparison helper: a style block whose `lang` resolves to
 /// vanilla CSS.
@@ -56,5 +62,24 @@ pub fn style_virtual_id(module_id: &str, idx: usize, lang: &str, scoped: bool) -
   } else {
     lang.trim().to_ascii_lowercase()
   };
-  format!("{module_id}?vue&type=style&idx={idx}&lang={normalized_lang}&scoped={scoped}")
+  format!(
+    "{module_id}?vue&{type_key}={type_value}&{idx_key}={idx}&{lang_key}={normalized_lang}&{scoped_key}={scoped}",
+    type_key = VUE_QUERY_TYPE_KEY,
+    type_value = VUE_QUERY_TYPE_STYLE,
+    idx_key = VUE_QUERY_INDEX_KEY,
+    lang_key = VUE_QUERY_LANG_KEY,
+    scoped_key = VUE_QUERY_SCOPED_KEY,
+  )
+}
+
+pub fn custom_block_virtual_id(module_id: &str, idx: usize, tag_name: &str) -> String {
+  let normalized_tag = tag_name.trim().to_ascii_lowercase();
+  format!(
+    "{module_id}?vue&{type_key}={type_value}&{idx_key}={idx}&{block_key}={normalized_tag}&{lang_key}={normalized_tag}",
+    type_key = VUE_QUERY_TYPE_KEY,
+    type_value = VUE_QUERY_TYPE_CUSTOM,
+    idx_key = VUE_QUERY_INDEX_KEY,
+    block_key = VUE_QUERY_BLOCK_KEY,
+    lang_key = VUE_QUERY_LANG_KEY,
+  )
 }

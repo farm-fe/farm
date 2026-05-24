@@ -11,7 +11,10 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   module::ModuleType,
-  plugin::{Plugin, PluginHookContext, PluginLoadHookParam, PluginTransformHookParam},
+  plugin::{
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginTransformHookParam,
+    PluginTransformHookResult,
+  },
 };
 
 use farmfe_plugin_vue::FarmPluginVue;
@@ -59,6 +62,14 @@ fn transform_fixture(
   context: &Arc<CompilationContext>,
   name: &str,
 ) -> String {
+  transform_fixture_result(plugin, context, name).content
+}
+
+fn transform_fixture_result(
+  plugin: &FarmPluginVue,
+  context: &Arc<CompilationContext>,
+  name: &str,
+) -> PluginTransformHookResult {
   let path = fixture_path(name);
   let content = load_fixture(plugin, context, name);
   let transform_param = PluginTransformHookParam {
@@ -75,7 +86,7 @@ fn transform_fixture(
     .expect("transform returns Ok")
     .expect("transform returns Some for vue files");
   assert_eq!(res.module_type, Some(ModuleType::Ts));
-  res.content
+  res
 }
 
 #[test]
@@ -141,6 +152,33 @@ fn registers_style_virtual_modules() {
 }
 
 #[test]
+fn style_virtual_module_id_format_is_stable() {
+  let (context, plugin) = make_plugin("");
+  let path = fixture_path("scss-style.vue");
+  let code = transform_fixture(&plugin, &context, "scss-style.vue");
+  let expected_id = format!("{path}?vue&type=style&idx=0&lang=scss&scoped=true");
+  assert!(
+    code.contains("?vue&type=style&idx=0&lang=scss&scoped=true"),
+    "expected main output to import {expected_id}, got:\n{code}"
+  );
+
+  let load_param = PluginLoadHookParam {
+    module_id: expected_id,
+    resolved_path: &path,
+    query: vec![("vue".to_string(), "".to_string())],
+    meta: Default::default(),
+  };
+  let hook_ctx = PluginHookContext {
+    caller: None,
+    meta: Default::default(),
+  };
+  assert!(plugin
+    .load(&load_param, &context, &hook_ctx)
+    .unwrap()
+    .is_some());
+}
+
+#[test]
 fn scss_styles_get_custom_module_type() {
   let (context, plugin) = make_plugin("");
   let path = fixture_path("scss-style.vue");
@@ -165,6 +203,97 @@ fn scss_styles_get_custom_module_type() {
     matches!(&res.module_type, ModuleType::Custom(t) if t == "scss"),
     "scss style block should be tagged as Custom(\"scss\"), got {:?}",
     res.module_type
+  );
+}
+
+#[test]
+fn descriptor_cache_is_replaced_on_repeated_transform() {
+  let (context, plugin) = make_plugin("");
+  let path = fixture_path("scoped-style.vue");
+
+  let first_param = PluginTransformHookParam {
+    module_id: path.clone(),
+    content: r#"<template><p class="one">one</p></template><style scoped>.one{color:red}</style>"#
+      .to_string(),
+    module_type: ModuleType::Custom("vue".to_string()),
+    resolved_path: &path,
+    query: vec![],
+    meta: Default::default(),
+    source_map_chain: vec![],
+  };
+  plugin
+    .transform(&first_param, &context)
+    .expect("first transform ok")
+    .expect("first transform returns Some");
+  let first_descriptor = plugin
+    .cached_descriptor_for_test(&path)
+    .expect("descriptor cached after first transform");
+
+  let second_param = PluginTransformHookParam {
+    content: r#"<template><p class="one">two</p></template><style scoped>.one{color:blue}</style>"#
+      .to_string(),
+    ..first_param
+  };
+  plugin
+    .transform(&second_param, &context)
+    .expect("second transform ok")
+    .expect("second transform returns Some");
+  let second_descriptor = plugin
+    .cached_descriptor_for_test(&path)
+    .expect("descriptor cached after second transform");
+
+  assert_eq!(second_descriptor.styles.len(), 1);
+  assert_ne!(first_descriptor.source_hash, second_descriptor.source_hash);
+  assert_ne!(
+    first_descriptor.styles[0].content_hash,
+    second_descriptor.styles[0].content_hash
+  );
+}
+
+#[test]
+fn registers_custom_block_virtual_modules() {
+  let (context, plugin) = make_plugin("");
+  let path = fixture_path("custom-block.vue");
+  let code = transform_fixture(&plugin, &context, "custom-block.vue");
+  assert!(
+    code.contains("?vue&type=custom&idx=0&block=i18n&lang=i18n"),
+    "expected custom block import, got:\n{code}"
+  );
+
+  let virtual_id = format!("{path}?vue&type=custom&idx=0&block=i18n&lang=i18n");
+  let load_param = PluginLoadHookParam {
+    module_id: virtual_id,
+    resolved_path: &path,
+    query: vec![("vue".to_string(), "".to_string())],
+    meta: Default::default(),
+  };
+  let hook_ctx = PluginHookContext {
+    caller: None,
+    meta: Default::default(),
+  };
+  let res = plugin
+    .load(&load_param, &context, &hook_ctx)
+    .unwrap()
+    .expect("custom block virtual module should be registered");
+  assert!(
+    matches!(&res.module_type, ModuleType::Custom(t) if t == "i18n"),
+    "custom block should be tagged as Custom(\"i18n\"), got {:?}",
+    res.module_type
+  );
+  assert!(res.content.contains("\"hello\""));
+}
+
+#[test]
+fn source_map_option_requests_fervid_source_map() {
+  let (context, plugin) = make_plugin(r#"{"sourceMap":true}"#);
+  let result = transform_fixture_result(&plugin, &context, "basic.vue");
+  assert!(
+    result
+      .source_map
+      .as_deref()
+      .is_some_and(|map| map.contains("basic.vue")),
+    "expected source map to mention basic.vue, got {:?}",
+    result.source_map
   );
 }
 

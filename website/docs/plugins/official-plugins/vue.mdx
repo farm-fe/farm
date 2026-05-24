@@ -77,7 +77,7 @@ In the `config` hook the plugin populates `compilation.define` with the standard
 
 ### Style sub-blocks
 
-Each `<style>` block is exposed as a virtual sub-module with the same query format Vite/Rollup users expect:
+Each `<style>` block is exposed as a virtual sub-module with a stable query format:
 
 ```
 foo.vue?vue&type=style&idx=<N>&lang=<lang>&scoped=<bool>
@@ -85,9 +85,29 @@ foo.vue?vue&type=style&idx=<N>&lang=<lang>&scoped=<bool>
 
 For native CSS the virtual module is emitted as `ModuleType::Css` and handled by Farm's built-in CSS pipeline. For non-CSS languages (`scss`, `sass`, `less`, `stylus`) it is emitted as `ModuleType::Custom("<lang>")` so a downstream preprocessor plugin (e.g. `@farmfe/plugin-sass`) can claim it.
 
-## Feature support (Phase A)
+### Custom blocks
 
-The plugin's v0 surface intentionally covers a subset of `unplugin-vue` — anything not listed here is on the Phase B roadmap.
+Custom SFC blocks are exposed as virtual modules so user plugins can opt into blocks such as `<i18n>` or `<docs>`:
+
+```
+foo.vue?vue&type=custom&idx=<N>&block=<tag>&lang=<tag>
+```
+
+The module type is `ModuleType::Custom("<tag>")`. If no downstream plugin claims that module type, Farm's normal unknown-module behavior applies.
+
+### HMR and scoped preprocessors
+
+The plugin caches descriptor metadata during transform (source hash, style block metadata, custom block metadata, custom-element mode, and virtual ids). This is the Rust-side foundation for granular HMR, but the current safe fallback is still full SFC invalidation when Farm cannot express a narrower update.
+
+Scoped native CSS is handled by `fervid`. Scoped preprocessed blocks are passed to downstream preprocessors as `ModuleType::Custom("<lang>")`; post-preprocessor re-scoping is still gated on a Farm hook that can run after Sass/Less compilation without moving those preprocessors into plugin-vue.
+
+## Reference example
+
+See `examples/vue/` for a small Vue 3 app using `@farmfe/plugin-vue`, Vue Router, Pinia, scoped CSS, and an SCSS SFC style block.
+
+## Feature support (Phase 2)
+
+The plugin intentionally covers the `fervid`-backed subset of `unplugin-vue`; features that require upstream compiler support are gated instead of being silently emulated.
 
 | Capability                                                | Status |
 | --------------------------------------------------------- | ------ |
@@ -98,12 +118,14 @@ The plugin's v0 surface intentionally covers a subset of `unplugin-vue` — anyt
 | Custom elements via `.ce.vue` or `features.customElement` | ✅      |
 | `__VUE_*__` define flag injection                         | ✅      |
 | `<style lang="scss">` etc. handed off to CSS preprocessor | ✅      |
-| Granular HMR (template-only / style-only)                 | Phase B (currently coarse — full module reload) |
-| Preprocessor re-scoping (scope id injected post-sass)     | Phase B |
-| Custom blocks (`<i18n>`, …) executor hooks                | Phase B |
-| `inlineTemplate: false` / external template split         | Phase B |
-| Type-only `defineProps<…>()` cross-file deps              | Phase B |
-| `componentIdGenerator`                                    | Upstream fervid |
+| Custom blocks (`<i18n>`, …) virtual modules               | ✅      |
+| Descriptor cache for HMR decisions                        | ✅ foundation; current fallback is full SFC reload |
+| Granular HMR (template-only / style-only)                 | Gated on Farm/fervid hooks |
+| Preprocessor re-scoping (scope id injected post-sass)     | Gated on Farm post-preprocessor hook ordering |
+| `inlineTemplate: false` / external template split         | Gated on fervid per-block template codegen |
+| Type-only `defineProps<…>()` cross-file deps              | Gated on fervid type dependency metadata |
+| `componentIdGenerator`                                    | Gated on fervid configurable id support |
+| `<script src>` / `<template src>` external blocks         | Experimental; verify against fervid before relying on it |
 | Custom `compiler` (pin `vue/compiler-sfc` version)        | Dropped — fervid is the compiler |
 
 ## Comparison to `unplugin-vue` / `@vitejs/plugin-vue`
