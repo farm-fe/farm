@@ -1,0 +1,805 @@
+{
+  "url": "https://www.arcgis.com/sharing/rest/content/items/d5dda743788a4b0688fe48f43ae7beb9/data?f=json",
+  "status": 200,
+  "data": {
+    "operationalLayers": [
+      {
+        "id": "ACS_Income_2016_5yr_6761",
+        "layerType": "ArcGISFeatureLayer",
+        "url": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/ACS_Income_2016_5yr/FeatureServer/0",
+        "visibility": true,
+        "opacity": 1,
+        "title": "Census Tracts",
+        "itemId": "9c86eeb5ddac4e6a9f6684539222dfd0",
+        "layerDefinition": {
+          "drawingInfo": {
+            "renderer": {
+              "visualVariables": [
+                {
+                  "type": "sizeInfo",
+                  "field": "Estimate_Total",
+                  "valueExpression": null,
+                  "valueUnit": "unknown",
+                  "minSize": 6,
+                  "maxSize": 45,
+                  "minDataValue": 1500,
+                  "maxDataValue": 4000
+                },
+                {
+                  "type": "transparencyInfo",
+                  "valueExpression": "// Write a script that returns a value that will be used to draw features.\n// For example, find the percentage of males:\n// Round(($feature.MalePop / $feature.TotalPop) * 100, 2)\n\nvar lessthan25 = $feature.Estimate_Total_Lessthan10000+$feature.Estimate_Total_10000to14999+$feature.Estimate_Total_15000to19999+$feature.Estimate_Total_20000to24999;\nvar range25to50 = $feature.Estimate_Total_25000to29999+$feature.Estimate_Total_30000to34999+$feature.Estimate_Total_35000to39999+$feature.Estimate_Total_40000to44999+$feature.Estimate_Total_45000to49999;\nvar range50to100 = $feature.Estimate_Total_50000to59999+$feature.Estimate_Total_60000to74999+$feature.Estimate_Total_75000to99999\nvar range100plus = $feature.Estimate_Total_100000to124999+$feature.Estimate_Total_125000to149999+$feature.Estimate_Total_150000to199999+$feature.Estimate_Total_200000ormore ;\n\n\n// The fields from which to calculate predominance\n// The expression will return the alias of the predominant field\n\nvar fields = [lessthan25, range25to50, range50to100,range100plus];\n\nvar winner = Max(fields);\nvar total = Sum(fields);\nreturn (winner/total)*100;",
+                  "valueExpressionTitle": "Strength of Predominance",
+                  "stops": [
+                    {
+                      "value": 32,
+                      "transparency": 70
+                    },
+                    {
+                      "value": 51,
+                      "transparency": 0
+                    }
+                  ],
+                  "legendOptions": {
+                    "showLegend": false
+                  }
+                }
+              ],
+              "authoringInfo": {
+                "visualVariables": [
+                  {
+                    "type": "sizeInfo",
+                    "minSliderValue": 0,
+                    "maxSliderValue": 20474
+                  },
+                  {
+                    "type": "transparencyInfo",
+                    "minSliderValue": 25.981243487321986,
+                    "maxSliderValue": 100
+                  }
+                ]
+              },
+              "type": "uniqueValue",
+              "valueExpression": "var lessthan25 = $feature.Estimate_Total_Lessthan10000+$feature.Estimate_Total_10000to14999+$feature.Estimate_Total_15000to19999+$feature.Estimate_Total_20000to24999;\r\nvar range25to50 = $feature.Estimate_Total_25000to29999+$feature.Estimate_Total_30000to34999+$feature.Estimate_Total_35000to39999+$feature.Estimate_Total_40000to44999+$feature.Estimate_Total_45000to49999;\r\nvar range50to100 = $feature.Estimate_Total_50000to59999+$feature.Estimate_Total_60000to74999+$feature.Estimate_Total_75000to99999\r\nvar range100plus = $feature.Estimate_Total_100000to124999+$feature.Estimate_Total_125000to149999+$feature.Estimate_Total_150000to199999+$feature.Estimate_Total_200000ormore ;\r\n\r\n\r\n// The fields from which to calculate predominance\r\n// The expression will return the alias of the predominant field\r\n\r\nvar fields = [\r\n  { value: lessthan25, alias: \"Households making less than $25,000\" },\r\n  { value: range25to50, alias: \"Households making $25,000 to $50,000\" },\r\n  { value: range50to100, alias: \"Households making $50,000 to $100,000\" },\r\n  { value: range100plus, alias: \"Households making $100,000 or more\" }\r\n];\r\n\r\n// Returns the predominant category as the alias\r\n// defined in the fields array. If there is a tie,\r\n// then both names are concatenated and used to\r\n// indicate the tie\r\n\r\nfunction getPredominantCategory(fieldsArray){\r\n  var maxValue = -Infinity;\r\n  var maxCategory = \"\";\r\n  for(var k in fieldsArray){\r\n    if(fieldsArray[k].value > maxValue){\r\n      maxValue = fieldsArray[k].value;\r\n      maxCategory = fieldsArray[k].alias;\r\n    } else if (fieldsArray[k].value == maxValue){\r\n      maxCategory = maxCategory + \"/\" + fieldsArray[k].alias;\r\n    }\r\n  }\r\n  return IIF(maxValue <= 0, null, maxCategory);\r\n}\r\n\r\ngetPredominantCategory(fields);",
+              "valueExpressionTitle": "Households by Income Range",
+              "uniqueValueInfos": [
+                {
+                  "value": "Households making less than $25,000",
+                  "symbol": {
+                    "angle": 0,
+                    "xoffset": 0,
+                    "yoffset": 0,
+                    "type": "esriPMS",
+                    "url": "https://static.arcgis.com/images/Symbols/Firefly/FireflyC19.png",
+                    "imageData": "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",
+                    "contentType": "image/png",
+                    "width": 11.25,
+                    "height": 11.25
+                  },
+                  "label": "Households making less than $25,000"
+                },
+                {
+                  "value": "Households making $25,000 to $50,000",
+                  "symbol": {
+                    "angle": 0,
+                    "xoffset": 0,
+                    "yoffset": 0,
+                    "type": "esriPMS",
+                    "url": "https://static.arcgis.com/images/Symbols/Firefly/FireflyD1.png",
+                    "imageData": "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",
+                    "contentType": "image/png",
+                    "width": 11.25,
+                    "height": 11.25
+                  },
+                  "label": "Households making $25,000 to $50,000"
+                },
+                {
+                  "value": "Households making $50,000 to $100,000",
+                  "symbol": {
+                    "angle": 0,
+                    "xoffset": 0,
+                    "yoffset": 0,
+                    "type": "esriPMS",
+                    "url": "https://static.arcgis.com/images/Symbols/Firefly/FireflyC5.png",
+                    "imageData": "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",
+                    "contentType": "image/png",
+                    "width": 11.25,
+                    "height": 11.25
+                  },
+                  "label": "Households making $50,000 to $100,000"
+                },
+                {
+                  "value": "Households making $100,000 or more",
+                  "symbol": {
+                    "angle": 0,
+                    "xoffset": 0,
+                    "yoffset": 0,
+                    "type": "esriPMS",
+                    "url": "https://static.arcgis.com/images/Symbols/Firefly/FireflyC8.png",
+                    "imageData": "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",
+                    "contentType": "image/png",
+                    "width": 11.25,
+                    "height": 11.25
+                  },
+                  "label": "Households making $100,000 or more"
+                }
+              ]
+            }
+          },
+          "minScale": 20907359,
+          "maxScale": 0
+        },
+        "popupInfo": {
+          "title": "<div style='text-align: center;'>{ST_ABBREV} Tract {ID}</div>",
+          "fieldInfos": [
+            {
+              "fieldName": "OBJECTID",
+              "label": "OBJECTID",
+              "isEditable": false,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "ID",
+              "label": "ID",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "NAME",
+              "label": "NAME",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "STATE_NAME",
+              "label": "STATE_NAME",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "ST_ABBREV",
+              "label": "ST_ABBREV",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "AREA",
+              "label": "AREA",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 2,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "ID_2",
+              "label": "ID_2",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 2,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Id_1",
+              "label": "Id",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "Id2",
+              "label": "Id2",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 2,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Geography",
+              "label": "Geography",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox"
+            },
+            {
+              "fieldName": "Estimate_Total",
+              "label": "Total Households",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total",
+              "label": "(MOE) Total Households",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_Lessthan10000",
+              "label": "Households making less than $10000",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_Lessthan100",
+              "label": "(MOE) Households making less than $10000 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_10000to14999",
+              "label": "Households making $10000 to $14999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_10000to1499",
+              "label": "(MOE) Households making $10000 to $14999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_15000to19999",
+              "label": "Households making $15000 to $19999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_15000to1999",
+              "label": "(MOE) Households making $15000 to $19999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_20000to24999",
+              "label": "Households making $20000 to $24999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_20000to2499",
+              "label": "(MOE) Households making $20000 to $24999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_25000to29999",
+              "label": "Households making $25000 to $29999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_25000to2999",
+              "label": "(MOE) Households making $25000 to $29999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_30000to34999",
+              "label": "Households making $30000 to $34999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_30000to3499",
+              "label": "(MOE) Households making $30000 to $34999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_35000to39999",
+              "label": "Households making $35000 to $39999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_35000to3999",
+              "label": "(MOE) Households making $35000 to $39999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_40000to44999",
+              "label": "Households making $40000 to $44999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_40000to4499",
+              "label": "(MOE) Households making $40000 to $44999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_45000to49999",
+              "label": "Households making $45000 to $49999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_45000to4999",
+              "label": "(MOE) Households making $45000 to $49999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_50000to59999",
+              "label": "Households making $50000 to $59999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_50000to5999",
+              "label": "(MOE) Households making $50000 to $59999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_60000to74999",
+              "label": "Households making $60000 to $74999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_60000to7499",
+              "label": "(MOE) Households making $60000 to $74999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_75000to99999",
+              "label": "Households making $75000 to $99999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_75000to9999",
+              "label": "(MOE) Households making $75000 to $99999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_100000to124999",
+              "label": "Households making $100000 to $124999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_100000to124",
+              "label": "(MOE) Households making $100000 to $124999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_125000to149999",
+              "label": "Households making $125000 to $149999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_125000to149",
+              "label": "(MOE) Households making $125000 to $149999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_150000to199999",
+              "label": "Households making $150000 to $199999",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_150000to199",
+              "label": "(MOE) Households making $150000 to $199999 ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "Estimate_Total_200000ormore",
+              "label": "Households making $200000 or more",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "MarginofError_Total_200000ormor",
+              "label": "(MOE) Households making $200000 or more ",
+              "isEditable": true,
+              "tooltip": "",
+              "visible": false,
+              "stringFieldOption": "textbox",
+              "format": {
+                "places": 0,
+                "digitSeparator": true
+              }
+            },
+            {
+              "fieldName": "expression/expr6",
+              "visible": true
+            }
+          ],
+          "description": "<div style=''><div style='text-align: center;'>The predominant income range here is:</div><div style='text-align: center;'><font size='3'><b> {expression/expr6}</b></font></div></div>",
+          "showAttachments": true,
+          "expressionInfos": [
+            {
+              "name": "expr6",
+              "title": "Predominant Income Range",
+              "expression": "var lessthan25 = $feature.Estimate_Total_Lessthan10000+$feature.Estimate_Total_10000to14999+$feature.Estimate_Total_15000to19999+$feature.Estimate_Total_20000to24999;\r\nvar range25to50 = $feature.Estimate_Total_25000to29999+$feature.Estimate_Total_30000to34999+$feature.Estimate_Total_35000to39999+$feature.Estimate_Total_40000to44999+$feature.Estimate_Total_45000to49999;\r\nvar range50to100 = $feature.Estimate_Total_50000to59999+$feature.Estimate_Total_60000to74999+$feature.Estimate_Total_75000to99999\r\nvar range100plus = $feature.Estimate_Total_100000to124999+$feature.Estimate_Total_125000to149999+$feature.Estimate_Total_150000to199999+$feature.Estimate_Total_200000ormore ;\r\n\r\n\r\n// The fields from which to calculate predominance\r\n// The expression will return the alias of the predominant field\r\n\r\nvar fields = [\r\n  { value: lessthan25, alias: \"Less than $25,000\" },\r\n  { value: range25to50, alias: \"$25,000 to $50,000\" },\r\n  { value: range50to100, alias: \"$50,000 to $100,000\" },\r\n  { value: range100plus, alias: \"$100,000 or more\" }\r\n];\r\n\r\n// Returns the predominant category as the alias\r\n// defined in the fields array. If there is a tie,\r\n// then both names are concatenated and used to\r\n// indicate the tie\r\n\r\nfunction getPredominantCategory(fieldsArray){\r\n  var maxValue = -Infinity;\r\n  var maxCategory = \"\";\r\n  for(var k in fieldsArray){\r\n    if(fieldsArray[k].value > maxValue){\r\n      maxValue = fieldsArray[k].value;\r\n      maxCategory = fieldsArray[k].alias;\r\n    } else if (fieldsArray[k].value == maxValue){\r\n      maxCategory = maxCategory + \"/\" + fieldsArray[k].alias;\r\n    }\r\n  }\r\n  return IIF(maxValue <= 0, null, maxCategory);\r\n}\r\n\r\ngetPredominantCategory(fields);",
+              "returnType": "string"
+            }
+          ],
+          "mediaInfos": []
+        }
+      }
+    ],
+    "baseMap": {
+      "baseMapLayers": [
+        {
+          "id": "VectorTile_9648",
+          "type": "VectorTileLayer",
+          "layerType": "VectorTileLayer",
+          "title": "Human Geography Dark Base",
+          "styleUrl": "https://www.arcgis.com/sharing/rest/content/items/d7397603e9274052808839b70812be50/resources/styles/root.json",
+          "itemId": "d7397603e9274052808839b70812be50",
+          "visibility": true,
+          "opacity": 1
+        },
+        {
+          "id": "VectorTile_5091",
+          "type": "VectorTileLayer",
+          "layerType": "VectorTileLayer",
+          "title": "Human Geography Dark Label",
+          "styleUrl": "https://www.arcgis.com/sharing/rest/content/items/4a3922d6d15f405d8c2b7a448a7fbad2/resources/styles/root.json",
+          "itemId": "4a3922d6d15f405d8c2b7a448a7fbad2",
+          "isReference": true,
+          "visibility": true,
+          "opacity": 0.52
+        },
+        {
+          "id": "VectorTile_6656",
+          "type": "VectorTileLayer",
+          "layerType": "VectorTileLayer",
+          "title": "Human Geography Dark Detail",
+          "styleUrl": "https://www.arcgis.com/sharing/rest/content/items/1ddbb25aa29c4811aaadd94de469856a/resources/styles/root.json",
+          "itemId": "1ddbb25aa29c4811aaadd94de469856a",
+          "isReference": true,
+          "visibility": true,
+          "opacity": 0.13,
+          "minScale": 295828763.795777,
+          "maxScale": 70.5310735
+        }
+      ],
+      "title": "Human Geography Dark Base"
+    },
+    "spatialReference": {
+      "wkid": 102100,
+      "latestWkid": 3857
+    },
+    "authoringApp": "WebMapViewer",
+    "authoringAppVersion": "8.4",
+    "version": "2.18",
+    "bookmarks": [
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100
+          },
+          "xmax": -7780496.320588278,
+          "xmin": -14022649.79846725,
+          "ymax": 6466541.417701793,
+          "ymin": 2523613.7506403094
+        },
+        "name": "USA"
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -8268935.5141521925,
+          "xmin": -8449021.152792135,
+          "ymax": 4911082.392174425,
+          "ymin": 4815688.980874488
+        },
+        "name": "Philadelphia, PA"
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -8471646.513164558,
+          "xmin": -8651732.1518045,
+          "ymax": 4754539.358246323,
+          "ymin": 4659145.946946386
+        },
+        "name": "Washington D.C."
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -9286446.308740435,
+          "xmin": -9466531.94738038,
+          "ymax": 4048956.3717513583,
+          "ymin": 3953562.960451422
+        },
+        "name": "Atlanta, GA"
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -11496183.447902936,
+          "xmin": -11856354.725182515,
+          "ymax": 4926954.23817908,
+          "ymin": 4736167.415579373
+        },
+        "name": "Denver, CO"
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -13392468.597693218,
+          "xmin": -13752639.874972796,
+          "ymax": 6137790.092498017,
+          "ymin": 5947003.269898309
+        },
+        "name": "Seattle, WA"
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -9670354.60957043,
+          "xmin": -9850440.248210376,
+          "ymax": 5191398.973660314,
+          "ymin": 5096005.562360378
+        },
+        "name": "Chicago, IL"
+      },
+      {
+        "extent": {
+          "spatialReference": {
+            "wkid": 102100,
+            "latestWkid": 3857
+          },
+          "xmax": -8140062.684463336,
+          "xmin": -8320148.32310328,
+          "ymax": 5019470.098282847,
+          "ymin": 4924076.68698291
+        },
+        "name": "New York City, NY"
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+---
+source: rust-ecosystem/tailwindcss-node/tests/optimize.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+plain:
+-- input --
+.foo { color: red; }
+
+-- output --
+.foo {
+  color: red;
+}
+
+
+nesting:
+-- input --
+.foo { color: blue; & .bar { color: red; } }
+
+-- output --
+.foo {
+  color: #00f;
+}
+
+.foo .bar {
+  color: red;
+}
+
+
+media-not:
+-- input --
+@media not (hover: hover) { .foo { color: red; } }
+
+-- output --
+@media not all and (hover: hover) {
+  .foo {
+    color: red;
+  }
+}
+
+
+minify:
+-- input --
+.foo {
+  color: red;
+  background: blue;
+}
+
+-- output --
+.foo{color:red;background:#00f}

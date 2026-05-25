@@ -65,7 +65,7 @@ export default defineConfig({
 ```
 目前 Farm 官方支持 2 个 Rust 插件：
 * **`@farmfe/plugin-react`**：Farm rust 插件，用于 React jsx 编译和 React-refresh 注入。
-* **`@farmfe/plugin-sass`**：用于 scss 文件编译的 Farm rust 插件，内部使用 `sass-embedded`。
+* **`@farmfe/plugin-sass`**：用于 scss 文件编译的 Farm rust 插件，底层使用 `grass`。
 
 :::tip
 要了解有关 rust 插件的更多信息，请参阅 [Rust 插件](/docs/plugins/official-plugins/overview#rust-插件)

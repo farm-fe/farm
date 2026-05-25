@@ -1,0 +1,640 @@
+{
+  "url": "https://services.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/ACS_Income_2016_5yr/FeatureServer/0/query?f=json&where=1%3D1&outFields=*&returnGeometry=true&resultRecordCount=5&outSR=102100",
+  "status": 200,
+  "data": {
+    "objectIdFieldName": "OBJECTID",
+    "uniqueIdField": {
+      "name": "OBJECTID",
+      "isSystemMaintained": true
+    },
+    "globalIdFieldName": "",
+    "geometryType": "esriGeometryPoint",
+    "spatialReference": {
+      "wkid": 102100,
+      "latestWkid": 3857
+    },
+    "fields": [
+      {
+        "name": "OBJECTID",
+        "type": "esriFieldTypeOID",
+        "alias": "OBJECTID",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "ID",
+        "type": "esriFieldTypeString",
+        "alias": "ID",
+        "sqlType": "sqlTypeOther",
+        "length": 11,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "NAME",
+        "type": "esriFieldTypeString",
+        "alias": "NAME",
+        "sqlType": "sqlTypeOther",
+        "length": 12,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "STATE_NAME",
+        "type": "esriFieldTypeString",
+        "alias": "STATE_NAME",
+        "sqlType": "sqlTypeOther",
+        "length": 20,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "ST_ABBREV",
+        "type": "esriFieldTypeString",
+        "alias": "ST_ABBREV",
+        "sqlType": "sqlTypeOther",
+        "length": 2,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "AREA",
+        "type": "esriFieldTypeDouble",
+        "alias": "AREA",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "ID_2",
+        "type": "esriFieldTypeDouble",
+        "alias": "ID_2",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Id_1",
+        "type": "esriFieldTypeString",
+        "alias": "Id",
+        "sqlType": "sqlTypeOther",
+        "length": 8000,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Id2",
+        "type": "esriFieldTypeDouble",
+        "alias": "Id2",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Geography",
+        "type": "esriFieldTypeString",
+        "alias": "Geography",
+        "sqlType": "sqlTypeOther",
+        "length": 8000,
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_Lessthan10000",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_Lessthan10000",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_Lessthan100",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_Lessthan10000",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_10000to14999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_10000to14999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_10000to1499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_10000to14999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_15000to19999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_15000to19999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_15000to1999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_15000to19999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_20000to24999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_20000to24999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_20000to2499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_20000to24999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_25000to29999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_25000to29999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_25000to2999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_25000to29999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_30000to34999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_30000to34999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_30000to3499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_30000to34999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_35000to39999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_35000to39999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_35000to3999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_35000to39999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_40000to44999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_40000to44999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_40000to4499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_40000to44999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_45000to49999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_45000to49999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_45000to4999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_45000to49999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_50000to59999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_50000to59999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_50000to5999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_50000to59999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_60000to74999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_60000to74999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_60000to7499",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_60000to74999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_75000to99999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_75000to99999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_75000to9999",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_75000to99999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_100000to124999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_100000to124999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_100000to124",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_100000to124999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_125000to149999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_125000to149999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_125000to149",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_125000to149999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_150000to199999",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_150000to199999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_150000to199",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_150000to199999",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "Estimate_Total_200000ormore",
+        "type": "esriFieldTypeInteger",
+        "alias": "Estimate_Total_200000ormore",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      },
+      {
+        "name": "MarginofError_Total_200000ormor",
+        "type": "esriFieldTypeInteger",
+        "alias": "MarginofError_Total_200000ormore",
+        "sqlType": "sqlTypeOther",
+        "domain": null,
+        "defaultValue": null
+      }
+    ],
+    "exceededTransferLimit": true,
+    "features": [
+      {
+        "attributes": {
+          "OBJECTID": 1,
+          "ID": "01001020100",
+          "NAME": "010010201.00",
+          "STATE_NAME": "Alabama",
+          "ST_ABBREV": "AL",
+          "AREA": 3.80327753671,
+          "ID_2": 1001020100,
+          "Id_1": "1400000US01001020100",
+          "Id2": 1001020100,
+          "Geography": "Census Tract 201, Autauga County, Alabama",
+          "Estimate_Total": 740,
+          "MarginofError_Total": 62,
+          "Estimate_Total_Lessthan10000": 32,
+          "MarginofError_Total_Lessthan100": 31,
+          "Estimate_Total_10000to14999": 48,
+          "MarginofError_Total_10000to1499": 34,
+          "Estimate_Total_15000to19999": 37,
+          "MarginofError_Total_15000to1999": 31,
+          "Estimate_Total_20000to24999": 30,
+          "MarginofError_Total_20000to2499": 21,
+          "Estimate_Total_25000to29999": 49,
+          "MarginofError_Total_25000to2999": 51,
+          "Estimate_Total_30000to34999": 36,
+          "MarginofError_Total_30000to3499": 30,
+          "Estimate_Total_35000to39999": 25,
+          "MarginofError_Total_35000to3999": 27,
+          "Estimate_Total_40000to44999": 18,
+          "MarginofError_Total_40000to4499": 14,
+          "Estimate_Total_45000to49999": 19,
+          "MarginofError_Total_45000to4999": 16,
+          "Estimate_Total_50000to59999": 37,
+          "MarginofError_Total_50000to5999": 32,
+          "Estimate_Total_60000to74999": 100,
+          "MarginofError_Total_60000to7499": 42,
+          "Estimate_Total_75000to99999": 136,
+          "MarginofError_Total_75000to9999": 60,
+          "Estimate_Total_100000to124999": 53,
+          "MarginofError_Total_100000to124": 27,
+          "Estimate_Total_125000to149999": 56,
+          "MarginofError_Total_125000to149": 35,
+          "Estimate_Total_150000to199999": 55,
+          "MarginofError_Total_150000to199": 31,
+          "Estimate_Total_200000ormore": 9,
+          "MarginofError_Total_200000ormor": 11
+        },
+        "geometry": {
+          "x": -9627663.4284,
+          "y": 3825953.0732999966
+        }
+      },
+      {
+        "attributes": {
+          "OBJECTID": 2,
+          "ID": "01001020200",
+          "NAME": "010010202.00",
+          "STATE_NAME": "Alabama",
+          "ST_ABBREV": "AL",
+          "AREA": 1.29210007714,
+          "ID_2": 1001020200,
+          "Id_1": "1400000US01001020200",
+          "Id2": 1001020200,
+          "Geography": "Census Tract 202, Autauga County, Alabama",
+          "Estimate_Total": 838,
+          "MarginofError_Total": 100,
+          "Estimate_Total_Lessthan10000": 79,
+          "MarginofError_Total_Lessthan100": 44,
+          "Estimate_Total_10000to14999": 145,
+          "MarginofError_Total_10000to1499": 56,
+          "Estimate_Total_15000to19999": 52,
+          "MarginofError_Total_15000to1999": 37,
+          "Estimate_Total_20000to24999": 18,
+          "MarginofError_Total_20000to2499": 19,
+          "Estimate_Total_25000to29999": 35,
+          "MarginofError_Total_25000to2999": 33,
+          "Estimate_Total_30000to34999": 32,
+          "MarginofError_Total_30000to3499": 34,
+          "Estimate_Total_35000to39999": 27,
+          "MarginofError_Total_35000to3999": 22,
+          "Estimate_Total_40000to44999": 89,
+          "MarginofError_Total_40000to4499": 70,
+          "Estimate_Total_45000to49999": 43,
+          "MarginofError_Total_45000to4999": 28,
+          "Estimate_Total_50000to59999": 29,
+          "MarginofError_Total_50000to5999": 22,
+          "Estimate_Total_60000to74999": 44,
+          "MarginofError_Total_60000to7499": 26,
+          "Estimate_Total_75000to99999": 133,
+          "MarginofError_Total_75000to9999": 58,
+          "Estimate_Total_100000to124999": 65,
+          "MarginofError_Total_100000to124": 33,
+          "Estimate_Total_125000to149999": 47,
+          "MarginofError_Total_125000to149": 28,
+          "Estimate_Total_150000to199999": 0,
+          "MarginofError_Total_150000to199": 11,
+          "Estimate_Total_200000ormore": 0,
+          "MarginofError_Total_200000ormor": 11
+        },
+        "geometry": {
+          "x": -9626106.1876,
+          "y": 3825397.441399999
+        }
+      },
+      {
+        "attributes": {
+          "OBJECTID": 3,
+          "ID": "01001020300",
+          "NAME": "010010203.00",
+          "STATE_NAME": "Alabama",
+          "ST_ABBREV": "AL",
+          "AREA": 2.06926868225,
+          "ID_2": 1001020300,
+          "Id_1": "1400000US01001020300",
+          "Id2": 1001020300,
+          "Geography": "Census Tract 203, Autauga County, Alabama",
+          "Estimate_Total": 1223,
+          "MarginofError_Total": 116,
+          "Estimate_Total_Lessthan10000": 126,
+          "MarginofError_Total_Lessthan100": 57,
+          "Estimate_Total_10000to14999": 53,
+          "MarginofError_Total_10000to1499": 55,
+          "Estimate_Total_15000to19999": 71,
+          "MarginofError_Total_15000to1999": 47,
+          "Estimate_Total_20000to24999": 28,
+          "MarginofError_Total_20000to2499": 23,
+          "Estimate_Total_25000to29999": 73,
+          "MarginofError_Total_25000to2999": 45,
+          "Estimate_Total_30000to34999": 49,
+          "MarginofError_Total_30000to3499": 39,
+          "Estimate_Total_35000to39999": 65,
+          "MarginofError_Total_35000to3999": 48,
+          "Estimate_Total_40000to44999": 77,
+          "MarginofError_Total_40000to4499": 53,
+          "Estimate_Total_45000to49999": 59,
+          "MarginofError_Total_45000to4999": 41,
+          "Estimate_Total_50000to59999": 203,
+          "MarginofError_Total_50000to5999": 96,
+          "Estimate_Total_60000to74999": 158,
+          "MarginofError_Total_60000to7499": 62,
+          "Estimate_Total_75000to99999": 109,
+          "MarginofError_Total_75000to9999": 59,
+          "Estimate_Total_100000to124999": 102,
+          "MarginofError_Total_100000to124": 53,
+          "Estimate_Total_125000to149999": 28,
+          "MarginofError_Total_125000to149": 28,
+          "Estimate_Total_150000to199999": 22,
+          "MarginofError_Total_150000to199": 20,
+          "Estimate_Total_200000ormore": 0,
+          "MarginofError_Total_200000ormor": 11
+        },
+        "geometry": {
+          "x": -9624642.9933,
+          "y": 3825694.1059999987
+        }
+      },
+      {
+        "attributes": {
+          "OBJECTID": 4,
+          "ID": "01001020400",
+          "NAME": "010010204.00",
+          "STATE_NAME": "Alabama",
+          "ST_ABBREV": "AL",
+          "AREA": 2.47121887056,
+          "ID_2": 1001020400,
+          "Id_1": "1400000US01001020400",
+          "Id2": 1001020400,
+          "Geography": "Census Tract 204, Autauga County, Alabama",
+          "Estimate_Total": 1776,
+          "MarginofError_Total": 152,
+          "Estimate_Total_Lessthan10000": 29,
+          "MarginofError_Total_Lessthan100": 27,
+          "Estimate_Total_10000to14999": 62,
+          "MarginofError_Total_10000to1499": 42,
+          "Estimate_Total_15000to19999": 110,
+          "MarginofError_Total_15000to1999": 58,
+          "Estimate_Total_20000to24999": 164,
+          "MarginofError_Total_20000to2499": 83,
+          "Estimate_Total_25000to29999": 95,
+          "MarginofError_Total_25000to2999": 89,
+          "Estimate_Total_30000to34999": 115,
+          "MarginofError_Total_30000to3499": 72,
+          "Estimate_Total_35000to39999": 78,
+          "MarginofError_Total_35000to3999": 44,
+          "Estimate_Total_40000to44999": 143,
+          "MarginofError_Total_40000to4499": 81,
+          "Estimate_Total_45000to49999": 56,
+          "MarginofError_Total_45000to4999": 41,
+          "Estimate_Total_50000to59999": 167,
+          "MarginofError_Total_50000to5999": 61,
+          "Estimate_Total_60000to74999": 158,
+          "MarginofError_Total_60000to7499": 53,
+          "Estimate_Total_75000to99999": 328,
+          "MarginofError_Total_75000to9999": 81,
+          "Estimate_Total_100000to124999": 118,
+          "MarginofError_Total_100000to124": 75,
+          "Estimate_Total_125000to149999": 67,
+          "MarginofError_Total_125000to149": 38,
+          "Estimate_Total_150000to199999": 82,
+          "MarginofError_Total_150000to199": 62,
+          "Estimate_Total_200000ormore": 4,
+          "MarginofError_Total_200000ormor": 8
+        },
+        "geometry": {
+          "x": -9622793.1494,
+          "y": 3824991.336099997
+        }
+      },
+      {
+        "attributes": {
+          "OBJECTID": 5,
+          "ID": "01001020500",
+          "NAME": "010010205.00",
+          "STATE_NAME": "Alabama",
+          "ST_ABBREV": "AL",
+          "AREA": 4.43541594448,
+          "ID_2": 1001020500,
+          "Id_1": "1400000US01001020500",
+          "Id2": 1001020500,
+          "Geography": "Census Tract 205, Autauga County, Alabama",
+          "Estimate_Total": 4289,
+          "MarginofError_Total": 291,
+          "Estimate_Total_Lessthan10000": 216,
+          "MarginofError_Total_Lessthan100": 163,
+          "Estimate_Total_10000to14999": 331,
+          "MarginofError_Total_10000to1499": 192,
+          "Estimate_Total_15000to19999": 52,
+          "MarginofError_Total_15000to1999": 75,
+          "Estimate_Total_20000to24999": 228,
+          "MarginofError_Total_20000to2499": 162,
+          "Estimate_Total_25000to29999": 81,
+          "MarginofError_Total_25000to2999": 75,
+          "Estimate_Total_30000to34999": 273,
+          "MarginofError_Total_30000to3499": 174,
+          "Estimate_Total_35000to39999": 284,
+          "MarginofError_Total_35000to3999": 224,
+          "Estimate_Total_40000to44999": 269,
+          "MarginofError_Total_40000to4499": 142,
+          "Estimate_Total_45000to49999": 175,
+          "MarginofError_Total_45000to4999": 176,
+          "Estimate_Total_50000to59999": 431,
+          "MarginofError_Total_50000to5999": 185,
+          "Estimate_Total_60000to74999": 259,
+          "MarginofError_Total_60000to7499": 144,
+          "Estimate_Total_75000to99999": 476,
+          "MarginofError_Total_75000to9999": 210,
+          "Estimate_Total_100000to124999": 698,
+          "MarginofError_Total_100000to124": 252,
+          "Estimate_Total_125000to149999": 212,
+          "MarginofError_Total_125000to149": 133,
+          "Estimate_Total_150000to199999": 207,
+          "MarginofError_Total_150000to199": 141,
+          "Estimate_Total_200000ormore": 97,
+          "MarginofError_Total_200000ormor": 112
+        },
+        "geometry": {
+          "x": -9620641.8999,
+          "y": 3824548.6788000017
+        }
+      }
+    ]
+  }
+}

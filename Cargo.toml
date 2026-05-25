@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*", "packages/create-farm", "rust-plugins/*"]
+members = ["crates/*", "packages/create-farm", "rust-plugins/*", "rust-ecosystem/*"]
 resolver = "2"
 
 [workspace.package]
@@ -52,6 +52,13 @@ lto = "fat"
 opt-level = 3
 strip = true
 panic = "abort"
+
+[profile.ci]
+inherits = "release"
+lto = false
+codegen-units = 16
+debug = false
+strip = "debuginfo"
 
 [profile.ci-test]
 inherits = "release"
