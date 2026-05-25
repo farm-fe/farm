@@ -60,7 +60,14 @@ fn test() {
 
 #[test]
 fn transforms_vue_virtual_scss_modules() {
-  let resolved_path = "C:/project/src/CounterCard.vue?vue&type=style&idx=0&lang=scss&scoped=true";
+  let resolved_path = format!(
+    "{}?vue&type=style&idx=0&lang=scss&scoped=true",
+    std::env::current_dir()
+      .unwrap()
+      .join("src")
+      .join("CounterCard.vue")
+      .to_string_lossy()
+  );
   let config = Config::default();
   let plugin = Arc::new(FarmPluginSass::new(&config, "{}".to_string()));
   let context = Arc::new(CompilationContext::new(config, vec![plugin.clone()]).unwrap());
@@ -68,7 +75,7 @@ fn transforms_vue_virtual_scss_modules() {
   let transformed = plugin
     .transform(
       &PluginTransformHookParam {
-        resolved_path,
+        resolved_path: &resolved_path,
         content: "$accent: #40916c;.card{background: rgba($accent, 0.12);button{background: $accent;color: white;}}".to_string(),
         module_type: ModuleType::Custom(String::from("scss")),
         query: vec![
@@ -78,7 +85,7 @@ fn transforms_vue_virtual_scss_modules() {
           ("scopeId".to_string(), "data-v-test".to_string()),
         ],
         meta: HashMap::from_iter([]),
-        module_id: resolved_path.to_string(),
+        module_id: resolved_path.clone(),
         source_map_chain: vec![],
       },
       &context,

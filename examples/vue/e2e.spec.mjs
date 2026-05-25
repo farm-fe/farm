@@ -9,6 +9,8 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const homeViewPath = join(projectPath, 'src/views/HomeView.vue');
 const counterCardPath = join(projectPath, 'src/components/CounterCard.vue');
 const persistentCachePath = join(projectPath, 'node_modules/.farm/vue-cache');
+const hmrTimeout = Number(process.env.FARM_E2E_HMR_TIMEOUT ?? 30_000);
+const hmrPollInterval = 100;
 
 function collectRequestIssues(page) {
   const requestIssues = [];
@@ -84,19 +86,38 @@ async function withFileEdits(edits, run) {
 }
 
 async function waitForStyle(page, selector, property, expected) {
-  await page.waitForFunction(
-    ({ selector, property, expected }) => {
-      const element = document.querySelector(selector);
-      return element && getComputedStyle(element)[property] === expected;
-    },
-    { selector, property, expected },
-    { timeout: 10_000 }
-  );
+  const deadline = Date.now() + hmrTimeout;
+  let actual = '';
+
+  while (Date.now() < deadline) {
+    actual = await page
+      .$eval(selector, (element, property) => getComputedStyle(element)[property], property)
+      .catch(() => '');
+    if (actual === expected) return;
+    await delay(hmrPollInterval);
+  }
+
+  throw new Error(`Expected ${selector} ${property} to be ${expected}, got ${actual}`);
+}
+
+async function waitForText(page, selector, expected) {
+  const deadline = Date.now() + hmrTimeout;
+  let actual = '';
+
+  while (Date.now() < deadline) {
+    actual = await page.textContent(selector).catch(() => '');
+    if (actual?.includes(expected)) return;
+    await delay(hmrPollInterval);
+  }
+
+  throw new Error(`Expected ${selector} to contain ${expected}, got ${actual}`);
 }
 
 async function assertHmr(page) {
   await page.locator('a[href="#/"]').click();
   await page.waitForSelector('.card button', { timeout: 10_000 });
+  await waitForText(page, '.intro', 'This example uses');
+  await delay(500);
   if ((await page.textContent('.card strong')).includes('Pinia count: 0')) {
     await page.locator('.card button').click();
   }
@@ -111,19 +132,11 @@ async function assertHmr(page) {
       }
     ],
     async () => {
-      await page.waitForFunction(
-        () => document.querySelector('.intro')?.textContent?.includes('HMR template update'),
-        null,
-        { timeout: 10_000 }
-      );
+      await waitForText(page, '.intro', 'HMR template update');
       expect(await page.textContent('.card strong')).toContain('Pinia count: 1');
     }
   );
-  await page.waitForFunction(
-    () => document.querySelector('.intro')?.textContent?.includes('This example uses'),
-    null,
-    { timeout: 10_000 }
-  );
+  await waitForText(page, '.intro', 'This example uses');
 
   await withFileEdits(
     [
