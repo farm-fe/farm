@@ -60,23 +60,23 @@ export default async function (ctx) {
   });
 
   await ctx.test(`example ${name} updates Tailwind utilities during HMR`, async () => {
-    const restoreButton = await editFile(
-      join(projectPath, 'src/components/Button.tsx'),
-      'bg-brand hover:bg-brand-dark text-white',
-      'bg-accent hover:bg-brand-dark text-white'
-    );
+    await startAndTest(projectPath, async (page) => {
+      await assertPage(page);
 
-    try {
-      await startAndTest(projectPath, async (page) => {
-        await assertPage(page);
+      const restoreButton = await editFile(
+        join(projectPath, 'src/components/Button.tsx'),
+        'bg-brand hover:bg-brand-dark text-white',
+        'bg-accent hover:bg-brand-dark text-white'
+      );
 
+      try {
         await page.waitForFunction(() => {
           const el = document.querySelector('[data-testid="btn-primary"]');
           return el && window.getComputedStyle(el).backgroundColor === 'rgb(171, 205, 239)';
         });
-      });
-    } finally {
-      await restoreButton?.();
-    }
+      } finally {
+        await restoreButton?.();
+      }
+    });
   });
 }
