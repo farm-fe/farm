@@ -1,5 +1,5 @@
 use farmfe_core::module::{Module, ModuleId, ModuleType};
-use farmfe_core::HashMap;
+use farmfe_core::{HashMap, HashSet};
 use napi::JsValue;
 use napi::{
   bindgen_prelude::FromNapiValue,
@@ -42,8 +42,22 @@ pub unsafe extern "C" fn vite_get_modules_by_file(
   let module_graph = ctx.module_graph.read();
   let file_id = ModuleId::from_resolved_path_with_query(&file, &ctx.config.root);
 
-  let modules = module_graph
-    .module_ids_by_file(&file_id)
+  let mut seen = HashSet::default();
+  let mut module_ids = vec![];
+
+  if module_graph.has_module(&file_id) {
+    seen.insert(file_id.clone());
+    module_ids.push(file_id.clone());
+  }
+
+  module_ids.extend(
+    module_graph
+      .module_ids_by_file(&file_id)
+      .into_iter()
+      .filter(|m_id| seen.insert(m_id.clone())),
+  );
+
+  let modules = module_ids
     .into_iter()
     .map(|m_id| {
       let m = module_graph.module(&m_id).unwrap();

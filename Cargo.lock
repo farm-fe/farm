@@ -2703,6 +2703,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
+ "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
  "fervid 0.2.0 (git+https://github.com/phoenix-ru/fervid.git?rev=4f26ab48f81eb9688fb84e9fa14541373d5bca7d)",
  "fxhash",
@@ -3049,7 +3050,7 @@ dependencies = [
  "fervid_css 0.2.0 (git+https://github.com/phoenix-ru/fervid.git?rev=4f26ab48f81eb9688fb84e9fa14541373d5bca7d)",
  "flagset",
  "fxhash",
- "indexmap 2.10.0",
+ "indexmap 2.14.0",
  "itertools 0.10.5",
  "lazy_static",
  "percent-encoding",
@@ -3653,6 +3654,19 @@ dependencies = [
  "once_cell",
  "phf",
  "rustc-hash 1.1.0",
+ "triomphe",
+]
+
+[[package]]
+name = "hstr"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31f11d91d7befd2ffd9d216e9e5ea1fae6174b20a2a1b67a688138003d2f4122"
+dependencies = [
+ "hashbrown 0.14.5",
+ "new_debug_unreachable",
+ "once_cell",
+ "rustc-hash 2.1.2",
  "triomphe",
 ]
 
@@ -7121,7 +7135,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.104",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -7203,6 +7217,17 @@ dependencies = [
  "hstr 0.2.17",
  "once_cell",
  "rustc-hash 2.1.2",
+ "serde",
+]
+
+[[package]]
+name = "swc_atoms"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3500dcf04c84606b38464561edc5e46f5132201cb3e23cf9613ed4033d6b1bb2"
+dependencies = [
+ "hstr 2.1.0",
+ "once_cell",
  "serde",
 ]
 
@@ -7293,6 +7318,33 @@ dependencies = [
  "swc_allocator 2.0.0",
  "swc_atoms 3.1.0",
  "swc_eq_ignore_macros 1.0.1",
+ "swc_visit 2.0.1",
+ "tracing",
+ "unicode-width 0.1.14",
+ "url",
+]
+
+[[package]]
+name = "swc_common"
+version = "14.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2bb772b3a26b8b71d4e8c112ced5b5867be2266364b58517407a270328a2696"
+dependencies = [
+ "anyhow",
+ "ast_node 3.0.4",
+ "better_scoped_tls 1.0.1",
+ "bytes-str",
+ "either",
+ "from_variant 2.0.2",
+ "new_debug_unreachable",
+ "num-bigint",
+ "once_cell",
+ "rustc-hash 2.1.2",
+ "serde",
+ "siphasher 0.3.11",
+ "swc_atoms 7.0.0",
+ "swc_eq_ignore_macros 1.0.1",
+ "swc_sourcemap 9.3.4",
  "swc_visit 2.0.1",
  "tracing",
  "unicode-width 0.1.14",
@@ -7423,7 +7475,7 @@ dependencies = [
  "swc_ecma_ast 14.0.0",
  "swc_ecma_transforms_base 24.0.0",
  "swc_ecma_visit 14.0.0",
- "vergen 9.0.1",
+ "vergen 9.1.0",
 ]
 
 [[package]]
@@ -7436,6 +7488,18 @@ dependencies = [
  "string_enum 0.4.4",
  "swc_atoms 0.6.7",
  "swc_common 0.33.26",
+]
+
+[[package]]
+name = "swc_css_ast"
+version = "14.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9fd83077e8da39e58c378ac25003ada5d1931b6823079aa2d48503f5166668d"
+dependencies = [
+ "is-macro",
+ "string_enum 1.0.2",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
 ]
 
 [[package]]
@@ -7476,8 +7540,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddaef5c00a714a3c9348fc94fc4b6c755f689a1c36b4ec190870fadf240261aa"
 dependencies = [
  "auto_impl",
- "bitflags 2.6.0",
- "rustc-hash 2.1.1",
+ "bitflags 2.11.1",
+ "rustc-hash 2.1.2",
  "serde",
  "swc_atoms 7.0.0",
  "swc_common 14.0.4",
@@ -7635,7 +7699,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cd30a941e3c6edc245c5119344e4126e7e21a5a01a10496ff65db3bffeca226"
 dependencies = [
  "once_cell",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "serde",
  "serde_json",
  "swc_atoms 7.0.0",
@@ -7751,6 +7815,25 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_ast"
+version = "14.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5d8d26e697ce58654f0816890af7a28efd8660c154b613acefa2d3727e8ec93"
+dependencies = [
+ "bitflags 2.11.1",
+ "is-macro",
+ "num-bigint",
+ "once_cell",
+ "phf",
+ "rustc-hash 2.1.2",
+ "string_enum 1.0.2",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
+ "swc_visit 2.0.1",
+ "unicode-id-start",
+]
+
+[[package]]
+name = "swc_ecma_ast"
 version = "23.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "550ee54eab536fe357090fec6d42d083c28cf44cc9bcfa93b1ea5e1606f3b2f7"
@@ -7828,6 +7911,30 @@ dependencies = [
  "swc_common 5.0.1",
  "swc_ecma_ast 5.1.0",
  "swc_ecma_codegen_macros 1.0.1",
+ "tracing",
+]
+
+[[package]]
+name = "swc_ecma_codegen"
+version = "16.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b3a46868f249b86a74f91774c8faf12340abb86ba7c3ff152bdc7a8f94011b6"
+dependencies = [
+ "ascii",
+ "compact_str",
+ "memchr",
+ "num-bigint",
+ "once_cell",
+ "regex",
+ "rustc-hash 2.1.2",
+ "ryu-js",
+ "serde",
+ "swc_allocator 4.0.1",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
+ "swc_ecma_ast 14.0.0",
+ "swc_ecma_codegen_macros 2.0.2",
+ "swc_sourcemap 9.3.4",
  "tracing",
 ]
 
@@ -8083,11 +8190,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69ec39d3c46e3a76129ad5b7032d509240fb150cf1a2e8a57b368bfd5ec3f9cd"
 dependencies = [
  "arrayvec",
- "bitflags 2.6.0",
+ "bitflags 2.11.1",
  "either",
  "num-bigint",
  "phf",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "seq-macro",
  "serde",
  "smallvec",
@@ -8221,6 +8328,22 @@ dependencies = [
  "swc_ecma_ast 5.1.0",
  "tracing",
  "typed-arena",
+]
+
+[[package]]
+name = "swc_ecma_parser"
+version = "22.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a43a77589c03110cb7f749b0e3feb8a75c5a81e9e539bde2873ddd5072fcb13"
+dependencies = [
+ "either",
+ "num-bigint",
+ "serde",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
+ "swc_ecma_ast 14.0.0",
+ "swc_ecma_lexer",
+ "tracing",
 ]
 
 [[package]]
@@ -8422,6 +8545,28 @@ dependencies = [
  "swc_ecma_utils 7.0.4",
  "swc_ecma_visit 5.0.0",
  "swc_parallel",
+ "tracing",
+]
+
+[[package]]
+name = "swc_ecma_transforms_base"
+version = "24.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2912d21bb6e1db97430b4425cc374e042057f25b5f2380f5e77319b5ebb6cb77"
+dependencies = [
+ "better_scoped_tls 1.0.1",
+ "indexmap 2.14.0",
+ "once_cell",
+ "par-core",
+ "phf",
+ "rustc-hash 2.1.2",
+ "serde",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
+ "swc_ecma_ast 14.0.0",
+ "swc_ecma_parser 22.0.3",
+ "swc_ecma_utils 20.0.0",
+ "swc_ecma_visit 14.0.0",
  "tracing",
 ]
 
@@ -8673,6 +8818,25 @@ dependencies = [
 
 [[package]]
 name = "swc_ecma_utils"
+version = "20.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84c3600d3ec9d59bcdab174c8dc75d5ffa96d2a3ec6739ca32e665366e101b71"
+dependencies = [
+ "indexmap 2.14.0",
+ "num_cpus",
+ "once_cell",
+ "par-core",
+ "rustc-hash 2.1.2",
+ "ryu-js",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
+ "swc_ecma_ast 14.0.0",
+ "swc_ecma_visit 14.0.0",
+ "tracing",
+]
+
+[[package]]
+name = "swc_ecma_utils"
 version = "29.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d69b480aa02b5ff2ab951478d8e7633eeda42940aeb5fe0386eebc19dd3b1e4"
@@ -8813,6 +8977,18 @@ dependencies = [
 
 [[package]]
 name = "swc_html_ast"
+version = "14.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0aaac81d52eca99cb457287b459e599ae0a09f73b6914b5c327fca86aace3e7f"
+dependencies = [
+ "is-macro",
+ "string_enum 1.0.2",
+ "swc_atoms 7.0.0",
+ "swc_common 14.0.4",
+]
+
+[[package]]
+name = "swc_html_ast"
 version = "21.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e457b067b8ad2056d39ce0ff2b7d03a51af18be40d71e568973359b7cf46ed44"
@@ -8899,7 +9075,7 @@ version = "14.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ca81cb496fb3aa9457073f9a4c4f0a767cd0c4ea567353b9524a8365cd257bd"
 dependencies = [
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "swc_atoms 7.0.0",
  "swc_common 14.0.4",
  "swc_html_ast 14.0.0",
@@ -8939,7 +9115,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "de231a2c4d35e68dc8df22a96445b1750737fabac1daac3021c7eca35c9a42b1"
 dependencies = [
  "once_cell",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "serde",
  "serde_json",
  "swc_atoms 7.0.0",
@@ -9066,7 +9242,7 @@ dependencies = [
  "data-encoding",
  "debugid",
  "if_chain",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "serde",
  "serde_json",
  "unicode-id-start",

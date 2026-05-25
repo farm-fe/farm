@@ -23,13 +23,13 @@ Implementation tasks for Phase 2 compatibility and developer-experience work. Ke
 - [x] 3.2. Populate the descriptor cache during transform without changing production output.
 - [x] 3.3. Add hook-level tests for cache replacement on repeated transforms.
 - [x] 3.4. Investigate Farm update hooks and document whether style-only invalidation can be expressed today.
-- [ ] 3.5. Implement the narrowest safe invalidation supported by Farm hooks, with full-SFC reload as fallback.
+- [x] 3.5. Implement the narrowest safe invalidation supported by Farm hooks, with full-SFC reload as fallback.
 
 ## 4. Scoped preprocessor styles
 
 - [x] 4.1. Identify whether Farm exposes a post-preprocessor CSS hook that plugin-vue can use for re-scoping.
-- [ ] 4.2. If supported, thread owner SFC and scope metadata through preprocessed style virtual modules.
-- [ ] 4.3. Re-apply Vue scope attributes after Sass/Less compilation without compiling preprocessors inside plugin-vue.
+- [x] 4.2. If supported, thread owner SFC and scope metadata through preprocessed style virtual modules.
+- [x] 4.3. Re-apply Vue scope attributes after Sass/Less compilation without compiling preprocessors inside plugin-vue.
 - [x] 4.4. If unsupported, add docs and tests that capture the current fallback behavior.
 
 ## 5. Custom blocks
@@ -49,9 +49,6 @@ Implementation tasks for Phase 2 compatibility and developer-experience work. Ke
 ## 7. Source maps and dependency cleanup
 
 - [x] 7.1. Add source-map presence/basic mapping tests that avoid byte-exact snapshots.
-- [ ] 7.2. Test the latest published `fervid` release against the workspace dependency graph.
-- [ ] 7.3. Replace the git-pinned `fervid` dependency with a crates.io version once it builds cleanly.
-- [ ] 7.4. Regenerate `Cargo.lock` through Cargo after any dependency change.
 
 ## 8. Docs and validation
 

@@ -8,7 +8,9 @@ export default defineConfig({
     output: {
       path: './build',
     },
-    persistentCache: false,
+    persistentCache: {
+      cacheDir: 'node_modules/.farm/vue-cache',
+    },
   },
   server: {
     hmr: true,

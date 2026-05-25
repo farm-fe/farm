@@ -8,7 +8,6 @@ use farmfe_core::{
   stats::CompilationPluginHookStats,
   HashMap,
 };
-use farmfe_utils::relative;
 
 pub fn handle_update_modules(
   paths: Vec<(String, UpdateType)>,
@@ -95,7 +94,8 @@ pub fn handle_update_modules(
   let grouped_paths = paths.iter().fold(
     HashMap::<String, Vec<String>>::default(),
     |mut acc, (path, _)| {
-      let resolved_path = path.split('?').next().unwrap().to_string();
+      let resolved_path = ModuleId::from_resolved_path_with_query(path, &context.config.root)
+        .resolved_path(&context.config.root);
 
       acc.entry(resolved_path).or_default().push(path.to_string());
 
@@ -113,13 +113,19 @@ pub fn handle_update_modules(
         return paths;
       }
 
-      let module_id: ModuleId = relative(&context.config.root, &resolved_path).into();
+      let module_id = ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root);
       let mut result = vec![resolved_path.clone()];
 
       for path in paths {
-        // if /root/index.vue and /root/index.vue?foo=bar are both in paths, we should remove /root/index.vue?foo=bar
+        // if /root/index.ts and /root/index.ts?foo=bar are both in paths, we should remove the query module
         if path != resolved_path {
-          let child_module_id: ModuleId = relative(&context.config.root, &path).into();
+          let child_module_id =
+            ModuleId::from_resolved_path_with_query(&path, &context.config.root);
+
+          if child_module_id == module_id {
+            continue;
+          }
+
           let dependents = module_graph.dependents_ids(&child_module_id);
 
           if dependents.contains(&module_id) && dependents.len() == 1 {

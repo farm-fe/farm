@@ -13,7 +13,7 @@ use fxhash::FxHashMap;
 
 use crate::consts::{
   VUE_QUERY_BLOCK_KEY, VUE_QUERY_INDEX_KEY, VUE_QUERY_LANG_KEY, VUE_QUERY_SCOPED_KEY,
-  VUE_QUERY_TYPE_CUSTOM, VUE_QUERY_TYPE_KEY, VUE_QUERY_TYPE_STYLE,
+  VUE_QUERY_SCOPE_ID_KEY, VUE_QUERY_TYPE_CUSTOM, VUE_QUERY_TYPE_KEY, VUE_QUERY_TYPE_STYLE,
 };
 
 /// Lowercase comparison helper: a style block whose `lang` resolves to
@@ -56,20 +56,34 @@ pub fn lang_to_module_type(lang: &str) -> ModuleType {
 }
 
 /// Build the virtual module id for a style block.
-pub fn style_virtual_id(module_id: &str, idx: usize, lang: &str, scoped: bool) -> String {
+pub fn style_virtual_id(
+  module_id: &str,
+  idx: usize,
+  lang: &str,
+  scoped: bool,
+  scope_id: Option<&str>,
+) -> String {
   let normalized_lang = if lang.trim().is_empty() {
     "css".to_string()
   } else {
     lang.trim().to_ascii_lowercase()
   };
-  format!(
+  let mut id = format!(
     "{module_id}?vue&{type_key}={type_value}&{idx_key}={idx}&{lang_key}={normalized_lang}&{scoped_key}={scoped}",
     type_key = VUE_QUERY_TYPE_KEY,
     type_value = VUE_QUERY_TYPE_STYLE,
     idx_key = VUE_QUERY_INDEX_KEY,
     lang_key = VUE_QUERY_LANG_KEY,
     scoped_key = VUE_QUERY_SCOPED_KEY,
-  )
+  );
+
+  if scoped {
+    if let Some(scope_id) = scope_id {
+      id.push_str(&format!("&{VUE_QUERY_SCOPE_ID_KEY}={scope_id}"));
+    }
+  }
+
+  id
 }
 
 pub fn custom_block_virtual_id(module_id: &str, idx: usize, tag_name: &str) -> String {

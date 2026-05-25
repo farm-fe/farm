@@ -25,12 +25,22 @@ use farmfe_core::{
   module::ModuleType,
   plugin::{
     Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginTransformHookParam,
-    PluginTransformHookResult,
+    PluginTransformHookResult, PluginUpdateModulesHookParam, UpdateType,
   },
   serde_json::{self, Value},
+  swc_common::DUMMY_SP,
+  swc_css_ast::{
+    AttributeSelector, ComplexSelector, ComplexSelectorChildren, CompoundSelector, Ident,
+    QualifiedRule, QualifiedRulePrelude, SubclassSelector, WqName,
+  },
 };
 
 use farmfe_macro_plugin::farm_plugin;
+use farmfe_toolkit::{
+  css::{codegen_css_stylesheet, parse_css_stylesheet},
+  swc_atoms::Atom,
+  swc_css_visit::{VisitMut, VisitMutWith},
+};
 
 use fervid::{CompileOptions, PropsDestructureConfig};
 
@@ -42,7 +52,8 @@ mod styles;
 
 use crate::consts::{CE_VUE_SUFFIX, VUE_MODULE_TYPE, VUE_QUERY_KEY};
 use crate::descriptor::{
-  content_hash, CustomBlockDescriptor, DescriptorCache, SfcDescriptor, StyleDescriptor,
+  content_hash, narrow_virtual_updates, CustomBlockDescriptor, DescriptorCache, SfcDescriptor,
+  StyleDescriptor,
 };
 use crate::filter::{CustomElementFilter, Filter};
 use crate::options::VuePluginOptions;
@@ -107,6 +118,174 @@ impl FarmPluginVue {
   pub fn cached_descriptor_for_test(&self, module_id: &str) -> Option<SfcDescriptor> {
     self.descriptors.get(module_id)
   }
+
+  fn compile_sfc(
+    &self,
+    module_id: &str,
+    resolved_path: &str,
+    content: &str,
+  ) -> farmfe_core::error::Result<CompiledSfc> {
+    let is_ce = self.is_custom_element(resolved_path);
+
+    let compile_result = fervid::compile(
+      content,
+      CompileOptions {
+        filename: Cow::Borrowed(resolved_path),
+        id: Cow::Owned(module_id.to_string()),
+        is_prod: Some(self.is_prod),
+        is_custom_element: Some(is_ce),
+        ssr: Some(self.ssr),
+        props_destructure: self.props_destructure.map(|enabled| {
+          if enabled {
+            PropsDestructureConfig::True
+          } else {
+            PropsDestructureConfig::False
+          }
+        }),
+        gen_default_as: None,
+        source_map: Some(self.source_map),
+        // We expose only a boolean toggle in v0; the richer
+        // `TransformAssetUrlsConfig::EnabledOptions(...)` shape is left for
+        // a follow-up because its inner `Rc` makes it `!Send + !Sync` and
+        // would require parsing JSON into a side-allocated cache.
+        transform_asset_urls: None,
+      },
+    )
+    .map_err(|e| CompilationError::TransformError {
+      resolved_path: resolved_path.to_string(),
+      msg: format!("[plugin-vue] fervid failed to compile SFC: {e:?}"),
+    })?;
+
+    let import_base = normalize_path_for_import(resolved_path);
+    let virtual_base = normalize_path_for_import(module_id);
+    let mut prepend = String::new();
+    let mut style_descriptors = Vec::new();
+    let mut entries = Vec::new();
+
+    for (idx, style) in compile_result.styles.into_iter().enumerate() {
+      let scope_id = format!("data-v-{}", compile_result.file_hash);
+      let virtual_id = style_virtual_id(
+        &virtual_base,
+        idx,
+        &style.lang,
+        style.is_scoped,
+        Some(&scope_id),
+      );
+      let module_type = lang_to_module_type(&style.lang);
+      let style_content_hash = content_hash(&style.code);
+      prepend.push_str(&format!(
+        "import {q}{base}?{query}{q};\n",
+        q = '"',
+        base = &import_base,
+        query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
+      ));
+      entries.push((
+        virtual_id.clone(),
+        StyleEntry {
+          content: style.code,
+          module_type,
+        },
+      ));
+      style_descriptors.push(StyleDescriptor {
+        index: idx,
+        lang: style.lang.trim().to_ascii_lowercase(),
+        scoped: style.is_scoped,
+        owner_module_id: virtual_base.clone(),
+        owner_resolved_path: import_base.clone(),
+        scope_id,
+        content_hash: style_content_hash,
+        virtual_id,
+      });
+    }
+
+    let mut custom_block_descriptors = Vec::new();
+    for (idx, asset) in compile_result.other_assets.into_iter().enumerate() {
+      let virtual_id = custom_block_virtual_id(&virtual_base, idx, &asset.tag_name);
+      let module_type = ModuleType::Custom(asset.tag_name.trim().to_ascii_lowercase());
+      prepend.push_str(&format!(
+        "import {q}{base}?{query}{q};\n",
+        q = '"',
+        base = &import_base,
+        query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
+      ));
+      custom_block_descriptors.push(CustomBlockDescriptor {
+        index: idx,
+        tag_name: asset.tag_name.trim().to_ascii_lowercase(),
+        content_hash: content_hash(&asset.content),
+        virtual_id: virtual_id.clone(),
+      });
+      entries.push((
+        virtual_id,
+        StyleEntry {
+          content: asset.content,
+          module_type,
+        },
+      ));
+    }
+
+    let descriptor = SfcDescriptor {
+      source_hash: compile_result.file_hash,
+      main_content_hash: content_hash(&compile_result.code),
+      is_custom_element: is_ce,
+      styles: style_descriptors,
+      custom_blocks: custom_block_descriptors,
+    };
+
+    Ok(CompiledSfc {
+      code: compile_result.code,
+      source_map: compile_result.source_map,
+      prepend,
+      descriptor,
+      entries,
+    })
+  }
+
+  fn register_compiled_sfc(&self, module_id: &str, resolved_path: &str, compiled: &CompiledSfc) {
+    for (virtual_id, entry) in &compiled.entries {
+      self.styles.insert(virtual_id.clone(), entry.clone());
+    }
+
+    self
+      .descriptors
+      .insert(module_id.to_string(), compiled.descriptor.clone());
+    self.descriptors.insert(
+      normalize_path_for_import(resolved_path),
+      compiled.descriptor.clone(),
+    );
+  }
+
+  fn rehydrate_sfc(&self, module_id: &str, resolved_path: &str) -> farmfe_core::error::Result<()> {
+    let resolved_path = resolved_path
+      .split_once('?')
+      .map(|(path, _)| path)
+      .unwrap_or(resolved_path);
+    if !resolved_path.ends_with(".vue") || !self.matches_filter(resolved_path) {
+      return Ok(());
+    }
+
+    let content =
+      std::fs::read_to_string(resolved_path).map_err(|e| CompilationError::LoadError {
+        resolved_path: resolved_path.to_string(),
+        source: Some(Box::new(e)),
+      })?;
+    let module_id = module_id
+      .split_once('?')
+      .map(|(base, _)| base)
+      .unwrap_or(module_id);
+    let module_id = normalize_path_for_import(module_id);
+    let compiled = self.compile_sfc(&module_id, resolved_path, &content)?;
+    self.register_compiled_sfc(&module_id, resolved_path, &compiled);
+
+    Ok(())
+  }
+}
+
+struct CompiledSfc {
+  code: String,
+  source_map: Option<String>,
+  prepend: String,
+  descriptor: SfcDescriptor,
+  entries: Vec<(String, StyleEntry)>,
 }
 
 /// True iff `query` contains the `vue` flag (we only inspect the key
@@ -114,6 +293,92 @@ impl FarmPluginVue {
 /// flags surface as `("vue", "")`).
 fn has_vue_query(query: &[(String, String)]) -> bool {
   query.iter().any(|(k, _)| k == VUE_QUERY_KEY)
+}
+
+fn query_value<'a>(query: &'a [(String, String)], key: &str) -> Option<&'a str> {
+  query
+    .iter()
+    .find(|(query_key, _)| query_key == key)
+    .map(|(_, value)| value.as_str())
+}
+
+fn scoped_style_scope_id(query: &[(String, String)]) -> Option<&str> {
+  let is_scoped_style = has_vue_query(query)
+    && query_value(query, "type") == Some("style")
+    && query_value(query, "scoped") == Some("true");
+
+  if is_scoped_style {
+    query_value(query, "scopeId").filter(|scope_id| !scope_id.is_empty())
+  } else {
+    None
+  }
+}
+
+struct VueScopeVisitor<'a> {
+  scope_id: &'a str,
+}
+
+impl VisitMut for VueScopeVisitor<'_> {
+  fn visit_mut_complex_selector(&mut self, selector: &mut ComplexSelector) {
+    selector.visit_mut_children_with(self);
+
+    for child in &mut selector.children {
+      if let ComplexSelectorChildren::CompoundSelector(compound) = child {
+        add_scope_attribute(compound, self.scope_id);
+      }
+    }
+  }
+
+  fn visit_mut_qualified_rule(&mut self, rule: &mut QualifiedRule) {
+    if let QualifiedRulePrelude::SelectorList(selector_list) = &mut rule.prelude {
+      selector_list.visit_mut_children_with(self);
+    }
+
+    rule.block.visit_mut_children_with(self);
+  }
+}
+
+fn add_scope_attribute(compound: &mut CompoundSelector, scope_id: &str) {
+  let already_scoped = compound.subclass_selectors.iter().any(|selector| {
+    matches!(selector, SubclassSelector::Attribute(attribute) if attribute.name.value.value == scope_id)
+  });
+
+  if already_scoped {
+    return;
+  }
+
+  let attribute = SubclassSelector::Attribute(Box::new(AttributeSelector {
+    span: DUMMY_SP,
+    name: WqName {
+      span: DUMMY_SP,
+      prefix: None,
+      value: Ident {
+        span: DUMMY_SP,
+        value: Atom::from(scope_id),
+        raw: None,
+      },
+    },
+    matcher: None,
+    value: None,
+    modifier: None,
+  }));
+
+  let insert_index = compound
+    .subclass_selectors
+    .iter()
+    .position(|selector| matches!(selector, SubclassSelector::PseudoElement(_)))
+    .unwrap_or(compound.subclass_selectors.len());
+  compound.subclass_selectors.insert(insert_index, attribute);
+}
+
+fn scope_compiled_css(
+  css: String,
+  scope_id: &str,
+  resolved_path: &str,
+) -> farmfe_core::error::Result<String> {
+  let mut parsed = parse_css_stylesheet(resolved_path, Arc::new(css))?.ast;
+  parsed.visit_mut_with(&mut VueScopeVisitor { scope_id });
+  Ok(codegen_css_stylesheet(&parsed, false, None, false).0)
 }
 
 fn normalize_path_for_import(path: &str) -> String {
@@ -162,17 +427,56 @@ impl Plugin for FarmPluginVue {
   fn load(
     &self,
     param: &PluginLoadHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     // Virtual style sub-block requests, e.g. `foo.vue?vue&type=style&idx=0&lang=css`.
     if has_vue_query(&param.query) {
       let normalized_module_id = normalize_path_for_import(&param.module_id);
-      if let Some(entry) = self
+      let entry = self
         .styles
         .get(&param.module_id)
         .or_else(|| self.styles.get(&normalized_module_id))
-      {
+        .or_else(|| {
+          self
+            .rehydrate_sfc(&normalized_module_id, param.resolved_path)
+            .ok()?;
+          self
+            .styles
+            .get(&param.module_id)
+            .or_else(|| self.styles.get(&normalized_module_id))
+        });
+
+      if let Some(entry) = entry {
+        if !matches!(entry.module_type, ModuleType::Css) {
+          let transformed = context.plugin_driver.transform(
+            PluginTransformHookParam {
+              module_id: param.module_id.clone(),
+              content: entry.content.clone(),
+              module_type: entry.module_type.clone(),
+              resolved_path: param.resolved_path,
+              query: param.query.clone(),
+              meta: param.meta.clone(),
+              source_map_chain: vec![],
+            },
+            context,
+          )?;
+
+          if transformed.module_type == Some(ModuleType::Css) {
+            let content = if let Some(scope_id) = scoped_style_scope_id(&param.query) {
+              scope_compiled_css(transformed.content, scope_id, param.resolved_path)?
+            } else {
+              transformed.content
+            };
+
+            return Ok(Some(PluginLoadHookResult {
+              content,
+              module_type: ModuleType::Css,
+              source_map: None,
+            }));
+          }
+        }
+
         return Ok(Some(PluginLoadHookResult {
           content: entry.content,
           module_type: entry.module_type,
@@ -210,114 +514,27 @@ impl Plugin for FarmPluginVue {
       return Ok(None);
     }
 
-    let is_ce = self.is_custom_element(param.resolved_path);
+    let compiled = self.compile_sfc(&param.module_id, param.resolved_path, &param.content)?;
+    self.register_compiled_sfc(&param.module_id, param.resolved_path, &compiled);
 
-    let compile_result = fervid::compile(
-      &param.content,
-      CompileOptions {
-        filename: Cow::Borrowed(param.resolved_path),
-        id: Cow::Owned(param.module_id.clone()),
-        is_prod: Some(self.is_prod),
-        is_custom_element: Some(is_ce),
-        ssr: Some(self.ssr),
-        props_destructure: self.props_destructure.map(|enabled| {
-          if enabled {
-            PropsDestructureConfig::True
-          } else {
-            PropsDestructureConfig::False
-          }
-        }),
-        gen_default_as: None,
-        source_map: Some(self.source_map),
-        // We expose only a boolean toggle in v0; the richer
-        // `TransformAssetUrlsConfig::EnabledOptions(...)` shape is left for
-        // a follow-up because its inner `Rc` makes it `!Send + !Sync` and
-        // would require parsing JSON into a side-allocated cache.
-        transform_asset_urls: None,
-      },
-    )
-    .map_err(|e| CompilationError::TransformError {
-      resolved_path: param.resolved_path.to_string(),
-      msg: format!("[plugin-vue] fervid failed to compile SFC: {e:?}"),
-    })?;
-
-    // Register each emitted style/custom block under its virtual id and
-    // prepend an `import` so it participates in the module graph.
-    let import_base = normalize_path_for_import(param.resolved_path);
-    let virtual_base = normalize_path_for_import(&param.module_id);
-    let mut prepend = String::new();
-    let mut style_descriptors = Vec::new();
-    if !compile_result.styles.is_empty() {
-      for (idx, style) in compile_result.styles.into_iter().enumerate() {
-        let virtual_id = style_virtual_id(&virtual_base, idx, &style.lang, style.is_scoped);
-        let module_type = lang_to_module_type(&style.lang);
-        let style_content_hash = content_hash(&style.code);
-        // The first `?` in the import path is the start of the query; the
-        // rest is `vue&type=style&…`. Farm preserves the entire query on
-        // both load and transform sides.
-        prepend.push_str(&format!(
-          "import {q}{base}?{query}{q};\n",
-          q = '"',
-          base = &import_base,
-          query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
-        ));
-        self.styles.insert(
-          virtual_id.clone(),
-          StyleEntry {
-            content: style.code,
-            module_type,
-          },
-        );
-        style_descriptors.push(StyleDescriptor {
-          index: idx,
-          lang: style.lang.trim().to_ascii_lowercase(),
-          scoped: style.is_scoped,
-          content_hash: style_content_hash,
-          virtual_id,
-        });
-      }
+    let mut code = compiled.code;
+    if !compiled.prepend.is_empty() {
+      code.insert_str(0, &compiled.prepend);
     }
 
-    let mut custom_block_descriptors = Vec::new();
-    if !compile_result.other_assets.is_empty() {
-      for (idx, asset) in compile_result.other_assets.into_iter().enumerate() {
-        let virtual_id = custom_block_virtual_id(&virtual_base, idx, &asset.tag_name);
-        let module_type = ModuleType::Custom(asset.tag_name.trim().to_ascii_lowercase());
-        prepend.push_str(&format!(
-          "import {q}{base}?{query}{q};\n",
-          q = '"',
-          base = &import_base,
-          query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
-        ));
-        custom_block_descriptors.push(CustomBlockDescriptor {
-          index: idx,
-          tag_name: asset.tag_name.trim().to_ascii_lowercase(),
-          content_hash: content_hash(&asset.content),
-          virtual_id: virtual_id.clone(),
-        });
-        self.styles.insert(
-          virtual_id,
-          StyleEntry {
-            content: asset.content,
-            module_type,
-          },
-        );
-      }
-    }
-
-    self.descriptors.insert(
-      param.module_id.clone(),
-      SfcDescriptor {
-        source_hash: compile_result.file_hash,
-        is_custom_element: is_ce,
-        styles: style_descriptors,
-        custom_blocks: custom_block_descriptors,
-      },
-    );
-
-    let mut code = compile_result.code;
-    if !prepend.is_empty() {
-      code.insert_str(0, &prepend);
+    if let Some(scope_id) = compiled
+      .descriptor
+      .styles
+      .iter()
+      .find(|style| style.scoped)
+      .map(|style| &style.scope_id)
+    {
+      code.push_str(&format!(
+        "\n{target} if (__farm_vue_sfc) __farm_vue_sfc.__scopeId = {q}{scope_id}{q};\n",
+        target = sfc_runtime_target_statement(),
+        q = '"',
+        scope_id = escape_double_quotes(scope_id),
+      ));
     }
 
     // Devtools metadata. fervid bakes `__hmrId` via its scope id during
@@ -326,21 +543,138 @@ impl Plugin for FarmPluginVue {
     // locate the component source.
     if !self.is_prod {
       code.push_str(&format!(
-        "\nif (typeof _sfc_main !== 'undefined') _sfc_main.__file = {q}{file}{q};\n",
+        "\n{target} if (__farm_vue_sfc) __farm_vue_sfc.__file = {q}{file}{q};\n",
+        target = sfc_runtime_target_statement(),
         q = '"',
         file = escape_double_quotes(param.resolved_path),
       ));
+
+      code.push_str(&vue_hmr_runtime_code(&normalize_path_for_import(
+        param.resolved_path,
+      )));
     }
 
     Ok(Some(PluginTransformHookResult {
       content: code,
       module_type: Some(ModuleType::Ts),
-      source_map: compile_result.source_map,
+      source_map: compiled.source_map,
       ignore_previous_source_map: true,
     }))
+  }
+
+  fn update_modules(
+    &self,
+    params: &mut PluginUpdateModulesHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let mut next_paths = Vec::with_capacity(params.paths.len());
+
+    for (path, update_type) in params.paths.drain(..) {
+      if !matches!(update_type, UpdateType::Updated)
+        || path.contains('?')
+        || !path.ends_with(".vue")
+        || !self.matches_filter(&path)
+      {
+        next_paths.push((path, update_type));
+        continue;
+      }
+
+      let descriptor_key = normalize_path_for_import(&path);
+      let Some(previous_descriptor) = self.descriptors.get(&descriptor_key) else {
+        self.rehydrate_sfc(&descriptor_key, &path)?;
+        next_paths.push((descriptor_key, update_type));
+        continue;
+      };
+      let fallback_update_path = previous_descriptor
+        .styles
+        .first()
+        .map(|style| style.owner_resolved_path.clone())
+        .or_else(|| {
+          previous_descriptor.custom_blocks.first().map(|block| {
+            block
+              .virtual_id
+              .split_once('?')
+              .map(|(base, _)| base)
+              .unwrap_or(&path)
+              .to_string()
+          })
+        })
+        .unwrap_or_else(|| path.clone());
+
+      let content = match std::fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(_) => {
+          next_paths.push((fallback_update_path, update_type));
+          continue;
+        }
+      };
+
+      let module_id = previous_descriptor
+        .styles
+        .first()
+        .map(|style| {
+          style
+            .virtual_id
+            .split_once('?')
+            .map(|(base, _)| base)
+            .unwrap_or(&path)
+        })
+        .or_else(|| {
+          previous_descriptor.custom_blocks.first().map(|block| {
+            block
+              .virtual_id
+              .split_once('?')
+              .map(|(base, _)| base)
+              .unwrap_or(&path)
+          })
+        })
+        .unwrap_or(&path)
+        .to_string();
+
+      let compiled = self.compile_sfc(&module_id, &path, &content)?;
+      let narrowed_updates = narrow_virtual_updates(&previous_descriptor, &compiled.descriptor);
+      self.register_compiled_sfc(&module_id, &path, &compiled);
+
+      if let Some(updates) = narrowed_updates {
+        next_paths.extend(
+          updates
+            .into_iter()
+            .map(|virtual_id| (virtual_id, UpdateType::Updated)),
+        );
+      } else {
+        next_paths.push((fallback_update_path, update_type));
+      }
+    }
+
+    params.paths = next_paths;
+    Ok(Some(()))
   }
 }
 
 fn escape_double_quotes(s: &str) -> String {
   s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+fn sfc_runtime_target_statement() -> &'static str {
+  "var __farm_vue_sfc = typeof _sfc_main !== 'undefined' ? _sfc_main : (typeof exports !== 'undefined' ? exports.default : undefined);"
+}
+
+fn vue_hmr_runtime_code(hmr_id: &str) -> String {
+  format!(
+    r#"
+{target}
+if (__farm_vue_sfc) __farm_vue_sfc.__hmrId = {q}{hmr_id}{q};
+if (import.meta.hot && typeof window !== 'undefined' && window.__VUE_HMR_RUNTIME__ && __farm_vue_sfc) {{
+  window.__VUE_HMR_RUNTIME__.createRecord(__farm_vue_sfc.__hmrId, __farm_vue_sfc);
+  import.meta.hot.accept((mod) => {{
+    if (!mod) return;
+    var __farm_vue_updated = mod.default || (mod.exports && mod.exports.default);
+    if (__farm_vue_updated) window.__VUE_HMR_RUNTIME__.reload(__farm_vue_updated.__hmrId, __farm_vue_updated);
+  }});
+}}
+"#,
+    target = sfc_runtime_target_statement(),
+    q = '"',
+    hmr_id = escape_double_quotes(hmr_id),
+  )
 }
