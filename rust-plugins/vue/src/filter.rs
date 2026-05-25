@@ -27,10 +27,25 @@ impl Filter {
   }
 
   pub fn matches(&self, path: &str) -> bool {
-    if self.exclude.iter().any(|re| re.is_match(path)) {
+    let normalized = normalize_path(path);
+    let paths = if normalized == path {
+      vec![path]
+    } else {
+      vec![path, normalized.as_str()]
+    };
+
+    if self
+      .exclude
+      .iter()
+      .any(|re| paths.iter().any(|path| re.is_match(path)))
+    {
       return false;
     }
-    self.include.iter().any(|re| re.is_match(path))
+
+    self
+      .include
+      .iter()
+      .any(|re| paths.iter().any(|path| re.is_match(path)))
   }
 }
 
@@ -66,9 +81,18 @@ impl CustomElementFilter {
     match self {
       CustomElementFilter::Always => true,
       CustomElementFilter::Never => false,
-      CustomElementFilter::Patterns(regs) => regs.iter().any(|re| re.is_match(path)),
+      CustomElementFilter::Patterns(patterns) => {
+        let normalized = normalize_path(path);
+        patterns
+          .iter()
+          .any(|re| re.is_match(path) || re.is_match(&normalized))
+      }
     }
   }
+}
+
+fn normalize_path(path: &str) -> String {
+  path.replace('\\', "/")
 }
 
 fn compile_patterns(sources: Vec<String>) -> Vec<Regex> {

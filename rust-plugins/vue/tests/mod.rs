@@ -307,6 +307,51 @@ fn ce_vue_suffix_triggers_custom_element_compilation() {
 }
 
 #[test]
+fn normalizes_windows_paths_for_virtual_style_imports() {
+  let (context, plugin) = make_plugin("");
+  let path = r"D:\a\farm\farm\examples\vue\src\App.vue".to_string();
+  let transform_param = PluginTransformHookParam {
+    module_id: path.clone(),
+    content: r#"<template><div>Hello</div></template><style scoped>.hello{color:red}</style>"#
+      .to_string(),
+    module_type: ModuleType::Custom("vue".to_string()),
+    resolved_path: &path,
+    query: vec![],
+    meta: Default::default(),
+    source_map_chain: vec![],
+  };
+
+  let code = plugin
+    .transform(&transform_param, &context)
+    .expect("transform returns Ok")
+    .expect("transform returns Some")
+    .content;
+
+  assert!(
+    code.contains(r#"import "D:/a/farm/farm/examples/vue/src/App.vue?vue&type=style"#),
+    "expected import path to use forward slashes, got:
+{code}"
+  );
+
+  let virtual_id =
+    "D:/a/farm/farm/examples/vue/src/App.vue?vue&type=style&idx=0&lang=css&scoped=true";
+  let load_param = PluginLoadHookParam {
+    module_id: virtual_id.to_string(),
+    resolved_path: &path,
+    query: vec![("vue".to_string(), "".to_string())],
+    meta: Default::default(),
+  };
+  let hook_ctx = PluginHookContext {
+    caller: None,
+    meta: Default::default(),
+  };
+  assert!(plugin
+    .load(&load_param, &context, &hook_ctx)
+    .unwrap()
+    .is_some());
+}
+
+#[test]
 fn respects_exclude_filter() {
   let (context, plugin) = make_plugin(r#"{"exclude":["fixtures/basic\\.vue$"]}"#);
   let path = fixture_path("basic.vue");

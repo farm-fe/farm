@@ -116,6 +116,10 @@ fn has_vue_query(query: &[(String, String)]) -> bool {
   query.iter().any(|(k, _)| k == VUE_QUERY_KEY)
 }
 
+fn normalize_path_for_import(path: &str) -> String {
+  path.replace('\\', "/")
+}
+
 impl Plugin for FarmPluginVue {
   fn name(&self) -> &str {
     "FarmPluginVue"
@@ -163,7 +167,12 @@ impl Plugin for FarmPluginVue {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     // Virtual style sub-block requests, e.g. `foo.vue?vue&type=style&idx=0&lang=css`.
     if has_vue_query(&param.query) {
-      if let Some(entry) = self.styles.get(&param.module_id) {
+      let normalized_module_id = normalize_path_for_import(&param.module_id);
+      if let Some(entry) = self
+        .styles
+        .get(&param.module_id)
+        .or_else(|| self.styles.get(&normalized_module_id))
+      {
         return Ok(Some(PluginLoadHookResult {
           content: entry.content,
           module_type: entry.module_type,
@@ -234,11 +243,13 @@ impl Plugin for FarmPluginVue {
 
     // Register each emitted style/custom block under its virtual id and
     // prepend an `import` so it participates in the module graph.
+    let import_base = normalize_path_for_import(param.resolved_path);
+    let virtual_base = normalize_path_for_import(&param.module_id);
     let mut prepend = String::new();
     let mut style_descriptors = Vec::new();
     if !compile_result.styles.is_empty() {
       for (idx, style) in compile_result.styles.into_iter().enumerate() {
-        let virtual_id = style_virtual_id(&param.module_id, idx, &style.lang, style.is_scoped);
+        let virtual_id = style_virtual_id(&virtual_base, idx, &style.lang, style.is_scoped);
         let module_type = lang_to_module_type(&style.lang);
         let style_content_hash = content_hash(&style.code);
         // The first `?` in the import path is the start of the query; the
@@ -247,7 +258,7 @@ impl Plugin for FarmPluginVue {
         prepend.push_str(&format!(
           "import {q}{base}?{query}{q};\n",
           q = '"',
-          base = param.resolved_path,
+          base = &import_base,
           query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
         ));
         self.styles.insert(
@@ -270,12 +281,12 @@ impl Plugin for FarmPluginVue {
     let mut custom_block_descriptors = Vec::new();
     if !compile_result.other_assets.is_empty() {
       for (idx, asset) in compile_result.other_assets.into_iter().enumerate() {
-        let virtual_id = custom_block_virtual_id(&param.module_id, idx, &asset.tag_name);
+        let virtual_id = custom_block_virtual_id(&virtual_base, idx, &asset.tag_name);
         let module_type = ModuleType::Custom(asset.tag_name.trim().to_ascii_lowercase());
         prepend.push_str(&format!(
           "import {q}{base}?{query}{q};\n",
           q = '"',
-          base = param.resolved_path,
+          base = &import_base,
           query = virtual_id.split_once('?').map(|(_, q)| q).unwrap_or(""),
         ));
         custom_block_descriptors.push(CustomBlockDescriptor {
