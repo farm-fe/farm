@@ -6,7 +6,7 @@ export interface TailwindCSSOptions {
   /**
    * JSON-serializable TailwindCSS configuration.
    *
-   * When omitted, the plugin loads `tailwind.config.js` from the current
+   * When omitted, the plugin loads `tailwindcss.config.js` from the current
    * working directory if it exists.
    */
   config?: Record<string, unknown>;
