@@ -23,16 +23,20 @@ after(async () => {
   }
 });
 
-test('loads only tailwind.config.js from the current working directory', async () => {
+test('loads CommonJS tailwindcss.config.js from the current working directory', async () => {
   const projectDir = await mkdtemp(join(tmpdir(), 'farm-tailwind-'));
   const previousCwd = process.cwd();
 
   await writeFile(
-    join(projectDir, 'tailwind.config.js'),
+    join(projectDir, 'tailwindcss.config.js'),
     'module.exports = { theme: { extend: { colors: { brand: "#123456" } } } };\n'
   );
   await writeFile(
-    join(projectDir, 'tailwind.config.ts'),
+    join(projectDir, 'tailwind.config.js'),
+    'module.exports = { theme: { extend: { colors: { ignored: "#654321" } } } };\n'
+  );
+  await writeFile(
+    join(projectDir, 'tailwindcss.config.ts'),
     'export default { theme: { extend: { colors: { ignored: "#654321" } } } };\n'
   );
 
@@ -48,6 +52,38 @@ test('loads only tailwind.config.js from the current working directory', async (
           extend: {
             colors: {
               brand: '#123456'
+            }
+          }
+        }
+      }
+    });
+  } finally {
+    process.chdir(previousCwd);
+    await rm(projectDir, { recursive: true, force: true });
+  }
+});
+
+test('loads ESM tailwindcss.config.js from the current working directory', async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), 'farm-tailwind-'));
+  const previousCwd = process.cwd();
+
+  await writeFile(
+    join(projectDir, 'tailwindcss.config.js'),
+    'export default { theme: { extend: { colors: { accent: "#abcdef" } } } };\n'
+  );
+
+  try {
+    process.chdir(projectDir);
+    const { default: tailwindcss } = await import('../index.js');
+    const [binPath, options] = tailwindcss();
+
+    assert.equal(resolve(binPath), resolve(localBinary));
+    assert.deepEqual(options, {
+      config: {
+        theme: {
+          extend: {
+            colors: {
+              accent: '#abcdef'
             }
           }
         }

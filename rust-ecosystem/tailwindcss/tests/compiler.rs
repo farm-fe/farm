@@ -39,6 +39,36 @@ fn core_compiler_accepts_external_config() {
 }
 
 #[test]
+fn external_config_extends_color_theme() {
+  let mut compiler = compile(
+    "@tailwind utilities;",
+    CompilerOptions {
+      config: Some(TailwindConfig::new(json!({
+        "theme": {
+          "extend": {
+            "colors": {
+              "brand": "#123456"
+            }
+          }
+        }
+      }))),
+      ..Default::default()
+    },
+  )
+  .unwrap();
+
+  let css = compiler.build(&["bg-brand".to_string()]);
+  assert!(
+    css.contains("--color-brand: #123456"),
+    "expected external config color token to be emitted: {css}"
+  );
+  assert!(
+    css.contains("background-color: var(--color-brand)"),
+    "expected bg-brand utility to resolve through config color: {css}"
+  );
+}
+
+#[test]
 fn build_inlines_tailwind_utilities_marker() {
   let mut compiler = compile(
     ".prose { font-family: serif; }\n@tailwind utilities;\n",
