@@ -60,9 +60,7 @@
 
 ### 其他依赖
 
-- 在构建 `sass-embedded` 需要用到 [protoc](https://grpc.io/docs/protoc-installation/) 所以您的本地开发环境还需要安装 [protoc](https://grpc.io/docs/protoc-installation/)。
 
-**TIP:** 当您在初次开发时, 请确保您的本地环境已经安装了 `protoc`。如果您的本地环境没有安装 `protoc`，则在执行 `pnpm bootstrap` 时会触发脚本, 针对 `mac` `linux` 用户会自动安装 `protoc`, 针对 `windows` 用户不会自动安装, 但是可以根据提示自行下载安装。
 
 ## 运行项目
 

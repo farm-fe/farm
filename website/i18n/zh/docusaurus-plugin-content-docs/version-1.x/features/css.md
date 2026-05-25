@@ -29,7 +29,7 @@ export function Comp() {
 Farm 官方提供了 sass、less、postcss 插件。
 
 ### Sass
-Farm Sass 插件是一个 Rust 插件，使用 `sass-embeded`（后面我们可能会迁移到纯 Rust 编写的 [`grass`](https://github.com/connorskees/grass)）。
+Farm Sass 插件是一个 Rust 插件，底层使用纯 Rust 编写的 [`grass`](https://github.com/connorskees/grass)。
 
 在 Farm 中编译 `sass/scss` 模块的步骤如下：
 

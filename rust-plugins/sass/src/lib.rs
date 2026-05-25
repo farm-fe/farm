@@ -1,15 +1,20 @@
 #![deny(clippy::all)]
 #![allow(clippy::result_large_err)]
-use std::str::FromStr;
+
+use std::{
+  collections::HashSet,
+  fmt::{Debug, Formatter},
+  io,
+  path::{Path, PathBuf},
+  sync::{Arc, Mutex},
+};
 
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
-  relative_path::RelativePath,
   serde_json::{self, Value},
-  HashMap,
 };
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
@@ -17,19 +22,8 @@ use farmfe_toolkit::{
   regex::Regex,
 };
 use farmfe_utils::relative;
+use grass::{Fs, InputSyntax, Options as GrassOptions, OutputStyle};
 use rebase_urls::rebase_urls;
-use sass_embedded::{
-  Exception, Importer, OutputStyle, Sass, StringOptions, StringOptionsBuilder, Syntax, Url,
-};
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::{env, fmt::Debug};
-use std::{
-  env::consts::{ARCH, OS},
-  fmt::Formatter,
-};
-
-const PKG_NAME: &str = "@farmfe/plugin-sass";
 
 mod rebase_urls;
 
@@ -46,29 +40,172 @@ impl FarmPluginSass {
       regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
     }
   }
-
-  fn get_sass_options(
-    &self,
-    resolved_path_with_query: String,
-    sourcemap_enabled: bool,
-  ) -> (StringOptions, HashMap<String, String>) {
-    let options = serde_json::from_str(&self.sass_options).unwrap_or_default();
-    get_options(options, resolved_path_with_query, sourcemap_enabled)
-  }
 }
 
-struct ImporterCollection {
+struct FarmFs {
+  root_file: PathBuf,
   root_importer: ModuleId,
+  root_content: String,
+  additional_data: Option<String>,
   context: Arc<CompilationContext>,
+  watched_files: Mutex<HashSet<PathBuf>>,
 }
 
-fn extension_from_path(path: &str) -> Syntax {
-  match PathBuf::from(path).extension().and_then(|ext| ext.to_str()) {
-    Some("sass") => Syntax::Indented,
-    Some("css") => Syntax::Css,
-    Some("scss") => Syntax::Scss,
-    _ => Syntax::Scss,
+impl Debug for FarmFs {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("FarmFs")
+      .field("root_file", &self.root_file)
+      .field("root_importer", &self.root_importer)
+      .finish()
   }
+}
+
+impl FarmFs {
+  fn new(
+    root_file: &str,
+    root_importer: ModuleId,
+    root_content: String,
+    additional_data: Option<String>,
+    context: Arc<CompilationContext>,
+  ) -> Self {
+    Self {
+      root_file: PathBuf::from(root_file),
+      root_importer,
+      root_content,
+      additional_data,
+      context,
+      watched_files: Mutex::new(HashSet::new()),
+    }
+  }
+
+  fn read_root(&self) -> Vec<u8> {
+    let content = if let Some(additional_data) = &self.additional_data {
+      format!("{additional_data}\n{}", self.root_content)
+    } else {
+      self.root_content.clone()
+    };
+
+    content.into_bytes()
+  }
+
+  fn resolve_path(&self, path: &Path) -> Option<PathBuf> {
+    if same_path(path, &self.root_file) {
+      return Some(self.root_file.clone());
+    }
+
+    if path.is_file() {
+      return Some(path.to_path_buf());
+    }
+
+    let source = path_to_resolve_source(path, &self.context.config.root);
+    resolve_importer(source, &self.root_importer, &self.context).ok()?
+  }
+
+  fn watched_module_ids(&self) -> Vec<ModuleId> {
+    self
+      .watched_files
+      .lock()
+      .expect("cannot lock sass watched files")
+      .iter()
+      .filter(|path| !same_path(path, &self.root_file))
+      .map(|path| ModuleId::new(&path.to_string_lossy(), "", &self.context.config.root))
+      .collect()
+  }
+
+  fn watched_paths(&self) -> Vec<PathBuf> {
+    self
+      .watched_files
+      .lock()
+      .expect("cannot lock sass watched files")
+      .iter()
+      .filter(|path| !same_path(path, &self.root_file))
+      .cloned()
+      .collect()
+  }
+}
+
+impl Fs for FarmFs {
+  fn is_dir(&self, path: &Path) -> bool {
+    path.is_dir()
+  }
+
+  fn is_file(&self, path: &Path) -> bool {
+    self.resolve_path(path).is_some()
+  }
+
+  fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
+    let resolved_path = self.resolve_path(path).ok_or_else(|| {
+      io::Error::new(
+        io::ErrorKind::NotFound,
+        format!("can not resolve {}", path.to_string_lossy()),
+      )
+    })?;
+
+    self
+      .watched_files
+      .lock()
+      .expect("cannot lock sass watched files")
+      .insert(resolved_path.clone());
+
+    if same_path(&resolved_path, &self.root_file) {
+      return Ok(self.read_root());
+    }
+
+    let resolved_path_string = resolved_path.to_string_lossy().to_string();
+    let root_file_string = self.root_file.to_string_lossy().to_string();
+    let content =
+      read_file_utf8(&resolved_path_string).map_err(|error| io::Error::other(error.to_string()))?;
+
+    rebase_urls(
+      &resolved_path_string,
+      &root_file_string,
+      content,
+      &self.context,
+    )
+    .map(String::into_bytes)
+    .map_err(|error| io::Error::other(error.to_string()))
+  }
+
+  fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+    self
+      .resolve_path(path)
+      .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, path.to_string_lossy().to_string()))
+  }
+}
+
+impl Debug for FarmPluginSass {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("FarmPluginSass").finish()
+  }
+}
+
+fn same_path(a: &Path, b: &Path) -> bool {
+  if a == b {
+    return true;
+  }
+
+  match (a.canonicalize(), b.canonicalize()) {
+    (Ok(a), Ok(b)) => a == b,
+    _ => false,
+  }
+}
+
+fn path_to_resolve_source(path: &Path, root: &str) -> String {
+  let path_string = path.to_string_lossy().replace('\\', "/");
+
+  if let Some(index) = path_string.find("/@/") {
+    return path_string[index + 1..].to_string();
+  }
+
+  if path_string.starts_with("@/") {
+    return path_string;
+  }
+
+  if path.is_absolute() {
+    return relative(root, &path_string);
+  }
+
+  path_string
 }
 
 fn resolve_importer_with_prefix(
@@ -76,7 +213,7 @@ fn resolve_importer_with_prefix(
   prefix: &str,
   root_importer: &ModuleId,
   context: &Arc<CompilationContext>,
-) -> Result<Option<String>, Exception> {
+) -> farmfe_core::error::Result<Option<PathBuf>> {
   if let Some(filename) = url.file_name() {
     url.set_file_name(format!("{}{}", prefix, filename.to_string_lossy()));
   }
@@ -92,29 +229,15 @@ fn resolve_importer_with_prefix(
       context,
       &PluginHookContext::default(),
     )
-    .map_err(|e| {
-      Exception::new(format!(
-        "can not resolve {:?} from {:?}: Error: {:?}",
-        url.to_string_lossy().to_string(),
-        prefix,
-        e
-      ))
-    })
-    .map(|item| item.map(|item| item.resolved_path))
+    .map(|item| item.map(|item| PathBuf::from(item.resolved_path)))
 }
 
 fn resolve_importer(
   url: String,
   root_importer: &ModuleId,
   context: &Arc<CompilationContext>,
-) -> Result<Option<String>, Exception> {
-  let file_path = match PathBuf::from_str(&url) {
-    Ok(path) => path,
-    Err(_) => return Ok(None),
-  };
-
-  let try_prefix_list = ["_"];
-
+) -> farmfe_core::error::Result<Option<PathBuf>> {
+  let file_path = PathBuf::from(&url);
   let default_import_result =
     resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
 
@@ -122,93 +245,13 @@ fn resolve_importer(
     return default_import_result;
   }
 
-  for prefix in try_prefix_list {
-    let resolved_path =
-      resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
+  let resolved_path = resolve_importer_with_prefix(file_path, "_", root_importer, context);
 
-    if matches!(resolved_path, Ok(Some(_))) {
-      return resolved_path;
-    }
+  if matches!(resolved_path, Ok(Some(_))) {
+    return resolved_path;
   }
 
   default_import_result
-}
-
-impl ImporterCollection {
-  fn load(&self, resolved_path: &str) -> Result<Option<String>, Box<Exception>> {
-    let context = &self.context;
-
-    if let Ok(file_content) = read_file_utf8(resolved_path) {
-      let root_file = self.root_importer.resolved_path(&context.config.root);
-
-      return Ok(Some(rebase_urls(
-        resolved_path,
-        &root_file,
-        file_content,
-        context,
-      )?));
-    }
-
-    Ok(None)
-  }
-}
-
-impl Importer for ImporterCollection {
-  fn canonicalize(
-    &self,
-    url: &str,
-    _options: &sass_embedded::ImporterOptions,
-  ) -> sass_embedded::Result<Option<Url>> {
-    let url = if url.strip_prefix("file:").is_some()
-      || url.starts_with('/')
-      || PathBuf::from(url).is_absolute()
-    {
-      if let Ok(url) = Url::from_str(url) {
-        url
-      } else {
-        Url::from_file_path(url)
-          .map_err(|_| Exception::new(format!("parse raw {url:?} to Url failed.")))?
-      }
-    } else {
-      let resolved_path = RelativePath::new(url).to_logical_path(&self.context.config.root);
-      Url::from_file_path(&resolved_path)
-        .map_err(|_| Exception::new(format!("parse {resolved_path:?} to Url failed.")))?
-    };
-
-    Ok(Some(url))
-  }
-
-  fn load(
-    &self,
-    canonical_url: &Url,
-  ) -> sass_embedded::Result<Option<sass_embedded::ImporterResult>> {
-    let url = relative(
-      &self.context.config.root,
-      &canonical_url.to_file_path().unwrap().to_string_lossy(),
-    );
-
-    if let Some(resolve_result) = resolve_importer(url, &self.root_importer, &self.context)? {
-      let content = self.load(&resolve_result)?;
-
-      if let Some(file_content) = content {
-        return Ok(Some(sass_embedded::ImporterResult {
-          contents: file_content,
-          source_map_url: None,
-          syntax: extension_from_path(&resolve_result),
-        }));
-      }
-    };
-
-    Ok(None)
-  }
-}
-
-impl Debug for ImporterCollection {
-  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ImporterCollection")
-      .field("root_importer", &self.root_importer)
-      .finish()
-  }
 }
 
 impl Plugin for FarmPluginSass {
@@ -260,65 +303,46 @@ impl Plugin for FarmPluginSass {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if param.module_type == ModuleType::Custom(String::from("sass")) {
-      let exe_path: PathBuf = get_exe_path(context);
-      let mut sass = Sass::new(exe_path).unwrap_or_else(|e| {
-        panic!(
-          "\n sass-embedded init error: {},\n Please try to install manually. eg: \n pnpm install sass-embedded-{}-{} \n",
-          e.message(),
-          get_os(),
-          get_arch()
-        )
-      });
-
-      let (mut string_options, additional_options) = self.get_sass_options(
-        ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&context.config.root),
-        context.sourcemap_enabled(&param.module_id.to_string()),
+      let options: Value = serde_json::from_str(&self.sass_options).unwrap_or_default();
+      let additional_data = options
+        .get("additionalData")
+        .and_then(Value::as_str)
+        .map(ToString::to_string);
+      let fs = FarmFs::new(
+        param.resolved_path,
+        param.module_id.clone().into(),
+        param.content.clone(),
+        additional_data,
+        context.clone(),
       );
-
-      let cloned_context = context.clone();
-
-      let import_collection = Box::new(ImporterCollection {
-        root_importer: param.module_id.clone().into(),
-        context: cloned_context,
-      });
-      // TODO support source map for additionalData
-      let content = if let Some(additional_data) = additional_options.get("additionalData") {
-        format!("{}\n{}", additional_data, param.content)
-      } else {
-        param.content.clone()
-      };
-
-      string_options
-        .common
-        .importers
-        .push(sass_embedded::SassImporter::Importer(import_collection));
-      string_options.url = Some(Url::from_file_path(param.resolved_path).unwrap());
-
-      let compile_result = sass.compile_string(&content, string_options).map_err(|e| {
-        farmfe_core::error::CompilationError::TransformError {
-          resolved_path: param.resolved_path.to_string(),
-          msg: e.message().to_string(),
-        }
-      })?;
-
-      let paths = compile_result
-        .loaded_urls
-        .iter()
-        .map(|url| url.path())
-        .filter(|p| p != &param.resolved_path)
-        .map(|p| ModuleId::new(p, "", &context.config.root))
-        .collect();
+      let grass_options = get_options(options, param.resolved_path, &fs);
+      let mut compile_result =
+        grass::from_path(param.resolved_path, &grass_options).map_err(|e| {
+          farmfe_core::error::CompilationError::TransformError {
+            resolved_path: param.resolved_path.to_string(),
+            msg: e.to_string(),
+          }
+        })?;
+      for path in fs.watched_paths() {
+        compile_result = rebase_urls(
+          &path.to_string_lossy(),
+          param.resolved_path,
+          compile_result,
+          context,
+        )?;
+      }
+      let watched_files = fs.watched_module_ids();
 
       context
         .add_watch_files(
           ModuleId::new(param.resolved_path, "", &context.config.root),
-          paths,
+          watched_files,
         )
         .expect("cannot add file to watch graph");
 
       return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        content: compile_result.css,
-        source_map: compile_result.source_map,
+        content: compile_result,
+        source_map: None,
         module_type: Some(farmfe_core::module::ModuleType::Css),
         ignore_previous_source_map: false,
       }));
@@ -327,143 +351,29 @@ impl Plugin for FarmPluginSass {
   }
 }
 
-fn get_os() -> &'static str {
-  match OS {
-    "linux" => "linux",
-    "macos" => "darwin",
-    "windows" => "win32",
-    os => panic!("dart-sass-embed is not supported OS: {os}"),
-  }
-}
+fn get_options<'a>(options: Value, resolved_path: &str, fs: &'a FarmFs) -> GrassOptions<'a> {
+  let mut grass_options = GrassOptions::default().fs(fs);
 
-fn get_arch() -> &'static str {
-  match ARCH {
-    "x86" => "ia32",
-    "x86_64" => "x64",
-    "aarch64" => "arm64",
-    arch => panic!("dart-sass-embed is not supported arch: {arch}"),
-  }
-}
-
-fn get_exe_path(context: &Arc<CompilationContext>) -> PathBuf {
-  let os = get_os();
-  let arch = get_arch();
-  let entry_file = if let "win32" = os {
-    "dart-sass-embedded.bat"
-  } else {
-    "dart-sass-embedded"
-  };
-
-  let cur_dir = env::current_dir().unwrap();
-
-  // user manually installs related dependencies
-  let manual_installation_path = RelativePath::new(&format!(
-    "node_modules/sass-embedded-{os}-{arch}/dart-sass-embedded/{entry_file}"
-  ))
-  .to_logical_path(&cur_dir);
-
-  if manual_installation_path.exists() {
-    return manual_installation_path;
-  }
-
-  let pkg_dir = context
-    .plugin_driver
-    .resolve(
-      &PluginResolveHookParam {
-        source: PKG_NAME.to_string(),
-        importer: None,
-        kind: ResolveKind::Import,
-      },
-      context,
-      &PluginHookContext::default(),
-    )
-    .unwrap()
-    .unwrap_or_else(|| {
-      panic!(
-        "can not resolve @farmfe/plugin-sass start from {}",
-        cur_dir.to_string_lossy()
-      )
-    })
-    .resolved_path;
-
-  // find closest node_modules start from pkg_dir
-  let mut cur_dir = PathBuf::from(pkg_dir).parent().unwrap().to_path_buf();
-
-  while !cur_dir.join("node_modules").exists() {
-    if cur_dir.parent().is_none() {
-      panic!("can not find node_modules in @farmfe/plugin-sass");
-    }
-
-    cur_dir = cur_dir.parent().unwrap().to_path_buf();
-  }
-
-  let default_path = RelativePath::new("node_modules")
-    .join(format!("sass-embedded-{os}-{arch}"))
-    .join(format!("dart-sass-embedded/{entry_file}"))
-    .to_logical_path(&cur_dir);
-
-  default_path
-}
-
-fn get_options(
-  options: Value,
-  resolved_path_with_query: String,
-  sourcemap_enabled: bool,
-) -> (StringOptions, HashMap<String, String>) {
-  let mut builder = StringOptionsBuilder::new();
-  builder = builder.url(
-    Url::from_file_path(&resolved_path_with_query)
-      .unwrap_or_else(|e| panic!("invalid path: {resolved_path_with_query}. Error: {e:?}")),
-  );
-  if let Some(source_map) = options.get("sourceMap") {
-    builder = builder.source_map(source_map.as_bool().unwrap_or(sourcemap_enabled));
-  } else {
-    builder = builder.source_map(sourcemap_enabled);
-  }
-  if let Some(source_map_include_sources) = options.get("sourceMapIncludeSources") {
-    builder =
-      builder.source_map_include_sources(source_map_include_sources.as_bool().unwrap_or(true));
-  } else {
-    builder = builder.source_map_include_sources(true);
-  }
-  if let Some(alert_ascii) = options.get("alertAscii") {
-    builder = builder.alert_ascii(alert_ascii.as_bool().unwrap());
-  }
-  if let Some(alert_color) = options.get("alertColor") {
-    builder = builder.alert_color(alert_color.as_bool().unwrap())
-  }
   if let Some(charset) = options.get("charset") {
-    builder = builder.charset(charset.as_bool().unwrap());
+    grass_options = grass_options.allows_charset(charset.as_bool().unwrap_or(true));
   }
+
   if let Some(quiet_deps) = options.get("quietDeps") {
-    builder = builder.quiet_deps(quiet_deps.as_bool().unwrap());
+    grass_options = grass_options.quiet(quiet_deps.as_bool().unwrap_or(false));
   }
-  if let Some(verbose) = options.get("verbose") {
-    builder = builder.verbose(verbose.as_bool().unwrap());
-  }
+
   if let Some(style) = options.get("style") {
-    let output_style = match style.as_str().unwrap() {
+    let output_style = match style.as_str().unwrap_or("expanded") {
       "expanded" => OutputStyle::Expanded,
       "compressed" => OutputStyle::Compressed,
       _ => panic!("sass stringOptions does not support this style configuration"),
     };
-    builder = builder.style(output_style);
+    grass_options = grass_options.style(output_style);
   }
 
-  let mut additional_data = HashMap::default();
-  // TODO support sourcemap for additionalData
-  if let Some(additional_date) = options.get("additionalData") {
-    additional_data.insert(
-      "additionalData".to_string(),
-      additional_date.as_str().unwrap().to_string(),
-    );
+  if resolved_path.ends_with(".sass") {
+    grass_options = grass_options.input_syntax(InputSyntax::Sass);
   }
 
-  if resolved_path_with_query.ends_with(".sass") {
-    builder = builder.syntax(Syntax::Indented);
-  }
-
-  // TODO support more options
-
-  (builder.build(), additional_data)
+  grass_options
 }
