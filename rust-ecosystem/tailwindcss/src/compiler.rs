@@ -4,7 +4,7 @@ use crate::apply::substitute_at_apply;
 use crate::ast::{self, AstNode};
 use crate::design_system::DesignSystem;
 use crate::parser::parse;
-use crate::theme::Theme;
+use crate::theme::{Theme, ThemeOptions};
 
 /// Bitflags that describe which Tailwind CSS features are used in the compiled
 /// CSS.
@@ -393,10 +393,54 @@ pub fn compile(css: &str, options: CompilerOptions) -> Result<Compiler, CompileE
 
   let features = detect_features(&ast);
 
-  let theme = Theme::with_defaults();
+  let mut theme = Theme::with_defaults();
+  if let Some(config) = &options.config {
+    apply_external_config_theme(&mut theme, &config.data);
+  }
   let design_system = DesignSystem::build(&ast, theme);
 
   Ok(Compiler::new(design_system, ast, features, options))
+}
+
+fn apply_external_config_theme(theme: &mut Theme, config: &Value) {
+  let Some(theme_config) = config.get("theme") else {
+    return;
+  };
+
+  if let Some(colors) = theme_config.get("colors") {
+    add_config_colors(theme, colors, &mut Vec::new());
+  }
+
+  if let Some(colors) = theme_config
+    .get("extend")
+    .and_then(|extend| extend.get("colors"))
+  {
+    add_config_colors(theme, colors, &mut Vec::new());
+  }
+}
+
+fn add_config_colors(theme: &mut Theme, colors: &Value, path: &mut Vec<String>) {
+  match colors {
+    Value::String(value) => {
+      if path.is_empty() {
+        return;
+      }
+
+      let key = format!("--color-{}", path.join("-"));
+      theme.add(&key, value, ThemeOptions::NONE);
+    }
+    Value::Object(map) => {
+      for (name, value) in map {
+        let path_len = path.len();
+        if name != "DEFAULT" {
+          path.push(name.to_string());
+        }
+        add_config_colors(theme, value, path);
+        path.truncate(path_len);
+      }
+    }
+    _ => {}
+  }
 }
 
 // ── feature detection ─────────────────────────────────────────────────────────
