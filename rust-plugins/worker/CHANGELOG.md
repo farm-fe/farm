@@ -1,5 +1,18 @@
 # @farmfe/plugin-worker
 
+## 2.0.0
+
+### Patch Changes
+
+- 5cf6af9: Fix Rust plugin build scripts and tooling compatibility with napi-rs CLI option parsing.
+
+  - Add backward compatibility in plugin-tools by stripping legacy `--cargo-name` before invoking `@napi-rs/cli`.
+  - Update Rust plugin build scripts to use `-p <cargo-package>` without the unsupported `--cargo-name` flag.
+  - Fix `@farmfe/plugin-react` `build:publish` script to target the correct Cargo package.
+  - Update create-farm-plugin Rust template and docs examples to generate the corrected build command.
+
+- 5cf6af9: Fix inline worker resource patching when generated JavaScript resources contain non-UTF8 bytes, preventing worker placeholders from being erased before replacement.
+
 ## 2.0.0-beta.1
 
 ### Patch Changes

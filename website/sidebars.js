@@ -23,6 +23,7 @@ const sidebars = {
       label: "Getting Started",
       collapsed: false,
       items: [
+        "announcement/farm-v2",
         "why-farm",
         "quick-start",
         "using-plugins",

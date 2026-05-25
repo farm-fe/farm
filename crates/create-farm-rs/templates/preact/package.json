@@ -14,8 +14,8 @@
     "preact": "^10.20.1"
   },
   "devDependencies": {
-    "@farmfe/core": "beta",
-    "@farmfe/cli": "beta",
+    "@farmfe/core": "^2.0.0",
+    "@farmfe/cli": "^2.0.0",
     "@preact/preset-vite": "^2.8.1",
     "typescript": "^5.4.3"
   }

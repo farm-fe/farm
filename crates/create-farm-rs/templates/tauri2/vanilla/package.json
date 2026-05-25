@@ -14,8 +14,8 @@
     "@tauri-apps/plugin-opener": "^2"
   },
   "devDependencies": {
-    "@farmfe/cli": "beta",
-    "@farmfe/core": "beta",
+    "@farmfe/cli": "^2.0.0",
+    "@farmfe/core": "^2.0.0",
     "@tauri-apps/cli": "^2",
     "core-js": "^3.40.0",
     "typescript": "^5.7.2"
