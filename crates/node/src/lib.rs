@@ -1,4 +1,3 @@
-#![feature(box_patterns)]
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
 #![allow(clippy::blocks_in_conditions)]
@@ -420,7 +419,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resources_map(&self, e: Env) -> HashMap<String, Unknown> {
+  pub fn resources_map(&self, e: Env) -> HashMap<String, Unknown<'_>> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
     let mut resources_map = HashMap::default();

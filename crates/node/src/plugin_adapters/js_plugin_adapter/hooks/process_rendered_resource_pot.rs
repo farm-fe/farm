@@ -116,7 +116,7 @@ impl From<JsPluginProcessRenderedResourcePotHookFilters>
       module_ids: f
         .module_ids
         .into_iter()
-        .map(|p| (ConfigRegex::new(&p)))
+        .map(|p| ConfigRegex::new(&p))
         .collect(),
     }
   }
