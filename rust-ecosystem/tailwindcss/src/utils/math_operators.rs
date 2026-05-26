@@ -61,9 +61,7 @@ pub fn add_whitespace_around_math_operators(input: &str) -> String {
     let c = bytes[i];
 
     // Track value positions (digit, then unit chars).
-    if is_digit(c) {
-      value_pos = Some(i);
-    } else if value_pos.is_some() && (c == PERCENT || is_lower(c) || is_upper(c)) {
+    if is_digit(c) || (value_pos.is_some() && (c == PERCENT || is_lower(c) || is_upper(c))) {
       value_pos = Some(i);
     } else {
       last_value_pos = value_pos;
@@ -161,7 +159,7 @@ pub fn add_whitespace_around_math_operators(input: &str) -> String {
       }
 
       // Surround with spaces if appropriate.
-      let last_value_adjacent = last_value_pos.map_or(false, |p| i > 0 && p == i - 1);
+      let last_value_adjacent = last_value_pos.is_some_and(|p| i > 0 && p == i - 1);
       if is_digit(prev)
         || is_digit(next)
         || prev == CLOSE_PAREN

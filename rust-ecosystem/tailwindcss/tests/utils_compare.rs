@@ -146,7 +146,7 @@ fn sort_is_stable_for_mixed_numeric_and_keyword() {
     let mut pos = 1usize;
     while pos < n {
       if stack[pos] < pos {
-        let k = if pos % 2 == 0 { 0 } else { stack[pos] };
+        let k = if pos.is_multiple_of(2) { 0 } else { stack[pos] };
         input.swap(k, pos);
         out.push(input.clone());
         stack[pos] += 1;

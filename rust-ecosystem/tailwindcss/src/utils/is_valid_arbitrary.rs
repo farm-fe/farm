@@ -60,10 +60,8 @@ pub fn is_valid_arbitrary(input: &str) -> bool {
           stack.pop();
         }
       }
-      SEMICOLON => {
-        if stack.is_empty() {
-          return false;
-        }
+      SEMICOLON if stack.is_empty() => {
+        return false;
       }
       _ => {}
     }
