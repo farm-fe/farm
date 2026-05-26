@@ -1,5 +1,4 @@
 #![deny(clippy::all)]
-#![feature(box_patterns)]
 pub mod find_local_components;
 pub mod finish_components;
 pub mod generate_dts;
