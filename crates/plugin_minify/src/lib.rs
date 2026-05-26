@@ -17,11 +17,7 @@ pub struct FarmPluginMinify {
 impl FarmPluginMinify {
   pub fn new(config: &Config) -> Self {
     Self {
-      minify_options: config
-        .minify
-        .clone()
-        .map(|val| MinifyOptions::from(val))
-        .unwrap_or_default(),
+      minify_options: config.minify.clone().map(|val| val).unwrap_or_default(),
     }
   }
 }
