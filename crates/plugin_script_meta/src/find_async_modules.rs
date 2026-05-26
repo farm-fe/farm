@@ -96,7 +96,7 @@ pub fn update_async_modules(
 #[cfg(test)]
 mod tests {
   use farmfe_core::{
-    module::{meta_data::script::ScriptModuleMetaData, ModuleMetaData, ModuleType},
+    module::{ModuleMetaData, ModuleType},
     swc_common::DUMMY_SP,
     swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt},
     HashSet,
@@ -108,9 +108,7 @@ mod tests {
     let mut module_graph = construct_test_module_graph();
     module_graph.modules_mut().into_iter().for_each(|module| {
       module.module_type = ModuleType::Js;
-      module.meta = Box::new(ModuleMetaData::Script(Box::new(
-        ScriptModuleMetaData::default(),
-      )));
+      *module.meta = ModuleMetaData::Script(Box::default());
       module.meta.as_script_mut().ast = Module {
         body: vec![],
         span: DUMMY_SP,

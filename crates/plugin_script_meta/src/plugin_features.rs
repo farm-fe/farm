@@ -1,5 +1,3 @@
-use std::i32;
-
 use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
 
 use farmfe_toolkit::script::set_module_system_for_module_meta;
@@ -58,7 +56,7 @@ impl Plugin for FarmPluginScriptMetaFeatures {
     meta.is_async = meta.statements.iter().any(|s| s.top_level_await);
 
     // analyze features used
-    let features_analyzer = FeaturesAnalyzer::new(&param.deps, &meta.statements);
+    let features_analyzer = FeaturesAnalyzer::new(param.deps, &meta.statements);
     meta.feature_flags = features_analyzer.analyze();
 
     Ok(None)

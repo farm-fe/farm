@@ -1,5 +1,3 @@
-use std::i32;
-
 use expand_exports::{
   expand_dynamic_entry_exports, expand_exports_of_module_graph, get_basic_module_export_ident,
 };
@@ -203,7 +201,7 @@ impl Plugin for FarmPluginScriptMetaExports {
 
     // if there are dependency changes, we should always do full update. Because there may be new export * from are added or removed.
     // We may optimize this in the future, support incremental update
-    if param.deps_changes.len() > 0 {
+    if !param.deps_changes.is_empty() {
       should_do_full_update = true;
     }
 
