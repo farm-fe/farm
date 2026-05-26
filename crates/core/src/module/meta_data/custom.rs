@@ -119,7 +119,7 @@ impl CustomMetaDataMap {
     self.internal.map.is_empty()
   }
 
-  pub fn iter(&self) -> Iter<String, Box<dyn Cacheable>> {
+  pub fn iter(&self) -> Iter<'_, String, Box<dyn Cacheable>> {
     self.internal.map.iter()
   }
 

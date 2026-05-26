@@ -14,6 +14,22 @@ pub struct FarmBytesStr {
   precomputed_hash: Option<u64>,
 }
 
+impl PartialEq for ArchivedFarmBytesStr {
+  fn eq(&self, other: &Self) -> bool {
+    self.precomputed_hash == other.precomputed_hash
+      && self.bytes.as_slice() == other.bytes.as_slice()
+  }
+}
+
+impl Eq for ArchivedFarmBytesStr {}
+
+impl Hash for ArchivedFarmBytesStr {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.precomputed_hash.hash(state);
+    self.bytes.as_slice().hash(state);
+  }
+}
+
 impl FarmBytesStr {
   pub fn new() -> Self {
     Self {
