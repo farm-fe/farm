@@ -50,53 +50,50 @@ fn tailwindcss_transform_basic() {
 
 #[test]
 fn tailwindcss_transform_at_apply() {
-  fixture!(
-    "tests/fixtures/at-apply/index.css",
-    |file, _crate_path| {
-      let resolved_path = file.to_string_lossy().to_string();
-      let config = Config::default();
-      let plugin = Arc::new(FarmPluginTailwindCSS::new(&config, "{}".to_string()));
-      let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
-      let content = read_file_utf8(&resolved_path).unwrap();
+  fixture!("tests/fixtures/at-apply/index.css", |file, _crate_path| {
+    let resolved_path = file.to_string_lossy().to_string();
+    let config = Config::default();
+    let plugin = Arc::new(FarmPluginTailwindCSS::new(&config, "{}".to_string()));
+    let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
+    let content = read_file_utf8(&resolved_path).unwrap();
 
-      let result = plugin
-        .transform(
-          &PluginTransformHookParam {
-            resolved_path: &resolved_path,
-            content: content.clone(),
-            module_type: ModuleType::Css,
-            query: vec![],
-            meta: HashMap::from_iter([]),
-            module_id: resolved_path.clone(),
-            source_map_chain: vec![],
-          },
-          &Arc::new(context),
-        )
-        .unwrap();
+    let result = plugin
+      .transform(
+        &PluginTransformHookParam {
+          resolved_path: &resolved_path,
+          content: content.clone(),
+          module_type: ModuleType::Css,
+          query: vec![],
+          meta: HashMap::from_iter([]),
+          module_id: resolved_path.clone(),
+          source_map_chain: vec![],
+        },
+        &Arc::new(context),
+      )
+      .unwrap();
 
-      // CSS with @apply should be detected and processed
-      match result {
-        Some(transformed) => {
-          let css = normalize_css(&transformed.content);
-          assert!(
-            css.contains("@apply") || css.contains("padding"),
-            "Transformed CSS should contain @apply or processed output"
-          );
-          assert_eq!(
-            transformed.module_type,
-            Some(ModuleType::Css),
-            "Module type should remain CSS"
-          );
-        }
-        None => {
-          // If compile returns no features, it returns None.
-          // This is acceptable since we don't have the full tailwindcss
-          // runtime in test - the @apply feature is detected but
-          // compilation may not produce output without full tailwindcss.
-        }
+    // CSS with @apply should be detected and processed
+    match result {
+      Some(transformed) => {
+        let css = normalize_css(&transformed.content);
+        assert!(
+          css.contains("@apply") || css.contains("padding"),
+          "Transformed CSS should contain @apply or processed output"
+        );
+        assert_eq!(
+          transformed.module_type,
+          Some(ModuleType::Css),
+          "Module type should remain CSS"
+        );
+      }
+      None => {
+        // If compile returns no features, it returns None.
+        // This is acceptable since we don't have the full tailwindcss
+        // runtime in test - the @apply feature is detected but
+        // compilation may not produce output without full tailwindcss.
       }
     }
-  );
+  });
 }
 
 #[test]
