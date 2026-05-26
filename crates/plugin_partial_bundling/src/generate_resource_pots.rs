@@ -37,7 +37,7 @@ pub fn generate_resource_pots(
       module_group_id.clone(),
       &used_resource_pot_names,
       module_graph,
-      &module_group_graph,
+      module_group_graph,
     );
 
     used_resource_pot_names.insert(base_resource_pot_name.clone());
@@ -70,7 +70,7 @@ pub fn generate_resource_pots(
       .module_pots
       .values_mut()
       .for_each(|pots| {
-        pots.sort_by(|a, b| b.size.cmp(&a.size));
+        pots.sort_by_key(|b| std::cmp::Reverse(b.size));
       });
 
     let merged_resource_pots = merge_module_pots(

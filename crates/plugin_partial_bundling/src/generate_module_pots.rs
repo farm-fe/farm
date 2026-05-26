@@ -216,7 +216,7 @@ mod tests {
         module_a.module_type = ModuleType::Js;
         module_a.execution_order = 1;
         module_a.immutable = true;
-        module_a.size = 1 * 1024;
+        module_a.size = 1024;
         module_a.package_name = "test-package1".to_string();
         module_a.package_version = "1.0.0".to_string();
 
@@ -259,7 +259,7 @@ mod tests {
     module_b.execution_order = 2;
 
     module_c.module_type = ModuleType::Js;
-    module_c.size = 1 * 1024;
+    module_c.size = 1024;
     module_c.execution_order = 3;
 
     module_graph.add_module(module_a);
