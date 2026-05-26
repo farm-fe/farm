@@ -1,3 +1,5 @@
+use std::fmt;
+
 use farmfe_core::{common::PackageJsonInfo, farm_profile_function, serde_json::Value};
 use farmfe_utils::relative;
 
@@ -14,11 +16,10 @@ pub enum BrowserMapType {
   ResolvedPath(String),
 }
 
-impl ToString for BrowserMapType {
-  fn to_string(&self) -> String {
+impl fmt::Display for BrowserMapType {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      BrowserMapType::Source(s) => s.clone(),
-      BrowserMapType::ResolvedPath(s) => s.clone(),
+      BrowserMapType::Source(s) | BrowserMapType::ResolvedPath(s) => f.write_str(s),
     }
   }
 }

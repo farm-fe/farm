@@ -92,7 +92,7 @@ impl Plugin for FarmPluginResolve {
       if let Some(dynamic_extensions) = hook_context.meta.get(DYNAMIC_EXTENSION_PRIORITY) {
         let exts = serde_json::from_str::<Vec<String>>(dynamic_extensions).unwrap_or_default();
 
-        if exts.len() > 0 {
+        if !exts.is_empty() {
           Some(exts)
         } else {
           None

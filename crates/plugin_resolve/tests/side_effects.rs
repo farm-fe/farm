@@ -28,7 +28,7 @@ fn resolve_side_effects_entry() {
         .to_string_lossy()
         .to_string()
     );
-    assert_eq!(resolved.side_effects, false);
+    assert!(!resolved.side_effects);
   });
 }
 
@@ -56,7 +56,7 @@ fn resolve_side_effects_subpath() {
         .to_string_lossy()
         .to_string()
     );
-    assert_eq!(resolved.side_effects, true);
+    assert!(resolved.side_effects);
   });
 }
 
@@ -84,6 +84,6 @@ fn resolve_side_effects_bool() {
         .to_string_lossy()
         .to_string()
     );
-    assert_eq!(resolved.side_effects, true);
+    assert!(resolved.side_effects);
   });
 }
