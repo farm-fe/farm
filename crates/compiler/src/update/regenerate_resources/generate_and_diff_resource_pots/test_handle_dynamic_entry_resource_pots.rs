@@ -57,7 +57,7 @@ fn test_handle_dynamic_entry_resource_pots() {
 
   let updated_modules = vec!["F".into(), "E".into(), "B".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph.entries.clone().into_keys().collect(),
+    &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);

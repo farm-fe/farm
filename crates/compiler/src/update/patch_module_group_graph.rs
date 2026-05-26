@@ -28,7 +28,7 @@ pub fn patch_module_group_graph(
       && module_graph.entries.contains_key(updated_module_id)
     {
       let mut added_module_group_graph =
-        module_group_graph_from_entries(&vec![updated_module_id.clone()], module_graph);
+        module_group_graph_from_entries(std::slice::from_ref(updated_module_id), module_graph);
       let edges = added_module_group_graph.edges();
       let module_group_ids = added_module_group_graph
         .module_groups()

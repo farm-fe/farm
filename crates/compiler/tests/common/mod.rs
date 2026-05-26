@@ -227,7 +227,7 @@ pub fn create_compiler_with_plugins(
   cwd: PathBuf,
   crate_path: PathBuf,
   minify: bool,
-  plugins: Vec<Arc<(dyn Plugin + 'static)>>,
+  plugins: Vec<Arc<dyn Plugin + 'static>>,
 ) -> Compiler {
   let swc_helpers_path = crate_path
     .join("tests")
@@ -385,10 +385,7 @@ pub fn get_dir_config_files(cwd: &Path) -> Vec<(String, PathBuf)> {
     .map(|item| {
       item
         .into_iter()
-        .filter_map(|file| match file {
-          Ok(v) => Some(v),
-          Err(_) => None,
-        })
+        .filter_map(|file| file.ok())
         .map(|v| v.path())
         .filter(|v| v.is_file())
         .filter(|v| {

@@ -320,7 +320,7 @@ mod tests {
   fn test_generate_resource_pot_map() {
     let mut module_graph = construct_test_module_graph_complex();
     let module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_keys().collect(),
+      &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
       &mut module_graph,
     );
 
@@ -361,7 +361,7 @@ mod tests {
     module_graph.module_mut(&"H".into()).unwrap().external = true;
 
     let module_group_graph = module_group_graph_from_entries(
-      &module_graph.entries.clone().into_keys().collect(),
+      &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
       &mut module_graph,
     );
 
