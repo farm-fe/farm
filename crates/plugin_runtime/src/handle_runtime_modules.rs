@@ -210,7 +210,7 @@ pub fn insert_runtime_modules(module_graph: &mut ModuleGraph, context: &Arc<Comp
     let (unresolved_mark, top_level_mark) = resolve_module_mark(ast, false, globals.value());
 
     // update meta.statements
-    let statements = analyze_statements(&ast);
+    let statements = analyze_statements(ast);
 
     entry_module.meta.as_script_mut().statements = statements;
     entry_module.meta.as_script_mut().top_level_mark = top_level_mark.as_u32();
@@ -271,7 +271,7 @@ pub fn transform_normal_runtime_inputs_to_dynamic_entries(
     ),
     (
       DYNAMIC_INPUTS[2].clone(),
-      context.config.runtime.plugins.len() > 0,
+      !context.config.runtime.plugins.is_empty(),
     ),
     (DYNAMIC_INPUTS[3].clone(), context.config.mode.is_dev()),
     (

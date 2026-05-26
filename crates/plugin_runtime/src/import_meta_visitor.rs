@@ -91,11 +91,7 @@ impl VisitMut for HmrAcceptedVisitor {
       ..
     }) = expr
     {
-      if &module.to_string() == FARM_MODULE
-        && &meta.to_string() == "meta"
-        && &hot.to_string() == "hot"
-        && &accept.to_string() == "accept"
-      {
+      if module == FARM_MODULE && meta == "meta" && hot == "hot" && accept == "accept" {
         // if args is empty or the first arg is a function expression, then it's hmr self accepted
         if args.is_empty()
           || matches!(args[0], ExprOrSpread {
@@ -115,19 +111,17 @@ impl VisitMut for HmrAcceptedVisitor {
               &self.context,
               &Default::default(),
             );
-            if let Ok(resolved) = resolve_result {
-              if let Some(resolved) = resolved {
-                let id = ModuleId::new(
-                  &resolved.resolved_path,
-                  &stringify_query(&resolved.query),
-                  &self.context.config.root,
-                );
-                self.hmr_accepted_deps.insert(id.clone());
-                *s = Str {
-                  span: DUMMY_SP,
-                  value: id.to_string().into(),
-                  raw: None,
-                }
+            if let Ok(Some(resolved)) = resolve_result {
+              let id = ModuleId::new(
+                &resolved.resolved_path,
+                &stringify_query(&resolved.query),
+                &self.context.config.root,
+              );
+              self.hmr_accepted_deps.insert(id.clone());
+              *s = Str {
+                span: DUMMY_SP,
+                value: id.to_string().into(),
+                raw: None,
               }
             }
           };

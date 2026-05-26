@@ -105,7 +105,7 @@ impl SourceReplacer<'_> {
     for kind in kinds {
       if let Some(dep_id) = self
         .module_graph
-        .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
+        .get_dep_by_source_optional(&self.module_id, source, Some(kind.clone()))
         .or(
           self
             .hoisted_external_modules
@@ -174,7 +174,7 @@ impl SourceReplacer<'_> {
 
         if dep_module.module_type.is_script() {
           // println!("replace {:?} to {:?}", value, id.id(self.mode.clone()));
-          str.value = id.id(self.mode.clone()).into();
+          str.value = id.id(self.mode).into();
           str.span = DUMMY_SP;
           str.raw = None;
           return SourceReplaceResult::Replaced;
@@ -203,7 +203,7 @@ impl SourceReplacer<'_> {
             return SourceReplaceResult::NotReplaced;
           }
 
-          str.value = id.id(self.mode.clone()).into();
+          str.value = id.id(self.mode).into();
           str.span = DUMMY_SP;
           str.raw = None;
         } else {

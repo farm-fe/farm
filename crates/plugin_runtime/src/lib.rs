@@ -100,10 +100,9 @@ impl Plugin for FarmPluginRuntime {
 
     config.define.insert(
       "$__farm_global_this__$".to_string(),
-      serde_json::Value::String(format!(
-        "{}",
-        get_farm_global_this(&config.runtime.namespace, &config.output.target_env)
-      )),
+      serde_json::Value::String(
+        get_farm_global_this(&config.runtime.namespace, &config.output.target_env).to_string(),
+      ),
     );
 
     Ok(Some(()))
@@ -134,7 +133,7 @@ impl Plugin for FarmPluginRuntime {
         },
         ..Default::default()
       }));
-    } else if param.importer.as_ref().map_or(false, |importer| {
+    } else if param.importer.as_ref().is_some_and(|importer| {
       let rel_path = importer.relative_path();
       rel_path == RUNTIME_PACKAGE || rel_path.ends_with(FARM_RUNTIME_SUFFIX)
     }) {
@@ -197,22 +196,22 @@ impl Plugin for FarmPluginRuntime {
         format!("{:?}", context.config.output.target_env.to_string()).as_str(),
       );
 
-      return Ok(Some(PluginLoadHookResult {
+      Ok(Some(PluginLoadHookResult {
         content: code,
         module_type: ModuleType::Ts,
         source_map: None,
-      }));
+      }))
     } else {
       let code = read_file_utf8(resolved_path)?;
       let module_type = module_type_from_id(resolved_path).ok_or(CompilationError::LoadError {
         resolved_path: resolved_path.to_string(),
         source: Some(Box::new(CompilationError::GenericError("Can not get module type for this runtime module. Please make the modules introduced by your runtime plugin are valid modules supported by Farm".to_string())))
       })?;
-      return Ok(Some(PluginLoadHookResult {
+      Ok(Some(PluginLoadHookResult {
         content: code,
         module_type,
         source_map: None,
-      }));
+      }))
     }
   }
 

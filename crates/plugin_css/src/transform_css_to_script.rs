@@ -192,7 +192,7 @@ pub fn transform_css_to_script_modules(
           let mut module_graph = context.module_graph.write();
           let module = module_graph.module_mut(&module_id).unwrap();
 
-          module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
+          *module.meta = ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
             ast,
             top_level_mark: top_level_mark.as_u32(),
             unresolved_mark: unresolved_mark.as_u32(),
@@ -202,7 +202,7 @@ pub fn transform_css_to_script_modules(
             comments: CommentsMetaData::from(comments),
             custom: Default::default(),
             ..Default::default()
-          })));
+          }));
 
           module.module_type = ModuleType::Js;
 
@@ -316,6 +316,19 @@ pub fn wrapper_style_load(
   css_deps: &String,
   src_map: Option<String>,
 ) -> String {
+  let css_code = format!(
+    "{}\n{}",
+    code.replace('`', "'").replace('\\', "\\\\"),
+    if let Some(src_map) = src_map {
+      format!(
+        r#"/*# sourceMappingURL=data:application/json;charset=utf-8;base64,{} */"#,
+        base64_encode(src_map.as_bytes())
+      )
+    } else {
+      "".to_string()
+    }
+  );
+
   format!(
     r#"
 const cssCode = `{}`;
@@ -338,18 +351,7 @@ if (module.meta.hot) {{
   }});
 }}
 "#,
-    format!(
-      "{}\n{}",
-      code.replace('`', "'").replace('\\', "\\\\"),
-      if let Some(src_map) = src_map {
-        format!(
-          r#"/*# sourceMappingURL=data:application/json;charset=utf-8;base64,{} */"#,
-          base64_encode(src_map.as_bytes())
-        )
-      } else {
-        "".to_string()
-      }
-    ),
+    css_code,
     id.replace('\\', "\\\\"),
     css_deps,
   )
