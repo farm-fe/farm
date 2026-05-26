@@ -65,7 +65,7 @@ pub fn generate_library_format_resources(
   // Do not clone resource pot if there is only one format to emit for performance reason
   if formats.len() == 1 {
     return emit_formatted_resource_pot(
-      formats[0].clone(),
+      formats[0],
       resource_pot,
       runtime_module_helper_ast,
       all_used_helper_idents,
