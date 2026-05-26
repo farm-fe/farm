@@ -21,6 +21,8 @@ use farmfe_toolkit::script::{
   analyze_statement::analyze_statements, concatenate_modules::EXPORT_NAMESPACE,
 };
 
+type ImportsToRename = HashMap<ModuleId, HashMap<(String, String), String>>;
+
 pub fn mangle_exports(
   can_not_be_mangled: &HashSet<ModuleExportIdent>,
   module_graph: &farmfe_core::module::module_graph::ModuleGraph,
@@ -57,7 +59,7 @@ pub fn mangle_exports(
         ident_generator.add_used_ident(&ident.sym);
       }
       for ident in meta.all_deeply_declared_idents.iter() {
-        ident_generator.add_used_ident(&ident);
+        ident_generator.add_used_ident(ident);
       }
       for ident in meta.unresolved_idents.iter() {
         ident_generator.add_used_ident(&ident.sym);
@@ -151,9 +153,8 @@ pub fn mangle_exports(
 pub fn find_imports_to_rename(
   full_mangled_ident_map: &HashMap<ModuleId, HashMap<String, String>>,
   module_graph: &farmfe_core::module::module_graph::ModuleGraph,
-) -> HashMap<ModuleId, HashMap<(String, String), String>> {
-  let imports_to_rename: Mutex<HashMap<ModuleId, HashMap<(String, String), String>>> =
-    Mutex::new(HashMap::default());
+) -> ImportsToRename {
+  let imports_to_rename: Mutex<ImportsToRename> = Mutex::new(HashMap::default());
 
   module_graph.modules().into_par_iter().for_each(|module| {
     if module.module_type.is_script() {
@@ -218,7 +219,7 @@ pub fn find_imports_to_rename(
                     }
                   }
                   ExportSpecifierInfo::All => {
-                    for (export, _) in &source_module.meta.as_script().export_ident_map {
+                    for export in source_module.meta.as_script().export_ident_map.keys() {
                       if let Some(mangled_ident) = mangled_ident_map.get(export) {
                         module_imports_to_rename
                           .insert((export.to_string(), source.clone()), mangled_ident.clone());
@@ -275,12 +276,12 @@ pub fn update_exports_meta_and_module_decl(
         let default_map = HashMap::default();
         let mangled_ident_map = full_mangled_ident_map
           .get(&module.id)
-          .unwrap_or_else(|| &default_map);
+          .unwrap_or(&default_map);
 
         let import_default_map = HashMap::default();
         let imports_to_rename = full_imports_to_rename
           .get(&module.id)
-          .unwrap_or_else(|| &import_default_map);
+          .unwrap_or(&import_default_map);
         let meta = module.meta.as_script_mut();
 
         // remove original exports and insert mangled exports
@@ -456,7 +457,7 @@ pub fn update_exports_meta_and_module_decl(
           }
         }
 
-        if extra_export_specifiers.len() > 0 {
+        if !extra_export_specifiers.is_empty() {
           // add extra export specifiers
           meta
             .ast
