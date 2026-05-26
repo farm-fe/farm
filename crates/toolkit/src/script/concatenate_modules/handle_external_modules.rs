@@ -238,7 +238,7 @@ fn push_new_preserved_import(
       .or(Some(defined_ident.clone()));
   }
 
-  let mut rename_visitor = RenameVisitor::new(module_id, Some(source_module_id), &rename_handler);
+  let mut rename_visitor = RenameVisitor::new(module_id, Some(source_module_id), rename_handler);
   item.visit_mut_with(&mut rename_visitor);
 
   let is_namespace_import = is_namespace_import_stmt(statement);
@@ -379,11 +379,9 @@ fn create_unique_ambiguous_export_all_ident(
     );
   }
 
-  let ident = renamed_ident
+  renamed_ident
     .map(|i| Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt()))
-    .unwrap_or(ident);
-
-  ident
+    .unwrap_or(ident)
 }
 
 /// Handle external export statements. Following is the example:
@@ -667,7 +665,7 @@ pub fn handle_ambiguous_export_all(options: HandleAmbiguousExportAllOptions) -> 
 
       // append defineExportStar
       result.items_to_append.push(create_define_export_star_item(
-        &module_id,
+        module_id,
         renamed_ident.clone().into(),
       ));
 
@@ -785,13 +783,13 @@ fn add_external_export_all_helper(
 
   // add import * xxx from the external module
   let preserved_item =
-    find_or_create_preserved_import_item(strip_context, module_id, &source_module_id);
+    find_or_create_preserved_import_item(strip_context, module_id, source_module_id);
 
   // append defineExportStar
   if should_add_namespace_ident {
     result.items_to_append.push(create_define_export_star_item(
-      &module_id,
-      preserved_item.namespace_ident.clone().unwrap().into(),
+      module_id,
+      preserved_item.namespace_ident.clone().unwrap(),
     ));
   }
 
@@ -837,7 +835,7 @@ pub fn add_ambiguous_ident_decl(
 
       let export_ident = extra_var_decl
         .as_ref()
-        .and_then(|(_, export_ident, _)| Some(export_ident.clone()))
+        .map(|(_, export_ident, _)| export_ident.clone())
         .or_else(|| rename_handler.get_unique_ident(&export_ident))
         .unwrap_or(export_ident);
 

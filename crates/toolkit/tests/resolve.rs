@@ -44,8 +44,7 @@ fn load_package_json() {
     assert!(
       cache.contains_key(&PACKAGE_JSON_LOADER.get_cache_key(&dir.join("src"), &Default::default()))
     );
-    assert!(cache
-      .contains_key(&PACKAGE_JSON_LOADER.get_cache_key(&dir.to_path_buf(), &Default::default())));
+    assert!(cache.contains_key(&PACKAGE_JSON_LOADER.get_cache_key(dir, &Default::default())));
 
     let cached_result = cache
       .get(&PACKAGE_JSON_LOADER.get_cache_key(&dir.join("src"), &Default::default()))

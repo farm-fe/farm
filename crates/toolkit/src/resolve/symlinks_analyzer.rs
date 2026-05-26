@@ -10,6 +10,12 @@ pub struct SymlinksAnalyzer {
   cache: DashMap<PathBuf, PathBuf>,
 }
 
+impl Default for SymlinksAnalyzer {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl SymlinksAnalyzer {
   pub fn new() -> Self {
     Self {

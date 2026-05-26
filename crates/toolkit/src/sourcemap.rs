@@ -42,7 +42,7 @@ pub fn append_sourcemap_comment(resource: &mut Resource, map: &Resource, config:
   // get last path segment
   let mut source_map_url = PathBuf::from(&map.name)
     .components()
-    .last()
+    .next_back()
     .unwrap()
     .as_os_str()
     .to_str()
@@ -105,7 +105,7 @@ pub fn trace_module_sourcemap(
       dst_token.is_range(),
     );
 
-    if let Some(content) = read_source_content(dst_token.clone(), dst_sourcemap) {
+    if let Some(content) = read_source_content(*dst_token, dst_sourcemap) {
       builder.set_source_contents(new_token.src_id, Some(BytesStr::from_string(content)));
     }
   };
@@ -136,14 +136,11 @@ pub fn trace_module_sourcemap(
         // reverse the chain to make the last one the original sourcemap
         chain.reverse();
         // filter out the empty sourcemap
-        chain = chain
-          .into_iter()
-          .filter(|map| map.get_token_count() > 0)
-          .collect();
+        chain.retain(|map| map.get_token_count() > 0);
         chain
       });
 
-      let mut dst_token = token.clone();
+      let mut dst_token = token;
       let mut dst_sourcemap = token.sourcemap();
 
       // trace the token back to original source file
@@ -156,7 +153,7 @@ pub fn trace_module_sourcemap(
         }
       }
 
-      add_token(&token, &dst_token, &dst_sourcemap);
+      add_token(&token, &dst_token, dst_sourcemap);
     } else {
       add_token(&token, &token, &sourcemap);
     }
@@ -245,12 +242,14 @@ pub fn load_source_original_sourcemap(
 use farmfe_utils::file_url_to_path;
 use std::cell::{RefCell, RefMut};
 
+type RemapSource = Box<dyn Fn(&str) -> String>;
+
 pub struct CollapseSourcemapOptions {
   /// if true, inline source content to the source map.
   /// if the source content does not exist and source filename exists, content will be read from source file from disk.
   pub inline_content: bool,
 
-  pub remap_source: Option<Box<dyn Fn(&str) -> String>>,
+  pub remap_source: Option<RemapSource>,
 }
 
 impl Default for CollapseSourcemapOptions {
@@ -274,10 +273,7 @@ pub fn collapse_sourcemap_chain(
   opts: CollapseSourcemapOptions,
 ) -> SourceMap {
   chain.reverse();
-  chain = chain
-    .into_iter()
-    .filter(|map| map.get_token_count() > 0)
-    .collect();
+  chain.retain(|map| map.get_token_count() > 0);
 
   if chain.is_empty() {
     let builder = SourceMapBuilder::new(None);
@@ -391,9 +387,8 @@ pub fn read_source_content(token: Token<'_>, map: &SourceMap) -> Option<String> 
       std::fs::read_to_string(src).ok()
     } else if let Some(map_file) = map_file {
       let src_file = PathBuf::from(map_file).parent().unwrap().join(src);
-      let src_content = std::fs::read_to_string(src_file).ok();
 
-      src_content
+      std::fs::read_to_string(src_file).ok()
     } else {
       None
     }

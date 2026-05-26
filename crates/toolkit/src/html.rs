@@ -80,10 +80,10 @@ pub fn create_element(name: &str, text: Option<&str>, attrs: Vec<(&str, &str)>) 
       .into_iter()
       .map(|(name, value)| create_attribute(name, Some(value)))
       .collect(),
-    children: if text.is_some() {
+    children: if let Some(text) = text {
       vec![Child::Text(Text {
         span: DUMMY_SP,
-        data: text.unwrap().into(),
+        data: text.into(),
         raw: None,
       })]
     } else {

@@ -109,11 +109,11 @@ fn import_named() {
   assert_eq!(defined_idents.len(), 3);
   let defined_idents_str = defined_idents
     .into_iter()
-    .map(|ident| print_id(&ident.into()))
+    .map(|ident| print_id(&ident))
     .collect::<HashSet<_>>();
-  assert!(defined_idents_str.contains(&"a#0".to_string()));
-  assert!(defined_idents_str.contains(&"b#0".to_string()));
-  assert!(defined_idents_str.contains(&"nc#0".to_string()));
+  assert!(defined_idents_str.contains("a#0"));
+  assert!(defined_idents_str.contains("b#0"));
+  assert!(defined_idents_str.contains("nc#0"));
 }
 
 #[test]
@@ -142,10 +142,7 @@ fn import_namespace() {
   assert!(export_info.is_none());
   assert_eq!(defined_idents.len(), 1);
   assert_eq!(
-    defined_idents
-      .iter()
-      .map(|ident| print_id(ident))
-      .collect::<Vec<_>>()[0],
+    defined_idents.iter().map(print_id).collect::<Vec<_>>()[0],
     "a#0".to_string()
   );
 }
@@ -200,10 +197,7 @@ fn export_default_decl() {
 
   assert_eq!(defined_idents.len(), 1);
   assert_eq!(
-    defined_idents
-      .iter()
-      .map(|ident| print_id(ident))
-      .collect::<Vec<_>>()[0],
+    defined_idents.iter().map(print_id).collect::<Vec<_>>()[0],
     "a#0".to_string()
   );
 }
@@ -230,16 +224,13 @@ fn export_decl() {
   ));
 
   if let ExportSpecifierInfo::Named { local, exported } = &export_info.specifiers[0] {
-    assert_eq!(print_id(&local), "a#0".to_string());
+    assert_eq!(print_id(local), "a#0".to_string());
     assert!(exported.is_none());
   }
 
   assert_eq!(defined_idents.len(), 1);
   assert_eq!(
-    defined_idents
-      .iter()
-      .map(|ident| print_id(ident))
-      .collect::<Vec<_>>()[0],
+    defined_idents.iter().map(print_id).collect::<Vec<_>>()[0],
     "a#0".to_string()
   );
 }
@@ -319,10 +310,7 @@ fn export_named_from() {
 
   assert_eq!(defined_idents.len(), 3);
   assert_eq!(
-    defined_idents
-      .iter()
-      .map(|ident| print_id(ident))
-      .collect::<HashSet<_>>(),
+    defined_idents.iter().map(print_id).collect::<HashSet<_>>(),
     vec!["a#0".to_string(), "c#0".to_string(), "d#0".to_string()]
       .into_iter()
       .collect::<HashSet<_>>()
@@ -383,10 +371,7 @@ fn export_named() {
 
   assert_eq!(defined_idents.len(), 3);
   assert_eq!(
-    defined_idents
-      .iter()
-      .map(|ident| print_id(ident))
-      .collect::<HashSet<_>>(),
+    defined_idents.iter().map(print_id).collect::<HashSet<_>>(),
     vec!["a#0".to_string(), "c#0".to_string(), "d#0".to_string()]
       .into_iter()
       .collect::<HashSet<_>>()
@@ -422,10 +407,7 @@ fn export_namespace() {
 
   assert_eq!(defined_idents.len(), 1);
   assert_eq!(
-    defined_idents
-      .iter()
-      .map(|ident| print_id(ident))
-      .collect::<HashSet<_>>(),
+    defined_idents.iter().map(print_id).collect::<HashSet<_>>(),
     vec!["a#0".to_string()].into_iter().collect::<HashSet<_>>()
   );
 }
@@ -447,9 +429,9 @@ fn func_decl() {
   assert_eq!(defined_idents.len(), 1);
   let defined_idents_str = defined_idents
     .iter()
-    .map(|ident| print_id(ident))
+    .map(print_id)
     .collect::<HashSet<String>>();
-  assert!(defined_idents_str.contains(&"a#0".to_string()));
+  assert!(defined_idents_str.contains("a#0"));
 
   assert_eq!(defined_idents_str.len(), 1);
   assert_eq!(
@@ -475,9 +457,9 @@ fn bar_decl() {
   assert_eq!(defined_idents.len(), 1);
   let defined_idents_str = defined_idents
     .iter()
-    .map(|ident| print_id(ident))
+    .map(print_id)
     .collect::<HashSet<String>>();
-  assert!(defined_idents_str.contains(&"a#0".to_string()));
+  assert!(defined_idents_str.contains("a#0"));
 }
 
 #[test]

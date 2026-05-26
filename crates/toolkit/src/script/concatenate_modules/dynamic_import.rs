@@ -53,10 +53,8 @@ impl<'a> VisitMut for DynamicImportVisitor<'a> {
 
     // Get the source string from the first argument
     let source = match &call_expr.args[0].expr.as_lit() {
-      Some(lit) => match lit {
-        farmfe_core::swc_ecma_ast::Lit::Str(s) => s.value.to_string_lossy().into_owned(),
-        _ => return,
-      },
+      Some(farmfe_core::swc_ecma_ast::Lit::Str(s)) => s.value.to_string_lossy().into_owned(),
+      Some(_) => return,
       None => return,
     };
 

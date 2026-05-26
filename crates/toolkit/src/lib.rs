@@ -1,5 +1,4 @@
 #![feature(box_patterns)]
-#![feature(let_chains)]
 
 pub mod constant;
 pub mod css;
