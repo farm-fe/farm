@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use farmfe_core::{
   swc_common::Span,
   swc_ecma_ast::*,
