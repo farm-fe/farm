@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-PLUGINS="react replace-dirname sass auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss"
+PLUGINS="react replace-dirname sass vue auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss"
 PROFILE="${FARM_BUILD_PROFILE:-ci}"
 ABI="${FARM_BUILD_ABI:?FARM_BUILD_ABI is required}"
 TARGET="${FARM_BUILD_TARGET:-}"
@@ -36,10 +36,6 @@ case "$ABI" in
     unset CC_x86_64_unknown_linux_gnu || true
     unset CC || true
     export CARGO_INCREMENTAL=0
-    if command -v apt-get >/dev/null 2>&1; then
-      apt-get update
-      apt-get install -y protobuf-compiler --fix-missing
-    fi
     ;;
   linux-x64-musl)
     if [ -f /etc/alpine-release ]; then
@@ -47,7 +43,7 @@ case "$ABI" in
       echo "https://dl-cdn.alpinelinux.org/alpine/v3.21/main" >> /etc/apk/repositories
       echo "https://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories
       apk update
-      apk add --upgrade clang-static llvm-dev protobuf
+      apk add --upgrade clang-static llvm-dev
     fi
     export CARGO_INCREMENTAL=0
     if [ "$PROFILE" != "ci" ]; then

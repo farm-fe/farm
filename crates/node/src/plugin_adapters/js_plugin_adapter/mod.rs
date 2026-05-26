@@ -309,19 +309,19 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<()>> {
     if let Some(js_update_modules_hook) = &self.js_update_modules_hook {
       let update_result = js_update_modules_hook.call(params.clone(), context.clone())?;
-      let mut updating_modules = params
-        .paths
-        .iter()
-        .map(|p| p.0.to_string())
-        .collect::<HashSet<_>>();
 
       if let Some(result) = update_result {
-        for (item, update_type) in result {
-          if !updating_modules.contains(&item) {
-            params.paths.push((item.clone(), update_type.into()));
-            updating_modules.insert(item);
-          }
-        }
+        let mut updating_modules = HashSet::default();
+        params.paths = result
+          .into_iter()
+          .filter_map(|(item, update_type)| {
+            if updating_modules.insert(item.clone()) {
+              Some((item, update_type.into()))
+            } else {
+              None
+            }
+          })
+          .collect();
       }
 
       Ok(Some(()))

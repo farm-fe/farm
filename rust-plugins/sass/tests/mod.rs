@@ -58,6 +58,47 @@ fn test() {
   });
 }
 
+#[test]
+fn transforms_vue_virtual_scss_modules() {
+  let resolved_path = format!(
+    "{}?vue&type=style&idx=0&lang=scss&scoped=true",
+    std::env::current_dir()
+      .unwrap()
+      .join("src")
+      .join("CounterCard.vue")
+      .to_string_lossy()
+  );
+  let config = Config::default();
+  let plugin = Arc::new(FarmPluginSass::new(&config, "{}".to_string()));
+  let context = Arc::new(CompilationContext::new(config, vec![plugin.clone()]).unwrap());
+
+  let transformed = plugin
+    .transform(
+      &PluginTransformHookParam {
+        resolved_path: &resolved_path,
+        content: "$accent: #40916c;.card{background: rgba($accent, 0.12);button{background: $accent;color: white;}}".to_string(),
+        module_type: ModuleType::Custom(String::from("scss")),
+        query: vec![
+          ("vue".to_string(), "".to_string()),
+          ("type".to_string(), "style".to_string()),
+          ("scoped".to_string(), "true".to_string()),
+          ("scopeId".to_string(), "data-v-test".to_string()),
+        ],
+        meta: HashMap::from_iter([]),
+        module_id: resolved_path.clone(),
+        source_map_chain: vec![],
+      },
+      &context,
+    )
+    .unwrap()
+    .unwrap();
+
+  assert_eq!(transformed.module_type, Some(ModuleType::Css));
+  assert!(transformed.content.contains(".card button"));
+  assert!(!transformed.content.contains("data-v-test"));
+  assert!(transformed.content.contains("#40916c"));
+}
+
 fn normalize_css(css: &str) -> String {
   css.replace("\r\n", "\n")
 }

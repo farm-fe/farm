@@ -82,6 +82,12 @@ jobs:
           path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-vue
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
+          path: ./rust-plugins/vue/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
         id: download-plugin-auto-import
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
@@ -348,6 +354,7 @@ jobs:
           - name: plugin-sass
           - name: plugin-react
           - name: plugin-replace-dirname
+          - name: plugin-vue
           - name: plugin-auto-import
           - name: plugin-compress
           - name: plugin-dsv

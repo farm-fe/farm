@@ -18,5 +18,10 @@ const b: Plugin = {
 };
 
 export default defineConfig({
+  compilation: {
+    persistentCache: {
+      cacheDir: 'node_modules/.farm/vite-vue-cache',
+    },
+  },
   vitePlugins: [vue(), b],
 });

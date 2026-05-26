@@ -254,6 +254,10 @@ fn resolve_importer(
   default_import_result
 }
 
+fn is_sass_module_type(module_type: &ModuleType) -> bool {
+  matches!(module_type, ModuleType::Custom(t) if t == "sass" || t == "scss")
+}
+
 impl Plugin for FarmPluginSass {
   fn name(&self) -> &str {
     "FarmPluginSass"
@@ -302,7 +306,7 @@ impl Plugin for FarmPluginSass {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if param.module_type == ModuleType::Custom(String::from("sass")) {
+    if is_sass_module_type(&param.module_type) {
       let options: Value = serde_json::from_str(&self.sass_options).unwrap_or_default();
       let additional_data = options
         .get("additionalData")

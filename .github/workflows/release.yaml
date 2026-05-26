@@ -107,6 +107,7 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-vue/* ./rust-plugins/vue/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-auto-import/* ./rust-plugins/auto-import/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-compress/* ./rust-plugins/compress/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dsv/* ./rust-plugins/dsv/npm/${abi}
@@ -130,6 +131,7 @@ jobs:
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
+            test -f ./rust-plugins/vue/npm/${abi}/index.farm
             test -f ./rust-plugins/auto-import/npm/${abi}/index.farm
             test -f ./rust-plugins/compress/npm/${abi}/index.farm
             test -f ./rust-plugins/dsv/npm/${abi}/index.farm

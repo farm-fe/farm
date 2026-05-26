@@ -669,14 +669,14 @@ export class VitePluginAdapter implements JsPlugin {
 
           moduleGraph.context = ctx;
 
-          const result = [];
+          const result: string[] = [];
 
           for (const [file, _] of paths) {
+            const filename = normalizePath(file);
             const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
 
-            const filename = normalizePath(file);
             const ctx: HmrContext = {
               file: filename,
               timestamp: Date.now(),
@@ -684,8 +684,8 @@ export class VitePluginAdapter implements JsPlugin {
                 (m) =>
                   ({
                     ...m,
-                    id: normalizePath(m.id),
-                    file: normalizePath(m.file)
+                    id: normalizePath(m.id ?? m.url ?? filename),
+                    file: normalizePath(m.file ?? filename)
                   }) as ModuleNode
               ),
               read: function (): string | Promise<string> {
@@ -696,14 +696,25 @@ export class VitePluginAdapter implements JsPlugin {
 
             const updateMods: ModuleNode[] = await hook?.(ctx);
 
-            if (updateMods) {
-              result.push(...updateMods.map((mod) => mod.id));
+            if (updateMods?.length) {
+              result.push(
+                ...updateMods
+                  .map((mod) => mod.id)
+                  .filter((id): id is string => Boolean(id))
+              );
             } else {
-              result.push(...mods.map((mod) => mod.id));
+              result.push(
+                ...mods
+                  .map((mod) => mod.id)
+                  .filter((id): id is string => Boolean(id))
+              );
             }
           }
 
-          return [...new Set(result)].map((id) => revertNormalizePath(id));
+          return [...new Set(result)].map((id) => [
+            revertNormalizePath(id),
+            'updated'
+          ]);
         }
       )
     };

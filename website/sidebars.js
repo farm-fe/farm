@@ -148,6 +148,7 @@ const sidebars = {
           collapsed: false,
           items: [
             "plugins/official-plugins/react",
+            "plugins/official-plugins/vue",
             "plugins/official-plugins/sass",
             "plugins/official-plugins/strip",
             "plugins/official-plugins/dsv",
