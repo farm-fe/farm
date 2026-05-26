@@ -113,16 +113,13 @@ pub fn icon_to_svg(
   let customizations_width = full_customizations.width.clone();
   let customizations_height = full_customizations.height.clone();
 
-  let mut width: Option<String> = None;
-  let mut height: Option<String> = None;
-
-  if customizations_width.is_none() {
-    height = match customizations_height {
+  let (width, height) = if customizations_width.is_none() {
+    let height = match customizations_height {
       None => Some("1em".to_string()),
       Some(ref h) if h == "auto" => Some(box_height.to_string()),
       Some(h) => Some(h),
     };
-    width = if height.is_none() {
+    let width = if height.is_none() {
       None
     } else {
       Some(calculate_size(
@@ -130,14 +127,15 @@ pub fn icon_to_svg(
         box_width as f32 / box_height as f32,
         None,
       ))
-    }
+    };
+    (width, height)
   } else {
-    width = match customizations_width {
+    let width = match customizations_width {
       Some(ref w) if w == "auto" => Some(box_width.to_string()),
       Some(w) => Some(w),
       None => unreachable!(),
     };
-    height = match customizations_height {
+    let height = match customizations_height {
       None => Some(calculate_size(
         &width.clone().unwrap(),
         box_height as f32 / box_width as f32,
@@ -146,7 +144,8 @@ pub fn icon_to_svg(
       Some(ref h) if h == "auto" => Some(box_height.to_string()),
       Some(h) => Some(h),
     };
-  }
+    (width, height)
+  };
 
   let attributes = Attributes {
     width,

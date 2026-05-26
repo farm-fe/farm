@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct IconifyJSON {
   pub icons: HashMap<String, IconifyIcon>,
 }
