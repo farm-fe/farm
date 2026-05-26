@@ -22,7 +22,7 @@ pub fn analyze_written_imported_idents(graph: &StatementGraph) -> HashSet<WriteT
             v.ident.clone(),
             v.fields
               .as_ref()
-              .map(|f| f.iter().map(|f| f.clone()).collect())
+              .map(|f| f.iter().cloned().collect())
               .unwrap_or_default(),
           )
         })

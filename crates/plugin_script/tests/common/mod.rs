@@ -109,6 +109,7 @@ pub fn build_module_deps(
   (module, deps)
 }
 
+#[allow(dead_code)]
 pub fn build_module(path: PathBuf, base: PathBuf) -> Module {
   build_module_deps(path, base).0
 }

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use common::create_module;
 use farmfe_core::{
@@ -323,7 +323,7 @@ fn trace_loadable_esm() {
       let code_bytes = codegen_module(ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
-      let output_path = PathBuf::from(file).parent().unwrap().join("output.js");
+      let output_path = file.parent().unwrap().join("output.js");
 
       if output_path.exists() {
         let output_code =

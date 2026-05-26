@@ -1,4 +1,4 @@
-use std::mem;
+use std::{fmt, mem};
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
@@ -45,13 +45,13 @@ impl UsedExportsIdent {
   }
 }
 
-impl ToString for UsedExportsIdent {
-  fn to_string(&self) -> String {
+impl fmt::Display for UsedExportsIdent {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      UsedExportsIdent::SwcIdent(ident) => ident.to_string(),
-      UsedExportsIdent::Default => "default".to_string(),
-      UsedExportsIdent::ExportAll => "*".to_string(),
-      UsedExportsIdent::ImportAll => "import_*_as".to_string(),
+      UsedExportsIdent::SwcIdent(ident) => f.write_str(ident),
+      UsedExportsIdent::Default => f.write_str("default"),
+      UsedExportsIdent::ExportAll => f.write_str("*"),
+      UsedExportsIdent::ImportAll => f.write_str("import_*_as"),
     }
   }
 }
@@ -113,11 +113,8 @@ impl UsedExports {
   }
 
   pub fn set_export_all(&mut self) {
-    match self {
-      UsedExports::Partial(_) => {
-        *self = UsedExports::All;
-      }
-      _ => {}
+    if let UsedExports::Partial(_) = self {
+      *self = UsedExports::All;
     }
   }
 

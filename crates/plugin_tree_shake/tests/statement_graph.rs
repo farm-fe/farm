@@ -21,12 +21,12 @@ fn create_test_statement_graph(code: &str) -> StatementGraph {
   let mut module = Module::new("test".into());
   let statements = analyze_statements(&ast);
 
-  module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
+  *module.meta = ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     statements,
     unresolved_mark: unresolved_mark.as_u32(),
     top_level_mark: top_level_mark.as_u32(),
     ..Default::default()
-  })));
+  }));
   StatementGraph::new(&module, &ast, &comment)
 }
 
@@ -68,7 +68,7 @@ export { a, b, c as d };"#;
       "{:?}",
       edges
         .iter()
-        .map(|e| (e.0.id.clone(), e.1.id.clone(), e.2))
+        .map(|e| (e.0.id, e.1.id, e.2))
         .collect::<Vec<_>>()
     );
 
@@ -82,12 +82,7 @@ export { a, b, c as d };"#;
       .2
       .used_idents_map
       .iter()
-      .map(|(i, deps)| {
-        (
-          print_id(i),
-          deps.iter().map(|i| print_id(i)).collect::<Vec<_>>(),
-        )
-      })
+      .map(|(i, deps)| (print_id(i), deps.iter().map(print_id).collect::<Vec<_>>()))
       .collect::<Vec<_>>();
     assert_eq!(
       used_idents,
@@ -104,7 +99,7 @@ export { a, b, c as d };"#;
       .used_idents_map
       .iter()
       .map(|(i, deps)| {
-        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        let mut deps = deps.iter().map(print_id).collect::<Vec<_>>();
         deps.sort();
         (print_id(i), deps)
       })
@@ -123,7 +118,7 @@ export { a, b, c as d };"#;
       .used_idents_map
       .iter()
       .map(|(i, deps)| {
-        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        let mut deps = deps.iter().map(print_id).collect::<Vec<_>>();
         deps.sort();
         (print_id(i), deps)
       })
@@ -144,12 +139,7 @@ export { a, b, c as d };"#;
       .2
       .used_idents_map
       .iter()
-      .map(|(i, deps)| {
-        (
-          print_id(i),
-          deps.iter().map(|i| print_id(i)).collect::<Vec<_>>(),
-        )
-      })
+      .map(|(i, deps)| (print_id(i), deps.iter().map(print_id).collect::<Vec<_>>()))
       .collect::<Vec<_>>();
     used_idents.sort();
     assert_eq!(
@@ -167,7 +157,7 @@ export { a, b, c as d };"#;
       .used_idents_map
       .iter()
       .map(|(i, deps)| {
-        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        let mut deps = deps.iter().map(print_id).collect::<Vec<_>>();
         deps.sort();
         (print_id(i), deps)
       })
@@ -186,12 +176,7 @@ export { a, b, c as d };"#;
       .2
       .used_idents_map
       .iter()
-      .map(|i| {
-        (
-          print_id(i.0),
-          i.1.iter().map(|i| print_id(i)).collect::<Vec<_>>(),
-        )
-      })
+      .map(|i| (print_id(i.0), i.1.iter().map(print_id).collect::<Vec<_>>()))
       .collect::<Vec<_>>();
     assert_eq!(
       used_idents,
@@ -208,7 +193,7 @@ export { a, b, c as d };"#;
       .used_idents_map
       .iter()
       .map(|(i, deps)| {
-        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        let mut deps = deps.iter().map(print_id).collect::<Vec<_>>();
         deps.sort();
         (print_id(i), deps)
       })
@@ -228,7 +213,7 @@ export { a, b, c as d };"#;
       .used_idents_map
       .iter()
       .map(|(i, deps)| {
-        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        let mut deps = deps.iter().map(print_id).collect::<Vec<_>>();
         deps.sort();
         (print_id(i), deps)
       })
@@ -279,12 +264,7 @@ fn construct_statement_graph_complex_1() {
       .2
       .used_idents_map
       .iter()
-      .map(|(i, deps)| {
-        (
-          print_id(i),
-          deps.iter().map(|i| print_id(i)).collect::<Vec<_>>(),
-        )
-      })
+      .map(|(i, deps)| (print_id(i), deps.iter().map(print_id).collect::<Vec<_>>()))
       .collect::<Vec<_>>();
     assert_eq!(
       used_idents,
@@ -303,7 +283,7 @@ fn construct_statement_graph_complex_1() {
       .used_idents_map
       .iter()
       .map(|(i, deps)| {
-        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        let mut deps = deps.iter().map(print_id).collect::<Vec<_>>();
         deps.sort();
         (print_id(i), deps)
       })
@@ -367,11 +347,7 @@ export { a, b, c as d };"#;
       .as_partial()
       .contains(&UsedExportsIdent::SwcIdent("aValue".to_string())));
 
-    let mut used_stmts = stmt_graph
-      .used_stmts()
-      .iter()
-      .map(|i| *i)
-      .collect::<Vec<_>>();
+    let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();
     assert_eq!(used_stmts, [0, 1, 2, 3, 4, 5]);
 
@@ -444,11 +420,7 @@ export { a, b, c as d };"#;
       .as_partial()
       .contains(&UsedExportsIdent::SwcIdent("aValue".to_string())));
 
-    let mut used_stmts = stmt_graph
-      .used_stmts()
-      .iter()
-      .map(|i| *i)
-      .collect::<Vec<_>>();
+    let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();
     assert_eq!(used_stmts, [0, 1, 2, 3, 6]);
 
@@ -488,11 +460,7 @@ fn trace_and_mark_used_statements_commonjs_exports() {
 
     assert_eq!(traced_import_stmts.len(), 0);
 
-    let mut used_stmts = stmt_graph
-      .used_stmts()
-      .iter()
-      .map(|i| *i)
-      .collect::<Vec<_>>();
+    let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();
     assert_eq!(used_stmts, [0]);
   });
@@ -544,11 +512,7 @@ export const {
       .as_partial()
       .contains(&UsedExportsIdent::Default));
 
-    let mut used_stmts = stmt_graph
-      .used_stmts()
-      .iter()
-      .map(|i| *i)
-      .collect::<Vec<_>>();
+    let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();
     assert_eq!(used_stmts, [0, 1]);
   });
