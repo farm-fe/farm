@@ -82,7 +82,6 @@ impl Plugin for FarmPluginDts {
     let mut module: EcmaAstModule = meta.ast.clone();
 
     module.visit_mut_with(&mut ImportPathRewriter {
-      source_path: PathBuf::from(path),
       config: (*context.config).clone(),
       resolver: Resolver::new(),
     });
@@ -151,7 +150,6 @@ impl VisitMut for ImportVariableRemover {
 }
 
 struct ImportPathRewriter {
-  source_path: PathBuf,
   config: Config,
   resolver: Resolver,
 }
