@@ -1,6 +1,3 @@
-#![feature(box_patterns)]
-#![feature(let_chains)]
-
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
@@ -25,10 +22,7 @@ pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {
       return ts.into();
     }
   };
-  let archived_item_ident = Ident::new(
-    &format!("Archived{}", item_ident.to_string()),
-    item_ident.span(),
-  );
+  let archived_item_ident = Ident::new(&format!("Archived{item_ident}"), item_ident.span());
 
   let derives = quote! {
     use rkyv::*;
