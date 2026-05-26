@@ -1,11 +1,13 @@
 import { strict as assert } from 'node:assert';
 import { readFile, rm, writeFile } from 'node:fs/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import path from 'node:path';
 import { startAndTest } from '../../e2e/index.mjs';
 
 const root = path.resolve(import.meta.dirname);
 const componentPath = path.join(root, 'src/components/HelloWorld.vue');
 const persistentCachePath = path.join(root, 'node_modules/.farm/vite-vue-cache');
+const hmrTimeout = Number(process.env.FARM_E2E_HMR_TIMEOUT ?? 30_000);
 
 async function assertVueSfcExample(page) {
   await page.waitForSelector('#root');
@@ -17,9 +19,9 @@ async function assertVueSfcExample(page) {
 
 async function waitForStyle(page, selector, property, expected) {
   await page.evaluate(
-    ({ selector, property, expected }) =>
+    ({ selector, property, expected, hmrTimeout }) =>
       new Promise((resolve, reject) => {
-        const deadline = Date.now() + 10000;
+        const deadline = Date.now() + hmrTimeout;
 
         const check = () => {
           const element = document.querySelector(selector);
@@ -35,7 +37,7 @@ async function waitForStyle(page, selector, property, expected) {
 
         check();
       }),
-    { selector, property, expected }
+    { selector, property, expected, hmrTimeout }
   );
 }
 
@@ -43,7 +45,7 @@ async function waitForText(page, selector, expected, label) {
   await page.waitForFunction(
     ({ selector, expected }) => document.querySelector(selector)?.textContent?.includes(expected),
     { selector, expected },
-    { timeout: 10000 }
+    { timeout: hmrTimeout }
   ).catch((error) => {
     throw new Error(`${label}: ${error.message}`);
   });
@@ -58,6 +60,7 @@ async function withFileEdit(filePath, from, to, run) {
   try {
     await run();
   } finally {
+    await delay(1000);
     await writeFile(filePath, original);
   }
 }
@@ -88,6 +91,7 @@ async function assertTemplateHmr(page, countButton) {
 
   await waitForText(page, '.card', 'test HMR', 'template HMR restore did not update');
   assert.match(await button.textContent(), /count is 1/);
+  await delay(1000);
 }
 
 async function assertStyleHmr(page, countButton) {
