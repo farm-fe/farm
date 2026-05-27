@@ -202,8 +202,8 @@ importers:
         specifier: workspace:*
         version: link:../../rust-plugins/react
       '@farmfe/plugin-svgr':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^2.0.0-beta.1
+        version: link:../../rust-plugins/svgr
       core-js:
         specifier: ^3.30.1
         version: 3.33.2
@@ -515,7 +515,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: 2.0.0-beta.0
+        specifier: 2.0.0-beta.1
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -6806,63 +6806,6 @@ packages:
   '@esri/calcite-ui-icons@3.32.0':
     resolution: {integrity: sha512-2UEddEeSnpXVWp/uNrgym3mrb8lZ5+vXFbtmvXv5NiE32nQGw2MFZD52L5Z+FsxqHJ9vVrtl/X6pTIgkd0c8jA==}
     hasBin: true
-
-  '@farmfe/plugin-svgr-darwin-arm64@0.0.1':
-    resolution: {integrity: sha512-YgjOwKPI4zh4HG+92w0yHeVZfjAyUnpyMVIREJP/4npm0SU2riUS3T0l/TP/0HLZ6Mba0H3HFT7YNYfTTXSMAA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@farmfe/plugin-svgr-darwin-x64@0.0.1':
-    resolution: {integrity: sha512-Mg+MTvJlkS5+0pPEGcFN25Gx9vJhMordmlxsfLeCz4iE+v/siRAZI5+VBFl6L+FWU0s0jUj4/xmR8gf9DYhJng==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@farmfe/plugin-svgr-linux-arm64-gnu@0.0.1':
-    resolution: {integrity: sha512-wnTlEnNBxQbWBaLzeWVkZxzmLYAA5PPemVF6RIYnnoqCHDjtR+XYSEni0Cp/HGlQKEibgNDnAXa6y3NRrbE+XA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@farmfe/plugin-svgr-linux-arm64-musl@0.0.1':
-    resolution: {integrity: sha512-UgauXx2mVurqBoDpK03xsAub657WklbkO6RDwczNwOvTXOjw/GqhaB6JbEZe8dLOxqCJm6G7xiOgptGj/c5T9g==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@farmfe/plugin-svgr-linux-x64-gnu@0.0.1':
-    resolution: {integrity: sha512-E03N1yrxA5gQQEuPAH8oM767UEG+B1wlg3dqe77HD6dGsqsoDlLKUgzdbmUt1uTeWSbRozYajGTgp2f/b3R6NQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@farmfe/plugin-svgr-linux-x64-musl@0.0.1':
-    resolution: {integrity: sha512-dAr0dyXgedW0YTIJEQ266j1ahCyV4/forwH15BTtWnv1VjCym+yhLvDHxGq5zVV+U0TBJtbWPeVh47zkvNYpFQ==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@farmfe/plugin-svgr-win32-arm64-msvc@0.0.1':
-    resolution: {integrity: sha512-S6fjA2ObhC/0c8j8kqbrBMi31gJYaIlNhN6vK7RUcUDWCyemFjgGWfKDX9xUpqXa+mIn03OpoKzbo+/2GwKA2w==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@farmfe/plugin-svgr-win32-ia32-msvc@0.0.1':
-    resolution: {integrity: sha512-BcjU+W9yYwVU/+j8PK8UTwM2T3m4vOOHwPCvGw99jHscPPwl7iIfck6AKVNxCls8qaDHIQ3rOQT7ubPPfPLSRw==}
-    engines: {node: '>= 10'}
-    cpu: [ia32]
-    os: [win32]
-
-  '@farmfe/plugin-svgr-win32-x64-msvc@0.0.1':
-    resolution: {integrity: sha512-joTf8T31UOSwQ51y3ZRexfK826zRXALujw66yaUue2/Akk+o/TFxG5PpnsAWMMt9liUfVyu3s1qGqFOOkAw5Ag==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [win32]
-
-  '@farmfe/plugin-svgr@0.0.1':
-    resolution: {integrity: sha512-LVIkPZNyiOc7dgzN3yUuOPKA2wxBbb01sIb6WrcYOsLXD3Zk5SmbqW6uXI8qbRBvsB9kKMb4fTP5b84Y65xx3A==}
 
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
@@ -28363,45 +28306,6 @@ snapshots:
       - '@floating-ui/utils'
 
   '@esri/calcite-ui-icons@3.32.0': {}
-
-  '@farmfe/plugin-svgr-darwin-arm64@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-darwin-x64@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-linux-arm64-gnu@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-linux-arm64-musl@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-linux-x64-gnu@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-linux-x64-musl@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-win32-arm64-msvc@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-win32-ia32-msvc@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr-win32-x64-msvc@0.0.1':
-    optional: true
-
-  '@farmfe/plugin-svgr@0.0.1':
-    optionalDependencies:
-      '@farmfe/plugin-svgr-darwin-arm64': 0.0.1
-      '@farmfe/plugin-svgr-darwin-x64': 0.0.1
-      '@farmfe/plugin-svgr-linux-arm64-gnu': 0.0.1
-      '@farmfe/plugin-svgr-linux-arm64-musl': 0.0.1
-      '@farmfe/plugin-svgr-linux-x64-gnu': 0.0.1
-      '@farmfe/plugin-svgr-linux-x64-musl': 0.0.1
-      '@farmfe/plugin-svgr-win32-arm64-msvc': 0.0.1
-      '@farmfe/plugin-svgr-win32-ia32-msvc': 0.0.1
-      '@farmfe/plugin-svgr-win32-x64-msvc': 0.0.1
 
   '@farmfe/utils@0.0.1': {}
 
