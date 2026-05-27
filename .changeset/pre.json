@@ -92,7 +92,9 @@
     "@farmfe/plugin-dts": "1.0.0-nightly-20250827162746",
     "@farmfe/plugin-react": "2.0.0-nightly-20250827162746",
     "@farmfe/plugin-replace-dirname": "1.0.0-nightly-20250827162746",
-    "@farmfe/plugin-sass": "2.0.0-nightly-20250827162746"
+    "@farmfe/plugin-sass": "2.0.0-nightly-20250827162746",
+    "@farmfe/plugin-vue": "2.0.0",
+    "@farmfe/plugin-tailwindcss": "2.0.0"
   },
   "changesets": [
     "blue-jobs-lick",
