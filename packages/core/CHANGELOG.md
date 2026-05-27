@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 2.0.0-beta.11
+
+### Patch Changes
+
+- ba8bf31: Fixed the issue of nested public and output config
+- 2f9ef0e: Update all SWC related crates to latest versions (swc_core v59.0.1)
+- Updated dependencies [5cf6af9]
+  - @farmfe/plugin-replace-dirname@2.0.0-beta.1
+
 ## 2.0.0-beta.10
 
 ### Patch Changes
