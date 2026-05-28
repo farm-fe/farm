@@ -12,7 +12,7 @@
 
 ## Overall Progress Tracker
 
-- [ ] A. Official plugin docs coverage
+- [x] A. Official plugin docs coverage
 - [ ] B. Config + feature docs correctness
 - [ ] C. JS/Rust plugin API docs
 - [ ] D. CLI + JavaScript API docs
@@ -40,7 +40,7 @@
   - `@farmfe/js-plugin-electron`
 - [x] Link first-slice pages from `website/sidebars.js`.
 - [x] Link first-slice pages from `website/docs/plugins/official-plugins/overview.md`.
-- [ ] Add README-backed Rust plugin pages:
+- [x] Add README-backed Rust plugin pages:
   - `@farmfe/plugin-svgr`
   - `@farmfe/plugin-wasm`
   - `@farmfe/plugin-worker`
@@ -49,18 +49,18 @@
   - `@farmfe/plugin-image`
   - `@farmfe/plugin-compress`
   - `@farmfe/plugin-modular-import`
-- [ ] Add source-backed Rust plugin pages:
+- [x] Add source-backed Rust plugin pages:
   - `@farmfe/plugin-auto-import`
   - `@farmfe/plugin-dts`
   - `@farmfe/plugin-mdx`
   - `@farmfe/plugin-replace-dirname`
-- [ ] Add remaining JS plugin pages:
+- [x] Add remaining JS plugin pages:
   - `@farmfe/js-plugin-babel`
   - `@farmfe/js-plugin-copy`
   - `@farmfe/js-plugin-qiankun`
   - `@farmfe/js-plugin-react-compiler`
   - `@farmfe/js-plugin-vuetify`
-- [ ] Keep install, usage, and options examples short and sourced from package README files, `index.d.ts`, or `src/index.ts`.
+- [x] Keep install, usage, and options examples short and sourced from package README files, `index.d.ts`, or `src/index.ts`.
 
 ## B. Config + Feature Docs Correctness
 
@@ -145,4 +145,3 @@ The current website build succeeds but reports pre-existing warnings unrelated t
 - Sass legacy JS API deprecation warnings are emitted by the build toolchain.
 - CSS minimizer warnings appear for generated `styles.*.css`.
 - Multiple current and versioned docs have broken anchors, especially config-option anchors and zh writing-plugin anchors.
-

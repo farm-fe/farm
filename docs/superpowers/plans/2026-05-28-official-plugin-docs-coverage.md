@@ -41,23 +41,23 @@ Official packages without current docs coverage:
 - Create: `website/docs/plugins/official-plugins/js-visualizer.mdx`
 - Create: `website/docs/plugins/official-plugins/js-electron.mdx`
 
-- [ ] **Step 1: Add docs for `@farmfe/plugin-tailwindcss`**
+- [x] **Step 1: Add docs for `@farmfe/plugin-tailwindcss`**
 
 Create `website/docs/plugins/official-plugins/tailwindcss.mdx` with install commands, Rust plugin registration, `content` and `config` option notes, and a minimal CSS example using `@import "tailwindcss";`.
 
-- [ ] **Step 2: Add docs for `@farmfe/js-plugin-tailwindcss`**
+- [x] **Step 2: Add docs for `@farmfe/js-plugin-tailwindcss`**
 
 Create `website/docs/plugins/official-plugins/js-tailwindcss.mdx` with install commands, JS plugin import usage, filter options, and a minimal CSS example using `@import "tailwindcss";`.
 
-- [ ] **Step 3: Add docs for `@farmfe/js-plugin-visualizer`**
+- [x] **Step 3: Add docs for `@farmfe/js-plugin-visualizer`**
 
 Create `website/docs/plugins/official-plugins/js-visualizer.mdx` with install commands, plugin usage, and `host`/`port` option documentation.
 
-- [ ] **Step 4: Add docs for `@farmfe/js-plugin-electron`**
+- [x] **Step 4: Add docs for `@farmfe/js-plugin-electron`**
 
 Create `website/docs/plugins/official-plugins/js-electron.mdx` with install commands, main/preload build configuration, and option types.
 
-- [ ] **Step 5: Wire the new pages into navigation and overview**
+- [x] **Step 5: Wire the new pages into navigation and overview**
 
 Add the new Rust TailwindCSS page to the Rust Plugins sidebar category. Add the JS TailwindCSS, Visualizer, and Electron pages to the JS Plugins sidebar category. Update `overview.md` so these entries are clickable and include the Rust TailwindCSS plugin in the Rust list.
 
