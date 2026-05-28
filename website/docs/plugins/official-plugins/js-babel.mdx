@@ -1,0 +1,46 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-babel
+
+JavaScript plugin that runs Babel on matched Farm modules.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-babel --save-dev</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-babel --dev</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-babel --save-dev</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import { babel } from "@farmfe/js-plugin-babel";
+
+export default defineConfig({
+  plugins: [
+    babel({
+      priority: 99,
+      transformOptions: {
+        presets: ["@babel/preset-env"],
+      },
+    }),
+  ],
+});
+```
+
+## Options
+
+- `filters?: { moduleTypes?: ModuleType[]; resolvedPaths?: string[] }` — modules to transform. Defaults to module types `["js", "jsx", "ts", "tsx"]` and no path filters.
+- `transformOptions?: TransformOptions` — passed to Babel `transformAsync` with `filename` set to the module id.
+- `priority: number` — Farm plugin priority. `babel()` defaults to `99`; include this option when passing an options object.
+- `name?: string` — Farm plugin name. Defaults to `"js-plugin:babel"`.

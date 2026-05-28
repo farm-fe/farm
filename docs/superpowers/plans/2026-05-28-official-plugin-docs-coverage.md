@@ -91,7 +91,7 @@ Expected: Docusaurus build completes without broken MDX or sidebar references.
 - Modify `website/sidebars.js`
 - Modify `website/docs/plugins/official-plugins/overview.md`
 
-- [ ] Add pages for remaining Rust plugins: `auto-import`, `dts`, `mdx`, and `replace-dirname`.
-- [ ] Add pages for remaining JS plugins: `babel`, `copy`, `qiankun`, `react-compiler`, and `vuetify`.
-- [ ] Source options from `index.d.ts`, `src/index.ts`, package README files, and examples.
+- [x] Add pages for remaining Rust plugins: `auto-import`, `dts`, `mdx`, and `replace-dirname`.
+- [x] Add pages for remaining JS plugins: `babel`, `copy`, `qiankun`, `react-compiler`, and `vuetify`.
+- [x] Source options from `index.d.ts`, `src/index.ts`, package README files, and examples.
 - [ ] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.

@@ -1,0 +1,50 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-replace-dirname
+
+Rust plugin that replaces Node-style path globals in script modules.
+
+It rewrites `__dirname`, `__filename`, and `import.meta.url` to string literals based on the module path.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-replace-dirname</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-replace-dirname</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-replace-dirname</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+`@farmfe/core` uses this plugin internally when bundling Farm config files. To register it manually, import the platform plugin path and pass it as a Rust plugin tuple:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import replaceDirname from "@farmfe/plugin-replace-dirname";
+
+export default defineConfig({
+  plugins: [
+    [replaceDirname, {
+      include: ["src/"],
+      exclude: ["node_modules/"],
+    }],
+  ],
+});
+```
+
+## Options
+
+- `include?: string[]` — regular expression strings for module paths to transform. Defaults to `[]`.
+- `exclude?: string[]` — regular expression strings for module paths to skip. Defaults to `["node_modules/"]`.
+
+:::note
+Unlike most Rust plugin packages, this package's default export is the resolved native plugin path string, not an options wrapper function.
+:::

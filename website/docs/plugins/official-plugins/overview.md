@@ -11,15 +11,19 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 * **[`@farmfe/plugin-react`](./react)**：Support React `jsx` and `react-refresh`.
 * **[`@farmfe/plugin-vue`](./vue)**：Compile Vue 3 Single-File Components via the `fervid` Rust compiler.
 * **[`@farmfe/plugin-sass`](./sass)**：Support compiling `sass/scss` files.
+* **[`@farmfe/plugin-auto-import`](./auto-import)**：Inject imports from presets and scanned local exports.
 * **[`@farmfe/plugin-tailwindcss`](./tailwindcss)**：Rust-based TailwindCSS integration.
 * **[`@farmfe/plugin-svgr`](./svgr)**：Transform SVG files into React components.
 * **[`@farmfe/plugin-wasm`](./wasm)**：Support WebAssembly and `wasm-pack` generated modules.
 * **[`@farmfe/plugin-worker`](./worker)**：Support web workers via constructors and worker query suffixes.
 * **[`@farmfe/plugin-url`](./url)**：Import files as data URIs or emitted asset URLs.
+* **[`@farmfe/plugin-dts`](./dts)**：Emit `.d.ts` files for matched TypeScript modules.
 * **[`@farmfe/plugin-icons`](./icons)**：Use Iconify icons as on-demand framework components.
 * **[`@farmfe/plugin-image`](./image)**：Import image files as base64 data URIs or DOM `Image` exports.
+* **[`@farmfe/plugin-mdx`](./mdx)**：Compile `.md` and `.mdx` files to JSX.
 * **[`@farmfe/plugin-compress`](./compress)**：Compress generated assets with Brotli, Gzip, Deflate, or DeflateRaw.
 * **[`@farmfe/plugin-modular-import`](./modular-import)**：Transform UI-library named imports into per-component imports.
+* **[`@farmfe/plugin-replace-dirname`](./replace-dirname)**：Replace `__dirname`, `__filename`, and `import.meta.url` in script modules.
 * **[`@farmfe/plugin-strip`](./strip)**：A Farm rust plugin to remove `debugger` statements and functions like `assert.equal` and `console.log` from your code.
 * **[`@farmfe/plugin-dsv`](./dsv)**：A Farm plugin which converts `.csv` and `.tsv` files into JavaScript modules.
 * **[`@farmfe/plugin-yaml`](./yaml)**：A Farm plugin which Converts YAML files to ES6 modules.
@@ -29,6 +33,8 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 ## Js Plugins
 
 * **[`@farmfe/js-plugin-postcss`](./js-postcss)**：Support `postcss` in your project.
+* **[`@farmfe/js-plugin-babel`](./js-babel)**：Run Babel on matched Farm modules.
+* **[`@farmfe/js-plugin-copy`](./js-copy)**：Copy files and globs at the end of a Farm build.
 * **[`@farmfe/js-plugin-less`](./js-less)**：Support compiling `less` files.
 * **[`@farmfe/js-plugin-svgr`](./js-svgr)**：Support compiling `svg` files.
 * **[`@farmfe/js-plugin-dts`](./js-dts)**：Support compiling `*.d.ts` files.
@@ -36,6 +42,9 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 * **[`@farmfe/js-plugin-tailwindcss`](./js-tailwindcss)**：Support TailwindCSS integration.
 * **[`@farmfe/js-plugin-visualizer`](./js-visualizer)**：Visualize your bundle size and composition.
 * **[`@farmfe/js-plugin-electron`](./js-electron)**：Support building Electron applications.
+* **[`@farmfe/js-plugin-qiankun`](./js-qiankun)**：Expose Farm apps as qiankun micro-apps.
+* **[`@farmfe/js-plugin-react-compiler`](./js-react-compiler)**：Run React Compiler through Babel for JSX/TSX modules.
+* **[`@farmfe/js-plugin-vuetify`](./js-vuetify)**：Support Vuetify auto-imports and style resolution.
 
 ## Community Plugins
 

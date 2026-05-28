@@ -1,0 +1,56 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-copy
+
+JavaScript plugin that copies files or globs at the end of a Farm build.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-copy --save-dev</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-copy --dev</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-copy --save-dev</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import copy from "@farmfe/js-plugin-copy";
+
+export default defineConfig({
+  plugins: [
+    copy({
+      targets: [
+        { src: "public/**/*", dest: "dist" },
+      ],
+      verbose: true,
+    }),
+  ],
+});
+```
+
+## Options
+
+- `targets?: Target[]` — copy targets. Defaults to `[]`.
+- `copyOnce?: boolean` — copy only once, useful in watch mode. Defaults to `false`.
+- `copySync?: boolean` — use synchronous copy operations. Defaults to `false`.
+- `flatten?: boolean` — remove source directory structure under `dest`. Defaults to `true`.
+- `verbose?: boolean` — log copied files. Defaults to `false`.
+
+Each target supports:
+
+- `src: string | string[]` — path or glob to copy.
+- `dest: string | string[]` — destination directory or directories.
+- `rename?: string | ((name: string, extension: string, fullPath: string) => string)` — rename copied files.
+- `transform?: (contents: Buffer, name: string) => unknown` — replace file contents. The implementation only allows `transform` for files.
+
+Other plugin and target options are passed through to `globby`; remaining plugin options are also passed to `fs-extra` copy/write calls.

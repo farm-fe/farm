@@ -1,0 +1,56 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-auto-import
+
+Rust plugin that injects imports for matched identifiers from presets and scanned local exports.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-auto-import</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-auto-import</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-auto-import</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import autoImport from "@farmfe/plugin-auto-import";
+import react from "@farmfe/plugin-react";
+
+export default defineConfig({
+  plugins: [
+    react({ runtime: "automatic" }),
+    autoImport({
+      presets: ["react", "react-router-dom"],
+      dirs: ["src/apis"],
+      dts: "src/auto-imports.d.ts",
+    }),
+  ],
+});
+```
+
+Supported string presets are `react`, `react-router`, `react-router-dom`, `vue`, `vue-router`, and `pinia`.
+
+## Options
+
+- `dirs?: string[]` — directories to scan for exports. Defaults to no extra directories.
+- `dts?: boolean | string` — generate an auto-import declaration file. Defaults to `true`; pass a string to choose the file path.
+- `ignore?: string[]` — regular expression strings for import names to ignore.
+- `presets?: Array<string | { from: string; imports: string[] } | Record<string, Array<string | [string, string]>>>` — built-in or custom imports. Tuple entries alias an import name.
+- `include?: string[]` — regular expression strings for module ids to transform.
+- `exclude?: string[]` — regular expression strings for module ids to skip. Defaults to `["node_modules"]`.
+- `injectAtEnd?: boolean` — inject generated imports at the end of the module. Defaults to `false`.
+
+:::note
+The Rust source declares an `importMode` option, but the current implementation does not use it.
+:::
