@@ -153,6 +153,7 @@ JavaScript plugin packages:
   - `website/docs/config/compilation-options.md`
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/using-plugins.md`
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/features/script.md`
+  - `website/i18n/zh/docusaurus-plugin-content-docs/current/config/compilation-options.md`
 - [ ] Leave `version-1.x` `@farmfe/js-plugin-vue` references unchanged because they document historical v1 behavior.
 - [ ] Fix known broken anchors reported by Docusaurus build:
   - `#output-targetenv`

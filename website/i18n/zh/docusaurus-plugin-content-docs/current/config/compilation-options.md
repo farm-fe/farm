@@ -395,11 +395,9 @@ export default defineConfig({
 - **options**: 传给 swc 插件的配置项
 - **filters**: 对哪些模块执行该插件，必须配置，支持 `resolvedPaths` 和 `moduleTypes` 这两个过滤项，两者如果同时指定，取并集。
 
-对于 Vue 项目支持 JSX 的配置示例如下：
+对于 Vue 项目支持 JSX 的配置示例如下。如果需要 Vue SFC 支持，请注册当前的 Rust 插件 `@farmfe/plugin-vue`：
 
 ```ts
-import jsPluginVue from "@farmfe/js-plugin-vue";
-
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -421,7 +419,7 @@ export default {
       ],
     },
   },
-  plugins: [jsPluginVue()],
+  plugins: ["@farmfe/plugin-vue"],
 };
 ```
 

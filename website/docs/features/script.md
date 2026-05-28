@@ -129,11 +129,10 @@ export default defineConfig({
 
 ## Using SWC Plugins
 
-SWC Plugins can be used directly in Farm, for example, we use `swc-plugin-vue-jsx` to compiling vue jsx in Farm:
+SWC Plugins can be used directly in Farm, for example, we use `swc-plugin-vue-jsx` to compile Vue JSX in Farm. For Vue SFC support, register the current Rust plugin `@farmfe/plugin-vue`:
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
-import jsPluginVue from "@farmfe/js-plugin-vue";
 
 export default defineConfig({
   compilation: {
@@ -153,7 +152,7 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [jsPluginVue()],
+  plugins: ["@farmfe/plugin-vue"],
 });
 ```
 

@@ -4,7 +4,7 @@ import TabItem from "@theme/TabItem";
 
 # @farmfe/js-plugin-tailwindcss
 
-TailwindCSS integration for Farm using the official TailwindCSS Node and Oxide packages.
+TailwindCSS integration for Farm using the official TailwindCSS Node and Oxide packages. This is the JavaScript-plugin alternative to the Rust [`@farmfe/plugin-tailwindcss`](./tailwindcss) package.
 
 ## Installation
 
@@ -52,7 +52,7 @@ export interface Options {
 
 ### `filters`
 
-Controls which modules are scanned for TailwindCSS class candidates. By default, the plugin scans project files and excludes `node_modules`.
+Controls which modules are scanned for TailwindCSS class candidates. By default, the plugin scans transformed project files and excludes `node_modules`.
 
 ```ts
 import { defineConfig } from '@farmfe/core';
@@ -72,5 +72,6 @@ export default defineConfig({
 
 ## How it works
 
-The plugin scans transformed modules for TailwindCSS candidates, stores the candidates in Farm metadata, and generates CSS for CSS root files during `freezeModule`.
+The plugin scans transformed modules with `@tailwindcss/oxide`, stores the candidates in Farm metadata, and generates CSS for CSS root files during `freezeModule` with `@tailwindcss/node`. It also tracks scanned modules as watch files for rebuilds.
 
+Prefer the Rust plugin for the default Farm-native path. Prefer this JS plugin when you need JS plugin filters or want to integrate with the JavaScript Tailwind pipeline directly.

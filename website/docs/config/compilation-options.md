@@ -488,11 +488,9 @@ Configure the swc plugin array, each item of the array contains three fields:
 - **options**: Configuration items passed to swc plugin
 - **filters**: Which modules to execute the plug-in, must be configured, support `resolvedPaths` and `moduleTypes` these two filter items, if both are specified at the same time, take the union.
 
-An example of a configuration that supports JSX for a Vue project is as follows:
+An example of a configuration that supports JSX for a Vue project is as follows. For Vue SFC support, register the current Rust plugin `@farmfe/plugin-vue`:
 
 ```ts
-import jsPluginVue from "@farmfe/js-plugin-vue";
-
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -514,7 +512,7 @@ export default {
       ],
     },
   },
-  plugins: [jsPluginVue()],
+  plugins: ["@farmfe/plugin-vue"],
 };
 ```
 

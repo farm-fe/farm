@@ -248,10 +248,8 @@ To learn more about runtime plugin refer to [Runtime Plugin](/docs/plugins/writi
 :::
 
 ## Using SWC Plugins
-Swc Plugin can also be used directly in Farm, Configuring `compilation.script.plugins` to add SWC plugins, for example:
+Swc Plugin can also be used directly in Farm, Configuring `compilation.script.plugins` to add SWC plugins, for example. For Vue SFC support, register the current Rust plugin `@farmfe/plugin-vue` in the top-level `plugins` array:
 ```ts
-import jsPluginVue from '@farmfe/js-plugin-vue';
-
 /**
   * @type {import('@farmfe/core').UserConfig}
   */
@@ -274,7 +272,7 @@ export default {
        }]
      }
    },
-   plugins: [jsPluginVue()],
+   plugins: ["@farmfe/plugin-vue"],
 };
 ```
 
