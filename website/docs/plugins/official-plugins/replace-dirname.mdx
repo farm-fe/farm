@@ -45,6 +45,6 @@ export default defineConfig({
 - `include?: string[]` — regular expression strings for module paths to transform. Defaults to `[]`.
 - `exclude?: string[]` — regular expression strings for module paths to skip. Defaults to `["node_modules/"]`.
 
-:::note
+:::warning
 Unlike most Rust plugin packages, this package's default export is the resolved native plugin path string, not an options wrapper function.
 :::

@@ -51,6 +51,6 @@ Each target supports:
 - `src: string | string[]` — path or glob to copy.
 - `dest: string | string[]` — destination directory or directories.
 - `rename?: string | ((name: string, extension: string, fullPath: string) => string)` — rename copied files.
-- `transform?: (contents: Buffer, name: string) => unknown` — replace file contents. The implementation only allows `transform` for files.
+- `transform?: (contents: Buffer, name: string) => string | Buffer | Uint8Array` — replace file contents before writing. The implementation only allows `transform` for matched files; if a glob matches a directory, using `transform` throws because directories do not have file contents to rewrite.
 
 Other plugin and target options are passed through to `globby`; remaining plugin options are also passed to `fs-extra` copy/write calls.

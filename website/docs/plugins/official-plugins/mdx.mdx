@@ -61,3 +61,5 @@ The Rust implementation accepts MDX compiler options plus Farm filters:
 - `jsxImportSource?: string` — defaults to `"react"`.
 - `filepath?: string`
 - `parse?: object` — passed to `mdxjs` parse options.
+
+`jsx` and `jsxRuntime` are passed through to `mdxjs` together: `jsx` controls whether JSX is preserved in the output, while `jsxRuntime` controls the runtime mode used when MDX compiles JSX. If `jsx` is `false`, MDX compiles JSX away using the selected runtime mode.
