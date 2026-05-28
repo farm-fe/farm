@@ -63,5 +63,5 @@ The Rust implementation accepts MDX compiler options plus Farm filters:
 - `parse?: object` — passed to `mdxjs` parse options.
 
 :::note
-The current published type file only exposes `include` and `exclude` and declares them as arrays, but the Rust implementation reads them as regular expression strings.
+Use regular expression strings for `include` and `exclude`; the implementation reads those options as string patterns even though the current published type file declares arrays.
 :::

@@ -70,6 +70,5 @@ Use `content` to explicitly list the files that should be scanned for TailwindCS
 Pass a JSON-serializable TailwindCSS configuration object. If `config` is omitted, the plugin tries to load `tailwindcss.config.js` from the current working directory.
 
 :::note
-The Rust plugin serializes options before passing them to the native plugin, so `tailwindcss.config.js` exports must be JSON-serializable.
+The Rust wrapper serializes options before passing them to the underlying TailwindCSS processor, so `tailwindcss.config.js` exports must be JSON-serializable.
 :::
-

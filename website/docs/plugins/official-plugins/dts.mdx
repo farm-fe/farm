@@ -44,5 +44,5 @@ export default defineConfig({
 The plugin writes `.d.ts` next to the matched module path in the emitted resources and rewrites import paths to `.d.ts` when they resolve through Farm aliases.
 
 :::note
-The implementation currently emits `.d.ts` for `.ts` and `.tsx` inputs only; `.d.cts` and `.d.mts` output suffixes are TODOs in the source.
+Currently only `.d.ts` output is supported for `.ts` and `.tsx` inputs. Support for `.d.cts` and `.d.mts` output suffixes is planned for a future release.
 :::

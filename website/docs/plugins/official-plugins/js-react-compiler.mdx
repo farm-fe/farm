@@ -38,11 +38,11 @@ export default defineConfig({
 ## Options
 
 - `filters?: { moduleTypes?: ModuleType[]; resolvedPaths?: string[] }` — modules to transform. Defaults to module types `["jsx", "tsx"]` and no path filters.
-- `transformOptions?: TransformOptions` — declared in the public TypeScript interface.
-- `compilerOptions?: Partial<PluginOptions>` — declared in the public TypeScript interface.
+- `transformOptions?: TransformOptions` — declared in the public TypeScript interface, but not yet forwarded to Babel.
+- `compilerOptions?: Partial<PluginOptions>` — declared in the public TypeScript interface, but not yet forwarded to Babel.
 
 The generated Farm plugin is named `"js-plugin:react-compiler"` and uses priority `120`.
 
 :::note
-The current implementation always configures Babel with `babel-plugin-react-compiler` and `@babel/plugin-syntax-jsx`. Although `transformOptions` and `compilerOptions` are typed, they are not currently forwarded into the Babel options.
+The current implementation always configures Babel with `babel-plugin-react-compiler` and `@babel/plugin-syntax-jsx`.
 :::
