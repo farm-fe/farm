@@ -21,7 +21,7 @@ Farm using SWC to compile scripts, and Farm has set reasonable default configura
 
 You can configuring the SWC Parser through `compilation.script.parser`. Refer to https://swc.rs/docs/configuration/compilation#jscparser.
 
-For example, if you want to enable decorator, you can set `compilation.script.parser.esConfig.decorators`(or `tsConfig.decorators` if the module is TS):
+For example, if you want to enable decorators in the parser, set `compilation.script.parser.esConfig.decorators` (or `parser.tsConfig.decorators` for TypeScript modules):
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -29,13 +29,15 @@ import { defineConfig } from '@farmfe/core';
 export default defineConfig({
   compilation: {
     script: {
-      // for .js/.jsx files
-      esConfig: {
-        decorators: true,
-      },
-      // for .ts/.tsx files
-      tsConfig: {
-        decorators: true,
+      parser: {
+        // for .js/.jsx files
+        esConfig: {
+          decorators: true,
+        },
+        // for .ts/.tsx files
+        tsConfig: {
+          decorators: true,
+        },
       },
     },
   },
@@ -46,9 +48,9 @@ By default Farm set `jsx: true` for `.jsx|.tsx` files. Other field are default t
 
 ## Configuring Target
 
-Using `compilation.script.target` to configure your target env when running your project, Farm set it based on [`output.targetEnv`](/docs/config/compilation-options#output-targetenv).
+Use `compilation.script.target` to configure the JavaScript syntax generation target. Farm can set it automatically from versioned browser [`output.targetEnv`](/docs/config/compilation-options#output-targetenv) values.
 :::note
-Farm set `compilation.script.target` automatically based on [`output.targetEnv`](/docs/config/compilation-options#output-targetenv). Normally you should not set `target` manually, use [`output.targetEnv`](/docs/config/compilation-options#output-targetenv) would be enough.
+Set [`output.targetEnv`](/docs/config/compilation-options#output-targetenv) for common production compatibility presets, or configure `script.target` directly when you only need to control generated JavaScript syntax.
 :::
 
 This option can be used along with `compilation.presetEnv` to gracefully downgrade your project for old browsers. For example, you can set target to `ES5` and enable `presetEnv`, then your project will be fully downgrade to ES5.
@@ -59,7 +61,7 @@ import { defineConfig } from '@farmfe/core';
 export default defineConfig({
   compilation: {
     script: {
-      target: "ES5",
+      target: "es5",
     },
     presetEnv: true,
   },

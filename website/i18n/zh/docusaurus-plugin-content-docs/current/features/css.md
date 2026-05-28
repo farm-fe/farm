@@ -23,16 +23,15 @@ export function Comp() {
 }
 ```
 
-您可以通过[`css.modules`](/docs/config/farm-config#cssmodules)配置CSS模块。 例如，您可以将 `css.modules.paths` 设置为 `['.css|sass|less|scss']` 那么所有 css 文件将被视为 css 模块。
+您可以通过 [`css.modules`](/zh/docs/config/compilation-options#cssmodules) 配置 CSS 模块。 例如，您可以将 `css.modules.paths` 设置为 `['.css|sass|less|scss']`，那么所有 css 文件将被视为 css 模块。
 
 ### CSS Modules 本地类名转换
 Farm 支持通过 [`css.modules.localsConversion`](/zh/docs/config/compilation-options#cssmoduleslocalsconversion) 转换 CSS 模块类名的命名规范。可用模式：
 
 - `asIs` — 类名按原样导出（默认）
-- `camelCase` — 类名转换为 camelCase
-- `camelCaseOnly` — 类名转换为 camelCase 并移除原始名称
-- `dashes` — 仅将类名中的短横线转换为 camelCase
-- `dashesOnly` — 仅转换短横线，并移除原始名称
+- `lowerCamel` — 类名转换为小驼峰，例如 `foo-bar` 变为 `fooBar`
+- `upperCamel` — 类名转换为大驼峰，例如 `foo-bar` 变为 `FooBar`
+- `snake` — 类名转换为 snake_case，例如 `foo-bar` 变为 `foo_bar`
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -41,7 +40,7 @@ export default defineConfig({
   compilation: {
     css: {
       modules: {
-        localsConversion: 'camelCase',
+        localsConversion: 'lowerCamel',
       }
     }
   }

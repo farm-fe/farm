@@ -35,12 +35,12 @@ export b1 = "B1";
 
 ## 配置 Tree Shake
 
-Tree Shake 默认在生产模式下启用，要禁用 tree Shake，请使用 `compilation. treeShake`：
+Tree Shake 默认在生产模式下启用，要禁用 Tree Shake，请使用 `compilation.treeShaking`：
 
 ```ts title="farm.config.ts"
 export default {
   compilation: {
-    treeShake: false,
+    treeShaking: false,
   },
 };
 ```

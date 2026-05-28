@@ -6,7 +6,7 @@
 * **`自动局部打包`**：根据依赖关系和大小，对项目进行局部打包。 对于每个资源请求，会生成大约25个资源，以保证并行加载性能，并尽可能提高缓存命中率。
 
 ## 输出格式
-Farm 支持多种输出格式：`esm`、`cjs`、`umd`、`iife`、`system` 和 `amd`。你还可以传递一个格式数组来同时构建多种输出。通过 [`output.format`](/docs/config/compilation-options#outputformat) 配置：
+Farm 支持多种输出格式：`esm`、`cjs`、`umd`、`iife`、`system` 和 `amd`。你还可以传递一个格式数组来同时构建多种输出。通过 [`output.format`](/docs/config/compilation-options#output-format) 配置：
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -61,7 +61,7 @@ build
 * [`output.assetsFilename`](/docs/config/compilation-options#outputassetsfilename)
 
 ```ts
-import defineConfig from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
   compilation: {
@@ -130,7 +130,7 @@ pnpm add -D core-js@3
 :::
 
 ## 配置 Tree Shake 和 Minify
-出于性能原因，像`treeShake`和`minify`这样的生产优化在`development`中默认被`禁用`，而在`生产`中默认被`启用`。 但如果手动配置了`treeShake`或`minify`，则无论`development`或`productive`都将使用默认值。
+出于性能原因，像 `treeShaking` 和 `minify` 这样的生产优化在 `development` 中默认被禁用，而在 `production` 中默认启用。 但如果手动配置了 `treeShaking` 或 `minify`，则无论 `development` 或 `production` 都会使用配置值。
 
 有关 Tree Shake 和 Minify 的详细信息，请参阅：
 * [Tree Shake](/docs/advanced/tree-shake)
