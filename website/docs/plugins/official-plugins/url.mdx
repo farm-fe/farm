@@ -58,4 +58,4 @@ console.log(`svg contents: ${svg}`);
 - `limit?: number` — inline files up to this size in bytes. Defaults to `14336` (14 KB). Set `0` to emit all matching files.
 - `emitFiles?: boolean` — when `false`, files larger than `limit` are returned as data URIs instead of being emitted. Defaults to `true`.
 
-The package types also declare `publicPath`, `filename`, `sourceDir`, and `destDir`; the current Rust implementation does not use those plugin options when emitting files.
+The package types also declare `publicPath`, `filename`, `sourceDir`, and `destDir`; those options are currently ignored when emitting files.

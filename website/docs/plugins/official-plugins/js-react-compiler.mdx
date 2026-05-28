@@ -38,9 +38,6 @@ export default defineConfig({
 ## Options
 
 - `filters?: { moduleTypes?: ModuleType[]; resolvedPaths?: string[] }` — modules to transform. Defaults to module types `["jsx", "tsx"]` and no path filters.
-- `transformOptions?: TransformOptions` — declared in the public TypeScript interface, but not yet forwarded to Babel.
-- `compilerOptions?: Partial<PluginOptions>` — declared in the public TypeScript interface, but not yet forwarded to Babel.
-
 The generated Farm plugin is named `"js-plugin:react-compiler"` and uses priority `120`.
 
 :::note

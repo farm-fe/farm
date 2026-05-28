@@ -61,7 +61,3 @@ The Rust implementation accepts MDX compiler options plus Farm filters:
 - `jsxImportSource?: string` — defaults to `"react"`.
 - `filepath?: string`
 - `parse?: object` — passed to `mdxjs` parse options.
-
-:::note
-Use regular expression strings for `include` and `exclude`; the implementation reads those options as string patterns even though the current published type file declares arrays.
-:::
