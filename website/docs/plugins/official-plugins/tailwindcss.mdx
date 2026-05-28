@@ -1,0 +1,75 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-tailwindcss
+
+Rust-based TailwindCSS integration for Farm.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the Rust plugin in `farm.config.ts`:
+
+```ts {5}
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    ['@farmfe/plugin-tailwindcss', {
+      content: ['./index.html', './src/**/*.{js,jsx,ts,tsx,vue,svelte}']
+    }]
+  ]
+});
+```
+
+Then import Tailwind from a CSS entry:
+
+```css
+@import "tailwindcss";
+```
+
+## Options
+
+```ts
+export interface TailwindCSSOptions {
+  /**
+   * Paths or patterns to scan for TailwindCSS candidates.
+   */
+  content?: string[];
+
+  /**
+   * JSON-serializable TailwindCSS configuration.
+   *
+   * When omitted, the plugin loads `tailwindcss.config.js` from the current
+   * working directory if it exists.
+   */
+  config?: Record<string, unknown>;
+}
+```
+
+### `content`
+
+Use `content` to explicitly list the files that should be scanned for TailwindCSS candidates.
+
+### `config`
+
+Pass a JSON-serializable TailwindCSS configuration object. If `config` is omitted, the plugin tries to load `tailwindcss.config.js` from the current working directory.
+
+:::note
+The Rust plugin serializes options before passing them to the native plugin, so `tailwindcss.config.js` exports must be JSON-serializable.
+:::
+

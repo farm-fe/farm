@@ -11,6 +11,7 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 * **[`@farmfe/plugin-react`](./react)**：Support React `jsx` and `react-refresh`.
 * **[`@farmfe/plugin-vue`](./vue)**：Compile Vue 3 Single-File Components via the `fervid` Rust compiler.
 * **[`@farmfe/plugin-sass`](./sass)**：Support compiling `sass/scss` files.
+* **[`@farmfe/plugin-tailwindcss`](./tailwindcss)**：Rust-based TailwindCSS integration.
 * **[`@farmfe/plugin-strip`](./strip)**：A Farm rust plugin to remove `debugger` statements and functions like `assert.equal` and `console.log` from your code.
 * **[`@farmfe/plugin-dsv`](./dsv)**：A Farm plugin which converts `.csv` and `.tsv` files into JavaScript modules.
 * **[`@farmfe/plugin-yaml`](./yaml)**：A Farm plugin which Converts YAML files to ES6 modules.
@@ -24,9 +25,9 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 * **[`@farmfe/js-plugin-svgr`](./js-svgr)**：Support compiling `svg` files.
 * **[`@farmfe/js-plugin-dts`](./js-dts)**：Support compiling `*.d.ts` files.
 * **[`@farmfe/js-plugin-sass`](./js-sass)**：Support compiling `sass/scss` files.
-* **`@farmfe/js-plugin-tailwindcss`**：Support TailwindCSS integration.
-* **`@farmfe/js-plugin-visualizer`**：Visualize your bundle size and composition.
-* **`@farmfe/js-plugin-electron`**：Support building Electron applications.
+* **[`@farmfe/js-plugin-tailwindcss`](./js-tailwindcss)**：Support TailwindCSS integration.
+* **[`@farmfe/js-plugin-visualizer`](./js-visualizer)**：Visualize your bundle size and composition.
+* **[`@farmfe/js-plugin-electron`](./js-electron)**：Support building Electron applications.
 
 ## Community Plugins
 

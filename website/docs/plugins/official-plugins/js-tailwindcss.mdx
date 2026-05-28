@@ -1,0 +1,76 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-tailwindcss
+
+TailwindCSS integration for Farm using the official TailwindCSS Node and Oxide packages.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts {2,6}
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/js-plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [
+    ...tailwindcss()
+  ]
+});
+```
+
+Then import Tailwind from a CSS entry:
+
+```css
+@import "tailwindcss";
+```
+
+## Options
+
+```ts
+export interface Options {
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
+}
+```
+
+### `filters`
+
+Controls which modules are scanned for TailwindCSS class candidates. By default, the plugin scans project files and excludes `node_modules`.
+
+```ts
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/js-plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [
+    ...tailwindcss({
+      filters: {
+        resolvedPaths: ['src/'],
+        moduleTypes: ['tsx', 'jsx', 'html']
+      }
+    })
+  ]
+});
+```
+
+## How it works
+
+The plugin scans transformed modules for TailwindCSS candidates, stores the candidates in Farm metadata, and generates CSS for CSS root files during `freezeModule`.
+
