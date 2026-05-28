@@ -130,7 +130,7 @@ pnpm add -D core-js@3
 :::
 
 ## 配置 Tree Shake 和 Minify
-出于性能原因，像 `treeShaking` 和 `minify` 这样的生产优化在 `development` 中默认被禁用，而在 `production` 中默认启用。 但如果手动配置了 `treeShaking` 或 `minify`，则无论 `development` 或 `production` 都会使用配置值。
+出于性能原因，像`treeShaking`和`minify`这样的生产优化在`development`中默认被禁用，而在`production`中默认启用。但如果手动配置了`treeShaking`或`minify`，则无论`development`或`production`都会使用配置值。
 
 有关 Tree Shake 和 Minify 的详细信息，请参阅：
 * [Tree Shake](/docs/advanced/tree-shake)
