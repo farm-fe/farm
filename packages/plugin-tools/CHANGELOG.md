@@ -1,5 +1,11 @@
 # @farmfe/plugin-tools
 
+## 2.0.0-beta.3
+
+### Patch Changes
+
+- 6e4352c: Publish native plugin packages with public access so first-time scoped package releases succeed.
+
 ## 2.0.0-beta.2
 
 ### Patch Changes
