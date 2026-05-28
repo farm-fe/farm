@@ -12,7 +12,7 @@
 
 ## Overall Progress Tracker
 
-- [ ] A. Official plugin docs coverage and completeness
+- [x] A. Official plugin docs coverage and completeness
 - [ ] B. Config + feature docs correctness
 - [ ] C. JS/Rust plugin API docs
 - [ ] D. CLI + JavaScript API docs
@@ -110,27 +110,27 @@ JavaScript plugin packages:
 
 ### A.2 Completeness pass before continuing
 
-- [ ] Verify every package listed in A.0 appears in `website/sidebars.js`.
-- [ ] Verify every package listed in A.0 appears in `website/docs/plugins/official-plugins/overview.md`.
-- [ ] Overhaul `website/i18n/zh/docusaurus-plugin-content-docs/current/plugins/official-plugins/overview.md` so current zh docs match the current package inventory:
+- [x] Verify every package listed in A.0 appears in `website/sidebars.js`.
+- [x] Verify every package listed in A.0 appears in `website/docs/plugins/official-plugins/overview.md`.
+- [x] Overhaul `website/i18n/zh/docusaurus-plugin-content-docs/current/plugins/official-plugins/overview.md` so current zh docs match the current package inventory:
   - Remove phantom packages `@farmfe/js-plugin-vue` and `@farmfe/js-plugin-solid`.
   - Add missing Rust plugin entries for `vue`, `auto-import`, `tailwindcss`, `svgr`, `wasm`, `worker`, `url`, `dts`, `icons`, `image`, `mdx`, `compress`, `modular-import`, and `replace-dirname`.
   - Add missing JS plugin entries for `js-babel`, `js-copy`, `js-electron`, `js-qiankun`, `js-react-compiler`, `js-tailwindcss`, `js-visualizer`, and `js-vuetify`.
   - Fix copy-paste placeholder descriptions for `js-postcss`, `js-less`, `js-svgr`, `js-dts`, and `js-sass`.
-- [ ] For each Rust plugin page, compare against `rust-plugins/<name>/package.json`, `index.d.ts`, README files when present, and `src/lib.rs`.
-- [ ] For each JS plugin page, compare against `js-plugins/<name>/package.json`, README files when present, and `src/index.ts` or emitted type definitions.
-- [ ] Upgrade `@farmfe/plugin-vue` docs first:
+- [x] For each Rust plugin page, compare against `rust-plugins/<name>/package.json`, `index.d.ts`, README files when present, and `src/lib.rs`.
+- [x] For each JS plugin page, compare against `js-plugins/<name>/package.json`, README files when present, and `src/index.ts` or emitted type definitions.
+- [x] Upgrade `@farmfe/plugin-vue` docs first:
   - Confirm the page describes the current experimental status and `fervid` limitations accurately.
   - Confirm options match `rust-plugins/vue/index.d.ts` and `rust-plugins/vue/src/lib.rs`.
   - Confirm examples mention needed peer dependencies and common SFC style/preprocessor pairing.
-- [ ] Upgrade `@farmfe/plugin-tailwindcss` docs next:
+- [x] Upgrade `@farmfe/plugin-tailwindcss` docs next:
   - Confirm options match `rust-plugins/tailwindcss/index.d.ts` and `rust-plugins/tailwindcss/src/lib.rs`.
   - Clarify whether the Rust plugin uses Tailwind v4 CSS-first `@import "tailwindcss"` behavior, content scanning, config loading, and `node_modules` exclusion.
   - Document known limitations and the relationship to `@farmfe/js-plugin-tailwindcss`.
-- [ ] Upgrade `@farmfe/js-plugin-tailwindcss` docs next:
+- [x] Upgrade `@farmfe/js-plugin-tailwindcss` docs next:
   - Confirm options match `js-plugins/tailwindcss/src/index.ts` and package dependencies.
   - Clarify Tailwind v4 package usage, filters, metadata flow, and when to prefer the Rust plugin.
-- [ ] Spot-check medium-risk pages whose implementations often have non-obvious options or limitations:
+- [x] Spot-check medium-risk pages whose implementations often have non-obvious options or limitations:
   - `@farmfe/plugin-react`
   - `@farmfe/plugin-sass`
   - `@farmfe/plugin-dts`
@@ -138,7 +138,7 @@ JavaScript plugin packages:
   - `@farmfe/js-plugin-dts`
   - `@farmfe/js-plugin-electron`
   - `@farmfe/js-plugin-vuetify`
-- [ ] Keep the pass concise: prefer source-backed option tables, minimal config examples, and "Known limitations" notes over large conceptual rewrites.
+- [x] Keep the pass concise: prefer source-backed option tables, minimal config examples, and "Known limitations" notes over large conceptual rewrites.
 - [ ] After updating plugin pages, run `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website` and confirm no new broken links are introduced.
 
 ## B. Config + Feature Docs Correctness
@@ -147,14 +147,14 @@ JavaScript plugin packages:
 
 - [ ] Audit `website/docs/config/configuring-farm.md` against current config loading behavior.
 - [ ] Audit `website/docs/config/compilation-options.md` against current exposed `UserConfig`/compilation option types.
-- [ ] Replace stale `@farmfe/js-plugin-vue` current-doc examples with current Vue guidance:
+- [x] Replace stale `@farmfe/js-plugin-vue` current-doc examples with current Vue guidance:
   - `website/docs/using-plugins.mdx`
   - `website/docs/features/script.md`
   - `website/docs/config/compilation-options.md`
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/using-plugins.md`
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/features/script.md`
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/config/compilation-options.md`
-- [ ] Leave `version-1.x` `@farmfe/js-plugin-vue` references unchanged because they document historical v1 behavior.
+- [x] Leave `version-1.x` `@farmfe/js-plugin-vue` references unchanged because they document historical v1 behavior.
 - [ ] Fix known broken anchors reported by Docusaurus build:
   - `#output-targetenv`
   - `#output-format`
