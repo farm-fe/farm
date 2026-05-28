@@ -58,4 +58,4 @@ console.log(`svg contents: ${svg}`);
 - `limit?: number` — inline files up to this size in bytes. Defaults to `14336` (14 KB). Set `0` to emit all matching files.
 - `emitFiles?: boolean` — when `false`, files larger than `limit` are returned as data URIs instead of being emitted. Defaults to `true`.
 
-The package types also declare `publicPath`, `filename`, `sourceDir`, and `destDir`, but the current implementation does not wire those options into emitted asset naming. Emitted files use Farm's configured `output.publicPath` and the source file's basename; treat the extra fields as reserved for future support rather than active options.
+The package types also declare `publicPath`, `filename`, `sourceDir`, and `destDir`, but the current implementation ignores those fields. Do not include them in user configurations today. Emitted files use Farm's configured `output.publicPath` and the source file's basename.

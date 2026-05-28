@@ -53,5 +53,5 @@ export default defineConfig({
 - `deleteOriginFile?: boolean` — delete the original uncompressed file after successful compression. Defaults to `false`.
 
 :::note
-`filter` must be a string, not a `RegExp` object, because Rust plugin options are serialized through JSON before they are deserialized by the native plugin.
+`filter` must be a string, not a `RegExp` object, because Rust plugin options are serialized through JSON before they are deserialized by the native plugin. Use a string pattern such as `"\\.(js|css)$"` instead of `/\.(js|css)$/`.
 :::
