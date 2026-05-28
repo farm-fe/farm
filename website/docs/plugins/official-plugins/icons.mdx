@@ -1,0 +1,116 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-icons
+
+A Rust Farm plugin for using Iconify icons as on-demand framework components.
+
+## Installation
+
+Install the plugin:
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install -D @farmfe/plugin-icons</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add -D @farmfe/plugin-icons</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add -D @farmfe/plugin-icons</CodeBlock>
+  </TabItem>
+</Tabs>
+
+Install icon data, either the full Iconify collection:
+
+```bash
+npm install -D @iconify/json
+```
+
+or a single icon set:
+
+```bash
+npm install -D @iconify-json/mdi
+```
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
+  plugins: [
+    [
+      "@farmfe/plugin-icons",
+      {
+        compiler: "jsx",
+        jsx: "react",
+        scale: 1.2,
+      },
+    ],
+  ],
+});
+```
+
+Import icons with the `~icons/{collection}/{icon}` convention:
+
+```jsx
+import IconAccessibility from "~icons/carbon/accessibility";
+import IconAccountBox from "~icons/mdi/account-box";
+
+export function App() {
+  return <IconAccountBox style={{ fontSize: "2em", color: "red" }} />;
+}
+```
+
+Vue usage follows the same import convention:
+
+```vue
+<script setup>
+import IconAccessibility from "~icons/carbon/accessibility";
+</script>
+
+<template>
+  <icon-accessibility />
+</template>
+```
+
+## Options
+
+- `scale?: number` — icon scale. Defaults to `1.2`.
+- `autoInstall?: boolean` — automatically install missing icon dependencies. Defaults to `false` in the current implementation.
+- `compiler?: "jsx" | "vue" | "solid" | "svelte"` — component compiler. Defaults to `"jsx"`.
+- `jsx?: "react" | "preact"` — JSX runtime for the JSX compiler.
+- `defaultStyle?: Partial<CSSStyleDeclaration>` — default SVG styles.
+- `defaultClass?: string` — default SVG class.
+- `customCollections?: Record<string, string>` — custom local or remote icon collections. Use `[iconname]` as the icon-name placeholder.
+
+## Custom icons
+
+```ts
+[
+  "@farmfe/plugin-icons",
+  {
+    customCollections: {
+      local: "./src/assets/icons",
+      remote: "https://example.com/icons/[iconname].svg",
+    },
+  },
+];
+```
+
+Then import from the custom collections:
+
+```ts
+import LocalIcon from "~icons/local/account";
+import RemoteIcon from "~icons/remote/foo";
+```
+
+Use `?raw` to import raw SVG output:
+
+```ts
+import RawIcon from "~icons/mdi/alarm-off?raw&width=4em&height=4em";
+```

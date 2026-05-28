@@ -1,0 +1,57 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-compress
+
+A Rust Farm plugin that compresses generated JavaScript, CSS, HTML, JSON, and other matched assets.
+
+Supported algorithms are Brotli, Gzip, Deflate, and DeflateRaw. The default algorithm is Brotli.
+
+## Requirements
+
+This plugin requires Node.js v18.0.0+ and Farm v1.0.0+.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-compress</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-compress</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-compress</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import compress from "@farmfe/plugin-compress";
+
+export default defineConfig({
+  plugins: [
+    compress({
+      algorithm: "brotli",
+      threshold: 1024,
+    }),
+  ],
+});
+```
+
+## Options
+
+- `algorithm?: "gzip" | "brotli" | "deflateRaw" | "deflate"` — compression algorithm. Defaults to `"brotli"`.
+- `level?: number` — compression level. Defaults to `6`.
+- `threshold?: number` — minimum file size in bytes before compression. Defaults to `1024`.
+- `filter?: string` — regular expression string for resources to compress. Defaults to `"\\.(js|mjs|json|css|html)$"`.
+- `deleteOriginFile?: boolean` — delete the original uncompressed file after successful compression. Defaults to `false`.
+
+:::note
+`filter` must be a string, not a `RegExp` object.
+:::

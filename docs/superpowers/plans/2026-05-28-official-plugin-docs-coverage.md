@@ -79,9 +79,9 @@ Expected: Docusaurus build completes without broken MDX or sidebar references.
 - Modify `website/sidebars.js`
 - Modify `website/docs/plugins/official-plugins/overview.md`
 
-- [ ] Add pages for README-backed Rust plugins: `svgr`, `wasm`, `worker`, `url`, `icons`, `image`, `compress`, and `modular-import`.
-- [ ] Use each package README as the source of installation, usage, options, and examples.
-- [ ] Wire every new page into the Rust Plugins sidebar category and overview.
+- [x] Add pages for README-backed Rust plugins: `svgr`, `wasm`, `worker`, `url`, `icons`, `image`, `compress`, and `modular-import`.
+- [x] Use each package README as the source of installation, usage, options, and examples.
+- [x] Wire every new page into the Rust Plugins sidebar category and overview.
 - [ ] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
 
 ## Task 3: Source-Backed Remaining Plugin Coverage
@@ -95,4 +95,3 @@ Expected: Docusaurus build completes without broken MDX or sidebar references.
 - [ ] Add pages for remaining JS plugins: `babel`, `copy`, `qiankun`, `react-compiler`, and `vuetify`.
 - [ ] Source options from `index.d.ts`, `src/index.ts`, package README files, and examples.
 - [ ] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
-

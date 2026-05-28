@@ -12,6 +12,14 @@ Refer to [Using Plugins](/docs/using-plugins) for how to use plugins in Farm.
 * **[`@farmfe/plugin-vue`](./vue)**：Compile Vue 3 Single-File Components via the `fervid` Rust compiler.
 * **[`@farmfe/plugin-sass`](./sass)**：Support compiling `sass/scss` files.
 * **[`@farmfe/plugin-tailwindcss`](./tailwindcss)**：Rust-based TailwindCSS integration.
+* **[`@farmfe/plugin-svgr`](./svgr)**：Transform SVG files into React components.
+* **[`@farmfe/plugin-wasm`](./wasm)**：Support WebAssembly and `wasm-pack` generated modules.
+* **[`@farmfe/plugin-worker`](./worker)**：Support web workers via constructors and worker query suffixes.
+* **[`@farmfe/plugin-url`](./url)**：Import files as data URIs or emitted asset URLs.
+* **[`@farmfe/plugin-icons`](./icons)**：Use Iconify icons as on-demand framework components.
+* **[`@farmfe/plugin-image`](./image)**：Import image files as base64 data URIs or DOM `Image` exports.
+* **[`@farmfe/plugin-compress`](./compress)**：Compress generated assets with Brotli, Gzip, Deflate, or DeflateRaw.
+* **[`@farmfe/plugin-modular-import`](./modular-import)**：Transform UI-library named imports into per-component imports.
 * **[`@farmfe/plugin-strip`](./strip)**：A Farm rust plugin to remove `debugger` statements and functions like `assert.equal` and `console.log` from your code.
 * **[`@farmfe/plugin-dsv`](./dsv)**：A Farm plugin which converts `.csv` and `.tsv` files into JavaScript modules.
 * **[`@farmfe/plugin-yaml`](./yaml)**：A Farm plugin which Converts YAML files to ES6 modules.

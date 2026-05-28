@@ -1,0 +1,71 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-worker
+
+A Rust Farm plugin for importing web worker scripts with `new Worker()`, `new SharedWorker()`, and worker query suffixes.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install -D @farmfe/plugin-worker</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add -D @farmfe/plugin-worker</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add -D @farmfe/plugin-worker</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import worker from "@farmfe/plugin-worker";
+
+export default defineConfig({
+  plugins: [worker()],
+});
+```
+
+## Import via constructor
+
+Use the standard worker constructor syntax:
+
+```ts
+const worker = new Worker(new URL("./worker.js", import.meta.url));
+```
+
+Module workers are supported through the constructor options:
+
+```ts
+const worker = new Worker(new URL("./worker.js", import.meta.url), {
+  type: "module",
+});
+```
+
+## Import with query suffix
+
+Use `?worker` or `?sharedworker` to import a custom worker constructor:
+
+```ts
+import MyWorker from "./worker?worker";
+
+const worker = new MyWorker();
+```
+
+Add `inline` to inline the worker as a base64 string, or `url` to read it as a URL:
+
+```ts
+import InlineWorker from "./worker?worker&inline";
+import WorkerUrl from "./worker?worker&url";
+```
+
+## Options
+
+- `compilerConfig?: Config` — optional Farm compilation config used when compiling workers.

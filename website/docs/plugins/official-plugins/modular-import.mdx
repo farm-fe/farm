@@ -1,0 +1,76 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-modular-import
+
+A Rust Farm plugin for transforming named UI-library imports into per-component imports with matching style imports.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install -D @farmfe/plugin-modular-import</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add -D @farmfe/plugin-modular-import</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add -D @farmfe/plugin-modular-import</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
+  plugins: [
+    [
+      "@farmfe/plugin-modular-import",
+      {
+        libraryName: "element-ui",
+      },
+    ],
+  ],
+});
+```
+
+This transforms:
+
+```js
+import { SomeComponent } from "element-ui";
+```
+
+to:
+
+```js
+import SomeComponent from "element-ui/lib/SomeComponent";
+import "element-ui/lib/SomeComponent/index.css";
+```
+
+## Options
+
+- `libraryName: string` — UI library package name to transform.
+- `libDir?: string` — component library directory. Defaults to `"lib"`.
+- `camel2Dash?: boolean` — controls component-name casing. Defaults to `true`.
+- `styleLibDir?: string` — style library directory. Defaults to `"lib"`.
+- `styleLibraryName?: string` — optional style library name, for example `"theme-default"`.
+- `styleLibraryPath?: string` — custom style path. Defaults to `"index.css"`.
+
+For example, configuring `libDir`, `styleLibraryName`, and `styleLibraryPath`:
+
+```ts
+[
+  "@farmfe/plugin-modular-import",
+  {
+    libraryName: "element-ui",
+    libDir: "es",
+    styleLibraryName: "theme-default",
+    styleLibraryPath: "style/index.css",
+  },
+];
+```
