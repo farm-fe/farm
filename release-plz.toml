@@ -91,6 +91,10 @@ name = "farmfe_plugin_tailwindcss"
 release = false
 
 [[package]]
+name = "farmfe_plugin_vue"
+release = false
+
+[[package]]
 name = "farmfe_ecosystem_tailwindcss"
 release = false
 

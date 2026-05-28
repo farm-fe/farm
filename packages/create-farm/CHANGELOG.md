@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-beta.4
+
+### Major Changes
+
+- 46bf9fd: Remove FreeBSD binary support from create-farm.
+
 ## 2.0.0-beta.3
 
 ### Patch Changes
