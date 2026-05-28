@@ -264,6 +264,41 @@ fn rounded_full() {
 }
 
 #[test]
+fn list_style_type_disc() {
+  let t = Theme::with_defaults();
+  let css = render("list-disc", &t);
+  assert!(css.contains("list-style-type: disc"), "got: {}", css);
+}
+
+#[test]
+fn line_clamp_numeric() {
+  let t = Theme::with_defaults();
+  let css = render("line-clamp-3", &t);
+  assert!(css.contains("overflow: hidden"), "got: {}", css);
+  assert!(css.contains("display: -webkit-box"), "got: {}", css);
+  assert!(css.contains("-webkit-box-orient: vertical"), "got: {}", css);
+  assert!(css.contains("-webkit-line-clamp: 3"), "got: {}", css);
+}
+
+#[test]
+fn columns_numeric() {
+  let t = Theme::with_defaults();
+  let css = render("columns-3", &t);
+  assert!(css.contains("columns: 3"), "got: {}", css);
+}
+
+#[test]
+fn aspect_video_uses_default_theme_token() {
+  let t = Theme::with_defaults();
+  let css = render("aspect-video", &t);
+  assert!(
+    css.contains("aspect-ratio: var(--aspect-video)"),
+    "got: {}",
+    css
+  );
+}
+
+#[test]
 fn opacity_numeric() {
   let t = Theme::with_defaults();
   let css = render("opacity-50", &t);

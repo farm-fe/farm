@@ -220,6 +220,9 @@ impl UtilityRegistry {
     // List style position
     m.insert("list-inside", vec![("list-style-position", "inside")]);
     m.insert("list-outside", vec![("list-style-position", "outside")]);
+    m.insert("list-disc", vec![("list-style-type", "disc")]);
+    m.insert("list-decimal", vec![("list-style-type", "decimal")]);
+    m.insert("list-none", vec![("list-style-type", "none")]);
 
     // Line clamp / truncate
     m.insert(
@@ -362,6 +365,11 @@ impl UtilityRegistry {
     f.insert("grow", handle_grow);
     f.insert("shrink", handle_shrink);
     f.insert("basis", handle_basis);
+
+    // Lower-frequency layout/text utilities
+    f.insert("line-clamp", handle_line_clamp);
+    f.insert("columns", handle_columns);
+    f.insert("aspect", handle_aspect);
 
     Self {
       static_utilities: m,
@@ -1211,4 +1219,59 @@ fn handle_shrink(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)
 // Flex basis (sizing scale)
 fn handle_basis(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
   sizing_decl(c, t, &["flex-basis"])
+}
+
+// Line clamp
+fn handle_line_clamp(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)>> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(line_clamp_decls(arb));
+  }
+  let v = c.utility_value.as_deref()?;
+  match v {
+    "none" => Some(vec![
+      ("overflow".into(), "visible".into()),
+      ("display".into(), "block".into()),
+      ("-webkit-box-orient".into(), "horizontal".into()),
+      ("-webkit-line-clamp".into(), "unset".into()),
+    ]),
+    _ if is_numeric(v) => Some(line_clamp_decls(v)),
+    _ => None,
+  }
+}
+
+fn line_clamp_decls(value: &str) -> Vec<(String, String)> {
+  vec![
+    ("overflow".into(), "hidden".into()),
+    ("display".into(), "-webkit-box".into()),
+    ("-webkit-box-orient".into(), "vertical".into()),
+    ("-webkit-line-clamp".into(), value.to_string()),
+  ]
+}
+
+// Columns
+fn handle_columns(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(vec![("columns".into(), arb.clone())]);
+  }
+  let v = c.utility_value.as_deref()?;
+  let columns = match v {
+    "auto" => "auto".to_string(),
+    _ if is_numeric(v) => v.to_string(),
+    _ => t.resolve(Some(v), &["--container"], ThemeOptions::NONE)?,
+  };
+  Some(vec![("columns".into(), columns)])
+}
+
+// Aspect ratio
+fn handle_aspect(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(vec![("aspect-ratio".into(), arb.clone())]);
+  }
+  let v = c.utility_value.as_deref()?;
+  let aspect = match v {
+    "auto" => "auto".to_string(),
+    "square" => "1 / 1".to_string(),
+    _ => t.resolve(Some(v), &["--aspect"], ThemeOptions::NONE)?,
+  };
+  Some(vec![("aspect-ratio".into(), aspect)])
 }
