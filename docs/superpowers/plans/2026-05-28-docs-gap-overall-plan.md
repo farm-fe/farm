@@ -139,7 +139,7 @@ JavaScript plugin packages:
   - `@farmfe/js-plugin-electron`
   - `@farmfe/js-plugin-vuetify`
 - [x] Keep the pass concise: prefer source-backed option tables, minimal config examples, and "Known limitations" notes over large conceptual rewrites.
-- [ ] After updating plugin pages, run `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website` and confirm no new broken links are introduced.
+- [x] After updating plugin pages, run `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website` and confirm no new broken links are introduced.
 
 ## B. Config + Feature Docs Correctness
 
@@ -219,7 +219,7 @@ JavaScript plugin packages:
 ## Validation
 
 - [x] `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website` succeeds after installing dependencies with `corepack pnpm install --filter farm-docs --ignore-scripts`.
-- [ ] Re-run `corepack pnpm build` after each docs coverage batch.
+- [x] Re-run `corepack pnpm build` after each docs coverage batch.
 - [ ] Check changed docs pages are listed in `website/sidebars.js` or intentionally discoverable from another page.
 - [ ] Check every new relative link resolves in the Docusaurus build.
 
