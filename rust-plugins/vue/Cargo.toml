@@ -16,7 +16,7 @@ farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plug
 serde = { version = "1.0", features = ["derive"] }
 fxhash = "0.2.1"
 regex = "1"
-fervid = { git = "https://github.com/phoenix-ru/fervid.git", rev = "4f26ab48f81eb9688fb84e9fa14541373d5bca7d" }
+fervid = { version = "0.2.0", git = "https://github.com/phoenix-ru/fervid.git", rev = "4f26ab48f81eb9688fb84e9fa14541373d5bca7d" }
 
 [dev-dependencies]
 farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
