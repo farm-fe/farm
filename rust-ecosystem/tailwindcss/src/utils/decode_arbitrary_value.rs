@@ -42,7 +42,7 @@ fn convert_underscores_to_whitespace(input: &str, skip_underscore_to_space: bool
   out
 }
 
-fn recursively_decode_arbitrary_values(ast: &mut Vec<ValueAstNode>) {
+fn recursively_decode_arbitrary_values(ast: &mut [ValueAstNode]) {
   for node in ast.iter_mut() {
     match node {
       ValueAstNode::Function { value, nodes } => {

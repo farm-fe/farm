@@ -174,7 +174,7 @@ fn set_pending_used_exports(
       ..
     } = import_stmt;
 
-    let dep_id = module_graph.get_dep_by_source(&tree_shake_module_id, &source, Some(kind));
+    let dep_id = module_graph.get_dep_by_source(tree_shake_module_id, &source, Some(kind));
 
     if let Some(dep_tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
       match used_stmt_idents {
@@ -427,26 +427,25 @@ fn trace_and_mark_write_imported_idents_statements(
                   }
                 }
                 crate::statement_graph::ImportSpecifierInfo::Default(ident) => {
-                  if ident == &written_imported_ident.ident {
-                    if dep_tree_shake_module
+                  if ident == &written_imported_ident.ident
+                    && dep_tree_shake_module
                       .handled_used_exports
                       .contains(&UsedExportsIdent::Default)
-                    {
-                      used_stmt_exports
-                        .entry(*stmt_id)
-                        .or_insert_with(HashSet::default)
-                        .insert(UsedStatementIdent::SwcIdent(
-                          written_imported_ident.ident.clone(),
-                        ));
+                  {
+                    used_stmt_exports
+                      .entry(*stmt_id)
+                      .or_insert_with(HashSet::default)
+                      .insert(UsedStatementIdent::SwcIdent(
+                        written_imported_ident.ident.clone(),
+                      ));
 
-                      write_side_effects_to_trace.push(TraceDepModuleWriteSideEffectsItem {
-                        module_id: tree_shake_module.module_id.clone(),
-                        dep_module_id: dep_module_id.clone(),
-                        ident: written_imported_ident.ident.clone(),
-                        is_namespace: false,
-                        export: "default".to_string().into(),
-                      });
-                    }
+                    write_side_effects_to_trace.push(TraceDepModuleWriteSideEffectsItem {
+                      module_id: tree_shake_module.module_id.clone(),
+                      dep_module_id: dep_module_id.clone(),
+                      ident: written_imported_ident.ident.clone(),
+                      is_namespace: false,
+                      export: "default".to_string().into(),
+                    });
                   }
                 }
               }
@@ -534,13 +533,13 @@ fn trace_and_mark_write_imported_idents_statements(
 
             used_stmt_exports
               .entry(*stmt_id)
-              .or_insert_with(HashSet::default)
+              .or_default()
               .insert(UsedStatementIdent::SwcIdent(item.ident.clone()));
 
             if item.is_namespace {
               used_import_all_fields
                 .entry(item.ident.clone())
-                .or_insert_with(HashSet::default)
+                .or_default()
                 .insert(UsedImportAllFields::Ident(item.export.to_string()));
             }
           }
@@ -674,7 +673,7 @@ fn find_dep_module_read_global_variables_dfs(
           dep_stmt.id,
           all_used_dep_defined_idents
             .into_iter()
-            .map(|i| UsedStatementIdent::SwcIdent(i))
+            .map(UsedStatementIdent::SwcIdent)
             .collect(),
           edge.used_import_all_fields.clone(),
         ));

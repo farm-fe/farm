@@ -58,8 +58,8 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
   // Check for important
   let (base, important) = if base.ends_with('!') {
     (&base[..base.len() - 1], true)
-  } else if base.starts_with('!') {
-    (&base[1..], true)
+  } else if let Some(stripped) = base.strip_prefix('!') {
+    (stripped, true)
   } else {
     (base as &str, false)
   };
@@ -83,7 +83,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
 
   let modifier_is_arbitrary = modifier
     .as_ref()
-    .map_or(false, |m| m.starts_with('[') && m.ends_with(']'));
+    .is_some_and(|m| m.starts_with('[') && m.ends_with(']'));
 
   // Arbitrary property: [property:value]
   if base_no_modifier.starts_with('[') && base_no_modifier.ends_with(']') {

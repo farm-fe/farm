@@ -1,5 +1,3 @@
-#![feature(path_file_prefix)]
-
 use std::{
   path::{Path, PathBuf},
   sync::Arc,
@@ -34,7 +32,7 @@ lazy_static! {
 const PLUGIN_NAME: &str = "FarmPluginStaticAssets";
 const PUBLIC_ASSET_PREFIX: &str = "virtual:__FARM_PUBLIC_ASSET__:";
 
-fn is_asset_query(query: &Vec<(String, String)>) -> bool {
+fn is_asset_query(query: &[(String, String)]) -> bool {
   let query_map = query.iter().cloned().collect::<HashMap<_, _>>();
 
   query_map.contains_key("raw") || query_map.contains_key("inline") || query_map.contains_key("url")
@@ -77,7 +75,7 @@ impl FarmPluginStaticAssets {
     }
   }
 
-  fn normalize_query_string(query: &Vec<(String, String)>) -> String {
+  fn normalize_query_string(query: &[(String, String)]) -> String {
     // remove internal inline, raw, url query
     let query = query
       .iter()
@@ -111,11 +109,10 @@ impl Plugin for FarmPluginStaticAssets {
     let extension = path.extension().and_then(|s| s.to_str());
 
     if let Some(ext) = extension {
-      if self.is_asset(ext, context)
-        && context.config.assets.public_dir.is_some()
-        && param.source.starts_with('/')
-      {
-        let public_dir = context.config.assets.public_dir.as_ref().unwrap();
+      if self.is_asset(ext, context) && param.source.starts_with('/') {
+        let Some(public_dir) = context.config.assets.public_dir.as_ref() else {
+          return Ok(None);
+        };
         let resolved_public_path =
           RelativePath::new(&param.source[1..]).to_logical_path(public_dir);
 
@@ -249,7 +246,7 @@ impl Plugin for FarmPluginStaticAssets {
             .config
             .assets
             .mode
-            .unwrap_or_else(|| (context.config.output.target_env.clone().into()))
+            .unwrap_or_else(|| context.config.output.target_env.clone().into())
         });
 
         let content = match mode {

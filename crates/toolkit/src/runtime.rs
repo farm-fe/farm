@@ -165,7 +165,7 @@ fn init_bool_features<'a>(
     let mut result = FULL_RUNTIME_FEATURES.clone();
 
     // remove plugin flag if no plugin is enabled
-    if context.config.runtime.plugins.len() == 0 {
+    if context.config.runtime.plugins.is_empty() {
       result.remove(FARM_ENABLE_RUNTIME_PLUGIN);
     }
 
@@ -174,7 +174,7 @@ fn init_bool_features<'a>(
 
   let mut bool_features = HashSet::default();
 
-  if !context.config.output.target_env.is_library() && context.config.runtime.plugins.len() > 0 {
+  if !context.config.output.target_env.is_library() && !context.config.runtime.plugins.is_empty() {
     bool_features.insert(FARM_ENABLE_RUNTIME_PLUGIN);
   }
 

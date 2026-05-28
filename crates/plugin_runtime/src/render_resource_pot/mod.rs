@@ -16,6 +16,8 @@ use scope_hoisting::build_scope_hoisted_module_groups;
 
 use self::render_module::render_module;
 
+type RenderResourcePotModulesResult = (Vec<RenderModuleResult>, HashMap<ModuleId, Arc<SourceMap>>);
+
 pub(crate) mod external;
 pub(crate) mod merge_rendered_module;
 mod render_module;
@@ -27,7 +29,7 @@ pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
-) -> Result<(Vec<RenderModuleResult>, HashMap<ModuleId, Arc<SourceMap>>)> {
+) -> Result<RenderResourcePotModulesResult> {
   let modules = Mutex::new(vec![]);
 
   // group modules in the same group that can perform scope hoisting
@@ -115,8 +117,8 @@ pub fn render_resource_pot_modules(
 
   modules.sort_by(|a, b| {
     a.module_id
-      .id(context.config.mode.clone())
-      .cmp(&b.module_id.id(context.config.mode.clone()))
+      .id(context.config.mode)
+      .cmp(&b.module_id.id(context.config.mode))
   });
 
   Ok((modules, source_maps))

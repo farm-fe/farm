@@ -1,3 +1,5 @@
+#![allow(clippy::mutable_key_type)]
+
 use farmfe_core::{config::Config, plugin::Plugin};
 
 use crate::utils::transform_export_all_to_export_named;

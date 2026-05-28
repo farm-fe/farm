@@ -50,7 +50,7 @@ pub(crate) fn merge_rendered_module(
     rendered_resource_pot_ast
       .props
       .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-        key: PropName::Str(module_id.id(context.config.mode.clone()).into()),
+        key: PropName::Str(module_id.id(context.config.mode).into()),
         value: expr,
       }))));
   }

@@ -26,10 +26,7 @@ pub fn to_key_path(path: &str) -> Vec<String> {
     let bytes = part.as_bytes();
     let mut current = 0usize;
 
-    loop {
-      let Some(bracket_l) = find_byte_from(bytes, b'[', current) else {
-        break;
-      };
+    while let Some(bracket_l) = find_byte_from(bytes, b'[', current) {
       let Some(bracket_r) = find_byte_from(bytes, b']', bracket_l) else {
         break;
       };

@@ -6,12 +6,13 @@ use farmfe_core::{
 const REGEX_PREFIX: &str = "$__farm_regex:";
 
 /// Determine whether the path conforms to the configuration of alias.
-pub fn is_start_with_alias(alias_vec: &Vec<AliasItem>, path: &str) -> bool {
-  alias_vec.iter().any(|alias_item| match alias_item {
-    AliasItem {
+pub fn is_start_with_alias(alias_vec: &[AliasItem], path: &str) -> bool {
+  alias_vec.iter().any(|alias_item| {
+    let AliasItem {
       find,
       replacement: _,
-    } => match find {
+    } = alias_item;
+    match find {
       StringOrRegex::String(alias) => {
         if let Some(stripped_alias) = alias.strip_prefix(REGEX_PREFIX) {
           if let Ok(regex) = Regex::new(stripped_alias) {
@@ -26,12 +27,11 @@ pub fn is_start_with_alias(alias_vec: &Vec<AliasItem>, path: &str) -> bool {
         }
       }
       StringOrRegex::Regex(regex) => regex.is_match(path),
-    },
+    }
   })
 }
 
 #[cfg(test)]
-
 mod test {
   use std::path::PathBuf;
 
@@ -60,18 +60,18 @@ mod test {
       },
     ];
 
-    assert_eq!(is_start_with_alias(&alias, "/@/img/logo.png"), true);
-    assert_eq!(is_start_with_alias(&alias, "@/img/logo.png"), true);
+    assert!(is_start_with_alias(&alias, "/@/img/logo.png"));
+    assert!(is_start_with_alias(&alias, "@/img/logo.png"));
 
-    assert_eq!(is_start_with_alias(&alias, "./img/logo.png"), false);
-    assert_eq!(is_start_with_alias(&alias, "../img/logo.png"), false);
-    assert_eq!(is_start_with_alias(&alias, "/img/logo.png"), false);
+    assert!(!is_start_with_alias(&alias, "./img/logo.png"));
+    assert!(!is_start_with_alias(&alias, "../img/logo.png"));
+    assert!(!is_start_with_alias(&alias, "/img/logo.png"));
 
-    assert_eq!(is_start_with_alias(&alias, "react/useEffect.ts"), false);
-    assert_eq!(is_start_with_alias(&alias, "react"), true);
+    assert!(!is_start_with_alias(&alias, "react/useEffect.ts"));
+    assert!(is_start_with_alias(&alias, "react"));
 
-    assert_eq!(is_start_with_alias(&alias, "/utils"), true);
-    assert_eq!(is_start_with_alias(&alias, "utils"), false);
-    assert_eq!(is_start_with_alias(&alias, "/utils/index.ts"), false);
+    assert!(is_start_with_alias(&alias, "/utils"));
+    assert!(!is_start_with_alias(&alias, "utils"));
+    assert!(!is_start_with_alias(&alias, "/utils/index.ts"));
   }
 }

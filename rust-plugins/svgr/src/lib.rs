@@ -24,7 +24,7 @@ pub struct FarmPluginSvgr {
 use options::Options;
 
 impl FarmPluginSvgr {
-  fn new(config: &Config, _options: String) -> Self {
+  fn new(_config: &Config, _options: String) -> Self {
     let options: Options = serde_json::from_str(&_options).unwrap();
     let include: Vec<&str> = options
       .include

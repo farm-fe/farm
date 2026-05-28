@@ -262,13 +262,7 @@ impl Plugin for FarmPluginTailwindCSS {
       return Ok(None);
     }
 
-    let candidates: Vec<String> = self
-      .candidates
-      .lock()
-      .unwrap()
-      .iter()
-      .cloned()
-      .collect();
+    let candidates: Vec<String> = self.candidates.lock().unwrap().iter().cloned().collect();
 
     let css = compiler.build(&candidates);
 
@@ -358,7 +352,9 @@ mod tests {
 
   #[test]
   fn is_candidate_source_file_works() {
-    assert!(FarmPluginTailwindCSS::is_candidate_source_file("/src/app.tsx"));
+    assert!(FarmPluginTailwindCSS::is_candidate_source_file(
+      "/src/app.tsx"
+    ));
     assert!(FarmPluginTailwindCSS::is_candidate_source_file(
       "/src/app.vue?lang.ts"
     ));
@@ -391,7 +387,9 @@ mod tests {
   #[test]
   fn has_tailwind_directive_detects_all_forms() {
     assert!(has_tailwind_directive("@tailwind utilities;"));
-    assert!(has_tailwind_directive("@tailwind base;\n@tailwind components;"));
+    assert!(has_tailwind_directive(
+      "@tailwind base;\n@tailwind components;"
+    ));
     assert!(has_tailwind_directive(".btn { @apply px-4; }"));
     assert!(has_tailwind_directive("@import \"tailwindcss\";"));
     assert!(has_tailwind_directive("@import 'tailwindcss';"));

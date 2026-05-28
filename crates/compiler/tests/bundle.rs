@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use farmfe_core::config::{
-  bool_or_obj::BoolOrObj, config_regex::ConfigRegex,
-  partial_bundling::PartialBundlingEnforceResourceConfig, Mode, TargetEnv,
-};
+use farmfe_core::config::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex, Mode, TargetEnv};
 use farmfe_core::HashMap;
 
 mod common;
@@ -74,7 +71,6 @@ fn test(file: String, crate_path: String, f: Option<impl Fn(&mut Config)>) {
         entry_name: Some(entry_name.clone()),
         output_file: Some(format_output_name(name)),
         ignore_emitted_field: false,
-        ..Default::default()
       },
     );
   }

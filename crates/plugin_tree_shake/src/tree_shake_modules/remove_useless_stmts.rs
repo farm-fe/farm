@@ -84,7 +84,7 @@ pub fn remove_useless_stmts(
   }
 
   // update statements in module_graph
-  meta.statements = analyze_statements(&swc_module);
+  meta.statements = analyze_statements(swc_module);
 
   modules_to_remove
 }

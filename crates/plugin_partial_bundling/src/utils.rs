@@ -13,7 +13,7 @@ pub fn try_get_filename(path: PathBuf) -> String {
 
 pub fn get_sorted_module_ids_str(module_ids: &HashSet<ModuleId>) -> String {
   let mut sorted_module_ids = module_ids.iter().collect::<Vec<_>>();
-  sorted_module_ids.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+  sorted_module_ids.sort_by_key(|a| a.to_string());
   sorted_module_ids
     .into_iter()
     .map(|id| id.to_string())

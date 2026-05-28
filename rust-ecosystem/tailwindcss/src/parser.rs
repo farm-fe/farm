@@ -134,11 +134,9 @@ impl<'a> Parser<'a> {
       let ch = self.byte();
 
       // CRLF: skip CR
-      if ch == CARRIAGE_RETURN {
-        if self.peek(1) == LINE_BREAK {
-          self.i += 1;
-          continue;
-        }
+      if ch == CARRIAGE_RETURN && self.peek(1) == LINE_BREAK {
+        self.i += 1;
+        continue;
       }
 
       // Backslash escape
@@ -182,9 +180,7 @@ impl<'a> Parser<'a> {
         continue;
       }
       if ch == CLOSE_PAREN {
-        if paren_depth > 0 {
-          paren_depth -= 1;
-        }
+        paren_depth = paren_depth.saturating_sub(1);
         buffer.push(')');
         self.i += 1;
         continue;

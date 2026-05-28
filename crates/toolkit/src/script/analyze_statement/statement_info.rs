@@ -17,14 +17,14 @@ pub struct AnalyzedStatementInfo {
   pub top_level_await: bool,
 }
 
-impl Into<Statement> for AnalyzedStatementInfo {
-  fn into(self) -> Statement {
+impl From<AnalyzedStatementInfo> for Statement {
+  fn from(val: AnalyzedStatementInfo) -> Self {
     Statement::new(
-      self.id,
-      self.export_info,
-      self.import_info,
-      self.defined_idents,
-      self.top_level_await,
+      val.id,
+      val.export_info,
+      val.import_info,
+      val.defined_idents,
+      val.top_level_await,
     )
   }
 }
@@ -106,7 +106,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
 
           for ident in &var_defined_idents {
             specifiers.push(ExportSpecifierInfo::Named {
-              local: ident.clone().into(),
+              local: ident.clone(),
               exported: None,
             });
           }
@@ -242,7 +242,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
     id: *id,
     import_info,
     export_info,
-    defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
+    defined_idents: defined_idents.into_iter().collect(),
     top_level_await: contains_top_level_await(stmt),
   }
 }

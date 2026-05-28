@@ -61,7 +61,7 @@ impl<'a> UsedIdentsVisitor<'a> {
     self.current_defined_ident = pre;
   }
 
-  pub fn into_scope(&mut self, f: impl FnOnce(&mut Self)) {
+  pub fn enter_scope(&mut self, f: impl FnOnce(&mut Self)) {
     let pre = self.in_top_level;
     self.in_top_level = false;
     f(self);
@@ -165,15 +165,15 @@ impl Visit for UsedIdentsVisitor<'_> {
   }
 
   fn visit_arrow_expr(&mut self, n: &farmfe_core::swc_ecma_ast::ArrowExpr) {
-    self.into_scope(|v| n.visit_children_with(v))
+    self.enter_scope(|v| n.visit_children_with(v))
   }
 
   fn visit_constructor(&mut self, n: &farmfe_core::swc_ecma_ast::Constructor) {
-    self.into_scope(|v| n.visit_children_with(v))
+    self.enter_scope(|v| n.visit_children_with(v))
   }
 
   fn visit_function(&mut self, n: &farmfe_core::swc_ecma_ast::Function) {
-    self.into_scope(|v| n.visit_children_with(v))
+    self.enter_scope(|v| n.visit_children_with(v))
   }
 
   fn visit_decl(&mut self, n: &farmfe_core::swc_ecma_ast::Decl) {
@@ -203,14 +203,12 @@ impl Visit for UsedIdentsVisitor<'_> {
                 }
               }
             };
-            let mut defined_idents_collector =
-              DefinedIdentsCollector::from_callback(Box::new(&mut cb));
+            let mut defined_idents_collector = DefinedIdentsCollector::from_callback(&mut cb);
             decl.name.visit_with(&mut defined_idents_collector);
 
             let defined_idents = defined_idents_collector
               .defined_idents
               .into_iter()
-              .map(|e| e.into())
               .collect::<Vec<_>>();
 
             self.with_ident(defined_idents, |v| {

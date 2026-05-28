@@ -14,6 +14,8 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 
+type CjsRequireMap = HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>;
+
 use crate::script::{
   create_export_namespace_ident,
   swc_try_with::try_with,
@@ -52,7 +54,7 @@ pub fn transform_module_to_esm(
     let ReplaceCjsRequireResult {
       cjs_require_items,
       should_add_farm_node_require,
-    } = replace_cjs_require(&module.id, &cjs_require_map, meta);
+    } = replace_cjs_require(&module.id, cjs_require_map, meta);
     should_add_farm_node_require_res = should_add_farm_node_require;
 
     // transform cjs to esm
@@ -80,7 +82,7 @@ pub fn update_export_namespace_ident(
   module_graph: &mut ModuleGraph,
 ) {
   for dep_id in export_namespace_modules.iter() {
-    if let Some(dep_module) = module_graph.module_mut(&dep_id) {
+    if let Some(dep_module) = module_graph.module_mut(dep_id) {
       if dep_module.external || !dep_module.module_type.is_script() {
         continue;
       }
@@ -97,7 +99,7 @@ pub fn update_export_namespace_ident(
           EXPORT_NAMESPACE.to_string(),
           ModuleExportIdent::new(
             dep_id.clone(),
-            create_export_namespace_ident(&dep_id).to_id().into(),
+            create_export_namespace_ident(dep_id).to_id().into(),
             ModuleExportIdentType::VirtualNamespace,
           ),
         );
@@ -109,10 +111,7 @@ pub fn update_export_namespace_ident(
 pub fn update_module_graph_edges_of_cjs_modules(
   module_graph: &mut ModuleGraph,
   modules: Option<&HashSet<ModuleId>>,
-) -> (
-  HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>,
-  HashSet<ModuleId>,
-) {
+) -> (CjsRequireMap, HashSet<ModuleId>) {
   let mut cjs_require_map_res = HashMap::default();
   let mut export_namespace_modules_res = HashSet::default();
 

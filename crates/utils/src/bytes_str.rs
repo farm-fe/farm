@@ -9,10 +9,25 @@ use rkyv::hash::FxHasher64;
 
 /// Zero copy byte str inspired by https://github.com/dudykr/ddbase/blob/main/crates/bytes-str/src/byte_str.rs
 #[derive(Clone, Default, rkyv::Archive, rkyv::Serialize, rkyv::Deserialize)]
-#[rkyv(derive(Hash, PartialEq, Eq))]
 pub struct FarmBytesStr {
   pub(crate) bytes: Bytes,
   precomputed_hash: Option<u64>,
+}
+
+impl PartialEq for ArchivedFarmBytesStr {
+  fn eq(&self, other: &Self) -> bool {
+    self.precomputed_hash == other.precomputed_hash
+      && self.bytes.as_slice() == other.bytes.as_slice()
+  }
+}
+
+impl Eq for ArchivedFarmBytesStr {}
+
+impl Hash for ArchivedFarmBytesStr {
+  fn hash<H: Hasher>(&self, state: &mut H) {
+    self.precomputed_hash.hash(state);
+    self.bytes.as_slice().hash(state);
+  }
 }
 
 impl FarmBytesStr {

@@ -272,7 +272,7 @@ fn is_family_name(value: &str) -> bool {
   for part in segment(value, ',') {
     let part = part.trim_start();
     if let Some(b) = part.as_bytes().first() {
-      if (b'0'..=b'9').contains(b) {
+      if b.is_ascii_digit() {
         return false;
       }
     }

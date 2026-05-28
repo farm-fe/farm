@@ -180,13 +180,13 @@ fn sass_plugin() {
     let css = resources_map.get("index.css").unwrap();
     let css_code = normalize_css(&String::from_utf8(css.bytes.clone()).unwrap());
 
-    let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css".into()]);
+    let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css"]);
 
     if is_update_snapshot_from_env() || !output_filename.exists() {
       let mut output_file = std::fs::File::create(output_filename).unwrap();
       output_file.write_all(css_code.as_bytes()).unwrap();
     } else {
-      let expected = normalize_css(&read_file_utf8(&output_filename.to_str().unwrap()).unwrap());
+      let expected = normalize_css(&read_file_utf8(output_filename.to_str().unwrap()).unwrap());
       assert_eq!(css_code, expected);
     }
   });

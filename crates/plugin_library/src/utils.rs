@@ -1,7 +1,6 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
-  config::minify::MinifyOptions,
   context::CompilationContext,
   module::meta_data::script::{
     statement::{Statement, StatementId, SwcId},
@@ -35,7 +34,7 @@ pub fn emit_resource_pot(
     .config
     .minify
     .clone()
-    .map(|val| MinifyOptions::from(val))
+    .map(|val| val)
     .unwrap_or_default();
 
   if context.config.minify.enabled() {
@@ -110,17 +109,15 @@ pub fn strip_runtime_module_helper_import(module: &mut Module) -> HashSet<String
   let mut used_helper_idents = HashSet::default();
 
   for (i, item) in module.body.iter().enumerate() {
-    if let ModuleItem::ModuleDecl(module_decl) = item {
-      if let ModuleDecl::Import(import_decl) = module_decl {
-        if import_decl.src.value == FARM_RUNTIME_MODULE_HELPER_ID {
-          for specifier in &import_decl.specifiers {
-            if let ImportSpecifier::Named(named_specifier) = specifier {
-              used_helper_idents.insert(named_specifier.local.sym.to_string());
-            }
+    if let ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) = item {
+      if import_decl.src.value == FARM_RUNTIME_MODULE_HELPER_ID {
+        for specifier in &import_decl.specifiers {
+          if let ImportSpecifier::Named(named_specifier) = specifier {
+            used_helper_idents.insert(named_specifier.local.sym.to_string());
           }
-
-          imports_to_remove.push(i);
         }
+
+        imports_to_remove.push(i);
       }
     }
   }
@@ -136,7 +133,7 @@ pub fn strip_runtime_module_helper_import(module: &mut Module) -> HashSet<String
 
 fn find_used_statements(
   mut statements: Vec<Statement>,
-  items: &Vec<ModuleItem>,
+  items: &[ModuleItem],
   used_helper_idents: &HashSet<String>,
 ) -> Vec<StatementId> {
   let mut queue = VecDeque::new();
@@ -193,7 +190,7 @@ impl Visit for UsedDefinedIdentsAnalyzer {
   }
 }
 
-pub fn add_format_to_generated_resources(resources: &mut Vec<GeneratedResource>, format: &str) {
+pub fn add_format_to_generated_resources(resources: &mut [GeneratedResource], format: &str) {
   resources.iter_mut().for_each(|resource| {
     let both_placeholder_map = HashMap::from_iter([("[format]".to_string(), format.to_string())]);
 
@@ -233,8 +230,8 @@ pub fn add_format_to_generated_resources(resources: &mut Vec<GeneratedResource>,
     }
 
     // source map
-    resource.source_map.as_mut().map(|r| {
+    if let Some(r) = resource.source_map.as_mut() {
       r.special_placeholders.extend(both_placeholder_map);
-    });
+    }
   });
 }

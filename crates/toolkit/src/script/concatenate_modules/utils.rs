@@ -59,6 +59,7 @@ pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) ->
   create_var_decl_item(default_ident, expr)
 }
 
+#[allow(clippy::mutable_key_type)]
 pub(crate) fn create_var_namespace_item(
   module_id: &ModuleId,
   export_ident_map: &HashMap<String, ModuleExportIdent>,
@@ -367,7 +368,7 @@ pub fn should_add_namespace_ident(
     if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
       let module_export_ident = module_export_ident.as_internal();
       // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
-      module_export_ident.ident == create_export_namespace_ident(&module_id).to_id().into()
+      module_export_ident.ident == create_export_namespace_ident(module_id).to_id().into()
         && module_export_ident.module_id == *module_id
     } else {
       false

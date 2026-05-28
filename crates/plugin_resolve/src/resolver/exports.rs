@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, fmt, str::FromStr, sync::Arc};
 
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -45,18 +45,18 @@ impl FromStr for Condition {
   }
 }
 
-impl ToString for &Condition {
-  fn to_string(&self) -> String {
+impl fmt::Display for Condition {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      Condition::Default => "default".to_string(),
-      Condition::Require => "require".to_string(),
-      Condition::Import => "import".to_string(),
-      Condition::Browser => "browser".to_string(),
-      Condition::Node => "node".to_string(),
-      Condition::Development => "development".to_string(),
-      Condition::Production => "production".to_string(),
-      Condition::Module => "module".to_string(),
-      Condition::Custom(c) => c.to_string(),
+      Condition::Default => f.write_str("default"),
+      Condition::Require => f.write_str("require"),
+      Condition::Import => f.write_str("import"),
+      Condition::Browser => f.write_str("browser"),
+      Condition::Node => f.write_str("node"),
+      Condition::Development => f.write_str("development"),
+      Condition::Production => f.write_str("production"),
+      Condition::Module => f.write_str("module"),
+      Condition::Custom(c) => f.write_str(c),
     }
   }
 }
@@ -76,8 +76,8 @@ pub struct ResolveExportsOrImportsResult {
 }
 
 impl ResolveExportsOrImportsResult {
-  pub fn to_resolved(self, strict_exports: bool) -> Option<String> {
-    if strict_exports && self.warnings.len() > 0 {
+  pub fn into_resolved(self, strict_exports: bool) -> Option<String> {
+    if strict_exports && !self.warnings.is_empty() {
       panic!(
         "Panic cause `resolve.strict_exports` is set to true:\n{}",
         self.warnings.join("\n")
@@ -110,10 +110,7 @@ pub fn resolve_exports_or_imports(
 
   // resolve exports field
   let is_browser = context.config.output.target_env.is_browser();
-  let is_require = match kind {
-    ResolveKind::Require => true,
-    _ => false,
-  };
+  let is_require = matches!(kind, ResolveKind::Require);
   let condition_config = ConditionOptions {
     browser: is_browser && !additional_conditions.contains(&String::from("node")),
     require: is_require && !additional_conditions.contains(&String::from("import")),
@@ -200,7 +197,7 @@ fn imports(
         imports_map.extend(object_value.clone());
       }
       _ => {
-        let warning = format!("Unexpected imports field format");
+        let warning = "Unexpected imports field format".to_string();
         return ResolveExportsOrImportsResult {
           resolved: None,
           warnings: vec![warning],
@@ -297,9 +294,9 @@ fn walk(
   let entry: String = if input.starts_with(".") || input.starts_with("#") {
     input.to_string()
   } else {
-    let warning = format!(
+    let warning =
       "input must start with \".\" or \"#\" when walk `exports` or `imports` field of package.json"
-    );
+        .to_string();
     return ResolveExportsOrImportsResult {
       resolved: None,
       warnings: vec![warning],
@@ -313,7 +310,7 @@ fn walk(
   if m.is_none() {
     let mut longest: Option<&str> = None;
 
-    for (key, _) in mapping {
+    for key in mapping.keys() {
       if let Some(cur_longest) = &longest {
         if key.len() < cur_longest.len() {
           // do not allow "./" to match if already matched "./foo*" key

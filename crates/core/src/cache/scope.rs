@@ -108,7 +108,7 @@ impl CacheScopeStore {
   fn get_data_ref<V: Cacheable>(
     &self,
     reference_id: &str,
-  ) -> Option<Ref<String, Box<dyn Cacheable>>> {
+  ) -> Option<Ref<'_, String, Box<dyn Cacheable>>> {
     if let Some(data) = self.data.get(reference_id) {
       return Some(data);
     }

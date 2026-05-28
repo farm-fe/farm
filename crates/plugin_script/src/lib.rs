@@ -1,5 +1,4 @@
 #![feature(box_patterns)]
-#![feature(path_file_prefix)]
 
 use std::{path::Path, sync::Arc};
 
@@ -192,8 +191,8 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
 
-    let cm = context.meta.get_module_source_map(&param.module_id);
-    let globals = context.meta.get_globals(&param.module_id);
+    let cm = context.meta.get_module_source_map(param.module_id);
+    let globals = context.meta.get_globals(param.module_id);
 
     // transform decorators if needed
     // this transform should be done before strip typescript cause it may need to access the type information
@@ -411,8 +410,8 @@ impl Plugin for FarmPluginScript {
         ast: result.ast,
         external_modules: result
           .external_modules
-          .into_iter()
-          .map(|(_, id)| id.to_string())
+          .into_values()
+          .map(|id| id.to_string())
           .collect(),
         rendered_modules: result.module_ids,
         comments: result.comments,
@@ -479,12 +478,12 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(config: &Config) -> Self {
+  pub fn new(_config: &Config) -> Self {
     #[cfg(feature = "swc_plugin")]
     {
       let plugin_runtime = Arc::new(swc_plugin_backend_wasmer::WasmerRuntime);
 
-      compile_wasm_plugins(None, &config.script.plugins, &*plugin_runtime)
+      compile_wasm_plugins(None, &_config.script.plugins, &*plugin_runtime)
         .unwrap_or_else(|_| panic!("Failed to compile wasm plugins"));
 
       Self {
@@ -509,14 +508,14 @@ pub fn generate_code_and_sourcemap(
 
   let mut mappings = vec![];
   let code_bytes = codegen_module(
-    &wrapped_resource_pot_ast,
+    wrapped_resource_pot_ast,
     merged_sourcemap.clone(),
     if sourcemap_enabled {
       Some(&mut mappings)
     } else {
       None
     },
-    create_codegen_config(&context),
+    create_codegen_config(context),
     Some(CodeGenCommentsConfig {
       comments: &merged_comments,
       // preserve all comments when generate module code.

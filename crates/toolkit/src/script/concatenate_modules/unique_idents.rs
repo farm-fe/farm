@@ -25,7 +25,7 @@ impl TopLevelIdents {
     // should always add default export to avoid name conflicts with preserved key words
     tli.add_ident(EXPORT_DEFAULT.into());
 
-    return tli;
+    tli
   }
 
   fn extend(&mut self, iter: impl Iterator<Item = Atom>) {
@@ -86,7 +86,7 @@ impl TopLevelIdentsRenameHandler {
     self
       .module_rename_map
       .entry(module_id)
-      .or_insert_with(HashMap::default)
+      .or_default()
       .insert(from, to);
   }
 
@@ -113,9 +113,8 @@ impl TopLevelIdentsRenameHandler {
 
   /// rename the imported ident if there are conflicts
   pub fn rename_ident_if_conflict(&mut self, module_id: &ModuleId, ident: &SwcId) -> Option<SwcId> {
-    self.get_unique_ident(ident).map(|unique_ident| {
+    self.get_unique_ident(ident).inspect(|unique_ident| {
       self.rename_ident(module_id.clone(), ident.clone(), unique_ident.clone());
-      unique_ident
     })
   }
 }
@@ -149,7 +148,7 @@ impl<'a> RenameVisitor<'a> {
 impl<'a> VisitMut for RenameVisitor<'a> {
   fn visit_mut_import_decl(&mut self, node: &mut farmfe_core::swc_ecma_ast::ImportDecl) {
     if let Some(source_module_id) = self.source_module_id {
-      node.src = Box::new(source_module_id.to_string().into());
+      *node.src = source_module_id.to_string().into();
     }
 
     node.visit_mut_children_with(self);
@@ -157,7 +156,7 @@ impl<'a> VisitMut for RenameVisitor<'a> {
 
   fn visit_mut_export_all(&mut self, node: &mut farmfe_core::swc_ecma_ast::ExportAll) {
     if let Some(source_module_id) = self.source_module_id {
-      node.src = Box::new(source_module_id.to_string().into());
+      *node.src = source_module_id.to_string().into();
     }
 
     node.visit_mut_children_with(self);
@@ -213,21 +212,17 @@ impl<'a> VisitMut for RenameVisitor<'a> {
   }
 
   fn visit_mut_prop(&mut self, n: &mut farmfe_core::swc_ecma_ast::Prop) {
-    match n {
-      Prop::Shorthand(m) => {
-        if let Some(new_name) = self.get_renamed_ident(m) {
-          *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
-            key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
-              span: DUMMY_SP,
-              sym: m.sym.as_str().into(),
-            }),
-            value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(new_name.sym.into())),
-          });
-          return;
-        }
+    if let Prop::Shorthand(m) = n {
+      if let Some(new_name) = self.get_renamed_ident(m) {
+        *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
+          key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
+            span: DUMMY_SP,
+            sym: m.sym.as_str().into(),
+          }),
+          value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(new_name.sym.into())),
+        });
+        return;
       }
-
-      _ => {}
     }
 
     n.visit_mut_children_with(self);
@@ -339,7 +334,7 @@ impl<'a> VisitMut for RenameVisitor<'a> {
 }
 
 pub fn init_rename_handler(
-  sorted_modules: &Vec<ModuleId>,
+  sorted_modules: &[ModuleId],
   module_graph: &ModuleGraph,
 ) -> TopLevelIdentsRenameHandler {
   let mut top_level_idents = TopLevelIdents::new();
@@ -377,12 +372,7 @@ pub fn init_rename_handler(
     // }
     // ```
     // we have to rename a to a$1 to avoid ident conflicts
-    top_level_idents.extend(
-      script_meta
-        .all_deeply_declared_idents
-        .iter()
-        .map(|id| id.clone()),
-    );
+    top_level_idents.extend(script_meta.all_deeply_declared_idents.iter().cloned());
   });
 
   let mut rename_handler = TopLevelIdentsRenameHandler::new(top_level_idents);

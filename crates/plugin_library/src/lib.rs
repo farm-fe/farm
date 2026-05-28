@@ -267,7 +267,7 @@ impl Plugin for FarmPluginLibrary {
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut cjs_require_map = self.cjs_require_map.lock();
     let cjs_require_map: HashMap<(ModuleId, String), (ModuleId, ModuleSystem)> =
-      cjs_require_map.drain().into_iter().collect();
+      cjs_require_map.drain().collect();
     let cjs_required_only_modules: HashSet<&ModuleId> =
       get_cjs_require_only_modules(&cjs_require_map);
 
@@ -339,10 +339,12 @@ impl Plugin for FarmPluginLibrary {
             .iter()
             .any(|(dep_id, _)| modules_set.contains(dep_id))
         })
-        .unwrap_or(modules.first().expect(&format!(
-          "resource pot {:?} has no modules, cannot determine entry module for rendering",
-          resource_pot.id
-        )))
+        .unwrap_or(modules.first().unwrap_or_else(|| {
+          panic!(
+            "resource pot {:?} has no modules, cannot determine entry module for rendering",
+            resource_pot.id
+          )
+        }))
         .to_owned()
         .clone()
     };
@@ -382,8 +384,8 @@ impl Plugin for FarmPluginLibrary {
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast,
       external_modules: external_modules
-        .into_iter()
-        .map(|(_, id)| id.to_string())
+        .into_values()
+        .map(|id| id.to_string())
         .collect(),
       rendered_modules: module_ids,
       comments,
@@ -459,7 +461,7 @@ fn replace_internal_import_sources_with_placeholders(
       ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) => {
         let source = import_decl.src.value.to_string_lossy().into_owned();
         if let Some(module_id) = source_to_internal_module.get(&source) {
-          import_decl.src = Box::new(Str {
+          *import_decl.src = Str {
             span: DUMMY_SP,
             value: format!(
               "{}{}",
@@ -468,14 +470,14 @@ fn replace_internal_import_sources_with_placeholders(
             )
             .into(),
             raw: None,
-          });
+          };
         }
       }
       ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(export)) => {
         if let Some(ref mut src) = export.src {
           let source = src.value.to_string_lossy().into_owned();
           if let Some(module_id) = source_to_internal_module.get(&source) {
-            *src = Box::new(Str {
+            **src = Str {
               span: DUMMY_SP,
               value: format!(
                 "{}{}",
@@ -484,14 +486,14 @@ fn replace_internal_import_sources_with_placeholders(
               )
               .into(),
               raw: None,
-            });
+            };
           }
         }
       }
       ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) => {
         let source = export_all.src.value.to_string_lossy().into_owned();
         if let Some(module_id) = source_to_internal_module.get(&source) {
-          export_all.src = Box::new(Str {
+          *export_all.src = Str {
             span: DUMMY_SP,
             value: format!(
               "{}{}",
@@ -500,7 +502,7 @@ fn replace_internal_import_sources_with_placeholders(
             )
             .into(),
             raw: None,
-          });
+          };
         }
       }
       _ => {}

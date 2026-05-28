@@ -512,15 +512,13 @@ mod tests {
       ModuleGroupId::new(&"2".into(), &ModuleGroupType::Entry),
     ]);
 
-    module.meta = Box::new(ModuleMetaData::Custom(CustomMetaDataMap::from(
-      HashMap::from_iter([(
-        "custom".to_string(),
-        Box::new(StructModuleData {
-          ast: "ast".to_string(),
-          imports: vec!["./index".to_string()],
-        }) as Box<dyn Cacheable>,
-      )]),
-    )));
+    *module.meta = ModuleMetaData::Custom(CustomMetaDataMap::from(HashMap::from_iter([(
+      "custom".to_string(),
+      Box::new(StructModuleData {
+        ast: "ast".to_string(),
+        imports: vec!["./index".to_string()],
+      }) as Box<dyn Cacheable>,
+    )])));
 
     let bytes = module.serialize_bytes().unwrap();
     let mut deserialized_module = Module::deserialize_bytes(bytes).unwrap();

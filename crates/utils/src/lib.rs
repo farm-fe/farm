@@ -36,7 +36,7 @@ pub fn parse_query(path: &str) -> Vec<(String, String)> {
     return vec![];
   }
 
-  let query_str = path.split('?').last().unwrap();
+  let query_str = path.split('?').next_back().unwrap();
   let pairs = query_str.split('&');
 
   let mut query = vec![];
