@@ -156,7 +156,7 @@ const myCssPlugin = {
 在 Farm 中，一切都被认为是“一等公民”，因此 Farm 设计 `module_type` 来标识模块类型，并在用不同的插件处理不同的模块类型
 `Module_type `由 `load` 钩子返回，并且可以由 `transform` 钩子转换。Farm 原生支持 `js/ts/jsx/tsx`、`css`、`html`、`json`、`static assets(png、svg等)`。对于这些模块类型，你可以直接在 `load` 或 `transform` hook 中返回。但是如果你想处理自定义模块类型，你需要实现其他钩子例如 `parse`， `render_resource_pot_modules`， `generate resources` 等来控制如何对自定义模块进行类型解析，渲染和生成资源。
 
-## 创建插件
+## 创建插件 {#create-plugin}
 
 Farm 提供了官方模板来帮助你快速创建 JavaScript 插件:
 <Tabs>
