@@ -228,10 +228,7 @@ impl UtilityRegistry {
     m.insert("grid-flow-row", vec![("grid-auto-flow", "row")]);
     m.insert("grid-flow-col", vec![("grid-auto-flow", "column")]);
     m.insert("grid-flow-dense", vec![("grid-auto-flow", "dense")]);
-    m.insert(
-      "grid-flow-row-dense",
-      vec![("grid-auto-flow", "row dense")],
-    );
+    m.insert("grid-flow-row-dense", vec![("grid-auto-flow", "row dense")]);
     m.insert(
       "grid-flow-col-dense",
       vec![("grid-auto-flow", "column dense")],
