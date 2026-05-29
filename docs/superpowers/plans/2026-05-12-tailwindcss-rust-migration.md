@@ -61,7 +61,7 @@
 > The original Phase 17–21 scope items (recursive `@apply` resolution / important propagation; CSS function parity for `theme()`, `--spacing()`, …; `property-order.rs`; compat-directory ruling; upstream-fixture E2E) are not blocking the rust plugin path and are tracked as follow-up items in the [`MIGRATION.md`](../../../rust-ecosystem/tailwindcss/MIGRATION.md) remaining-work section.
 
 ### Summary
-- **404 tests** pass across `farmfe_ecosystem_tailwindcss` (verified 2026-05-29 via `cargo test -p farmfe_ecosystem_tailwindcss --tests`; +32 over the 372 Phase-16 baseline).
+- **405 tests** pass across `farmfe_ecosystem_tailwindcss` (verified 2026-05-29 via `cargo test -p farmfe_ecosystem_tailwindcss --tests`; +33 over the 372 Phase-16 baseline).
 - **`farmfe_plugin_tailwindcss`** rust plugin: **12 tests pass** (6 unit + 6 integration), confirming candidate scanning, CSS root detection, node_modules skipping, `@apply` transform, and `@import` resolve pass-through behaviour.
 - **Phase 11 (Plan B foundation utils) is complete**: all 16 sub-modules ported (`segment`, `escape`, `to_key_path`, `brace_expansion`, `compare`, `compare_breakpoints`, `math_operators`, `is_color`, `is_valid_arbitrary`, `dimensions`, `decode_arbitrary_value`, `infer_data_type`, `replace_shadow_colors`, plus top-level `value_parser`, `selector_parser`, `attribute_selector_parser`).
 - **Phase 12 (AST/parser parity)**: `optimize_ast` now merges consecutive `@`-rules with identical name+params recursively, matching upstream behavior (e.g. two `@media (min-width: 640px)` blocks → one merged block, with inner `@media` blocks also coalesced).
