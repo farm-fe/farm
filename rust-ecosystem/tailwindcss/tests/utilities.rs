@@ -418,3 +418,71 @@ fn border_side_widths() {
   assert!(render("border-x-4", &t).contains("border-left-width: 4px"));
   assert!(render("border-x-4", &t).contains("border-right-width: 4px"));
 }
+
+#[test]
+fn grid_column_placement_utilities() {
+  let t = Theme::with_defaults();
+  assert!(render("col-11", &t).contains("grid-column: 11"));
+  assert!(render("-col-12", &t).contains("grid-column: calc(12 * -1)"));
+  assert!(render("col-auto", &t).contains("grid-column: auto"));
+  assert!(render("col-span-4", &t).contains("grid-column: span 4 / span 4"));
+  assert!(render("col-span-full", &t).contains("grid-column: 1 / -1"));
+  assert!(render("col-[span_2/span_2]", &t).contains("grid-column: span 2 / span 2"));
+}
+
+#[test]
+fn grid_row_placement_utilities() {
+  let t = Theme::with_defaults();
+  assert!(render("row-11", &t).contains("grid-row: 11"));
+  assert!(render("-row-12", &t).contains("grid-row: calc(12 * -1)"));
+  assert!(render("row-auto", &t).contains("grid-row: auto"));
+  assert!(render("row-span-4", &t).contains("grid-row: span 4 / span 4"));
+  assert!(render("row-span-full", &t).contains("grid-row: 1 / -1"));
+  assert!(render("row-[span_2/span_2]", &t).contains("grid-row: span 2 / span 2"));
+}
+
+#[test]
+fn grid_line_start_end_utilities() {
+  let t = Theme::with_defaults();
+  assert!(render("col-start-4", &t).contains("grid-column-start: 4"));
+  assert!(render("-col-start-4", &t).contains("grid-column-start: calc(4 * -1)"));
+  assert!(render("col-end-auto", &t).contains("grid-column-end: auto"));
+  assert!(render("row-start-[7]", &t).contains("grid-row-start: 7"));
+  assert!(render("row-end-99", &t).contains("grid-row-end: 99"));
+}
+
+#[test]
+fn grid_auto_track_utilities() {
+  let t = Theme::with_defaults();
+  assert!(render("auto-cols-auto", &t).contains("grid-auto-columns: auto"));
+  assert!(render("auto-cols-fr", &t).contains("grid-auto-columns: minmax(0, 1fr)"));
+  assert!(render("auto-cols-[2fr]", &t).contains("grid-auto-columns: 2fr"));
+  assert!(render("auto-rows-min", &t).contains("grid-auto-rows: min-content"));
+  assert!(render("auto-rows-[2fr]", &t).contains("grid-auto-rows: 2fr"));
+}
+
+#[test]
+fn grid_flow_utilities() {
+  let t = Theme::with_defaults();
+  assert!(render("grid-flow-row", &t).contains("grid-auto-flow: row"));
+  assert!(render("grid-flow-col", &t).contains("grid-auto-flow: column"));
+  assert!(render("grid-flow-dense", &t).contains("grid-auto-flow: dense"));
+  assert!(render("grid-flow-row-dense", &t).contains("grid-auto-flow: row dense"));
+  assert!(render("grid-flow-col-dense", &t).contains("grid-auto-flow: column dense"));
+}
+
+#[test]
+fn grid_template_track_utilities() {
+  let t = Theme::with_defaults();
+  assert!(render("grid-cols-none", &t).contains("grid-template-columns: none"));
+  assert!(render("grid-cols-subgrid", &t).contains("grid-template-columns: subgrid"));
+  assert!(
+    render("grid-cols-12", &t).contains("grid-template-columns: repeat(12, minmax(0, 1fr))")
+  );
+  assert!(render("grid-rows-none", &t).contains("grid-template-rows: none"));
+  assert!(render("grid-rows-subgrid", &t).contains("grid-template-rows: subgrid"));
+  assert!(
+    render("grid-rows-12", &t).contains("grid-template-rows: repeat(12, minmax(0, 1fr))")
+  );
+  assert!(render("grid-rows-[200px]", &t).contains("grid-template-rows: 200px"));
+}
