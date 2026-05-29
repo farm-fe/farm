@@ -95,6 +95,7 @@ green; the test total is recorded below so regressions are visible.
 | 21 | `@source` directive parsing: `@source "glob"`, `@source not "glob"`, `@source inline("…")`, `@source not inline("…")` collected into `DesignSystem::sources()`, exposed via `Compiler::sources()` for host-side scanner integration, and stripped from compiled output. Malformed forms silently dropped. | 394 |
 | 22 | Verification + plugin hardening: confirmed the rust plugin (`farmfe_plugin_tailwindcss`) end-to-end — 12 plugin tests pass (6 unit + 6 integration). Extracted `has_tailwind_directive()` helper in the plugin so directive detection is a single named pass with a guard against `@applyXyz`-style false positives. Plan doc (`docs/superpowers/plans/2026-05-12-tailwindcss-rust-migration.md`) synced with the live phase log. | 394 |
 | 23 | Phase 16.x utility follow-up: added lower-frequency list-style-type (`list-disc`), line-clamp, columns, and aspect-ratio utility support. `Theme::with_defaults()` now seeds `--aspect-video`. | 398 |
+| 24 | Phase 16.x grid utility follow-up: added grid placement and track utilities (`col-*`, `col-span-*`, `col-start/end-*`, row equivalents, `auto-cols-*`, `auto-rows-*`, `grid-flow-*`, `grid-cols-*`, `grid-rows-*`) with upstream-derived coverage. | 404 |
 
 Run-of-show for the next phases is tracked in
 `docs/superpowers/plans/2026-05-12-tailwindcss-rust-migration.md`.
