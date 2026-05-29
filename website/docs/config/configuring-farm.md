@@ -35,6 +35,14 @@ For config options details, refer to:
 You can also use `farm start/build -c my-config.ts` (or `--config my-config.ts`) to use a custom config file.
 :::
 
+## Config Resolution and Validation
+
+Farm resolves `--config` relative to the project root. If no explicit config file is passed, Farm searches the project root using the filename order above.
+
+Configuration files are validated before Farm starts. Unknown fields are rejected, so prefer the documented `UserConfig` shape rather than passing internal compiler fields directly.
+
+When loading TypeScript or ESM config files, Farm bundles the config and imports the generated file from `node_modules/.farm/`. The output format is inferred from the config extension (`.cjs`/`.cts` use CommonJS; `.js`/`.mjs`/`.mts` use ESM). For uncommon loader interop cases, `FARM_CONFIG_FORMAT=cjs` or `FARM_CONFIG_FORMAT=esm` can override that inference.
+
 ## Loading Ts Config File
 Farm supports TypeScript config files like `farm.config.ts`, `farm.config.cts`, and `farm.config.mts` out of the box. Farm bundles the config file and its local dependencies into `node_modules/.farm/` first, then imports the generated bundle.
 

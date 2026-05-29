@@ -66,8 +66,6 @@ interface OutputOptions {
   targetEnv?: 'browser' | 'node' | 'node16' | 'node-legacy' | 'node-next' | 'browser-legacy' | 'browser-es2015' | 'browser-es2017' | 'browser-esnext' | 'library';
   // output module format, supports a single format or an array of formats (array only when targetEnv is 'library')
   format?: 'cjs' | 'esm' | 'umd' | 'iife' | 'system' | 'amd' | ('cjs' | 'esm' | 'umd' | 'iife' | 'system' | 'amd')[];
-  // clean output.path before emitting
-  clean?: boolean;
   // Whether to print file size of output files
   showFileSize?: boolean;
   // output ascii only
@@ -216,6 +214,10 @@ The current `@farmfe/core` TypeScript `UserConfig` and validation schema do not 
 - **default**: `true`
 
 Whether to clean `output.path` before emitting files.
+
+:::caution
+The current JavaScript config validation schema does not accept `output.clean` in `farm.config.ts`. Treat this as internal compiler behavior until the JavaScript config API exposes it.
+:::
 
 #### `output.showFileSize`
 
@@ -418,7 +420,6 @@ interface FarmRuntimeOptions {
     path: string;
     plugins?: string[];
     swcHelpersPath?: string;
-    namespace?: string;
     isolate?: boolean;
   };
 }
@@ -452,6 +453,10 @@ Customize the path of `@swc/helpers`. It is not recommended to set this option u
 
 Configure the namespace of Farm Runtime to ensure that the execution of different products under the same window or global can be isolated from each other. By default, the name field of the project package.json is used as the namespace.
 
+:::caution
+The runtime normalizer still computes a namespace internally, but the current JavaScript config validation schema does not accept `runtime.namespace` in `farm.config.ts`.
+:::
+
 #### `runtime.isolate`
 
 - **default**: `false`
@@ -477,6 +482,19 @@ export default defineConfig({
   },
 });
 ```
+
+#### `assets.publicDir`
+
+- **default**: top-level [`publicDir`](/docs/config/shared#publicdir), resolved from the project root
+
+Override the public assets directory for the compiler. In most projects, use the top-level `publicDir` shared option instead so the dev server and build pipeline stay in sync.
+
+#### `assets.mode`
+
+- **default**: inferred from [`output.targetEnv`](/docs/config/compilation-options#output-targetenv)
+- **type**: `"browser" | "node"`
+
+Controls how static assets are emitted for browser or Node-style output. Most projects should leave this unset and configure `output.targetEnv` instead.
 
 ### script
 

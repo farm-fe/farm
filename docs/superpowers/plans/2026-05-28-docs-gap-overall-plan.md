@@ -13,7 +13,7 @@
 ## Overall Progress Tracker
 
 - [x] A. Official plugin docs coverage and completeness
-- [ ] B. Config + feature docs correctness
+- [x] B. Config + feature docs correctness
 - [ ] C. JS/Rust plugin API docs
 - [ ] D. CLI + JavaScript API docs
 - [ ] E. Migration guide cleanup
@@ -145,8 +145,8 @@ JavaScript plugin packages:
 
 **Goal:** High-traffic config and feature docs match current option names, anchors, and behavior.
 
-- [ ] Audit `website/docs/config/configuring-farm.md` against current config loading behavior.
-- [ ] Audit `website/docs/config/compilation-options.md` against current exposed `UserConfig`/compilation option types.
+- [x] Audit `website/docs/config/configuring-farm.md` against current config loading behavior.
+- [x] Audit `website/docs/config/compilation-options.md` against current exposed `UserConfig`/compilation option types.
 - [x] Replace stale `@farmfe/js-plugin-vue` current-doc examples with current Vue guidance:
   - `website/docs/using-plugins.mdx`
   - `website/docs/features/script.md`
@@ -155,20 +155,20 @@ JavaScript plugin packages:
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/features/script.md`
   - `website/i18n/zh/docusaurus-plugin-content-docs/current/config/compilation-options.md`
 - [x] Leave `version-1.x` `@farmfe/js-plugin-vue` references unchanged because they document historical v1 behavior.
-- [ ] Fix known broken anchors reported by Docusaurus build:
+- [x] Fix known broken anchors reported by Docusaurus build:
   - `#output-targetenv`
   - `#output-format`
   - `#output-librarybundletype`
   - `#externals`
   - `#outputexternalglobals`
-- [ ] Audit feature pages that link to config anchors:
+- [x] Audit feature pages that link to config anchors:
   - `website/docs/features/css.md`
   - `website/docs/features/library.md`
   - `website/docs/features/script.md`
   - `website/docs/advanced/polyfill.md`
   - `website/docs/advanced/ssr.md`
   - `website/docs/tutorials/build.md`
-- [ ] Keep this pass focused on correctness, working links, and concise examples.
+- [x] Keep this pass focused on correctness, working links, and concise examples.
 
 ## C. JS/Rust Plugin API Docs
 
@@ -206,8 +206,8 @@ JavaScript plugin packages:
 
 **Goal:** Complete a concise sweep that improves navigability and correctness without attempting exhaustive reference rewrites.
 
-- [ ] Run `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
-- [ ] Record pre-existing warnings separately from warnings introduced by this work.
+- [x] Run `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
+- [x] Record pre-existing warnings separately from warnings introduced by this work.
 - [ ] Prioritize fixes in this order:
   1. Broken docs build or broken navigation.
   2. Incorrect install/import/config examples.
@@ -220,8 +220,8 @@ JavaScript plugin packages:
 
 - [x] `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website` succeeds after installing dependencies with `corepack pnpm install --filter farm-docs --ignore-scripts`.
 - [x] Re-run `corepack pnpm build` after each docs coverage batch.
-- [ ] Check changed docs pages are listed in `website/sidebars.js` or intentionally discoverable from another page.
-- [ ] Check every new relative link resolves in the Docusaurus build.
+- [x] Check changed docs pages are listed in `website/sidebars.js` or intentionally discoverable from another page.
+- [x] Check every new relative link resolves in the Docusaurus build.
 
 ## Known Pre-Existing Build Warnings
 
@@ -231,5 +231,4 @@ The current website build succeeds but reports pre-existing warnings unrelated t
 - Browserslist database is outdated.
 - Sass legacy JS API deprecation warnings are emitted by the build toolchain.
 - CSS minimizer warnings appear for generated `styles.*.css`.
-- Multiple current and versioned docs have broken anchors, especially config-option anchors and zh writing-plugin anchors.
-- Current docs contain stale `@farmfe/js-plugin-vue` examples in three English pages and two zh pages. This does not break the Docusaurus build, but it points users to a package that no longer exists in `js-plugins/*`.
+- No broken config-option anchors were reported by the 2026-05-29 build after the config/feature docs pass.
