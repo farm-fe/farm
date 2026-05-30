@@ -1185,18 +1185,24 @@ git commit -m "feat(vue-example): integrate @farmfe/plugin-vue-jsx with JSX comp
 
 ### Task 13: Build and e2e test verification
 
-- [ ] **Step 1: Rebuild both plugins**
+- [ ] **Step 1: Build only the related Rust plugins**
+
+Build just the two plugins needed by the vue example (not the full workspace):
 
 ```bash
 cd rust-plugins/vue && pnpm run build && cd ../..
 cd rust-plugins/vue-jsx && pnpm run build && cd ../..
 ```
 
-- [ ] **Step 2: Bootstrap to link workspace packages**
+- [ ] **Step 2: Install dependencies for the vue example only**
+
+Link the workspace packages that the example depends on without rebuilding everything:
 
 ```bash
-pnpm bootstrap
+cd examples/vue && pnpm install --filter @farmfe-examples/vue... && cd ../..
 ```
+
+This resolves `workspace:*` deps (`@farmfe/cli`, `@farmfe/core`, `@farmfe/plugin-sass`, `@farmfe/plugin-vue`, `@farmfe/plugin-vue-jsx`) from local packages without triggering full bootstrap.
 
 - [ ] **Step 3: Build the vue example**
 
