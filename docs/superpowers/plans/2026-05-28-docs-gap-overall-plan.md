@@ -17,7 +17,7 @@
 - [x] C. JS/Rust plugin API docs
 - [x] D. CLI + JavaScript API docs
 - [x] E. Migration guide cleanup
-- [ ] F. Broad first pass across all of the above, concise rather than exhaustive
+- [x] F. Broad first pass across all of the above, concise rather than exhaustive
 
 ## Source-of-Truth Map
 
@@ -188,6 +188,7 @@ JavaScript plugin packages:
 - Updated JS plugin API docs for current hook names (`configureServer`, `processRenderedResourcePot`, `augmentResourcePotHash`, `processModule`, `freezeModule`, `updateFinished`), filters, config signature, finish timing, and resource-pot/hash naming caveat.
 - Updated Rust plugin API docs for current `Plugin` trait hooks including freeze/module-graph/resource-pot/generated-resource/entry-resource hooks and current render/hash signatures.
 - Updated writing guides for current hook names, runtime plugin type name (`FarmRuntimePlugin`), and source-backed Rust examples.
+- Synced the current zh JS plugin API note so it no longer claims JS plugins lack module-level hooks; it now points AST-heavy work toward Rust plugins while acknowledging `processModule` / `freezeModule`.
 
 ## D. CLI + JavaScript API Docs
 
@@ -203,6 +204,7 @@ JavaScript plugin packages:
 
 - Rewrote current CLI docs from `packages/cli/src/index.ts`, including aliases, `[root]` usage, current `--target` option, preview options, `--debug`, and removed stale `plugin` command/version output.
 - Rewrote current JavaScript API docs from `packages/core/src/index.ts`, `compiler/index.ts`, and server sources; examples now use `resolveConfig`/`createCompiler` instead of direct unresolved constructors.
+- Synced the current zh CLI and JavaScript API docs with the current English pages so the translated docs no longer mention removed `plugin` commands, stale watch/build flags, old constructor patterns, or stale `clean(options)` signatures.
 
 ## E. Migration Guide Cleanup
 
@@ -231,6 +233,14 @@ JavaScript plugin packages:
   4. Broken anchors in current English docs.
   5. Translation/versioned-doc drift that blocks build confidence.
 - [x] Defer exhaustive API tables, full translation updates, and large conceptual rewrites to follow-up plans unless a short correction is enough.
+
+2026-05-30 final follow-up:
+
+- Fixed remaining zh writing-plugin overview drift: current `defineConfig` import path and writing-plugin links.
+- Replaced removed `farm plugin create` contribution examples with the standalone `create-farm-plugin` scaffold command.
+- Corrected direct plugin scaffold commands in JS/Rust writing guides so npm/yarn examples invoke `farm-plugin`.
+- Corrected `@farmfe/js-plugin-visualizer` documented default host to match implementation (`localhost`).
+- Re-ran `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`; build succeeded for English and zh locales with only the known pre-existing warning classes below.
 
 ## Validation
 

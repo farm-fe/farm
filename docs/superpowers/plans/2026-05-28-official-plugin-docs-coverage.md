@@ -61,7 +61,7 @@ Create `website/docs/plugins/official-plugins/js-electron.mdx` with install comm
 
 Add the new Rust TailwindCSS page to the Rust Plugins sidebar category. Add the JS TailwindCSS, Visualizer, and Electron pages to the JS Plugins sidebar category. Update `overview.md` so these entries are clickable and include the Rust TailwindCSS plugin in the Rust list.
 
-- [ ] **Step 6: Validate**
+- [x] **Step 6: Validate**
 
 Run:
 
@@ -82,7 +82,7 @@ Expected: Docusaurus build completes without broken MDX or sidebar references.
 - [x] Add pages for README-backed Rust plugins: `svgr`, `wasm`, `worker`, `url`, `icons`, `image`, `compress`, and `modular-import`.
 - [x] Use each package README as the source of installation, usage, options, and examples.
 - [x] Wire every new page into the Rust Plugins sidebar category and overview.
-- [ ] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
+- [x] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
 
 ## Task 3: Source-Backed Remaining Plugin Coverage
 
@@ -94,4 +94,6 @@ Expected: Docusaurus build completes without broken MDX or sidebar references.
 - [x] Add pages for remaining Rust plugins: `auto-import`, `dts`, `mdx`, and `replace-dirname`.
 - [x] Add pages for remaining JS plugins: `babel`, `copy`, `qiankun`, `react-compiler`, and `vuetify`.
 - [x] Source options from `index.d.ts`, `src/index.ts`, package README files, and examples.
-- [ ] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
+- [x] Validate with `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
+
+Validation completed during the docs gap follow-up: `corepack pnpm build` succeeded for English and zh locales after installing docs dependencies with `corepack pnpm install --filter farm-docs --ignore-scripts`.
