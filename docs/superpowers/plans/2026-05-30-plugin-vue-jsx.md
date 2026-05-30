@@ -1,6 +1,6 @@
 # @farmfe/plugin-vue-jsx Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Port swc-plugin-vue-jsx to a native Farm Rust plugin, integrate it into the existing Vue example alongside @farmfe/plugin-vue, and verify both plugins work together with build + e2e tests.
 
@@ -52,13 +52,13 @@
 - Create: `rust-plugins/vue-jsx/package.json`
 - Create: `rust-plugins/vue-jsx/options.d.ts`
 
-- [ ] **Step 1: Create directory**
+- [x] **Step 1: Create directory**
 
 ```bash
 mkdir -p rust-plugins/vue-jsx/src rust-plugins/vue-jsx/scripts rust-plugins/vue-jsx/tests/fixtures
 ```
 
-- [ ] **Step 2: Write Cargo.toml**
+- [x] **Step 2: Write Cargo.toml**
 
 ```toml
 [package]
@@ -88,7 +88,7 @@ farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
 farmfe_compiler = { path = "../../crates/compiler" }
 ```
 
-- [ ] **Step 3: Write rustfmt.toml**
+- [x] **Step 3: Write rustfmt.toml**
 
 Copy from `rust-plugins/vue/rustfmt.toml`:
 
@@ -96,7 +96,7 @@ Copy from `rust-plugins/vue/rustfmt.toml`:
 edition = "2021"
 ```
 
-- [ ] **Step 4: Write .gitignore**
+- [x] **Step 4: Write .gitignore**
 
 ```
 target
@@ -104,7 +104,7 @@ target
 *.farm
 ```
 
-- [ ] **Step 5: Write package.json**
+- [x] **Step 5: Write package.json**
 
 ```json
 {
@@ -151,7 +151,7 @@ target
 }
 ```
 
-- [ ] **Step 6: Write options.d.ts**
+- [x] **Step 6: Write options.d.ts**
 
 ```ts
 export interface VueJsxPluginOptions {
@@ -172,7 +172,7 @@ export interface VueJsxPluginOptions {
 }
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/
@@ -186,7 +186,7 @@ git commit -m "chore: scaffold vue-jsx plugin crate and npm package"
 - Create: `rust-plugins/vue-jsx/scripts/index.js`
 - Create: `rust-plugins/vue-jsx/scripts/index.d.ts`
 
-- [ ] **Step 1: Write scripts/func.js**
+- [x] **Step 1: Write scripts/func.js**
 
 ```js
 import binPath from "./index.js";
@@ -194,13 +194,13 @@ import binPath from "./index.js";
 export default (options) => [binPath, options];
 ```
 
-- [ ] **Step 2: Write scripts/index.js**
+- [x] **Step 2: Write scripts/index.js**
 
 Copy from `rust-plugins/svgr/scripts/index.js`, replacing `plugin-svgr` with `plugin-vue-jsx` and adjusting npm paths from `../npm/` to `../npm/`.
 
 The key replacement: all `@farmfe/plugin-svgr-*` → `@farmfe/plugin-vue-jsx-*`.
 
-- [ ] **Step 3: Write scripts/index.d.ts**
+- [x] **Step 3: Write scripts/index.d.ts**
 
 ```ts
 import type { VueJsxPluginOptions } from '../options.d';
@@ -208,7 +208,7 @@ declare const binPath: (options?: VueJsxPluginOptions) => [string, VueJsxPluginO
 export default binPath;
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/scripts/
@@ -220,7 +220,7 @@ git commit -m "chore: add vue-jsx JS bridge scripts"
 **Files:**
 - Create: `rust-plugins/vue-jsx/src/options.rs`
 
-- [ ] **Step 1: Write src/options.rs**
+- [x] **Step 1: Write src/options.rs**
 
 Port from `swc-plugin-vue-jsx/visitor/src/options.rs`. Change `swc_core::common::comments::Comments` import to use `farmfe_core::swc_common::comments::Comments` (re-exported via core). Add `farmfe_toolkit_plugin_types::swc_plugin` for the unresolved_mark if needed. Otherwise identical logic.
 
@@ -318,13 +318,13 @@ impl Visitor<'_> for RegexVisitor {
 }
 ```
 
-- [ ] **Step 2: Verify it compiles**
+- [x] **Step 2: Verify it compiles**
 
 ```bash
 cargo check -p farmfe_plugin_vue_jsx
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/src/options.rs
@@ -337,7 +337,7 @@ git commit -m "feat(vue-jsx): port options module"
 - Create: `rust-plugins/vue-jsx/src/patch_flags.rs`
 - Create: `rust-plugins/vue-jsx/src/slot_flag.rs`
 
-- [ ] **Step 1: Write src/patch_flags.rs**
+- [x] **Step 1: Write src/patch_flags.rs**
 
 Identical to swc-plugin-vue-jsx source:
 
@@ -364,7 +364,7 @@ bitflags! {
 }
 ```
 
-- [ ] **Step 2: Write src/slot_flag.rs**
+- [x] **Step 2: Write src/slot_flag.rs**
 
 ```rust
 #[derive(Clone, Debug)]
@@ -374,7 +374,7 @@ pub enum SlotFlag {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/src/patch_flags.rs rust-plugins/vue-jsx/src/slot_flag.rs
@@ -386,7 +386,7 @@ git commit -m "feat(vue-jsx): port patch_flags and slot_flag modules"
 **Files:**
 - Create: `rust-plugins/vue-jsx/src/util.rs`
 
-- [ ] **Step 1: Write src/util.rs**
+- [x] **Step 1: Write src/util.rs**
 
 Port from `swc-plugin-vue-jsx/visitor/src/util.rs`. Change imports:
 - `swc_core::common::DUMMY_SP` → `farmfe_core::swc_common::DUMMY_SP`
@@ -408,13 +408,13 @@ pub(crate) fn transform_text(text: &str) -> String { ... }
 
 For `transform_text`, the SWC version uses `Atom::from` for `splitted.map(Atom::from).collect()` directly — in Farm, `Atom` is available as `farmfe_toolkit::swc_atoms::Atom`.
 
-- [ ] **Step 2: Verify compiles**
+- [x] **Step 2: Verify compiles**
 
 ```bash
 cargo check -p farmfe_plugin_vue_jsx
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/src/util.rs
@@ -426,7 +426,7 @@ git commit -m "feat(vue-jsx): port util module"
 **Files:**
 - Create: `rust-plugins/vue-jsx/src/directive.rs`
 
-- [ ] **Step 1: Write src/directive.rs**
+- [x] **Step 1: Write src/directive.rs**
 
 Port from `swc-plugin-vue-jsx/visitor/src/directive.rs`. All code is pure AST manipulation — verbatim copy with these import changes:
 
@@ -451,13 +451,13 @@ pub(crate) fn parse_directive(
 
 The two error sites in v-text/v-html parsing become `Err("message".into())`. The caller in lib.rs will convert to `CompilationError::TransformError`.
 
-- [ ] **Step 2: Verify compiles**
+- [x] **Step 2: Verify compiles**
 
 ```bash
 cargo check -p farmfe_plugin_vue_jsx
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/src/directive.rs
@@ -469,7 +469,7 @@ git commit -m "feat(vue-jsx): port directive module"
 **Files:**
 - Create: `rust-plugins/vue-jsx/src/resolve_type.rs`
 
-- [ ] **Step 1: Write src/resolve_type.rs**
+- [x] **Step 1: Write src/resolve_type.rs**
 
 Port from `swc-plugin-vue-jsx/visitor/src/resolve_type.rs`. This module defines methods on `VueJsxTransformVisitor<C>` (`extract_props_type`, `extract_emits_type`, `build_props_type`, `resolve_type_elements`, `resolve_string_or_union_strings`, `resolve_indexed_access`, `infer_runtime_type`) plus free functions `extract_prop_name`, `try_unwrap_lit_prop_name`, `extract_type_ann_from_pat`, `inject_define_component_option`.
 
@@ -487,13 +487,13 @@ Since these are `impl<C: Comments> VueJsxTransformVisitor<C>` methods, the free 
 
 The `resolve_type` feature uses `FxHashMap` from `fnv` in the original — replace with `FnvHashMap` from `fxhash` (Farm convention). Actually no — check: the original doesn't use `FnvHashMap` directly in resolve_type.rs; it uses `IndexMap`/`IndexSet`. No change needed.
 
-- [ ] **Step 2: Verify compiles**
+- [x] **Step 2: Verify compiles**
 
 ```bash
 cargo check -p farmfe_plugin_vue_jsx
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/src/resolve_type.rs
@@ -505,7 +505,7 @@ git commit -m "feat(vue-jsx): port resolve_type module"
 **Files:**
 - Create: `rust-plugins/vue-jsx/src/lib.rs`
 
-- [ ] **Step 1: Write src/lib.rs**
+- [x] **Step 1: Write src/lib.rs**
 
 This is the main orchestration file. It replaces the SWC `#[plugin_transform]` entry point with a `FarmPlugin` transform hook.
 
@@ -710,7 +710,7 @@ impl Plugin for FarmPluginVueJsx {
 
 Key detail: `VueJsxTransformVisitor::new()` now takes `resolved_path: &str` as an additional parameter so error messages from `HANDLER.with` replacements can include the file path.
 
-- [ ] **Step 2: Verify compiles**
+- [x] **Step 2: Verify compiles**
 
 ```bash
 cargo check -p farmfe_plugin_vue_jsx
@@ -718,7 +718,7 @@ cargo check -p farmfe_plugin_vue_jsx
 
 Expect some type errors around `Comments` trait object — fix by adjusting the trait bound. The `comments` field uses `Option<&dyn Comments>` in the visitor. Actually, the original uses `Option<C>` where `C: Comments`. For Farm, since we get `SingleThreadedComments` from `parse_module`, use `Option<&SingleThreadedComments>` and update the generic bound.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/src/lib.rs
@@ -732,7 +732,7 @@ git commit -m "feat(vue-jsx): implement FarmPlugin transform hook"
 - Create: `rust-plugins/vue-jsx/tests/fixtures/*/output.js` (43 files)
 - Create: `rust-plugins/vue-jsx/tests/fixtures/*/config.json` (few files, only where present in original)
 
-- [ ] **Step 1: Copy fixtures from swc-plugin-vue-jsx**
+- [x] **Step 1: Copy fixtures from swc-plugin-vue-jsx**
 
 ```bash
 cp -r /home/bright/opensource/swc-plugin-vue-jsx/visitor/tests/fixture/* \
@@ -758,11 +758,11 @@ v-model-with-textarea, v-model-with-text-input, v-show, v-slots,
 v-slots-complex, v-text, without-jsx, without-props
 ```
 
-- [ ] **Step 2: Review output files**
+- [x] **Step 2: Review output files**
 
 Some output files may reference SWC-specific generated names. Review a sample (5-10 fixtures) to ensure the expected outputs are correct for the Farm toolchain (same SWC version, so output should match exactly).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/tests/fixtures/
@@ -774,7 +774,7 @@ git commit -m "test(vue-jsx): port 43 test fixtures from swc-plugin-vue-jsx"
 **Files:**
 - Create: `rust-plugins/vue-jsx/tests/mod.rs`
 
-- [ ] **Step 1: Write tests/mod.rs**
+- [x] **Step 1: Write tests/mod.rs**
 
 Follow the test pattern from `rust-plugins/vue/tests/mod.rs`:
 
@@ -850,14 +850,14 @@ fn ignores_non_jsx_files() {
 // ... etc for all 43 fixtures
 ```
 
-- [ ] **Step 2: Run tests to verify they fail (plugin not built yet)**
+- [x] **Step 2: Run tests to verify they fail (plugin not built yet)**
 
 ```bash
 cargo test -p farmfe_plugin_vue_jsx 2>&1 | tail -5
 ```
 Expected: compilation errors (module not found) or test failures.
 
-- [ ] **Step 3: Build the plugin and run all tests**
+- [x] **Step 3: Build the plugin and run all tests**
 
 After fixing compilation, run:
 ```bash
@@ -865,11 +865,11 @@ cargo test -p farmfe_plugin_vue_jsx
 ```
 Iterate on failures: adjust expected output for any AST representation differences.
 
-- [ ] **Step 4: Update snapshots if needed**
+- [x] **Step 4: Update snapshots if needed**
 
 If the SWC version in Farm produces slightly different output, update the fixture `output.js` files to match actual output.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add rust-plugins/vue-jsx/tests/mod.rs
@@ -882,7 +882,7 @@ git commit -m "test(vue-jsx): add integration tests for all 43 fixtures"
 - Modify: `website/docs/frameworks/vue.mdx`
 - Create: `website/docs/plugins/official-plugins/vue-jsx.mdx`
 
-- [ ] **Step 1: Update website/docs/frameworks/vue.mdx**
+- [x] **Step 1: Update website/docs/frameworks/vue.mdx**
 
 Replace the "Integrating jsx" section (lines 30-39) from:
 ```ts
@@ -897,7 +897,7 @@ export default defineConfig({ plugins: [vueJsx()] });
 
 Also remove the `:::warning` block (lines 17-19) about using Vite plugins since we now have both native Vue plugins.
 
-- [ ] **Step 2: Create website/docs/plugins/official-plugins/vue-jsx.mdx**
+- [x] **Step 2: Create website/docs/plugins/official-plugins/vue-jsx.mdx**
 
 Follow the same format as `website/docs/plugins/official-plugins/vue.mdx`:
 
@@ -972,7 +972,7 @@ pnpm add @vue/babel-helper-vue-transform-on
 ```
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add website/docs/frameworks/vue.mdx website/docs/plugins/official-plugins/vue-jsx.mdx
@@ -988,14 +988,14 @@ git commit -m "docs: add vue-jsx plugin documentation to website"
 - Modify: `examples/vue/src/views/HomeView.vue`
 - Modify: `examples/vue/e2e.spec.mjs`
 
-- [ ] **Step 1: Add @farmfe/plugin-vue-jsx to devDependencies**
+- [x] **Step 1: Add @farmfe/plugin-vue-jsx to devDependencies**
 
 In `examples/vue/package.json`, add to devDependencies:
 ```json
 "@farmfe/plugin-vue-jsx": "workspace:*"
 ```
 
-- [ ] **Step 2: Update farm.config.ts to register the jsx plugin**
+- [x] **Step 2: Update farm.config.ts to register the jsx plugin**
 
 ```ts
 import { defineConfig } from '@farmfe/core';
@@ -1025,7 +1025,7 @@ export default defineConfig({
 
 Note: `@farmfe/plugin-vue-jsx` is placed after `@farmfe/plugin-vue` because vue-jsx needs to process `.tsx`/`.jsx` files that vue doesn't handle. The load/transform order isn't critical since they operate on different module types.
 
-- [ ] **Step 3: Create src/components/Welcome.tsx**
+- [x] **Step 3: Create src/components/Welcome.tsx**
 
 A Vue JSX component that demonstrates JSX directives:
 
@@ -1065,7 +1065,7 @@ This component exercises:
 - Conditional rendering with `{expression && <jsx/>}` — verifies JSX expressions
 - `ref` reactivity
 
-- [ ] **Step 4: Import Welcome.tsx in HomeView.vue**
+- [x] **Step 4: Import Welcome.tsx in HomeView.vue**
 
 ```vue
 <script setup lang="ts">
@@ -1130,7 +1130,7 @@ Add a small style for the JSX component at the bottom of `HomeView.vue`:
 }
 ```
 
-- [ ] **Step 5: Update e2e.spec.mjs to verify the JSX component**
+- [x] **Step 5: Update e2e.spec.mjs to verify the JSX component**
 
 Add a verification section after the existing `assertVueExample` checks. Add this after the intro color check (~line 53) inside `assertVueExample`:
 
@@ -1176,7 +1176,7 @@ await withFileEdits(
 await waitForText(page, '.jsx-badge', 'Rendered by');
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add examples/vue/
