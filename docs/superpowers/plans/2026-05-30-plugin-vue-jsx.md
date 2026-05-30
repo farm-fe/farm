@@ -1185,7 +1185,7 @@ git commit -m "feat(vue-example): integrate @farmfe/plugin-vue-jsx with JSX comp
 
 ### Task 13: Build and e2e test verification
 
-- [ ] **Step 1: Build only the related Rust plugins**
+- [x] **Step 1: Build only the related Rust plugins**
 
 Build just the two plugins needed by the vue example (not the full workspace):
 
@@ -1194,7 +1194,7 @@ cd rust-plugins/vue && pnpm run build && cd ../..
 cd rust-plugins/vue-jsx && pnpm run build && cd ../..
 ```
 
-- [ ] **Step 2: Install dependencies for the vue example only**
+- [x] **Step 2: Install dependencies for the vue example only**
 
 Link the workspace packages that the example depends on without rebuilding everything:
 
@@ -1204,7 +1204,7 @@ cd examples/vue && pnpm install --filter @farmfe-examples/vue... && cd ../..
 
 This resolves `workspace:*` deps (`@farmfe/cli`, `@farmfe/core`, `@farmfe/plugin-sass`, `@farmfe/plugin-vue`, `@farmfe/plugin-vue-jsx`) from local packages without triggering full bootstrap.
 
-- [ ] **Step 3: Build the vue example**
+- [x] **Step 3: Build the vue example**
 
 ```bash
 cd examples/vue && pnpm run build
@@ -1212,7 +1212,7 @@ cd examples/vue && pnpm run build
 
 Expected: build succeeds, output in `build/` directory. Verify the JSX output file contains `createVNode` or similar Vue runtime calls.
 
-- [ ] **Step 4: Verify JSX transform in build output**
+- [x] **Step 4: Verify JSX transform in build output**
 
 ```bash
 grep -r "createVNode\|resolveComponent\|_createVNode" examples/vue/build/
@@ -1220,7 +1220,7 @@ grep -r "createVNode\|resolveComponent\|_createVNode" examples/vue/build/
 
 Expected: find Vue JSX runtime calls in the compiled output.
 
-- [ ] **Step 5: Run the Rust tests for both plugins**
+- [x] **Step 5: Run the Rust tests for both plugins**
 
 ```bash
 cargo test -p farmfe_plugin_vue
@@ -1229,7 +1229,7 @@ cargo test -p farmfe_plugin_vue_jsx
 
 Expected: all tests pass.
 
-- [ ] **Step 6: Run the e2e tests for the vue example**
+- [x] **Step 6: Run the e2e tests for the vue example**
 
 ```bash
 pnpm run test-e2e -- examples/vue/e2e.spec.mjs
@@ -1237,7 +1237,7 @@ pnpm run test-e2e -- examples/vue/e2e.spec.mjs
 
 Expected: all e2e tests pass, including JSX component rendering, JSX count increment, v-show directive, and JSX HMR.
 
-- [ ] **Step 7: Run full CI gate**
+- [x] **Step 7: Run full CI gate**
 
 ```bash
 cargo check --all --all-targets
@@ -1247,7 +1247,7 @@ cargo test --profile ci-test
 
 Expected: no new errors or warnings.
 
-- [ ] **Step 8: Commit final verification**
+- [x] **Step 8: Commit final verification**
 
 ```bash
 git add .

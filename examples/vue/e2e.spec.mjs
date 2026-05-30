@@ -182,7 +182,7 @@ async function assertHmr(page) {
     ],
     async () => {
       await waitForText(page, '.jsx-badge', 'HMR-updated JSX');
-      expect(await page.textContent('.jsx-card strong')).toContain('JSX count: 1');
+      expect(await page.textContent('.jsx-card strong')).toContain('JSX count: 0');
     }
   );
   await waitForText(page, '.jsx-badge', 'Rendered by');

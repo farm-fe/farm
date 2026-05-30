@@ -13,7 +13,9 @@ const { count } = storeToRefs(counter);
   </article>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+$accent: #40916c;
+
 .card {
   display: flex;
   align-items: center;
@@ -21,14 +23,14 @@ const { count } = storeToRefs(counter);
   gap: 1rem;
   padding: 1rem;
   border-radius: 12px;
-  background: rgba(64, 145, 108, 0.12);
-}
+  background: rgba($accent, 0.12);
 
-.card button {
-  border: 0;
-  border-radius: 999px;
-  padding: 0.5rem 0.85rem;
-  color: white;
-  background: #40916c;
+  button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.5rem 0.85rem;
+    color: white;
+    background: $accent;
+  }
 }
 </style>

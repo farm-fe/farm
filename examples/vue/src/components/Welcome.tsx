@@ -15,7 +15,7 @@ export default defineComponent({
           Rendered by <code>@farmfe/plugin-vue-jsx</code>
         </p>
         <div class="jsx-card">
-          <strong>JSX count: {count.value}</strong>
+          <strong>JSX count:{` ${count.value}`}</strong>
           <button onClick={increment}>+1</button>
           <button
             v-show={show.value}
