@@ -15,20 +15,15 @@ export default defineConfig({
     script: {
       plugins: [
         {
-          name: '@swc/plugin-emotion',
-          options: {
-            autoLabel: 'always',
-            labelFormat: 'farm-emotion-[local]',
-          },
+          name: '@swc/plugin-styled-jsx',
+          options: {},
           filters: {
             moduleTypes: ['tsx'],
           },
         },
       ],
     },
-    sourcemap: false
-    // treeShaking: true,
-    // minify: true,
+    sourcemap: false,
   },
-  plugins: [['@farmfe/plugin-react', { importSource: '@emotion/react' }]],
+  plugins: ['@farmfe/plugin-react'],
 });
