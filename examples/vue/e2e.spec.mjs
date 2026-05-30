@@ -8,6 +8,7 @@ const projectPath = dirname(fileURLToPath(import.meta.url));
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const homeViewPath = join(projectPath, 'src/views/HomeView.vue');
 const counterCardPath = join(projectPath, 'src/components/CounterCard.vue');
+const welcomePath = join(projectPath, 'src/components/Welcome.tsx');
 const persistentCachePath = join(projectPath, 'node_modules/.farm/vue-cache');
 const hmrTimeout = Number(process.env.FARM_E2E_HMR_TIMEOUT ?? 30_000);
 const hmrPollInterval = 100;
@@ -57,6 +58,23 @@ async function assertVueExample(page, requestIssues) {
 
   await page.locator('.card button').click();
   expect(await page.textContent('.card strong')).toContain('Pinia count: 1');
+  // JSX component verification
+  const jsxBadge = await page.$eval('.jsx-badge', (el) => el.textContent);
+  expect(jsxBadge).toContain('@farmfe/plugin-vue-jsx');
+
+  const jsxCount = await page.$eval('.jsx-card strong', (el) => el.textContent);
+  expect(jsxCount).toContain('JSX count: 0');
+
+  await page.locator('.jsx-card button').first().click();
+  await delay(200);
+  const updatedCount = await page.$eval('.jsx-card strong', (el) => el.textContent);
+  expect(updatedCount).toContain('JSX count: 1');
+
+  await page.locator('.jsx-card button').nth(1).click();
+  await delay(200);
+  const revealText = await page.$eval('.jsx-reveal', (el) => el.textContent);
+  expect(revealText).toContain('v-show directive works!');
+
   await page.locator('a[href="#/about"]').click();
   await page.waitForSelector('.about', { timeout: 10_000 });
   expect(await page.textContent('.about')).toContain('router navigation');
@@ -152,6 +170,22 @@ async function assertHmr(page) {
     }
   );
   await waitForStyle(page, '.intro', 'color', 'rgb(45, 106, 79)');
+
+  // JSX HMR test
+  await withFileEdits(
+    [
+      {
+        file: welcomePath,
+        from: 'Rendered by',
+        to: 'HMR-updated JSX powered by'
+      }
+    ],
+    async () => {
+      await waitForText(page, '.jsx-badge', 'HMR-updated JSX');
+      expect(await page.textContent('.jsx-card strong')).toContain('JSX count: 1');
+    }
+  );
+  await waitForText(page, '.jsx-badge', 'Rendered by');
 
   await withFileEdits(
     [

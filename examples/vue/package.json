@@ -19,6 +19,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/plugin-sass": "workspace:*",
-    "@farmfe/plugin-vue": "workspace:*"
+    "@farmfe/plugin-vue": "workspace:*",
+    "@farmfe/plugin-vue-jsx": "workspace:*"
   }
 }
