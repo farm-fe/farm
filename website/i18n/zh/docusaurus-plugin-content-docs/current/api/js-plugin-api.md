@@ -503,7 +503,7 @@ export default function farmSassPlugin(
 * `filters.moduleTypes` 不是 ** `regex`，它必须与 `ModuleType` 完全匹配，如 `css`、`js`、`tsx` 等。
 
 :::note
-`transform` 钩子是**内容到内容**。 有一个类似的钩子叫做 `process_module` ， `process_module` 是**ast 到 ast**。 由于性能问题，Js 插件不支持 `process_module` 钩子，如果您想要 **ast 到 ast** 转换，请尝试使用 [`Rust Plugin`](/docs/plugins/writing-plugins/rust-plugin)。
+`transform` 钩子是**内容到内容**转换。JS 插件也暴露 `processModule` 和 `freezeModule` 等模块级钩子；不过需要大量 AST 操作或自定义模块图行为时，通常更适合使用 [`Rust Plugin`](/docs/plugins/writing-plugins/rust-plugin)。
 :::
 
 ### buildEnd

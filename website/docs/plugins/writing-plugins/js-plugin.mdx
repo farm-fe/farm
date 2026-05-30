@@ -185,11 +185,11 @@ or you can create a plugin directly by running the following command:
           <CodeBlock>pnpm create farm-plugin my-farm-plugin --type js</CodeBlock>
               </TabItem>
           <TabItem value="npm" label="npm">
-              <CodeBlock>npm create my-farm-plugin --type js</CodeBlock>
+              <CodeBlock>npm create farm-plugin@latest my-farm-plugin -- --type js</CodeBlock>
               </TabItem>
 
   <TabItem value="yarn" label="yarn">
-          <CodeBlock>yarn create my-farm-plugin --type js</CodeBlock>
+          <CodeBlock>yarn create farm-plugin my-farm-plugin --type js</CodeBlock>
               </TabItem>
           </Tabs>
 Above command will create new js plugin with name `my-farm-plugin` in the current directory. `--type` can be `rust` or `js`
