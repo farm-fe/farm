@@ -241,10 +241,8 @@ export default defineConfig({
 :::
 
 ## 使用 SWC 插件
-Swc Plugin 也可以直接在Farm中使用，配置`compilation.script.plugins`来添加SWC插件，例如：
+Swc Plugin 也可以直接在 Farm 中使用，配置 `compilation.script.plugins` 来添加 SWC 插件。例如下面使用 `swc-plugin-vue-jsx` 编译 Vue JSX；如果需要 Vue SFC 支持，请在顶层 `plugins` 中注册当前的 Rust 插件 `@farmfe/plugin-vue`：
 ```ts
-import jsPluginVue from '@farmfe/js-plugin-vue';
-
 export default defineConfig({
    compilation: {
      script: {
@@ -264,7 +262,7 @@ export default defineConfig({
        }]
      }
    },
-   plugins: [jsPluginVue()],
+   plugins: ["@farmfe/plugin-vue"],
 });
 ```
 

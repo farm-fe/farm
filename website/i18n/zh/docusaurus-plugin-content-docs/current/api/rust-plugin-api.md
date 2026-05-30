@@ -733,12 +733,12 @@ fn render_start(
 `render_start` 仅在第一次编译时调用一次。 `HMR` 或 `Lazy Compilation` 不会触发 `render_start` 钩子。
 :::
 
-## render_resource_pot_modules
+## render_resource_pot
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
 ```rust
-fn render_resource_pot_modules(
+fn render_resource_pot(
   &self,
   _resource_pot: &ResourcePot,
   _context: &Arc<CompilationContext>,

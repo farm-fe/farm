@@ -22,5 +22,5 @@ All options are as below:
 * **`all-inline`**: Generate source maps for all files, and inline source maps into the product, do not generate separate files
 
 :::note
-For plugin authors, if you transform the code in [`transform hook`](/docs/api/rust-plugin-api#transform) or [`renderResourcePot hook`](/docs/api/rust-plugin-api#render_resource_pot), you should return the source map of your transformation to ensure source map is correct. Farm maintains a **source map chain** of plugins to trace the final resources back to the real original code.
+For plugin authors, if you transform code in the [`transform` hook](/docs/api/rust-plugin-api#transform), [`render_resource_pot` hook](/docs/api/rust-plugin-api#render_resource_pot), or [`process_rendered_resource_pot` hook](/docs/api/rust-plugin-api#process_rendered_resource_pot), return the source map of your transformation to keep source maps correct. Farm maintains a **source map chain** of plugins to trace the final resources back to the real original code.
 :::

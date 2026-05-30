@@ -220,6 +220,19 @@ impl UtilityRegistry {
     // List style position
     m.insert("list-inside", vec![("list-style-position", "inside")]);
     m.insert("list-outside", vec![("list-style-position", "outside")]);
+    m.insert("list-disc", vec![("list-style-type", "disc")]);
+    m.insert("list-decimal", vec![("list-style-type", "decimal")]);
+    m.insert("list-none", vec![("list-style-type", "none")]);
+
+    // Grid auto-flow
+    m.insert("grid-flow-row", vec![("grid-auto-flow", "row")]);
+    m.insert("grid-flow-col", vec![("grid-auto-flow", "column")]);
+    m.insert("grid-flow-dense", vec![("grid-auto-flow", "dense")]);
+    m.insert("grid-flow-row-dense", vec![("grid-auto-flow", "row dense")]);
+    m.insert(
+      "grid-flow-col-dense",
+      vec![("grid-auto-flow", "column dense")],
+    );
 
     // Line clamp / truncate
     m.insert(
@@ -362,6 +375,25 @@ impl UtilityRegistry {
     f.insert("grow", handle_grow);
     f.insert("shrink", handle_shrink);
     f.insert("basis", handle_basis);
+
+    // Lower-frequency layout/text utilities
+    f.insert("line-clamp", handle_line_clamp);
+    f.insert("columns", handle_columns);
+    f.insert("aspect", handle_aspect);
+
+    // Grid placement / tracks
+    f.insert("col", handle_col);
+    f.insert("col-span", handle_col_span);
+    f.insert("col-start", handle_col_start);
+    f.insert("col-end", handle_col_end);
+    f.insert("row", handle_row);
+    f.insert("row-span", handle_row_span);
+    f.insert("row-start", handle_row_start);
+    f.insert("row-end", handle_row_end);
+    f.insert("auto-cols", handle_auto_cols);
+    f.insert("auto-rows", handle_auto_rows);
+    f.insert("grid-cols", handle_grid_cols);
+    f.insert("grid-rows", handle_grid_rows);
 
     Self {
       static_utilities: m,
@@ -699,6 +731,10 @@ fn parse_fraction(v: &str) -> Option<(f64, f64)> {
 
 fn is_numeric(v: &str) -> bool {
   !v.is_empty() && v.parse::<f64>().is_ok()
+}
+
+fn is_positive_integer(v: &str) -> bool {
+  v.parse::<u32>().is_ok_and(|n| n > 0)
 }
 
 fn trim_float(n: f64) -> String {
@@ -1211,4 +1247,215 @@ fn handle_shrink(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)
 // Flex basis (sizing scale)
 fn handle_basis(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
   sizing_decl(c, t, &["flex-basis"])
+}
+
+// Line clamp
+fn handle_line_clamp(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)>> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(line_clamp_decls(arb));
+  }
+  let v = c.utility_value.as_deref()?;
+  match v {
+    "none" => Some(vec![
+      ("overflow".into(), "visible".into()),
+      ("display".into(), "block".into()),
+      ("-webkit-box-orient".into(), "horizontal".into()),
+      ("-webkit-line-clamp".into(), "unset".into()),
+    ]),
+    _ if is_numeric(v) => Some(line_clamp_decls(v)),
+    _ => None,
+  }
+}
+
+fn line_clamp_decls(value: &str) -> Vec<(String, String)> {
+  vec![
+    ("overflow".into(), "hidden".into()),
+    ("display".into(), "-webkit-box".into()),
+    ("-webkit-box-orient".into(), "vertical".into()),
+    ("-webkit-line-clamp".into(), value.to_string()),
+  ]
+}
+
+// Columns
+fn handle_columns(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(vec![("columns".into(), arb.clone())]);
+  }
+  let v = c.utility_value.as_deref()?;
+  let columns = match v {
+    "auto" => "auto".to_string(),
+    _ if is_numeric(v) => v.to_string(),
+    _ => t.resolve(Some(v), &["--container"], ThemeOptions::NONE)?,
+  };
+  Some(vec![("columns".into(), columns)])
+}
+
+// Aspect ratio
+fn handle_aspect(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(vec![("aspect-ratio".into(), arb.clone())]);
+  }
+  let v = c.utility_value.as_deref()?;
+  let aspect = match v {
+    "auto" => "auto".to_string(),
+    "square" => "1 / 1".to_string(),
+    _ => t.resolve(Some(v), &["--aspect"], ThemeOptions::NONE)?,
+  };
+  Some(vec![("aspect-ratio".into(), aspect)])
+}
+
+// Grid placement / tracks
+fn resolve_grid_line(
+  c: &ParsedCandidate,
+  t: &Theme,
+  theme_key: &str,
+  auto_value: bool,
+) -> Option<String> {
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(format_grid_line_value(arb));
+  }
+  let v = c.utility_value.as_deref()?;
+  if let Some(resolved) = t.resolve(Some(v), &[theme_key], ThemeOptions::NONE) {
+    return Some(resolved);
+  }
+  match v {
+    "auto" if auto_value => Some("auto".into()),
+    _ if is_positive_integer(v) => Some(maybe_neg(v.to_string(), c.negative)),
+    _ => None,
+  }
+}
+
+fn format_grid_line_value(value: &str) -> String {
+  value
+    .split('/')
+    .map(str::trim)
+    .collect::<Vec<_>>()
+    .join(" / ")
+}
+
+fn resolve_grid_span(c: &ParsedCandidate) -> Option<String> {
+  if c.negative {
+    return None;
+  }
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(format!("span {} / span {}", arb, arb));
+  }
+  let v = c.utility_value.as_deref()?;
+  match v {
+    "full" => Some("1 / -1".into()),
+    _ if is_positive_integer(v) => Some(format!("span {} / span {}", v, v)),
+    _ => None,
+  }
+}
+
+fn grid_decl(
+  c: &ParsedCandidate,
+  t: &Theme,
+  property: &str,
+  theme_key: &str,
+  auto_value: bool,
+) -> Option<Vec<(String, String)>> {
+  Some(vec![(
+    property.into(),
+    resolve_grid_line(c, t, theme_key, auto_value)?,
+  )])
+}
+
+fn handle_col(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  grid_decl(c, t, "grid-column", "--grid-column", true)
+}
+
+fn handle_col_span(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)>> {
+  Some(vec![("grid-column".into(), resolve_grid_span(c)?)])
+}
+
+fn handle_col_start(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  grid_decl(c, t, "grid-column-start", "--grid-column-start", true)
+}
+
+fn handle_col_end(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  grid_decl(c, t, "grid-column-end", "--grid-column-end", true)
+}
+
+fn handle_row(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  grid_decl(c, t, "grid-row", "--grid-row", true)
+}
+
+fn handle_row_span(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)>> {
+  Some(vec![("grid-row".into(), resolve_grid_span(c)?)])
+}
+
+fn handle_row_start(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  grid_decl(c, t, "grid-row-start", "--grid-row-start", true)
+}
+
+fn handle_row_end(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  grid_decl(c, t, "grid-row-end", "--grid-row-end", true)
+}
+
+fn resolve_auto_track(c: &ParsedCandidate, t: &Theme, theme_key: &str) -> Option<String> {
+  if c.negative {
+    return None;
+  }
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(arb.clone());
+  }
+  let v = c.utility_value.as_deref()?;
+  if let Some(resolved) = t.resolve(Some(v), &[theme_key], ThemeOptions::NONE) {
+    return Some(resolved);
+  }
+  match v {
+    "auto" => Some("auto".into()),
+    "min" => Some("min-content".into()),
+    "max" => Some("max-content".into()),
+    "fr" => Some("minmax(0, 1fr)".into()),
+    _ => None,
+  }
+}
+
+fn handle_auto_cols(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  Some(vec![(
+    "grid-auto-columns".into(),
+    resolve_auto_track(c, t, "--grid-auto-columns")?,
+  )])
+}
+
+fn handle_auto_rows(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  Some(vec![(
+    "grid-auto-rows".into(),
+    resolve_auto_track(c, t, "--grid-auto-rows")?,
+  )])
+}
+
+fn resolve_grid_template(c: &ParsedCandidate, t: &Theme, theme_key: &str) -> Option<String> {
+  if c.negative {
+    return None;
+  }
+  if let Some(arb) = &c.arbitrary_value {
+    return Some(arb.clone());
+  }
+  let v = c.utility_value.as_deref()?;
+  if let Some(resolved) = t.resolve(Some(v), &[theme_key], ThemeOptions::NONE) {
+    return Some(resolved);
+  }
+  match v {
+    "none" => Some("none".into()),
+    "subgrid" => Some("subgrid".into()),
+    _ if is_positive_integer(v) => Some(format!("repeat({}, minmax(0, 1fr))", v)),
+    _ => None,
+  }
+}
+
+fn handle_grid_cols(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  Some(vec![(
+    "grid-template-columns".into(),
+    resolve_grid_template(c, t, "--grid-template-columns")?,
+  )])
+}
+
+fn handle_grid_rows(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  Some(vec![(
+    "grid-template-rows".into(),
+    resolve_grid_template(c, t, "--grid-template-rows")?,
+  )])
 }

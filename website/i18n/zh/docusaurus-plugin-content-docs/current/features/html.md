@@ -43,7 +43,7 @@ Farm 在编译时会将这些 `script` 和 `link` 转化为最终的生产可用
 `script` 和 `link` 可以引用 farm 支持的任何模块类型，例如，`js`、`jsx`、`ts`、`tsx` 或插件支持的其他模块类型。 您可以根据需要使用任意数量的 `script` 或 `link`。
 :::
 
-## 多页面应用程序 - MPA
+## 多页面应用程序 - MPA {#multi-page-app}
 
 如果您正在构建多页面应用程序，只需配置多个 html，例如：
 
