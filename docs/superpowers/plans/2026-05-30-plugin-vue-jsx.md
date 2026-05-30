@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Port swc-plugin-vue-jsx to a native Farm Rust plugin that transforms Vue JSX/TSX at build time.
+**Goal:** Port swc-plugin-vue-jsx to a native Farm Rust plugin, integrate it into the existing Vue example alongside @farmfe/plugin-vue, and verify both plugins work together with build + e2e tests.
 
-**Architecture:** Standalone cdylib Rust plugin at `rust-plugins/vue-jsx/` implementing only the `transform` hook. Parses source with `farmfe_toolkit::script::parse_module`, runs the ported `VueJsxTransformVisitor` on the SWC AST, codegens back with `farmfe_toolkit::script::codegen_module`. All 7 options ported.
+**Architecture:** Standalone cdylib Rust plugin at `rust-plugins/vue-jsx/` implementing only the `transform` hook. Parses source with `farmfe_toolkit::script::parse_module`, runs the ported `VueJsxTransformVisitor` on the SWC AST, codegens back with `farmfe_toolkit::script::codegen_module`. All 7 options ported. Integrated into `examples/vue/` to validate co-existence with `@farmfe/plugin-vue`.
 
-**Tech Stack:** Rust (edition 2021), swc_ecma_ast via farmfe_core/toolkit re-exports, NAPI-RS/npm for distribution.
+**Tech Stack:** Rust (edition 2021), swc_ecma_ast via farmfe_core/toolkit re-exports, NAPI-RS/npm for distribution, Vue 3 + TSX for example integration.
 
 ---
 
@@ -35,6 +35,11 @@
 | `rust-plugins/vue-jsx/tests/fixtures/*/config.json` | Create | Port fixture configs |
 | `website/docs/frameworks/vue.mdx` | Modify | Replace Vite JSX plugin ref |
 | `website/docs/plugins/official-plugins/vue-jsx.mdx` | Create | Plugin documentation page |
+| `examples/vue/package.json` | Modify | Add @farmfe/plugin-vue-jsx dep |
+| `examples/vue/farm.config.ts` | Modify | Register vue-jsx plugin |
+| `examples/vue/src/components/Welcome.tsx` | Create | Vue JSX test component |
+| `examples/vue/src/views/HomeView.vue` | Modify | Import Welcome.tsx |
+| `examples/vue/e2e.spec.mjs` | Modify | Add JSX component + HMR assertions |
 
 ---
 
@@ -974,57 +979,273 @@ git add website/docs/frameworks/vue.mdx website/docs/plugins/official-plugins/vu
 git commit -m "docs: add vue-jsx plugin documentation to website"
 ```
 
-### Task 12: Build and verify end-to-end
+### Task 12: Integrate vue-jsx plugin into examples/vue
 
-- [ ] **Step 1: Build the plugin**
+**Files:**
+- Modify: `examples/vue/package.json`
+- Modify: `examples/vue/farm.config.ts`
+- Create: `examples/vue/src/components/Welcome.tsx`
+- Modify: `examples/vue/src/views/HomeView.vue`
+- Modify: `examples/vue/e2e.spec.mjs`
 
-```bash
-cd rust-plugins/vue-jsx && pnpm run build
+- [ ] **Step 1: Add @farmfe/plugin-vue-jsx to devDependencies**
+
+In `examples/vue/package.json`, add to devDependencies:
+```json
+"@farmfe/plugin-vue-jsx": "workspace:*"
 ```
 
-Expected: `farm-plugin-vue-jsx.linux-x64-gnu.node` created in the crate root.
+- [ ] **Step 2: Update farm.config.ts to register the jsx plugin**
 
-- [ ] **Step 2: Run Rust tests**
+```ts
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  compilation: {
+    input: {
+      index: './index.html',
+    },
+    output: {
+      path: './build',
+    },
+    persistentCache: {
+      cacheDir: 'node_modules/.farm/vue-cache',
+    },
+  },
+  server: {
+    hmr: true,
+  },
+  plugins: [
+    '@farmfe/plugin-vue',
+    '@farmfe/plugin-vue-jsx',
+    '@farmfe/plugin-sass',
+  ],
+});
+```
+
+Note: `@farmfe/plugin-vue-jsx` is placed after `@farmfe/plugin-vue` because vue-jsx needs to process `.tsx`/`.jsx` files that vue doesn't handle. The load/transform order isn't critical since they operate on different module types.
+
+- [ ] **Step 3: Create src/components/Welcome.tsx**
+
+A Vue JSX component that demonstrates JSX directives:
+
+```tsx
+import { defineComponent, ref } from 'vue';
+
+export default defineComponent({
+  name: 'Welcome',
+  setup() {
+    const count = ref(0);
+    const increment = () => { count.value++; };
+    const show = ref(true);
+
+    return () => (
+      <div class="welcome-jsx">
+        <p class="jsx-badge">
+          Rendered by <code>@farmfe/plugin-vue-jsx</code>
+        </p>
+        <div class="jsx-card">
+          <strong>JSX count: {count.value}</strong>
+          <button onClick={increment}>+1</button>
+          <button v-show={show.value} onClick={() => { show.value = false; }}>
+            Hide me
+          </button>
+          {!show.value && <p class="jsx-reveal">v-show directive works!</p>}
+        </div>
+      </div>
+    );
+  },
+});
+```
+
+This component exercises:
+- Basic JSX rendering
+- Event handling (`onClick`)
+- Vue directive (`v-show`) — verifies the transform works
+- Conditional rendering with `{expression && <jsx/>}` — verifies JSX expressions
+- `ref` reactivity
+
+- [ ] **Step 4: Import Welcome.tsx in HomeView.vue**
+
+```vue
+<script setup lang="ts">
+import CounterCard from '../components/CounterCard.vue';
+import Welcome from '../components/Welcome';
+</script>
+
+<template>
+  <section>
+    <p class="intro">This example uses the native Rust <code>@farmfe/plugin-vue</code>.</p>
+    <Welcome />
+    <CounterCard />
+  </section>
+</template>
+
+<style scoped>
+.intro {
+  color: #2d6a4f;
+}
+</style>
+```
+
+Add a small style for the JSX component at the bottom of `HomeView.vue`:
+
+```css
+:deep(.welcome-jsx) {
+  margin: 1rem 0;
+}
+
+:deep(.jsx-badge) {
+  color: #1b4332;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+:deep(.jsx-card) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #95d5b2;
+  border-radius: 8px;
+  background: rgba(45, 106, 79, 0.08);
+  margin-bottom: 1rem;
+}
+
+:deep(.jsx-card button) {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #40916c;
+  border-radius: 4px;
+  background: #40916c;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+:deep(.jsx-reveal) {
+  width: 100%;
+  color: #2d6a4f;
+  font-weight: 500;
+}
+```
+
+- [ ] **Step 5: Update e2e.spec.mjs to verify the JSX component**
+
+Add a verification section after the existing `assertVueExample` checks. Add this after the intro color check (~line 53) inside `assertVueExample`:
+
+```js
+// JSX component verification
+const jsxBadge = await page.$eval('.jsx-badge', (el) => el.textContent);
+expect(jsxBadge).toContain('@farmfe/plugin-vue-jsx');
+
+const jsxCount = await page.$eval('.jsx-card strong', (el) => el.textContent);
+expect(jsxCount).toContain('JSX count: 0');
+
+// Click the +1 button in JSX card
+const jsxButtons = await page.$$('.jsx-card button');
+await jsxButtons[0].click();
+await delay(200);
+const updatedCount = await page.$eval('.jsx-card strong', (el) => el.textContent);
+expect(updatedCount).toContain('JSX count: 1');
+
+// Test v-show directive: click the hide button
+await jsxButtons[1].click();
+await delay(200);
+const revealText = await page.$eval('.jsx-reveal', (el) => el.textContent);
+expect(revealText).toContain('v-show directive works!');
+```
+
+Also add an HMR test for the JSX component. After the existing HMR tests in `assertHmr` (~line 167), add:
+
+```js
+const welcomePath = join(projectPath, 'src/components/Welcome.tsx');
+await withFileEdits(
+  [
+    {
+      file: welcomePath,
+      from: 'Rendered by',
+      to: 'HMR-updated JSX powered by'
+    }
+  ],
+  async () => {
+    await waitForText(page, '.jsx-badge', 'HMR-updated JSX');
+    expect(await page.textContent('.jsx-card strong')).toContain('JSX count: 1');
+  }
+);
+await waitForText(page, '.jsx-badge', 'Rendered by');
+```
+
+- [ ] **Step 6: Commit**
 
 ```bash
+git add examples/vue/
+git commit -m "feat(vue-example): integrate @farmfe/plugin-vue-jsx with JSX component and e2e tests"
+```
+
+### Task 13: Build and e2e test verification
+
+- [ ] **Step 1: Rebuild both plugins**
+
+```bash
+cd rust-plugins/vue && pnpm run build && cd ../..
+cd rust-plugins/vue-jsx && pnpm run build && cd ../..
+```
+
+- [ ] **Step 2: Bootstrap to link workspace packages**
+
+```bash
+pnpm bootstrap
+```
+
+- [ ] **Step 3: Build the vue example**
+
+```bash
+cd examples/vue && pnpm run build
+```
+
+Expected: build succeeds, output in `build/` directory. Verify the JSX output file contains `createVNode` or similar Vue runtime calls.
+
+- [ ] **Step 4: Verify JSX transform in build output**
+
+```bash
+grep -r "createVNode\|resolveComponent\|_createVNode" examples/vue/build/
+```
+
+Expected: find Vue JSX runtime calls in the compiled output.
+
+- [ ] **Step 5: Run the Rust tests for both plugins**
+
+```bash
+cargo test -p farmfe_plugin_vue
 cargo test -p farmfe_plugin_vue_jsx
 ```
 
-Expected: all 44+ tests pass (1 ignore-non-jsx + 43 fixtures).
+Expected: all tests pass.
 
-- [ ] **Step 3: Run cargo check on full workspace**
+- [ ] **Step 6: Run the e2e tests for the vue example**
+
+```bash
+pnpm run test-e2e -- examples/vue/e2e.spec.mjs
+```
+
+Expected: all e2e tests pass, including JSX component rendering, JSX count increment, v-show directive, and JSX HMR.
+
+- [ ] **Step 7: Run full CI gate**
 
 ```bash
 cargo check --all --all-targets
-```
-
-Expected: no new errors introduced.
-
-- [ ] **Step 4: Run cargo clippy**
-
-```bash
 cargo clippy --all --all-targets
-```
-
-Expected: no new warnings.
-
-- [ ] **Step 5: Run cargo test full suite**
-
-```bash
 cargo test --profile ci-test
 ```
 
-Expected: all existing tests still pass.
+Expected: no new errors or warnings.
 
-- [ ] **Step 6: Commit and push**
+- [ ] **Step 8: Commit final verification**
 
 ```bash
 git add .
-git commit -m "feat(vue-jsx): complete @farmfe/plugin-vue-jsx migration
-
-Port swc-plugin-vue-jsx to native Farm Rust plugin. Supports all 7
-options including resolve_type and transform_on. Includes 43 ported
-test fixtures and website documentation.
+git commit -m "chore: verify vue+jsx plugins integration with build and e2e
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
