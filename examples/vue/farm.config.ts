@@ -17,7 +17,6 @@ export default defineConfig({
   },
   plugins: [
     '@farmfe/plugin-vue',
-    '@farmfe/plugin-vue-jsx',
     '@farmfe/plugin-sass',
   ],
 });
