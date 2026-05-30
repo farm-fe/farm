@@ -20,7 +20,7 @@ export default defineConfig({
 
 ## Output Formats
 
-In library mode you can produce multiple module formats in a single build by passing an array to [`output.format`](/docs/config/compilation-options#outputformat):
+In library mode you can produce multiple module formats in a single build by passing an array to [`output.format`](/docs/config/compilation-options#output-format):
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -40,26 +40,15 @@ Supported values: `"esm"`, `"cjs"`, `"umd"`, `"iife"`, `"system"`, `"amd"`.
 
 ## Bundle Types
 
-Use [`output.libraryBundleType`](/docs/config/compilation-options#output-librarybundletype) to control how modules are grouped into output files. Three modes are available:
+Farm's compiler has three library bundle strategies, described in [`output.libraryBundleType`](/docs/config/compilation-options#output-librarybundletype):
+
+:::caution
+The current `@farmfe/core` TypeScript `UserConfig` and validation schema do not expose `output.libraryBundleType` for `farm.config.ts`. The modes below describe compiler behavior, not currently supported JavaScript config fields.
+:::
 
 ### `single-bundle` (default)
 
 All source modules are merged into **one output file** per format. This is the simplest option and is ideal for small libraries or when you want consumers to get a single file.
-
-```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
-
-export default defineConfig({
-  compilation: {
-    input: { index: './src/index.ts' },
-    output: {
-      targetEnv: 'library',
-      format: ['esm', 'cjs'],
-      libraryBundleType: 'single-bundle',
-    },
-  },
-});
-```
 
 :::note
 `single-bundle` supports only a single entry. If you configure multiple entries, Farm will throw an error.
@@ -69,42 +58,9 @@ export default defineConfig({
 
 Each entry produces its own output bundle. Internal modules that are shared between entries are extracted into separate shared chunks, similar to code-splitting for applications.
 
-```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
-
-export default defineConfig({
-  compilation: {
-    input: {
-      index: './src/index.ts',
-      utils: './src/utils.ts',
-    },
-    output: {
-      targetEnv: 'library',
-      format: ['esm', 'cjs'],
-      libraryBundleType: 'multiple-bundle',
-    },
-  },
-});
-```
-
 ### `bundle-less`
 
 Each source file is compiled independently and emitted as its own output file, **preserving the original directory structure**. This is the recommended approach for component libraries because it allows consumers to import individual modules and benefit from tree-shaking.
-
-```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
-
-export default defineConfig({
-  compilation: {
-    input: { index: './src/index.ts' },
-    output: {
-      targetEnv: 'library',
-      format: ['esm', 'cjs'],
-      libraryBundleType: 'bundle-less',
-    },
-  },
-});
-```
 
 With `bundle-less`, the output mirrors the source structure:
 
@@ -136,7 +92,7 @@ For most UI component libraries, `bundle-less` is the preferred choice. It produ
 
 ## Externals
 
-Mark dependencies that should not be bundled into the library output using [`compilation.externals`](/docs/config/compilation-options#externals):
+Mark dependencies that should not be bundled into the library output using [`compilation.external`](/docs/config/compilation-options#externals):
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -148,7 +104,7 @@ export default defineConfig({
       targetEnv: 'library',
       format: ['esm', 'cjs'],
     },
-    externals: ['react', 'react-dom'],
+    external: ['react', 'react-dom'],
   },
 });
 ```
@@ -170,14 +126,14 @@ export default defineConfig({
         'react-dom': 'ReactDOM',
       },
     },
-    externals: ['react', 'react-dom'],
+    external: ['react', 'react-dom'],
   },
 });
 ```
 
 ## Output Filename
 
-Customize output filenames with [`output.entryFilename`](/docs/config/compilation-options#outputentryfilename) and [`output.filename`](/docs/config/compilation-options#outputfilename). Template tokens like `[entryName]`, `[ext]`, `[hash]`, and `[contentHash]` are supported:
+Customize output filenames with [`output.entryFilename`](/docs/config/compilation-options#outputentryfilename) and [`output.filename`](/docs/config/compilation-options#outputfilename). Template tokens like `[entryName]`, `[resourceName]`, `[ext]`, and `[contentHash]` are supported:
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';

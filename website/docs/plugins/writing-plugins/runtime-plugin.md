@@ -5,13 +5,13 @@ A Farm runtime plugin is a pure javascript object that define a set of hooks to 
 /**
  * HMR client as a Farm Runtime Plugin
  */
-import type { Plugin } from '@farmfe/runtime';
+import type { FarmRuntimePlugin } from '@farmfe/runtime';
 import { createHotContext } from './hot-module-state';
 import { HmrClient } from './hmr-client';
 
 let hmrClient: HmrClient;
 // export a Farm runtime plugin object
-export default <Plugin>{
+export default <FarmRuntimePlugin>{
   name: 'farm-runtime-hmr-client-plugin',
   // define hooks
   bootstrap(moduleSystem) {
@@ -26,7 +26,7 @@ export default <Plugin>{
 ```
 
 Above it's a runtime plugin that supports HMR for Farm. Essentials:
-* A runtime plugin entry file should **`export`** a default object that defines a set of hooks. e.g `export default <Plugin>{/*...*/}`
+* A runtime plugin entry file should **`export`** a default object that defines a set of hooks. e.g `export default <FarmRuntimePlugin>{/*...*/}`
 * `name` is required to identify the plugin, make sure `name` is unique
 * A `hook` is a method that defined in the exported object.
 
@@ -102,9 +102,9 @@ export default defineConfig({
 As we mentioned above, a Farm runtime plugin is a pure javascript object that define a set of hooks, you can just create a ts file like:
 
 ```ts title="./plugins/runtime.ts"
-import type { Plugin } from '@farmfe/runtime';
+import type { FarmRuntimePlugin } from '@farmfe/runtime';
 
-export default <Plugin> {
+export default <FarmRuntimePlugin> {
   name: 'my-plugin',
   // ...
 }
@@ -113,9 +113,9 @@ export default <Plugin> {
 Then define [hooks](#runtime-plugin-hooks) you need in the exported object:
 
 ```ts title="./plugins/runtime.ts"
-import type { Plugin } from '@farmfe/runtime';
+import type { FarmRuntimePlugin } from '@farmfe/runtime';
 
-export default <Plugin> {
+export default <FarmRuntimePlugin> {
   name: 'my-plugin',
   moduleCreated(module) {
     // ...

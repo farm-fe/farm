@@ -1,6 +1,6 @@
 # 语法降级和 Polyfill
 
-默认情况下，Farm 将降级到 ES2017(原生支持 async/await)，并在生产模式下自动注入必要的`polyfills`
+在生产模式下选择带版本的浏览器 [`output.targetEnv`](/zh/docs/config/compilation-options#output-targetenv)（例如 `browser-es2017`、`browser-es2015` 或 `browser-legacy`）时，Farm 可以自动降级语法并注入 polyfill。
 
 :::note
 默认情况下，Farm 不会为 `node_modules/` 下的模块进行转换和注入 polyfills ，如果您需要降级语法并为 `node_modules/` 注入 polyfills ，您可以使用 `compilation.presetEnv.include`
@@ -8,7 +8,7 @@
 
 ## 配置 `targetEnv`
 
-Farm 提供一个规范化的[`output.targetEnv`](/zh/docs/config/compilation-options#output-targetenv)选项来配置你的应用程序的目标执行环境。Farm 会自动为你的目标环境执行正确的`syntax downgrade`和`polyfill injection`。例如：
+Farm 提供一个规范化的 [`output.targetEnv`](/zh/docs/config/compilation-options#output-targetenv) 选项来配置应用程序的目标执行环境。带版本的浏览器目标会启用对应的语法降级和 polyfill 注入。例如：
 
 ```ts title="farm.config.ts"
 export default {
@@ -23,9 +23,7 @@ export default {
 Farm 会将您的应用程序编译为旧版浏览器（ES5）
 
 - 将所有的 `Js/Jsx/Ts/Tsx`模块编译到 ES5，并注入所有的 polyfills（Promise，regenerator-runtime 等）
-- 为所有 `css/scss/less` 模块添加前缀，例如`--webkit-`
-
-Farm 支持许多规范化的`targetEnv`选项，如`browser-modern`，`browser-es2017`，`browser-es2015`，`node16`，`node-legacy`等。**默认情况下，`targetEnv`是`browser-es2017`**。请参阅[`output.targetEnv`](/zh/docs/config/compilation-options#output-targetenv)
+Farm 支持许多规范化的 `targetEnv` 选项，如 `browser-esnext`、`browser-es2017`、`browser-es2015`、`browser-legacy`、`node16`、`node-legacy` 和 `node-next`。需要特定兼容性目标时请显式设置 `targetEnv`。请参阅 [`output.targetEnv`](/zh/docs/config/compilation-options#output-targetenv)。
 
 :::note
 您可能需要手动安装 `core-js@3`或`regeneration-runtime`，如果需要 polyfill 。尝试运行`pnpm add core-js` 如果你遇到了一些错误例如：`can not resolve 'core-js/modules/xxx'`
@@ -33,7 +31,7 @@ Farm 支持许多规范化的`targetEnv`选项，如`browser-modern`，`browser-
 
 ## 分别配置语法和 Polyfill
 
-在内部，`targetEnv`只是 `presetEnv`、`script.target` 和 `css.prefixer`的预设。如果需要，您可以更精确地配置它们
+在内部，`targetEnv` 会选择生产兼容性默认值，例如 `presetEnv`，以及带版本浏览器目标对应的 `script.target`。如果需要，您可以更精确地配置这些选项。
 
 ### 配置 `presetEnv`
 

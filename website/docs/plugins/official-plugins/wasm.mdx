@@ -1,0 +1,68 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-wasm
+
+A Rust Farm plugin for seamless WebAssembly integration, including support for `wasm-pack` generated modules.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install -D @farmfe/plugin-wasm</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add -D @farmfe/plugin-wasm</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add -D @farmfe/plugin-wasm</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import wasm from "@farmfe/plugin-wasm";
+
+export default defineConfig({
+  plugins: [wasm()],
+});
+```
+
+Pre-compiled `.wasm` files can be imported with the `?init` query. The default export is an initialization function:
+
+```ts
+import init from "./example.wasm?init";
+
+init().then((instance) => {
+  instance.exports.test();
+});
+```
+
+The initialization function can receive a WebAssembly import object:
+
+```ts
+import init from "./example.wasm?init";
+
+init({
+  imports: {
+    someFunc: () => {},
+  },
+});
+```
+
+WASM packages can also be imported as ESM modules:
+
+```ts
+import { someFunc } from "wasm-project";
+
+someFunc();
+```
+
+## Options
+
+This plugin does not expose user options.

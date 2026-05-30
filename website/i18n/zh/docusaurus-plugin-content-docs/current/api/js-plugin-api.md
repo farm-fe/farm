@@ -160,8 +160,8 @@ const myPlugin = () => {
 }
 ```
 
-### configureDevServer
-- **type: `configureDevServer?: (server: Server) => void | Promise<void>;`**
+### configureServer
+- **type: `configureServer?: (server: Server) => void | Promise<void>;`**
 - **hook type: `serial`**
 - **required: `false`**
 
@@ -178,7 +178,7 @@ const myPlugin = () => {
 
   return {
     name: 'my-plugin',
-    configureDevServer(server) {
+    configureServer(server) {
       devServer = server;
     }
   }
@@ -354,8 +354,7 @@ const myPlugin = () => ({
 ```ts
 type LoadHook = { 
   filters: {
-    importers: string[];
-    sources: string[];
+    resolvedPaths: string[];
   };
   executor: Callback<PluginLoadHookParam, PluginLoadHookResult> 
 };
@@ -415,8 +414,8 @@ const myPlugin = () => ({
 ```ts
 type TransformHook = { 
   filters: {
-    importers: string[];
-    sources: string[];
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
   };
   executor: Callback<PluginTransformHookParam, PluginTransformHookResult> 
 };
@@ -504,7 +503,7 @@ export default function farmSassPlugin(
 * `filters.moduleTypes` 不是 ** `regex`，它必须与 `ModuleType` 完全匹配，如 `css`、`js`、`tsx` 等。
 
 :::note
-`transform` 钩子是**内容到内容**。 有一个类似的钩子叫做 `process_module` ， `process_module` 是**ast 到 ast**。 由于性能问题，Js 插件不支持 `process_module` 钩子，如果您想要 **ast 到 ast** 转换，请尝试使用 [`Rust Plugin`](/docs/plugins/writing-plugins/rust-plugin)。
+`transform` 钩子是**内容到内容**转换。JS 插件也暴露 `processModule` 和 `freezeModule` 等模块级钩子；不过需要大量 AST 操作或自定义模块图行为时，通常更适合使用 [`Rust Plugin`](/docs/plugins/writing-plugins/rust-plugin)。
 :::
 
 ### buildEnd
@@ -563,18 +562,18 @@ const myPlugin = () => {
 `renderStart` 仅在第一次编译时调用一次。 稍后编译如 `Lazy Compilation` 和 `HMR Update` 将不会触发 `renderStart` 。
 :::
 
-### renderResourcePot
+### processRenderedResourcePot
 - **required: `false`**
 - **hook type: `serial`**
 - **type:**
 ```ts
-type RenderResourcePotHook = JsPluginHook<
+type ProcessRenderedResourcePotHook = JsPluginHook<
   {
     resourcePotTypes?: ResourcePotType[];
     moduleIds?: string[];
   },
-  RenderResourcePotParams,
-  RenderResourcePotResult
+  ProcessRenderedResourcePotParams,
+  ProcessRenderedResourcePotResult
 >;
 
 type Callback<P, R> = (
@@ -583,7 +582,7 @@ type Callback<P, R> = (
 ) => Promise<R | null | undefined>;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
-export interface RenderResourcePotParams {
+export interface ProcessRenderedResourcePotParams {
   content: string;
   sourceMapChain: string[];
   resourcePotInfo: {
@@ -597,7 +596,7 @@ export interface RenderResourcePotParams {
     custom: Record<string, string>;
   };
 }
-export interface RenderResourcePotResult {
+export interface ProcessRenderedResourcePotResult {
   content: string;
   sourceMap?: string;
 }
@@ -608,7 +607,7 @@ export interface RenderResourcePotResult {
 ```ts
 const myPlugin = () => ({
   name: 'test-render-resource-pot',
-  renderResourcePot: {
+  processRenderedResourcePot: {
     filters: {
       moduleIds: ['^index.ts\\?foo=bar$'],
       resourcePotTypes: ['css']
@@ -631,12 +630,12 @@ const myPlugin = () => ({
 当同时指定了 `filters.moduleIds` 和 `filters.resourcePotTypes` 时，取并集。
 :::
 
-### augmentResourceHash
+### augmentResourcePotHash
 - **required: `false`**
 - **hook type: `serial`**
 - **type:**
 ```ts
-type AugmentResourceHash = JsPluginHook<
+type AugmentResourcePotHash = JsPluginHook<
   {
     resourcePotTypes?: ResourcePotType[];
     moduleIds?: string[];
@@ -665,8 +664,8 @@ type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
 ```ts
 const myPlugin = () => ({
-  name: 'test-augment-resource-pot',
-  renderResourcePot: {
+  name: 'test-augment-resource-pot-hash',
+  processRenderedResourcePot: {
     filters: {
       moduleIds: ['^index.ts\\?foo=bar$'],
       resourcePotTypes: ['css']
