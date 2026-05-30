@@ -741,7 +741,7 @@ where
                             .unwrap_or_default()
                         {
                             if !is_component && util::is_on(&attr_name)
-                                // omit the flag for click handlers becaues hydration gives click
+                                // omit the flag for click handlers because hydration gives click
                                 // dedicated fast path.
                                 && !attr_name.eq_ignore_ascii_case("onclick")
                                 // omit v-model handlers
