@@ -1,0 +1,60 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-image
+
+A Rust Farm plugin that imports JPG, PNG, GIF, SVG, and WebP files as base64 data URIs.
+
+## Requirements
+
+This plugin requires Node.js v18.0.0+ and Farm v1.0.0+.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-image</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-image</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-image</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import image from "@farmfe/plugin-image";
+
+export default defineConfig({
+  plugins: [image()],
+});
+```
+
+Then import images from application code:
+
+```js
+import logo from "./logo.png";
+
+console.log(logo);
+```
+
+## Options
+
+- `dom?: boolean` — when `true`, export a DOM `Image` element instead of a base64 string. Defaults to `false`.
+- `include?: string[]` — regex patterns for files the plugin should process.
+- `exclude?: string[]` — regex patterns for files the plugin should ignore.
+
+With `dom: true`, the imported value can be appended directly to the document:
+
+```js
+import logo from "./logo.png";
+
+document.body.appendChild(logo);
+```

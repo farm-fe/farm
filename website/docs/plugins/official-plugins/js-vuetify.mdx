@@ -1,0 +1,52 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-vuetify
+
+JavaScript plugin for Vuetify component/directive auto-imports and Vuetify style resolution.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-vuetify vuetify unplugin-vue --save-dev</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-vuetify vuetify unplugin-vue --dev</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-vuetify vuetify unplugin-vue --save-dev</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import vue from "unplugin-vue/vite";
+import vuetify from "@farmfe/js-plugin-vuetify";
+
+export default defineConfig({
+  vitePlugins: [vue()],
+  plugins: [
+    vuetify({
+      autoImport: true,
+      styles: "sass",
+    }),
+  ],
+});
+```
+
+The plugin requires a Vue plugin named `unplugin-vue` or `vite:vue` in `vitePlugins`; it throws if none is found.
+
+## Options
+
+Options are based on `@vuetify/loader-shared`.
+
+- `autoImport?: boolean | { labs?: boolean; ignore?: string[] }` — enable Vuetify component and directive imports. Defaults to `true`.
+- `styles?: true | "none" | "sass" | { configFile: string }` — control Vuetify style imports. Defaults to `true`.
+
+When `autoImport` is enabled, `.vue` files and Vue template/script virtual modules are scanned for Vuetify imports. The style resolver plugin is only registered when `styles` is `"none"`, `"sass"`, or an object with `configFile`.
+
+The package also re-exports `transformAssetUrls` from `@vuetify/loader-shared`.

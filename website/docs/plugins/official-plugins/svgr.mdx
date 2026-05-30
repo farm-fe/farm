@@ -1,0 +1,60 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-svgr
+
+A Rust Farm plugin that transforms SVG files into React components.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install -D @farmfe/plugin-svgr</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add -D @farmfe/plugin-svgr</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add -D @farmfe/plugin-svgr</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the plugin in `farm.config.ts`:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import svgr from "@farmfe/plugin-svgr";
+
+export default defineConfig({
+  plugins: [
+    svgr({
+      include: ["src/**/*.svg"],
+      exclude: ["src/icons/*.svg"],
+      defaultStyle: { fill: "currentColor" },
+      defaultClass: "svg-icon",
+    }),
+  ],
+});
+```
+
+Then import SVG files as React components:
+
+```jsx
+import Logo from "./logo.svg";
+
+export function App() {
+  return <Logo width={50} height={50} />;
+}
+```
+
+## Options
+
+- `include?: string[]` — SVG file patterns to transform. Defaults to `["**/*.svg"]`.
+- `exclude?: string[]` — SVG file patterns to skip.
+- `defaultClass?: string` — default class name added to the generated SVG.
+- `defaultStyle?: object` — default style object added to the generated SVG.
+
+SVG imports with `?raw`, `?url`, `?inline`, or `?img=true` are ignored by this plugin.

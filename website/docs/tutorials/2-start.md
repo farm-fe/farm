@@ -223,7 +223,7 @@ export default defineConfig({
 Now postcss is fully supported in Farm, you can use popular postcss plugins `tailwind`, `px2rem`, etc. We won't cover postcss details here, refer to postcss docs for more details.
 
 :::tip
-Refer to [Farm Plugins](/docs/plugins/overview) to learn more about Farm plugins.
+Refer to [Farm Plugins](/docs/plugins/official-plugins/overview) to learn more about Farm plugins.
 :::
 
 ## Using Public Directory

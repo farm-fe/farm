@@ -89,8 +89,7 @@ export default defineConfig({
     lazyCompilation: false,
     persistentCache: false,
     minify: false,
-    treeShake: false
+    treeShaking: false
   },
 });
 ```
-

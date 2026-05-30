@@ -1,0 +1,77 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-electron
+
+Support development and build workflows for Electron applications using Farm.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-electron electron</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-electron electron</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-electron electron</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Configure the Electron main and optional preload entries in `farm.config.ts`:
+
+```ts {2,6-13}
+import { defineConfig } from '@farmfe/core';
+import electron from '@farmfe/js-plugin-electron';
+
+export default defineConfig({
+  plugins: [
+    electron({
+      main: {
+        input: 'electron/main.ts'
+      },
+      preload: {
+        input: 'electron/preload.ts'
+      }
+    })
+  ]
+});
+```
+
+During development, the plugin starts the Electron app after the Farm dev server is listening and exposes the renderer URL as `process.env.FARM_DEV_SERVER_URL`.
+
+## Options
+
+```ts
+import type { UserConfig } from '@farmfe/core';
+
+export interface BuildOptions {
+  /**
+   * Shortcut of `compilation.input`.
+   */
+  input: string | Record<string, string>;
+  farm?: UserConfig;
+}
+
+export interface ElectronPluginOptions {
+  main: BuildOptions;
+  preload?: BuildOptions;
+}
+```
+
+### `main`
+
+Required build options for the Electron main process entry.
+
+### `preload`
+
+Optional build options for Electron preload scripts. Preload builds default to CommonJS output unless the project package is ESM.
+
+### `farm`
+
+Per-target Farm config merged into the generated build for `main` or `preload`. The plugin sets Electron-specific defaults such as `external: ['^electron$']`, `targetEnv: 'library'`, and `persistentCache: false`.
+

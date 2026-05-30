@@ -245,6 +245,9 @@ impl Theme {
       t.add(k, v, d);
     }
 
+    // ── Aspect ratio ────────────────────────────────────────────────────
+    t.add("--aspect-video", "16 / 9", d);
+
     t
   }
 

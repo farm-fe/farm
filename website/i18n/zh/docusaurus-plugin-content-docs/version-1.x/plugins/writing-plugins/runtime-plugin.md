@@ -162,5 +162,5 @@ export default defineConfig({
 ```
 You can just export `ts` file using `"main": "src/index.ts"`.
 
-## 运行时插件钩子
+## 运行时插件钩子 {#runtime-plugin-hooks}
 请参阅[运行时插件 API](/docs/api/runtime-plugin-api)

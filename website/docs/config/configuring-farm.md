@@ -1,7 +1,11 @@
 # Configuring Farm
 
 ## Config File Spec
-By default, Farm reads the configuration from the `farm.config.ts|js|mjs` file in the project root directory, an example configuration file:
+By default, Farm reads the first config file it finds in the project root, in this order:
+
+`farm.config.ts`, `farm.config.js`, `farm.config.cjs`, `farm.config.mjs`, `farm.config.cts`, `farm.config.mts`.
+
+An example configuration file:
 
 ```ts title="farm.config.ts" {5-7}
 import { defineConfig } from "@farmfe/core";
@@ -28,13 +32,35 @@ For config options details, refer to:
 * [`Shared Options`](/docs/config/shared): Configuring shared options between `compiler options` and `dev server options`, like `root`, `env` and so on.
 
 :::note
-You can also use `farm start/build -c my-config.ts` to use a custom file as config file.
+You can also use `farm start/build -c my-config.ts` (or `--config my-config.ts`) to use a custom config file.
 :::
 
-## Loading Ts Config File
-Farm support load ts config file like `farm.config.ts` out of box. Farm will bundle `farm.config.ts` and it's local ts dependencies into `farm-config.xxx.mjs` file first and load it from disk. Because Farm compiles the `farm.config.ts` into `mjs` file, you **CAN NOT** use `__dirname` or `__filename` in your `farm.config.ts`, use `import.meta.url` instead.
+## Config Resolution and Validation
 
-Or you can use `farm.config.mjs` or `farm.config.cjs` with `@type` to support types avoid bundling `farm.config.ts`:
+Farm resolves `--config` relative to the project root. If no explicit config file is passed, Farm searches the project root using the filename order above.
+
+Configuration files are validated before Farm starts. Unknown fields are rejected, so prefer the documented `UserConfig` shape rather than passing internal compiler fields directly.
+
+When loading TypeScript or ESM config files, Farm bundles the config and imports the generated file from `node_modules/.farm/`. The output format is inferred from the config extension (`.cjs`/`.cts` use CommonJS; `.js`/`.mjs`/`.mts` use ESM). For uncommon loader interop cases, `FARM_CONFIG_FORMAT=cjs` or `FARM_CONFIG_FORMAT=esm` can override that inference.
+
+## Loading Ts Config File
+Farm supports TypeScript config files like `farm.config.ts`, `farm.config.cts`, and `farm.config.mts` out of the box. Farm bundles the config file and its local dependencies into `node_modules/.farm/` first, then imports the generated bundle.
+
+Config files may export an object, a promise, or a function that receives `{ mode, command, isPreview }`:
+
+```ts title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig(({ mode, command }) => ({
+  compilation: {
+    mode,
+  },
+}));
+```
+
+Farm replaces `__dirname` and `__filename` in bundled config files with the original config file directory and filename. You can also use standard ESM APIs such as `import.meta.url` in ESM config files.
+
+Or you can use `farm.config.mjs` or `farm.config.cjs` with `@type` for editor type support:
 
 ```js title="farm.config.mjs"
 /**
@@ -89,8 +115,7 @@ export default defineConfig({
     lazyCompilation: false,
     persistentCache: false,
     minify: false,
-    treeShake: false
+    treeShaking: false
   },
 });
 ```
-

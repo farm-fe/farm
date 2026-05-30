@@ -1,0 +1,69 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-qiankun
+
+JavaScript plugin for exposing Farm applications as qiankun micro-apps.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-qiankun --save-dev</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-qiankun --dev</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-qiankun --save-dev</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the HTML transform plugin:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import { qiankunFarmPlugin } from "@farmfe/js-plugin-qiankun";
+
+export default defineConfig({
+  plugins: [
+    qiankunFarmPlugin({
+      appName: "myMicroApp",
+      devMode: true,
+    }),
+  ],
+});
+```
+
+Then register lifecycle hooks in your app entry:
+
+```ts
+import { injectQiankun } from "@farmfe/js-plugin-qiankun/helper";
+
+injectQiankun({
+  async bootstrap() {},
+  async mount(props) {
+    console.log(props);
+  },
+  async unmount() {},
+});
+```
+
+## Options
+
+### Plugin options
+
+- `appName: string` — required qiankun app name. It must be a valid JavaScript identifier; the plugin throws otherwise.
+- `devMode?: boolean` — append debug logging to the injected helper script. Defaults to `false`.
+
+### `injectQiankun` options
+
+- `bootstrap: () => Promise<void>`
+- `mount: (props: unknown) => Promise<void>`
+- `unmount: () => Promise<void>`
+- `update?: (props: unknown) => Promise<void>`
+
+The Farm plugin appends a script to the HTML body that bridges these helper hooks to `window[appName]`.

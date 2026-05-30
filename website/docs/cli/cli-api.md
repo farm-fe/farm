@@ -1,148 +1,100 @@
 # Farm CLI
 
-The Farm CLI allows you to start, build, preview, and watch your application.
+The Farm CLI starts the dev server, builds production output, watches builds, previews built assets, and cleans Farm's persistent cache.
 
-To get a list of cli available to Farm, run the following command inside your command
+Run this from a project that has `@farmfe/cli` installed:
 
-```json title="Terminal"
-npx farm -h
+```bash
+npx farm --help
 ```
 
-The output look like this:
+## Commands
 
-```json title="Terminal"
-farm/0.5.11
+| Command | Purpose |
+| --- | --- |
+| `farm [root]` | Start the development server. Aliases: `farm start`, `farm dev`. |
+| `farm build [root]` | Compile the project for production. |
+| `farm watch [root]` | Compile in development mode and rebuild when files change. |
+| `farm preview [root]` | Serve an existing production build for local preview. |
+| `farm clean [path]` | Remove Farm persistent-cache files. |
 
-Usage:
-  $ farm [root]
+## Global options
 
-Commands:
-  [root]            Compile the project in dev mode and serve it with farm dev server
-  build             compile the project in production mode
-  watch             watch file change
-  preview           compile the project in watch mode
-  clean [path]      Clean up the cache built incrementally
-  plugin [command]  Commands for manage plugins
+These options are available to all commands unless noted by command-specific help:
 
-For more info, run any command with the `--help` flag:
-  $ farm --help
-  $ farm build --help
-  $ farm watch --help
-  $ farm preview --help
-  $ farm clean --help
-  $ farm plugin --help
+| Option | Description |
+| --- | --- |
+| `-c, --config <file>` | Use a specific config file. Defaults to `farm.config.js`, `farm.config.ts`, `farm.config.mjs`, `farm.config.cjs`, `farm.config.mts`, or `farm.config.cts`. |
+| `-m, --mode <mode>` | Set the config/env mode. |
+| `--base <path>` | Set the public base path. |
+| `-d, --debug [feat]` | Show debug logs, optionally scoped to a feature. |
+| `--clearScreen` | Enable or disable terminal clear-screen behavior. Defaults to `true`. |
+| `-h, --help` | Show help. |
+| `-v, --version` | Show the installed `@farmfe/cli` and `@farmfe/core` versions. |
 
-Options:
-  -l, --lazy           lazyCompilation
-  --host <host>        specify host
-  --port <port>        specify port
-  --open               open browser on server start
-  --hmr                enable hot module replacement
-  --cors               enable cors
-  --strictPort         specified port is already in use, exit with error
-  -c, --config <file>  use specified config file
-  -m, --mode <mode>    set env mode
-  --base <path>        public base path
-  --clearScreen        allow/disable clear screen when logging
-  -h, --help           Display this message
-  -v, --version        Display version number
-```
+## `farm [root]`, `farm dev`, `farm start`
 
-## Start
+Start the Farm dev server and compile in development mode.
 
-`farm start` The command is used to start the development server and compile the code in the development environment
+Common options:
 
-```json title="Terminal"
-Usage:
-  $ farm [root]
+| Option | Description |
+| --- | --- |
+| `-l, --lazy` | Enable lazy compilation. Defaults to `true`. |
+| `--host <host>` | Specify the host. |
+| `--port <port>` | Specify the port. |
+| `--open` | Open the browser when the server starts. |
+| `--hmr` | Enable hot module replacement. |
+| `--cors` | Enable CORS. |
+| `--strictPort` | Exit if the requested port is already in use. Defaults to `true`. |
+| `--target <target>` | Set output target env: `node`, `browser`, or `library`. |
+| `--format <format>` | Set output format: `esm` or `commonjs`. |
+| `--sourcemap` | Emit source maps. |
+| `--treeShaking` | Enable tree shaking. |
+| `--minify` | Enable minification. |
 
-Options:
-  -l, --lazy           lazyCompilation
-  --host <host>        specify host
-  --port <port>        specify port
-  --open               open browser on server start
-  --hmr                enable hot module replacement
-  --cors               enable cors
-  --strictPort         specified port is already in use, exit with error
-  -c, --config <file>  use specified config file
-  -m, --mode <mode>    set env mode
-  --base <path>        public base path
-  --clearScreen        allow/disable clear screen when logging
-```
+## `farm build [root]`
 
-## Build
+Build production output.
 
-`farm build` The command builds the products that can be used in the production environment in the default `dist` directory.
+| Option | Description |
+| --- | --- |
+| `-o, --outDir <dir>` | Output directory. |
+| `-i, --input <file>` | Entry HTML/input file. |
+| `--target <target>` | Set output target env: `node`, `browser`, or `library`. |
+| `--format <format>` | Set output format: `esm` or `commonjs`. |
+| `--sourcemap` | Emit source maps. |
+| `--treeShaking` | Enable tree shaking. |
+| `--minify` | Enable minification. |
 
-```json title="Terminal"
-Usage:
-  $ farm build
+## `farm watch [root]`
 
-Options:
-  -o, --outDir <dir>    output directory
-  -i, --input <file>    input file path
-  -w, --watch           watch file change
-  --targetEnv <target>  transpile targetEnv node, browser
-  --format <format>     transpile format esm, commonjs
-  --sourcemap           output source maps for build
-  --treeShaking         Eliminate useless code without side effects
-  --minify              code compression at build time
-  -c, --config <file>   use specified config file
-  -m, --mode <mode>     set env mode
-  --base <path>         public base path
-  --clearScreen         allow/disable clear screen when logging
-  -h, --help            Display this message
-```
+Build in development mode and rebuild on file changes. This command is usually used for Node/library-style outputs rather than serving an app.
 
-## Preview
+| Option | Description |
+| --- | --- |
+| `-o, --outDir <dir>` | Output directory. |
+| `-i, --input <file>` | Entry input file. |
+| `--target <target>` | Set output target env: `node`, `browser`, or `library`. |
+| `--format <format>` | Set output format: `esm` or `commonjs`. |
+| `--sourcemap` | Emit source maps. |
 
-`farm preview` the command for locally previewing the products built in your production environment, you need to execute farm build in advance to build the products in the production environment.
+## `farm preview [root]`
 
-```json title="Terminal"
-Usage:
-  $ farm preview
+Serve already-built production assets. Run `farm build` first.
 
-Options:
-  --open [url]          Whether to open the page in the browser at startup
-  --port <port>         Set the port number for Server snooping
-  --host <host>         Specify the host to listen to when Server starts
-  -c --config <config>  Specify the profile path
-  -h, --help            Show command help
-```
+| Option | Description |
+| --- | --- |
+| `--host [host]` | Specify the host. |
+| `--port <port>` | Specify the port. |
+| `--open` | Open the browser when preview starts. |
+| `--outDir <dir>` | Directory to serve. Defaults to `dist`. |
+| `--strictPort` | Exit if the requested port is already in use. |
 
-## Watch
+## `farm clean [path]`
 
-`farm watch` the command generally listen for file changes and rebuild in `node` environment
+Remove Farm persistent-cache files. By default it cleans the current project's resolved cache directory.
 
-```json title="Terminal"
-
-Usage:
-  $ farm watch
-
-Options:
-  --format <format>    transpile format esm, commonjs
-  -o, --outDir <dir>   output directory
-  -i, --input <file>   input file path
-  -c, --config <file>  use specified config file
-  -m, --mode <mode>    set env mode
-  --base <path>        public base path
-  --clearScreen        allow/disable clear screen when logging
-  -h, --help           Display this message
-```
-
-## Clean
-
-`farm clean` Because the incremental build provided by `farm` generates the cache file locally, you may need to clean up the cache file under certain circumstances (unpredictable compilation errors)
-
-```json title="Terminal"
-Usage:
-  $ farm clean [path]
-
-Options:
-  --recursive          Recursively search for node_modules directories and clean them
-  -c, --config <file>  use specified config file
-  -m, --mode <mode>    set env mode
-  --base <path>        public base path
-  --clearScreen        allow/disable clear screen when logging
-  -h, --help           Display this message
-```
+| Option | Description |
+| --- | --- |
+| `--recursive` | Search recursively for `node_modules` directories and clean Farm cache locations under them. |
