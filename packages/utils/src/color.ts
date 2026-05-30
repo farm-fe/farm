@@ -16,8 +16,8 @@
 
 import { createRequire } from 'node:module';
 
-export type StylerEnabled = (s: any) => any;
-export type ColorFunction = (s: any) => any;
+export type StylerEnabled = (s: string | string[]) => string;
+export type ColorFunction = (s: string | string[]) => string;
 
 const require = createRequire(import.meta.url);
 
@@ -41,16 +41,16 @@ const enabled =
     'CI' in env);
 
 export const createFormatter =
-  (open: string, close: string, replace = open) =>
-  (input: string) => {
+  (open: string, close: string, replace = open): ColorFunction =>
+  (input): string => {
     if (open === '' || close === '') {
-      return input;
+      return String(input);
     }
-    const string = '' + input;
-    const index = string.indexOf(close, open.length);
+    const s = '' + input;
+    const index = s.indexOf(close, open.length);
     return ~index
-      ? open + replaceClose(string, close, replace, index) + close
-      : open + string + close;
+      ? open + replaceClose(s, close, replace, index) + close
+      : open + s + close;
   };
 
 const replaceClose = (
@@ -67,88 +67,101 @@ const replaceClose = (
     : start + end;
 };
 
+// no-op passthrough when colors are disabled
+// accepts string | string[] to match callers like logMessage
+const passthrough: StylerEnabled = (s) =>
+  typeof s === 'string' ? s : String(s);
+
 export const reset: StylerEnabled = enabled
-  ? (s: string) => `\x1b[0m${s}\x1b[0m`
-  : String;
+  ? (s: string | string[]) => `\x1b[0m${String(s)}\x1b[0m`
+  : passthrough;
 export const bold: StylerEnabled = enabled
   ? createFormatter('\x1b[1m', '\x1b[22m', '\x1b[22m\x1b[1m')
-  : String;
+  : passthrough;
 export const dim = enabled
   ? createFormatter('\x1b[2m', '\x1b[22m', '\x1b[22m\x1b[2m')
-  : String;
+  : passthrough;
 export const italic: StylerEnabled = enabled
   ? createFormatter('\x1b[3m', '\x1b[23m')
-  : String;
+  : passthrough;
 export const underline: StylerEnabled = enabled
   ? createFormatter('\x1b[4m', '\x1b[24m')
-  : String;
+  : passthrough;
 export const inverse: StylerEnabled = enabled
   ? createFormatter('\x1b[7m', '\x1b[27m')
-  : String;
+  : passthrough;
 export const hidden: StylerEnabled = enabled
   ? createFormatter('\x1b[8m', '\x1b[28m')
-  : String;
+  : passthrough;
 export const strikethrough: StylerEnabled = enabled
   ? createFormatter('\x1b[9m', '\x1b[29m')
-  : String;
+  : passthrough;
 
 export const debugColor = createFormatter('\x1b[38;2;255;140;0m', '\x1b[39m');
 export const brandColor = enabled
   ? createFormatter('\x1b[38;2;113;26;95m', '\x1b[39m')
-  : String;
+  : passthrough;
 
 // black
 export const black = enabled
   ? createFormatter('\x1b[38;2;0;0;0m', '\x1b[39m')
-  : String;
+  : passthrough;
 export const red = enabled
   ? createFormatter('\x1b[38;2;219;90;107m', '\x1b[39m')
-  : String;
-export const green = enabled ? createFormatter('\x1b[32m', '\x1b[39m') : String;
+  : passthrough;
+export const green = enabled
+  ? createFormatter('\x1b[32m', '\x1b[39m')
+  : passthrough;
 export const yellow = enabled
   ? createFormatter('\x1b[33m', '\x1b[39m')
-  : String;
+  : passthrough;
 export const blue = enabled
   ? createFormatter('\x1b[38;2;68;206;246m', '\x1b[39m')
-  : String;
+  : passthrough;
 export const magenta = enabled
   ? createFormatter('\x1b[38;2;180;0;100m', '\x1b[39m')
-  : String;
+  : passthrough;
 export const purple = enabled
   ? createFormatter('\x1b[38;2;140;67;86m', '\x1b[39m')
-  : String;
+  : passthrough;
 export const orange = enabled
   ? createFormatter('\x1b[38;2;255;137;54m', '\x1b[39m')
-  : String;
+  : passthrough;
 export const lightCyan = enabled
   ? createFormatter('\x1b[38;2;180;240;240m', '\x1b[39m')
-  : String;
-export const cyan = enabled ? createFormatter('\x1b[36m', '\x1b[39m') : String;
-export const white = enabled ? createFormatter('\x1b[37m', '\x1b[39m') : String;
+  : passthrough;
+export const cyan = enabled
+  ? createFormatter('\x1b[36m', '\x1b[39m')
+  : passthrough;
+export const white = enabled
+  ? createFormatter('\x1b[37m', '\x1b[39m')
+  : passthrough;
 
 export const bgBlack = enabled
   ? createFormatter('\x1b[40m', '\x1b[49m')
-  : String;
+  : passthrough;
 
-export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
+export const bgRed = enabled
+  ? createFormatter('\x1b[41m', '\x1b[49m')
+  : passthrough;
 export const bgGreen = enabled
   ? createFormatter('\x1b[42m', '\x1b[49m')
-  : String;
+  : passthrough;
 export const bgYellow = enabled
   ? createFormatter('\x1b[43m', '\x1b[49m')
-  : String;
+  : passthrough;
 export const bgBlue = enabled
   ? createFormatter('\x1b[44m', '\x1b[49m')
-  : String;
+  : passthrough;
 export const bgMagenta = enabled
   ? createFormatter('\x1b[45m', '\x1b[49m')
-  : String;
+  : passthrough;
 export const bgCyan = enabled
   ? createFormatter('\x1b[46m', '\x1b[49m')
-  : String;
+  : passthrough;
 export const bgWhite = enabled
   ? createFormatter('\x1b[47m', '\x1b[49m')
-  : String;
+  : passthrough;
 
 export function gradientString(text: string, colors: number[][]) {
   const steps = text.length;

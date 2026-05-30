@@ -28,31 +28,31 @@ switch (platform) {
   case "win32":
     switch (arch) {
       case "x64":
-        if (existsSync(join(currentDir, "./npm/win32-x64-msvc/index.farm"))) {
-          binPath = join(currentDir, "./npm/win32-x64-msvc/index.farm");
+        if (existsSync(join(currentDir, "../npm/win32-x64-msvc/index.farm"))) {
+          binPath = join(currentDir, "../npm/win32-x64-msvc/index.farm");
         } else {
           binPath = require.resolve(
-            "@farmfe/plugin-dts-win32-x64-msvc",
+            "@farmfe/plugin-replace-dirname-win32-x64-msvc",
           );
         }
 
         break;
       case "ia32":
-        if (existsSync(join(currentDir, "./npm/win32-ia32-msvc/index.farm"))) {
-          binPath = join(currentDir, "./npm/win32-ia32-msvc/index.farm");
+        if (existsSync(join(currentDir, "../npm/win32-ia32-msvc/index.farm"))) {
+          binPath = join(currentDir, "../npm/win32-ia32-msvc/index.farm");
         } else {
           binPath = require.resolve(
-            "@farmfe/plugin-dts-win32-ia32-msvc",
+            "@farmfe/plugin-replace-dirname-win32-ia32-msvc",
           );
         }
 
         break;
       case "arm64":
-        if (existsSync(join(currentDir, "./npm/win32-arm64-msvc/index.farm"))) {
-          binPath = join(currentDir, "./npm/win32-arm64-msvc/index.farm");
+        if (existsSync(join(currentDir, "../npm/win32-arm64-msvc/index.farm"))) {
+          binPath = join(currentDir, "../npm/win32-arm64-msvc/index.farm");
         } else {
           binPath = require.resolve(
-            "@farmfe/plugin-dts-win32-arm64-msvc",
+            "@farmfe/plugin-replace-dirname-win32-arm64-msvc",
           );
         }
 
@@ -64,20 +64,20 @@ switch (platform) {
   case "darwin":
     switch (arch) {
       case "x64":
-        if (existsSync(join(currentDir, "./npm/darwin-x64/index.farm"))) {
-          binPath = join(currentDir, "./npm/darwin-x64/index.farm");
+        if (existsSync(join(currentDir, "../npm/darwin-x64/index.farm"))) {
+          binPath = join(currentDir, "../npm/darwin-x64/index.farm");
         } else {
           binPath = require.resolve(
-            "@farmfe/plugin-dts-darwin-x64",
+            "@farmfe/plugin-replace-dirname-darwin-x64",
           );
         }
         break;
       case "arm64":
-        if (existsSync(join(currentDir, "./npm/darwin-arm64/index.farm"))) {
-          binPath = join(currentDir, "./npm/darwin-arm64/index.farm");
+        if (existsSync(join(currentDir, "../npm/darwin-arm64/index.farm"))) {
+          binPath = join(currentDir, "../npm/darwin-arm64/index.farm");
         } else {
           binPath = require.resolve(
-            "@farmfe/plugin-dts-darwin-arm64",
+            "@farmfe/plugin-replace-dirname-darwin-arm64",
           );
         }
         break;
@@ -89,19 +89,19 @@ switch (platform) {
     switch (arch) {
       case "x64":
         if (isMusl()) {
-          if (existsSync(join(currentDir, "./npm/linux-x64-musl/index.farm"))) {
-            binPath = join(currentDir, "./npm/linux-x64-musl/index.farm");
+          if (existsSync(join(currentDir, "../npm/linux-x64-musl/index.farm"))) {
+            binPath = join(currentDir, "../npm/linux-x64-musl/index.farm");
           } else {
             binPath = require.resolve(
-              "@farmfe/plugin-dts-linux-x64-musl",
+              "@farmfe/plugin-replace-dirname-linux-x64-musl",
             );
           }
         } else {
-          if (existsSync(join(currentDir, "./npm/linux-x64-gnu/index.farm"))) {
-            binPath = join(currentDir, "./npm/linux-x64-gnu/index.farm");
+          if (existsSync(join(currentDir, "../npm/linux-x64-gnu/index.farm"))) {
+            binPath = join(currentDir, "../npm/linux-x64-gnu/index.farm");
           } else {
             binPath = require.resolve(
-              "@farmfe/plugin-dts-linux-x64-gnu",
+              "@farmfe/plugin-replace-dirname-linux-x64-gnu",
             );
           }
         }
@@ -111,22 +111,22 @@ switch (platform) {
       case "arm64":
         if (isMusl()) {
           if (
-            existsSync(join(currentDir, "./npm/linux-arm64-musl/index.farm"))
+            existsSync(join(currentDir, "../npm/linux-arm64-musl/index.farm"))
           ) {
-            binPath = join(currentDir, "./npm/linux-arm64-musl/index.farm");
+            binPath = join(currentDir, "../npm/linux-arm64-musl/index.farm");
           } else {
             binPath = require.resolve(
-              "@farmfe/plugin-dts-linux-arm64-musl",
+              "@farmfe/plugin-replace-dirname-linux-arm64-musl",
             );
           }
         } else {
           if (
-            existsSync(join(currentDir, "./npm/linux-arm64-gnu/index.farm"))
+            existsSync(join(currentDir, "../npm/linux-arm64-gnu/index.farm"))
           ) {
-            binPath = join(currentDir, "./npm/linux-arm64-gnu/index.farm");
+            binPath = join(currentDir, "../npm/linux-arm64-gnu/index.farm");
           } else {
             binPath = require.resolve(
-              "@farmfe/plugin-dts-linux-arm64-gnu",
+              "@farmfe/plugin-replace-dirname-linux-arm64-gnu",
             );
           }
         }

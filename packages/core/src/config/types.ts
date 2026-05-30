@@ -363,13 +363,14 @@ interface ResolvedCss extends CssConfig {
   };
 }
 
-export interface ResolvedCompilation
-  extends Exclude<Config['config'], undefined> {
+type NonNullableConfig = NonNullable<Config['config']>;
+
+export interface ResolvedCompilation extends NonNullableConfig {
   external?: string[];
   resolve?: {
     dedupe?: never;
-  } & Config['config']['resolve'];
-  assets?: Omit<Config['config']['assets'], 'mode'>;
+  } & NonNullableConfig['resolve'];
+  assets?: Omit<NonNullableConfig['assets'], 'mode'>;
   css?: ResolvedCss;
 }
 

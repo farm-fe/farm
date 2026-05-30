@@ -92,7 +92,7 @@ export class Logger implements ILogger {
     this.brandPrefix();
   }
 
-  private brandPrefix(color?: (s: string | string[]) => string): void {
+  private brandPrefix(color?: ColorFunction): void {
     const formattedName = colors.bold(this.prefix);
     const formattedPrefix = colors.bold(`[ ${formattedName} ]`);
     this.prefix = color ? color(formattedPrefix) : formattedPrefix;
@@ -109,7 +109,7 @@ export class Logger implements ILogger {
   private logMessage(
     level: LogLevelNames,
     message: string | Error,
-    color?: (s: string | string[]) => string,
+    color?: ColorFunction,
     clearScreen = false,
     showBanner = true
   ): void {
@@ -161,7 +161,7 @@ export class Logger implements ILogger {
   }
 
   info(message: string, clearScreen = false): void {
-    this.logMessage('info', message, null, clearScreen);
+    this.logMessage('info', message, undefined, clearScreen);
   }
 
   warn(message: string, clearScreen = false): void {
@@ -263,10 +263,11 @@ export function bootstrap(
   hasCacheDir: boolean
 ): void {
   if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && config.configFilePath) {
-    const shortFile = getShortName(config.configFilePath, config.root);
-    config.logger.info(`Using config file at ${bold(green(shortFile))}`, true);
+    const shortFile = getShortName(config.configFilePath, config.root ?? '');
+    config.logger?.info(`Using config file at ${bold(green(shortFile))}`, true);
   }
-  const hasPersistentCache = config.compilation.persistentCache && hasCacheDir;
+  const hasPersistentCache =
+    !!config.compilation?.persistentCache && hasCacheDir;
   const persistentCacheFlag = hasPersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
@@ -280,7 +281,7 @@ export function bootstrap(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Compile in'
     )} ${colors.bold(
-      colors.green(config.logger.formatTime(time))
+      colors.green(config.logger?.formatTime(time) ?? '')
     )} ${persistentCacheFlag}`,
     '\n'
   );

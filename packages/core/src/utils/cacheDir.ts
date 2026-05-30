@@ -5,7 +5,7 @@ export async function isCacheDirExists(dir: string): Promise<boolean> {
     const hasCacheDir = fs.readdirSync(dir, { withFileTypes: true });
 
     return !!(hasCacheDir && hasCacheDir.length);
-  } catch (_) {
+  } catch (_: any) {
     return false;
   }
 }

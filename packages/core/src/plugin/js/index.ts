@@ -146,7 +146,7 @@ export function convertPlugin(plugin: JsPlugin) {
   try {
     const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
     return pluginSchema.parse(plugin);
-  } catch (err) {
+  } catch (err: any) {
     const validationError = fromZodError(err, {
       prefix: 'Failed to verify js plugin schema'
     });

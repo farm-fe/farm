@@ -143,7 +143,7 @@ export async function resolveConfig(
 }
 
 async function handleResolveConfig(
-  configFilePath: string,
+  configFilePath: string | undefined,
   userConfig: UserConfig,
   sortFarmJsPlugins: JsPlugin[],
   rustPlugins: RustPlugin[],
@@ -198,7 +198,7 @@ export async function handleLazyCompilation(
   const commandHandlers = {
     [COMMANDS.START]: async (config: ResolvedUserConfig) => {
       if (
-        config.compilation.lazyCompilation &&
+        config.compilation?.lazyCompilation &&
         typeof config.server?.host === 'string'
       ) {
         await setLazyCompilationDefine(config);
@@ -245,6 +245,7 @@ export async function resolveAndFilterAsyncPlugins(
 async function setLazyCompilationDefine(
   resolvedUserConfig: ResolvedUserConfig
 ) {
+  if (!resolvedUserConfig.server || !resolvedUserConfig.compilation) return;
   const hostname = await resolveHostname(resolvedUserConfig.server.host);
   resolvedUserConfig.compilation.define = {
     ...(resolvedUserConfig.compilation.define ?? {}),

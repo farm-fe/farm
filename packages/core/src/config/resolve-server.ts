@@ -38,19 +38,19 @@ export function normalizeDevServerConfig(
             host: host ?? DEFAULT_DEV_SERVER_OPTIONS.host,
             port: port ?? DEFAULT_DEV_SERVER_OPTIONS.port
           },
-          hmrConfig === true ? {} : hmrConfig
+          hmrConfig === true ? {} : (hmrConfig ?? {})
         );
 
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, serverOptions, {
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, serverOptions ?? {}, {
     hmr,
     protocol: https ? 'https' : 'http',
     https: https
       ? {
           ...https,
-          ca: tryHttpsAsFileRead(serverOptions.https.ca),
-          cert: tryHttpsAsFileRead(serverOptions.https.cert),
-          key: tryHttpsAsFileRead(serverOptions.https.key),
-          pfx: tryHttpsAsFileRead(serverOptions.https.pfx)
+          ca: tryHttpsAsFileRead(serverOptions?.https?.ca),
+          cert: tryHttpsAsFileRead(serverOptions?.https?.cert),
+          key: tryHttpsAsFileRead(serverOptions?.https?.key),
+          pfx: tryHttpsAsFileRead(serverOptions?.https?.pfx)
         }
       : undefined,
     preview: merge(

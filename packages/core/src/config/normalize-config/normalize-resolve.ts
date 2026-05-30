@@ -7,6 +7,7 @@ export function normalizeResolve(
   const alias = normalizeResolveAlias(config);
 
   if (alias.length) {
+    resolvedCompilation.resolve ??= {};
     resolvedCompilation.resolve.alias = alias;
   }
 }
@@ -36,7 +37,10 @@ export function normalizeResolveAlias(
           ? normalizeItem(item.find, item.replacement)
           : normalizeItem(item, item)
       )
-      .filter(Boolean);
+      .filter(
+        (item: any): item is { find: string | RegExp; replacement: string } =>
+          item != null
+      );
 
   const normalizeObject = (obj: any) => {
     return Object.entries(obj as Record<string, string>)
@@ -44,7 +48,10 @@ export function normalizeResolveAlias(
         const result = normalizeItem(find, replacement);
         return result;
       })
-      .filter(Boolean);
+      .filter(
+        (item): item is { find: string | RegExp; replacement: string } =>
+          item != null
+      );
   };
 
   let result: Array<{ find: string | RegExp; replacement: string }>;

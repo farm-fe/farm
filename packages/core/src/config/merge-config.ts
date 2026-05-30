@@ -9,9 +9,10 @@ export function mergeConfig<T extends Record<string, any>>(
   target?: T
 ): T {
   const result: Record<string, any> = { ...userConfig };
-  for (const key of Object.keys(target || {})) {
+  const safeTarget: Record<string, any> = target ?? {};
+  for (const key of Object.keys(safeTarget)) {
     const left = result[key];
-    const right = target[key];
+    const right = safeTarget[key];
 
     if (right === null || right === undefined) {
       continue;
@@ -94,7 +95,7 @@ export function mergeFarmCliConfig(
     if (
       target.root &&
       !isAbsolute(target.root) &&
-      cliOption.configFile !== false
+      typeof cliOption.configFile === 'string'
     ) {
       const resolvedRoot = path.resolve(cliOption.configFile, target.root);
       target.root = resolvedRoot;
@@ -121,7 +122,9 @@ export function mergeFarmCliConfig(
   if (cliOption.mode) {
     left = mergeConfig(left, {
       compilation: {
-        mode: mode ?? (cliOption.mode as UserConfig['compilation']['mode'])
+        mode:
+          mode ??
+          (cliOption.mode as NonNullable<UserConfig['compilation']>['mode'])
       }
     });
   }

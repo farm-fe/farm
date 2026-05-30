@@ -12,13 +12,15 @@ import {
 } from './utils.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
-  const vitePlugins = config.vitePlugins.filter(Boolean).map((plugin) => {
-    if (typeof plugin === 'function') {
-      return plugin().vitePlugin;
-    } else {
-      return plugin;
-    }
-  });
+  const vitePlugins = (config.vitePlugins ?? [])
+    .filter(Boolean)
+    .map((plugin) => {
+      if (typeof plugin === 'function') {
+        return plugin().vitePlugin;
+      } else {
+        return plugin;
+      }
+    });
 
   let sourcemap = true;
 
@@ -27,7 +29,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   }
 
   const viteConfig: ViteUserConfig = {
-    root: normalizePath(config.root),
+    root: normalizePath(config.root ?? process.cwd()),
     base: config.compilation?.output?.publicPath ?? '/',
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
@@ -324,6 +326,7 @@ export function viteConfigToFarmConfig(
   const farmConfig: UserConfig = {
     compilation: {}
   };
+  const compilation = farmConfig.compilation ?? {};
 
   if (config.root) {
     farmConfig.root = path.isAbsolute(config.root)
@@ -331,36 +334,33 @@ export function viteConfigToFarmConfig(
       : config.root;
   }
   if (config?.css) {
-    farmConfig.compilation.css ??= {};
-    farmConfig.compilation.css._viteCssOptions = config.css;
+    compilation.css ??= {};
+    compilation.css._viteCssOptions = config.css;
   }
 
   if (config.base) {
-    farmConfig.compilation.output ??= {};
-    farmConfig.compilation.output.publicPath = config.base;
+    compilation.output ??= {};
+    compilation.output.publicPath = config.base;
   }
   if (config.publicDir) {
     farmConfig.publicDir = config.publicDir;
   }
   if (config.mode === 'development' || config.mode === 'production') {
-    farmConfig.compilation.mode = config.mode;
+    compilation.mode = config.mode;
   }
   if (config.define) {
-    farmConfig.compilation.define = config.define;
+    compilation.define = config.define;
   }
 
   if (config.resolve) {
-    farmConfig.compilation.resolve ??= {};
+    compilation.resolve ??= {};
 
     if (config.resolve.alias) {
       if (!Array.isArray(config.resolve.alias)) {
-        farmConfig.compilation.resolve.alias = config.resolve.alias as Record<
-          string,
-          any
-        >;
+        compilation.resolve.alias = config.resolve.alias as Record<string, any>;
       } else {
-        if (!farmConfig.compilation.resolve.alias) {
-          farmConfig.compilation.resolve.alias = [];
+        if (!compilation.resolve.alias) {
+          compilation.resolve.alias = [];
         }
 
         const normalizedAlias = normalizeResolveAlias(farmConfig);
@@ -393,11 +393,10 @@ export function viteConfigToFarmConfig(
       }
     }
 
-    farmConfig.compilation.resolve.extensions = config.resolve.extensions;
-    farmConfig.compilation.resolve.mainFields = config.resolve.mainFields;
-    farmConfig.compilation.resolve.conditions = config.resolve.conditions;
-    farmConfig.compilation.resolve.symlinks =
-      config.resolve.preserveSymlinks != true;
+    compilation.resolve.extensions = config.resolve.extensions;
+    compilation.resolve.mainFields = config.resolve.mainFields;
+    compilation.resolve.conditions = config.resolve.conditions;
+    compilation.resolve.symlinks = config.resolve.preserveSymlinks != true;
   }
 
   if (config.server) {
@@ -440,21 +439,21 @@ export function viteConfigToFarmConfig(
     if (config.mode === 'production') {
       farmConfig.watch = config.build.watch as WatchOptions;
     }
-    farmConfig.compilation.output ??= {};
-    farmConfig.compilation.output.path = config.build.outDir;
+    compilation.output ??= {};
+    compilation.output.path = config.build.outDir;
 
     if (
       config.build?.sourcemap !== undefined &&
       origFarmConfig.compilation?.sourcemap === undefined
     ) {
-      farmConfig.compilation.sourcemap = Boolean(config.build.sourcemap);
+      compilation.sourcemap = Boolean(config.build.sourcemap);
     }
 
     if (
       config.build.ssr !== undefined &&
       origFarmConfig.compilation?.lazyCompilation === undefined
     ) {
-      farmConfig.compilation.lazyCompilation = !config.build.ssr;
+      compilation.lazyCompilation = !config.build.ssr;
     }
 
     if (config.build.rollupOptions?.output !== undefined) {
@@ -463,7 +462,7 @@ export function viteConfigToFarmConfig(
 
         for (const k of keys) {
           // @ts-ignore type is correct
-          farmConfig.compilation.output[k] =
+          compilation.output[k] =
             // @ts-ignore type is correct
             config.build.rollupOptions.output[k];
         }

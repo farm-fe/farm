@@ -23,9 +23,11 @@ export function normalizeOutput(
     const scriptSuffixes = ['.js', '.ts', '.jsx', '.tsx'];
     const isScript =
       config?.input &&
-      Object.values(config?.input).every(([_, value]) =>
-        scriptSuffixes.some((suffix) => value.endsWith(suffix))
-      );
+      Object.values(config?.input)
+        .filter((v): v is string => v != null)
+        .every(([_, value]) =>
+          scriptSuffixes.some((suffix) => value.endsWith(suffix))
+        );
     config.output.targetEnv = isScript ? 'library' : 'browser';
   }
 
@@ -58,12 +60,16 @@ export function normalizeOutput(
   );
 }
 
-type TargetEnvKeys = Config['config']['output']['targetEnv'];
+type NonNullableConfig = NonNullable<Config['config']>;
+
+type TargetEnvKeys = NonNullable<
+  NonNullable<NonNullableConfig['output']>['targetEnv']
+>;
 
 type TargetsForTargetEnv = Record<
   TargetEnvKeys,
   {
-    scriptGenTarget?: Config['config']['script']['target'];
+    scriptGenTarget?: NonNullable<NonNullableConfig['script']>['target'];
     scriptTargets: string[] | null;
     cssTargets: string[] | null;
   } | null
@@ -132,13 +138,15 @@ const targetsMap: TargetsMap = {
  * Set up targets for the given targetEnv.
  * @param config
  */
-function normalizeTargetEnv(config: Config['config']) {
+function normalizeTargetEnv(config: NonNullable<Config['config']>) {
+  if (!config.output) return;
+
   const aliasMap: Record<string, keyof TargetsMap> = {
     node: 'node-next',
     browser: 'browser-esnext'
   };
 
-  const targetEnv = (aliasMap[config.output.targetEnv] ??
+  const targetEnv = (aliasMap[config.output.targetEnv ?? ''] ??
     config.output.targetEnv) as keyof TargetsMap;
 
   if (targetsMap[targetEnv]) {
@@ -174,22 +182,21 @@ function normalizeTargetEnv(config: Config['config']) {
     config.script ??= { plugins: [] };
     config.script.target = config.script.target ?? scriptGenTarget ?? 'esnext';
 
-    if (!config)
-      if (config.css?.prefixer !== null) {
-        if (cssTargets == null) {
-          config.css ??= {};
-          config.css.prefixer = null;
-        } else if (typeof config.css?.prefixer === 'object') {
-          if (!config.css.prefixer.targets) {
-            config.css.prefixer.targets = cssTargets;
-          }
-        } else {
-          config.css ??= {};
-          config.css.prefixer = {
-            targets: cssTargets
-          };
+    if (config.css?.prefixer !== null) {
+      if (cssTargets == null) {
+        config.css ??= {};
+        config.css.prefixer = null;
+      } else if (typeof config.css?.prefixer === 'object') {
+        if (!config.css.prefixer.targets) {
+          config.css.prefixer.targets = cssTargets;
         }
+      } else {
+        config.css ??= {};
+        config.css.prefixer = {
+          targets: cssTargets
+        };
       }
+    }
   } else {
     // disable presetEnv and prefixer
     if (config.presetEnv === undefined) {

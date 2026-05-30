@@ -54,19 +54,19 @@ function dynamicImport(id: string): Promise<any> {
 }
 
 function loadDynamicResources(id: string, force = false): Promise<any> {
-  const resources = dynamicModuleResourcesMap[id].map((index) => dynamicResources[index]);
+  const resources = dynamicModuleResourcesMap[id].map(
+    (index) => dynamicResources[index]
+  );
 
   return loadDynamicResourcesOnly(id, force)
     .then(() => {
       // Do not require the module if all the resources are not js resources
-      if (resources.every(resource => resource.type !== 0)) {
+      if (resources.every((resource) => resource.type !== 0)) {
         return;
       }
 
       if (!moduleSystem.m()[id]) {
-        throw new Error(
-          `Dynamic imported module "${id}" is not registered.`,
-        );
+        throw new Error(`Dynamic imported module "${id}" is not registered.`);
       }
 
       return requireDynamicModule(id);
@@ -77,13 +77,14 @@ function loadDynamicResources(id: string, force = false): Promise<any> {
     });
 }
 
-
 function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
-  const resources = dynamicModuleResourcesMap[id].map((index) => dynamicResources[index]);
+  const resources = dynamicModuleResourcesMap[id].map(
+    (index) => dynamicResources[index]
+  );
 
   if (!moduleSystem.m()[id] && (!resources || resources.length === 0)) {
     throw new Error(
-      `Dynamic imported module "${id}" does not belong to any resource`,
+      `Dynamic imported module "${id}" does not belong to any resource`
     );
   }
   // force reload resources
@@ -102,8 +103,8 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
         }
       }
       return load(resource);
-    }),
-  )
+    })
+  );
 }
 
 function load(resource: Resource, query?: string): Promise<void> {
@@ -114,18 +115,18 @@ function load(resource: Resource, query?: string): Promise<void> {
       // Skip inject Promise polyfill for runtime
       return Promise.resolve();
     } else if (loadingResources[resource.path]) {
-      if (query) {
-        loadingResources[resource.path] = loadingResources[resource.path].then(() => loadResource(resource, 0, query));
+      const loading = loadingResources[resource.path];
+      if (query && loading) {
+        loadingResources[resource.path] = loading.then(() =>
+          loadResource(resource, 0, query)
+        );
       }
 
-      return loadingResources[resource.path];
+      return loadingResources[resource.path] ?? Promise.resolve();
     }
 
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-      const result = moduleSystem.p.b(
-        'loadResource',
-        resource
-      );
+      const result = moduleSystem.p.b('loadResource', resource);
 
       if (result) {
         return result.then((res: ResourceLoadResult) => {
@@ -148,10 +149,7 @@ function load(resource: Resource, query?: string): Promise<void> {
 
 function loadResourceNode(resource: Resource) {
   if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-    const result = moduleSystem.p.b(
-      'loadResource',
-      resource
-    );
+    const result = moduleSystem.p.b('loadResource', resource);
 
     if (result) {
       return result.then((res: ResourceLoadResult) => {
@@ -175,10 +173,13 @@ function loadResourceNode(resource: Resource) {
   } else if (resource.type === 1) {
     return Promise.resolve();
   }
-
 }
 
-function loadResource(resource: Resource, index: number, query?: string): Promise<void> {
+function loadResource(
+  resource: Resource,
+  index: number,
+  query?: string
+): Promise<void> {
   const publicPath = publicPaths[index];
   const url = `${
     publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath
@@ -260,22 +261,22 @@ function isResourceLoaded(path: string) {
 // The public paths are injected during compile time
 function setPublicPaths(p: string[]): void {
   for (const key in p) {
-    publicPaths[key] = p[key]
+    publicPaths[key] = p[key];
   }
 }
 
 function setInitialLoadedResources(resources: string[]) {
-  resources.forEach(resource => {
+  resources.forEach((resource) => {
     setLoadedResource(resource);
   });
 }
 
-  // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
-  // This method can also be called during runtime to add new dynamic modules
+// These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
+// This method can also be called during runtime to add new dynamic modules
 function setDynamicModuleResourcesMap(
-    dr: Resource[],
-    dmp: Record<string, number[]>,
-  ): void {
-    dynamicResources = dr;
-    dynamicModuleResourcesMap = dmp;
-  }
+  dr: Resource[],
+  dmp: Record<string, number[]>
+): void {
+  dynamicResources = dr;
+  dynamicModuleResourcesMap = dmp;
+}

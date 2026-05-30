@@ -46,11 +46,11 @@ export function proxyMiddleware(
       // originalRes can be falsy if the proxy itself errored
       const res = originalRes as http.ServerResponse | net.Socket | undefined;
       if (!res) {
-        resolvedUserConfig.logger.error(
+        resolvedUserConfig.logger?.error(
           `http proxy error: ${err.message} \n ${err.stack}`
         );
       } else if ('req' in res) {
-        resolvedUserConfig.logger.error(
+        resolvedUserConfig.logger?.error(
           // @ts-ignore
           `http proxy error: ${originalRes.req.url}\n${err.stack}`
         );
@@ -63,7 +63,7 @@ export function proxyMiddleware(
             .end();
         }
       } else {
-        resolvedUserConfig.logger.error(`ws proxy error:\n ${err.stack}`);
+        resolvedUserConfig.logger?.error(`ws proxy error:\n ${err.stack}`);
         res.end();
       }
     });
@@ -72,7 +72,7 @@ export function proxyMiddleware(
       rewriteOriginHeader(proxyReq, options, resolvedUserConfig);
 
       socket.on('error', (err) => {
-        resolvedUserConfig.logger.error(
+        resolvedUserConfig.logger?.error(
           `ws proxy socket error: \n ${err.stack}`
         );
       });
@@ -94,7 +94,7 @@ export function proxyMiddleware(
 
   if (middlewareServer) {
     middlewareServer.on('upgrade', (req, socket: any, head) => {
-      const url = req.url;
+      const url = req.url ?? '';
       for (const context in proxies) {
         if (doesProxyContextMatchUrl(context, url)) {
           const [proxy, opts] = proxies[context];
@@ -104,7 +104,7 @@ export function proxyMiddleware(
             opts.target?.toString().startsWith('wss:')
           ) {
             if (opts.bypass) {
-              const bypassResult = opts.bypass(req, undefined, opts);
+              const bypassResult = opts.bypass(req, undefined as any, opts);
               if (typeof bypassResult === 'string') {
                 req.url = bypassResult;
                 return;
@@ -124,7 +124,7 @@ export function proxyMiddleware(
     });
   }
   return function handleProxyMiddleware(req, res, next) {
-    const url = req.url;
+    const url = req.url ?? '';
     for (const context in proxies) {
       if (doesProxyContextMatchUrl(context, url)) {
         const [proxy, opts] = proxies[context];
@@ -141,7 +141,7 @@ export function proxyMiddleware(
         }
 
         if (opts.rewrite) {
-          req.url = opts.rewrite(req.url as string);
+          req.url = opts.rewrite(req.url ?? '');
         }
 
         proxy.web(req, res, opts);
@@ -166,7 +166,7 @@ function rewriteOriginHeader(
   const { target } = options;
 
   if (proxyReq.headersSent) {
-    config.logger.warn(
+    config.logger?.warn(
       'Unable to rewrite Origin header as headers are already sent.'
     );
     return;

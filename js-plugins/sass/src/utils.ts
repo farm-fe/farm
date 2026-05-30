@@ -32,7 +32,7 @@ export function getSassImplementation(implementation?: string | any) {
   if (!implementation) {
     try {
       resolvedImplementation = getDefaultSassImplementation();
-    } catch (error) {
+    } catch (error: any) {
       throwError('SassImplementation', error);
       process.exit(error);
     }
@@ -41,7 +41,7 @@ export function getSassImplementation(implementation?: string | any) {
   if (typeof implementation === 'string') {
     try {
       resolvedImplementation = __require(implementation);
-    } catch (error) {
+    } catch (error: any) {
       throwError('SassImplementation', error);
       process.exit(error);
     }
