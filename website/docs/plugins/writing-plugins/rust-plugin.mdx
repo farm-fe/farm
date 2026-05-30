@@ -115,7 +115,7 @@ Before you start to write your rust plugin, you should know the following concep
 ### Module Type
 In Farm, every thing is `First Class Citizens`, so Farm designs `module_type` to identify the type of a module and handle different kinds of ModuleTypes in different plugins. 
 
-`module_type` returned by `load` hook, and can be transformed by `transform` hook. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. For these module types, you can return them directly in `load` or `transform` hook directly. But if you want to handle custom module types, you may need to implement ohter hooks like `parse`, `render_resource_pot_modules`, `generate resources`, etc to control how to parse, render and generate resources for the custom module types.
+`module_type` returned by `load` hook, and can be transformed by `transform` hook. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. For these module types, you can return them directly in `load` or `transform` hook directly. But if you want to handle custom module types, you may need to implement other hooks like `parse`, `render_resource_pot`, `generate_resources`, etc to control how to parse, render and generate_resources for the custom module types.
 
 
 ## Create Plugin
@@ -264,9 +264,9 @@ impl Plugin for FarmPluginExample {
     if param.module_id.starts_with("virtual:my-css:css") {
       // return module type and content
       Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
-        module_type: "css".to_string(),
+        module_type: farmfe_core::module::ModuleType::Css,
         content: ".red { color: red; }".to_string(),
-        ..Default::default()
+        source_map: None,
       }))
     } else {
       Ok(None)
@@ -275,7 +275,7 @@ impl Plugin for FarmPluginExample {
 }
 ```
 
-For non-native supported module types, you should use `transform` hook to transform the module type to a native supported module type, otherwise you need to implement `parse`, `renderResourcePot` hook to handle your custom module type:
+For non-native supported module types, you should use `transform` hook to transform the module type to a native supported module type, otherwise you need to implement `parse`, `render_resource_pot` hook to handle your custom module type:
 
 ```rust {8-18} title="src/lib.rs"
 // ... ignore other code
@@ -289,14 +289,13 @@ impl Plugin for FarmPluginExample {
     &self,
     param: &farmfe_core::plugin::PluginTransformHookParam,
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     // module type guard is required
-    if matches!(param.module_type, ModuleType::Custom("sass")) {
+    if matches!(&param.module_type, farmfe_core::module::ModuleType::Custom(name) if name == "sass") {
       // compile sass and transform the module type from sass to css
       Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        module_type: "css".to_string(),
-        content: compileSass(param.content),
+        module_type: Some(farmfe_core::module::ModuleType::Css),
+        content: compile_sass(&param.content),
         ..Default::default()
       }))
     } else {
@@ -307,11 +306,11 @@ impl Plugin for FarmPluginExample {
 ```
 
 :::note
-Module type guard like `matches!(param.module_type, ModuleType::Custom("sass"))` is required in the `transform` hook, cause the `transform` hook will be called for all module types, and you should only handle your custom module type in the `transform` hook. So do the `parse` and other hooks.
+Module type guard like `matches!(&param.module_type, farmfe_core::module::ModuleType::Custom(name) if name == "sass")` is required in the `transform` hook, because the `transform` hook will be called for all module types, and you should only handle your custom module type in the `transform` hook. Do the same in `parse` and other hooks.
 :::
 
 
-or implement `parse`, `render_resource_pot_modules` hook to handle your custom module type, see how native farm css plugin handle `css` module type in [farm-plugin-css](https://github.com/farm-fe/farm/blob/main/crates/plugin_html/src/lib.rs#L159).
+or implement `parse`, `render_resource_pot` hook to handle your custom module type, see how native farm css plugin handle `css` module type in [farm-plugin-css](https://github.com/farm-fe/farm/blob/main/crates/plugin_html/src/lib.rs#L159).
 
 
 ### Handle Plugin Options

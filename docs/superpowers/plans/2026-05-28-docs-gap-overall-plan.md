@@ -14,9 +14,9 @@
 
 - [x] A. Official plugin docs coverage and completeness
 - [x] B. Config + feature docs correctness
-- [ ] C. JS/Rust plugin API docs
-- [ ] D. CLI + JavaScript API docs
-- [ ] E. Migration guide cleanup
+- [x] C. JS/Rust plugin API docs
+- [x] D. CLI + JavaScript API docs
+- [x] E. Migration guide cleanup
 - [ ] F. Broad first pass across all of the above, concise rather than exhaustive
 
 ## Source-of-Truth Map
@@ -174,33 +174,49 @@ JavaScript plugin packages:
 
 **Goal:** Plugin author docs describe current hooks, types, and recommended patterns.
 
-- [ ] Audit `website/docs/api/js-plugin-api.md` against current JS plugin type definitions.
-- [ ] Audit `website/docs/api/rust-plugin-api.md` against current Rust plugin traits and hook signatures.
-- [ ] Audit writing guides:
+- [x] Audit `website/docs/api/js-plugin-api.md` against current JS plugin type definitions.
+- [x] Audit `website/docs/api/rust-plugin-api.md` against current Rust plugin traits and hook signatures.
+- [x] Audit writing guides:
   - `website/docs/plugins/writing-plugins/js-plugin.mdx`
   - `website/docs/plugins/writing-plugins/rust-plugin.mdx`
   - `website/docs/plugins/writing-plugins/runtime-plugin.md`
-- [ ] Fix broken writing-guide anchors currently reported for zh/current and zh/1.x pages where the English source change can prevent future drift.
-- [ ] Add concise hook lifecycle notes only where they remove ambiguity.
+- [x] Fix broken writing-guide anchors currently reported for zh/current and zh/1.x pages where the English source change can prevent future drift.
+- [x] Add concise hook lifecycle notes only where they remove ambiguity.
+
+2026-05-30 pass:
+
+- Updated JS plugin API docs for current hook names (`configureServer`, `processRenderedResourcePot`, `augmentResourcePotHash`, `processModule`, `freezeModule`, `updateFinished`), filters, config signature, finish timing, and resource-pot/hash naming caveat.
+- Updated Rust plugin API docs for current `Plugin` trait hooks including freeze/module-graph/resource-pot/generated-resource/entry-resource hooks and current render/hash signatures.
+- Updated writing guides for current hook names, runtime plugin type name (`FarmRuntimePlugin`), and source-backed Rust examples.
 
 ## D. CLI + JavaScript API Docs
 
 **Goal:** CLI and JavaScript API pages reflect current exported commands and programmatic APIs.
 
-- [ ] Audit `website/docs/cli/cli-api.md` against `packages/cli`.
-- [ ] Audit `website/docs/api/javascript-api.mdx` against current JavaScript exports from Farm packages.
-- [ ] Verify examples use current import paths and config helpers.
-- [ ] Remove stale commands or mark legacy-only commands when they still apply to versioned docs.
-- [ ] Keep examples minimal and runnable.
+- [x] Audit `website/docs/cli/cli-api.md` against `packages/cli`.
+- [x] Audit `website/docs/api/javascript-api.mdx` against current JavaScript exports from Farm packages.
+- [x] Verify examples use current import paths and config helpers.
+- [x] Remove stale commands or mark legacy-only commands when they still apply to versioned docs.
+- [x] Keep examples minimal and runnable.
+
+2026-05-30 pass:
+
+- Rewrote current CLI docs from `packages/cli/src/index.ts`, including aliases, `[root]` usage, current `--target` option, preview options, `--debug`, and removed stale `plugin` command/version output.
+- Rewrote current JavaScript API docs from `packages/core/src/index.ts`, `compiler/index.ts`, and server sources; examples now use `resolveConfig`/`createCompiler` instead of direct unresolved constructors.
 
 ## E. Migration Guide Cleanup
 
 **Goal:** Migration pages are easy to follow and do not conflict with current 2.x docs.
 
-- [ ] Audit `website/docs/migration/from-vite.md` for outdated Vite comparison notes and broken links.
-- [ ] Audit `website/docs/migration/v1-to-v2.md` for stale option names and missing 2.x redirects.
-- [ ] Separate current migration guidance from version-specific historical guidance.
-- [ ] Prefer short tables for renamed options, changed defaults, and replacement commands.
+- [x] Audit `website/docs/migration/from-vite.md` for outdated Vite comparison notes and broken links.
+- [x] Audit `website/docs/migration/v1-to-v2.md` for stale option names and missing 2.x redirects.
+- [x] Separate current migration guidance from version-specific historical guidance.
+- [x] Prefer short tables for renamed options, changed defaults, and replacement commands.
+
+2026-05-30 pass:
+
+- Reworked Vite migration guidance to describe `vitePlugins` as compatibility-layer support and avoid overstating Vite internals compatibility.
+- Fixed v1-to-v2 HMR/config guidance to use `server.hmr`, corrected plugin-doc links, removed a missing v2-features link, and adjusted misleading `config.custom.*` guidance.
 
 ## F. Broad First Pass
 
@@ -208,13 +224,13 @@ JavaScript plugin packages:
 
 - [x] Run `corepack pnpm build` from `/tmp/workspace/farm-fe/farm/website`.
 - [x] Record pre-existing warnings separately from warnings introduced by this work.
-- [ ] Prioritize fixes in this order:
+- [x] Prioritize fixes in this order:
   1. Broken docs build or broken navigation.
   2. Incorrect install/import/config examples.
   3. Missing official package coverage.
   4. Broken anchors in current English docs.
   5. Translation/versioned-doc drift that blocks build confidence.
-- [ ] Defer exhaustive API tables, full translation updates, and large conceptual rewrites to follow-up plans unless a short correction is enough.
+- [x] Defer exhaustive API tables, full translation updates, and large conceptual rewrites to follow-up plans unless a short correction is enough.
 
 ## Validation
 

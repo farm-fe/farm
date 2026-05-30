@@ -30,7 +30,7 @@ export default defineConfig({
           // return the resolve result
           return {
             resolvedPath: "virtual:my-module",
-            query: {},
+            query: [],
             sideEffects: false,
             external: false,
           };
@@ -94,7 +94,7 @@ The following hooks are available in Farm v2's `JsPlugin` interface. See [Js Plu
 **Generate Hooks:**
 - `renderStart` — Called when resource generation starts
 - `processRenderedResourcePot` — Process a resource pot after rendering
-- `augmentResourcePotHash` — Augment the hash of a resource pot
+- `augmentResourcePotHash` — Augment the hash of a resource pot. This is the TypeScript authoring name; the lower-level bridge still uses the historical `augmentResourceHash` name internally.
 - `finalizeResources` — Finalize all resources before output
 - `transformHtml` — Transform the generated HTML
 - `writeResources` — Called when resources are written to disk
@@ -154,10 +154,10 @@ const myCssPlugin = {
 ### Module Type
 In Farm, every thing is `First Class Citizens`, so Farm designs `module_type` to identify the type of a module and handle different kinds of ModuleTypes in different plugins. 
 
-`module_type` returned by `load` hook, and can be transformed by `transform` hook. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. For these module types, you can return them directly in `load` or `transform` hook directly. But if you want to handle custom module types, you may need to implement ohter hooks like `parse`, `render_resource_pot_modules`, `generate resources`, etc to control how to parse, render and generate resources for the custom module types.
+`module_type` returned by `load` hook, and can be transformed by `transform` hook. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. For these module types, you can return them directly in `load` or `transform` hook directly. JavaScript plugins can use `processModule` and `freezeModule` for later module-level processing, but custom parsing, rendering, and resource generation hooks are Rust-only.
 
 :::note
-Js Plugins don't support `parse`, `render_resource_pot_modules`, `generate resources` hooks, you have to use Rust Plugins to handle custom module types.
+Js Plugins don't support `parse`, `render_resource_pot`, `generate_resources` hooks, you have to use Rust Plugins to handle custom module types.
 ::: 
 
 ## Create Plugin

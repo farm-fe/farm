@@ -102,7 +102,7 @@ Note that the priority of most farm internal plugins like `plugin-script`, `plug
 :::
 
 ### config
-- **type: `config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;`**
+- **type: `config?: (config: UserConfig, configEnv: ConfigEnv) => UserConfig | Promise<UserConfig>;`**
 - **hook type: `serial`**
 - **required: `false`**
 
@@ -161,8 +161,8 @@ const myPlugin = () => {
 }
 ```
 
-### configureDevServer
-- **type: `configureDevServer?: (server: Server) => void | Promise<void>;`**
+### configureServer
+- **type: `configureServer?: (server: Server) => void | Promise<void>;`**
 - **hook type: `serial`**
 - **required: `false`**
 
@@ -179,7 +179,7 @@ const myPlugin = () => {
 
   return {
     name: 'my-plugin',
-    configureDevServer(server) {
+    configureServer(server) {
       devServer = server;
     }
   }
@@ -274,15 +274,15 @@ export interface PluginResolveHookResult {
   /// resolved path, normally a absolute path. you can also return a virtual path, and use [PluginLoadHookResult] to provide the content of the virtual path
   resolvedPath: string;
   /// whether this module should be external, if true, the module won't present in the final result
-  external: boolean;
+  external?: boolean;
   /// whether this module has side effects, affects tree shaking
-  sideEffects: boolean;
+  sideEffects?: boolean;
   /// the query parsed from specifier, for example, query should be `{ inline: true }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
   /// if you just want a normal query parsing like the example above, [crate::utils::parse_query] is for you
-  query: [string, string][] | null;
+  query?: [string, string][] | null;
   /// meta data of the module, will be passed to [PluginLoadHookParam] and [PluginTransformHookParam]
-  meta: Record<string, string> | null;
+  meta?: Record<string, string> | null;
 }
 ```
 
@@ -357,8 +357,7 @@ Note:
 ```ts
 type LoadHook = { 
   filters: {
-    importers: string[];
-    sources: string[];
+    resolvedPaths: string[];
   };
   executor: Callback<PluginLoadHookParam, PluginLoadHookResult> 
 };
@@ -419,8 +418,8 @@ const myPlugin = () => ({
 ```ts
 type TransformHook = { 
   filters: {
-    importers: string[];
-    sources: string[];
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
   };
   executor: Callback<PluginTransformHookParam, PluginTransformHookResult> 
 };
@@ -507,7 +506,7 @@ For filters:
 * `filters.moduleTypes` is **NOT** `regex`, it must exactly match the `ModuleType` like `css`, `js`, `tsx`, etc.
 
 :::note
-`transform` hook is **content to content**. There is a similar hook called `process_module`, `process_module` is **ast to ast**. Js plugin does not support `process_module` hook due to performance issues, if you want **ast to ast** transformations, try [`Rust Plugin`](/docs/plugins/writing-plugins/rust-plugin) instead.
+`transform` hook is **content to content**. JavaScript plugins also expose `processModule` and `freezeModule` for later module-level processing, but AST-heavy transformations are still better suited to [`Rust Plugin`](/docs/plugins/writing-plugins/rust-plugin).
 :::
 
 ### buildEnd
@@ -566,18 +565,32 @@ const myPlugin = () => {
 `renderStart` is only called once for the first compile. Later compiling like `Lazy Compilation` and `HMR Update` won't trigger `renderStart`.
 :::
 
-### renderResourcePot
+### processModule
+- **required: `false`**
+- **hook type: `serial`**
+- **type:** `processModule?: JsPluginHook<{ moduleTypes?: ModuleType[]; resolvedPaths?: string[] }, PluginProcessModuleParams, PluginProcessModuleResult>`
+
+Transforms module-level content after parsing-oriented stages. Use this only when you need module processing from JavaScript; for AST-heavy work, prefer Rust plugins.
+
+### freezeModule
+- **required: `false`**
+- **hook type: `serial`**
+- **type:** `freezeModule?: JsPluginHook<{ moduleTypes?: ModuleType[]; resolvedPaths?: string[] }, FreeModuleParam, PluginProcessModuleResult>`
+
+Runs after module graph construction reaches the module-freezing phase. Use it for final module-level transformations before later graph/resource stages.
+
+### processRenderedResourcePot
 - **required: `false`**
 - **hook type: `serial`**
 - **type:**
 ```ts
-type RenderResourcePotHook = JsPluginHook<
+type ProcessRenderedResourcePotHook = JsPluginHook<
   {
     resourcePotTypes?: ResourcePotType[];
     moduleIds?: string[];
   },
-  RenderResourcePotParams,
-  RenderResourcePotResult
+  JsResourcePot,
+  PluginRenderResourcePotResult
 >;
 
 type Callback<P, R> = (
@@ -586,23 +599,21 @@ type Callback<P, R> = (
 ) => Promise<R | null | undefined>;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
-export interface RenderResourcePotParams {
+export interface JsResourcePot {
+  id: string;
+  name: string;
+  resourcePotType: ResourcePotType;
+  moduleIds: ModuleId[];
   content: string;
   sourceMapChain: string[];
-  resourcePotInfo: {
-    id: string;
-    name: string;
-    resourcePotType: ResourcePotType;
-    map?: string;
-    modules: Record<ModuleId, RenderedModule>;
-    moduleIds: ModuleId[];
-    data: JsResourcePotInfoData;
-    custom: Record<string, string>;
-  };
+  isDynamicEntry: boolean;
+  isEntry: boolean;
+  custom: Record<string, string>;
 }
-export interface RenderResourcePotResult {
+export interface PluginRenderResourcePotResult {
   content: string;
   sourceMap?: string;
+  ignorePreviousSourceMap?: boolean;
 }
 ```
 
@@ -611,7 +622,7 @@ export interface RenderResourcePotResult {
 ```ts
 const myPlugin = () => ({
   name: 'test-render-resource-pot',
-  renderResourcePot: {
+  processRenderedResourcePot: {
     filters: {
       moduleIds: ['^index.ts\\?foo=bar$'],
       resourcePotTypes: ['css']
@@ -634,12 +645,12 @@ We transform all `<--layer-->` in css resource pot and replace them to real `css
 When both `filters.moduleIds` and `filters.resourcePotTypes` are specified, take the union.
 :::
 
-### augmentResourceHash
+### augmentResourcePotHash
 - **required: `false`**
 - **hook type: `serial`**
 - **type:**
 ```ts
-type AugmentResourceHash = JsPluginHook<
+type AugmentResourcePotHash = JsPluginHook<
   {
     resourcePotTypes?: ResourcePotType[];
     moduleIds?: string[];
@@ -664,13 +675,13 @@ type Callback<P, R> = (
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 ```
 
-Append resource hash for give Resource Pot. Useful if you want to add additional conditions when generating resource hash.
+Append resource hash for give Resource Pot. Use the `augmentResourcePotHash` property when authoring TypeScript plugins; the lower-level bridge still uses the historical `augmentResourceHash` name internally.
 
 
 ```ts
 const myPlugin = () => ({
-  name: 'test-augment-resource-pot',
-  renderResourcePot: {
+  name: 'test-augment-resource-pot-hash',
+  augmentResourcePotHash: {
     filters: {
       moduleIds: ['^index.ts\\?foo=bar$'],
       resourcePotTypes: ['css']
@@ -743,7 +754,7 @@ const myPlugin = () => ({
   transformHtml: {
     order: 2,
     async executor({ htmlResource }) {
-      const htmlCode = Buffer.from(htmlResource).toString();
+      const htmlCode = Buffer.from(htmlResource.bytes).toString();
   
       const newHtmlCode = htmlCode.replace('my-app-data', data);
       htmlResource.bytes = [...Buffer.from(newHtmlCode)];
@@ -842,7 +853,7 @@ You must decide how to `serialize/deserialize` cache to `bytes` in your plugins.
 - **hook type: `parallel`**
 - **required: `false`**
 
-Called before the resources render starts.
+Called when compilation work is finished.
 
 Example:
 ```ts
@@ -865,6 +876,13 @@ const myPlugin = () => {
 `finish` is only called once for the first compile. Later compiling like `Lazy Compilation` and `HMR Update` won't trigger `finish`.
 :::
 
+### updateFinished
+- **required: `false`**
+- **hook type: `serial`**
+- **type:** `updateFinished?: { executor: Callback<Record<string, never>, void> };`
+
+Called after an HMR or incremental update has finished. Use this for cleanup that should run after regenerated resources are finalized.
+
 ### updateModules
 - **required: `false`**
 - **hook type: `serial`**
@@ -872,8 +890,8 @@ const myPlugin = () => {
 ```ts
 type UpdateModulesHook = {
   executor: Callback<
-    { paths: [string, string][] },
-    string[] | undefined | null | void
+    PluginUpdateModulesHookParam,
+    [string, UpdateType][] | undefined | null | void
   >;
 };
 ```
