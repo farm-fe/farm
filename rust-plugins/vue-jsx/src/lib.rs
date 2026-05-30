@@ -11,7 +11,7 @@ use fxhash::FxHashMap;
 use indexmap::IndexSet;
 
 use farmfe_core::serde_json;
-use farmfe_core::swc_common::{comments::Comments, Mark, Span, Spanned, SyntaxContext, DUMMY_SP};
+use farmfe_core::swc_common::{comments::Comments, Globals, Mark, Span, Spanned, SyntaxContext, DUMMY_SP, GLOBALS};
 use farmfe_core::swc_ecma_ast::*;
 use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::swc_ecma_utils::{private_ident, quote_ident, quote_str};
@@ -59,13 +59,14 @@ where
 
     pub(crate) assignment_left: Option<Ident>,
     pub(crate) injecting_consts: Vec<VarDeclarator>,
+    pub(crate) resolved_path: String,
 }
 
 impl<C> VueJsxTransformVisitor<C>
 where
     C: Comments,
 {
-    pub fn new(options: Options, unresolved_mark: Mark, comments: Option<C>) -> Self {
+    pub fn new(options: Options, unresolved_mark: Mark, comments: Option<C>, resolved_path: String) -> Self {
         Self {
             options,
             vue_imports: Default::default(),
@@ -86,6 +87,7 @@ where
 
             assignment_left: None,
             injecting_consts: Default::default(),
+            resolved_path,
         }
     }
 
@@ -1619,58 +1621,62 @@ impl Plugin for FarmPluginVueJsx {
             _ => Syntax::Es(Default::default()),
         };
 
-        let parse_result = parse_module(
-            &param.module_id.clone().into(),
-            Arc::new(param.content.clone()),
-            syntax,
-            Default::default(),
-        )
-        .map_err(|e| CompilationError::TransformError {
-            resolved_path: param.resolved_path.to_string(),
-            msg: format!("[vue-jsx] failed to parse module: {e}"),
-        })?;
-
-        let unresolved_mark = Mark::new();
-        let mut ast = parse_result.ast;
-        let comments = parse_result.comments;
-        let cm = parse_result.source_map;
-
-        let mut visitor = VueJsxTransformVisitor::new(
-            options,
-            unresolved_mark,
-            Some(&comments),
-        );
-
-        ast.visit_mut_with(&mut visitor);
-
-        let codegen_config = create_codegen_config(_context);
-        let code_bytes = codegen_module(
-            &ast,
-            cm,
-            None,
-            codegen_config,
-            Some(farmfe_toolkit::script::CodeGenCommentsConfig {
-                comments: &comments,
-                config: &Default::default(),
-            }),
-        )
-        .map_err(|e| CompilationError::TransformError {
-            resolved_path: param.resolved_path.to_string(),
-            msg: format!("[vue-jsx] codegen error: {e}"),
-        })?;
-
-        let content = String::from_utf8(code_bytes).map_err(|e| {
-            CompilationError::TransformError {
+        let globals = Globals::default();
+        GLOBALS.set(&globals, || {
+            let parse_result = parse_module(
+                &param.module_id.clone().into(),
+                Arc::new(param.content.clone()),
+                syntax,
+                Default::default(),
+            )
+            .map_err(|e| CompilationError::TransformError {
                 resolved_path: param.resolved_path.to_string(),
-                msg: format!("[vue-jsx] invalid utf-8 output: {e}"),
-            }
-        })?;
+                msg: format!("[vue-jsx] failed to parse module: {e}"),
+            })?;
 
-        Ok(Some(PluginTransformHookResult {
-            content,
-            module_type: Some(param.module_type.clone()),
-            source_map: None,
-            ignore_previous_source_map: false,
-        }))
+            let unresolved_mark = Mark::new();
+            let mut ast = parse_result.ast;
+            let comments = parse_result.comments;
+            let cm = parse_result.source_map;
+
+            let mut visitor = VueJsxTransformVisitor::new(
+                options,
+                unresolved_mark,
+                Some(&comments),
+                param.resolved_path.to_string(),
+            );
+
+            ast.visit_mut_with(&mut visitor);
+
+            let codegen_config = create_codegen_config(_context);
+            let code_bytes = codegen_module(
+                &ast,
+                cm,
+                None,
+                codegen_config,
+                Some(farmfe_toolkit::script::CodeGenCommentsConfig {
+                    comments: &comments,
+                    config: &Default::default(),
+                }),
+            )
+            .map_err(|e| CompilationError::TransformError {
+                resolved_path: param.resolved_path.to_string(),
+                msg: format!("[vue-jsx] codegen error: {e}"),
+            })?;
+
+            let content = String::from_utf8(code_bytes).map_err(|e| {
+                CompilationError::TransformError {
+                    resolved_path: param.resolved_path.to_string(),
+                    msg: format!("[vue-jsx] invalid utf-8 output: {e}"),
+                }
+            })?;
+
+            Ok(Some(PluginTransformHookResult {
+                content,
+                module_type: Some(param.module_type.clone()),
+                source_map: None,
+                ignore_previous_source_map: false,
+            }))
+        })
     }
 }
