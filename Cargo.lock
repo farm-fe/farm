@@ -1422,6 +1422,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "css_dataset"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0ed4c49b3d82ab5e2a0167f0d24d30872cbd8526b54fb060c84295ad7b6d71d"
+dependencies = [
+ "phf",
+ "phf_codegen",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cssparser"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2712,6 +2724,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_vue_jsx"
+version = "0.0.1"
+dependencies = [
+ "bitflags 2.11.1",
+ "css_dataset",
+ "farmfe_compiler",
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
+ "fxhash",
+ "indexmap 2.14.0",
+ "regex",
+ "serde",
+]
+
+[[package]]
 name = "farmfe_plugin_wasm"
 version = "0.0.0"
 dependencies = [
@@ -3051,7 +3081,7 @@ dependencies = [
  "flagset",
  "fxhash",
  "indexmap 2.14.0",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lazy_static",
  "percent-encoding",
  "phf",

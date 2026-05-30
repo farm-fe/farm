@@ -4,5 +4,9 @@
       "Bash(*)",
       "Bash(cmd.exe *)"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }
