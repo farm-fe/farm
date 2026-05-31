@@ -23,7 +23,6 @@
       "!**/examples/**",
       "!**/*.{js,mjs,cjs}",
       "!cspell.json",
-      "!packages/runtime",
       "!packages/runtime-plugin-import-meta"
     ],
     "ignoreUnknown": true
@@ -36,7 +35,12 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "includes": ["**/*.ts", "!**/node_modules", "!**/dist"]
+    "includes": [
+      "**/*.ts",
+      "!**/node_modules",
+      "!**/dist",
+      "!packages/runtime/**"
+    ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
@@ -132,7 +136,8 @@
             "noInnerDeclarations": "off"
           },
           "suspicious": {
-            "noFunctionAssign": "off"
+            "noFunctionAssign": "off",
+            "noRedeclare": "off"
           }
         }
       }

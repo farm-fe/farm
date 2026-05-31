@@ -1,4 +1,4 @@
-import type { ModuleSystem, Module } from '../module-system.js';
+import type { Module, ModuleSystem } from '../module-system.js';
 import type { Resource } from './dynamic-import.js';
 
 export interface ResourceLoadResult {

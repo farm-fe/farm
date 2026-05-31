@@ -1,6 +1,6 @@
-import { test, expect } from 'vitest';
-import { Module, ModuleSystem } from '../src/index.js';
+import { expect, test } from 'vitest';
 import { initModuleSystem } from '../dist/modules/plugin.js';
+import { Module, ModuleSystem } from '../src/index.js';
 
 test('plugin hooks serial execution', async () => {
   const moduleSystem = {} as ModuleSystem;
