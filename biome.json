@@ -23,7 +23,6 @@
       "!**/examples/**",
       "!**/*.{js,mjs,cjs}",
       "!cspell.json",
-      "!packages/runtime",
       "!packages/runtime-plugin-import-meta"
     ],
     "ignoreUnknown": true
@@ -36,7 +35,12 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "includes": ["**/*.ts", "!**/node_modules", "!**/dist"]
+    "includes": [
+      "**/*.ts",
+      "!**/node_modules",
+      "!**/dist",
+      "!packages/runtime/**"
+    ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
@@ -79,7 +83,7 @@
       "style": {
         "noInferrableTypes": "error",
         "noNamespace": "error",
-        "noNonNullAssertion": "warn",
+        "noNonNullAssertion": "error",
         "useAsConstAssertion": "error"
       },
       "suspicious": {
@@ -122,6 +126,23 @@
       "!**/*.config.ts"
     ]
   },
+  "overrides": [
+    {
+      "includes": ["packages/runtime/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredVariables": "off",
+            "noInnerDeclarations": "off"
+          },
+          "suspicious": {
+            "noFunctionAssign": "off",
+            "noRedeclare": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "jsxQuoteStyle": "single",

@@ -83,7 +83,7 @@ export async function recursiveReaddir(dir: string): Promise<string[]> {
   let directs: fs.Dirent[];
   try {
     directs = await fsp.readdir(dir, { withFileTypes: true });
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === 'EACCES') {
       // Ignore permission errors
       return [];

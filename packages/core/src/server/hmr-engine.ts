@@ -11,7 +11,7 @@ import { Server as FarmDevServer } from './index.js';
 export class HmrEngine {
   private _updateQueue: CompilerUpdateItem[] = [];
 
-  private _onUpdates: ((result: JsUpdateResult) => void)[];
+  private _onUpdates!: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
   constructor(private readonly devServer: FarmDevServer) {
@@ -29,23 +29,26 @@ export class HmrEngine {
     this._onUpdates.push(cb);
   }
 
-  recompileAndSendResult = async (): Promise<JsUpdateResult> => {
+  recompileAndSendResult = async (): Promise<JsUpdateResult | undefined> => {
     const queue = [...this._updateQueue];
 
     if (queue.length === 0) {
       return;
     }
+    const compiler = this.devServer.compiler;
+    if (!compiler) return;
+    const compilerRoot = compiler.config.root ?? '';
     const logger = this.devServer.logger;
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item.path)) {
-          return relative(this.devServer.compiler.config.root, item.path);
+          return relative(compilerRoot, item.path);
         } else {
-          const resolvedPath = this.devServer.compiler.transformModulePath(
-            this.devServer.compiler.config.root,
+          const resolvedPath = compiler.transformModulePath(
+            compilerRoot,
             item.path
           );
-          return relative(this.devServer.compiler.config.root, resolvedPath);
+          return relative(compilerRoot, resolvedPath);
         }
       })
       .join(', ');
@@ -55,19 +58,19 @@ export class HmrEngine {
     }
 
     // we must add callback before update
-    this.devServer.compiler.onUpdateFinish(async () => {
+    compiler.onUpdateFinish(async () => {
       // if there are more updates, recompile again
       if (this._updateQueue.length > 0) {
         await this.recompileAndSendResult();
       }
-      if (this.devServer.config?.server.writeToDisk) {
-        this.devServer.compiler.writeResourcesToDisk();
+      if (this.devServer.config?.server?.writeToDisk) {
+        compiler.writeResourcesToDisk();
       }
     });
 
     const start = performance.now();
 
-    const result = await this.devServer.compiler.update(queue);
+    const result = await compiler.update(queue);
 
     logger.info(
       `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
@@ -78,7 +81,7 @@ export class HmrEngine {
       (item) => !queue.includes(item)
     );
 
-    let dynamicResourcesMap: Record<string, Resource[]> = null;
+    let dynamicResourcesMap: Record<string, Resource[]> | null = null;
 
     if (result.dynamicResourcesMap) {
       for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
@@ -127,10 +130,12 @@ export class HmrEngine {
     absPath: CompilerUpdateItem | CompilerUpdateItem[],
     force = false
   ) {
+    const compiler = this.devServer.compiler;
+    if (!compiler) return;
     const pathItems = Array.isArray(absPath) ? absPath : [absPath];
     for (const item of pathItems) {
       if (
-        this.devServer.compiler.hasModule(item.path) &&
+        compiler.hasModule(item.path) &&
         !this._updateQueue.find((queueItem) => queueItem.path === item.path)
       ) {
         if (fse.existsSync(item.path)) {
@@ -149,10 +154,10 @@ export class HmrEngine {
       }
     }
 
-    if (!this.devServer.compiler.compiling && this._updateQueue.length > 0) {
+    if (!compiler.compiling && this._updateQueue.length > 0) {
       try {
         await this.recompileAndSendResult();
-      } catch (e) {
+      } catch (e: any) {
         const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
         const errorStr = `${JSON.stringify({
           message: serialization
@@ -163,7 +168,7 @@ export class HmrEngine {
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${(this.devServer.config.server.hmr as HmrOptions).overlay}
+              overlay: ${(this.devServer.config.server?.hmr as HmrOptions)?.overlay}
             }
           `);
         });

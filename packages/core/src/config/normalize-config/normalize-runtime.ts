@@ -22,7 +22,7 @@ export function normalizeRuntimeConfig(
   resolvedUserConfig: ResolvedUserConfig,
   isProduction: boolean
 ) {
-  const resolvedRootPath = resolvedCompilation.root;
+  const resolvedRootPath = resolvedCompilation.root ?? process.cwd();
   const require = createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
   const importMetaPluginPath = require.resolve(
@@ -44,58 +44,60 @@ export function normalizeRuntimeConfig(
       resolvedCompilation.output?.targetEnv !== 'browser-esnext'
   };
 
-  resolvedCompilation.runtime.plugins = resolvedCompilation.runtime.plugins.map(
-    (plugin) => {
-      if (path.isAbsolute(plugin)) return plugin;
-      return plugin.startsWith('.')
-        ? path.resolve(resolvedRootPath, plugin)
-        : require.resolve(plugin);
-    }
-  );
+  const runtime = resolvedCompilation.runtime;
+  const runtimePlugins = runtime.plugins ?? [];
 
-  if (!resolvedCompilation.runtime.namespace) {
-    resolvedCompilation.runtime.namespace = createHash('md5')
+  runtime.plugins = runtimePlugins.map((plugin) => {
+    if (path.isAbsolute(plugin)) return plugin;
+    return plugin.startsWith('.')
+      ? path.resolve(resolvedRootPath, plugin)
+      : require.resolve(plugin);
+  });
+
+  if (!runtime.namespace) {
+    runtime.namespace = createHash('md5')
       .update(getNamespaceName(resolvedRootPath))
       .digest('hex');
   }
 
-  const isNode = isNodeEnv(resolvedCompilation.output.targetEnv);
+  const output = resolvedCompilation.output ?? {};
+
+  const isNode = isNodeEnv(output.targetEnv);
   if (
     !isProduction &&
     !isNode &&
-    isArray(resolvedCompilation.runtime.plugins) &&
+    isArray(runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
-    !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
+    !runtime.plugins.includes(hmrClientPluginPath)
   ) {
-    const publicPath = getValidPublicPath(
-      resolvedCompilation.output.publicPath
-    );
+    const publicPath = getValidPublicPath(output.publicPath);
     const serverOptions = resolvedUserConfig.server;
     const defineHmrPath = normalizePath(
-      path.join(publicPath, resolvedUserConfig.server.hmr.path)
+      path.join(publicPath, serverOptions.hmr?.path ?? '')
     );
 
-    resolvedCompilation.runtime.plugins.push(hmrClientPluginPath);
+    runtime.plugins.push(hmrClientPluginPath);
 
+    resolvedCompilation.define ??= {};
     resolvedCompilation.define.FARM_HMR_PORT = String(
       (serverOptions.hmr.port || undefined) ??
         serverOptions.port ??
         DEFAULT_DEV_SERVER_OPTIONS.port
     );
     resolvedCompilation.define.FARM_HMR_HOST = JSON.stringify(
-      resolvedUserConfig.server.hmr.host
+      serverOptions.hmr.host
     );
     resolvedCompilation.define.FARM_HMR_PROTOCOL = JSON.stringify(
-      resolvedUserConfig.server.hmr.protocol
+      serverOptions.hmr.protocol
     );
     resolvedCompilation.define.FARM_HMR_PATH = JSON.stringify(defineHmrPath);
   }
 
   if (
-    isArray(resolvedCompilation.runtime.plugins) &&
-    !resolvedCompilation.runtime.plugins.includes(importMetaPluginPath)
+    isArray(runtime.plugins) &&
+    !runtime.plugins.includes(importMetaPluginPath)
   ) {
-    resolvedCompilation.runtime.plugins.push(importMetaPluginPath);
+    runtime.plugins.push(importMetaPluginPath);
   }
 }
 

@@ -70,7 +70,7 @@ function optimizeSafeRealPathSync() {
   // get the error EISDIR: illegal operation on a directory
   try {
     fs.realpathSync.native(path.resolve('./'));
-  } catch (error) {
+  } catch (error: any) {
     if (error.message.includes('EISDIR: illegal operation on a directory')) {
       safeRealpathSync = fs.realpathSync;
       return;
@@ -163,14 +163,15 @@ export async function copyPublicDirectory(
   resolvedUserConfig: ResolvedUserConfig
 ): Promise<void> {
   const absPublicDirPath = normalizePublicDir(
-    resolvedUserConfig.root,
+    resolvedUserConfig.root ?? process.cwd(),
     resolvedUserConfig.publicDir
   );
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
       const files = await fse.readdir(absPublicDirPath);
-      const outputPath = resolvedUserConfig.compilation.output.path;
+      const outputPath = resolvedUserConfig.compilation?.output?.path;
+      if (!outputPath) return;
       for (const file of files) {
         const publicFile = path.join(absPublicDirPath, file);
         const destFile = path.join(outputPath, file);
@@ -187,8 +188,8 @@ export async function copyPublicDirectory(
       //   )}.`
       // );
     }
-  } catch (error) {
-    resolvedUserConfig.logger.error(
+  } catch (error: any) {
+    resolvedUserConfig.logger?.error(
       `Error copying public directory: ${error.message}`
     );
   }

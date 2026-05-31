@@ -41,57 +41,49 @@ export class ViteDevServerAdapter {
 }
 
 export class ViteModuleGraphAdapter {
-  context: CompilationContext;
+  context: CompilationContext | undefined;
   pluginName: string;
   logger: Logger;
 
   constructor(pluginName: string, logger: Logger) {
     // context will be set in buildStart hook
-    this.context = undefined;
     this.pluginName = pluginName;
     this.logger = logger;
   }
 
   getModulesByFile(file: string): ViteModule[] {
-    const raw = this.context.viteGetModulesByFile(file);
+    const context = this.context;
+    if (!context) return [];
+    const raw = context.viteGetModulesByFile(file);
 
     return raw.map((item) => {
-      return proxyViteModuleNode(
-        item,
-        this.pluginName,
-        this.context,
-        this.logger
-      );
+      return proxyViteModuleNode(item, this.pluginName, context, this.logger);
     });
   }
 
-  getModuleById(id: string): ViteModule {
-    const raw = this.context.viteGetModuleById(id);
+  getModuleById(id: string): ViteModule | undefined {
+    const context = this.context;
+    if (!context) return undefined;
+    const raw = context.viteGetModuleById(id);
 
     if (raw) {
-      return proxyViteModuleNode(
-        raw,
-        this.pluginName,
-        this.context,
-        this.logger
-      );
+      return proxyViteModuleNode(raw, this.pluginName, context, this.logger);
     }
+    return undefined;
   }
 
   async getModuleByUrl(url: string): Promise<ViteModule | undefined> {
+    const context = this.context;
+    if (!context) return undefined;
     if (url.startsWith('/')) {
       url = url.slice(1);
-      const raw = this.context.viteGetModuleById(url);
+      const raw = context.viteGetModuleById(url);
 
       if (raw) {
-        return proxyViteModuleNode(
-          raw,
-          this.pluginName,
-          this.context,
-          this.logger
-        );
+        return proxyViteModuleNode(raw, this.pluginName, context, this.logger);
       }
     }
+    return undefined;
   }
 
   invalidateModule() {
@@ -221,6 +213,7 @@ export function createViteModuleGraphAdapter(
         ['context'],
         p
       );
+      return false;
     }
   });
 

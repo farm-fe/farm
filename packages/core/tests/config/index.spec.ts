@@ -38,21 +38,25 @@ describe('mergeFarmCliConfig', () => {
   });
 
   test('userConfig.root relative, should have configPath', () => {
-    expect(() => {
-      mergeFarmCliConfig(
-        { root: './path/to/' },
-        { root: './path/userConfig' },
-        'development'
-      );
-    }).toThrow();
+    // When configFile is not a string, relative root is kept as-is (no resolution)
+    const result1 = mergeFarmCliConfig(
+      { root: './path/to/' },
+      { root: './path/userConfig' },
+      'development'
+    );
 
-    const result = mergeFarmCliConfig(
+    expect(result1).toEqual({
+      root: './path/userConfig'
+    });
+
+    // When configFile is a string path, relative root is resolved against configFile
+    const result2 = mergeFarmCliConfig(
       { root: './path/to/', configFile: process.cwd() },
       { root: './path/userConfig' },
       'development'
     );
 
-    expect(result).toEqual({
+    expect(result2).toEqual({
       root: path.resolve(process.cwd(), './path/userConfig')
     });
   });

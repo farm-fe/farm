@@ -7,19 +7,19 @@ interface ReactCompilerOptions
   compilerOptions?: Partial<PluginOptions>;
 }
 
-const defaultFilters: ReactCompilerOptions['filters'] = {
-  moduleTypes: ['jsx', 'tsx'],
-  resolvedPaths: []
-};
+const defaultReactCompilerModuleTypes = ['jsx', 'tsx'] as const;
+const defaultReactCompilerResolvedPaths: string[] = [];
 
 export function reactCompiler(options: ReactCompilerOptions = {}): JsPlugin {
   return babel({
     name: 'js-plugin:react-compiler',
     priority: 120,
     filters: {
-      moduleTypes: options.filters?.moduleTypes ?? defaultFilters.moduleTypes,
+      moduleTypes: options.filters?.moduleTypes ?? [
+        ...defaultReactCompilerModuleTypes
+      ],
       resolvedPaths:
-        options.filters?.resolvedPaths ?? defaultFilters.resolvedPaths
+        options.filters?.resolvedPaths ?? defaultReactCompilerResolvedPaths
     },
     transformOptions: {
       plugins: ['babel-plugin-react-compiler', '@babel/plugin-syntax-jsx'].map(

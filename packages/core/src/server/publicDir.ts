@@ -10,11 +10,11 @@ export async function initPublicFiles(
   config: ResolvedUserConfig
 ): Promise<Set<string> | undefined> {
   let fileNames: string[];
-  const publicDir: string = config.publicDir;
+  const publicDir: string = config.publicDir ?? '';
 
   try {
     fileNames = await recursiveReaddir(publicDir);
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === ERR_SYMLINK_IN_RECURSIVE_READDIR) {
       return;
     }

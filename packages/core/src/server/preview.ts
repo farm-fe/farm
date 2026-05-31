@@ -42,7 +42,7 @@ export interface PreviewServerOptions extends CommonServerOptions {
   distDir: string;
   open: boolean | string;
   cors: boolean | CorsOptions;
-  proxy: Record<string, string | ProxyOptions>;
+  proxy?: Record<string, string | ProxyOptions>;
   middlewares?: PreviewServerMiddleware[];
 }
 
@@ -51,17 +51,17 @@ export interface PreviewServerOptions extends CommonServerOptions {
  * @class
  */
 export class PreviewServer extends httpServer {
-  config: ResolvedUserConfig;
-  previewServerOptions: PreviewServerOptions;
-  httpsOptions: SecureServerOptions;
+  config!: ResolvedUserConfig;
+  previewServerOptions!: PreviewServerOptions;
+  httpsOptions: SecureServerOptions | undefined;
 
-  publicPath: string;
-  httpServer: HttpServer;
+  publicPath!: string;
+  httpServer!: HttpServer;
 
-  middlewares: connect.Server;
-  serve: RequestHandler;
-  closeHttpServerFn: () => Promise<void>;
-  terminateServerFn: () => Promise<void>;
+  middlewares!: connect.Server;
+  serve!: RequestHandler;
+  closeHttpServerFn!: () => Promise<void>;
+  terminateServerFn!: () => Promise<void>;
 
   /**
    * Creates an instance of PreviewServer.
@@ -84,7 +84,7 @@ export class PreviewServer extends httpServer {
       'production'
     );
 
-    this.logger = this.config.logger;
+    this.logger = this.config.logger ?? this.logger;
 
     await this.#resolveOptions();
 
@@ -114,7 +114,7 @@ export class PreviewServer extends httpServer {
    */
   #initializeMiddlewares() {
     const { cors, proxy, middlewares } = this.previewServerOptions;
-    const { appType, middlewareMode } = this.config.server;
+    const { appType, middlewareMode } = this.config.server ?? {};
 
     if (cors !== false) {
       this.middlewares.use(
@@ -140,9 +140,10 @@ export class PreviewServer extends httpServer {
 
     this.middlewares.use(this.serve);
 
-    middlewares?.forEach((middleware) =>
-      this.middlewares.use(middleware(this))
-    );
+    middlewares?.forEach((middleware) => {
+      const mw = middleware(this);
+      if (mw) this.middlewares.use(mw);
+    });
 
     if (appType === 'spa' || appType === 'mpa') {
       this.middlewares.use(notFoundMiddleware());
@@ -156,18 +157,17 @@ export class PreviewServer extends httpServer {
    * @returns {Promise<void>}
    */
   async #resolveOptions(): Promise<void> {
-    const {
-      server,
-      compilation: { root, output }
-    } = this.config;
+    const { server, compilation } = this.config;
 
-    this.publicPath = getValidPublicPath(output.publicPath ?? '/');
+    this.publicPath = getValidPublicPath(
+      compilation?.output?.publicPath ?? '/'
+    );
     const preview = server?.preview;
 
-    const distPath = preview?.distDir || output?.path || 'dist';
+    const distPath = preview?.distDir || compilation?.output?.path || 'dist';
     const distDir = path.isAbsolute(distPath)
       ? distPath
-      : path.resolve(root, distPath);
+      : path.resolve(compilation?.root ?? '', distPath);
 
     if (!existsSync(distDir)) {
       throw new Error(
@@ -179,7 +179,7 @@ export class PreviewServer extends httpServer {
     this.serve = sirv(distDir, {
       etag: true,
       dev: true,
-      single: this.config.server.appType === 'spa',
+      single: this.config.server?.appType === 'spa',
       ignores: false,
       setHeaders: (res, pathname) => {
         if (knownJavascriptExtensionRE.test(pathname)) {
@@ -187,27 +187,30 @@ export class PreviewServer extends httpServer {
         }
         if (headers) {
           for (const name in headers) {
-            res.setHeader(name, headers[name]);
+            res.setHeader(
+              name,
+              headers[name] as string | number | readonly string[]
+            );
           }
         }
       }
     });
 
-    this.httpsOptions = await this.resolveHttpsConfig(
-      preview?.https ?? server?.https
-    );
+    this.httpsOptions =
+      (await this.resolveHttpsConfig(preview?.https ?? server?.https)) ??
+      undefined;
 
     this.previewServerOptions = {
       headers,
-      host: typeof preview.host === 'string' ? preview.host : 'localhost',
+      host: typeof preview?.host === 'string' ? preview.host : 'localhost',
       port: preview?.port ?? 1911,
       strictPort: preview?.strictPort ?? false,
-      https: this.httpsOptions,
+      https: this.httpsOptions ?? ({} as Record<string, never>),
       distDir,
       open: preview?.open ?? false,
       cors: preview?.cors ?? false,
       proxy: preview?.proxy ?? server?.proxy,
-      middlewares: preview.middlewares
+      middlewares: preview?.middlewares
     };
   }
 
@@ -237,7 +240,7 @@ export class PreviewServer extends httpServer {
       if (this.config.configFilePath) {
         const shortFile = getShortName(
           this.config.configFilePath,
-          this.config.root
+          this.config.root ?? ''
         );
         this.logger.info(`Using config file at ${bold(green(shortFile))}`);
       }
@@ -257,7 +260,7 @@ export class PreviewServer extends httpServer {
           '';
         openBrowser(url);
       }
-    } catch (error) {
+    } catch (error: any) {
       throw error;
     }
   }

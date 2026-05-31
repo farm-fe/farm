@@ -26,11 +26,13 @@ export class HotModuleState {
       // accept a single dependency hot.accept('./dep.js', () => {})
       this.acceptCallbacks.push({
         deps: [deps],
-        fn: ([mod]) => callback?.(mod)
+        fn: ([mod]) => {
+          callback?.(mod);
+        }
       });
     } else if (Array.isArray(deps)) {
       // accept multiple dependencies hot.accept(['./dep1.js', './dep2.js'], () => {})
-      this.acceptCallbacks.push({ deps, fn: callback });
+      this.acceptCallbacks.push({ deps, fn: callback ?? (() => {}) });
     } else {
       throw new Error('invalid hot.accept call');
     }
@@ -92,6 +94,7 @@ export class HotModuleState {
   }
 
   send<T extends string>(event: T, data?: any): void {
+    if (!this.hmrClient.socket) return;
     if (this.hmrClient.socket.readyState === WebSocket.OPEN) {
       this.hmrClient.socket.send(
         JSON.stringify({ type: 'custom', event, data })
@@ -103,6 +106,7 @@ export class HotModuleState {
 export function createHotContext(id: string, hmrClient: HmrClient) {
   if (hmrClient.registeredHotModulesMap.has(id)) {
     const hotModuleState = hmrClient.registeredHotModulesMap.get(id);
+    if (!hotModuleState) return;
     hotModuleState.acceptCallbacks = []; // clear the accept callbacks when hot reloading
     return hotModuleState;
   }

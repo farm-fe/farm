@@ -35,7 +35,10 @@ export type CorsOrigin = boolean | string | RegExp | (string | RegExp)[];
 export interface CorsOptions {
   origin?:
     | CorsOrigin
-    | ((origin: string, cb: (err: Error, origins: CorsOrigin) => void) => void);
+    | ((
+        origin: string | undefined,
+        cb: (err: Error, origins: CorsOrigin) => void
+      ) => void);
   methods?: string | string[];
   allowedHeaders?: string | string[];
   exposedHeaders?: string | string[];
@@ -53,7 +56,7 @@ export interface ResolvedServerUrls {
 // For the unencrypted tls protocol, we use http service.
 // In other cases, https / http2 is used.
 export class httpServer {
-  public logger: Logger;
+  public logger!: Logger;
   protected httpServer: HttpServer | null = null;
   protected resolvedUrls: ResolvedServerUrls | null = null;
   constructor() {}
@@ -123,27 +126,28 @@ export class httpServer {
     }
 
     let { port, strictPort, host } = serverOptions;
+    const httpServer = this.httpServer;
 
     return new Promise((resolve, reject) => {
       const onError = (e: Error & { code?: string }) => {
         if (e.code === 'EADDRINUSE') {
           if (strictPort) {
-            this.httpServer.removeListener('error', onError);
+            httpServer.removeListener('error', onError);
             reject(new Error(`Port ${port} is already in use`));
           } else {
             this.logger.warn(`Port ${port} is in use, trying another one...`);
-            this.httpServer.listen(++port, host);
+            httpServer.listen(++port, host);
           }
         } else {
-          this.httpServer.removeListener('error', onError);
+          httpServer.removeListener('error', onError);
           reject(e);
         }
       };
 
-      this.httpServer.on('error', onError);
+      httpServer.on('error', onError);
 
-      this.httpServer.listen(port, host, () => {
-        this.httpServer.removeListener('error', onError);
+      httpServer.listen(port, host, () => {
+        httpServer.removeListener('error', onError);
         resolve(port);
       });
     });

@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "farm build",
-    "type-check": "tsc -p ./tsconfig.build.json --noEmit",
+    "type-check": "tsc -p ./tsconfig.json --noEmit",
     "dev": "farm watch"
   },
   "keywords": [

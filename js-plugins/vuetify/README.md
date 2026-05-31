@@ -5,13 +5,13 @@ Farm plugin for [Vuetify](https://vuetifyjs.com/), a component framework for Vue
 ## Install
 
 ```shell
-npm i @farmfe/js-plugin-vuetify -D
+npm i @farmfe/js-plugin-vuetify @farmfe/plugin-vue -D
 ```
 
 or yarn/pnpm
 
 ```shell
-pnpm add @farmfe/js-plugin-vuetify -D
+pnpm add @farmfe/js-plugin-vuetify @farmfe/plugin-vue -D
 ```
 
 ## Usage
@@ -19,12 +19,14 @@ pnpm add @farmfe/js-plugin-vuetify -D
 ```ts
 // farm.config.ts
 import vuetify from "@farmfe/js-plugin-vuetify";
-import vue from "unplugin-vue/vite";
+import vue from "@farmfe/plugin-vue";
 
 defineConfig({
   plugins: [vue(), vuetify()],
 });
 ```
+
+The plugin also works with Vue SFC support from `@vitejs/plugin-vue` or `unplugin-vue`.
 
 ## Options
 

@@ -2,6 +2,7 @@ import {
   mergeCustomExternal,
   partialExternal
 } from '../../config/normalize-config/normalize-external.js';
+import type { ConfigEnv } from '../../config/types.js';
 import { UserConfig } from '../../config/types.js';
 import { isArray } from '../../utils/share.js';
 import { JsPlugin } from '../type.js';
@@ -15,7 +16,10 @@ export function externalAdapter(): JsPlugin {
 
     priority: -Infinity,
 
-    config(config: UserConfig): UserConfig | Promise<UserConfig> {
+    config(
+      config: UserConfig,
+      _configEnv: ConfigEnv
+    ): UserConfig | Promise<UserConfig> {
       if (
         config?.compilation?.external &&
         isArray(config.compilation.external)
@@ -33,6 +37,7 @@ export function externalAdapter(): JsPlugin {
           }
         };
       }
+      return {};
     }
   };
 }

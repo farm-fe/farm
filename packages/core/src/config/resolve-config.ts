@@ -10,11 +10,13 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
   const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
     options;
 
+  const resolvedFileName = fileName ?? 'index';
+
   return {
-    root: path.resolve(inlineOptions.root ?? '.'),
+    root: path.resolve(inlineOptions?.root ?? '.'),
     compilation: {
       input: {
-        [fileName]: configFilePath
+        [resolvedFileName]: configFilePath
       },
       output: {
         entryFilename: '[entryName]',
@@ -56,18 +58,16 @@ export async function resolveUserConfig(
     resolvedUserConfig.configFilePath = configFilePath;
   }
 
-  const resolvedRootPath = resolvedUserConfig.root;
+  const resolvedRootPath = resolvedUserConfig.root ?? process.cwd();
   const resolvedEnvPath = resolvedUserConfig.envDir ?? resolvedRootPath;
 
+  const envMode = resolvedUserConfig.envMode ?? 'development';
   const userEnv = loadEnv(
-    resolvedUserConfig.envMode,
+    envMode,
     resolvedEnvPath,
     resolvedUserConfig.envPrefix
   );
-  const existsEnvFiles = getExistsEnvFiles(
-    resolvedUserConfig.envMode,
-    resolvedEnvPath
-  );
+  const existsEnvFiles = getExistsEnvFiles(envMode, resolvedEnvPath);
 
   resolvedUserConfig.root ||= process.cwd();
 
@@ -80,16 +80,16 @@ export async function resolveUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: userConfig.compilation.mode,
+    NODE_ENV: userConfig.compilation?.mode,
     BASE_URL: userConfig.compilation?.output?.publicPath ?? '/',
     mode: userConfig.mode,
-    DEV: userConfig.compilation.mode === ENV_DEVELOPMENT,
-    PROD: userConfig.compilation.mode === ENV_PRODUCTION
+    DEV: userConfig.compilation?.mode === ENV_DEVELOPMENT,
+    PROD: userConfig.compilation?.mode === ENV_PRODUCTION
   };
 
   resolvedUserConfig.publicDir = normalizePublicDir(
     resolvedRootPath,
-    userConfig.publicDir
+    userConfig.publicDir ?? 'public'
   );
 
   return resolvedUserConfig;

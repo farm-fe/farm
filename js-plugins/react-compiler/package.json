@@ -5,7 +5,8 @@
   "scripts": {
     "build": "npm run build:cjs",
     "build:cjs": "cross-env FARM_FORMAT=cjs farm build",
-    "dev": "npm run build:cjs -- --watch"
+    "dev": "npm run build:cjs -- --watch",
+    "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "keywords": [
     "babel",

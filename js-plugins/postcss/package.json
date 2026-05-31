@@ -29,9 +29,9 @@
   "scripts": {
     "build": "pnpm run clean && farm build",
     "start": "pnpm run watch",
-    "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
+    "clean": "rimraf dist build",
     "prepublishOnly": "npm run build",
-    "type-check": "tsc -p ./tsconfig.build.json --noEmit"
+    "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "files": [
     "build"

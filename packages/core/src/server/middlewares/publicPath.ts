@@ -8,9 +8,9 @@ export function publicPathMiddleware(
   middlewareMode: boolean
 ): Connect.NextHandleFunction {
   return function handlePublicPathMiddleware(req, res, next) {
-    const publicPath = app.publicPath;
+    const publicPath = app.publicPath ?? '/';
     // auto redirect to public path
-    const url = req.url;
+    const url = req.url ?? '';
 
     if (url.startsWith(publicPath)) {
       req.url = stripBase(url, publicPath);

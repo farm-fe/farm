@@ -1,0 +1,68 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-vue-jsx
+
+Transform Vue JSX/TSX at build time — converts directives (`v-model`, `v-show`, etc.) into Vue 3 runtime calls. Written in Rust with zero JS overhead.
+
+This plugin is the Farm-native equivalent of `@vitejs/plugin-vue-jsx`, ported from `swc-plugin-vue-jsx`.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-vue-jsx</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-vue-jsx</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-vue-jsx</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import vueJsx from "@farmfe/plugin-vue-jsx";
+
+export default defineConfig({
+  plugins: [vueJsx()],
+});
+```
+
+With options:
+
+```ts
+export default defineConfig({
+  plugins: [
+    vueJsx({
+      optimize: true,
+      transformOn: true,
+      resolveType: true,
+    }),
+  ],
+});
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `transformOn` | `boolean` | `false` | Convert `on` / `nativeOn` attrs via `@vue/babel-helper-vue-transform-on` |
+| `optimize` | `boolean` | `false` | Inject Vue PatchFlags for optimized VNode updates |
+| `customElementPatterns` | `string[]` | `[]` | Regex patterns for custom element tags |
+| `mergeProps` | `boolean` | `true` | Merge attribute objects with Vue's `mergeProps` |
+| `enableObjectSlots` | `boolean` | `true` | Enable object slot detection |
+| `pragma` | `string` | `undefined` | Custom pragma (e.g. `h`), overrides `createVNode` |
+| `resolveType` | `boolean` | `false` | Resolve TypeScript types for `defineComponent` props/emits |
+
+## transformOn
+
+When enabled, `on` and `nativeOn` attributes are converted using `@vue/babel-helper-vue-transform-on`. You must install this package in your project:
+
+```bash
+pnpm add @vue/babel-helper-vue-transform-on
+```

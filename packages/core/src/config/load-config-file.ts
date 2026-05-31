@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import fse from 'fs-extra';
 
-import { ModuleFormat } from '../types/binding.js';
+import { ModuleFormat, OutputConfig } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { isObject, isWindows } from '../utils/share.js';
 import { DEFAULT_CONFIG_NAMES, ENV_PRODUCTION } from './constants.js';
@@ -78,17 +78,26 @@ export async function loadConfigFile(
       configRootPath
     );
 
+    if (!resolvedConfigFilePath) {
+      return undefined;
+    }
+
     const config = await readConfigFile(
       inlineOptions,
       resolvedConfigFilePath,
       configEnv,
       mode
     );
+
+    if (!config) {
+      return undefined;
+    }
+
     return {
-      config: config && parseUserConfig(config),
+      config: parseUserConfig(config),
       configFilePath: resolvedConfigFilePath
     };
-  } catch (error) {
+  } catch (error: any) {
     // In this place, the original use of throw caused emit to the outermost catch
     // callback, causing the code not to execute. If the internal catch compiler's own
     // throw error can solve this problem, it will not continue to affect the execution of
@@ -176,13 +185,27 @@ export async function readConfigFile(
     mode
   });
   // disable copy public dir
-  normalizedConfig.assets.publicDir = '__farm_un_exist_public_dir__';
+  if (normalizedConfig.assets) {
+    Object.assign(normalizedConfig.assets, {
+      publicDir: '__farm_un_exist_public_dir__'
+    });
+  }
   // disable show file size
+  normalizedConfig.output ??= {} as OutputConfig;
   normalizedConfig.output.showFileSize = false;
 
-  const replaceDirnamePlugin = await import(
+  const replaceDirnamePlugin = (await import(
     '@farmfe/plugin-replace-dirname'
-  ).then((mod) => mod.default);
+  )) as {
+    default: string | ((options?: Record<string, never>) => [string, unknown]);
+  };
+
+  // replaceDirnamePlugin.default can be:
+  // - ESM (func.js): (options?) => [binPath, options] — a function
+  // - CJS (index.js): the binary path string directly
+  const pluginDefault = replaceDirnamePlugin.default;
+  const replaceDirnamePluginPath =
+    typeof pluginDefault === 'function' ? pluginDefault()[0] : pluginDefault;
 
   const compiler = new Compiler({
     compilation: {
@@ -190,7 +213,7 @@ export async function readConfigFile(
       output: { ...normalizedConfig.output, showFileSize: false }
     },
     jsPlugins: [],
-    rustPlugins: [[replaceDirnamePlugin, '{}']]
+    rustPlugins: [[replaceDirnamePluginPath, '{}']]
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
