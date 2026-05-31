@@ -13,6 +13,9 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "farm build",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit",

@@ -40,7 +40,6 @@
   },
   "files": [
     "index.js",
-    "index.d.ts",
-    "func.js"
+    "index.d.ts"
   ]
 }

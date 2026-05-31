@@ -1,0 +1,25 @@
+name: Check Package Files
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  check-package-files:
+    name: Check Package Files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Check package files configuration
+        run: node scripts/check-package-files.mjs
