@@ -59,6 +59,7 @@ where
 
     pub(crate) assignment_left: Option<Ident>,
     pub(crate) injecting_consts: Vec<VarDeclarator>,
+    #[allow(dead_code)]
     pub(crate) resolved_path: String,
 }
 

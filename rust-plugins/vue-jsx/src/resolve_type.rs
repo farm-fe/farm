@@ -389,7 +389,7 @@ where
             TsType::TsTypeRef(TsTypeRef {
                 type_name: TsEntityName::Ident(ident),
                 type_params,
-                span,
+                span: _,
                 ..
             }) => {
                 let key = (ident.sym.clone(), ident.ctxt);
