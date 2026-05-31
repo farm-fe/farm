@@ -10,12 +10,12 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^1"
+    "@tauri-apps/api": "^1.6.0"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1",
+    "@tauri-apps/cli": "^1.6.3",
     "@farmfe/cli": "beta",
     "@farmfe/core": "beta",
-    "typescript": "^5.0.2"
+    "typescript": "^6.0.3"
   }
 }

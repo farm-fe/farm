@@ -10,25 +10,25 @@
     "farm": "farm"
   },
   "dependencies": {
-    "react": "18",
-    "react-dom": "18"
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.4.0",
-    "@electron-forge/maker-deb": "^7.4.0",
-    "@electron-forge/maker-rpm": "^7.4.0",
-    "@electron-forge/maker-squirrel": "^7.4.0",
-    "@electron-forge/maker-zip": "^7.4.0",
-    "@electron-forge/shared-types": "^7.4.0",
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-deb": "^7.11.2",
+    "@electron-forge/maker-rpm": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
+    "@electron-forge/shared-types": "^7.11.2",
     "@farmfe/core": "beta",
     "@farmfe/cli": "beta",
     "@farmfe/js-plugin-electron": "beta",
     "@farmfe/plugin-react": "beta",
-    "@types/react": "18",
-    "@types/react-dom": "18",
-    "core-js": "^3.36.1",
-    "electron": "^30.0.9",
-    "fs-extra": "^11.2.0",
-    "react-refresh": "^0.14.0"
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "core-js": "^3.49.0",
+    "electron": "^42.2.0",
+    "fs-extra": "^11.3.5",
+    "react-refresh": "^0.18.0"
   }
 }
