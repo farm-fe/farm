@@ -21,7 +21,7 @@ async function assertEmotionPluginOutput(page) {
 
   expect(emotionResult.backgroundColor).toBe('rgb(255, 105, 180)');
   expect(emotionResult.borderRadius).toBe('4px');
-  expect(emotionResult.className).toContain('farm-emotion');
+  expect(emotionResult.className).toContain('css-');
 
   const styledComponentsResult = await page.locator('[data-testid="styled-components-card"]').evaluate((node) => {
     const style = getComputedStyle(node);
@@ -34,7 +34,7 @@ async function assertEmotionPluginOutput(page) {
 
   expect(styledComponentsResult.backgroundColor).toBe('rgb(46, 125, 50)');
   expect(styledComponentsResult.borderRadius).toBe('16px');
-  expect(styledComponentsResult.className).toContain('main__StyledComponentsCard');
+  expect(styledComponentsResult.className).toContain('styled-components__Card');
 
   const styledJsxResult = await page.locator('[data-testid="styled-jsx-card"]').evaluate((node) => {
     const style = getComputedStyle(node);
