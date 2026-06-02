@@ -7,8 +7,10 @@ const projectPath = dirname(fileURLToPath(import.meta.url));
 
 async function assertEmotionPluginOutput(page) {
   await page.waitForSelector('[data-testid="emotion-card"]', { timeout: 10_000 });
+  await page.waitForSelector('[data-testid="styled-components-card"]', { timeout: 10_000 });
+  await page.waitForSelector('[data-testid="styled-jsx-card"]', { timeout: 10_000 });
 
-  const result = await page.locator('[data-testid="emotion-card"]').evaluate((node) => {
+  const emotionResult = await page.locator('[data-testid="emotion-card"]').evaluate((node) => {
     const style = getComputedStyle(node);
     return {
       backgroundColor: style.backgroundColor,
@@ -17,9 +19,35 @@ async function assertEmotionPluginOutput(page) {
     };
   });
 
-  expect(result.backgroundColor).toBe('rgb(255, 105, 180)');
-  expect(result.borderRadius).toBe('4px');
-  expect(result.className).toContain('farm-emotion');
+  expect(emotionResult.backgroundColor).toBe('rgb(255, 105, 180)');
+  expect(emotionResult.borderRadius).toBe('4px');
+  expect(emotionResult.className).toContain('farm-emotion');
+
+  const styledComponentsResult = await page.locator('[data-testid="styled-components-card"]').evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderRadius: style.borderRadius,
+      className: node.className
+    };
+  });
+
+  expect(styledComponentsResult.backgroundColor).toBe('rgb(46, 125, 50)');
+  expect(styledComponentsResult.borderRadius).toBe('16px');
+  expect(styledComponentsResult.className).toContain('Main__StyledComponentsCard');
+
+  const styledJsxResult = await page.locator('[data-testid="styled-jsx-card"]').evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderRadius: style.borderRadius,
+      className: node.className
+    };
+  });
+
+  expect(styledJsxResult.backgroundColor).toBe('rgb(25, 118, 210)');
+  expect(styledJsxResult.borderRadius).toBe('12px');
+  expect(styledJsxResult.className).toContain('jsx-');
 }
 
 export default async function (ctx) {
