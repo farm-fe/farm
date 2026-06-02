@@ -24,6 +24,23 @@ export default defineConfig({
             moduleTypes: ['tsx'],
           },
         },
+        {
+          name: '@swc/plugin-styled-components',
+          options: {
+            displayName: true,
+            ssr: true,
+          },
+          filters: {
+            moduleTypes: ['tsx'],
+          },
+        },
+        {
+          name: '@swc/plugin-styled-jsx',
+          options: {},
+          filters: {
+            moduleTypes: ['tsx'],
+          },
+        },
       ],
     },
     sourcemap: false
