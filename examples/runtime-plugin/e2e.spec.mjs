@@ -8,9 +8,15 @@ const projectPath = dirname(fileURLToPath(import.meta.url));
 
 export default async function (ctx) {
   await ctx.test('build verifies runtime plugin resource loading', async () => {
-    await execFileAsync('npm', ['run', 'build'], {
-      cwd: projectPath,
-      timeout: 120_000
-    });
+    try {
+      await execFileAsync('npm', ['run', 'build'], {
+        cwd: projectPath,
+        timeout: 120_000
+      });
+    } catch (error) {
+      const stdout = error?.stdout ? `\nstdout:\n${error.stdout}` : '';
+      const stderr = error?.stderr ? `\nstderr:\n${error.stderr}` : '';
+      throw new Error(`runtime-plugin build failed.${stdout}${stderr}`);
+    }
   });
 }
