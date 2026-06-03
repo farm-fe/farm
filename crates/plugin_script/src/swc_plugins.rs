@@ -138,11 +138,7 @@ impl RustPlugins {
     let filename = self.metadata_context.filename.clone();
 
     let fut = async move { self.apply_inner(n) };
-    if let Ok(handle) = tokio::runtime::Handle::try_current() {
-      handle.block_on(fut)
-    } else {
-      tokio::runtime::Runtime::new().unwrap().block_on(fut)
-    }
+    block_on_plugin_transform(fut)
     .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
   }
 
@@ -206,6 +202,31 @@ impl RustPlugins {
         serialized.deserialize().map(|v| v.into_inner())
       },
     )
+  }
+}
+
+fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
+  if let Ok(handle) = tokio::runtime::Handle::try_current() {
+    tokio::task::block_in_place(|| handle.block_on(future))
+  } else {
+    tokio::runtime::Runtime::new().unwrap().block_on(future)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::block_on_plugin_transform;
+
+  #[test]
+  fn block_on_plugin_transform_should_complete_inside_tokio_runtime() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(1)
+      .build()
+      .unwrap();
+
+    let value = runtime.block_on(async { block_on_plugin_transform(async { 42 }) });
+
+    assert_eq!(value, 42);
   }
 }
 

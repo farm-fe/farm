@@ -21,7 +21,7 @@ export default defineConfig({
             labelFormat: 'farm-emotion-[local]',
           },
           filters: {
-            resolvedPaths: ['src/emotion.tsx$'],
+            resolvedPaths: ['src[/\\\\]emotion.tsx$'],
           },
         },
         {
@@ -31,14 +31,14 @@ export default defineConfig({
             ssr: true,
           },
           filters: {
-            resolvedPaths: ['src/styled-components.tsx$'],
+            resolvedPaths: ['src[/\\\\]styled-components.tsx$'],
           },
         },
         {
           name: '@swc/plugin-styled-jsx',
           options: {},
           filters: {
-            resolvedPaths: ['src/styled-jsx.tsx$'],
+            resolvedPaths: ['src[/\\\\]styled-jsx.tsx$'],
           },
         },
       ],
