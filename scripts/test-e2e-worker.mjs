@@ -154,9 +154,9 @@ async function runWorker(exampleNames) {
   let browser = null;
 
   try {
-    const needsBrowser = exampleNames.some(
-      (exampleName) => !BROWSERLESS_SPEC_EXAMPLES.has(exampleName)
-    );
+    const needsBrowser =
+      exampleNames.length > 0 &&
+      exampleNames.some((exampleName) => !BROWSERLESS_SPEC_EXAMPLES.has(exampleName));
     if (needsBrowser) {
       browser = await chromium.launch({ headless: true, args: ciArgs });
       initBrowser(browser);
