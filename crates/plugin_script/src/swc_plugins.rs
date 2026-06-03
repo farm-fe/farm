@@ -137,9 +137,8 @@ impl RustPlugins {
 
     let filename = self.metadata_context.filename.clone();
 
-    let fut = async move { self.apply_inner(n) };
-    block_on_plugin_transform(fut)
-    .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
+    run_plugin_transform(|| self.apply_inner(n))
+      .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
   }
 
   fn apply_inner(&mut self, n: Program) -> Result<Program, anyhow::Error> {
@@ -205,28 +204,38 @@ impl RustPlugins {
   }
 }
 
-fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
+fn run_plugin_transform<T>(operation: impl FnOnce() -> T) -> T {
   if let Ok(handle) = tokio::runtime::Handle::try_current() {
-    tokio::task::block_in_place(|| handle.block_on(future))
+    let _guard = handle.enter();
+    operation()
   } else {
-    tokio::runtime::Runtime::new().unwrap().block_on(future)
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let _guard = runtime.enter();
+    operation()
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::block_on_plugin_transform;
+  use super::run_plugin_transform;
 
   #[test]
-  fn block_on_plugin_transform_should_complete_inside_tokio_runtime() {
+  fn run_plugin_transform_should_complete_inside_tokio_runtime() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
       .worker_threads(1)
       .build()
       .unwrap();
 
-    let value = runtime.block_on(async { block_on_plugin_transform(async { 42 }) });
+    let value = runtime.block_on(async { run_plugin_transform(|| 42) });
 
     assert_eq!(value, 42);
+  }
+
+  #[test]
+  fn run_plugin_transform_should_provide_tokio_context_without_existing_runtime() {
+    let value = run_plugin_transform(|| tokio::runtime::Handle::try_current().is_ok());
+
+    assert!(value);
   }
 }
 
