@@ -23,6 +23,7 @@ import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
 const EXAMPLES_DIR = resolve(process.cwd(), 'examples');
 const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
+const BROWSERLESS_SPEC_EXAMPLES = new Set(['runtime-plugin']);
 
 // ---------------------------------------------------------------------------
 // Default smoke test (start + preview in parallel)
@@ -153,8 +154,13 @@ async function runWorker(exampleNames) {
   let browser = null;
 
   try {
-    browser = await chromium.launch({ headless: true, args: ciArgs });
-    initBrowser(browser);
+    const needsBrowser = exampleNames.some(
+      (exampleName) => !BROWSERLESS_SPEC_EXAMPLES.has(exampleName)
+    );
+    if (needsBrowser) {
+      browser = await chromium.launch({ headless: true, args: ciArgs });
+      initBrowser(browser);
+    }
     logger(`Worker started — ${exampleNames.length} example(s) assigned`, {
       color: 'cyan'
     });
@@ -162,8 +168,10 @@ async function runWorker(exampleNames) {
     for (const exampleName of exampleNames) {
       let context = null;
       try {
-        context = await browser.newContext();
-        initBrowserContext(context);
+        if (!BROWSERLESS_SPEC_EXAMPLES.has(exampleName)) {
+          context = await browser.newContext();
+          initBrowserContext(context);
+        }
 
         setBrowserRecoveryHandler(async () => {
           // Context-level recovery: close old context, create new one
