@@ -14,9 +14,10 @@ export default async function (ctx) {
         timeout: 120_000
       });
     } catch (error) {
+      const message = error instanceof Error ? ` ${error.message}` : '';
       const stdout = error?.stdout ? `\nstdout:\n${error.stdout}` : '';
       const stderr = error?.stderr ? `\nstderr:\n${error.stderr}` : '';
-      throw new Error(`runtime-plugin build failed.${stdout}${stderr}`);
+      throw new Error(`runtime-plugin build failed.${message}${stdout}${stderr}`);
     }
   });
 }

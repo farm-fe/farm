@@ -168,25 +168,26 @@ async function runWorker(exampleNames) {
     for (const exampleName of exampleNames) {
       let context = null;
       try {
-        if (!BROWSERLESS_SPEC_EXAMPLES.has(exampleName)) {
+        const needsExampleBrowser = !BROWSERLESS_SPEC_EXAMPLES.has(exampleName);
+        if (needsExampleBrowser) {
           context = await browser.newContext();
           initBrowserContext(context);
-        }
 
-        setBrowserRecoveryHandler(async () => {
-          // Context-level recovery: close old context, create new one
-          if (context) {
-            await context.close().catch(() => {});
-            context = null;
-          }
-          if (!browser?.isConnected()) {
-            logger('Browser disconnected. Relaunching...', { color: 'yellow' });
-            browser = await chromium.launch({ headless: true, args: ciArgs });
-            initBrowser(browser);
-          }
-          context = await browser.newContext();
-          initBrowserContext(context);
-        });
+          setBrowserRecoveryHandler(async () => {
+            // Context-level recovery: close old context, create new one
+            if (context) {
+              await context.close().catch(() => {});
+              context = null;
+            }
+            if (!browser?.isConnected()) {
+              logger('Browser disconnected. Relaunching...', { color: 'yellow' });
+              browser = await chromium.launch({ headless: true, args: ciArgs });
+              initBrowser(browser);
+            }
+            context = await browser.newContext();
+            initBrowserContext(context);
+          });
+        }
 
         const { name, results } = await runExample(exampleName);
         if (results.length > 0 && process.send) {
