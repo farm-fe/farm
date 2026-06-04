@@ -43,13 +43,11 @@
   "dependencies": {
     "cac": "^6.7.14",
     "cross-spawn": "^7.0.3",
-    "inquirer": "9.2.12",
     "walkdir": "^0.4.1"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@types/cross-spawn": "^6.0.2",
-    "@types/inquirer": "^9.0.3"
+    "@types/cross-spawn": "^6.0.2"
   }
 }
