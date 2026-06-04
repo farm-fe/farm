@@ -3,9 +3,9 @@
   "version": "0.0.2",
   "private": true,
   "dependencies": {
-    "@farmfe-examples/lib-for-browser": "workspace:^",
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-chat": "1.13.7",
+    "@farmfe-examples/lib-for-browser": "workspace:^",
     "antd": "^5.4.2",
     "antd-style": "3.6.2",
     "clsx": "^1.2.1",
@@ -22,7 +22,7 @@
     "@farmfe/plugin-sass": "workspace:*",
     "@types/react": "18",
     "@types/react-dom": "18",
-    "axios": "^1.6.5",
+    "axios": "^1.17.0",
     "react-refresh": "^0.14.0"
   },
   "scripts": {

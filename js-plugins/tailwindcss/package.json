@@ -24,7 +24,7 @@
     "@tailwindcss/node": "4.0.0-beta.8",
     "@tailwindcss/oxide": "4.0.0-beta.8",
     "lightningcss": "^1.27.0",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.15",
     "postcss-import": "^16.0.1",
     "tailwindcss": "4.0.0-beta.8"
   },

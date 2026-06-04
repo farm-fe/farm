@@ -26,13 +26,13 @@
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
     "@changesets/cli": "^2.26.0",
-    "@codspeed/vitest-plugin": "^3.1.1",
+    "@codspeed/vitest-plugin": "^5.5.0",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@types/node": "^18.19.67",
-    "@vitest/coverage-v8": "2.0.4",
+    "@types/node": "^24.10.4",
+    "@vitest/coverage-v8": "4.1.8",
     "cross-env": "^7.0.3",
     "cspell": "^6.2.2",
     "execa": "^7.1.1",
@@ -42,10 +42,10 @@
     "nanospinner": "^1.1.0",
     "playwright-chromium": "^1.42.1",
     "rimraf": "^3.0.2",
-    "rollup": "^3.29.4",
+    "rollup": "^3.30.0",
     "typescript": "^4.9.4",
-    "vite": "^5.2.6",
-    "vitest": "2.0.4"
+    "vite": "^6.4.2",
+    "vitest": "4.1.8"
   },
   "lint-staged": {
     "packages/**/*.ts": [
