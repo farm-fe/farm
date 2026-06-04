@@ -32,6 +32,6 @@
   },
   "dependencies": {
     "core-js": "^3.30.1",
-    "prismjs": "^1.29.0"
+    "prismjs": "^1.30.0"
   }
 }
