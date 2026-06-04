@@ -23,7 +23,6 @@ import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
 const EXAMPLES_DIR = resolve(process.cwd(), 'examples');
 const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
-const BROWSERLESS_SPEC_EXAMPLES = new Set(['runtime-plugin']);
 
 // ---------------------------------------------------------------------------
 // Default smoke test (start + preview in parallel)
@@ -154,13 +153,8 @@ async function runWorker(exampleNames) {
   let browser = null;
 
   try {
-    const needsBrowser =
-      exampleNames.length > 0 &&
-      exampleNames.some((exampleName) => !BROWSERLESS_SPEC_EXAMPLES.has(exampleName));
-    if (needsBrowser) {
-      browser = await chromium.launch({ headless: true, args: ciArgs });
-      initBrowser(browser);
-    }
+    browser = await chromium.launch({ headless: true, args: ciArgs });
+    initBrowser(browser);
     logger(`Worker started — ${exampleNames.length} example(s) assigned`, {
       color: 'cyan'
     });
@@ -168,26 +162,23 @@ async function runWorker(exampleNames) {
     for (const exampleName of exampleNames) {
       let context = null;
       try {
-        const needsExampleBrowser = !BROWSERLESS_SPEC_EXAMPLES.has(exampleName);
-        if (needsExampleBrowser) {
+        context = await browser.newContext();
+        initBrowserContext(context);
+
+        setBrowserRecoveryHandler(async () => {
+          // Context-level recovery: close old context, create new one
+          if (context) {
+            await context.close().catch(() => {});
+            context = null;
+          }
+          if (!browser?.isConnected()) {
+            logger('Browser disconnected. Relaunching...', { color: 'yellow' });
+            browser = await chromium.launch({ headless: true, args: ciArgs });
+            initBrowser(browser);
+          }
           context = await browser.newContext();
           initBrowserContext(context);
-
-          setBrowserRecoveryHandler(async () => {
-            // Context-level recovery: close old context, create new one
-            if (context) {
-              await context.close().catch(() => {});
-              context = null;
-            }
-            if (!browser?.isConnected()) {
-              logger('Browser disconnected. Relaunching...', { color: 'yellow' });
-              browser = await chromium.launch({ headless: true, args: ciArgs });
-              initBrowser(browser);
-            }
-            context = await browser.newContext();
-            initBrowserContext(context);
-          });
-        }
+        });
 
         const { name, results } = await runExample(exampleName);
         if (results.length > 0 && process.send) {

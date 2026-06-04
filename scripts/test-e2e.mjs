@@ -259,6 +259,14 @@ async function main() {
 
   logger(`Discovered ${exampleNames.length} example(s)`, { color: 'cyan' });
   logger(`Runnable: ${runnableCount}  |  skipped: ${exampleNames.length - runnableCount}`, { color: 'cyan' });
+
+  if (runnableCount === 0) {
+    logger('No runnable browser E2E examples found.', { color: 'yellow' });
+    printSummary(new Map());
+    closeLogFiles();
+    process.exit(0);
+  }
+
   logger(`Running with ${concurrency} worker(s)`, { color: 'cyan' });
 
   // Distribute examples round-robin across workers
