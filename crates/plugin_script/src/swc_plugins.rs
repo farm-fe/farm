@@ -137,7 +137,8 @@ impl RustPlugins {
 
     let filename = self.metadata_context.filename.clone();
 
-    run_plugin_transform(|| self.apply_inner(n))
+    let fut = async move { self.apply_inner(n) };
+    block_on_plugin_transform(fut)
       .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
   }
 
@@ -204,38 +205,52 @@ impl RustPlugins {
   }
 }
 
-fn run_plugin_transform<T>(operation: impl FnOnce() -> T) -> T {
+fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
   if let Ok(handle) = tokio::runtime::Handle::try_current() {
-    let _guard = handle.enter();
-    operation()
+    tokio::task::block_in_place(|| handle.block_on(future))
   } else {
-    let runtime = tokio::runtime::Runtime::new().unwrap();
-    let _guard = runtime.enter();
-    operation()
+    tokio::runtime::Runtime::new().unwrap().block_on(future)
   }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::run_plugin_transform;
+  use super::block_on_plugin_transform;
 
   #[test]
-  fn run_plugin_transform_should_complete_inside_tokio_runtime() {
+  fn block_on_plugin_transform_should_complete_inside_tokio_runtime() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
       .worker_threads(1)
       .build()
       .unwrap();
 
-    let value = runtime.block_on(async { run_plugin_transform(|| 42) });
+    let value = runtime.block_on(async { block_on_plugin_transform(async { 42 }) });
 
     assert_eq!(value, 42);
   }
 
   #[test]
-  fn run_plugin_transform_should_provide_tokio_context_without_existing_runtime() {
-    let value = run_plugin_transform(|| tokio::runtime::Handle::try_current().is_ok());
+  fn block_on_plugin_transform_should_provide_tokio_context_without_existing_runtime() {
+    let value = block_on_plugin_transform(async { tokio::runtime::Handle::try_current().is_ok() });
 
     assert!(value);
+  }
+
+  #[test]
+  fn block_on_plugin_transform_should_drive_async_work_inside_tokio_runtime() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(1)
+      .build()
+      .unwrap();
+
+    let value = runtime.block_on(async {
+      block_on_plugin_transform(async {
+        tokio::task::yield_now().await;
+        42
+      })
+    });
+
+    assert_eq!(value, 42);
   }
 }
 
