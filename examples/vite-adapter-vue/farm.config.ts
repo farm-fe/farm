@@ -20,7 +20,11 @@ function configureVitePluginVue() {
   // return plugin and its filters
   return {
     // using plugin vue
-    vitePlugin: vue(),
+    vitePlugin: vue({
+      script: {
+        babelParserPlugins: ['deferredImportEvaluation']
+      }
+    }),
     // configuring filters for it. Unmatched module paths will be skipped.
     filters: ["!node_modules", "node_modules/my-ui"]
   };

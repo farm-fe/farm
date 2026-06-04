@@ -9,6 +9,7 @@
         Argon2 hash
       </ElButton>
       Hash Bytes: {{ hashBytes }}
+      <DeferImport />
       <test />
     </el-tab-pane>
     <el-tab-pane label="test1" name="test1">
@@ -34,6 +35,7 @@
 
 <script lang="ts" setup>
 import { ElTabs, ElTabPane, ElButton } from 'element-plus'
+import DeferImport from './components/DeferImport.vue';
 import 'element-plus/theme-chalk/src/tabs.scss'
 import 'element-plus/theme-chalk/src/tab-pane.scss'
 // import { Button as TinyButton, Modal } from '@opentiny/vue'
