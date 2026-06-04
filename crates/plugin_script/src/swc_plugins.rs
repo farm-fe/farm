@@ -206,6 +206,9 @@ impl RustPlugins {
 }
 
 fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
+  // SWC plugin transforms can perform async work internally. When Farm is already
+  // inside Tokio, move the blocking wait off the runtime worker; otherwise create
+  // a runtime so the future is actually driven to completion.
   if let Ok(handle) = tokio::runtime::Handle::try_current() {
     tokio::task::block_in_place(|| handle.block_on(future))
   } else {

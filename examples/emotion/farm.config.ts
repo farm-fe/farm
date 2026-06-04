@@ -13,6 +13,7 @@ export default defineConfig({
       path: './build',
     },
     script: {
+      // Match POSIX and Windows path separators because CI builds examples on all platforms.
       plugins: [
         {
           name: '@swc/plugin-emotion',
