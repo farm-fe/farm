@@ -1,4 +1,5 @@
 import { defineConfig } from '@farmfe/core';
+import vue from '@farmfe/plugin-vue';
 
 export default defineConfig({
   compilation: {
@@ -16,7 +17,11 @@ export default defineConfig({
     hmr: true,
   },
   plugins: [
-    '@farmfe/plugin-vue',
+    vue({
+      script: {
+        babelParserPlugins: ['deferredImportEvaluation']
+      }
+    }),
     '@farmfe/plugin-sass',
   ],
 });

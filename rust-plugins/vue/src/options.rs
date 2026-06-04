@@ -79,6 +79,12 @@ pub struct VueFeaturesOptions {
   pub custom_element: Option<CustomElementMatcher>,
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct VueScriptOptions {
+  pub babel_parser_plugins: Vec<String>,
+}
+
 /// Top-level options for `@farmfe/plugin-vue`.
 ///
 /// Field names are camelCase to match the TypeScript surface defined in
@@ -98,4 +104,23 @@ pub struct VuePluginOptions {
   /// `true` (default) enables fervid's defaults; `false` disables.
   pub transform_asset_urls: Option<bool>,
   pub features: Option<VueFeaturesOptions>,
+  pub script: Option<VueScriptOptions>,
+}
+
+#[cfg(test)]
+mod tests {
+  use super::VuePluginOptions;
+  use farmfe_core::serde_json;
+
+  #[test]
+  fn deserializes_script_babel_parser_plugins() {
+    let options: VuePluginOptions =
+      serde_json::from_str(r#"{"script":{"babelParserPlugins":["deferredImportEvaluation"]}}"#)
+        .expect("script options deserialize");
+
+    assert_eq!(
+      options.script.unwrap().babel_parser_plugins,
+      vec!["deferredImportEvaluation"]
+    );
+  }
 }
