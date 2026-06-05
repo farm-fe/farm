@@ -1,6 +1,6 @@
 //index.js:
  function exportByDefineProperty(to, to_k, get) {
-    if (Object.prototype.hasOwnProperty.call(to, to_k)) {
+    if (Object.hasOwn(to, to_k)) {
         return;
     }
     Object.defineProperty(to, to_k, {
