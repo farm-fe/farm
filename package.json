@@ -65,7 +65,14 @@
   },
   "pnpm": {
     "overrides": {
-      "@farmfe/core": "workspace:*"
+      "@farmfe/core": "workspace:*",
+      "braces": "3.0.3",
+      "cross-spawn": "7.0.6",
+      "follow-redirects": "1.16.0",
+      "js-yaml": "4.2.0",
+      "micromatch": "4.0.8",
+      "tar": "7.5.16",
+      "undici": "7.27.1"
     }
   },
   "packageManager": "pnpm@9.4.0"
