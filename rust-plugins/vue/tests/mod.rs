@@ -183,38 +183,6 @@ fn compiles_basic_sfc() {
 }
 
 #[test]
-fn compiles_deferred_import_evaluation_script() {
-  let (context, plugin) = make_plugin(
-    r#"{"script":{"babelParserPlugins":["deferredImportEvaluation"]}}"#,
-  );
-  let path = write_temp_vue(
-    "defer",
-    r#"<script setup lang="ts">
-import defer * as deferredFeature from "./deferred-feature";
-
-const message = deferredFeature.message;
-</script>
-
-<template>
-  <div>{{ message }}</div>
-</template>
-"#,
-  );
-
-  let code = transform_content(
-    &plugin,
-    &context,
-    &path,
-    &std::fs::read_to_string(&path).expect("temp vue fixture is readable"),
-  );
-
-  assert!(
-    code.contains(r#"import defer * as deferredFeature from "./deferred-feature""#),
-    "expected compiled output to preserve deferred import, got:\n{code}"
-  );
-}
-
-#[test]
 fn registers_style_virtual_modules() {
   let (context, plugin) = make_plugin("");
   let path = fixture_path("scoped-style.vue");

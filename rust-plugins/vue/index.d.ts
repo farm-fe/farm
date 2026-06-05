@@ -24,14 +24,6 @@ export interface VueFeaturesOptions {
   customElement?: boolean | string | RegExp | (string | RegExp)[];
 }
 
-export interface VueScriptOptions {
-  /**
-   * Additional Babel parser plugins accepted by Vue's script parser option.
-   * `deferredImportEvaluation` is supported by the current Rust/SWC parser.
-   */
-  babelParserPlugins?: string[];
-}
-
 export interface VuePluginOptions {
   /**
    * Files matched by this filter are treated as Vue SFCs.
@@ -65,8 +57,6 @@ export interface VuePluginOptions {
   customElement?: boolean | string | RegExp | (string | RegExp)[];
 
   features?: VueFeaturesOptions;
-
-  script?: VueScriptOptions;
 }
 
 /**
