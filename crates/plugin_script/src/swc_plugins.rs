@@ -207,6 +207,7 @@ impl RustPlugins {
   }
 }
 
+/// Drive an SWC plugin transform future to completion from synchronous plugin hooks.
 fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
   // SWC plugin transforms can perform async work internally. When Farm is already
   // inside Tokio, move the blocking wait off the runtime worker; otherwise create
@@ -218,6 +219,7 @@ fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
   }
 }
 
+/// Run a Wasmer SWC plugin transform exclusively to avoid runtime-level deadlocks.
 fn run_serialized_plugin_transform<F, R>(op: F) -> R
 where
   F: FnOnce() -> R,
