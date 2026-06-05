@@ -164,11 +164,10 @@ function load(resource, query) {
             // Skip inject Promise polyfill for runtime
             return Promise.resolve();
         } else if (loadingResources[resource.path]) {
-            const loading = loadingResources[resource.path];
-            if (query && loading) {
-                loadingResources[resource.path] = loading.then(()=>loadResource(resource, 0, query));
+            if (query) {
+                loadingResources[resource.path] = loadingResources[resource.path].then(()=>loadResource(resource, 0, query));
             }
-            return loadingResources[resource.path] ?? Promise.resolve();
+            return loadingResources[resource.path];
         }
         return loadResource(resource, 0, query);
     }
@@ -320,7 +319,7 @@ function initModuleSystem$2(ms) {
     }
 }
 function exportByDefineProperty(to, to_k, get) {
-    if (Object.hasOwn(to, to_k)) {
+    if (Object.prototype.hasOwnProperty.call(to, to_k)) {
         return;
     }
     Object.defineProperty(to, to_k, {
@@ -342,7 +341,7 @@ function defineExportEsModule(to) {
 }
 function defineExportStar(to, from) {
     Object.keys(from).forEach(function(k) {
-        if (k !== 'default' && !Object.hasOwn(to, k)) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
                 value: from[k],
                 enumerable: true,
@@ -358,7 +357,7 @@ function interopRequireDefault(obj) {
     };
 }
 function getRequireWildcardCache(nodeInterop) {
-    if (typeof WeakMap !== 'function') return null;
+    if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
     var cacheNodeInterop = new WeakMap();
     // @ts-ignore ignore type check
@@ -368,7 +367,7 @@ function getRequireWildcardCache(nodeInterop) {
 }
 function interopRequireWildcard(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
-    if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function')) return {
+    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
         default: obj
     };
     var cache = getRequireWildcardCache(nodeInterop);
@@ -376,9 +375,10 @@ function interopRequireWildcard(obj, nodeInterop) {
     var newObj = {
         __proto__: null
     };
+    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
     for(var key in obj){
-        if (key !== 'default' && Object.hasOwn(obj, key)) {
-            var desc = Object.getOwnPropertyDescriptor(obj, key);
+        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
             if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
             else newObj[key] = obj[key];
         }

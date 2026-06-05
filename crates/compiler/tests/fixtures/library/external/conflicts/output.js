@@ -1,7 +1,7 @@
 //index.js:
  function defineExportStar(to, from) {
     Object.keys(from).forEach(function(k) {
-        if (k !== 'default' && !Object.hasOwn(to, k)) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
                 value: from[k],
                 enumerable: true,

@@ -1,7 +1,7 @@
 //index.js:
  var __farmNodeRequire = require;
 function exportByDefineProperty(to, to_k, get) {
-    if (Object.hasOwn(to, to_k)) {
+    if (Object.prototype.hasOwnProperty.call(to, to_k)) {
         return;
     }
     Object.defineProperty(to, to_k, {

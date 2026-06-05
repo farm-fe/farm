@@ -39,7 +39,7 @@ function farmRegister(id, module) {
 }
 ; // module_id: @farmfe/runtime/src/modules/module-helper.ts.farm-runtime
 function exportByDefineProperty(to, to_k, get) {
-    if (Object.hasOwn(to, to_k)) {
+    if (Object.prototype.hasOwnProperty.call(to, to_k)) {
         return;
     }
     Object.defineProperty(to, to_k, {
