@@ -56,7 +56,10 @@
     "vitest": "2.0.4"
   },
   "lint-staged": {
-    "{packages,js-plugins,website,scripts}/**/*.{ts,json,yaml,yml}": [
+    "{js-plugins,website,scripts}/**/*.{ts,json,yaml,yml}": [
+      "pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
+    ],
+    "packages/!(runtime|runtime-plugin-hmr|runtime-plugin-import-meta)/**/*.{ts,json,yaml,yml}": [
       "pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },
