@@ -76,6 +76,7 @@ pub fn transform_by_swc_plugins(
 /// A shared instance to plugin's module bytecode cache.
 pub static PLUGIN_MODULE_CACHE: Lazy<swc_plugin_runner::cache::PluginModuleCache> =
   Lazy::new(Default::default);
+static PLUGIN_TRANSFORM_LOCK: Lazy<parking_lot::Mutex<()>> = Lazy::new(Default::default);
 
 /// Create a new cache instance if not initialized. This can be called multiple
 /// time, but any subsequent call will be ignored.
@@ -186,14 +187,15 @@ impl RustPlugins {
               self.plugin_runtime.clone(),
             );
 
-            serialized = transform_plugin_executor
-              .transform(&serialized, Some(should_enable_comments_proxy))
-              .with_context(|| {
-                format!(
-                  "failed to invoke `{}` as js transform plugin at {}",
-                  &p.name, plugin_name
-                )
-              })?;
+            serialized = run_serialized_plugin_transform(|| {
+              transform_plugin_executor.transform(&serialized, Some(should_enable_comments_proxy))
+            })
+            .with_context(|| {
+              format!(
+                "failed to invoke `{}` as js transform plugin at {}",
+                &p.name, plugin_name
+              )
+            })?;
           }
         }
 
@@ -216,9 +218,22 @@ fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
   }
 }
 
+fn run_serialized_plugin_transform<F, R>(op: F) -> R
+where
+  F: FnOnce() -> R,
+{
+  let _guard = PLUGIN_TRANSFORM_LOCK.lock();
+  op()
+}
+
 #[cfg(test)]
 mod tests {
-  use super::block_on_plugin_transform;
+  use super::{block_on_plugin_transform, run_serialized_plugin_transform};
+  use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc, Barrier,
+  };
+  use std::time::Duration;
 
   #[test]
   fn block_on_plugin_transform_should_complete_inside_tokio_runtime() {
@@ -254,6 +269,38 @@ mod tests {
     });
 
     assert_eq!(value, 42);
+  }
+
+  #[test]
+  fn swc_plugin_transform_should_be_serialized_across_threads() {
+    let active = Arc::new(AtomicUsize::new(0));
+    let max_active = Arc::new(AtomicUsize::new(0));
+    let barrier = Arc::new(Barrier::new(3));
+
+    let handles = (0..2)
+      .map(|_| {
+        let active = active.clone();
+        let max_active = max_active.clone();
+        let barrier = barrier.clone();
+        std::thread::spawn(move || {
+          barrier.wait();
+          run_serialized_plugin_transform(|| {
+            let current = active.fetch_add(1, Ordering::SeqCst) + 1;
+            max_active.fetch_max(current, Ordering::SeqCst);
+            std::thread::sleep(Duration::from_millis(50));
+            active.fetch_sub(1, Ordering::SeqCst);
+          });
+        })
+      })
+      .collect::<Vec<_>>();
+
+    barrier.wait();
+
+    for handle in handles {
+      handle.join().unwrap();
+    }
+
+    assert_eq!(max_active.load(Ordering::SeqCst), 1);
   }
 }
 
