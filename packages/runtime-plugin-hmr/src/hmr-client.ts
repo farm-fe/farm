@@ -18,7 +18,7 @@ const socketProtocol =
 const socketHostUrl = `${hmrHost}:${hmrPort}${FARM_HMR_PATH}`;
 
 export class HmrClient {
-  socket?: WebSocket;
+  socket: WebSocket;
   registeredHotModulesMap = new Map<string, HotModuleState>();
   disposeMap = new Map<string, (data: any) => void | Promise<void>>();
   pruneMap = new Map<string, (data: any) => void | Promise<void>>();
@@ -82,12 +82,12 @@ export class HmrClient {
 
   closeConnectionGracefully() {
     if (
-      this.socket?.readyState === WebSocket.CLOSING ||
-      this.socket?.readyState === WebSocket.CLOSED
+      this.socket.readyState === WebSocket.CLOSING ||
+      this.socket.readyState === WebSocket.CLOSED
     ) {
       return;
     }
-    this.socket?.close(1000, 'Client closing connection');
+    this.socket.close(1000, 'Client closing connection');
   }
 
   async applyHotUpdates(result: HmrUpdateResult, moduleSystem: ModuleSystem) {
@@ -99,9 +99,7 @@ export class HmrClient {
       const prune = this.pruneMap.get(id);
       if (prune) {
         const hotContext = this.registeredHotModulesMap.get(id);
-        if (hotContext) {
-          await prune(hotContext.data);
-        }
+        await prune(hotContext.data);
       }
 
       // if the module is both in remove and added, we just need to clear the cache
@@ -127,7 +125,7 @@ export class HmrClient {
     if (result.dynamicResources && result) {
       moduleSystem.sd(
         result.dynamicResources,
-        result.dynamicModuleResourcesMap ?? {}
+        result.dynamicModuleResourcesMap
       );
     }
 
@@ -159,11 +157,11 @@ export class HmrClient {
             ({ deps }) => deps.includes(boundary)
           );
           const depsAcceptedCallbacks = hotContext.acceptCallbacks.filter(
-            ({ deps }) => deps.includes(acceptedDep ?? '')
+            ({ deps }) => deps.includes(acceptedDep)
           );
           // when there are both self accept callbacks and deps accept callbacks in a boundary module, only the deps accept callbacks will be called
           for (const [acceptedId, acceptedCallbacks] of Object.entries({
-            [acceptedDep ?? '']: depsAcceptedCallbacks,
+            [acceptedDep]: depsAcceptedCallbacks,
             [boundary]: selfAcceptedCallbacks
           })) {
             if (acceptedCallbacks.length > 0) {
@@ -171,8 +169,7 @@ export class HmrClient {
                 this.registeredHotModulesMap.get(acceptedId);
 
               const disposer = this.disposeMap.get(acceptedId);
-              if (disposer && acceptHotContext)
-                await disposer(acceptHotContext.data);
+              if (disposer) await disposer(acceptHotContext.data);
 
               const acceptedExports = moduleSystem.r(acceptedId);
 
@@ -187,7 +184,7 @@ export class HmrClient {
               break;
             }
           }
-        } catch (err: any) {
+        } catch (err) {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
           logger.error(`Error occurred while applying hot updates: ${err}`);
@@ -230,7 +227,7 @@ export class HmrClient {
         await Promise.all(
           payload.updates.map(async (update) => {
             if (update.type === 'js-update') {
-              this.socket?.send(JSON.stringify(update));
+              this.socket.send(JSON.stringify(update));
               return;
             }
 

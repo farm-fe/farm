@@ -5,7 +5,7 @@ export function handleErrorSync(
 ) {
   try {
     fun(...args);
-  } catch (err: any) {
+  } catch (err) {
     cb(err);
   }
 }
@@ -23,7 +23,7 @@ export function parseIfJSON(str: string): any {
       return str;
     }
     return parsed;
-  } catch (e: any) {
+  } catch (e) {
     return str;
   }
 }

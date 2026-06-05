@@ -41,7 +41,9 @@
       "**/*.ts",
       "!**/node_modules",
       "!**/dist",
-      "!packages/runtime/**"
+      "!packages/runtime/**",
+      "!packages/runtime-plugin-hmr/**",
+      "!packages/runtime-plugin-import-meta/**"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
@@ -125,26 +127,12 @@
       "!**/website/**",
       "!**/node_modules/**",
       "!**/*.config.js",
-      "!**/*.config.ts"
+      "!**/*.config.ts",
+      "!packages/runtime/**",
+      "!packages/runtime-plugin-hmr/**",
+      "!packages/runtime-plugin-import-meta/**"
     ]
   },
-  "overrides": [
-    {
-      "includes": ["packages/runtime/**"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUndeclaredVariables": "off",
-            "noInnerDeclarations": "off"
-          },
-          "suspicious": {
-            "noFunctionAssign": "off",
-            "noRedeclare": "off"
-          }
-        }
-      }
-    }
-  ],
   "javascript": {
     "formatter": {
       "jsxQuoteStyle": "single",
