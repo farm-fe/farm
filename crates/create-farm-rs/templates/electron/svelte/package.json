@@ -20,13 +20,13 @@
     "@farmfe/cli": "beta",
     "@farmfe/js-plugin-electron": "beta",
     "core-js": "^3.36.1",
-    "electron": "^39.8.10",
+    "electron": "^30.0.9",
     "fs-extra": "^11.2.0",
     "typescript": "^5.0.2",
-    "@sveltejs/vite-plugin-svelte": "^4.0.4",
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
     "@tsconfig/svelte": "^5.0.4",
-    "svelte": "^5.56.1",
-    "svelte-check": "^4.3.4",
+    "svelte": "^4.2.12",
+    "svelte-check": "^3.6.8",
     "tslib": "^2.6.2"
   }
 }

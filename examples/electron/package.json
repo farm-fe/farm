@@ -20,7 +20,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-electron": "workspace:*",
-    "electron": "^39.8.10",
+    "electron": "^30.0.7",
     "electron-builder": "^24.13.3",
     "fs-extra": "^11.2.0",
     "typescript": "^5.4.3"

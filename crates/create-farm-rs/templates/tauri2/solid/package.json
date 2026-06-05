@@ -12,7 +12,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "solid-js": "^1.9.13",
+    "solid-js": "^1.9.3",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2"
   },

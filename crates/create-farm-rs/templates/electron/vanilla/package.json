@@ -20,7 +20,7 @@
     "@farmfe/cli": "beta",
     "@farmfe/js-plugin-electron": "beta",
     "core-js": "^3.36.1",
-    "electron": "^39.8.10",
+    "electron": "^30.0.9",
     "fs-extra": "^11.2.0",
     "typescript": "^5.0.2",
     "tslib": "^2.6.2"
