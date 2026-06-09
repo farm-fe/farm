@@ -135,6 +135,7 @@ SWC Plugins can be used directly in Farm, for example, we use `swc-plugin-vue-js
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
+import vue from '@farmfe/plugin-vue';
 
 export default defineConfig({
   compilation: {
@@ -154,7 +155,7 @@ export default defineConfig({
       ],
     },
   },
-  plugins: ["@farmfe/plugin-vue"],
+  plugins: [vue()],
 });
 ```
 

@@ -84,7 +84,7 @@ export default function farmSassPlugin(
       async executor(param) {
         if (param.query.length === 0 && existsSync(param.resolvedPath)) {
           const data = await tryRead(param.resolvedPath);
-          if (!data) return null;
+          if (data === undefined) return null;
           return {
             content: data,
             moduleType: 'sass'

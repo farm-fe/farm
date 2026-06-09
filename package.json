@@ -16,7 +16,7 @@
     "doc": "pnpm --filter farm-docs dev",
     "release": "node scripts/release.mjs",
     "release:nightly": "node scripts/release-nightly.mjs",
-    "check": "biome check . --diagnostic-level=warn --apply",
+    "check": "biome check . --diagnostic-level=warn --write",
     "bump": "node scripts/bump.mjs",
     "bump:nightly": "node scripts/bump-nightly.mjs",
     "bump:create-farm": "node scripts/bump-create-farm-version.mjs",

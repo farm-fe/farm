@@ -9,16 +9,17 @@ Adding Rust plugins by `plugins` option:
 
 ```ts title="farm.config.ts" {3,7}
 import { defineConfig } from "@farmfe/core";
+import sass from "@farmfe/plugin-sass";
 
 export default defineConfig({
   // configuring it in plugins
   plugins: [
-    ['@farmfe/plugin-sass', { /** plugin options here */ }]
+    sass({ /** plugin options here */ })
   ],
 });
 ```
 
-Configuring the Rust plugin package name(or path) in string and its options in object.
+Import the rust plugin's default export and call it like a JS plugin, optionally passing options as the first argument.
 
 ## Writing Rust Plugin
 See [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin) for details.

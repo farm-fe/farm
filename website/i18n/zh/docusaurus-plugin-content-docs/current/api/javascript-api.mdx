@@ -18,6 +18,7 @@ start(options?: FarmCliOptions & UserConfig): Promise<void>
 
 ```ts
 import { start } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 await start({
   compilation: {
@@ -25,7 +26,7 @@ await start({
     output: { publicPath: '/dist/' }
   },
   server: { port: 6532 },
-  plugins: ['@farmfe/plugin-react']
+  plugins: [react()]
 });
 ```
 
@@ -100,9 +101,10 @@ await clean(process.cwd());
 
 ```ts
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
-  plugins: ['@farmfe/plugin-react']
+  plugins: [react()]
 });
 ```
 

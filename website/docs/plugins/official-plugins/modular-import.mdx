@@ -26,15 +26,13 @@ Register the plugin in `farm.config.ts`:
 
 ```ts
 import { defineConfig } from "@farmfe/core";
+import modularImport from "@farmfe/plugin-modular-import";
 
 export default defineConfig({
   plugins: [
-    [
-      "@farmfe/plugin-modular-import",
-      {
-        libraryName: "element-ui",
-      },
-    ],
+    modularImport({
+      libraryName: "element-ui",
+    }),
   ],
 });
 ```
@@ -64,13 +62,10 @@ import "element-ui/lib/SomeComponent/index.css";
 For example, configuring `libDir`, `styleLibraryName`, and `styleLibraryPath`:
 
 ```ts
-[
-  "@farmfe/plugin-modular-import",
-  {
-    libraryName: "element-ui",
-    libDir: "es",
-    styleLibraryName: "theme-default",
-    styleLibraryPath: "style/index.css",
-  },
-];
+modularImport({
+  libraryName: "element-ui",
+  libDir: "es",
+  styleLibraryName: "theme-default",
+  styleLibraryPath: "style/index.css",
+});
 ```

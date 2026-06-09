@@ -18,13 +18,14 @@ Select `React` template in `Select Framework`
 
 ```javascript title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
-  plugins: ['@farmfe/plugin-react'],
+  plugins: [react()],
 });
 ```
 
-The `@farmfe/plugin-react` plugin is written in `Rust`, so you do not need to explicitly import it; you can register it by passing a string package name.
+Like JS plugins, the rust `@farmfe/plugin-react` is imported and called as a factory function.
 
 ### Integrating emotion
 You can support `emotion` by registering the `@swc/plugin-emotion` plugin.
@@ -32,6 +33,7 @@ You can support `emotion` by registering the `@swc/plugin-emotion` plugin.
 
 ```javascript title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
   compilation: {
@@ -47,7 +49,7 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [['@farmfe/plugin-react', { "importSource": "@emotion/react" }]],
+  plugins: [react({ importSource: '@emotion/react' })],
 });
 
 ```
@@ -83,18 +85,16 @@ export function Main() {
 
 ```javascript title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig(async (env) => {
   return {
     plugins: [
-      [
-        '@farmfe/plugin-react',
-        {
-          refresh: process.env.NODE_ENV === 'development',
-          development: process.env.NODE_ENV === 'development'
-        }
-      ],
+      react({
+        refresh: process.env.NODE_ENV === 'development',
+        development: process.env.NODE_ENV === 'development'
+      }),
       farmJsPluginSvgr()
     ]
   };

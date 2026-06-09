@@ -23,10 +23,11 @@ Farm's native plugins use `plugins`. Vite-compatible plugins belong in `vitePlug
 ```ts
 import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   vitePlugins: [vue()],
-  plugins: ['@farmfe/plugin-sass']
+  plugins: [sass()]
 });
 ```
 

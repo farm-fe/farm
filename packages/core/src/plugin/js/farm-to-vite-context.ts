@@ -131,7 +131,7 @@ export function farmContextToViteContext(
       importer?: any,
       options?: any
     ): Promise<any> => {
-      if (options.custom?.caller === `${pluginName}.${hookName}`) {
+      if (options?.custom?.caller === `${pluginName}.${hookName}`) {
         return null;
       }
 
@@ -144,7 +144,7 @@ export function farmContextToViteContext(
         {
           source,
           importer: importer ?? null,
-          kind: options.isEntry ? 'entry' : 'import'
+          kind: options?.isEntry ? 'entry' : 'import'
         },
         {
           meta: hookContext?.meta ?? {},

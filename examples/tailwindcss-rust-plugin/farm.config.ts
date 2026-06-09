@@ -1,4 +1,5 @@
 import { defineConfig } from '@farmfe/core';
+import tailwindConfig from './tailwindcss.config.js';
 
 export default defineConfig({
   compilation: {
@@ -10,6 +11,6 @@ export default defineConfig({
   },
   plugins: [
     '@farmfe/plugin-react',
-    ['@farmfe/plugin-tailwindcss', {}]
+    ['@farmfe/plugin-tailwindcss', { config: tailwindConfig }]
   ]
 });

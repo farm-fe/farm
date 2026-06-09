@@ -7,18 +7,19 @@
 
 通过 `plugins` 选项添加 Rust 插件：
 
-```ts title="farm.config.ts" {3,7}
+```ts title="farm.config.ts" {2,7}
 import { defineConfig } from "@farmfe/core";
+import sass from "@farmfe/plugin-sass";
 
 export default defineConfig({
   // 在 plugins 中配置
   plugins: [
-    ['@farmfe/plugin-sass', { /** 插件选项 */ }]
+    sass({ /** 插件选项 */ })
   ],
 });
 ```
 
-在字符串中配置 Rust 插件包名称（或路径），并在对象中配置其选项。
+像 JS 插件一样导入 Rust 插件并以工厂函数的形式调用，将选项作为参数传入。
 
 ## 编写 Rust 插件
 有关详细信息，请参阅[编写 Rust 插件](/docs/plugins/writing-plugins/rust-plugin)。
