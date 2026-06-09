@@ -27,7 +27,7 @@
     "@types/react": "18",
     "@types/react-dom": "18",
     "core-js": "^3.36.1",
-    "electron": "^30.0.9",
+    "electron": "^39.8.10",
     "fs-extra": "^11.2.0",
     "react-refresh": "^0.14.0"
   }

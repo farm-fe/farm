@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "axios": "^1.4.0",
+    "axios": "^1.17.0",
     "core-js": "^3.30.1",
-    "element-plus": "^2.4.1",
+    "element-plus": "^2.14.1",
     "vue": "^3.3.0"
   },
   "devDependencies": {
