@@ -523,6 +523,8 @@ Configure the swc plugin array, each item of the array contains three fields:
 An example of a configuration that supports JSX for a Vue project is as follows. For Vue SFC support, register the current Rust plugin `@farmfe/plugin-vue`:
 
 ```ts
+import vue from "@farmfe/plugin-vue";
+
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -544,7 +546,7 @@ export default {
       ],
     },
   },
-  plugins: ["@farmfe/plugin-vue"],
+  plugins: [vue()],
 };
 ```
 

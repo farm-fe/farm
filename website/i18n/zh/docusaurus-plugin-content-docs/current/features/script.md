@@ -125,6 +125,8 @@ export default defineConfig({
 SWC Plugins 可以直接在 Farm 中使用，例如我们在 Farm 中使用 `swc-plugin-vue-jsx` 来编译 Vue JSX。如果需要 Vue SFC 支持，请注册当前的 Rust 插件 `@farmfe/plugin-vue`：
 
 ```ts title="farm.config.ts"
+import vue from "@farmfe/plugin-vue";
+
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -146,7 +148,7 @@ export default {
       ],
     },
   },
-  plugins: ["@farmfe/plugin-vue"],
+  plugins: [vue()],
 };
 ```
 

@@ -21,7 +21,8 @@
   "scripts": {
     "build": "pnpm run build:plugin && pnpm run build:helper",
     "build:plugin": "farm build",
-    "build:helper": "farm build -c farm-helper.config.ts"
+    "build:helper": "farm build -c farm-helper.config.ts",
+    "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "keywords": [
     "farm",

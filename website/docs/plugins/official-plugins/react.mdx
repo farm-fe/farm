@@ -20,12 +20,13 @@ Support `React Jsx` and `React Refresh` for Farm.
 </Tabs>
 
 ## Usage
-`@farmfe/plugin-react` is a Rust plugin, you only need to configure its package name in `plugins` field in `farm.config.ts`.
+`@farmfe/plugin-react` is a Rust plugin. Import its default export and call it inside the `plugins` array of `farm.config.ts`.
 ```ts {4}
 import { UserConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-react', { /** options here */}]
+  plugins: [react({ /** options here */ })]
 }
 ```
 

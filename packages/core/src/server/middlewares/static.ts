@@ -25,11 +25,11 @@ export function staticMiddleware(app: Server): Connect.NextHandleFunction {
   const serve = sirv(
     root,
     sirvOptions({
-      getHeaders: () => config.server.headers
+      getHeaders: () => config.server?.headers
     })
   );
   return function handleStaticMiddleware(req, res, next) {
-    let stripQueryAndHashUrl = stripQueryAndHash(req.url);
+    let stripQueryAndHashUrl = stripQueryAndHash(req.url ?? '');
 
     if (
       stripQueryAndHashUrl[stripQueryAndHashUrl.length - 1] === '/' ||
@@ -62,7 +62,7 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
   const serve = sirv(
     publicDir,
     sirvOptions({
-      getHeaders: () => config.server.headers
+      getHeaders: () => config.server?.headers
     })
   );
   const toFilePath = (url: string) => {

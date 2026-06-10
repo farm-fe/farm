@@ -1,11 +1,9 @@
 export * from './preview.js';
 
 import fs, { PathLike } from 'node:fs';
-import type {
-  Server as HttpBaseServer,
-  ServerOptions as HttpsServerOptions
-} from 'node:http';
+import type { Server as HttpBaseServer } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
+import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type * as net from 'node:net';
 import connect from 'connect';
 import corsMiddleware from 'cors';
@@ -81,14 +79,20 @@ export function shouldAutoSyncHmrPort(
 export function syncServerPort(
   config: ResolvedUserConfig,
   serverPort: number,
-  shouldSyncHmrPort = shouldAutoSyncHmrPort(config.server)
+  shouldSyncHmrPort = config.server
+    ? shouldAutoSyncHmrPort(config.server)
+    : false
 ) {
-  if (shouldSyncHmrPort) {
+  if (shouldSyncHmrPort && config.server) {
     config.server.hmr.port = serverPort;
-    config.compilation.define.FARM_HMR_PORT = serverPort.toString();
+    if (config.compilation?.define) {
+      config.compilation.define.FARM_HMR_PORT = serverPort.toString();
+    }
   }
 
-  config.server.port = serverPort;
+  if (config.server) {
+    config.server.port = serverPort;
+  }
 }
 
 /**
@@ -96,22 +100,22 @@ export function syncServerPort(
  * @class
  */
 export class Server extends httpServer {
-  ws: WsServer;
-  serverOptions: ServerConfig;
-  httpsOptions: HttpsServerOptions;
+  ws!: WsServer;
+  serverOptions!: ServerConfig;
+  httpsOptions: HttpsServerOptions | undefined;
   shouldSyncHmrPort = false;
   publicDir: string | undefined;
   publicPath?: string;
   publicFiles?: Set<string>;
-  httpServer: HttpServer;
-  watcher: Watcher;
+  httpServer!: HttpServer | null;
+  watcher!: Watcher;
   hmrEngine?: HmrEngine;
-  middlewares: connect.Server;
+  middlewares!: connect.Server;
   compiler?: CompilerType;
-  root: string;
-  config: ResolvedUserConfig;
-  closeHttpServerFn: () => Promise<void>;
-  terminateServerFn: (_: unknown, exitCode?: number) => Promise<void>;
+  root!: string;
+  config!: ResolvedUserConfig;
+  closeHttpServerFn!: () => Promise<void>;
+  terminateServerFn!: (_: unknown, exitCode?: number) => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
 
@@ -186,7 +190,7 @@ export class Server extends httpServer {
       'development'
     );
 
-    server.logger = server.config.logger;
+    server.logger = server.config.logger ?? server.logger;
 
     server.#resolveOptions();
 
@@ -240,10 +244,11 @@ export class Server extends httpServer {
     }
 
     if (!server.serverOptions.middlewareMode && server.httpServer) {
-      server.httpServer.once('listening', () => {
+      const httpServer = server.httpServer;
+      httpServer.once('listening', () => {
         // update actual port since this may be different from initial value
         server.serverOptions.port = (
-          server.httpServer.address() as net.AddressInfo
+          httpServer.address() as net.AddressInfo
         ).port;
       });
     }
@@ -260,6 +265,7 @@ export class Server extends httpServer {
     await this.watcher.createWatcher();
 
     this.watcher.on('add', async (file: string) => {
+      if (!this.compiler) return;
       const currentAddedItem: CompilerUpdateItem = {
         path: normalizePath(file),
         type: 'added'
@@ -269,6 +275,7 @@ export class Server extends httpServer {
     });
 
     this.watcher.on('unlink', async (file: string) => {
+      if (!this.compiler) return;
       const currentRemovedItem: CompilerUpdateItem = {
         path: normalizePath(file),
         type: 'removed'
@@ -284,7 +291,7 @@ export class Server extends httpServer {
             type: 'updated'
           })
         );
-        this.hmrEngine.hmrUpdate(normalizedParentFiles, true);
+        this.hmrEngine?.hmrUpdate(normalizedParentFiles, true);
       }
     });
 
@@ -294,8 +301,8 @@ export class Server extends httpServer {
       if (this.watcher.isConfigFilesChanged(file)) {
         try {
           await this.restartServer();
-        } catch (e) {
-          this.config.logger.error(`restart server error ${e}`);
+        } catch (e: any) {
+          this.logger.error(`restart server error ${e}`);
         }
 
         return;
@@ -306,18 +313,20 @@ export class Server extends httpServer {
           path: normalizePath(file),
           type: 'updated'
         };
-        this.hmrEngine.hmrUpdate(currentRemovedItem);
-      } catch (error) {
-        this.config.logger.error(`Farm Hmr Update Error: ${error}`);
+        this.hmrEngine?.hmrUpdate(currentRemovedItem);
+      } catch (error: any) {
+        this.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
 
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      if (!this.compiler) return;
+      const compiler = this.compiler;
       const added = [
         ...updateResult.added,
         ...updateResult.extraWatchResult.add
       ].map((addedModule) => {
-        const resolvedPath = this.compiler.transformModulePath(
+        const resolvedPath = compiler.transformModulePath(
           this.root,
           addedModule
         );
@@ -340,7 +349,7 @@ export class Server extends httpServer {
 
     this.serverOptions.port = serverPort;
 
-    if (this.config.compilation.lazyCompilation) {
+    if (this.config.compilation?.lazyCompilation) {
       handleLazyCompilation(this.config, command);
     }
   }
@@ -358,16 +367,19 @@ export class Server extends httpServer {
     const prevUrls = this.resolvedUrls;
 
     const newServer = await this.restart();
+    if (!newServer) return;
     const {
       serverOptions: { port, host },
       resolvedUrls
     } = newServer;
 
-    if (
-      port !== prevPort ||
-      host !== prevHost ||
-      this.hasUrlsChanged(prevUrls, resolvedUrls)
-    ) {
+    const urlsChanged = prevUrls
+      ? this.hasUrlsChanged(
+          prevUrls,
+          resolvedUrls ?? { local: [], network: [] }
+        )
+      : true;
+    if (port !== prevPort || host !== prevHost || urlsChanged) {
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = true;
     } else {
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = false;
@@ -396,11 +408,11 @@ export class Server extends httpServer {
    * Restarts the server.
    */
   async restart() {
-    let newServer: Server = null;
+    let newServer: Server | undefined;
     try {
       await this.close();
       newServer = await Server.createServer(this.inlineConfig);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Failed to restart server :\n ${error}`);
       return;
     }
@@ -469,10 +481,8 @@ export class Server extends httpServer {
       if (open) {
         this.#openServerBrowser();
       }
-    } catch (error) {
-      this.config.logger.error(
-        `Start DevServer Error: ${error} \n ${error.stack}`
-      );
+    } catch (error: any) {
+      this.logger.error(`Start DevServer Error: ${error} \n ${error.stack}`);
       // throw error;
     }
   }
@@ -499,7 +509,7 @@ export class Server extends httpServer {
    * @param {string[]} deps - Array of file paths to be watched.
    */
   addWatchFile(root: string, deps: string[]): void {
-    this.getCompiler().addExtraWatchFile(root, deps);
+    this.getCompiler()?.addExtraWatchFile(root, deps);
   }
 
   /**
@@ -517,7 +527,7 @@ export class Server extends httpServer {
     const { jsPlugins } = this.config;
 
     for (const hook of getSortedPluginHooksBindThis(
-      jsPlugins,
+      jsPlugins ?? [],
       'configureServer'
     )) {
       this.postConfigureServerHooks.push(await hook(reflexServer));
@@ -533,19 +543,14 @@ export class Server extends httpServer {
    * @returns { void }
    */
   #resolveOptions(): void {
-    const {
-      compilation: {
-        output: { publicPath },
-        assets: { publicDir }
-      },
-      root,
-      server
-    } = this.config;
-    this.publicPath = getValidPublicPath(publicPath);
-    this.publicDir = publicDir;
-    if (server.origin?.endsWith('/')) {
+    const { compilation, root, server } = this.config;
+    this.publicPath = getValidPublicPath(compilation?.output?.publicPath);
+    this.publicDir = (
+      compilation?.assets as { publicDir?: string } | undefined
+    )?.publicDir;
+    if (server?.origin?.endsWith('/')) {
       server.origin = server.origin.slice(0, -1);
-      this.config.logger.warn(
+      this.logger.warn(
         `${colors.bold('(!)')} server.origin should not end with "/". Using "${
           server.origin
         }" instead.`
@@ -553,7 +558,7 @@ export class Server extends httpServer {
     }
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
     this.shouldSyncHmrPort = shouldAutoSyncHmrPort(this.serverOptions);
-    this.root = root;
+    this.root = root ?? '';
   }
 
   /**
@@ -592,7 +597,7 @@ export class Server extends httpServer {
       this.middlewares.use(publicMiddleware(this));
     }
 
-    if (this.config.compilation.lazyCompilation) {
+    if (this.config.compilation?.lazyCompilation) {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
@@ -601,19 +606,20 @@ export class Server extends httpServer {
     // Check dev resource tree in `_output_files` url
     this.middlewares.use(outputFilesMiddleware(this));
 
-    if (this.config.server.writeToDisk) {
+    if (this.config.server?.writeToDisk) {
       this.middlewares.use(resourceDiskMiddleware(this));
     } else {
       this.middlewares.use(resourceMiddleware(this));
     }
 
-    this.postConfigureServerHooks.reduce((_, fn) => {
+    this.postConfigureServerHooks.forEach((fn) => {
       if (typeof fn === 'function') fn();
-    }, null);
+    });
 
-    this.serverOptions.middlewares?.forEach((middleware) =>
-      this.middlewares.use(middleware(this))
-    );
+    this.serverOptions.middlewares?.forEach((middleware) => {
+      const mw = middleware(this);
+      if (mw) this.middlewares.use(mw);
+    });
 
     if (appType === 'spa' || appType === 'mpa') {
       this.middlewares.use(htmlFallbackMiddleware(this));
@@ -628,19 +634,17 @@ export class Server extends httpServer {
    * @throws {Error} If compilation fails.
    */
   async #compile(): Promise<void> {
+    if (!this.compiler) return;
     try {
       await this.compiler.compile();
 
-      await (this.config.server.writeToDisk
+      await (this.config.server?.writeToDisk
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
-    } catch (err) {
-      this.config.logger.error(
-        `Compilation failed: ${convertErrorMessage(err)}`,
-        {
-          exit: true
-        }
-      );
+    } catch (err: any) {
+      this.logger.error(`Compilation failed: ${convertErrorMessage(err)}`, {
+        exit: true
+      });
     }
   }
 
@@ -660,19 +664,19 @@ export class Server extends httpServer {
    */
   async #startCompile() {
     this.setCompiler(createCompiler(this.config));
+    if (!this.compiler) return;
 
     for (const hook of getSortedPluginHooksBindThis(
-      this.config.jsPlugins,
+      this.config.jsPlugins ?? [],
       'configureCompiler'
     )) {
       await hook?.(this.compiler);
     }
 
     // check if cache dir exists
-    const { persistentCache } = this.compiler.config.compilation;
-    const hasCacheDir = await isCacheDirExists(
-      (persistentCache as PersistentCacheConfig).cacheDir
-    );
+    const { persistentCache } = this.compiler.config.compilation ?? {};
+    const cacheDir = (persistentCache as PersistentCacheConfig)?.cacheDir;
+    const hasCacheDir = await isCacheDirExists(cacheDir ?? '');
     const start = performance.now();
     await this.#compile();
 
@@ -685,7 +689,7 @@ export class Server extends httpServer {
    * @private
    * @returns {Promise<Set<string>>} A promise that resolves to a set of public file paths.
    */
-  async #handlePublicFiles(): Promise<Set<string>> {
+  async #handlePublicFiles(): Promise<Set<string> | undefined> {
     const initPublicFilesPromise = initPublicFiles(this.config);
     return await initPublicFilesPromise;
   }
@@ -700,7 +704,8 @@ export class Server extends httpServer {
 
     this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
       // find hmr boundary starting from the parent of the file
-      this.config.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
+      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
+      if (!this.compiler || !this.hmrEngine) return;
       const parentFiles = this.compiler.getParentFiles(path);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -727,8 +732,9 @@ export class Server extends httpServer {
 
     let hasListened = false;
     const openSockets = new Set<net.Socket>();
+    const httpServer = this.httpServer;
 
-    this.httpServer.on('connection', (socket) => {
+    httpServer.on('connection', (socket) => {
       openSockets.add(socket);
       debugServer?.(`has open server socket ${openSockets}`);
 
@@ -738,7 +744,7 @@ export class Server extends httpServer {
       });
     });
 
-    this.httpServer.once('listening', () => {
+    httpServer.once('listening', () => {
       hasListened = true;
     });
 
@@ -747,7 +753,7 @@ export class Server extends httpServer {
         openSockets.forEach((s) => s.destroy());
 
         if (hasListened) {
-          this.httpServer.close((err) => {
+          httpServer.close((err) => {
             if (err) {
               reject(err);
             } else {
@@ -778,11 +784,7 @@ export class Server extends httpServer {
       return;
     }
     if (this.resolvedUrls) {
-      printServerUrls(
-        this.resolvedUrls,
-        this.serverOptions.host,
-        this.config.logger
-      );
+      printServerUrls(this.resolvedUrls, this.serverOptions.host, this.logger);
     } else if (this.serverOptions.middlewareMode) {
       throw new Error('cannot print server URLs in middleware mode.');
     } else {

@@ -40,17 +40,15 @@ Register the plugin in `farm.config.ts`:
 
 ```ts
 import { defineConfig } from "@farmfe/core";
+import icons from "@farmfe/plugin-icons";
 
 export default defineConfig({
   plugins: [
-    [
-      "@farmfe/plugin-icons",
-      {
-        compiler: "jsx",
-        jsx: "react",
-        scale: 1.2,
-      },
-    ],
+    icons({
+      compiler: "jsx",
+      jsx: "react",
+      scale: 1.2,
+    }),
   ],
 });
 ```
@@ -91,15 +89,12 @@ import IconAccessibility from "~icons/carbon/accessibility";
 ## Custom icons
 
 ```ts
-[
-  "@farmfe/plugin-icons",
-  {
-    customCollections: {
-      local: "./src/assets/icons",
-      remote: "https://example.com/icons/[iconname].svg",
-    },
+icons({
+  customCollections: {
+    local: "./src/assets/icons",
+    remote: "https://example.com/icons/[iconname].svg",
   },
-];
+});
 ```
 
 Then import from the custom collections:

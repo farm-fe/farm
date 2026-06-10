@@ -54,6 +54,8 @@ Farm为流行的框架提供了 SSR [示例](https://github.com/farm-fe/farm/tre
 ```ts title="farm.config.ts"
 import path from 'path';
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   compilation: {
@@ -104,7 +106,7 @@ export default defineConfig({
       }
     ]
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
+  plugins: [react(), sass()]
 });
 ```
 
@@ -122,6 +124,8 @@ export default defineConfig({
 
 ```ts title="farm.config.server.ts"
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   compilation: {
@@ -136,14 +140,11 @@ export default defineConfig({
     // c-highlight-end
   },
   plugins: [
-    [
-      '@farmfe/plugin-react',
-      {
-        refresh: false,
-        development: false
-      }
-    ],
-    '@farmfe/plugin-sass'
+    react({
+      refresh: false,
+      development: false
+    }),
+    sass()
   ]
 });
 ```

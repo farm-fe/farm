@@ -26,7 +26,7 @@ export async function traceDependencies(
     const compiler = createTraceDepCompiler(configFilePath);
     const files = (await compiler.traceDependencies()) as string[];
     return files.filter((file) => !/@farm-runtime[\/\\]module/.test(file)); // ignore internal runtime module
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = convertErrorMessage(error);
     throw Error(`Error tracing dependencies: ${errorMessage}`);
   }

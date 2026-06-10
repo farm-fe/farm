@@ -28,16 +28,14 @@ farm.config.ts
 
 ```typescript
 import { defineConfig } from '@farmfe/core';
+import virtual from '@farmfe/plugin-virtual';
 
 export default defineConfig({
   plugins: [
-    [
-      '@farmfe/plugin-virtual',
-      {
-        'virtual-module': 'export const a = 1',
-        'src/01.js': 'export const module01 = "virtual-module"',
-      },
-    ],
+    virtual({
+      'virtual-module': 'export const a = 1',
+      'src/01.js': 'export const module01 = "virtual-module"',
+    }),
   ],
 });
 ```

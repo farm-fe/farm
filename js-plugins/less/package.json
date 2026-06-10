@@ -30,8 +30,8 @@
     "build": "pnpm run clean && farm build",
     "start": "cross-env FARM_FORMAT=esm farm watch",
     "prepublishOnly": "npm run build",
-    "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
-    "type-check": "tsc -p ./tsconfig.build.json --noEmit"
+    "clean": "rimraf dist build",
+    "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "files": [
     "build"

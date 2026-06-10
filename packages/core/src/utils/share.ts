@@ -66,7 +66,7 @@ export function clearScreen() {
     console.log(blank);
     readline.cursorTo(process.stdout, 0, 0);
     readline.clearScreenDown(process.stdout);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to clear screen:', error);
   }
 }
@@ -101,7 +101,7 @@ export function arraify<T>(target: T | T[]): T[] {
 export function getFileSystemStats(file: string): fs.Stats | undefined {
   try {
     return fs.statSync(file, { throwIfNoEntry: false });
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error accessing file ${file}:`, error);
     return undefined;
   }
@@ -166,17 +166,19 @@ export function preventExperimentalWarning() {
   };
 }
 
-export function mapTargetEnvValue(config: Config['config']) {
-  if (FARM_TARGET_NODE_ENVS.includes(config.output.targetEnv)) {
-    config.output.targetEnv = 'node';
-  } else if (FARM_TARGET_BROWSER_ENVS.includes(config.output.targetEnv)) {
-    config.output.targetEnv = 'browser';
+export function mapTargetEnvValue(config: NonNullable<Config['config']>) {
+  const output = config.output;
+  if (!output?.targetEnv) return;
+  if (FARM_TARGET_NODE_ENVS.includes(output.targetEnv)) {
+    output.targetEnv = 'node';
+  } else if (FARM_TARGET_BROWSER_ENVS.includes(output.targetEnv)) {
+    output.targetEnv = 'browser';
   } else {
-    if (FARM_TARGET_LIBRARY_ENVS.includes(config.output.targetEnv)) {
+    if (FARM_TARGET_LIBRARY_ENVS.includes(output.targetEnv)) {
       return;
     }
 
-    config.output.targetEnv = 'library';
+    output.targetEnv = 'library';
   }
 }
 
@@ -206,7 +208,7 @@ export function arrayEqual(a: any[], b: any[]): boolean {
 }
 
 export function isNodeEnv(env: OutputConfig['targetEnv']): boolean {
-  return /^(node|library)(?!-browser)/.test(env);
+  return /^(node|library)(?!-browser)/.test(env ?? '');
 }
 
 export function getValidPublicPath(publicPath = '/'): string {

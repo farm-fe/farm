@@ -11,9 +11,86 @@ import path from 'upath';
 
 interface Options extends VuetifyOptions {}
 
+type VueFilterPattern = string | RegExp | (string | RegExp)[];
+
+interface VuePluginOptions {
+  include?: VueFilterPattern;
+  exclude?: VueFilterPattern;
+}
+
+type ViteVuePlugin = JsPlugin & {
+  api?: {
+    options?: VuePluginOptions;
+  };
+};
+
+const SUPPORTED_VITE_VUE_PLUGIN_NAMES = new Set(['unplugin-vue', 'vite:vue']);
+const FARM_PLUGIN_VUE_PACKAGE = '@farmfe/plugin-vue';
+const DEFAULT_VUE_INCLUDE = /\.vue$/;
+
 function isSubdir(root: string, test: string) {
   const relative = path.relative(root, test);
   return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+function filterToRegExp(filter: unknown, fallback: RegExp | null) {
+  if (!filter) return fallback;
+  if (filter instanceof RegExp) return filter;
+  if (typeof filter === 'string') return new RegExp(filter);
+  if (Array.isArray(filter)) {
+    const sources = filter
+      .map((item) => {
+        if (item instanceof RegExp) return item.source;
+        if (typeof item === 'string') return item;
+        return null;
+      })
+      .filter(Boolean);
+
+    return sources.length ? new RegExp(sources.join('|')) : fallback;
+  }
+  return fallback;
+}
+
+function isFarmPluginVuePath(pluginPath: string) {
+  const normalizedPath = normalizePath(pluginPath);
+  return (
+    normalizedPath === FARM_PLUGIN_VUE_PACKAGE ||
+    normalizedPath.includes('/@farmfe/plugin-vue') ||
+    normalizedPath.includes('/rust-plugins/vue/') ||
+    normalizedPath.includes('/farm-plugin-vue')
+  );
+}
+
+function parseRustPluginOptions(
+  options: unknown
+): VuePluginOptions | undefined {
+  if (!options) return undefined;
+  if (typeof options === 'string') {
+    try {
+      return JSON.parse(options);
+    } catch {
+      return undefined;
+    }
+  }
+  if (isObject(options)) return options as VuePluginOptions;
+  return undefined;
+}
+
+function getFarmPluginVueOptions(config: any): VuePluginOptions | undefined {
+  for (const plugin of config.plugins ?? []) {
+    if (typeof plugin === 'string' && isFarmPluginVuePath(plugin)) return {};
+    if (Array.isArray(plugin) && isFarmPluginVuePath(plugin[0])) {
+      return parseRustPluginOptions(plugin[1]) ?? {};
+    }
+  }
+
+  for (const [pluginPath, options] of config.rustPlugins ?? []) {
+    if (isFarmPluginVuePath(pluginPath)) {
+      return parseRustPluginOptions(options) ?? {};
+    }
+  }
+
+  return undefined;
 }
 
 const PLUGIN_VIRTUAL_PREFIX = 'virtual:';
@@ -21,7 +98,7 @@ const PLUGIN_VIRTUAL_NAME = 'plugin-vuetify';
 const VIRTUAL_MODULE_ID = `${PLUGIN_VIRTUAL_PREFIX}${PLUGIN_VIRTUAL_NAME}`;
 
 export default function farmPlugin(_options?: Options): JsPlugin[] {
-  let include: RegExp;
+  let include: RegExp | null;
   let exclude: RegExp | null;
 
   const options = _options || {};
@@ -37,26 +114,26 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
     priority: 40,
 
     configResolved(config) {
-      const { vitePlugins } = config;
+      const vitePlugins = (config.vitePlugins ?? []) as ViteVuePlugin[];
 
-      const vuePlugin = vitePlugins.find(
-        (plugin: JsPlugin) =>
-          plugin.name === 'unplugin-vue' || plugin.name === 'vite:vue'
+      const vuePlugin = vitePlugins.find((plugin: ViteVuePlugin) =>
+        SUPPORTED_VITE_VUE_PLUGIN_NAMES.has(plugin.name)
       );
+      const vueOptions =
+        vuePlugin?.api?.options ?? getFarmPluginVueOptions(config);
 
-      if (!vuePlugin) {
+      if (!vueOptions) {
         throw new Error(
-          'No Vue plugin found, please install either @vitejs/plugin-vue nor unplugin-vue.'
+          'No Vue plugin found, please install @farmfe/plugin-vue, @vitejs/plugin-vue or unplugin-vue.'
         );
       }
 
-      const vueOptions = vuePlugin.api.options;
-      if (vueOptions === undefined) {
+      if (vuePlugin && vuePlugin.api?.options === undefined) {
         throw new Error('Vue plugin options not found.');
       }
 
-      include = vueOptions.include || /\.vue$/;
-      exclude = vueOptions.exclude || null;
+      include = filterToRegExp(vueOptions.include, DEFAULT_VUE_INCLUDE);
+      exclude = filterToRegExp(vueOptions.exclude, null);
     },
     transform: {
       filters: {
@@ -68,7 +145,7 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
           query && query.find(([key, _value]) => key === 'vue') !== undefined;
         const isVueFile =
           !isVueVirtual &&
-          include.test(resolvedPath) &&
+          include?.test(resolvedPath) &&
           (!exclude || !exclude.test(resolvedPath)) &&
           !/^import { render as _sfc_render } from ".*"$/m.test(content);
         const isVueTemplate =
@@ -135,7 +212,7 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
             // this is a workaround and may not work properly.
             const target = source.replace(/\.css$/, '.sass');
             const file = path.relative(path.join(vuetifyBase, 'lib'), target);
-            const contents = `@use "${normalizePath(configFile)};\n@use "${normalizePath(target)}";`;
+            const contents = `@use "${normalizePath(configFile ?? '')};\n@use "${normalizePath(target)}";`;
             tempFiles.set(file, contents);
             return { resolvedPath: `${VIRTUAL_MODULE_ID}:${file}` };
           }
@@ -163,9 +240,10 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
           };
         }
         if (id.startsWith(`${VIRTUAL_MODULE_ID}`)) {
-          const content = tempFiles.get(
-            new RegExp(`^${VIRTUAL_MODULE_ID}:(.*?)(\\?.*)?$`).exec(id)[1]
+          const match = new RegExp(`^${VIRTUAL_MODULE_ID}:(.*?)(\\?.*)?$`).exec(
+            id
           );
+          const content = match ? tempFiles.get(match[1]) : null;
           return content ? { content, moduleType: 'css' } : null;
         }
         return null;

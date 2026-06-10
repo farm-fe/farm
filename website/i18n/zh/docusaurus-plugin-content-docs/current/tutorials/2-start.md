@@ -26,14 +26,15 @@ pnpm add @farmfe/plugin-sass -D
 ````
 
 然后将此插件添加到`plugins`中：
-```ts title="farm.config.ts" {7}
+```ts title="farm.config.ts" {2,8}
 // ...
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   // ... ignore other fields
   plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass'
+    react(),
+    sass()
   ]
 });
 ```
@@ -180,15 +181,15 @@ Farm 为 `postcss`(`@farmfe/js-plugin-postcss`) 和 `less`(`@farmfe/js-plugin-le
 pnpm add -D @farmfe/js-plugin-postcss
 ```
 然后在`farm.config.ts`的`plugins`中配置它：
-```ts title="farm.config.ts" {7}
+```ts title="farm.config.ts" {8}
 // ...
 import farmPluginPostcss from '@farmfe/js-plugin-postcss';
 
 export default defineConfig({
   // ... ignore other fields
   plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass',
+    react(),
+    sass(),
     farmPluginPostcss()
   ]
 });

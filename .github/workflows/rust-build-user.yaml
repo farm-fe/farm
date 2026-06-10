@@ -129,6 +129,11 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
           path: rust-plugins/vue/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Vue JSX
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
+          path: rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Auto Import
         uses: actions/upload-artifact@v4
         with:

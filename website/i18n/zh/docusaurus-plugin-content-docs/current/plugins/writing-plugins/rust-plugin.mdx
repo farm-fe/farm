@@ -224,10 +224,11 @@ pnpm build
 
 ```javascript
 import { defineConfig } from '@farmfe/core';
+import myFarmPlugin from 'my-farm-plugin';
 
 export default defineConfig({
   plugins: [
-    'my-farm-plugin'
+    myFarmPlugin()
   ]
 });
 ```
@@ -340,13 +341,14 @@ rust 插件选项可以在`farm.config.ts`中配置:
 
 ```javascript
 import { defineConfig } from '@farmfe/core';
+import myFarmPlugin from 'my-farm-plugin';
 
 export default defineConfig({
   plugins: [
-    ['my-farm-plugin', {
+    myFarmPlugin({
       // plugin options
       myOption: 'myOption'
-    }]
+    })
   ]
 });
 ```

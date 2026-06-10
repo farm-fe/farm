@@ -1,0 +1,1 @@
+import{createTextVNode as _createTextVNode,createVNode as _createVNode}from"vue";_createVNode("div",null,[_createVNode(Comp,null,{default:()=>[_createTextVNode("content")],...slots}),_createVNode(Comp,null,{default:()=>[_createTextVNode("content")],a:b})]);

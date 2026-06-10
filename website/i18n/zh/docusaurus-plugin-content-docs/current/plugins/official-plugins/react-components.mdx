@@ -21,12 +21,13 @@ import TabItem from "@theme/TabItem";
 </Tabs>
 
 ## 使用
-`@farmfe/plugin-react-components` 是一个Rust插件，你只需要在 `farm.config.ts` 的 `plugins` 字段中配置其包名即可。
-```ts {4}
+导入 `@farmfe/plugin-react-components` 并在 `farm.config.ts` 的 `plugins` 字段中以工厂函数的形式调用，与 JS 插件用法一致。
+```ts {2,5}
 import { UserConfig } from '@farmfe/core';
+import reactComponents from '@farmfe/plugin-react-components';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-react-components', { /** 选项在此 */}]
+  plugins: [reactComponents({ /** 选项在此 */ })]
 }
 ```
 
@@ -92,22 +93,25 @@ Components({
 // farm.config.js
 
 import { UserConfig } from '@farmfe/core';
+import reactComponents from '@farmfe/plugin-react-components';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-react-components', {
-        local: true,
-        resolvers:[
-          {
-            module: "antd",
-            prefix: "Ant"
-          },
-          {
-            module:"@arco-design/web-react",
-            prefix: "Arco",
-            import_style: true // style/index.js
-          }
-        ]
-  }]
+  plugins: [
+    reactComponents({
+      local: true,
+      resolvers: [
+        {
+          module: "antd",
+          prefix: "Ant"
+        },
+        {
+          module: "@arco-design/web-react",
+          prefix: "Arco",
+          import_style: true // style/index.js
+        }
+      ]
+    })
+  ]
 }
 ```
 

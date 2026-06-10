@@ -2819,6 +2819,9 @@ importers:
       '@farmfe/plugin-vue':
         specifier: workspace:*
         version: link:../../rust-plugins/vue
+      '@farmfe/plugin-vue-jsx':
+        specifier: workspace:*
+        version: link:../../rust-plugins/vue-jsx
 
   examples/vue-antdv:
     dependencies:
@@ -3071,6 +3074,9 @@ importers:
         specifier: ^5.4.5
         version: 5.4.5
     devDependencies:
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@types/fs-extra':
         specifier: ^11.0.1
         version: 11.0.3
@@ -3283,6 +3289,9 @@ importers:
         specifier: ^8.14.2
         version: 8.14.2(bufferutil@4.0.8)(utf-8-validate@6.0.3)
     devDependencies:
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
         version: link:../dts
@@ -3655,6 +3664,12 @@ importers:
         version: link:../../packages/plugin-tools
 
   rust-plugins/vue:
+    devDependencies:
+      '@farmfe/plugin-tools':
+        specifier: workspace:*
+        version: link:../../packages/plugin-tools
+
+  rust-plugins/vue-jsx:
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*

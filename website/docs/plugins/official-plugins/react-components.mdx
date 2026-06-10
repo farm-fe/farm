@@ -21,12 +21,13 @@ On-demand components auto importing for React.
 </Tabs>
 
 ## Usage
-`@farmfe/plugin-react-components` is a Rust plugin, you only need to configure its package name in `plugins` field in `farm.config.ts`.
-```ts {4}
+Import `@farmfe/plugin-react-components` and call it as a factory function in the `plugins` field of `farm.config.ts`, just like a JS plugin.
+```ts {2,5}
 import { UserConfig } from '@farmfe/core';
+import reactComponents from '@farmfe/plugin-react-components';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-react-components', { /** options here */}]
+  plugins: [reactComponents({ /** options here */ })]
 }
 ```
 
@@ -92,22 +93,25 @@ Supported Resolvers:
 // farm.config.js
 
 import { UserConfig } from '@farmfe/core';
+import reactComponents from '@farmfe/plugin-react-components';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-react-components', {
-        local: true,
-        resolvers:[
-          {
-            module: "antd",
-            prefix: "Ant"
-          },
-          {
-            module:"@arco-design/web-react",
-            prefix: "Arco",
-            import_style: true // style/index.js
-          }
-        ]
-  }]
+  plugins: [
+    reactComponents({
+      local: true,
+      resolvers: [
+        {
+          module: "antd",
+          prefix: "Ant"
+        },
+        {
+          module: "@arco-design/web-react",
+          prefix: "Arco",
+          import_style: true // style/index.js
+        }
+      ]
+    })
+  ]
 }
 ```
 

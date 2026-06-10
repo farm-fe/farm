@@ -19,9 +19,10 @@ export function lazyCompilationMiddleware(
 ): Connect.NextHandleFunction {
   return async function handleLazyCompilationMiddleware(req, res, next) {
     const { config, compiler } = app;
+    if (!compiler) return next();
     const lazyCompilationPath = `/${DEFAULT_LAZY_COMPILATION_PATH}`;
 
-    if (!req.url.startsWith(lazyCompilationPath)) {
+    if (!req.url?.startsWith(lazyCompilationPath)) {
       return next();
     }
 
@@ -29,7 +30,7 @@ export function lazyCompilationMiddleware(
     const paths = (parsedUrl.query.paths as string).split(',');
 
     const isNodeEnvironment = parsedUrl.query.node;
-    const root = compiler.config.root;
+    const root = compiler.config.root ?? '';
     const pathsStr = paths
       .map((p) => {
         if (
@@ -44,7 +45,7 @@ export function lazyCompilationMiddleware(
       })
       .join(', ');
 
-    config.logger.info(
+    config.logger?.info(
       `${bold(green('✨Lazy compiling'))} ${bold(cyan(pathsStr))}`,
       true
     );
@@ -59,7 +60,7 @@ export function lazyCompilationMiddleware(
         false,
         false
       );
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(`Lazy compilation update failed: ${e.message}`);
     }
 
@@ -67,21 +68,21 @@ export function lazyCompilationMiddleware(
       return next();
     }
 
-    if (isNodeEnvironment || config.server.writeToDisk) {
+    if (isNodeEnvironment || config.server?.writeToDisk) {
       compiler.writeResourcesToDisk();
     }
 
-    config.logger.info(
+    config.logger?.info(
       `${bold(green(`✓ Lazy compilation done`))} ${bold(
         cyan(pathsStr)
       )} in ${bold(
-        green(config.logger.formatTime(performance.now() - start))
+        green(config.logger?.formatTime(performance.now() - start))
       )}.`
     );
 
     if (result) {
       const { dynamicResources, dynamicModuleResourcesMap } =
-        getDynamicResources(result.dynamicResourcesMap);
+        getDynamicResources(result.dynamicResourcesMap ?? null);
 
       const responseData = {
         dynamicResources,
@@ -96,7 +97,7 @@ export function lazyCompilationMiddleware(
         ? 'application/javascript'
         : 'application/json';
 
-      send(req, res, lazyCompilationContent, req.url, {
+      send(req, res, lazyCompilationContent, req.url ?? '', {
         headers: {
           'Content-Type': contentType,
           'Access-Control-Allow-Origin': '*',

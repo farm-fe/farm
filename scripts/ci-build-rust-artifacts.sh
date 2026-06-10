@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-PLUGINS="react replace-dirname sass vue auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss"
+PLUGINS="react replace-dirname sass vue vue-jsx auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss"
 PROFILE="${FARM_BUILD_PROFILE:-ci}"
 ABI="${FARM_BUILD_ABI:?FARM_BUILD_ABI is required}"
 TARGET="${FARM_BUILD_TARGET:-}"

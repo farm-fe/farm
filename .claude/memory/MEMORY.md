@@ -1,0 +1,1 @@
+- [No Skip Git Hooks](no-skip-git-hooks.md) — Never use --no-verify when committing; fix hooks instead

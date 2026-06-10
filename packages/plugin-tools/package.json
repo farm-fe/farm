@@ -13,7 +13,8 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b -w",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "license": "MIT",
   "author": {

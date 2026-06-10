@@ -26,7 +26,10 @@ import {
 } from './utils/index.js';
 import { watchFileChangeAndRebuild } from './watcher/index.js';
 
-export type { Compiler as BindingCompiler } from './types/binding.js';
+export type {
+  Compiler as BindingCompiler,
+  ModuleType
+} from './types/binding.js';
 
 import type { PersistentCacheConfig } from './types/binding.js';
 import { convertErrorMessage } from './utils/error.js';
@@ -38,7 +41,7 @@ export async function start(
     const server = await Server.createServer(inlineConfig);
     await server.listen();
     server.printUrls();
-  } catch (error) {
+  } catch (error: any) {
     new Logger().error('Failed to start the server', { exit: false, error });
   }
 }
@@ -50,7 +53,7 @@ export async function preview(
   try {
     await previewServer.createPreviewServer();
     previewServer.listen();
-  } catch (error) {
+  } catch (error: any) {
     previewServer.logger.error('Failed to start the preview server', {
       exit: false,
       error
@@ -63,7 +66,7 @@ async function _internalBuild(
   resolvedUserConfig: ResolvedUserConfig
 ): Promise<void> {
   const {
-    compilation: { persistentCache, output },
+    compilation: { persistentCache, output } = {},
     configFilePath,
     root,
     logger,
@@ -72,12 +75,12 @@ async function _internalBuild(
 
   try {
     if (configFilePath) {
-      const shortFile = getShortName(configFilePath, root);
-      logger.info(`Using config file at ${bold(green(shortFile))}`);
+      const shortFile = getShortName(configFilePath, root ?? '');
+      logger?.info(`Using config file at ${bold(green(shortFile))}`);
     }
 
     for (const hook of getSortedPluginHooksBindThis(
-      jsPlugins,
+      jsPlugins ?? [],
       'configureCompiler'
     )) {
       await hook?.(compiler);
@@ -94,22 +97,22 @@ async function _internalBuild(
       ? bold(PersistentCacheBrand)
       : '';
 
-    logger.info(
+    logger?.info(
       `Build completed in ${bold(
-        green(`${logger.formatTime(elapsedTime)}`)
+        green(`${logger?.formatTime(elapsedTime)}`)
       )} ${persistentCacheText} Resources emitted to ${bold(
-        green(output.path)
+        green(output?.path ?? '')
       )}.`
     );
     compiler.writeResourcesToDisk();
-  } catch (err) {
+  } catch (err: any) {
     let errorMsg = err?.toString();
 
     try {
       errorMsg = `Build failed due to following errors:\n\n ${convertErrorMessage(err)}`;
-    } catch (e) {}
+    } catch (e: any) {}
 
-    logger.error(errorMsg, {
+    logger?.error(errorMsg, {
       error: err,
       exit: true
     });
@@ -153,9 +156,10 @@ export async function clean(
   recursive = false
 ): Promise<void> {
   const resolvedUserConfig = await resolveConfig({}, 'build', 'production');
-  const cachePath = (
-    resolvedUserConfig.compilation.persistentCache as PersistentCacheConfig
-  ).cacheDir;
+  const persistentCache = resolvedUserConfig.compilation?.persistentCache as
+    | PersistentCacheConfig
+    | undefined;
+  const cachePath = persistentCache?.cacheDir ?? '';
 
   const nodeModulesFolders = recursive
     ? await findNodeModulesRecursively(rootPath)
@@ -167,22 +171,22 @@ export async function clean(
         const farmFolderStats = await fs.stat(cachePath);
         if (farmFolderStats.isDirectory()) {
           await fs.rm(cachePath, { recursive: true, force: true });
-          resolvedUserConfig.logger.info(
+          resolvedUserConfig.logger?.info(
             `✨ ✨ Cache cleaned at ${colors.bold(colors.green(cachePath))}`
           );
         }
-      } catch (error) {
+      } catch (error: any) {
         if (error?.code === 'ENOENT') {
-          resolvedUserConfig.logger.warn(
+          resolvedUserConfig.logger?.warn(
             `No cached files found in ${colors.bold(
               colors.green(nodeModulesPath)
             )}`
           );
         } else {
-          resolvedUserConfig.logger.error(
+          resolvedUserConfig.logger?.error(
             `Error cleaning cache in ${colors.bold(
               colors.green(nodeModulesPath)
-            )}: ${error.message}`
+            )}: ${(error as Error)?.message ?? 'Unknown error'}`
           );
         }
       }

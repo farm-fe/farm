@@ -26,16 +26,17 @@ Register the Rust plugin in `farm.config.ts`:
 
 ```ts {5}
 import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/plugin-tailwindcss';
 
 export default defineConfig({
   plugins: [
-    ['@farmfe/plugin-tailwindcss', {
+    tailwindcss({
       config: {
         theme: {
           extend: {}
         }
       }
-    }]
+    })
   ]
 });
 ```

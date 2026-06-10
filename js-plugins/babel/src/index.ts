@@ -17,10 +17,8 @@ export interface BabelOptions {
   name?: string;
 }
 
-const defaultFilters: BabelOptions['filters'] = {
-  moduleTypes: ['js', 'jsx', 'ts', 'tsx'],
-  resolvedPaths: []
-};
+const defaultModuleTypes: ModuleType[] = ['js', 'jsx', 'ts', 'tsx'];
+const defaultResolvedPaths: string[] = [];
 
 export function babel(options: BabelOptions = { priority: 99 }): JsPlugin {
   return {
@@ -29,9 +27,8 @@ export function babel(options: BabelOptions = { priority: 99 }): JsPlugin {
 
     processModule: {
       filters: {
-        moduleTypes: options.filters?.moduleTypes ?? defaultFilters.moduleTypes,
-        resolvedPaths:
-          options.filters?.resolvedPaths ?? defaultFilters.resolvedPaths
+        moduleTypes: options.filters?.moduleTypes ?? defaultModuleTypes,
+        resolvedPaths: options.filters?.resolvedPaths ?? defaultResolvedPaths
       },
       async executor(param) {
         const { content, moduleId } = param;
@@ -42,7 +39,7 @@ export function babel(options: BabelOptions = { priority: 99 }): JsPlugin {
         });
 
         return {
-          content: result.code
+          content: result?.code ?? ''
         };
       }
     }

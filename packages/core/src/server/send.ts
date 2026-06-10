@@ -32,13 +32,13 @@ export function send(
     return;
   }
 
-  res.setHeader('Content-Type', mime.getType(extname(url)));
+  res.setHeader('Content-Type', mime.getType(extname(url)) ?? '');
   res.setHeader('Cache-Control', cacheControl);
   res.setHeader('Etag', etag);
 
   if (headers) {
     for (const name in headers) {
-      res.setHeader(name, headers[name]);
+      res.setHeader(name, headers[name] as string | number | readonly string[]);
     }
   }
 

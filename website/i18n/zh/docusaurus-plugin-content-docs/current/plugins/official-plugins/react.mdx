@@ -8,12 +8,13 @@ import { PackageManagerTabs } from "../../../../../../src/theme/PackageManagerTa
 <PackageManagerTabs command="pnpm add @farmfe/plugin-react" />
 
 ## Usage
-`@farmfe/plugin-react` 是一个 Rust 插件，你只需要在 `farm.config.ts` 的 `plugins` 字段中配置它的包名。
-```ts {4}
+导入 `@farmfe/plugin-react` 并在 `farm.config.ts` 的 `plugins` 字段中以工厂函数的形式调用，与 JS 插件用法一致。
+```ts {2,5}
 import { UserConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-react', { /** options here */}]
+  plugins: [react({ /** options here */ })]
 }
 ```
 

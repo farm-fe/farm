@@ -53,7 +53,7 @@ export function createLessResolvePlugin(
             const res = await ctx.resolve(
               {
                 source: url,
-                importer,
+                importer: importer ?? null,
                 kind: 'cssUrl'
               },
               {

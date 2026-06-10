@@ -15,7 +15,8 @@ export function farmContextToViteContext(
   config?: UserConfig,
   hookContext?: { caller?: string; meta: Record<string, unknown> }
 ): PluginContext {
-  const cacheKey = pluginName + hookName + currentHandlingFile;
+  const cacheKey =
+    (pluginName ?? '') + (hookName ?? '') + (currentHandlingFile ?? '');
   if (contextCache.has(cacheKey)) {
     return contextCache.get(cacheKey) as PluginContext;
   }
@@ -51,13 +52,13 @@ export function farmContextToViteContext(
 
         if (typeof params.source === 'string') {
           content = [...Buffer.from(params.source)];
-        } else {
+        } else if (params.source) {
           content = [...params.source];
         }
 
         farmContext.emitFile({
           resolvedPath: currentHandlingFile ?? 'vite-plugin-adapter',
-          name: params.fileName ?? params.name,
+          name: params.fileName ?? params.name ?? 'asset',
           content,
           resourceType: 'asset'
         });
@@ -117,28 +118,33 @@ export function farmContextToViteContext(
     },
     meta: {
       rollupVersion: '3.29.4',
-      watchMode: config.compilation?.mode !== 'production'
+      watchMode: config?.compilation?.mode !== 'production'
     },
     parse: (_) => {
       throw new Error(
         `Vite plugin ${pluginName} is not compatible with Farm for now. Because parse(called by hook ${pluginName}.${hookName}) is not supported in Farm`
       );
     },
-    resolve: async (source, importer, options = {}) => {
-      if (options.custom?.caller === `${pluginName}.${hookName}`) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolve: (async (
+      source: any,
+      importer?: any,
+      options?: any
+    ): Promise<any> => {
+      if (options?.custom?.caller === `${pluginName}.${hookName}`) {
         return null;
       }
 
       // if importer is a windows style absolute path, replace all / with \\ to make it a valid windows path
-      if (/^[a-zA-Z]:\//.test(importer)) {
+      if (importer && /^[a-zA-Z]:\//.test(importer)) {
         importer = revertNormalizePath(importer);
       }
 
       const farmResolveResult = await farmContext.resolve(
         {
           source,
-          importer,
-          kind: options.isEntry ? 'entry' : 'import'
+          importer: importer ?? null,
+          kind: options?.isEntry ? 'entry' : 'import'
         },
         {
           meta: hookContext?.meta ?? {},
@@ -149,7 +155,7 @@ export function farmContextToViteContext(
       if (farmResolveResult) {
         return {
           id: normalizePath(farmResolveResult.resolvedPath),
-          external: farmResolveResult.external,
+          external: farmResolveResult.external ?? false,
           resolvedBy: 'vite-plugin-adapter-farm-resolve',
           moduleSideEffects: farmResolveResult.sideEffects,
           meta: {
@@ -163,8 +169,8 @@ export function farmContextToViteContext(
       }
 
       return null;
-    },
-    setAssetSource(assetReferenceId, source) {
+    }) as any,
+    setAssetSource(assetReferenceId: any, source: any) {
       this.emitFile({
         type: 'asset',
         source,

@@ -45,11 +45,12 @@ export class DefaultLogger implements Logger {
   }
 
   private brandPrefix(color?: string | ChalkInstance) {
-    const { name = 'Farm' } = this.options;
+    const opts = this.options ?? {};
+    const { name = 'Farm' } = opts;
 
     let prefixColor: string | ChalkInstance | undefined;
-    if (typeof this.options.brandColor === 'string') {
-      prefixColor = this.options.brandColor;
+    if (typeof opts.brandColor === 'string') {
+      prefixColor = opts.brandColor;
     } else if (typeof color !== 'undefined') {
       prefixColor = color;
     }
@@ -87,7 +88,7 @@ export class DefaultLogger implements Logger {
 
   info(message: string, showBanner?: boolean): void {
     this.brandPrefix();
-    this.logMessage(LogLevel.Info, message, null, showBanner);
+    this.logMessage(LogLevel.Info, message, undefined, showBanner);
   }
 
   warn(message: string): void {
@@ -98,7 +99,9 @@ export class DefaultLogger implements Logger {
   error(message: string | Error, options?: ErrorOptions): void {
     this.brandPrefix(chalk.red);
     const errorMessage =
-      message instanceof Error ? message.stack : `${message}`;
+      message instanceof Error
+        ? (message.stack ?? message.message)
+        : `${message}`;
     this.logMessage(LogLevel.Error, errorMessage, chalk.red);
 
     if (options?.exit) {

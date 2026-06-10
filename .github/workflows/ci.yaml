@@ -88,6 +88,12 @@ jobs:
           path: ./rust-plugins/vue/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-vue-jsx
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
+          path: ./rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
         id: download-plugin-auto-import
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
@@ -224,7 +230,7 @@ jobs:
         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
 
   type-check:
-    name: Type Check
+    name: Type Check & Changesets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -249,6 +255,8 @@ jobs:
         run: pnpm --filter @farmfe/cli run build
       - name: Build Runtime
         run: pnpm --filter @farmfe/runtime run build
+      - name: Build Babel Plugin Types
+        run: pnpm --filter @farmfe/js-plugin-babel exec tsc -p tsconfig.json --emitDeclarationOnly
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
@@ -355,6 +363,7 @@ jobs:
           - name: plugin-react
           - name: plugin-replace-dirname
           - name: plugin-vue
+          - name: plugin-vue-jsx
           - name: plugin-auto-import
           - name: plugin-compress
           - name: plugin-dsv

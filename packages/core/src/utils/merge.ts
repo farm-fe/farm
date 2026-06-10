@@ -42,6 +42,7 @@ function isMergeableObject(obj: any) {
 
 const arrayMerge: Options['arrayMerge'] = (target, source, options) => {
   const destination = target.slice();
+  if (!options) return destination;
 
   source.forEach((item, index) => {
     if (typeof destination[index] === 'undefined') {

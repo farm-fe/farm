@@ -45,11 +45,11 @@ const DEFAULT_PATHS_REGEX = ['\\.(s[ac]ss)$'];
 export default function farmSassPlugin(
   options: SassPluginOptions = {}
 ): JsPlugin {
-  let farmConfig!: UserConfig['compilation'];
+  let farmConfig: UserConfig['compilation'];
   const implementation = getSassImplementation(options.implementation);
 
   // @ts-ignore TODO fix it
-  const cwd = () => farmConfig.root ?? process.cwd();
+  const cwd = () => farmConfig?.root ?? process.cwd();
 
   const resolvedPaths = options.filters?.resolvedPaths ?? DEFAULT_PATHS_REGEX;
   // enable legacy mode by default
@@ -84,6 +84,7 @@ export default function farmSassPlugin(
       async executor(param) {
         if (param.query.length === 0 && existsSync(param.resolvedPath)) {
           const data = await tryRead(param.resolvedPath);
+          if (data === undefined) return null;
           return {
             content: data,
             moduleType: 'sass'
@@ -98,7 +99,9 @@ export default function farmSassPlugin(
         resolvedPaths: options.filters?.resolvedPaths,
         moduleTypes: options.filters?.moduleTypes ?? ['sass']
       },
-      async executor(param, ctx) {
+      async executor(param, _ctx) {
+        if (!_ctx) return { content: '', moduleType: 'css' as const };
+        const ctx = _ctx;
         try {
           const additionContext = await getAdditionContext(
             cwd(),
@@ -117,7 +120,7 @@ export default function farmSassPlugin(
             sassImpl,
             sourceMapEnabled,
             options,
-            ctx,
+            ctx: ctx,
             root: cwd()
           };
           const { css, sourceMap } = options.legacy
@@ -132,7 +135,7 @@ export default function farmSassPlugin(
                 ? JSON.stringify(sourceMap)
                 : (sourceMap as string | undefined)
           };
-        } catch (error) {
+        } catch (error: any) {
           throwError('transform', error);
         }
 
@@ -214,7 +217,7 @@ async function resolveDependency(
     );
     if (result && (result.endsWith('.scss') || result.endsWith('.sass')))
       return result;
-  } catch (error) {
+  } catch (error: any) {
     default_import_error = error;
   }
 
@@ -229,7 +232,7 @@ async function resolveDependency(
       if (result) {
         return result;
       }
-    } catch (_error) {
+    } catch (_error: any) {
       /* do nothing */
     }
   }
@@ -247,7 +250,7 @@ const syntaxMap: Record<string, string> = {
 function urlCanParse(file: string): boolean {
   try {
     return !!new URL(file);
-  } catch (error) {
+  } catch (error: any) {
     return false;
   }
 }
@@ -296,6 +299,7 @@ async function compileScss(param: CompileCssParams) {
               transformParam,
               ctx
             );
+            if (!filePath) return null;
             return pathToFileURL(filePath);
           },
           async load(canonicalUrl) {
@@ -309,7 +313,7 @@ async function compileScss(param: CompileCssParams) {
                   id,
                   {
                     ...transformParam,
-                    moduleId: importer
+                    moduleId: importer ?? transformParam.moduleId
                   },
                   ctx
                 );
@@ -351,7 +355,7 @@ async function compileScssLegacy(param: CompileCssParams) {
     sassImpl.render(
       {
         includePaths: ['node_modules'],
-        ...(options?.sassOptions ?? {}),
+        ...((options?.sassOptions as any) ?? {}),
         data: `${additionContext}\n${transformParam.content}`,
         sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
         outFile: transformParam.resolvedPath,
@@ -360,6 +364,7 @@ async function compileScssLegacy(param: CompileCssParams) {
         importer: [
           function (url, _, done) {
             resolveDependency(url, transformParam, ctx).then((resolvedPath) => {
+              if (!resolvedPath) return;
               rebaseUrls(
                 resolvedPath,
                 transformParam.resolvedPath,
@@ -369,7 +374,7 @@ async function compileScssLegacy(param: CompileCssParams) {
                     id,
                     {
                       ...transformParam,
-                      moduleId: importer
+                      moduleId: importer ?? transformParam.moduleId
                     },
                     ctx
                   );
@@ -382,8 +387,8 @@ async function compileScssLegacy(param: CompileCssParams) {
         ]
       },
       (err, result) => {
-        if (err) {
-          reject(err);
+        if (err || !result) {
+          reject(err ?? new Error('sass render returned no result'));
           return;
         }
 
@@ -394,7 +399,7 @@ async function compileScssLegacy(param: CompileCssParams) {
 
         resolve({
           css: result.css.toString(),
-          sourceMap: result.map && result.map.toString()
+          sourceMap: result.map?.toString()
         });
       }
     );

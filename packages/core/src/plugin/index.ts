@@ -19,7 +19,10 @@ export async function resolveVitePlugins(
   config: UserConfig,
   mode: CompilationMode
 ) {
-  const plugins = config?.vitePlugins?.filter(Boolean) ?? [];
+  const plugins =
+    config?.vitePlugins?.filter((p): p is NonNullable<typeof p> =>
+      Boolean(p)
+    ) ?? [];
   if (!plugins.length) return [];
 
   return handleVitePlugins(plugins, config, mode);
@@ -145,9 +148,10 @@ export async function resolveConfigResolvedHook(
 
       if (hook?.filters?.resolvedPaths?.length && config.root) {
         // Convert absolute paths to relative paths
+        const root = config.root;
         hook.filters.resolvedPaths = hook.filters.resolvedPaths.map(
           (p: string) =>
-            isAbsolute(p) && !p.startsWith('\\') ? relative(config.root, p) : p
+            isAbsolute(p) && !p.startsWith('\\') ? relative(root, p) : p
         );
       }
     }

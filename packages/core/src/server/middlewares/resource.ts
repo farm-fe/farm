@@ -37,10 +37,14 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     if (res.writableEnded) {
       return next();
     }
-    const url = cleanUrl(req.url);
+    const url = cleanUrl(req.url ?? '');
     const { compiler, config, publicPath } = app;
 
     await waitForCompilerReady(app);
+
+    if (!compiler) {
+      return next();
+    }
 
     if (compiler.compiling) {
       await compiler.waitForCompileFinish();
@@ -52,7 +56,7 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       }
     }
 
-    const resourceResult = findResource(req, compiler, publicPath);
+    const resourceResult = findResource(req, compiler, publicPath ?? '/');
 
     if (resourceResult === true) {
       return next();
@@ -60,7 +64,7 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
 
     if (resourceResult) {
       // need judge if resource is a deps node_modules set cache-control to 1 year
-      const headers = config.server.headers;
+      const headers = config.server?.headers;
       send(req, res, resourceResult.resource, url, { headers });
       return;
     }
@@ -77,15 +81,16 @@ export function resourceDiskMiddleware(
       return next();
     }
     const { config, compiler } = app;
+    if (!compiler) return next();
     const root = path.join(
-      compiler.config.root,
-      config.compilation.output.path
+      compiler.config.root ?? '',
+      config.compilation?.output?.path ?? ''
     );
 
     const serve = sirv(
       root,
       sirvOptions({
-        getHeaders: () => config.server.headers
+        getHeaders: () => config.server?.headers
       })
     );
     serve(req, res, next);
@@ -99,7 +104,7 @@ export function findResource(
 ): true | undefined | RealResourcePath {
   const { resourceWithoutPublicPath } = normalizePathByPublicPath(
     publicPath,
-    req.url
+    req.url ?? ''
   );
   const normalizedPath = resourceWithoutPublicPath.startsWith('/')
     ? resourceWithoutPublicPath.slice(1)
@@ -111,7 +116,7 @@ export function findResource(
     return {
       resource,
       resourcePath: resourceWithoutPublicPath,
-      rawPath: req.url
+      rawPath: req.url ?? ''
     };
   }
 }
@@ -128,6 +133,7 @@ export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
 
     try {
       const { compiler } = app;
+      if (!compiler) return next();
       const files = Object.keys(compiler.resources()).sort();
 
       const fileTree = generateFileTree(files);
@@ -136,7 +142,7 @@ export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
       const html = generateFileTreeHtml(fileTree);
       res.write(html);
       res.end();
-    } catch (error) {
+    } catch (error: any) {
       if (!res.writableEnded) {
         next(error);
       }

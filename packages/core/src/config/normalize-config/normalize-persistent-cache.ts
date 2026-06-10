@@ -22,11 +22,15 @@ export async function normalizePersistentCache(
   config: Config['config'],
   resolvedUserConfig: ResolvedUserConfig
 ) {
+  if (!config) return;
+
+  const resolvedRoot = config.root ?? process.cwd();
+
   if (isDisableCache()) {
     config.persistentCache = false;
   }
 
-  if (config?.persistentCache === false) {
+  if (config.persistentCache === false) {
     return;
   }
 
@@ -39,7 +43,7 @@ export async function normalizePersistentCache(
   }
 
   config.persistentCache.cacheDir = path.resolve(
-    config.root,
+    resolvedRoot,
     config.persistentCache.cacheDir || DEFAULT_CACHE_DIR
   );
   // globalCacheKeyStrategy should not be passed to rust
@@ -77,7 +81,7 @@ export async function normalizePersistentCache(
   }
 
   // add type of package.json to envs
-  const packageJsonPath = path.join(config.root, DEFAULT_PACKAGE_JSON);
+  const packageJsonPath = path.join(resolvedRoot, DEFAULT_PACKAGE_JSON);
 
   if (globalBuiltinCacheKeyStrategy.packageJson) {
     if (existsSync(packageJsonPath)) {
@@ -91,6 +95,8 @@ export async function normalizePersistentCache(
         'main',
         'module'
       ];
+
+      config.persistentCache.envs ??= {};
 
       for (const key of affectedKeys) {
         const value = packageJson[key] ?? 'unknown';
@@ -151,7 +157,7 @@ export async function normalizePersistentCache(
     packages.push(...(rustPlugins ?? []));
 
     if (packages?.length) {
-      const require = createRequire(path.join(config.root, 'package.json'));
+      const require = createRequire(path.join(resolvedRoot, 'package.json'));
 
       for (const p of packages) {
         try {
