@@ -6,6 +6,7 @@ function defineConfig(config: UserConfig) {
 
 export default defineConfig({
   compilation: {
+    persistentCache: false,
     input: {
       index: './index.html',
     },
