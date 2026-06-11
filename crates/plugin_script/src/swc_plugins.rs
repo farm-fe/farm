@@ -76,7 +76,29 @@ pub fn transform_by_swc_plugins(
 /// A shared instance to plugin's module bytecode cache.
 pub static PLUGIN_MODULE_CACHE: Lazy<swc_plugin_runner::cache::PluginModuleCache> =
   Lazy::new(Default::default);
-static PLUGIN_TRANSFORM_LOCK: Lazy<parking_lot::Mutex<()>> = Lazy::new(Default::default);
+
+/// Dedicated multi-threaded tokio runtime for SWC plugin transforms.
+///
+/// Plugin host imports executed via `swc_plugin_runner` may need a tokio
+/// context to drive internal async work. We always drive that work on this
+/// dedicated runtime — separate from the host (e.g. Node.js / napi)
+/// runtime — so that:
+///   1. Plugin transforms running on Farm worker threads (e.g. rayon) can
+///      call into `block_on` without depending on, or starving, the
+///      host runtime (combine with [`tokio::task::block_in_place`] when
+///      already inside one).
+///   2. Multiple Farm worker threads can run plugin transforms concurrently
+///      without contending on a single-threaded runtime.
+///   3. The runtime is constructed once per process instead of per-call,
+///      avoiding repeated `Runtime::new()` allocation overhead.
+static PLUGIN_TOKIO_RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
+  tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(2)
+    .thread_name("farm-swc-plugin")
+    .enable_time()
+    .build()
+    .expect("failed to create farm swc plugin tokio runtime")
+});
 
 /// Create a new cache instance if not initialized. This can be called multiple
 /// time, but any subsequent call will be ignored.
@@ -187,15 +209,14 @@ impl RustPlugins {
               self.plugin_runtime.clone(),
             );
 
-            serialized = run_serialized_plugin_transform(|| {
-              transform_plugin_executor.transform(&serialized, Some(should_enable_comments_proxy))
-            })
-            .with_context(|| {
-              format!(
-                "failed to invoke `{}` as js transform plugin at {}",
-                &p.name, plugin_name
-              )
-            })?;
+            serialized = transform_plugin_executor
+              .transform(&serialized, Some(should_enable_comments_proxy))
+              .with_context(|| {
+                format!(
+                  "failed to invoke `{}` as js transform plugin at {}",
+                  &p.name, plugin_name
+                )
+              })?;
           }
         }
 
@@ -208,29 +229,24 @@ impl RustPlugins {
 }
 
 /// Drive an SWC plugin transform future to completion from synchronous plugin hooks.
+///
+/// Always drives the future on the dedicated [`PLUGIN_TOKIO_RT`] runtime so
+/// concurrent Farm worker threads can execute plugin transforms in parallel.
+/// When invoked from inside another tokio runtime (e.g. napi's), we use
+/// [`tokio::task::block_in_place`] so the calling worker is yielded back to
+/// its scheduler instead of being deadlocked while waiting.
 fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
-  // SWC plugin transforms can perform async work internally. When Farm is already
-  // inside Tokio, move the blocking wait off the runtime worker; otherwise create
-  // a runtime so the future is actually driven to completion.
-  if let Ok(handle) = tokio::runtime::Handle::try_current() {
+  let handle = PLUGIN_TOKIO_RT.handle().clone();
+  if tokio::runtime::Handle::try_current().is_ok() {
     tokio::task::block_in_place(|| handle.block_on(future))
   } else {
-    tokio::runtime::Runtime::new().unwrap().block_on(future)
+    handle.block_on(future)
   }
-}
-
-/// Run a Wasmer SWC plugin transform exclusively to avoid runtime-level deadlocks.
-fn run_serialized_plugin_transform<F, R>(op: F) -> R
-where
-  F: FnOnce() -> R,
-{
-  let _guard = PLUGIN_TRANSFORM_LOCK.lock();
-  op()
 }
 
 #[cfg(test)]
 mod tests {
-  use super::{block_on_plugin_transform, run_serialized_plugin_transform};
+  use super::block_on_plugin_transform;
   use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Barrier,
@@ -274,35 +290,45 @@ mod tests {
   }
 
   #[test]
-  fn swc_plugin_transform_should_be_serialized_across_threads() {
+  fn block_on_plugin_transform_should_run_concurrently_across_threads() {
+    const THREADS: usize = 4;
+
     let active = Arc::new(AtomicUsize::new(0));
     let max_active = Arc::new(AtomicUsize::new(0));
-    let barrier = Arc::new(Barrier::new(3));
+    let barrier = Arc::new(Barrier::new(THREADS));
 
-    let handles = (0..2)
+    let handles = (0..THREADS)
       .map(|_| {
         let active = active.clone();
         let max_active = max_active.clone();
         let barrier = barrier.clone();
         std::thread::spawn(move || {
-          barrier.wait();
-          run_serialized_plugin_transform(|| {
+          block_on_plugin_transform(async move {
+            // Synchronize all worker threads inside the shared runtime so
+            // that they truly overlap; then yield to the scheduler at least
+            // once to exercise the multi-threaded path.
+            barrier.wait();
             let current = active.fetch_add(1, Ordering::SeqCst) + 1;
             max_active.fetch_max(current, Ordering::SeqCst);
-            std::thread::sleep(Duration::from_millis(50));
+            tokio::task::yield_now().await;
+            tokio::time::sleep(Duration::from_millis(20)).await;
             active.fetch_sub(1, Ordering::SeqCst);
           });
         })
       })
       .collect::<Vec<_>>();
 
-    barrier.wait();
-
     for handle in handles {
       handle.join().unwrap();
     }
 
-    assert_eq!(max_active.load(Ordering::SeqCst), 1);
+    // With the dedicated multi-threaded runtime, multiple plugin transforms
+    // must be allowed to run concurrently rather than be serialized.
+    assert!(
+      max_active.load(Ordering::SeqCst) >= 2,
+      "expected concurrent plugin transforms, observed max_active = {}",
+      max_active.load(Ordering::SeqCst)
+    );
   }
 }
 
