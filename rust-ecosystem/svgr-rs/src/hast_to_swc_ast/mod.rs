@@ -244,14 +244,11 @@ pub fn to_swc_ast(hast: swc_xml::ast::Document) -> Option<JSXElement> {
 
 #[cfg(test)]
 mod tests {
-  use std::{borrow::Borrow, path::PathBuf, rc::Rc};
+  use std::{borrow::Borrow, fs, path::PathBuf, rc::Rc};
 
-  use swc_core::{
-    common::{FileName, SourceFile, SourceMap},
-    ecma::codegen::{text_writer::JsWriter, Config, Emitter},
-  };
+  use swc_common::{FileName, SourceFile, SourceMap};
+  use swc_ecma_codegen::{text_writer::JsWriter, Config, Emitter, Node};
   use swc_xml::parser::parse_file_as_document;
-  use testing::NormalizedOutput;
 
   use super::*;
 
@@ -274,12 +271,11 @@ mod tests {
       wr: JsWriter::new(cm, new_line, &mut buf, None),
     };
 
-    emitter
-      .emit_module_item(&ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        span: DUMMY_SP,
-        expr: Box::new(Expr::JSXElement(Box::new(jsx))),
-      })))
-      .unwrap();
+    let item = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+      span: DUMMY_SP,
+      expr: Box::new(Expr::JSXElement(Box::new(jsx))),
+    }));
+    item.emit_with(&mut emitter).unwrap();
 
     unsafe { String::from_utf8_unchecked(buf) }
   }
@@ -292,9 +288,14 @@ mod tests {
 
     let res = transform(cm, fm, false);
 
-    NormalizedOutput::from(res)
-      .compare_to_file(jsx_path)
-      .unwrap();
+    let expected = fs::read_to_string(&jsx_path)
+      .unwrap_or_else(|e| panic!("failed to read fixture {}: {e}", jsx_path.display()));
+    assert_eq!(
+      res.trim_end_matches(['\n', '\r']),
+      expected.trim_end_matches(['\n', '\r']),
+      "fixture mismatch: {}",
+      input.display()
+    );
   }
 
   fn code_test(input: &str, expected: &str) {
@@ -306,9 +307,24 @@ mod tests {
     assert_eq!(res, expected)
   }
 
-  #[testing::fixture("__fixture__/*/*.svg")]
-  fn pass(input: PathBuf) {
-    document_test(input);
+  #[test]
+  fn fixtures() {
+    let fixtures_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("__fixture__");
+    let mut found = false;
+    for entry in fs::read_dir(&fixtures_dir).expect("read fixtures dir") {
+      let entry = entry.unwrap();
+      let path = entry.path();
+      if !path.is_dir() {
+        continue;
+      }
+      let svg_path = path.join("input.svg");
+      if !svg_path.exists() {
+        continue;
+      }
+      found = true;
+      document_test(svg_path);
+    }
+    assert!(found, "no fixtures discovered under {}", fixtures_dir.display());
   }
 
   #[test]

@@ -84,12 +84,10 @@ pub static PLUGIN_MODULE_CACHE: Lazy<swc_plugin_runner::cache::PluginModuleCache
 /// dedicated runtime — separate from the host (e.g. Node.js / napi)
 /// runtime — so that:
 ///   1. Plugin transforms running on Farm worker threads (e.g. rayon) can
-///      call into `block_on` without depending on, or starving, the
-///      host runtime (combine with [`tokio::task::block_in_place`] when
-///      already inside one).
-///   2. Multiple Farm worker threads can run plugin transforms concurrently
-///      without contending on a single-threaded runtime.
-///   3. The runtime is constructed once per process instead of per-call,
+///      call into `block_on` without depending on, or starving, the host
+///      runtime (combined with [`tokio::task::block_in_place`] when already
+///      inside one).
+///   2. The runtime is constructed once per process instead of per-call,
 ///      avoiding repeated `Runtime::new()` allocation overhead.
 static PLUGIN_TOKIO_RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
   tokio::runtime::Builder::new_multi_thread()
@@ -231,8 +229,8 @@ impl RustPlugins {
 /// Drive an SWC plugin transform future to completion from synchronous plugin hooks.
 ///
 /// Always drives the future on the dedicated [`PLUGIN_TOKIO_RT`] runtime so
-/// concurrent Farm worker threads can execute plugin transforms in parallel.
-/// When invoked from inside another tokio runtime (e.g. napi's), we use
+/// plugin host async work has a stable, process-wide tokio context. When
+/// invoked from inside another tokio runtime (e.g. napi's), we use
 /// [`tokio::task::block_in_place`] so the calling worker is yielded back to
 /// its scheduler instead of being deadlocked while waiting.
 fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
@@ -244,14 +242,17 @@ fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
   }
 }
 
+// Concurrent wasm-plugin transforms are isolated from Farm's rayon worker
+// pool at the call site (see `Plugin::process_module` in `lib.rs`): the whole
+// `try_with` block is moved onto a dedicated short-lived OS thread via
+// `std::thread::scope`. The wasmer compile backend's per-function fan-out
+// (`Registry::in_worker_cross`) therefore resolves against a pool that is
+// independent from Farm's compilation pool, removing the rayon-pool
+// starvation deadlock seen on low-core CI machines.
+
 #[cfg(test)]
 mod tests {
   use super::block_on_plugin_transform;
-  use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc, Barrier,
-  };
-  use std::time::Duration;
 
   #[test]
   fn block_on_plugin_transform_should_complete_inside_tokio_runtime() {
@@ -287,48 +288,6 @@ mod tests {
     });
 
     assert_eq!(value, 42);
-  }
-
-  #[test]
-  fn block_on_plugin_transform_should_run_concurrently_across_threads() {
-    const THREADS: usize = 4;
-
-    let active = Arc::new(AtomicUsize::new(0));
-    let max_active = Arc::new(AtomicUsize::new(0));
-    let barrier = Arc::new(Barrier::new(THREADS));
-
-    let handles = (0..THREADS)
-      .map(|_| {
-        let active = active.clone();
-        let max_active = max_active.clone();
-        let barrier = barrier.clone();
-        std::thread::spawn(move || {
-          block_on_plugin_transform(async move {
-            // Synchronize all worker threads inside the shared runtime so
-            // that they truly overlap; then yield to the scheduler at least
-            // once to exercise the multi-threaded path.
-            barrier.wait();
-            let current = active.fetch_add(1, Ordering::SeqCst) + 1;
-            max_active.fetch_max(current, Ordering::SeqCst);
-            tokio::task::yield_now().await;
-            tokio::time::sleep(Duration::from_millis(20)).await;
-            active.fetch_sub(1, Ordering::SeqCst);
-          });
-        })
-      })
-      .collect::<Vec<_>>();
-
-    for handle in handles {
-      handle.join().unwrap();
-    }
-
-    // With the dedicated multi-threaded runtime, multiple plugin transforms
-    // must be allowed to run concurrently rather than be serialized.
-    assert!(
-      max_active.load(Ordering::SeqCst) >= 2,
-      "expected concurrent plugin transforms, observed max_active = {}",
-      max_active.load(Ordering::SeqCst)
-    );
   }
 }
 

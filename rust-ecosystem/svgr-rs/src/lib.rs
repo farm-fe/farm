@@ -36,7 +36,7 @@ pub use self::core::state::{Caller, Config as State};
 /// Basic usage:
 ///
 /// ```rust
-/// use svgr_rs::transform;
+/// use farmfe_svgr_rs::transform;
 ///
 /// let result = transform(
 ///   r#"<svg></svg>"#.to_string(),

@@ -425,7 +425,7 @@ fn get_jsx_runtime_import_specifiers(
 
 fn get_or_create_import(
   imports: &mut Vec<ModuleItem>,
-  soruce_value: &str,
+  source_value: &str,
   specifier: ImportSpecifier,
 ) {
   let mut existing = None;
@@ -435,7 +435,7 @@ fn get_or_create_import(
         .specifiers
         .iter()
         .any(|specifier| matches!(specifier, ImportSpecifier::Namespace(_)));
-      if !is_namespace_import && import_decl.src.value.as_str() == Some(soruce_value) {
+      if !is_namespace_import && import_decl.src.value.as_str() == Some(source_value) {
         existing = Some(import_decl);
         break;
       }
@@ -452,7 +452,7 @@ fn get_or_create_import(
     specifiers: vec![specifier],
     src: Box::new(Str {
       span: DUMMY_SP,
-      value: soruce_value.into(),
+      value: source_value.into(),
       raw: None,
     }),
     type_only: false,
@@ -462,7 +462,7 @@ fn get_or_create_import(
   imports.push(module_item);
 }
 
-fn get_or_create_named_import(imports: &mut Vec<ModuleItem>, soruce_value: &str, name: &str) {
+fn get_or_create_named_import(imports: &mut Vec<ModuleItem>, source_value: &str, name: &str) {
   let specifier = ImportSpecifier::Named(ImportNamedSpecifier {
     span: DUMMY_SP,
     local: Ident {
@@ -474,7 +474,7 @@ fn get_or_create_named_import(imports: &mut Vec<ModuleItem>, soruce_value: &str,
     imported: None,
     is_type_only: false,
   });
-  get_or_create_import(imports, soruce_value, specifier)
+  get_or_create_import(imports, source_value, specifier)
 }
 
 fn create_var_decl_init_hoc(var_name: &str, callee: &str, component_name: &str) -> ModuleItem {
