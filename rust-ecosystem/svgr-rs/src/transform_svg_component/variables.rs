@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use swc_common::{FileName, SourceMap, SyntaxContext, DUMMY_SP};
+use swc_common::{sync::Lrc, FileName, SourceMap, SyntaxContext, DUMMY_SP};
 use swc_ecma_ast::*;
 use swc_ecma_parser as parser;
 
@@ -301,26 +299,26 @@ pub fn get_variables(
         },
       )));
 
-      if let Some(caller) = &state.caller {
-        if let Some(previous_export) = caller.previous_export.clone() {
-          let cm = Rc::<SourceMap>::default();
-          let fm = cm.new_source_file(FileName::Anon.into(), previous_export);
+      if let Some(caller) = &state.caller
+        && let Some(previous_export) = caller.previous_export.clone()
+      {
+        let cm = Lrc::<SourceMap>::default();
+        let fm = cm.new_source_file(FileName::Anon.into(), previous_export);
 
-          let mut recovered_errors = vec![];
-          let module = parser::parse_file_as_module(
-            fm.as_ref(),
-            parser::Syntax::Es(parser::EsSyntax {
-              jsx: true,
-              ..Default::default()
-            }),
-            EsVersion::Es2020,
-            None,
-            &mut recovered_errors,
-          )
-          .unwrap();
-          for module_item in module.body {
-            exports.push(module_item)
-          }
+        let mut recovered_errors = vec![];
+        let module = parser::parse_file_as_module(
+          fm.as_ref(),
+          parser::Syntax::Es(parser::EsSyntax {
+            jsx: true,
+            ..Default::default()
+          }),
+          EsVersion::Es2020,
+          None,
+          &mut recovered_errors,
+        )
+        .unwrap();
+        for module_item in module.body {
+          exports.push(module_item)
         }
       }
     } else {

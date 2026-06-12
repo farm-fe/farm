@@ -65,27 +65,27 @@ impl VisitMut for Visitor {
     let mut required_attrs = vec!["width", "height"];
 
     n.attrs.iter_mut().for_each(|attr| {
-      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-        if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-          required_attrs
-            .clone()
-            .iter()
-            .enumerate()
-            .for_each(|(index, attr)| {
-              if ident.sym.as_str() == *attr {
-                match *attr {
-                  "height" => {
-                    jsx_attr.value.replace(get_value(self.height.as_ref()));
-                  }
-                  "width" => {
-                    jsx_attr.value.replace(get_value(self.width.as_ref()));
-                  }
-                  _ => {}
+      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr
+        && let JSXAttrName::Ident(ident) = &jsx_attr.name
+      {
+        required_attrs
+          .clone()
+          .iter()
+          .enumerate()
+          .for_each(|(index, attr)| {
+            if ident.sym.as_str() == *attr {
+              match *attr {
+                "height" => {
+                  jsx_attr.value.replace(get_value(self.height.as_ref()));
                 }
-                required_attrs.remove(index);
+                "width" => {
+                  jsx_attr.value.replace(get_value(self.width.as_ref()));
+                }
+                _ => {}
               }
-            });
-        }
+              required_attrs.remove(index);
+            }
+          });
       }
     });
 
@@ -130,9 +130,9 @@ fn get_value(raw: Option<&Size>) -> JSXAttrValue {
 
 #[cfg(test)]
 mod tests {
-  use std::{default::Default, rc::Rc};
+  use std::default::Default;
 
-  use swc_common::{FileName, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::*;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
@@ -146,7 +146,7 @@ mod tests {
   }
 
   fn code_test(input: &str, opts: Options, expected: &str) {
-    let cm = Rc::new(SourceMap::default());
+    let cm = Lrc::new(SourceMap::default());
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let lexer = Lexer::new(

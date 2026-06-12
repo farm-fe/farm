@@ -80,20 +80,20 @@ impl SvgElementVisitor {
 
 impl VisitMut for SvgElementVisitor {
   fn visit_mut_jsx_element(&mut self, n: &mut JSXElement) {
-    if let JSXElementName::Ident(ident) = &mut n.opening.name {
-      if ident.sym.as_str() == "svg" {
-        let mut jsx_element_visitor = JSXElementVisitor::new(
-          self.replaced_components.clone(),
-          self.unsupported_components.clone(),
-        );
+    if let JSXElementName::Ident(ident) = &mut n.opening.name
+      && ident.sym.as_str() == "svg"
+    {
+      let mut jsx_element_visitor = JSXElementVisitor::new(
+        self.replaced_components.clone(),
+        self.unsupported_components.clone(),
+      );
+      ident.sym = "Svg".into();
+      if let Some(closing) = &mut n.closing
+        && let JSXElementName::Ident(ident) = &mut closing.name
+      {
         ident.sym = "Svg".into();
-        if let Some(closing) = &mut n.closing {
-          if let JSXElementName::Ident(ident) = &mut closing.name {
-            ident.sym = "Svg".into();
-          }
-        }
-        n.visit_mut_with(&mut jsx_element_visitor);
       }
+      n.visit_mut_with(&mut jsx_element_visitor);
     }
   }
 }
@@ -126,10 +126,10 @@ impl JSXElementVisitor {
           .borrow_mut()
           .insert(component.to_string());
         ident.sym = Atom::from(*component);
-        if let Some(closing) = &mut n.closing {
-          if let JSXElementName::Ident(ident) = &mut closing.name {
-            ident.sym = Atom::from(*component);
-          }
+        if let Some(closing) = &mut n.closing
+          && let JSXElementName::Ident(ident) = &mut closing.name
+        {
+          ident.sym = Atom::from(*component);
         }
       } else {
         // Remove element if not supported
@@ -205,10 +205,10 @@ impl VisitMut for ImportDeclVisitor {
     if n.src.value.as_str() == Some("react-native-svg") {
       for component in self.replaced_components.borrow().iter() {
         if n.specifiers.iter().any(|specifier| {
-          if let ImportSpecifier::Named(named) = specifier {
-            if named.local.sym == *component {
-              return true;
-            }
+          if let ImportSpecifier::Named(named) = specifier
+            && named.local.sym == *component
+          {
+            return true;
           }
           false
         }) {
@@ -245,7 +245,7 @@ impl VisitMut for ImportDeclVisitor {
 
 #[cfg(test)]
 mod tests {
-  use swc_common::{comments::SingleThreadedComments, FileName, SourceMap};
+  use swc_common::{comments::SingleThreadedComments, sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::*;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
@@ -253,7 +253,7 @@ mod tests {
   use super::*;
 
   fn code_test(input: &str, expected: &str) {
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let lexer = Lexer::new(

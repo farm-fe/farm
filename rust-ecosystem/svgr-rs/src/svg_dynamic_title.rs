@@ -106,10 +106,9 @@ impl Visitor {
         name: JSXAttrName::Ident(ident),
         ..
       }) = attr
+        && ident.sym.as_str() == "id"
       {
-        if ident.sym.as_str() == "id" {
-          return true;
-        }
+        return true;
       }
       false
     });
@@ -196,14 +195,13 @@ impl VisitMut for Visitor {
       }
 
       let has_tag = n.children.clone().iter_mut().enumerate().any(|(i, c)| {
-        if let JSXElementChild::JSXElement(e) = c {
-          if let JSXElementName::Ident(ident) = &e.opening.name {
-            if ident.sym == self.tag {
-              let tag_element = self.get_tag_element_with_existing_title(e);
-              n.children[i] = tag_element;
-              return true;
-            }
-          }
+        if let JSXElementChild::JSXElement(e) = c
+          && let JSXElementName::Ident(ident) = &e.opening.name
+          && ident.sym == self.tag
+        {
+          let tag_element = self.get_tag_element_with_existing_title(e);
+          n.children[i] = tag_element;
+          return true;
         }
         false
       });
@@ -217,9 +215,7 @@ impl VisitMut for Visitor {
 
 #[cfg(test)]
 mod tests {
-  use std::rc::Rc;
-
-  use swc_common::{FileName, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::*;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
@@ -228,7 +224,7 @@ mod tests {
   use super::*;
 
   fn code_test(input: &str, tag: String, expected: &str) {
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let lexer = Lexer::new(

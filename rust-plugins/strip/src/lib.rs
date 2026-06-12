@@ -212,13 +212,11 @@ impl VisitMut for StripCode {
       callee: Callee::Expr(callee_expr),
       ..
     }) = e
+      && let Some(flatten_callee) = flatten(callee_expr)
+      && self.re_functions_regex.is_match(&flatten_callee)
     {
-      if let Some(flatten_callee) = flatten(callee_expr) {
-        if self.re_functions_regex.is_match(&flatten_callee) {
-          *e = *void_expr();
-          return;
-        }
-      }
+      *e = *void_expr();
+      return;
     }
     e.visit_mut_children_with(self);
   }

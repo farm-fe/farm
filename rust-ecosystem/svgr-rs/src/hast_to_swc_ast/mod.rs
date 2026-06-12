@@ -244,15 +244,15 @@ pub fn to_swc_ast(hast: swc_xml::ast::Document) -> Option<JSXElement> {
 
 #[cfg(test)]
 mod tests {
-  use std::{borrow::Borrow, fs, path::PathBuf, rc::Rc};
+  use std::{borrow::Borrow, fs, path::PathBuf};
 
-  use swc_common::{FileName, SourceFile, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceFile, SourceMap};
   use swc_ecma_codegen::{text_writer::JsWriter, Config, Emitter, Node};
   use swc_xml::parser::parse_file_as_document;
 
   use super::*;
 
-  fn transform(cm: Rc<SourceMap>, fm: Rc<SourceFile>, minify: bool) -> String {
+  fn transform(cm: Lrc<SourceMap>, fm: Lrc<SourceFile>, minify: bool) -> String {
     let mut errors = vec![];
     let doc = parse_file_as_document(fm.borrow(), Default::default(), &mut errors).unwrap();
 
@@ -283,7 +283,7 @@ mod tests {
   fn document_test(input: PathBuf) {
     let jsx_path = input.parent().unwrap().join("output.jsx");
 
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.load_file(&input).expect("failed to load fixture file");
 
     let res = transform(cm, fm, false);
@@ -299,7 +299,7 @@ mod tests {
   }
 
   fn code_test(input: &str, expected: &str) {
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let res = transform(cm, fm, true);

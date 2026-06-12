@@ -23,14 +23,14 @@ impl Visitor {
 impl VisitMut for Visitor {
   fn visit_mut_jsx_opening_element(&mut self, n: &mut JSXOpeningElement) {
     n.attrs.iter_mut().for_each(|attr| {
-      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-        if let Some(JSXAttrValue::Str(str)) = &jsx_attr.value {
-          let old_value = str.value.to_string_lossy().into_owned();
+      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr
+        && let Some(JSXAttrValue::Str(str)) = &jsx_attr.value
+      {
+        let old_value = str.value.to_string_lossy().into_owned();
 
-          if self.values.contains_key(&old_value) {
-            let attr_value = get_attr_value(self.values.get(&old_value).unwrap());
-            jsx_attr.value = Some(attr_value);
-          }
+        if self.values.contains_key(&old_value) {
+          let attr_value = get_attr_value(self.values.get(&old_value).unwrap());
+          jsx_attr.value = Some(attr_value);
         }
       }
     });
@@ -62,9 +62,7 @@ fn get_attr_value(new: &str) -> JSXAttrValue {
 
 #[cfg(test)]
 mod tests {
-  use std::rc::Rc;
-
-  use swc_common::{FileName, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::*;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
@@ -73,7 +71,7 @@ mod tests {
   use super::*;
 
   fn code_test(input: &str, replace_attr_values: HashMap<String, String>, expected: &str) {
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let lexer = Lexer::new(

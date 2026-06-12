@@ -110,18 +110,17 @@ impl VisitMut for Visitor {
 
       let is_equal_attr = |attr: &JSXAttrOrSpread| -> bool {
         if *spread {
-          if let JSXAttrOrSpread::SpreadElement(spread) = attr {
-            if let Expr::Ident(ident) = spread.expr.as_ref() {
-              return ident.sym == *name;
-            }
+          if let JSXAttrOrSpread::SpreadElement(spread) = attr
+            && let Expr::Ident(ident) = spread.expr.as_ref()
+          {
+            return ident.sym == *name;
           }
           false
+        } else if let JSXAttrOrSpread::JSXAttr(attr) = attr
+          && let JSXAttrName::Ident(ident) = &attr.name
+        {
+          ident.sym == *name
         } else {
-          if let JSXAttrOrSpread::JSXAttr(attr) = attr {
-            if let JSXAttrName::Ident(ident) = &attr.name {
-              return ident.sym == *name;
-            }
-          }
           false
         }
       };
@@ -213,9 +212,7 @@ fn svg_prop_to_attr(key: &str, value: &str) -> Attribute {
 
 #[cfg(test)]
 mod tests {
-  use std::rc::Rc;
-
-  use swc_common::{FileName, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::*;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
@@ -229,7 +226,7 @@ mod tests {
   }
 
   fn code_test(input: &str, opts: Options, expected: &str) {
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let lexer = Lexer::new(

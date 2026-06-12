@@ -255,12 +255,10 @@ fn handle_dynamic_entry_resource_pots(
     if matches!(
       module_group.module_group_type,
       ModuleGroupType::DynamicEntry
-    ) {
-      if let Some(resource_pot) =
-        dynamic_entry_module_group_to_resource_pot(&mut module_graph, module_group)
-      {
-        resource_pots.push(resource_pot);
-      }
+    ) && let Some(resource_pot) =
+      dynamic_entry_module_group_to_resource_pot(&mut module_graph, module_group)
+    {
+      resource_pots.push(resource_pot);
     }
   }
 

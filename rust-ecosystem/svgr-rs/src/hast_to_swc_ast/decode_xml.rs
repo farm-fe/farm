@@ -24,7 +24,7 @@ pub fn decode_xml(s: &str) -> String {
       let mut start = cur_idx;
       let mut radix = 10;
 
-      if bytes[start].to_ascii_lowercase() == b'x' {
+      if bytes[start].eq_ignore_ascii_case(&b'x') {
         radix = 16;
         cur_idx += 1;
         start += 1;

@@ -38,12 +38,11 @@ impl VisitMut for Visitor {
     let mut attrs = n.attrs.clone();
     attrs.reverse();
     attrs.iter().enumerate().for_each(|(index, attr)| {
-      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
-        if let JSXAttrName::Ident(ident) = &jsx_attr.name {
-          if self.attributes.contains(&ident.sym.to_string()) {
-            n.attrs.remove(len - index - 1);
-          }
-        }
+      if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr
+        && let JSXAttrName::Ident(ident) = &jsx_attr.name
+        && self.attributes.contains(&ident.sym.to_string())
+      {
+        n.attrs.remove(len - index - 1);
       }
     });
   }
@@ -51,9 +50,9 @@ impl VisitMut for Visitor {
 
 #[cfg(test)]
 mod tests {
-  use std::{default::Default, rc::Rc};
+  use std::default::Default;
 
-  use swc_common::{FileName, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::*;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
@@ -67,7 +66,7 @@ mod tests {
   }
 
   fn code_test(input: &str, opts: Options, expected: &str) {
-    let cm = Rc::new(SourceMap::default());
+    let cm = Lrc::new(SourceMap::default());
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let lexer = Lexer::new(

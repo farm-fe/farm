@@ -112,9 +112,7 @@ pub fn transform(
 
 #[cfg(test)]
 mod tests {
-  use std::rc::Rc;
-
-  use swc_common::{FileName, SourceMap};
+  use swc_common::{sync::Lrc, FileName, SourceMap};
   use swc_ecma_ast::EsVersion;
   use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
   use swc_ecma_parser as parser;
@@ -128,7 +126,7 @@ mod tests {
     state: &core::state::InternalConfig,
     expected: &str,
   ) {
-    let cm = Rc::<SourceMap>::default();
+    let cm = Lrc::<SourceMap>::default();
     let fm = cm.new_source_file(FileName::Anon.into(), input.to_string());
 
     let mut recovered_errors = vec![];

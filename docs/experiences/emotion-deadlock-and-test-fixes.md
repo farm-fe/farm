@@ -1,3 +1,5 @@
+<!-- cspell:ignore cranelift cranelift's doctest soruce recieve -->
+
 # Emotion Deadlock Investigation & Companion Test/Spell Fixes
 
 This note captures the diagnosis and fix process for the `examples/emotion`
