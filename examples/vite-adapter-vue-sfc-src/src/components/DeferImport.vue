@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import defer * as deferredFeature from '../deferred-feature';
 
 const message = deferredFeature.message;

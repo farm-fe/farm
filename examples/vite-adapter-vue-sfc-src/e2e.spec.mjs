@@ -15,6 +15,9 @@ async function assertVueSfcExample(page) {
   assert.match(await page.locator('h1').textContent(), /Farm \+ Vue/);
   assert.match(await page.locator('.card').textContent(), /test HMR/);
   assert.match(await page.locator('.read-the-docs').textContent(), /Farm and Vue logos/);
+
+  await page.waitForSelector('#defer-message', { timeout: hmrTimeout });
+  assert.equal(await page.locator('#defer-message').textContent(), 'Deferred import evaluation works');
 }
 
 async function waitForStyle(page, selector, property, expected) {

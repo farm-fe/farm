@@ -1,4 +1,4 @@
-import { defineConfig, JsPlugin } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import { type Plugin } from 'vite';
@@ -23,5 +23,12 @@ export default defineConfig({
       cacheDir: 'node_modules/.farm/vite-vue-cache',
     },
   },
-  vitePlugins: [vue(), b],
+  vitePlugins: [
+    vue({
+      script: {
+        babelParserPlugins: ['deferredImportEvaluation'],
+      },
+    }),
+    b,
+  ],
 });

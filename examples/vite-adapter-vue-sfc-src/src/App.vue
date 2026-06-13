@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HelloWorld from './components/HelloWorld.vue';
+import DeferImport from './components/DeferImport.vue';
 </script>
 
 <template>
@@ -12,6 +13,7 @@ import HelloWorld from './components/HelloWorld.vue';
     </a>
   </div>
   <HelloWorld msg="Farm + Vue" />
+  <DeferImport />
 </template>
 
 <!-- <style scoped src="./app.css"></style> -->
