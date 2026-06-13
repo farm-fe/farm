@@ -30,15 +30,13 @@ Register the plugin in `farm.config.ts`:
 
 ```ts
 import { defineConfig } from "@farmfe/core";
+import url from "@farmfe/plugin-url";
 
 export default defineConfig({
   plugins: [
-    [
-      "@farmfe/plugin-url",
-      {
-        limit: 14 * 1024,
-      },
-    ],
+    url({
+      limit: 14 * 1024,
+    }),
   ],
 });
 ```

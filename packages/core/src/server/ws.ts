@@ -91,7 +91,7 @@ export type WebSocketCustomListener<T> = (
 const WebSocketServerRaw = WebSocketServerRaw_;
 
 export class WsServer {
-  public wss: WebSocketServerRaw_;
+  public wss!: WebSocketServerRaw_;
   public customListeners = new Map<string, Set<WebSocketCustomListener<any>>>();
   public clientsMap = new WeakMap<WebSocketRaw, WebSocketClient>();
   public bufferedError: ErrorPayload | null = null;
@@ -99,21 +99,21 @@ export class WsServer {
   public httpServer: any;
   wsHttpServer: Server | undefined;
   private serverConfig: ServerConfig;
-  private port: number;
+  private port!: number;
   private host: string | undefined;
-  private hmrServerWsListener: (
+  private hmrServerWsListener!: (
     req: InstanceType<typeof IncomingMessage>,
     socket: Duplex,
     head: Buffer
   ) => void;
-  private hmrOrigins: string[];
+  private hmrOrigins!: string[];
 
   /**
    * Creates a new WebSocket server instance.
    */
   constructor(private readonly devServer: FarmDevServer) {
     this.logger = devServer.logger ?? new Logger();
-    this.serverConfig = devServer.config.server;
+    this.serverConfig = devServer.config.server ?? ({} as ServerConfig);
   }
 
   /**
@@ -139,7 +139,7 @@ export class WsServer {
     }
 
     // Add non-localhost origin
-    const configuredOrigin = `${protocol}://${hostname.name}:${port}`;
+    const configuredOrigin = `${protocol}://${hostname?.name}:${port}`;
 
     if (
       hostname &&
@@ -152,7 +152,7 @@ export class WsServer {
     if (config.server?.host !== config.server?.hmr?.host) {
       const hmrHostname = await resolveHostname(config.server?.hmr?.host);
       origins.push(
-        `${config.server?.hmr?.protocol || protocol}://${hmrHostname.name}:${config.server.hmr?.port || config.server.port}`
+        `${config.server?.hmr?.protocol || protocol}://${hmrHostname.name}:${config.server?.hmr?.port || config.server?.port}`
       );
     }
 
@@ -172,11 +172,11 @@ export class WsServer {
     this.httpServer =
       hmrServer || (portsAreCompatible && this.devServer.httpServer);
 
-    this.port = (hmrPort as number) || DEFAULT_HMR_OPTIONS.port;
+    this.port = (hmrPort as number) ?? DEFAULT_HMR_OPTIONS.port;
     this.host = ((hmr && hmr.host) as string) || undefined;
 
     if (this.httpServer) {
-      let hmrBase = this.devServer.publicPath;
+      let hmrBase = this.devServer.publicPath ?? '/';
 
       const hmrPath = hmr?.path;
 
@@ -192,7 +192,7 @@ export class WsServer {
           );
         }
 
-        const origin = req.headers['origin'];
+        const origin = (req.headers['origin'] as string) ?? '';
 
         if (
           req.headers['sec-websocket-protocol'] === HMR_HEADER &&
@@ -255,7 +255,7 @@ export class WsServer {
 
         // transform vite js-update to farm update
         if (parsed?.type === 'js-update' && parsed?.path) {
-          this.devServer.hmrEngine.hmrUpdate(parsed.path, true);
+          this.devServer.hmrEngine?.hmrUpdate(parsed.path, true);
           return;
         }
 
@@ -312,7 +312,7 @@ export class WsServer {
       if (!this.customListeners.has(event)) {
         this.customListeners.set(event, new Set());
       }
-      this.customListeners.get(event).add(fn);
+      this.customListeners.get(event)?.add(fn);
     }
   }
 
@@ -379,13 +379,12 @@ export class WsServer {
         this.wss.close((err: any) => (err ? reject(err) : resolve()));
       });
       if (this.wsHttpServer) {
+        const server = this.wsHttpServer;
         await new Promise<void>((resolve, reject) => {
-          this.wsHttpServer.close((err: any) =>
-            err ? reject(err) : resolve()
-          );
+          server.close((err: any) => (err ? reject(err) : resolve()));
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       throw new Error(`Failed to close WebSocket server: ${err}`);
     }
   }
@@ -414,18 +413,19 @@ export class WsServer {
    * @param {WebSocketRaw} socket - The raw WebSocket object.
    * @returns {WebSocketClient} The client object.
    */
-  #getSocketClient(socket: WebSocketRaw) {
-    if (!this.clientsMap.has(socket)) {
-      this.clientsMap.set(socket, {
-        send: (...args) => {
-          const payload: HMRPayload = this.#createPayload(...args);
-          socket.send(JSON.stringify(payload));
-        },
-        // @ts-ignore
-        rawSend: (str: string) => socket.send(str),
-        socket
-      });
-    }
-    return this.clientsMap.get(socket);
+  #getSocketClient(socket: WebSocketRaw): WebSocketClient {
+    const existing = this.clientsMap.get(socket);
+    if (existing) return existing;
+    const client: WebSocketClient = {
+      send: (...args) => {
+        const payload: HMRPayload = this.#createPayload(...args);
+        socket.send(JSON.stringify(payload));
+      },
+      // @ts-ignore
+      rawSend: (str: string) => socket.send(str),
+      socket
+    };
+    this.clientsMap.set(socket, client);
+    return client;
   }
 }

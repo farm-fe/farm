@@ -71,11 +71,11 @@ pub fn render_resource_pots_and_generate_resources(
       for cached_resource in cached_resources.resources {
         resources.lock().push(cached_resource.resource);
 
-        if let Some(map) = cached_resource.source_map {
-          if !context.config.sourcemap.is_inline() {
-            resource_pot.add_resource(map.name.clone());
-            resources.lock().push(map);
-          }
+        if let Some(map) = cached_resource.source_map
+          && !context.config.sourcemap.is_inline()
+        {
+          resource_pot.add_resource(map.name.clone());
+          resources.lock().push(map);
         }
       }
     } else {

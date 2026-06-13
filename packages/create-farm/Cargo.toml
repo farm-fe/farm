@@ -1,5 +1,5 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "create_farm_node"
 version = "2.0.0"
 authors = ["Erkelost"]

@@ -25,10 +25,16 @@ jobs:
           # `fetch-depth: 0` is needed to clone all the git history, which is necessary to
           # release from the latest commit of the release PR.
           fetch-depth: 0
-      # Use your favorite way to install the Rust toolchain.
-      # The action I'm using here is a popular choice.
+      # Use the project's pinned nightly toolchain (rust-toolchain.toml).
+      # The previously published farmfe_core 2.1.0 was built against this
+      # nightly and uses syntax (let-chains) that does not compile on stable.
+      # When release-plz verifies the package tarball it re-downloads and
+      # compiles the published crate, so the toolchain here MUST match.
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-10
+          components: clippy, rustfmt
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
@@ -63,7 +69,10 @@ jobs:
           # determine the next version and build the changelog.
           fetch-depth: 0
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-04-10
+          components: clippy, rustfmt
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:

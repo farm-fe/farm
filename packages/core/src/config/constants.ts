@@ -1,9 +1,5 @@
 import { readFileSync } from 'node:fs';
-import {
-  HmrOptions,
-  NormalizedServerConfig,
-  ResolvedCompilation
-} from './types.js';
+import { HmrOptions, ResolvedCompilation } from './types.js';
 
 export const DEFAULT_CONFIG_NAMES = [
   'farm.config.ts',
@@ -31,21 +27,20 @@ export const VERSION = version;
 export const ENV_PRODUCTION = 'production';
 export const ENV_DEVELOPMENT = 'development';
 
-export const DEFAULT_HMR_OPTIONS: Required<HmrOptions> = {
+export const DEFAULT_HMR_OPTIONS: HmrOptions = {
   host: 'localhost',
-  port:
-    (process.env.FARM_DEFAULT_HMR_PORT &&
-      Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
-    undefined,
+  port: process.env.FARM_DEFAULT_HMR_PORT
+    ? Number(process.env.FARM_DEFAULT_HMR_PORT)
+    : undefined,
   path: '/__hmr',
   overlay: true,
   clientPort: 9000,
   timeout: 0,
-  server: null,
+  server: undefined,
   protocol: ''
 };
 
-export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
+export const DEFAULT_DEV_SERVER_OPTIONS = {
   headers: {},
   port:
     (process.env.FARM_DEFAULT_SERVER_PORT &&

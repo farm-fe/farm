@@ -414,6 +414,8 @@ export default defineConfig({
 对于 Vue 项目支持 JSX 的配置示例如下。如果需要 Vue SFC 支持，请注册当前的 Rust 插件 `@farmfe/plugin-vue`：
 
 ```ts
+import vue from "@farmfe/plugin-vue";
+
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -435,7 +437,7 @@ export default {
       ],
     },
   },
-  plugins: ["@farmfe/plugin-vue"],
+  plugins: [vue()],
 };
 ```
 

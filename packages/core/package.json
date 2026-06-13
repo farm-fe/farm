@@ -67,7 +67,7 @@
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "napi:version": "napi version",
     "artifacts": "napi artifacts",
-    "type-check": "tsc -p tsconfig.build.json",
+    "type-check": "tsc -p tsconfig.build.json --noEmit",
     "build:rs:ci": "npm run build:rs:debug -- --profile ci"
   },
   "devDependencies": {

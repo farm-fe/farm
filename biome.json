@@ -23,8 +23,9 @@
       "!**/examples/**",
       "!**/*.{js,mjs,cjs}",
       "!cspell.json",
-      "!packages/runtime",
-      "!packages/runtime-plugin-import-meta"
+      "!packages/runtime/**",
+      "!packages/runtime-plugin-hmr/**",
+      "!packages/runtime-plugin-import-meta/**"
     ],
     "ignoreUnknown": true
   },
@@ -36,7 +37,14 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "includes": ["**/*.ts", "!**/node_modules", "!**/dist"]
+    "includes": [
+      "**/*.ts",
+      "!**/node_modules",
+      "!**/dist",
+      "!packages/runtime/**",
+      "!packages/runtime-plugin-hmr/**",
+      "!packages/runtime-plugin-import-meta/**"
+    ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
@@ -79,7 +87,7 @@
       "style": {
         "noInferrableTypes": "error",
         "noNamespace": "error",
-        "noNonNullAssertion": "warn",
+        "noNonNullAssertion": "error",
         "useAsConstAssertion": "error"
       },
       "suspicious": {
@@ -119,7 +127,10 @@
       "!**/website/**",
       "!**/node_modules/**",
       "!**/*.config.js",
-      "!**/*.config.ts"
+      "!**/*.config.ts",
+      "!packages/runtime/**",
+      "!packages/runtime-plugin-hmr/**",
+      "!packages/runtime-plugin-import-meta/**"
     ]
   },
   "javascript": {

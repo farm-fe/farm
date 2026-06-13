@@ -36,7 +36,7 @@ export default function farmLessPlugin(
   );
 
   // @ts-ignore TODO fix it
-  const cwd = () => farmConfig.root ?? process.cwd();
+  const cwd = () => farmConfig?.root ?? process.cwd();
 
   return {
     name: pluginName,
@@ -73,6 +73,8 @@ export default function farmLessPlugin(
         if (param.query.length === 0 && existsSync(param.resolvedPath)) {
           const data = await tryRead(param.resolvedPath);
 
+          if (!data) return null;
+
           return {
             content: data,
             moduleType: 'less'
@@ -88,8 +90,9 @@ export default function farmLessPlugin(
         moduleTypes: options.filters?.moduleTypes ?? ['less']
       },
       async executor(param, ctx) {
+        if (!ctx) return { content: '', moduleType: 'css' as const };
         try {
-          const isProd = farmConfig.mode === 'production';
+          const isProd = (farmConfig && farmConfig.mode) === 'production';
           let relData = '';
           const fileRoot = path.dirname(param.resolvedPath);
           const configPaths = options.lessOptions?.paths;
@@ -139,7 +142,7 @@ export default function farmLessPlugin(
             moduleType: 'css',
             sourceMap: map
           };
-        } catch (error) {
+        } catch (error: any) {
           throwError('transform', error);
         }
         return {

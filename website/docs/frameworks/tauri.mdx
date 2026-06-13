@@ -25,9 +25,10 @@ Update the file with the following content:
 
 ```ts
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
-  plugins: ['@farmfe/plugin-react'],
+  plugins: [react()],
   server: {
     port: 1420
   }

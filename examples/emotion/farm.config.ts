@@ -6,6 +6,7 @@ function defineConfig(config: UserConfig) {
 
 export default defineConfig({
   compilation: {
+    persistentCache: false,
     input: {
       index: './index.html',
     },
@@ -13,12 +14,33 @@ export default defineConfig({
       path: './build',
     },
     script: {
+      // Match POSIX and Windows path separators because CI builds examples on all platforms.
       plugins: [
         {
           name: '@swc/plugin-emotion',
+          options: {
+            autoLabel: 'always',
+            labelFormat: 'farm-emotion-[local]',
+          },
+          filters: {
+            resolvedPaths: ['src[/\\\\]emotion.tsx$'],
+          },
+        },
+        {
+          name: '@swc/plugin-styled-components',
+          options: {
+            displayName: true,
+            ssr: true,
+          },
+          filters: {
+            resolvedPaths: ['src[/\\\\]styled-components.tsx$'],
+          },
+        },
+        {
+          name: '@swc/plugin-styled-jsx',
           options: {},
           filters: {
-            moduleTypes: ['tsx'],
+            resolvedPaths: ['src[/\\\\]styled-jsx.tsx$'],
           },
         },
       ],

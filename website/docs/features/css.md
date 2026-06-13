@@ -77,14 +77,13 @@ pnpm add -D @farmfe/plugin-sass
 2. Configure the plugin
 ```ts
 import { defineConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   // ...
-  plugins: ['@farmfe/plugin-sass'] // to use a rust plugin, just configure its package name as a string
+  plugins: [sass()] // import the rust plugin and call it like a JS plugin
   // if you want to specify options for plugin-sass, use
-  // plugins: [
-  //   ['@farmfe/plugin-sass', { sourceMap: false }]
-  // ]
+  // plugins: [sass({ sourceMap: false })]
 });
 ```
 
@@ -95,28 +94,25 @@ import './index.scss';
 
 To use sass with css modules, change the file name from `index.scss` to `index.module.scss`, see [css modules](/docs/config/compilation-options#cssmodules).
 
-`@farmfe/plugin-sass` supports a lot of options, use the array syntax of `plugins` to specify options for plugin sass:
+`@farmfe/plugin-sass` supports a lot of options, pass them as the argument of `sass()`:
 
 ```ts
 import { defineConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   // if you want to specify options for plugin-sass, use
   plugins: [
-    [
-      '@farmfe/plugin-sass',
-      // all supported options as below
-      {
-        sourceMap: true // bool
-        sourceMapIncludeSources: true, // bool
-        alertAscii: true, // bool
-        alertColor: true, // bool
-        charset: true, // bool
-        quietDeps: true, // bool
-        verbose: false, // bool
-        style: 'expanded' | 'compressed' // output code style
-      }
-    ]
+    sass({
+      sourceMap: true, // bool
+      sourceMapIncludeSources: true, // bool
+      alertAscii: true, // bool
+      alertColor: true, // bool
+      charset: true, // bool
+      quietDeps: true, // bool
+      verbose: false, // bool
+      style: 'expanded' // 'expanded' | 'compressed'
+    })
   ]
 });
 ```

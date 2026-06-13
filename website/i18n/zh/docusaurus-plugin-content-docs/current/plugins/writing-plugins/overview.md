@@ -10,12 +10,13 @@ To use a Rust plugin, configuring `plugins` in `farm.config.ts`.
 
 ```ts
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 defineConfig({
   // ...
   plugins: [
     { /*..*/ }, // Js plugin, a object with hook defined
-    '@farmfe/plugin-react', // rust plugin package name
+    react(), // rust plugin imported and called as a factory function
   ]
 })
 

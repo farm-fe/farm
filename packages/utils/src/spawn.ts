@@ -1,8 +1,8 @@
-import { StdioOptions, spawn } from 'child_process';
+import { ChildProcess, StdioOptions, spawn } from 'child_process';
 
 export function createSpawnCmd(dest: string, stdio: StdioOptions = 'inherit') {
   return function (cmd: string, args?: string[]): Promise<unknown> {
-    const ls = spawn(cmd, args, {
+    const ls: ChildProcess = spawn(cmd, args ?? [], {
       cwd: dest,
       stdio: stdio,
       shell: true

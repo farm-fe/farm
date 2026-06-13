@@ -77,10 +77,10 @@ pub fn style_virtual_id(
     scoped_key = VUE_QUERY_SCOPED_KEY,
   );
 
-  if scoped {
-    if let Some(scope_id) = scope_id {
-      id.push_str(&format!("&{VUE_QUERY_SCOPE_ID_KEY}={scope_id}"));
-    }
+  if scoped
+    && let Some(scope_id) = scope_id
+  {
+    id.push_str(&format!("&{VUE_QUERY_SCOPE_ID_KEY}={scope_id}"));
   }
 
   id

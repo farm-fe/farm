@@ -50,13 +50,18 @@ export async function resolveServerUrls(
     return { local: [], network: [] };
   }
 
-  const serverOptions = type == 'dev' ? config.server : config.server.preview;
+  const serverOptions = config.server
+    ? type === 'dev'
+      ? config.server
+      : config.server.preview
+    : undefined;
+  if (!serverOptions) return { local: [], network: [] };
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(serverOptions.host);
   const protocol = serverOptions.https ? 'https' : 'http';
   const port = address.port;
-  const base = getValidPublicPath(config.compilation.output.publicPath);
+  const base = getValidPublicPath(config.compilation?.output?.publicPath);
 
   // print all network interfaces networkInterfaces() by default
   Object.values(os.networkInterfaces())

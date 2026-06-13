@@ -53,6 +53,8 @@ For above example, `farm.config.ts` is used to **build the project for browser**
 ```ts title="farm.config.ts"
 import path from 'path';
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   compilation: {
@@ -103,7 +105,7 @@ export default defineConfig({
       }
     ]
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
+  plugins: [react(), sass()]
 });
 ```
 
@@ -121,6 +123,8 @@ In this example, we are building a `SPA` SSR application with `if (ctx.path === 
 
 ```ts title="farm.config.server.ts"
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   compilation: {
@@ -135,14 +139,11 @@ export default defineConfig({
     // c-highlight-end
   },
   plugins: [
-    [
-      '@farmfe/plugin-react',
-      {
-        refresh: false,
-        development: false
-      }
-    ],
-    '@farmfe/plugin-sass'
+    react({
+      refresh: false,
+      development: false
+    }),
+    sass()
   ]
 });
 ```

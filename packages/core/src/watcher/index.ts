@@ -28,7 +28,7 @@ export const debugWatcher = createDebugger('farm:watcher');
 interface IWatcher {
   resolvedWatchOptions: WatchOptions;
   extraWatchedFiles: string[];
-  getInternalWatcher(): FSWatcher;
+  getInternalWatcher(): FSWatcher | null;
   filterWatchFile(file: string, root: string): boolean;
   getExtraWatchedFiles(compiler?: Compiler | null): string[];
   watchExtraFiles(): void;
@@ -39,9 +39,9 @@ interface IWatcher {
 
 export default class Watcher extends EventEmitter implements IWatcher {
   private watchedFiles = new Set<string>();
-  public resolvedWatchOptions: WatchOptions;
+  public resolvedWatchOptions!: WatchOptions;
   public extraWatchedFiles: string[] = [];
-  private _watcher: FSWatcher;
+  private _watcher: FSWatcher | null = null;
 
   constructor(public config: ResolvedUserConfig) {
     super();
@@ -52,25 +52,25 @@ export default class Watcher extends EventEmitter implements IWatcher {
     event: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir',
     listener: (path: string) => void
   ): this {
-    this._watcher.on(event, listener);
+    this._watcher?.on(event, listener);
     return this;
   }
 
   add(paths: string | ReadonlyArray<string>): this {
-    this._watcher.add(paths);
+    this._watcher?.add(paths);
     return this;
   }
 
   unwatch(paths: string | ReadonlyArray<string>): this {
-    this._watcher.unwatch(paths);
+    this._watcher?.unwatch(paths);
     return this;
   }
 
   getWatched(): { [directory: string]: string[] } {
-    return this._watcher.getWatched();
+    return this._watcher?.getWatched() ?? {};
   }
 
-  getInternalWatcher() {
+  getInternalWatcher(): FSWatcher | null {
     return this._watcher;
   }
 
@@ -84,17 +84,20 @@ export default class Watcher extends EventEmitter implements IWatcher {
   }
 
   getExtraWatchedFiles(compiler?: Compiler | null) {
+    if (!compiler) return this.extraWatchedFiles;
+    const root = this.config.root ?? process.cwd();
     this.extraWatchedFiles = [
-      ...compiler.resolvedModulePaths(this.config.root),
+      ...compiler.resolvedModulePaths(root),
       ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this.config.root));
+    ].filter((file) => this.filterWatchFile(file, root));
     return this.extraWatchedFiles;
   }
 
   watchExtraFiles() {
+    if (!this._watcher) return;
     this.extraWatchedFiles.forEach((file) => {
       if (!this.watchedFiles.has(file)) {
-        this._watcher.add(file);
+        this._watcher?.add(file);
         this.watchedFiles.add(file);
       }
     });
@@ -105,7 +108,10 @@ export default class Watcher extends EventEmitter implements IWatcher {
       progress: false
     });
     const enabledWatcher = this.config.watch !== null;
-    const files = [this.config.root, ...this.getExtraWatchedFiles(compiler)];
+    const files: string[] = [
+      this.config.root ?? process.cwd(),
+      ...this.getExtraWatchedFiles(compiler)
+    ];
 
     this._watcher = enabledWatcher
       ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
@@ -113,22 +119,22 @@ export default class Watcher extends EventEmitter implements IWatcher {
   }
 
   resolveChokidarOptions() {
+    const { compilation, root } = this.config;
+    if (!compilation) return;
+    const { output, persistentCache } = compilation;
     const userWatchOptions = this.config.watch;
     const { ignored: ignoredList, ...otherOptions } =
       typeof userWatchOptions === 'object' ? userWatchOptions : {};
-    const cacheDir = (
-      this.config.compilation.persistentCache as PersistentCacheConfig
-    ).cacheDir;
-    const ignored: WatchOptions['ignored'] = [
+    const cacheDir = (persistentCache as PersistentCacheConfig)?.cacheDir;
+    const outputPath = output?.path ?? '.farm';
+    const ignored = [
       '**/.git/**',
       '**/node_modules/**',
-      '**/test-results/**', // Playwright
-      glob.escapePath(
-        path.resolve(this.config.root, this.config.compilation.output.path)
-      ) + '/**',
+      '**/test-results/**',
+      glob.escapePath(path.resolve(root ?? process.cwd(), outputPath)) + '/**',
       cacheDir ? glob.escapePath(cacheDir) + '/**' : undefined,
       ...arraify(ignoredList || [])
-    ].filter(Boolean);
+    ].filter((v): v is string => v !== undefined && v !== null);
 
     this.resolvedWatchOptions = {
       ignored,
@@ -155,20 +161,22 @@ export default class Watcher extends EventEmitter implements IWatcher {
 
   isConfigFilesChanged(file: string): boolean {
     file = normalizePath(file);
-    const shortFile = getShortName(file, this.config.root);
-    const isConfigFile = this.config.configFilePath === file;
-    const isConfigDependencyFile = this.config.configFileDependencies.some(
+    const { root, configFilePath, configFileDependencies, envFiles, logger } =
+      this.config;
+    const shortFile = getShortName(file, root ?? process.cwd());
+    const isConfigFile = configFilePath === file;
+    const isConfigDependencyFile = (configFileDependencies ?? []).some(
       (name) => file === name
     );
-    const isEnvFile = this.config.envFiles.some((name) => file === name);
+    const isEnvFile = (envFiles ?? []).some((name) => file === name);
 
     if (isConfigFile || isConfigDependencyFile || isEnvFile) {
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      this.config.logger.info(
+      logger?.info(
         `${bold(green(shortFile))} changed, Server is being restarted`,
         true
       );
-      this.config.logger.info(`[config change] ${colors.dim(file)}`);
+      logger?.info(`[config change] ${colors.dim(file)}`);
       return true;
     }
 
@@ -261,14 +269,14 @@ export async function watchFileChangeAndRebuild(
         ...updateResult.extraWatchResult.add
       ].map((addedModule) => {
         const resolvedPath = compiler.transformModulePath(
-          resolvedUserConfig.root,
+          resolvedUserConfig.root ?? '',
           addedModule
         );
         return resolvedPath;
       });
 
       const filteredAdded = added.filter((file) =>
-        watcher.filterWatchFile(file, resolvedUserConfig.root)
+        watcher.filterWatchFile(file, resolvedUserConfig.root ?? '')
       );
 
       if (filteredAdded.length > 0) {
@@ -286,17 +294,19 @@ export async function watchFileChangeAndRebuild(
       );
       const elapsedTime = Math.floor(performance.now() - start);
 
-      logger.info(
-        `update completed in ${bold(
-          green(`${logger.formatTime(elapsedTime)}`)
-        )} Resources emitted to ${bold(
-          green(resolvedUserConfig.compilation.output.path)
-        )}.`
-      );
+      if (logger) {
+        logger.info(
+          `update completed in ${bold(
+            green(`${logger.formatTime(elapsedTime)}`)
+          )} Resources emitted to ${bold(
+            green(resolvedUserConfig.compilation?.output?.path ?? '')
+          )}.`
+        );
+      }
       handleUpdateFinish(result);
       compiler.writeResourcesToDisk();
-    } catch (error) {
-      resolvedUserConfig.logger.error(
+    } catch (error: any) {
+      resolvedUserConfig.logger?.error(
         `Update Error: ${convertErrorMessage(error)}`
       );
     }

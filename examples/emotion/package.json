@@ -7,13 +7,17 @@
     "clsx": "^1.2.1",
     "core-js": "^3.30.1",
     "react": "18",
-    "react-dom": "18"
+    "react-dom": "18",
+    "styled-components": "^6.1.13",
+    "styled-jsx": "^5.1.6"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",
     "@swc/plugin-emotion": "14.7.0",
+    "@swc/plugin-styled-components": "12.7.0",
+    "@swc/plugin-styled-jsx": "13.7.0",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"

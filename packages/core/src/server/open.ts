@@ -120,7 +120,10 @@ export function openBrowser(url: string) {
       // Special case: BROWSER="none" will prevent opening completely.
       return false;
     case Actions.SCRIPT:
-      return executeNodeScript(value, url);
+      if (value) {
+        return executeNodeScript(value, url);
+      }
+      return false;
     case Actions.BROWSER:
       return startBrowserProcess(value, url);
     default:

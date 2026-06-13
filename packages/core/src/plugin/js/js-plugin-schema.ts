@@ -524,12 +524,11 @@ export class PluginSchemaRegistry {
   }
 
   createPluginSchema(pluginName: string | undefined) {
+    const name = pluginName ?? 'unknown';
     const schemaShape = Object.fromEntries(
       Array.from(this.schemas.entries()).map(([hookName, factory]) => [
         hookName,
-        hookName === 'name'
-          ? factory(pluginName)
-          : factory(pluginName).optional()
+        hookName === 'name' ? factory(name) : factory(name).optional()
       ])
     );
     return z

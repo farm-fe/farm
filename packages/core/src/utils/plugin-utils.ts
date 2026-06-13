@@ -18,7 +18,7 @@ export const getAdditionContext = async (
 ) => {
   const { globals = [], additionalData } = option;
 
-  const result = globals.reduce((result, file) => {
+  const result = globals.reduce<string[]>((result, file) => {
     let filepath: string;
     if (isAbsolute(file)) {
       filepath = file;
@@ -29,7 +29,7 @@ export const getAdditionContext = async (
       result.push(fs.readFileSync(filepath, 'utf-8'));
 
       ctx.addWatchFile(currentFile, filepath);
-    } catch (error) {
+    } catch (error: any) {
       throwError(pluginName, 'read', error);
     }
     return result;

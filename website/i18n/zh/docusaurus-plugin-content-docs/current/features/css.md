@@ -79,13 +79,14 @@ npm install @farmfe/plugin-sass
 2. 配置插件
 ```ts
 import type { UserConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default <UserConfig> {
   // ...
-  plugins: ['@farmfe/plugin-sass'] // 配置 Rust 插件的包名即可引入和使用该插件
+  plugins: [sass()] // 像 JS 插件一样导入并以工厂函数形式调用
   // 如果你希望配置 plugin-sass 的参数，可以使用如下形式的配置
   // plugins: [
-  //   ['@farmfe/plugin-sass', { sourceMap: false }]
+  //   sass({ sourceMap: false })
   // ]
 };
 ```
@@ -97,28 +98,24 @@ import './index.scss';
 
 如果要将 `sass` 与 `css modules` 一起使用，请将文件名从 `index.scss` 更改为 `index.module.scss`，请参阅 [css modules](#css-modules)。
 
-`@farmfe/plugin-sass` 支持很多选项，使用 plugins 的数组配置指定插件 sass 的选项：
+`@farmfe/plugin-sass` 支持很多选项，将选项对象传给工厂函数即可：
 
 ```ts
 import type { UserConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default <UserConfig> {
   plugins: [
-    // 通过数组语法指定插件以及配置
-    [
-      '@farmfe/plugin-sass',
-      // 所有支持的选项如下
-      {
-        sourceMap: true // bool
-        sourceMapIncludeSources: true, // bool
-        alertAscii: true, // bool
-        alertColor: true, // bool
-        charset: true, // bool
-        quietDeps: true, // bool
-        verbose: false, // bool
-        style: 'expanded' | 'compressed' // output code style
-      }
-    ]
+    sass({
+      sourceMap: true, // bool
+      sourceMapIncludeSources: true, // bool
+      alertAscii: true, // bool
+      alertColor: true, // bool
+      charset: true, // bool
+      quietDeps: true, // bool
+      verbose: false, // bool
+      style: 'expanded' | 'compressed' // output code style
+    })
   ]
 };
 ```

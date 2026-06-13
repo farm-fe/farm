@@ -13,7 +13,7 @@ use farmfe_toolkit::{
 };
 use farmfe_toolkit_plugin_types::swc_transforms::FarmSwcTransformReactOptions;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn farm_swc_transform_react(
   ast: &mut swc_ecma_ast::Module,
   options: FarmSwcTransformReactOptions,

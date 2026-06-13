@@ -10,7 +10,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult};
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn farm_swc_parse_module(
   id: &ModuleId,
   content: Arc<String>,
@@ -20,7 +20,7 @@ pub fn farm_swc_parse_module(
   parse_module(id, content, syntax, target)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn farm_create_swc_source_map(
   id: &ModuleId,
   content: Arc<String>,
@@ -29,7 +29,7 @@ pub fn farm_create_swc_source_map(
   Ok((cm, source_file))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub fn farm_swc_try_with(
   cm: Arc<SourceMap>,
   globals: &Globals,

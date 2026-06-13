@@ -14,11 +14,11 @@ pub fn gen_svg_for_icon_data(
     body,
     ..
   } = icon_to_svg(icon_data, None);
-  if let Some(s) = options.scale {
-    if s != 0.0 {
-      attributes.height = Some(format!("{s}em"));
-      attributes.width = Some(format!("{s}em"));
-    }
+  if let Some(s) = options.scale
+    && s != 0.0
+  {
+    attributes.height = Some(format!("{s}em"));
+    attributes.width = Some(format!("{s}em"));
   }
   let svg_content = format!("<svg>{body}</svg>");
   let svg = SvgBuilder::new(&svg_content)

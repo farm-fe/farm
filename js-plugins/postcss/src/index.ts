@@ -59,7 +59,9 @@ export default function farmPostcssPlugin(
         resolvedPaths: options.filters?.resolvedPaths,
         moduleTypes: options.filters?.moduleTypes ?? ['css']
       },
-      async executor(param, context) {
+      async executor(param, _context) {
+        if (!_context) return { content: '', moduleType: 'css' as const };
+        const context = _context;
         try {
           const sourceMapEnabled = context.sourceMapEnabled(param.moduleId);
           const enablePostcssImport =
@@ -85,7 +87,7 @@ export default function farmPostcssPlugin(
                         source: id
                       },
                       {
-                        meta: param.meta,
+                        meta: param.meta as Record<string, unknown>,
                         caller: pluginName
                       }
                     );
@@ -106,6 +108,7 @@ export default function farmPostcssPlugin(
                 load: async (id: string) => {
                   // After postcss-import inline process, the `url()` relative paths in the css file need to be recomputed relative to the entry CSS file.
                   const content = await tryRead(id);
+                  if (!content) return id;
                   const implementation = getPostcssImplementation();
                   const urlRebasePostcssProcessor: Processor = implementation([
                     postcssUrl({

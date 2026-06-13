@@ -4,6 +4,7 @@ import fse from 'fs-extra';
 
 import { bindingPath } from '../../../binding/index.js';
 import { isEmptyObject, isNodeEnv } from '../../utils/index.js';
+import { Logger } from '../../utils/logger.js';
 import merge from '../../utils/merge.js';
 import {
   DEFAULT_COMPILATION_OPTIONS,
@@ -50,6 +51,8 @@ export async function normalizeUserCompilationConfig(
 
   resolvedUserConfig.root = resolvedRootPath;
 
+  const logger = resolvedUserConfig.logger ?? new Logger({});
+
   // if normalize default config, skip check input option
   const inputIndexConfig = await checkCompilationInputValue(resolvedUserConfig);
 
@@ -60,7 +63,7 @@ export async function normalizeUserCompilationConfig(
       input: inputIndexConfig,
       root: resolvedRootPath
     },
-    compilation
+    compilation ?? {}
   );
 
   const isProduction = mode === ENV_PRODUCTION;
@@ -69,16 +72,18 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.coreLibPath = bindingPath;
 
-  normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
+  normalizeOutput(resolvedCompilation, isProduction, logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
   // @ts-ignore do not check type for this internal option
   if (!resolvedCompilation.assets?.publicDir) {
     resolvedCompilation.assets ??= {};
 
+    const resolvedRoot = resolvedCompilation.root ?? resolvedRootPath;
+
     const userPublicDir = resolvedUserConfig.publicDir
       ? resolvedUserConfig.publicDir
-      : path.join(resolvedCompilation.root, 'public');
+      : path.join(resolvedRoot, 'public');
 
     if (path.isAbsolute(userPublicDir)) {
       // @ts-ignore do not check type for this internal option
@@ -86,7 +91,7 @@ export async function normalizeUserCompilationConfig(
     } else {
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = path.join(
-        resolvedCompilation.root,
+        resolvedRoot,
         userPublicDir
       );
     }
@@ -104,8 +109,9 @@ export async function normalizeUserCompilationConfig(
       ? {}
       : Object.keys(resolvedUserConfig.env || {}).reduce<EnvResult>(
           (env, key) => {
+            const userEnv = resolvedUserConfig.env ?? {};
             env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-              JSON.stringify(resolvedUserConfig.env[key]);
+              JSON.stringify(userEnv[key]);
             return env;
           },
           {} as EnvResult
@@ -130,7 +136,7 @@ export async function normalizeUserCompilationConfig(
     const input: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(compilation.input)) {
-      if (!value && (value ?? true)) continue;
+      if (value == null) continue;
       if (!path.isAbsolute(value) && !value.startsWith('./')) {
         input[key] = `./${value}`;
       } else {
@@ -145,19 +151,15 @@ export async function normalizeUserCompilationConfig(
   // so, it only happens in development mode
   // https://github.com/farm-fe/farm/issues/962
   if (resolvedCompilation.treeShaking && resolvedCompilation.lazyCompilation) {
-    resolvedUserConfig.logger.error(
+    logger.error(
       'treeShaking option is not supported in lazyCompilation mode, lazyCompilation will be disabled.'
     );
     resolvedCompilation.lazyCompilation = false;
   }
 
-  normalizeProdDefaults(
-    resolvedCompilation,
-    isProduction,
-    resolvedUserConfig.logger
-  );
+  normalizeProdDefaults(resolvedCompilation, isProduction, logger);
 
-  normalizeScript(resolvedCompilation, resolvedUserConfig.logger);
+  normalizeScript(resolvedCompilation, logger);
 
   // normalize persistent cache at last
   await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
@@ -189,8 +191,8 @@ export async function checkCompilationInputValue(
   let errorMessage = '';
 
   // Check if input is specified
-  if (!isEmptyObject(compilation?.input) && inputValue.length) {
-    inputIndexConfig = compilation?.input;
+  if (!isEmptyObject(compilation?.input ?? {}) && inputValue.length) {
+    inputIndexConfig = (compilation?.input ?? {}) as { index?: string };
   } else {
     const rootPath = userConfig?.root ?? '.';
     if (isTargetNode) {
@@ -206,7 +208,7 @@ export async function checkCompilationInputValue(
             };
             break;
           }
-        } catch (error) {
+        } catch (error: any) {
           errorMessage = error.stack;
         }
       }
@@ -218,7 +220,7 @@ export async function checkCompilationInputValue(
             index: defaultHtmlPath
           };
         }
-      } catch (error) {
+      } catch (error: any) {
         errorMessage = error.stack;
       }
     }

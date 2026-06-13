@@ -21,15 +21,25 @@ import {
   writeFileWithCheck
 } from './utils.js';
 export default class Context {
-  config: UserConfig['compilation'] & { root?: string };
+  config!: UserConfig['compilation'] & { root?: string };
   options: any;
   project: Project | undefined;
-  include: string[];
-  exclude: string[];
+  include!: string[];
+  exclude!: string[];
   logger = new DefaultLogger({ name: 'FarmDtsPlugin' });
+
+  private get _project(): Project {
+    if (!this.project) {
+      throw new Error(
+        'ts-morph Project not initialized. Call handleResolveOptions first.'
+      );
+    }
+    return this.project;
+  }
+
   handleResolveOptions(options: any = {}, config: UserConfig['compilation']) {
-    this.config = config;
-    let libFolderPath: string;
+    this.config = config ?? {};
+    let libFolderPath: string | undefined;
     const defaultOption: any = {
       tsconfigPath: 'tsconfig.json',
       aliasesExclude: [],
@@ -90,8 +100,7 @@ export default class Context {
       options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**'
     ).map(normalizeGlob);
 
-    const aliasOptions: UserConfig['compilation']['resolve']['alias'] =
-      config?.resolve?.alias ?? {};
+    const aliasOptions = config?.resolve?.alias ?? {};
     let aliases: any[] = [];
     if (isObject(aliasOptions)) {
       aliases = Object.entries(aliasOptions).map(([key, value]) => {
@@ -134,7 +143,7 @@ export default class Context {
   }
 
   async handleTransform(id: string, content: string) {
-    this.project.createSourceFile(id, content, {
+    this._project.createSourceFile(id, content, {
       overwrite: true
     });
   }
@@ -148,11 +157,11 @@ export default class Context {
     const startTime = performance.now();
 
     // get all source files and resolve current file dependencies
-    this.project.resolveSourceFileDependencies();
+    this._project.resolveSourceFileDependencies();
 
-    const service = this.project.getLanguageService();
+    const service = this._project.getLanguageService();
 
-    const outputFiles = this.project
+    const outputFiles = this._project
       .getSourceFiles()
       .flatMap((sourceFile) =>
         service
@@ -224,7 +233,7 @@ export default class Context {
       for (const file of files) {
         if (dtsRE.test(file)) {
           this.options.sourceDtsFiles.add(
-            this.project.addSourceFileAtPath(file)
+            this._project.addSourceFileAtPath(file)
           );
         }
       }
@@ -242,10 +251,10 @@ export default class Context {
 
   async handleDoctor() {
     if (!this.options.skipDiagnostics) {
-      const diagnostics = this.project.getPreEmitDiagnostics();
+      const diagnostics = this._project.getPreEmitDiagnostics();
       if (diagnostics?.length) {
         this.logger.error(
-          this.project.formatDiagnosticsWithColorAndContext(diagnostics)
+          this._project.formatDiagnosticsWithColorAndContext(diagnostics)
         );
       }
       if (typeof this.options.afterDiagnostic === 'function') {

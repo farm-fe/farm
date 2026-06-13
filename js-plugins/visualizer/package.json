@@ -29,6 +29,7 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",
@@ -51,7 +52,8 @@
     "build:plugin": "farm build",
     "build:client": "cd src/client && farm build",
     "preview": "cd src/client && farm preview",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "files": [
     "build"

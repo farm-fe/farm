@@ -42,6 +42,7 @@ Create a `farm.config.ts` file under project root:
 and add following configuration:
 ```ts
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
   compilation: {
@@ -55,7 +56,7 @@ export default defineConfig({
     }
   },
   plugins: [
-    '@farmfe/plugin-react',
+    react(),
   ]
 });
 ```

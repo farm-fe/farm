@@ -21,27 +21,24 @@ const logger = new Logger();
  *   - `preview`: compile the project in watch mode'.
  *   - `clean`: Clean up the cache built incrementally'.
  */
-export async function resolveCore(): Promise<{
-  start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
-  clean: typeof clean;
-}> {
+export async function resolveCore() {
   try {
-    return import('@farmfe/core');
-  } catch (err) {
+    return await import('@farmfe/core');
+  } catch (err: any) {
     logger.error(
       `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`,
       { exit: true }
     );
+    throw err;
   }
 }
 
 /**
  * filter duplicate item in options
  */
-export function filterDuplicateOptions<T>(options: T) {
+export function filterDuplicateOptions<T extends Record<string, unknown>>(
+  options: T
+) {
   for (const [key, value] of Object.entries(options)) {
     if (Array.isArray(value)) {
       options[key as keyof T] = value[value.length - 1];
@@ -104,7 +101,7 @@ export async function handleAsyncOperationErrors<T>(
 ) {
   try {
     await asyncOperation;
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`${errorMessage}:\n${error.stack}`, { exit: true });
   }
 }
@@ -133,7 +130,7 @@ export function resolveCliConfig(
   options: GlobalCliOptions & CleanOptions
 ) {
   root = resolveRootPath(root);
-  const configPath = getConfigPath(root, options.config);
+  const configPath = getConfigPath(root, options.config ?? '') ?? '';
   return {
     root,
     configPath

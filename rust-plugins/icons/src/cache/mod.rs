@@ -74,18 +74,17 @@ impl HttpClient {
     let loading = Loading::default();
     let config = config::standard();
 
-    if let Some(disk_cache) = &self.cache {
-      if let Some(entry) = disk_cache.get(url) {
-        if let Ok((cached_value, _)) = bincode::decode_from_slice::<CacheValue, _>(&entry, config) {
-          if cached_value.expiration > SystemTime::now() {
-            loading.success(format!("{url} icon fetched from cache"));
-            loading.end();
-            return Ok(cached_value.data);
-          } else {
-            // Remove expired cache entry; ignore errors
-            disk_cache.remove(url);
-          }
-        }
+    if let Some(disk_cache) = &self.cache
+      && let Some(entry) = disk_cache.get(url)
+      && let Ok((cached_value, _)) = bincode::decode_from_slice::<CacheValue, _>(&entry, config)
+    {
+      if cached_value.expiration > SystemTime::now() {
+        loading.success(format!("{url} icon fetched from cache"));
+        loading.end();
+        return Ok(cached_value.data);
+      } else {
+        // Remove expired cache entry; ignore errors
+        disk_cache.remove(url);
       }
     }
 
@@ -128,15 +127,15 @@ impl HttpClient {
 }
 
 fn get_cache_duration(response: &Response) -> Option<Duration> {
-  if let Some(cache_control) = response.headers().get(CACHE_CONTROL) {
-    if let Ok(cache_control_str) = cache_control.to_str() {
-      for directive in cache_control_str.split(',') {
-        let directive = directive.trim();
-        if let Some(value) = directive.strip_prefix("max-age=") {
-          if let Ok(seconds) = value.parse::<u64>() {
-            return Some(Duration::from_secs(seconds));
-          }
-        }
+  if let Some(cache_control) = response.headers().get(CACHE_CONTROL)
+    && let Ok(cache_control_str) = cache_control.to_str()
+  {
+    for directive in cache_control_str.split(',') {
+      let directive = directive.trim();
+      if let Some(value) = directive.strip_prefix("max-age=")
+        && let Ok(seconds) = value.parse::<u64>()
+      {
+        return Some(Duration::from_secs(seconds));
       }
     }
   }

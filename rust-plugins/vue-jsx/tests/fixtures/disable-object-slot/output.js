@@ -1,0 +1,1 @@
+import{createVNode as _createVNode,isVNode as _isVNode}from"vue";function _isSlot(s){return typeof s==="function"||{}.toString.call(s)==="[object Object]"&&!_isVNode(s);}let _slot;_createVNode(Badge,null,_isSlot((_slot)=slots.default())?_slot:{default:()=>[_slot]});

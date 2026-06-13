@@ -41,6 +41,7 @@ React 项目需要 3 个包：
 并添加以下配置：
 ```ts
 import { UserConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
 function defineConfig(config: UserConfig): UserConfig {
   return config;
@@ -58,7 +59,7 @@ export default defineConfig({
     }
   },
   plugins: [
-    '@farmfe/plugin-react',
+    react(),
   ]
 });
 ```

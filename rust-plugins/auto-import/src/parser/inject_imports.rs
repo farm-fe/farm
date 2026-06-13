@@ -92,24 +92,24 @@ pub fn inject_imports(
             return true;
           }
         }
-        if let Some(default_import) = default_import {
-          if default_import == import_name {
-            if c_priority == 0 {
-              println!("Duplicated in imported, has been ignored and {import_name} is used");
-              return false;
-            } else {
-              return true;
-            }
+        if let Some(default_import) = default_import
+          && default_import == import_name
+        {
+          if c_priority == 0 {
+            println!("Duplicated in imported, has been ignored and {import_name} is used");
+            return false;
+          } else {
+            return true;
           }
         }
-        if let Some(namespaced_import) = namespaced_import {
-          if namespaced_import == import_name {
-            if c_priority == 0 {
-              println!("Duplicated in imported, has been ignored and {import_name} is used");
-              return false;
-            } else {
-              return true;
-            }
+        if let Some(namespaced_import) = namespaced_import
+          && namespaced_import == import_name
+        {
+          if c_priority == 0 {
+            println!("Duplicated in imported, has been ignored and {import_name} is used");
+            return false;
+          } else {
+            return true;
           }
         }
         false

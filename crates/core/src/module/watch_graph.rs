@@ -112,10 +112,10 @@ impl WatchGraph {
     let mut res = HashSet::default();
 
     for node in self.g.edge_indices() {
-      if matches!(self.g.edge_weight(node), Some(EdgeMode::WatchImport)) {
-        if let Some((_root, to)) = self.g.edge_endpoints(node) {
-          res.insert(self.g.node_weight(to).unwrap());
-        }
+      if matches!(self.g.edge_weight(node), Some(EdgeMode::WatchImport))
+        && let Some((_root, to)) = self.g.edge_endpoints(node)
+      {
+        res.insert(self.g.node_weight(to).unwrap());
       }
     }
 

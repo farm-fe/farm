@@ -1,7 +1,7 @@
 [package]
 name = "farmfe_core"
 version = "2.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
 description = "Core types and data structures for farm."

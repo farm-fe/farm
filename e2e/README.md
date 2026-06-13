@@ -6,12 +6,13 @@ This folder contains a standalone Playwright-based E2E test runner (no vitest). 
 
 1. Use the skill `/e2e-example-acceptance` before and after edits.
 2. Create or update `examples/<name>/e2e.spec.ts`.
-3. Reuse `startAndTest` and `watchAndTest` from `e2e/farm-runner.ts`. Import the `expect` function from `e2e/expect.ts`.
-4. Validate all three modes for the affected example:
+3. Reuse `startAndTest` and `watchAndTest` from `e2e/index.mjs`, or Playwright for Electron-style browser checks. Import the `expect` function from `e2e/index.mjs`.
+4. `e2e.spec.mjs` files must only run browser E2E tasks. Move build-only, unit, or script-only checks into package scripts or non-E2E tests instead.
+5. Validate all three modes for the affected example:
    - `cd examples/<name> && npm run start`
    - `cd examples/<name> && npm run build`
    - `cd examples/<name> && npm run preview`
-5. Ensure assertions cover:
+6. Ensure assertions cover:
    - expected page content
    - no runtime console errors
    - no unexpected failed requests

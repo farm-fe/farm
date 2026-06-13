@@ -19,7 +19,8 @@
     "start": "farm watch",
     "dev": "farm watch",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +33,7 @@
     "typescript": "^5.4.5"
   },
   "devDependencies": {
+    "@farmfe/core": "workspace:*",
     "@types/fs-extra": "^11.0.1"
   },
   "files": [

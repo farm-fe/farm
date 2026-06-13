@@ -474,12 +474,12 @@ impl Plugin for JsPluginAdapter {
     params: &mut PluginFinalizeResourcesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook {
-      if let Some(result) = js_finalize_resources_hook.call(params.into(), context.clone())? {
-        params.resources_map.clear();
-        params.resources_map.extend(result);
-      };
-    }
+    if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook
+      && let Some(result) = js_finalize_resources_hook.call(params.into(), context.clone())?
+    {
+      params.resources_map.clear();
+      params.resources_map.extend(result);
+    };
 
     if let Some(js_transform_html_hook) = &self.js_transform_html_hook {
       for (_, v) in params.resources_map.iter_mut() {

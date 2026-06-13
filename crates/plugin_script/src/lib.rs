@@ -212,9 +212,34 @@ impl Plugin for FarmPluginScript {
     if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
       use farmfe_toolkit::script::swc_try_with::try_with;
 
-      try_with(cm.clone(), globals.value(), || {
-        transform_by_swc_plugins(param, self.plugin_runtime.clone().unwrap(), context).unwrap()
-      })?;
+      // Run the entire wasm-plugin transform on a fresh OS thread, off of
+      // Farm's rayon worker pool.
+      //
+      // wasmer's compile backend dispatches per-function compile jobs onto
+      // rayon (`Registry::in_worker_cross`). When the caller is itself running
+      // on a rayon worker, those fan-out jobs compete for the same pool; on
+      // low-core CI machines (e.g. `FARM_THREAD_NUMS=2`) this can starve the
+      // pool and deadlock the build. By doing `try_with` (which sets all
+      // scoped-tls — `GLOBALS`, `HANDLER`, `HELPERS`, `COMMENTS` — on the
+      // current thread) inside `std::thread::scope`, the entire wasm transform
+      // (including any rayon fan-out) runs on a thread that is *not* a Farm
+      // rayon worker, removing the starvation hazard.
+      let cm = cm.clone();
+      let globals = globals.value();
+      let plugin_runtime = self.plugin_runtime.clone().unwrap();
+      let param: &mut PluginProcessModuleHookParam = &mut *param;
+      let context: &Arc<CompilationContext> = context;
+      let result: Result<()> = std::thread::scope(|scope| {
+        scope
+          .spawn(move || {
+            try_with(cm, globals, || {
+              transform_by_swc_plugins(param, plugin_runtime, context).unwrap()
+            })
+          })
+          .join()
+          .expect("swc plugin transform thread panicked")
+      });
+      result?;
     }
 
     if param.module_type.is_script() {

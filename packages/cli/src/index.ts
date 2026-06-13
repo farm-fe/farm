@@ -97,6 +97,7 @@ cli
       };
 
       if (options.base) {
+        defaultOptions.compilation = defaultOptions.compilation ?? {};
         defaultOptions.compilation.output = {
           publicPath: options.base
         };
@@ -218,6 +219,7 @@ cli
       };
 
       if (options.base) {
+        defaultOptions.compilation = defaultOptions.compilation ?? {};
         defaultOptions.compilation.output = {
           publicPath: options.base
         };

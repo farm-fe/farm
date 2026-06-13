@@ -28,25 +28,29 @@ This plugin is the Farm-native equivalent of [`unplugin-vue`](https://github.com
 
 ## Usage
 
-`@farmfe/plugin-vue` is a Rust plugin — register it in the `plugins` array of your `farm.config.ts`.
+`@farmfe/plugin-vue` is a Rust plugin — import it and call it inside the `plugins` array of your `farm.config.ts`, the same as a JS plugin.
 
 ```ts
 import { defineConfig } from "@farmfe/core";
+import vue from "@farmfe/plugin-vue";
 
 export default defineConfig({
   plugins: [
-    ["@farmfe/plugin-vue", {
+    vue({
       // options (see below) — may be omitted entirely
-    }],
+    }),
   ],
 });
 ```
 
-If you don't need any options the bare package name works too:
+If you don't need any options, simply call it with no arguments:
 
 ```ts
+import { defineConfig } from "@farmfe/core";
+import vue from "@farmfe/plugin-vue";
+
 export default defineConfig({
-  plugins: ["@farmfe/plugin-vue"],
+  plugins: [vue()],
 });
 ```
 

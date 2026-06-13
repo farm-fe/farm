@@ -465,7 +465,7 @@ export function parseUserConfig(config: UserConfig): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
     return parsed as UserConfig;
-  } catch (err) {
+  } catch (err: any) {
     const validationError = fromZodError(err);
     throw new Error(
       `${validationError.toString()}. \n Please check your configuration file or command line configuration.`

@@ -21,12 +21,13 @@ Support `Sass` for Farm.
 </Tabs>
 
 ## Usage
-`@farmfe/plugin-sass` is a Rust plugin, you only need to configure its package name in `plugins` field in `farm.config.ts`.
+`@farmfe/plugin-sass` is a Rust plugin. Import its default export and call it inside the `plugins` array of `farm.config.ts`.
 ```ts {4}
 import { UserConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 const config: UserConfig = {
-  plugins: ['@farmfe/plugin-sass', { /** options here */}]
+  plugins: [sass({ /** options here */ })]
 }
 ```
 
