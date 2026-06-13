@@ -1,7 +1,7 @@
 [package]
 name = "farmfe_plugin_script"
 version = "2.0.1"
-edition = "2021"
+edition = "2024"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
 description = "Script compilation plugin of farm."
@@ -36,6 +36,7 @@ once_cell = { version = "1.10.0", optional = true }
 tokio = { features = [
   "rt",
   "rt-multi-thread",
+  "time",
 ], version = "1", default-features = false, optional = true }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
 farmfe_plugin_script_meta = { path = "../plugin_script_meta", version = "2.0.1" }

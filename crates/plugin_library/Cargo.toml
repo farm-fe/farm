@@ -1,7 +1,7 @@
 [package]
 name = "farmfe_plugin_library"
 version = "2.0.1"
-edition = "2021"
+edition = "2024"
 authors = ["shulandmimi", "brightwwu"]
 license = "MIT"
 description = "Support bundling ESM/CJS modules into a pure ESM/CJS module for Farm, similar to Rollup/Esbuild."

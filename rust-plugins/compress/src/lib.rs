@@ -212,10 +212,10 @@ impl Plugin for FarmfePluginCompress {
         },
       );
 
-      if should_delete_origin {
-        if let Some(resource) = param.resources_map.get_mut(&resource_id) {
-          resource.emitted = true;
-        }
+      if should_delete_origin
+        && let Some(resource) = param.resources_map.get_mut(&resource_id)
+      {
+        resource.emitted = true;
       }
     }
 

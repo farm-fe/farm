@@ -152,14 +152,14 @@ impl Plugin for FarmPluginVirtualModule {
     }
 
     // Try relative import resolution
-    if let Some(importer) = &param.importer {
-      if let Some(result) = self.resolve_relative_import(
+    if let Some(importer) = &param.importer
+      && let Some(result) = self.resolve_relative_import(
         &param.source,
         importer.relative_path(),
         &context.config.root,
-      ) {
-        return Ok(Some(result));
-      }
+      )
+    {
+      return Ok(Some(result));
     }
 
     Ok(None)

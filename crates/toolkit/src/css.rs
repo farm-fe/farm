@@ -98,9 +98,9 @@ pub fn codegen_css_stylesheet(
     },
     BasicCssWriterConfig::default(),
   );
-  let mut gen = CodeGenerator::new(css_writer, CodegenConfig { minify });
+  let mut codegen = CodeGenerator::new(css_writer, CodegenConfig { minify });
 
-  gen.emit(stylesheet).unwrap();
+  codegen.emit(stylesheet).unwrap();
 
   let (css_code, src_map) = if let Some(cm) = cm {
     let map = build_sourcemap(cm, &mappings);

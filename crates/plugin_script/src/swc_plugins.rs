@@ -77,6 +77,27 @@ pub fn transform_by_swc_plugins(
 pub static PLUGIN_MODULE_CACHE: Lazy<swc_plugin_runner::cache::PluginModuleCache> =
   Lazy::new(Default::default);
 
+/// Dedicated multi-threaded tokio runtime for SWC plugin transforms.
+///
+/// Plugin host imports executed via `swc_plugin_runner` may need a tokio
+/// context to drive internal async work. We always drive that work on this
+/// dedicated runtime — separate from the host (e.g. Node.js / napi)
+/// runtime — so that:
+///   1. Plugin transforms running on Farm worker threads (e.g. rayon) can
+///      call into `block_on` without depending on, or starving, the host
+///      runtime (combined with [`tokio::task::block_in_place`] when already
+///      inside one).
+///   2. The runtime is constructed once per process instead of per-call,
+///      avoiding repeated `Runtime::new()` allocation overhead.
+static PLUGIN_TOKIO_RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
+  tokio::runtime::Builder::new_multi_thread()
+    .worker_threads(2)
+    .thread_name("farm-swc-plugin")
+    .enable_time()
+    .build()
+    .expect("failed to create farm swc plugin tokio runtime")
+});
+
 /// Create a new cache instance if not initialized. This can be called multiple
 /// time, but any subsequent call will be ignored.
 ///
@@ -138,12 +159,8 @@ impl RustPlugins {
     let filename = self.metadata_context.filename.clone();
 
     let fut = async move { self.apply_inner(n) };
-    if let Ok(handle) = tokio::runtime::Handle::try_current() {
-      handle.block_on(fut)
-    } else {
-      tokio::runtime::Runtime::new().unwrap().block_on(fut)
-    }
-    .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
+    block_on_plugin_transform(fut)
+      .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
   }
 
   fn apply_inner(&mut self, n: Program) -> Result<Program, anyhow::Error> {
@@ -206,6 +223,71 @@ impl RustPlugins {
         serialized.deserialize().map(|v| v.into_inner())
       },
     )
+  }
+}
+
+/// Drive an SWC plugin transform future to completion from synchronous plugin hooks.
+///
+/// Always drives the future on the dedicated [`PLUGIN_TOKIO_RT`] runtime so
+/// plugin host async work has a stable, process-wide tokio context. When
+/// invoked from inside another tokio runtime (e.g. napi's), we use
+/// [`tokio::task::block_in_place`] so the calling worker is yielded back to
+/// its scheduler instead of being deadlocked while waiting.
+fn block_on_plugin_transform<F: std::future::Future>(future: F) -> F::Output {
+  let handle = PLUGIN_TOKIO_RT.handle().clone();
+  if tokio::runtime::Handle::try_current().is_ok() {
+    tokio::task::block_in_place(|| handle.block_on(future))
+  } else {
+    handle.block_on(future)
+  }
+}
+
+// Concurrent wasm-plugin transforms are isolated from Farm's rayon worker
+// pool at the call site (see `Plugin::process_module` in `lib.rs`): the whole
+// `try_with` block is moved onto a dedicated short-lived OS thread via
+// `std::thread::scope`. The wasmer compile backend's per-function fan-out
+// (`Registry::in_worker_cross`) therefore resolves against a pool that is
+// independent from Farm's compilation pool, removing the rayon-pool
+// starvation deadlock seen on low-core CI machines.
+
+#[cfg(test)]
+mod tests {
+  use super::block_on_plugin_transform;
+
+  #[test]
+  fn block_on_plugin_transform_should_complete_inside_tokio_runtime() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(1)
+      .build()
+      .unwrap();
+
+    let value = runtime.block_on(async { block_on_plugin_transform(async { 42 }) });
+
+    assert_eq!(value, 42);
+  }
+
+  #[test]
+  fn block_on_plugin_transform_should_provide_tokio_context_without_existing_runtime() {
+    let value = block_on_plugin_transform(async { tokio::runtime::Handle::try_current().is_ok() });
+
+    assert!(value);
+  }
+
+  #[test]
+  fn block_on_plugin_transform_should_drive_async_work_inside_tokio_runtime() {
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(1)
+      .build()
+      .unwrap();
+
+    let value = runtime.block_on(async {
+      block_on_plugin_transform(async {
+        tokio::task::yield_now().await;
+        42
+      })
+    });
+
+    assert_eq!(value, 42);
   }
 }
 

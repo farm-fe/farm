@@ -37,10 +37,10 @@ pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   });
   let system_time = file_meta.modified();
 
-  if let Ok(system_time) = system_time {
-    if let Ok(dur) = system_time.duration_since(SystemTime::UNIX_EPOCH) {
-      return dur.as_nanos();
-    }
+  if let Ok(system_time) = system_time
+    && let Ok(dur) = system_time.duration_since(SystemTime::UNIX_EPOCH)
+  {
+    return dur.as_nanos();
   }
 
   SystemTime::now()
@@ -58,8 +58,7 @@ pub fn get_content_hash_of_module(content: &str) -> String {
     content.to_string()
   };
 
-  let module_content_hash = farmfe_toolkit::hash::sha256(content.as_bytes(), 32);
-  module_content_hash
+  farmfe_toolkit::hash::sha256(content.as_bytes(), 32)
 }
 
 pub fn try_get_module_cache_by_timestamp(

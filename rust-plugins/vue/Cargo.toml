@@ -1,5 +1,5 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "farmfe_plugin_vue"
 version = "0.0.1"
 description = "Farm Rust plugin to compile Vue 3 SFCs, powered by fervid."

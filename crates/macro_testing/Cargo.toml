@@ -1,7 +1,7 @@
 [package]
 name = "farmfe_testing"
 version = "2.0.0"
-edition = "2021"
+edition = "2024"
 authors = ["shulandmimi <sshuang141@163.com>"]
 license = "MIT"
 description = "Testing macro for farm."

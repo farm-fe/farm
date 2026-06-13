@@ -193,20 +193,20 @@ impl ComponentFinder {
 impl Visit for ComponentFinder {
   fn visit_var_decl(&mut self, var_decl: &VarDecl) {
     for decl in &var_decl.decls {
-      if let Some(ident) = &decl.name.as_ident() {
-        if let Some(init) = &decl.init {
-          if !is_uppercase(ident) {
-            return;
+      if let Some(ident) = &decl.name.as_ident()
+        && let Some(init) = &decl.init
+      {
+        if !is_uppercase(ident) {
+          return;
+        }
+        match &**init {
+          Expr::Arrow(arrow_expr) if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) => {
+            self.add_component(ident.sym.as_ref());
           }
-          match &**init {
-            Expr::Arrow(arrow_expr) if is_jsx_return_with_block_stmt_or_expr(&arrow_expr.body) => {
-              self.add_component(ident.sym.as_ref());
-            }
-            Expr::Fn(fn_expr) if is_jsx_return_with_block_stmt(&fn_expr.function.body) => {
-              self.add_component(ident.sym.as_ref());
-            }
-            _ => {}
+          Expr::Fn(fn_expr) if is_jsx_return_with_block_stmt(&fn_expr.function.body) => {
+            self.add_component(ident.sym.as_ref());
           }
+          _ => {}
         }
       }
     }
@@ -261,27 +261,27 @@ impl Visit for ExportComponentsFinder {
 
   fn visit_named_export(&mut self, export_named: &NamedExport) {
     for specifier in &export_named.specifiers {
-      if let ExportSpecifier::Named(named) = specifier {
-        if let ModuleExportName::Ident(name) = named.exported.as_ref().unwrap_or(&named.orig) {
-          let component_name = name.sym.to_string();
-          if is_uppercase(name) && self.is_component(&component_name) {
-            self.add_exported_components(&component_name, ExportType::Named)
-          }
-        };
-      }
+      if let ExportSpecifier::Named(named) = specifier
+        && let ModuleExportName::Ident(name) = named.exported.as_ref().unwrap_or(&named.orig)
+      {
+        let component_name = name.sym.to_string();
+        if is_uppercase(name) && self.is_component(&component_name) {
+          self.add_exported_components(&component_name, ExportType::Named)
+        }
+      };
     }
   }
 
   fn visit_export_default_decl(&mut self, export_default: &ExportDefaultDecl) {
     let component_name = self.filename.clone();
-    if let DefaultDecl::Fn(fn_dec) = &export_default.decl {
-      if is_jsx_return_with_block_stmt(&fn_dec.function.body) {
-        let name = fn_dec
-          .ident
-          .as_ref()
-          .map_or(component_name, |ident| ident.sym.to_string());
-        self.add_exported_components(&name, ExportType::Default);
-      }
+    if let DefaultDecl::Fn(fn_dec) = &export_default.decl
+      && is_jsx_return_with_block_stmt(&fn_dec.function.body)
+    {
+      let name = fn_dec
+        .ident
+        .as_ref()
+        .map_or(component_name, |ident| ident.sym.to_string());
+      self.add_exported_components(&name, ExportType::Default);
     }
     export_default.visit_children_with(self);
   }

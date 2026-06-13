@@ -8,12 +8,12 @@ pub fn farm_plugin(_attr: TokenStream, item: TokenStream) -> TokenStream {
   let struct_name = &item_struct.ident;
 
   let ts = quote! {
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub fn _plugin_create(config: &farmfe_core::config::Config, options: String) -> std::sync::Arc<dyn farmfe_core::plugin::Plugin> {
       std::sync::Arc::new(#struct_name::new(config, options))
     }
 
-    #[no_mangle]
+    #[unsafe(no_mangle)]
     pub fn _core_version() -> std::string::String {
       farmfe_core::VERSION.to_string()
     }
