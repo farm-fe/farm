@@ -130,13 +130,16 @@
     "@farmfe/plugin-virtual": "2.0.0-beta.2",
     "@farmfe/plugin-wasm": "2.0.0-beta.0",
     "@farmfe/plugin-worker": "2.0.0-beta.1",
-    "@farmfe/plugin-yaml": "2.0.0-beta.0"
+    "@farmfe/plugin-yaml": "2.0.0-beta.0",
+    "@farmfe/plugin-vue-jsx": "0.0.1"
   },
   "changesets": [
     "blue-jobs-lick",
     "bright-tigers-config",
     "brown-hounds-try",
     "calm-bikes-cheat",
+    "clean-horses-fix",
+    "curly-lions-drive",
     "farm-plugin-vue",
     "fifty-otters-hope",
     "gorgeous-teachers-study",
@@ -162,6 +165,8 @@
     "thick-trees-collect",
     "tough-pans-collect",
     "update-swc-crates",
+    "vue-jsx-plugin",
+    "vuetify-plugin-vue-support",
     "warm-pumas-build",
     "weak-files-hide"
   ]
