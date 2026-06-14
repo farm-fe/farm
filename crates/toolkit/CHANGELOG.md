@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v2.1.0...farmfe_toolkit-v2.2.0) - 2026-06-14
+
+### Added
+
+- migrate all Rust and JavaScript plugins to current repo ([#2282](https://github.com/farm-fe/farm/pull/2282))
+- *(core)* support umd & css.transformToScript ([#2254](https://github.com/farm-fe/farm/pull/2254))
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+- cjs require doesn't be handled correctly when targetEnv is library ([#2259](https://github.com/farm-fe/farm/pull/2259))
+
+### Other
+
+- Add empty changeset for lint/type-check fixes ([#2306](https://github.com/farm-fe/farm/pull/2306))
+- upgrade Rust nightly to 2026-04-10 and align SWC crates to latest ([#2298](https://github.com/farm-fe/farm/pull/2298))
+- Update SWC related crates to latest version and ensure tests pass ([#2281](https://github.com/farm-fe/farm/pull/2281))
+
 ## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v2.0.0...farmfe_toolkit-v2.1.0) - 2025-09-21
 
 ### Added
