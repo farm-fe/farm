@@ -65,7 +65,14 @@
   },
   "pnpm": {
     "overrides": {
-      "@farmfe/core": "workspace:*"
+      "@farmfe/core": "workspace:*",
+      "chokidar>braces": "3.0.3",
+      "execa>cross-spawn": "7.0.6",
+      "fast-glob>micromatch": "4.0.8",
+      "http-proxy>follow-redirects": "1.16.0",
+      "cheerio>undici": "7.27.1",
+      "@tailwindcss/oxide>tar": "7.5.16",
+      "cosmiconfig>js-yaml": "4.2.0"
     }
   },
   "packageManager": "pnpm@9.4.0"
