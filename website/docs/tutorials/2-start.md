@@ -295,7 +295,7 @@ and when loading dynamic scripts and css, the dynamic fetched resources url woul
 
 ## Configuring Alias And Externals
 
-Alias and externals are also most useful configurations, we can use `compilation.resolve.alias` and `compilation.externals` in Farm:
+Alias and externals are also most useful configurations, we can use `compilation.resolve.alias` and `compilation.external` in Farm:
 
 ```ts title="farm.config.ts"
 // ...
@@ -307,7 +307,7 @@ export default defineConfig({
         "@/": path.join(process.cwd(), "src"),
       },
     },
-    externals: ["node:fs"],
+    external: ["node:fs"],
   },
   // ...
 });
