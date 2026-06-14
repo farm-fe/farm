@@ -12,6 +12,6 @@
   "devDependencies": {
     "@farmfe/cli": "beta",
     "@farmfe/core": "beta",
-    "typescript": "^5.4.3"
+    "typescript": "^6.0.3"
   }
 }

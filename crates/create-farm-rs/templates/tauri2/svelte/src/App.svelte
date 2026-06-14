@@ -21,11 +21,11 @@
     <a href="https://tauri.app" target="_blank">
       <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
     </a>
-    <a href="https://kit.svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
+    <a href="https://svelte.dev" target="_blank">
+      <img src="/svelte.svg" class="logo svelte" alt="Svelte Logo" />
     </a>
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
+  <p>Click on the Tauri, Farm, and Svelte logos to learn more.</p>
 
   <form class="row" onsubmit={greet}>
     <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
@@ -39,7 +39,7 @@
   filter: drop-shadow(0 0 2em #ff7474);
 }
 
-.logo.svelte-kit:hover {
+.logo.svelte:hover {
   filter: drop-shadow(0 0 2em #ff3e00);
 }
 
