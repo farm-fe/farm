@@ -20,7 +20,7 @@ pub fn is_source_relative(source: &str) -> bool {
 }
 
 pub fn is_source_absolute(source: &str) -> bool {
-  PathBuf::from_str(source).map_or(false, |p| p.is_absolute())
+  PathBuf::from_str(source).is_ok_and(|p| p.is_absolute())
 }
 
 pub fn is_source_dot(source: &str) -> bool {

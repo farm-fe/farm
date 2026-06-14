@@ -91,11 +91,11 @@ impl<'a> VisitMut for SourceReplacer<'a> {
             }
           };
 
-          *value = Box::new(UrlValue::Str(Str {
+          **value = UrlValue::Str(Str {
             span: DUMMY_SP,
             value: resource_name.into(),
             raw: None,
-          }));
+          });
         }
       }
     }

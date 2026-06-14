@@ -165,7 +165,7 @@ pub fn concatenate_modules_ast(
   // merge comments, module_asts and preserved_module_decls back to strip_module_results
   let stripped_results = comments
     .into_iter()
-    .zip(module_asts.into_iter())
+    .zip(module_asts)
     .zip(pre_post_items)
     .map(
       |(((_, comments), (_, ast)), (_, (items_to_prepend, items_to_append)))| {
@@ -275,7 +275,6 @@ fn strip_modules_asts(
           .export_ident_map
           .values()
           .cloned()
-          .into_iter()
           .map(|e| (None, e)),
       );
     }
@@ -391,11 +390,11 @@ fn strip_modules_asts(
       // ```
       // if module is used by export * as or import * as or import('...')
       result.ast.body.push(create_var_namespace_item(
-        &module_id,
+        module_id,
         export_ident_map,
         strip_context
           .cyclic_idents
-          .get(&module_id)
+          .get(module_id)
           .unwrap_or(&HashSet::default()),
         &rename_handler,
       ));
@@ -409,7 +408,7 @@ fn strip_modules_asts(
   let entry_module = module_graph.module(entry_module_id).unwrap();
   let entry_module_export_ident_map = entry_module.meta.as_script().get_export_idents();
 
-  if entry_module_export_ident_map.len() > 0 {
+  if !entry_module_export_ident_map.is_empty() {
     let item = generate_export_decl_item(entry_module_export_ident_map, &rename_handler);
     strip_context
       .preserved_export_decls
@@ -420,11 +419,11 @@ fn strip_modules_asts(
   strip_module_results
     .par_iter_mut()
     .for_each(|(module_id, result)| {
-      let cm = context.meta.get_module_source_map(&module_id);
+      let cm = context.meta.get_module_source_map(module_id);
 
       try_with(cm, context.meta.get_globals(module_id).value(), || {
         let mut dynamic_import_visitor =
-          DynamicImportVisitor::new(module_id, &module_graph, &module_ids, &rename_handler);
+          DynamicImportVisitor::new(module_id, module_graph, module_ids, &rename_handler);
         result.ast.visit_mut_with(&mut dynamic_import_visitor);
 
         dynamic_external_modules
@@ -564,6 +563,7 @@ fn merge_stripped_module_asts(
 
 /// For `export * from` and `export { foo } from`, the export ident may be declared in an external module(because of resources split instead of configure the module as external)
 /// For this case, we should find the boundary module of the external ident and treat it the same as external module
+#[allow(clippy::too_many_arguments)]
 fn handle_external_reexport_idents(
   entry_module_id: &ModuleId,
   module_id: &ModuleId,
@@ -592,7 +592,7 @@ fn handle_external_reexport_idents(
         source_module_id,
         export_str,
         module_graph,
-        &rename_handler,
+        rename_handler,
         &mut HashSet::default(),
       )
     {
@@ -632,7 +632,7 @@ fn handle_external_reexport_idents(
       let export_ident = export_ident.as_internal();
 
       let renamed_ident = rename_handler
-        .get_renamed_ident(&module_id, &ident)
+        .get_renamed_ident(module_id, &ident)
         .unwrap_or(ident);
 
       rename_handler.rename_ident(

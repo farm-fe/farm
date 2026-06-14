@@ -69,6 +69,12 @@ lazy_static! {
   ];
 }
 
+impl Default for Resolver {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl Resolver {
   pub fn new() -> Self {
     Self {
@@ -98,11 +104,9 @@ impl Resolver {
       options: options.clone(),
     };
 
-    if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
+    if let Some(Some(result)) = self.resolve_cache.lock().get(&cache_key) {
       // None result should not be cached
-      if let Some(result) = result {
-        return Some(result.clone());
-      }
+      return Some(result.clone());
     }
 
     let result = self._resolve(source, base_dir, kind, options, context);
@@ -392,7 +396,7 @@ impl Resolver {
   /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
   fn try_file(
     &self,
-    file: &PathBuf,
+    file: &Path,
     options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
@@ -521,9 +525,9 @@ impl Resolver {
         options: options.clone(),
       };
 
-      if !resolve_node_modules_cache.contains_key(&key) {
-        resolve_node_modules_cache.insert(key, result.clone());
-      }
+      resolve_node_modules_cache
+        .entry(key)
+        .or_insert_with(|| result.clone());
     }
     result
   }
@@ -671,7 +675,7 @@ impl Resolver {
 
     let relative_path = if let Ok(package_json_info) = package_json_info {
       resolve_exports_or_imports(&package_json_info, subpath, "exports", kind, context)
-        .to_resolved(context.config.resolve.strict_exports)
+        .into_resolved(context.config.resolve.strict_exports)
         .or_else(|| {
           if context.config.output.target_env.is_browser() {
             try_browser_map(
@@ -730,7 +734,7 @@ impl Resolver {
           kind,
           context,
         )
-        .to_resolved(context.config.resolve.strict_exports)
+        .into_resolved(context.config.resolve.strict_exports)
       })
       .or_else(|| {
         let is_browser = context.config.output.target_env.is_browser();
@@ -837,7 +841,7 @@ impl Resolver {
     .ok()?;
 
     resolve_exports_or_imports(&package_json_info, source, "imports", kind, context)
-      .to_resolved(context.config.resolve.strict_exports)
+      .into_resolved(context.config.resolve.strict_exports)
       .map(|imports_path| (imports_path, package_json_info.dir().to_string()))
   }
 

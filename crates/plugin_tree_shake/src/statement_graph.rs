@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fmt;
 
 pub use farmfe_core::module::meta_data::script::statement::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId,
@@ -50,16 +51,22 @@ impl UsedStatementIdent {
   }
 }
 
-impl ToString for UsedStatementIdent {
-  fn to_string(&self) -> String {
+impl fmt::Display for UsedStatementIdent {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      UsedStatementIdent::Default => "default".to_string(),
-      UsedStatementIdent::SwcIdent(id) => format!("{}{:?}", id.sym, id.ctxt()),
-      UsedStatementIdent::ExportAll => "*".to_string(),
-      UsedStatementIdent::InExportAll(id) => format!("*({id})"),
+      UsedStatementIdent::Default => f.write_str("default"),
+      UsedStatementIdent::SwcIdent(id) => write!(f, "{}{:?}", id.sym, id.ctxt()),
+      UsedStatementIdent::ExportAll => f.write_str("*"),
+      UsedStatementIdent::InExportAll(id) => write!(f, "*({id})"),
     }
   }
 }
+
+type DependentTraceItem = (
+  StatementId,
+  HashSet<SwcId>,
+  HashMap<SwcId, HashSet<UsedImportAllFields>>,
+);
 
 #[derive(Debug, Default)]
 pub struct StatementGraphEdge {
@@ -373,7 +380,7 @@ impl StatementGraph {
         }
       } else if let UsedStatementIdent::Default = used_defined_ident {
         // if the used defined ident is default, add all defined idents to used defined idents
-        if let Some(export_info) = &self.stmt(&stmt_id).export_info {
+        if let Some(export_info) = &self.stmt(stmt_id).export_info {
           if export_info.contains_default_export() {
             all_used_dep_defined_idents.extend(dep_stmt.defined_idents.clone());
           }
@@ -421,7 +428,7 @@ impl StatementGraph {
         )
       })
       .collect();
-    used_statements.sort_by(|a, b| a.0.cmp(&b.0));
+    used_statements.sort_by_key(|a| a.0);
 
     let mut stmts = VecDeque::from(used_statements);
     let mut visited = HashSet::default();
@@ -537,18 +544,8 @@ impl StatementGraph {
     stmt_id: StatementId,
     stmt_used_import_all_fields: &Option<HashMap<SwcId, HashSet<UsedImportAllFields>>>,
     visited: &mut HashSet<StatementId>,
-    stack: &mut Vec<(
-      StatementId,
-      HashSet<SwcId>,
-      HashMap<SwcId, HashSet<UsedImportAllFields>>,
-    )>,
-    result: &mut Vec<
-      Vec<(
-        StatementId,
-        HashSet<SwcId>,
-        HashMap<SwcId, HashSet<UsedImportAllFields>>,
-      )>,
-    >,
+    stack: &mut Vec<DependentTraceItem>,
+    result: &mut Vec<Vec<DependentTraceItem>>,
   ) {
     if visited.contains(&stmt_id) {
       return;
@@ -630,7 +627,7 @@ impl StatementGraph {
           };
           // only trace the statement that defined idents
           for dept_defined_ident in &dept_stmt.defined_idents {
-            if let Some(dept_used_cur_idents) = edge.used_idents_map.get(&dept_defined_ident) {
+            if let Some(dept_used_cur_idents) = edge.used_idents_map.get(dept_defined_ident) {
               if has_intersection(dept_used_cur_idents) {
                 used_dept_defined_idents.insert(dept_defined_ident.clone());
               }
@@ -666,11 +663,7 @@ impl StatementGraph {
     &self,
     stmt_id: StatementId,
     used_import_all_fields: &Option<HashMap<SwcId, HashSet<UsedImportAllFields>>>,
-  ) -> Vec<(
-    StatementId,
-    HashSet<SwcId>,
-    HashMap<SwcId, HashSet<UsedImportAllFields>>,
-  )> {
+  ) -> Vec<DependentTraceItem> {
     // we only trace the dependents side effects of the statement that has defined idents
     if self.stmt(&stmt_id).defined_idents.is_empty() {
       return vec![];

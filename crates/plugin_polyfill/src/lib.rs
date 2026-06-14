@@ -139,7 +139,7 @@ impl Plugin for FarmPluginPolyfill {
     }
 
     let cm = context.meta.get_module_source_map(param.module_id);
-    let globals = context.meta.get_globals(&param.module_id);
+    let globals = context.meta.get_globals(param.module_id);
     let is_runtime_module = self.farm_runtime_regex.is_match(relative_path);
 
     // inline helpers for farm runtime module
@@ -200,11 +200,7 @@ impl Plugin for FarmPluginPolyfill {
       let module_ast = match final_ast {
         Program::Script(script_ast) => Module {
           span: script_ast.span,
-          body: script_ast
-            .body
-            .into_iter()
-            .map(|item| ModuleItem::Stmt(item))
-            .collect(),
+          body: script_ast.body.into_iter().map(ModuleItem::Stmt).collect(),
           shebang: script_ast.shebang,
         },
         Program::Module(module_ast) => module_ast,

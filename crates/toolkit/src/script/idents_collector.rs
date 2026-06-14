@@ -8,8 +8,14 @@ use farmfe_core::{
 
 pub struct DefinedIdentsCollector<'a> {
   pub defined_idents: HashSet<SwcId>,
-  assign_callback: Option<Box<&'a mut dyn FnMut(SwcId, SwcId)>>,
+  assign_callback: Option<&'a mut dyn FnMut(SwcId, SwcId)>,
   current_assign_left_idents: HashSet<SwcId>,
+}
+
+impl<'a> Default for DefinedIdentsCollector<'a> {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 impl<'a> DefinedIdentsCollector<'a> {
@@ -21,7 +27,7 @@ impl<'a> DefinedIdentsCollector<'a> {
     }
   }
 
-  pub fn from_callback(cb: Box<&'a mut dyn FnMut(SwcId, SwcId)>) -> Self {
+  pub fn from_callback(cb: &'a mut dyn FnMut(SwcId, SwcId)) -> Self {
     Self {
       defined_idents: HashSet::default(),
       assign_callback: Some(cb),
@@ -111,6 +117,12 @@ pub struct AllDeclaredIdentsCollector {
   pub all_declared_idents: HashSet<SwcId>,
 
   in_top_level: bool,
+}
+
+impl Default for AllDeclaredIdentsCollector {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 impl AllDeclaredIdentsCollector {

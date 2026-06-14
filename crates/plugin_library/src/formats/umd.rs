@@ -52,10 +52,7 @@ pub fn emit_umd_resources(
       context,
     );
     // make external identifiers ordered by name
-    let mut external_identifiers = external_identifier_map
-      .into_iter()
-      .map(|(k, (v, mark))| (k, (v, mark)))
-      .collect::<Vec<_>>();
+    let mut external_identifiers = external_identifier_map.into_iter().collect::<Vec<_>>();
     external_identifiers.sort_by(|a, b| a.0.cmp(&b.0));
 
     let ast = std::mem::take(&mut meta.ast);
@@ -189,7 +186,7 @@ impl VisitMut for RequireExprTransformer {
 /// }
 /// ```
 fn create_umd_function_expr(
-  external_identifiers: &Vec<(String, (String, Mark))>,
+  external_identifiers: &[(String, (String, Mark))],
   ast: Module,
   unresolved_mark: Mark,
 ) -> Expr {
@@ -204,7 +201,7 @@ fn create_umd_function_expr(
 
   params.append(
     &mut external_identifiers
-      .into_iter()
+      .iter()
       .map(|(k, (_, mark))| Param {
         span: DUMMY_SP,
         decorators: vec![],
@@ -248,7 +245,7 @@ fn create_umd_function_expr(
 /// ```
 fn create_umd_wrapper_stmt(
   factory_expr: Expr,
-  external_identifiers: &Vec<(String, (String, Mark))>,
+  external_identifiers: &[(String, (String, Mark))],
   name: &str,
 ) -> Stmt {
   let raw_external_identifiers = external_identifiers
@@ -289,7 +286,9 @@ fn create_umd_wrapper_stmt(
     .as_mut_expr()
     .and_then(|expr_stmt| expr_stmt.expr.as_mut_call())
     .and_then(|call_expr| call_expr.args.get_mut(1))
-    .and_then(|arg| Some(arg.expr = Box::new(factory_expr)))
+    .map(|arg| {
+      *arg.expr = factory_expr;
+    })
     .expect("replace factory_expr failed");
 
   wrapper_stmt

@@ -1,5 +1,5 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "farmfe_plugin_modular_import"
 version = "0.0.1"
 

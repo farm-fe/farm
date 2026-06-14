@@ -1,4 +1,3 @@
-#![feature(let_chains)]
 #![feature(box_patterns)]
 #![deny(clippy::all)]
 #![allow(clippy::ptr_arg)]

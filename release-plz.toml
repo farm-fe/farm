@@ -86,6 +86,22 @@ release = false
 name = "farmfe_plugin_yaml"
 release = false
 
+[[package]]
+name = "farmfe_plugin_tailwindcss"
+release = false
+
+[[package]]
+name = "farmfe_plugin_vue"
+release = false
+
+[[package]]
+name = "farmfe_ecosystem_tailwindcss"
+release = false
+
+[[package]]
+name = "farmfe_ecosystem_tailwindcss_node"
+release = false
+
 
 [[package]]
 name = "farmfe_utils"

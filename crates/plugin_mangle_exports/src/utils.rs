@@ -60,61 +60,58 @@ pub fn transform_export_all_to_export_named(module_id: ModuleId, module_graph: &
   let mut items_to_append: Vec<ModuleItem> = vec![];
 
   for (i, item) in meta.ast.body.iter().enumerate() {
-    if let ModuleItem::ModuleDecl(module_decl) = item {
-      if let ModuleDecl::ExportAll(export_all) = module_decl {
-        let dep_module_id = module_graph.get_dep_by_source(
-          &module_id,
-          &export_all
-            .src
-            .value
-            .as_str()
-            .expect("non-UTF-8 string literal"),
-          Some(ResolveKind::ExportFrom),
-        );
-        let dep_module = module_graph.module(&dep_module_id).unwrap();
+    if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) = item {
+      let dep_module_id = module_graph.get_dep_by_source(
+        &module_id,
+        export_all
+          .src
+          .value
+          .as_str()
+          .expect("non-UTF-8 string literal"),
+        Some(ResolveKind::ExportFrom),
+      );
+      let dep_module = module_graph.module(&dep_module_id).unwrap();
 
-        if dep_module.external || !dep_module.module_type.is_script() {
+      if dep_module.external || !dep_module.module_type.is_script() {
+        continue;
+      }
+
+      let dep_meta = dep_module.meta.as_script();
+
+      for export in dep_meta.export_ident_map.keys() {
+        if export == EXPORT_DEFAULT {
           continue;
         }
 
-        let dep_meta = dep_module.meta.as_script();
-
-        for (export, _) in &dep_meta.export_ident_map {
-          if export == EXPORT_DEFAULT {
-            continue;
-          }
-
-          let replace_item = items_to_replace.entry(i).or_insert(NamedExport {
+        let replace_item = items_to_replace.entry(i).or_insert(NamedExport {
+          span: DUMMY_SP,
+          specifiers: vec![],
+          src: Some(export_all.src.clone()),
+          type_only: false,
+          with: None,
+        });
+        replace_item
+          .specifiers
+          .push(ExportSpecifier::Named(ExportNamedSpecifier {
             span: DUMMY_SP,
-            specifiers: vec![],
-            src: Some(export_all.src.clone()),
-            type_only: false,
-            with: None,
-          });
-          replace_item
-            .specifiers
-            .push(ExportSpecifier::Named(ExportNamedSpecifier {
-              span: DUMMY_SP,
-              orig: ModuleExportName::Ident(Ident::new(
-                export.as_str().into(),
-                DUMMY_SP,
-                SyntaxContext::empty(),
-              )),
-              exported: None,
-              is_type_only: false,
-            }));
-        }
+            orig: ModuleExportName::Ident(Ident::new(
+              export.as_str().into(),
+              DUMMY_SP,
+              SyntaxContext::empty(),
+            )),
+            exported: None,
+            is_type_only: false,
+          }));
+      }
 
-        // should preserve ambiguous export all statement
-        if dep_meta
-          .ambiguous_export_ident_map
-          .get(AMBIGUOUS_EXPORT_ALL)
-          .is_some()
-        {
-          items_to_append.push(ModuleItem::ModuleDecl(ModuleDecl::ExportAll(
-            export_all.clone(),
-          )));
-        }
+      // should preserve ambiguous export all statement
+      if dep_meta
+        .ambiguous_export_ident_map
+        .contains_key(AMBIGUOUS_EXPORT_ALL)
+      {
+        items_to_append.push(ModuleItem::ModuleDecl(ModuleDecl::ExportAll(
+          export_all.clone(),
+        )));
       }
     }
   }

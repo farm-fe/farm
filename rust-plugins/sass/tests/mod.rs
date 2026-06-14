@@ -53,9 +53,50 @@ fn test() {
       .unwrap()
       .unwrap();
     let expected =
-      "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}";
+      "body {\n  color: #000;\n}\nbody .description:hover {\n  background-color: #f8f9fa;\n}\n";
     assert_eq!(transformed.content, expected);
   });
+}
+
+#[test]
+fn transforms_vue_virtual_scss_modules() {
+  let resolved_path = format!(
+    "{}?vue&type=style&idx=0&lang=scss&scoped=true",
+    std::env::current_dir()
+      .unwrap()
+      .join("src")
+      .join("CounterCard.vue")
+      .to_string_lossy()
+  );
+  let config = Config::default();
+  let plugin = Arc::new(FarmPluginSass::new(&config, "{}".to_string()));
+  let context = Arc::new(CompilationContext::new(config, vec![plugin.clone()]).unwrap());
+
+  let transformed = plugin
+    .transform(
+      &PluginTransformHookParam {
+        resolved_path: &resolved_path,
+        content: "$accent: #40916c;.card{background: rgba($accent, 0.12);button{background: $accent;color: white;}}".to_string(),
+        module_type: ModuleType::Custom(String::from("scss")),
+        query: vec![
+          ("vue".to_string(), "".to_string()),
+          ("type".to_string(), "style".to_string()),
+          ("scoped".to_string(), "true".to_string()),
+          ("scopeId".to_string(), "data-v-test".to_string()),
+        ],
+        meta: HashMap::from_iter([]),
+        module_id: resolved_path.clone(),
+        source_map_chain: vec![],
+      },
+      &context,
+    )
+    .unwrap()
+    .unwrap();
+
+  assert_eq!(transformed.module_type, Some(ModuleType::Css));
+  assert!(transformed.content.contains(".card button"));
+  assert!(!transformed.content.contains("data-v-test"));
+  assert!(transformed.content.contains("#40916c"));
 }
 
 fn normalize_css(css: &str) -> String {
@@ -139,13 +180,13 @@ fn sass_plugin() {
     let css = resources_map.get("index.css").unwrap();
     let css_code = normalize_css(&String::from_utf8(css.bytes.clone()).unwrap());
 
-    let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css".into()]);
+    let output_filename = PathBuf::from_iter(vec![cwd.to_str().unwrap(), "output.css"]);
 
     if is_update_snapshot_from_env() || !output_filename.exists() {
       let mut output_file = std::fs::File::create(output_filename).unwrap();
       output_file.write_all(css_code.as_bytes()).unwrap();
     } else {
-      let expected = normalize_css(&read_file_utf8(&output_filename.to_str().unwrap()).unwrap());
+      let expected = normalize_css(&read_file_utf8(output_filename.to_str().unwrap()).unwrap());
       assert_eq!(css_code, expected);
     }
   });

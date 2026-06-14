@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(*)"
+      "Bash(*)",
+      "Bash(cmd.exe *)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:github.com)"
     ]
+  },
+  "sandbox": {
+    "enabled": false,
+    "autoAllowBashIfSandboxed": false
   }
 }

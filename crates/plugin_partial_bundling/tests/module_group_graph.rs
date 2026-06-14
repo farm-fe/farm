@@ -11,7 +11,7 @@ use farmfe_testing_helpers::{
 fn module_group_graph() {
   let mut module_graph = construct_test_module_graph_complex();
   let module_group_graph =
-    module_group_graph_from_entries(&vec!["A".into(), "B".into()], &mut module_graph);
+    module_group_graph_from_entries(&["A".into(), "B".into()], &mut module_graph);
 
   assert_eq!(
     module_group_graph,

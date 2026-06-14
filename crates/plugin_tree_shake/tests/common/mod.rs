@@ -124,6 +124,7 @@ pub fn create_module_with_globals(code: &str) -> Module {
   })
 }
 
+#[allow(dead_code)]
 pub fn print_id(id: &SwcId) -> String {
   format!("{}{:?}", id.sym, id.ctxt())
 }

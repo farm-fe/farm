@@ -214,7 +214,7 @@ fn test_patch_module_group_graph_3() {
 
   let updated_modules = vec!["F".into(), "E".into(), "B".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph.entries.clone().into_keys().collect(),
+    &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
@@ -250,7 +250,7 @@ fn test_patch_module_group_graph_3() {
   );
 
   let update_module_group_graph = module_group_graph_from_entries(
-    &module_graph.entries.clone().into_keys().collect(),
+    &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
     &mut module_graph,
   );
 
@@ -343,7 +343,7 @@ fn test_patch_module_group_graph_css_modules() {
 
   let start_points = vec!["D".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph.entries.clone().into_keys().collect(),
+    &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
@@ -371,7 +371,7 @@ fn test_patch_module_group_graph_css_modules() {
   );
 
   let update_module_group_graph = module_group_graph_from_entries(
-    &module_graph.entries.clone().into_keys().collect(),
+    &module_graph.entries.clone().into_keys().collect::<Vec<_>>(),
     &mut module_graph,
   );
 
@@ -444,8 +444,7 @@ fn test_patch_module_group_graph_remove_and_add() {
   module_graph
     .add_edge(&"e".into(), &"b".into(), Default::default())
     .unwrap();
-  let mut module_group_graph =
-    module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
+  let mut module_group_graph = module_group_graph_from_entries(&["a".into()], &mut module_graph);
 
   let diff_result = diff_module_graph(vec!["a".into()], &module_graph, &update_module_graph);
 
@@ -468,8 +467,7 @@ fn test_patch_module_group_graph_remove_and_add() {
 
   assert_eq!(affected_groups, HashSet::from_iter([group_id_a.clone()]));
 
-  let update_module_group_graph =
-    module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
+  let update_module_group_graph = module_group_graph_from_entries(&["a".into()], &mut module_graph);
 
   assert_eq!(module_group_graph, update_module_group_graph);
 
@@ -504,8 +502,7 @@ fn test_diff_module_deps_remove_and_add_complex() {
 
   let mut module_graph = create_basic_graph();
   module_graph.remove_module(&"c".into());
-  let mut module_group_graph =
-    module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
+  let mut module_group_graph = module_group_graph_from_entries(&["a".into()], &mut module_graph);
 
   let diff_result = diff_module_graph(
     vec!["a".into(), "b".into()],
@@ -532,8 +529,7 @@ fn test_diff_module_deps_remove_and_add_complex() {
 
   assert_eq!(affected_groups, HashSet::from_iter([group_id_a.clone()]));
 
-  let update_module_group_graph =
-    module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
+  let update_module_group_graph = module_group_graph_from_entries(&["a".into()], &mut module_graph);
 
   assert_eq!(module_group_graph, update_module_group_graph);
 

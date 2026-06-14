@@ -108,7 +108,7 @@ pub struct CodeGenCommentsConfig<'a> {
 
 pub fn create_codegen_config(context: &CompilationContext) -> swc_ecma_codegen::Config {
   let minify = context.config.minify.enabled();
-  let target = context.config.script.target.clone();
+  let target = context.config.script.target;
   let ascii_only = context.config.output.ascii_only;
 
   swc_ecma_codegen::Config::default()

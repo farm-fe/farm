@@ -1,9 +1,9 @@
 [workspace]
-members = ["crates/*", "packages/create-farm", "rust-plugins/*"]
+members = ["crates/*", "packages/create-farm", "rust-plugins/*", "rust-ecosystem/*"]
 resolver = "2"
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 homepage = "https://farmfe.org"
 license = "MIT"
 repository = "https://github.com/farm-fe/farm"
@@ -53,6 +53,13 @@ opt-level = 3
 strip = true
 panic = "abort"
 
+[profile.ci]
+inherits = "release"
+lto = false
+codegen-units = 16
+debug = false
+strip = "debuginfo"
+
 [profile.ci-test]
 inherits = "release"
 # opt-level = 0
@@ -61,11 +68,12 @@ inherits = "release"
 # codegen-units = 16
 
 # Patch serde to provide backward-compatible `__private` module alias.
-# Older transitive deps (svgr-rs → swc_core 0.100.7 → swc_common 0.37.5,
-# fervid → swc_core 0.90.37 → swc_common 0.33.26, mdxjs → swc_core 10.7.0
-# → swc_common 5.0.1) use `serde::__private` which was renamed to
-# `serde::__private<version>` in serde 1.0.218+. The newer swc_atoms 9.0.0
-# requires serde >= 1.0.225, creating an incompatibility. This patch adds
-# `pub mod __private` as an alias alongside the versioned module.
+# Some transitive deps still reference `serde::__private` (renamed to
+# `serde::__private<version>` in serde 1.0.218+):
+#   * mdxjs 1.0.4 → swc_core 27.0.6 → swc_common 12.0.1
+#   * fervid → swc_core 35.0.0 → swc_common 14.0.4
+# Once those upstream crates update to a version of swc_common that does
+# not use `serde::__private`, this patch (and the `patches/serde` fork)
+# can be removed.
 [patch.crates-io]
 serde = { path = "patches/serde" }

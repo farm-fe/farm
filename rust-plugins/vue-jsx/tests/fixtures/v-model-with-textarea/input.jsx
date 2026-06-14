@@ -1,0 +1,1 @@
+<textarea v-model={test} />

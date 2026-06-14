@@ -28,10 +28,9 @@ You can configuring css modules by [`css.modules`](/docs/config/compilation-opti
 Farm supports converting the naming convention of CSS module class names via [`css.modules.localsConversion`](/docs/config/compilation-options#cssmoduleslocalsconversion). Available modes:
 
 - `asIs` — Class names are exported as-is (default)
-- `camelCase` — Class names are converted to camelCase
-- `camelCaseOnly` — Class names are converted to camelCase and the original name is removed
-- `dashes` — Only dashes in class names are converted to camelCase
-- `dashesOnly` — Only dashes are converted, and the original name is removed
+- `lowerCamel` — Class names are converted to lower camelCase, for example `foo-bar` becomes `fooBar`
+- `upperCamel` — Class names are converted to upper CamelCase, for example `foo-bar` becomes `FooBar`
+- `snake` — Class names are converted to snake_case, for example `foo-bar` becomes `foo_bar`
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -40,7 +39,7 @@ export default defineConfig({
   compilation: {
     css: {
       modules: {
-        localsConversion: 'camelCase',
+        localsConversion: 'lowerCamel',
       }
     }
   }
@@ -66,7 +65,7 @@ export default defineConfig({
 Farm provide official sass, less, postcss plugins to support css pre-processor.
 
 ### Sass
-Farm sass plugin is a Rust Plugin and use `sass-embeded`(we may migrate to [grass](https://github.com/connorskees/grass) in the future).
+Farm sass plugin is a Rust Plugin powered by [`grass`](https://github.com/connorskees/grass).
 
 Steps to compile `sass/scss` modules in Farm.
 1. Install dependencies
@@ -78,14 +77,13 @@ pnpm add -D @farmfe/plugin-sass
 2. Configure the plugin
 ```ts
 import { defineConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   // ...
-  plugins: ['@farmfe/plugin-sass'] // to use a rust plugin, just configure its package name as a string
+  plugins: [sass()] // import the rust plugin and call it like a JS plugin
   // if you want to specify options for plugin-sass, use
-  // plugins: [
-  //   ['@farmfe/plugin-sass', { sourceMap: false }]
-  // ]
+  // plugins: [sass({ sourceMap: false })]
 });
 ```
 
@@ -94,30 +92,27 @@ export default defineConfig({
 import './index.scss';
 ```
 
-To use sass with css modules, change the file name from `index.scss` to `index.module.scss`, see [css modules](/docs/config/farm-config#cssmodules).
+To use sass with css modules, change the file name from `index.scss` to `index.module.scss`, see [css modules](/docs/config/compilation-options#cssmodules).
 
-`@farmfe/plugin-sass` supports a lot of options, use the array syntax of `plugins` to specify options for plugin sass:
+`@farmfe/plugin-sass` supports a lot of options, pass them as the argument of `sass()`:
 
 ```ts
 import { defineConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default defineConfig({
   // if you want to specify options for plugin-sass, use
   plugins: [
-    [
-      '@farmfe/plugin-sass',
-      // all supported options as below
-      {
-        sourceMap: true // bool
-        sourceMapIncludeSources: true, // bool
-        alertAscii: true, // bool
-        alertColor: true, // bool
-        charset: true, // bool
-        quietDeps: true, // bool
-        verbose: false, // bool
-        style: 'expanded' | 'compressed' // output code style
-      }
-    ]
+    sass({
+      sourceMap: true, // bool
+      sourceMapIncludeSources: true, // bool
+      alertAscii: true, // bool
+      alertColor: true, // bool
+      charset: true, // bool
+      quietDeps: true, // bool
+      verbose: false, // bool
+      style: 'expanded' // 'expanded' | 'compressed'
+    })
   ]
 });
 ```
@@ -148,7 +143,7 @@ export default defineConfig({
 import './index.less';
 ```
 
-To use sass with css modules, change the file name from `index.less` to `index.module.less`, see [css modules](/docs/config/farm-config#cssmodules)
+To use less with css modules, change the file name from `index.less` to `index.module.less`, see [css modules](/docs/config/compilation-options#cssmodules)
 
 ### Postcss
 The Farm postcss plugin is a JS plugin. The steps to introduce postcss in Farm are as follows:
@@ -241,7 +236,7 @@ export default defineConfig({
 Farm supports css prefixer out of box, you can configure it using `compilation.css.prefixer`.
 
 :::note
-`css.prefix.targets` will be set automatically when [`output.targetEnv`](/docs/config/compilation-options#output-targetenv). Normally set [`output.targetEnv`](/docs/config/compilation-options#output-targetenv) would be enough.
+Configure `css.prefixer.targets` directly when you need specific CSS prefixing targets.
 :::
 
 ```ts title="farm.config.ts"
@@ -250,7 +245,7 @@ import { defineConfig } from '@farmfe/core';
 export default defineConfig({
    compilation: {
      css: {
-       prefix: {
+       prefixer: {
         targets: ['ie >= 10']
        }
      },

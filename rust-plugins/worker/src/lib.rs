@@ -48,10 +48,10 @@ impl FarmfePluginWorker {
       .get("compilerConfig")
       .unwrap_or(&Value::Object(Map::new()))
       .clone();
-    if let Value::Object(ref mut map) = compiler_config {
-      if !map.contains_key("presetEnv") {
-        map.insert("presetEnv".to_string(), Value::Bool(true));
-      }
+    if let Value::Object(ref mut map) = compiler_config
+      && !map.contains_key("presetEnv")
+    {
+      map.insert("presetEnv".to_string(), Value::Bool(true));
     }
     Self {
       options: Options {

@@ -32,6 +32,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
+    secrets: inherit
     needs: [check-changeset-status]
     if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD != 'true'
 
@@ -54,7 +55,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: "pnpm"
 
       - name: Install Dependencies
         uses: nick-fields/retry@v3
@@ -92,10 +92,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
-          cache: "pnpm"
 
       # batch download artifacts
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4.1.3
         with:
           path: /tmp/artifacts
       - name: Copy Farm Core Binary
@@ -108,6 +107,8 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-vue/* ./rust-plugins/vue/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-vue-jsx/* ./rust-plugins/vue-jsx/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-auto-import/* ./rust-plugins/auto-import/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-compress/* ./rust-plugins/compress/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dsv/* ./rust-plugins/dsv/npm/${abi}
@@ -131,6 +132,8 @@ jobs:
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
+            test -f ./rust-plugins/vue/npm/${abi}/index.farm
+            test -f ./rust-plugins/vue-jsx/npm/${abi}/index.farm
             test -f ./rust-plugins/auto-import/npm/${abi}/index.farm
             test -f ./rust-plugins/compress/npm/${abi}/index.farm
             test -f ./rust-plugins/dsv/npm/${abi}/index.farm
@@ -147,11 +150,6 @@ jobs:
             test -f ./rust-plugins/wasm/npm/${abi}/index.farm
             test -f ./rust-plugins/worker/npm/${abi}/index.farm
             test -f ./rust-plugins/yaml/npm/${abi}/index.farm
-          done
-          for abi in android-arm-eabi linux-arm-gnueabihf android-arm64 freebsd-x64
-          do
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
-            test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
           done
 
       - name: Install Dependencies

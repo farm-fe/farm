@@ -11,7 +11,7 @@ export function getPostcssImplementation(implementation?: string) {
     const lessImplPkg = implementation || 'postcss';
     try {
       resolvedImplementation = __require(lessImplPkg);
-    } catch (e) {
+    } catch (e: any) {
       throwError('Implementation', e);
     }
   }
@@ -25,7 +25,7 @@ export function throwError(type: string, error: Error) {
 export async function tryRead(filename: string) {
   try {
     return await fs.promises.readFile(filename, 'utf-8');
-  } catch (e) {
+  } catch (e: any) {
     throwError('readFile', e);
   }
 }

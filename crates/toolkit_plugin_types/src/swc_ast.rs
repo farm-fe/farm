@@ -13,6 +13,12 @@ pub struct ParseScriptModuleResult {
   pub comments: SingleThreadedComments,
 }
 
+type FarmSwcParseModule =
+  unsafe fn(&ModuleId, Arc<String>, Syntax, EsVersion) -> Result<ParseScriptModuleResult>;
+type FarmCreateSwcSourceMap =
+  unsafe fn(&ModuleId, Arc<String>) -> Result<(Arc<SourceMap>, Arc<SourceFile>)>;
+type FarmSwcTryWith = unsafe fn(Arc<SourceMap>, &Globals, Box<dyn FnOnce()>) -> Result<()>;
+
 pub fn farm_swc_parse_module(
   lib: &libloading::Library,
   id: &ModuleId,
@@ -21,9 +27,8 @@ pub fn farm_swc_parse_module(
   target: EsVersion,
 ) -> Result<ParseScriptModuleResult> {
   unsafe {
-    let farm_swc_parse_module: libloading::Symbol<
-      unsafe fn(&ModuleId, Arc<String>, Syntax, EsVersion) -> Result<ParseScriptModuleResult>,
-    > = lib.get(b"farm_swc_parse_module").unwrap();
+    let farm_swc_parse_module: libloading::Symbol<FarmSwcParseModule> =
+      lib.get(b"farm_swc_parse_module").unwrap();
     farm_swc_parse_module(id, content, syntax, target)
   }
 }
@@ -34,9 +39,8 @@ pub fn farm_create_swc_source_map(
   content: Arc<String>,
 ) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
   unsafe {
-    let farm_create_swc_source_map: libloading::Symbol<
-      unsafe fn(&ModuleId, Arc<String>) -> Result<(Arc<SourceMap>, Arc<SourceFile>)>,
-    > = lib.get(b"farm_create_swc_source_map").unwrap();
+    let farm_create_swc_source_map: libloading::Symbol<FarmCreateSwcSourceMap> =
+      lib.get(b"farm_create_swc_source_map").unwrap();
     farm_create_swc_source_map(id, content)
   }
 }
@@ -45,12 +49,11 @@ pub fn farm_swc_try_with(
   lib: &libloading::Library,
   cm: Arc<SourceMap>,
   globals: &Globals,
-  op: Box<dyn FnOnce() -> ()>,
+  op: Box<dyn FnOnce()>,
 ) -> Result<()> {
   unsafe {
-    let farm_swc_try_with: libloading::Symbol<
-      unsafe fn(Arc<SourceMap>, &Globals, Box<dyn FnOnce() -> ()>) -> Result<()>,
-    > = lib.get(b"farm_swc_try_with").unwrap();
+    let farm_swc_try_with: libloading::Symbol<FarmSwcTryWith> =
+      lib.get(b"farm_swc_try_with").unwrap();
     farm_swc_try_with(cm, globals, op)
   }
 }

@@ -9,14 +9,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
-      - name: Cache rust artifacts
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: cargo-clippy
-
-      - uses: arduino/setup-protoc@v3
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run cargo fmt
         run: cargo fmt
@@ -35,7 +27,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-          cache: "pnpm"
 
       - name: Install Dependencies
         uses: nick-fields/retry@v3

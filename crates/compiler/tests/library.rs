@@ -12,7 +12,7 @@ use crate::common::{
 
 fn normalize_path(path: &str) -> String {
   if cfg!(windows) {
-    path.replace('\\', "/").into()
+    path.replace('\\', "/")
   } else {
     path.to_string()
   }
@@ -33,7 +33,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
 
   let entry_name = "index".to_string();
   let files = get_dir_config_files(cwd);
-  let test_cases_that_need_real_runtime = vec![
+  let test_cases_that_need_real_runtime = [
     "cjs/",
     "hybrid/",
     "dynamic/lodash_export",
@@ -92,7 +92,6 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         entry_name: Some(entry_name.clone()),
         output_file: Some(format_output_name(name)),
         ignore_emitted_field: false,
-        ..Default::default()
       },
     );
   }

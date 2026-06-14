@@ -65,8 +65,7 @@ async function createFarm() {
           }
         },
         {
-          type: () =>
-            !fs.existsSync(targetDir) || isEmpty(targetDir) ? null : 'confirm',
+          type: () => (!targetDir || isEmpty(targetDir) ? null : 'confirm'),
           name: 'overwrite',
           message: () =>
             (targetDir === '.'
@@ -90,14 +89,17 @@ async function createFarm() {
         }
       }
     );
-  } catch (cancelled) {
+  } catch (cancelled: any) {
     console.log(cancelled.message);
     return;
   }
   const { type = argTemplate, pluginName: finalPluginName = argPluginName } =
     result;
 
-  await copyTemplate(targetDir, { type, pluginName: finalPluginName });
+  await copyTemplate(targetDir ?? '.', {
+    type,
+    pluginName: finalPluginName ?? ''
+  });
 }
 
 function formatTargetDir(targetDir: string | undefined) {
@@ -130,7 +132,7 @@ async function copyTemplate(targetDir: string, options: IResultType) {
       fs.readFileSync(packageJsonPath, 'utf-8')
     );
     // Modify the dependencies object as needed
-    packageJsonContent.dependencies[options.pluginName] = 'workspace:*'; // Modify this line with your dependency and version
+    packageJsonContent.dependencies[options.pluginName ?? ''] = 'workspace:*'; // Modify this line with your dependency and version
     fs.writeFileSync(
       packageJsonPath,
       JSON.stringify(packageJsonContent, null, 2)
@@ -176,7 +178,7 @@ function replaceNamePlaceholders(
       name: '<FARM-RUST-PLUGIN-CARGO-NAME>',
       replace: () => {
         // replace @ to empty string and all invalid characters to _
-        return options.pluginName
+        return (options.pluginName ?? '')
           .replace(/@/g, '')
           .replace(/[^a-zA-Z0-9_]/g, '_');
       }
@@ -185,7 +187,7 @@ function replaceNamePlaceholders(
       name: '<FARM-RUST-PLUGIN-STRUCT-NAME>',
       replace: () => {
         return (
-          options.pluginName
+          (options.pluginName ?? '')
             .replace(/@/g, '')
             .replace(/[^a-zA-Z0-9_]/g, '_')
             // to camelCase
@@ -199,7 +201,10 @@ function replaceNamePlaceholders(
 
   for (const placeholder of PLACEHOLDERS) {
     if (content.includes(placeholder.name)) {
-      content = content.replaceAll(placeholder.name, placeholder.replace());
+      content = content.replaceAll(
+        placeholder.name,
+        placeholder.replace() ?? ''
+      );
     }
   }
 

@@ -51,7 +51,6 @@ fn minify_script_test() {
             entry_name: Some(entry_name.clone()),
             output_file: Some(format_output_name(name)),
             ignore_emitted_field: false,
-            ..Default::default()
           },
         );
       }

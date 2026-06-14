@@ -3,16 +3,23 @@
   "version": "2.0.0-beta.1",
   "description": "farmfe utils",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./colors": {
       "import": "./dist/color.js",
+      "types": "./dist/color.d.ts",
       "default": "./dist/color.js"
     }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "license": "MIT",
   "repository": {

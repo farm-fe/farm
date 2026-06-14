@@ -1,0 +1,1 @@
+import{createVNode as _createVNode}from"vue";_createVNode(C,{"modelValue":foo,"modelModifiers":{"modifier":true},"onUpdate:modelValue":$event=>(foo)=$event,"bar":bar,"barModifiers":{"modifier1":true,"modifier2":true},"onUpdate:bar":$event=>(bar)=$event},null);

@@ -1,8 +1,8 @@
 {
   "name": "@farmfe/plugin-sass",
-  "version": "2.0.0-beta.0",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "version": "2.0.0-beta.1",
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -10,15 +10,6 @@
   },
   "devDependencies": {
     "@farmfe/plugin-tools": "workspace:*"
-  },
-  "optionalDependencies": {
-    "sass-embedded-darwin-arm64": "1.62.0",
-    "sass-embedded-darwin-x64": "1.62.0",
-    "sass-embedded-linux-arm64": "1.62.0",
-    "sass-embedded-linux-ia32": "1.62.0",
-    "sass-embedded-linux-x64": "1.62.0",
-    "sass-embedded-win32-ia32": "1.62.0",
-    "sass-embedded-win32-x64": "1.62.0"
   },
   "napi": {
     "binaryName": "farm-plugin-sass",
@@ -36,9 +27,9 @@
   },
   "exports": {
     ".": {
-      "import": "./func.js",
-      "types": "./index.d.ts",
-      "default": "./index.js"
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -48,8 +39,6 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "index.js",
-    "index.d.ts",
-    "func.js"
+    "scripts"
   ]
 }

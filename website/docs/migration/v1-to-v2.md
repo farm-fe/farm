@@ -219,7 +219,7 @@ farm dev
 
 If you encounter HMR connection errors:
 - Check browser console for specific error messages
-- Verify that `devServer.hmr` settings match your deployment environment
+- Verify that `server.hmr` settings match your deployment environment
 - Ensure no origin-related proxies are interfering
 
 ### 5. Test Build Output
@@ -237,9 +237,10 @@ Verify that:
 
 | v1 Setting | v2 Location | Notes |
 |-----------|-----------|-------|
-| `config.custom.external` | `config.external` | Moved to top level |
-| `config.custom.*` | `config.*` corresponding field | All custom fields promoted |
-| `devServer.hmr` | `devServer.hmr` | Same, but now validates Origin header |
+| `compilation.external` | `compilation.external` | Still configured under `compilation`; review current [compilation options](../config/compilation-options). |
+| `compilation.custom.*` | `compilation.custom.*` | Still available for custom compiler/plugin metadata; avoid moving it to top-level config. |
+| `devServer` | `server` | Dev server config was renamed. |
+| `devServer.hmr` | `server.hmr` | Same purpose, but now validates Origin header and supports more sub-options. |
 
 ## Troubleshooting Common Issues
 
@@ -252,7 +253,7 @@ Verify that:
 2. Configure HMR explicitly if needed:
    ```javascript
    {
-     devServer: {
+     server: {
        hmr: {
          host: 'your-domain.com',
          port: 9801
@@ -291,13 +292,12 @@ export default {
 ## Getting Help
 
 - Review the [Configuration documentation](../config/configuring-farm)
-- Check the [Plugin documentation](../plugins/overview)
+- Check the [Plugin documentation](../plugins/official-plugins/overview)
 - Visit the [Farm GitHub discussions](https://github.com/farm-fe/farm/discussions)
 - Join the [Discord community](https://discord.com/invite/mDErq9aFnF)
 
 ## See Also
 
-- [What's New in Farm v2](../features/v2-features)
 - [Configuration Reference](../config/configuring-farm)
 - [Rust Plugin API](../api/rust-plugin-api)
 - [JavaScript Plugin API](../api/js-plugin-api)

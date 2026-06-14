@@ -17,14 +17,15 @@ pnpm add -D @farmfe/plugin-sass @farmfe/js-plugin-postcss
 
 使用 `plugins` 配置 Farm 编译插件：
 ```ts title="farm.config.ts"
+import sass from "@farmfe/plugin-sass";
 import farmPostcssPlugin from "@farmfe/js-plugin-postcss";
 
 export default defineConfig({
   // ...
   plugins: [
-     // Rust插件，配置其包名
-    "@farmfe/plugin-sass",
-    // JS插件，配置插件对象
+     // Rust 插件，导入并以函数形式调用
+    sass(),
+    // JS 插件，配置插件对象
     farmPostcssPlugin()
   ],
 });
@@ -35,37 +36,35 @@ Farm编译插件有2种：
 * **`Js Plugins`**：用JS/TS编写，用于兼容当前的JS生态系统
 
 ### 使用 Rust 插件
-使用 `package name` 来配置 Rust 插件，例如：
+和 JS 插件一样，导入 Rust 插件并以工厂函数的形式调用，例如：
 ```ts title="farm.config.ts"
+import sass from "@farmfe/plugin-sass";
+
 export default defineConfig({
   // ...
   plugins: [
-    "@farmfe/plugin-sass",
+    sass(),
   ],
 });
 ```
 对于上面的例子，Farm 将解析包 `@farmfe/plugin-sass` 并将其视为 Farm Rust 插件。
 
-如果要为 Rust 插件配置选项，可以使用`数组语法`，如`[packageName, optionsObject]`，例如：
+如果要为 Rust 插件配置选项，将选项传给工厂函数即可，例如：
 ```ts title="farm.config.ts"
+import sass from "@farmfe/plugin-sass";
+
 export default defineConfig({
   // ...
   plugins: [
-    // 使用数组语法来配置 Rust 插件
-    [
-      // Rust 插件的名称
-      "@farmfe/plugin-sass",
-      // Rust 插件的选项
-      {
-        additionalData: '@use "@/global-variables.scss";'
-      }
-    ],
+    sass({
+      additionalData: '@use "@/global-variables.scss";'
+    }),
   ],
 });
 ```
 目前 Farm 官方支持 2 个 Rust 插件：
 * **`@farmfe/plugin-react`**：Farm rust 插件，用于 React jsx 编译和 React-refresh 注入。
-* **`@farmfe/plugin-sass`**：用于 scss 文件编译的 Farm rust 插件，内部使用 `sass-embedded`。
+* **`@farmfe/plugin-sass`**：用于 scss 文件编译的 Farm rust 插件，底层使用 `grass`。
 
 :::tip
 要了解有关 rust 插件的更多信息，请参阅 [Rust 插件](/docs/plugins/official-plugins/overview#rust-插件)
@@ -241,9 +240,9 @@ export default defineConfig({
 :::
 
 ## 使用 SWC 插件
-Swc Plugin 也可以直接在Farm中使用，配置`compilation.script.plugins`来添加SWC插件，例如：
+Swc Plugin 也可以直接在 Farm 中使用，配置 `compilation.script.plugins` 来添加 SWC 插件。例如下面使用 `swc-plugin-vue-jsx` 编译 Vue JSX；如果需要 Vue SFC 支持，请在顶层 `plugins` 中注册当前的 Rust 插件 `@farmfe/plugin-vue`：
 ```ts
-import jsPluginVue from '@farmfe/js-plugin-vue';
+import vue from "@farmfe/plugin-vue";
 
 export default defineConfig({
    compilation: {
@@ -264,7 +263,7 @@ export default defineConfig({
        }]
      }
    },
-   plugins: [jsPluginVue()],
+   plugins: [vue()],
 });
 ```
 

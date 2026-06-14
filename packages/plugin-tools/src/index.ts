@@ -45,6 +45,17 @@ const removeArg = (args: string[], name: string) => {
   args.splice(index, 1);
 };
 
+const hasArg = (args: string[], name: string) =>
+  args.some((arg) => arg === name || arg.startsWith(`${name}=`));
+
+const removeFlag = (args: string[], name: string) => {
+  const index = args.indexOf(name);
+
+  if (index !== -1) {
+    args.splice(index, 1);
+  }
+};
+
 const cli = cac('farm-plugin-tools');
 
 cli
@@ -55,6 +66,10 @@ cli
     const args = process.argv.slice(3);
     const abi = getArg(argsObj, args, '--abi');
     removeArg(args, '--cargo-name');
+
+    if (hasArg(args, '--profile')) {
+      removeFlag(args, '--release');
+    }
 
     // all args are passed to napi-rs directly
     // 1. build with napi-rs

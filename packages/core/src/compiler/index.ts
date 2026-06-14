@@ -74,7 +74,7 @@ export class Compiler {
       } else {
         await this._bindingCompiler.compile();
       }
-    } catch (e) {
+    } catch (e: any) {
       // error thrown from rust compiler do not have js stack trace
       e.stack = '';
       throw e;
@@ -99,7 +99,9 @@ export class Compiler {
     ignoreCompilingCheck = false,
     generateUpdateResource = true
   ): Promise<JsUpdateResult> {
-    let resolve: (res: JsUpdateResult) => void;
+    // Initialize with a no-op that is immediately overwritten by the synchronous
+    // Promise executor; avoids TS2454 with strictNullChecks
+    let resolve: (res: JsUpdateResult) => void = () => {};
 
     const promise = new Promise<JsUpdateResult>((r) => {
       resolve = r;
@@ -133,7 +135,9 @@ export class Compiler {
                 break;
               }
               const cb = this._onUpdateFinishQueue.shift();
-              await cb();
+              if (cb) {
+                await cb();
+              }
             }
           }
         },
@@ -142,7 +146,7 @@ export class Compiler {
       );
 
       return res as JsUpdateResult;
-    } catch (e) {
+    } catch (e: any) {
       this.compiling = false;
       throw e;
     }
@@ -164,7 +168,7 @@ export class Compiler {
     return this._bindingCompiler.resources();
   }
 
-  resource(path: string): Buffer {
+  resource(path: string): Buffer | null {
     return (
       this._bindingCompiler.resource(path) ||
       this._bindingCompiler.resource(cleanUrl(path))
@@ -183,7 +187,7 @@ export class Compiler {
   }
 
   callWriteResourcesHook() {
-    for (const jsPlugin of this.config.jsPlugins) {
+    for (const jsPlugin of this.config.jsPlugins ?? []) {
       jsPlugin.writeResources?.executor?.({
         resourcesMap: this._bindingCompiler.resourcesMap() as Record<
           string,
@@ -257,18 +261,19 @@ export class Compiler {
 
   private checkCompiling() {
     if (this.compiling) {
-      this.config.logger.error('Already compiling', {
+      this.config.logger?.error('Already compiling', {
         exit: true
       });
     }
   }
 
   private getOutputPath(): string {
-    const { output, root } = this.config.compilation;
-    const configOutputPath = output.path;
+    const compilation = this.config.compilation ?? {};
+    const { output, root } = compilation;
+    const configOutputPath = output?.path ?? 'dist';
     const outputPath = path.isAbsolute(configOutputPath)
       ? configOutputPath
-      : path.join(root, configOutputPath);
+      : path.join(root ?? process.cwd(), configOutputPath);
     return outputPath;
   }
 

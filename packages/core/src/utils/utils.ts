@@ -1,10 +1,10 @@
 import { Server as DevServer } from '../server/index.js';
 import type { PreviewServer } from '../server/preview.js';
 
-export function safeJsonParse<T>(v: string, defaultValue?: T): T {
+export function safeJsonParse<T>(v: string, defaultValue?: T): T | undefined {
   try {
     return JSON.parse(v);
-  } catch (error) {
+  } catch (error: any) {
     return defaultValue;
   }
 }

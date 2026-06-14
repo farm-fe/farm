@@ -1,0 +1,42 @@
+{
+  "name": "@farmfe/plugin-vue",
+  "version": "2.0.0-beta.1",
+  "description": "Farm Rust plugin to compile Vue 3 SFCs, powered by fervid.",
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "napi": {
+    "binaryName": "farm-plugin-vue",
+    "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-unknown-linux-musl",
+      "i686-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
+  },
+  "exports": {
+    ".": {
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_vue --release",
+    "build:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z farm-plugin-tools build --platform --cargo-name farmfe_plugin_vue -p farmfe_plugin_vue --release",
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  "files": [
+    "scripts"
+  ]
+}

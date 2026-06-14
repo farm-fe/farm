@@ -34,10 +34,12 @@ Then add this plugin to `plugins`:
 
 ```ts title="farm.config.ts" {7}
 // ...
+import react from "@farmfe/plugin-react";
+import sass from "@farmfe/plugin-sass";
 
 export default defineConfig({
   // ... ignore other fields
-  plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass"],
+  plugins: [react(), sass()],
 });
 ```
 
@@ -212,18 +214,20 @@ then configure it in `plugins` of `farm.config.ts`:
 
 ```ts title="farm.config.ts" {7}
 // ...
+import react from "@farmfe/plugin-react";
+import sass from "@farmfe/plugin-sass";
 import farmPluginPostcss from "@farmfe/js-plugin-postcss";
 
 export default defineConfig({
   // ... ignore other fields
-  plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass", farmPluginPostcss()],
+  plugins: [react(), sass(), farmPluginPostcss()],
 });
 ```
 
 Now postcss is fully supported in Farm, you can use popular postcss plugins `tailwind`, `px2rem`, etc. We won't cover postcss details here, refer to postcss docs for more details.
 
 :::tip
-Refer to [Farm Plugins](/docs/plugins/overview) to learn more about Farm plugins.
+Refer to [Farm Plugins](/docs/plugins/official-plugins/overview) to learn more about Farm plugins.
 :::
 
 ## Using Public Directory

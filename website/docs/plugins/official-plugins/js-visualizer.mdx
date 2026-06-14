@@ -1,0 +1,70 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-visualizer
+
+Visualize Farm bundle size and module composition.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-visualizer</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-visualizer</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-visualizer</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts {2,11}
+import { defineConfig } from '@farmfe/core';
+import visualizer from '@farmfe/js-plugin-visualizer';
+
+export default defineConfig({
+  compilation: {
+    input: {
+      index: './index.html'
+    }
+  },
+  plugins: [
+    visualizer()
+  ]
+});
+```
+
+## Options
+
+```ts
+export interface RecordViewerOptions {
+  /**
+   * Specify hostname.
+   * @default 'localhost'
+   */
+  host?: string;
+
+  /**
+   * Specify port.
+   * @default 9527
+   */
+  port?: number;
+}
+```
+
+### `host`
+
+Host for the visualizer server. Defaults to `localhost`.
+
+### `port`
+
+Port for the visualizer server. Defaults to `9527`.
+
+## Credits
+
+Farm's Visualizer is inspired by [`vite-plugin-inspect`](https://github.com/antfu/vite-plugin-inspect) and [`rsdoctor`](https://github.com/web-infra-dev/rsdoctor).
+

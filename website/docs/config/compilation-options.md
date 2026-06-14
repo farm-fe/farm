@@ -1,6 +1,6 @@
 # Compiler Options
 
-By default, Farm reads the configuration from the `farm.config.ts|js|mjs` file in the project root directory, an example configuration file:
+By default, Farm reads the configuration from `farm.config.ts`, `farm.config.js`, `farm.config.cjs`, `farm.config.mjs`, `farm.config.cts`, or `farm.config.mts` in the project root directory. An example configuration file:
 
 ```ts title="farm.config.ts" {5-7}
 import { defineConfig } from "@farmfe/core";
@@ -43,7 +43,7 @@ export default defineConfig({
     },
   },
   // ..
-};
+});
 ```
 
 ### output
@@ -62,12 +62,10 @@ interface OutputOptions {
   publicPath?: string;
   // Static resource file name configuration
   assetsFilename?: string;
-  // Target execution environment, polyfill and syntax downgrade will be enabled if the target env is not `node-next` or `browser-esnext`
+  // Target execution environment. Versioned targets select Farm's production compatibility presets.
   targetEnv?: 'browser' | 'node' | 'node16' | 'node-legacy' | 'node-next' | 'browser-legacy' | 'browser-es2015' | 'browser-es2017' | 'browser-esnext' | 'library';
   // output module format, supports a single format or an array of formats (array only when targetEnv is 'library')
   format?: 'cjs' | 'esm' | 'umd' | 'iife' | 'system' | 'amd' | ('cjs' | 'esm' | 'umd' | 'iife' | 'system' | 'amd')[];
-  // clean output.path before emitting
-  clean?: boolean;
   // Whether to print file size of output files
   showFileSize?: boolean;
   // output ascii only
@@ -145,36 +143,36 @@ When building for production, the injected resources url would be `https://cdn.c
 
 and when loading dynamic scripts and css, the dynamic fetched resources url would also be: `https://cdn.com/<asset-path>`
 
-#### `output.assetsFileName`
+#### `output.assetsFilename`
 
 - **Default value**: `"[resourceName].[ext]"`
 
 The filename configuration for static resource output, the placeholder is the same as `output.filename`.
 
-#### `output.targetEnv`
+#### `output.targetEnv` {#output-targetenv}
 
-- **default**: `"browser-es2017"`
+- **default**: `"browser"` for application builds
 
-Configure the execution environment of the product, which can be `"browser"` or `"node"`. Farm will automatically inject polyfill and downgrade syntax(for both script and css) for your specified targetEnv, the supported `targetEnv`s is below:
+Configure the execution environment of the product. Set this explicitly to `"library"` when building package output instead of an application. In production builds, versioned targets select Farm's compatibility presets, including browser syntax downgrade and preset-env behavior where applicable. The supported `targetEnv`s are below:
 
 Targeting `browser`:
 * **`browser-es2017`**: Compiling the project to browsers that support `async await` natively.
 * **`browser-es2015`**: Compiling the project to browsers that support `es6 features` natively.
 * **`browser-legacy`**: Compile the project to `ES5`, for example, `IE9`. Note that this may introduce lots of polyfills which makes production size larger. Make sure you really need to support legacy browsers like `IE9`.
 * **`browser-esnext`**: Compile the project to latest modern browsers, no polyfill will be injected.
-* **`browser`**: Alias of `browser-es2017`
+* **`browser`**: Browser output without versioned downgrade presets.
 
 Targeting `node`:
 * **`node16`**: Compile the project to `Node 16`.
 * **`node-legacy`**: Compile the project to `Node 10`.
 * **`node-next`**: Compile the project to latest Node Version, no polyfill will be injected.
-* **`node`**: Alias of `node16`
+* **`node`**: Node output without versioned downgrade presets.
 
 Targeting `library`:
 * **`library`**: Build as a library. When `targetEnv` is `library`, you can set `format` to an array of formats (e.g. `['esm', 'cjs']`) to produce multiple output bundles in one build.
 
 
-#### `output.format`
+#### `output.format` {#output-format}
 
 - **default**: `"esm"`
 
@@ -197,11 +195,29 @@ export default defineConfig({
 This option is only valid for JS outputs.
 :::
 
+#### `output.libraryBundleType` {#output-librarybundletype}
+
+- **type**: compiler-level `"single-bundle" | "multiple-bundle" | "bundle-less"`
+
+This compiler-level field controls the library bundling strategy when `output.targetEnv` is `"library"`:
+
+* **`single-bundle`**: one output bundle per format. This mode only supports a single entry.
+* **`multiple-bundle`**: each entry produces its own output bundle and shared chunks may be extracted.
+* **`bundle-less`**: each source module is emitted independently, preserving the source structure.
+
+:::caution
+The current `@farmfe/core` TypeScript `UserConfig` and validation schema do not expose this field for `farm.config.ts`. Treat this as compiler behavior reference until the JavaScript config API exposes it.
+:::
+
 #### `output.clean`
 
-- **default**: `undefined`
+- **default**: `true`
 
 Whether to clean `output.path` before emitting files.
+
+:::caution
+The current JavaScript config validation schema does not accept `output.clean` in `farm.config.ts`. Treat this as internal compiler behavior until the JavaScript config API exposes it.
+:::
 
 #### `output.showFileSize`
 
@@ -215,7 +231,7 @@ Whether to print file size information for the final output files after build.
 
 Whether to escape non-ASCII characters in the output to ASCII-safe sequences.
 
-#### `output.externalGlobals`
+#### `output.externalGlobals` {#outputexternalglobals}
 
 - **default**: `{}`
 
@@ -295,7 +311,7 @@ export default defineConfig({
 });
 ```
 
-#### `resolve. mainFields`
+#### `resolve.mainFields`
 
 - **default**: `["exports", "browser", "module", "main"]`
 
@@ -357,7 +373,7 @@ export default defineConfig({
 });
 ```
 
-### external
+### external {#externals}
 
 - **default**: `[]`
 - **type**: `(string | Record<string, string>)[]`
@@ -404,7 +420,6 @@ interface FarmRuntimeOptions {
     path: string;
     plugins?: string[];
     swcHelpersPath?: string;
-    namespace?: string;
     isolate?: boolean;
   };
 }
@@ -438,6 +453,10 @@ Customize the path of `@swc/helpers`. It is not recommended to set this option u
 
 Configure the namespace of Farm Runtime to ensure that the execution of different products under the same window or global can be isolated from each other. By default, the name field of the project package.json is used as the namespace.
 
+:::caution
+The runtime normalizer still computes a namespace internally, but the current JavaScript config validation schema does not accept `runtime.namespace` in `farm.config.ts`.
+:::
+
 #### `runtime.isolate`
 
 - **default**: `false`
@@ -464,6 +483,19 @@ export default defineConfig({
 });
 ```
 
+#### `assets.publicDir`
+
+- **default**: top-level [`publicDir`](/docs/config/shared#publicdir), resolved from the project root
+
+Override the public assets directory for the compiler. In most projects, use the top-level `publicDir` shared option instead so the dev server and build pipeline stay in sync.
+
+#### `assets.mode`
+
+- **default**: inferred from [`output.targetEnv`](/docs/config/compilation-options#output-targetenv)
+- **type**: `"browser" | "node"`
+
+Controls how static assets are emitted for browser or Node-style output. Most projects should leave this unset and configure `output.targetEnv` instead.
+
 ### script
 
 #### `script.target`
@@ -488,10 +520,10 @@ Configure the swc plugin array, each item of the array contains three fields:
 - **options**: Configuration items passed to swc plugin
 - **filters**: Which modules to execute the plug-in, must be configured, support `resolvedPaths` and `moduleTypes` these two filter items, if both are specified at the same time, take the union.
 
-An example of a configuration that supports JSX for a Vue project is as follows:
+An example of a configuration that supports JSX for a Vue project is as follows. For Vue SFC support, register the current Rust plugin `@farmfe/plugin-vue`:
 
 ```ts
-import jsPluginVue from "@farmfe/js-plugin-vue";
+import vue from "@farmfe/plugin-vue";
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -514,7 +546,7 @@ export default {
       ],
     },
   },
-  plugins: [jsPluginVue()],
+  plugins: [vue()],
 };
 ```
 
@@ -590,7 +622,7 @@ interface FarmCssModulesConfig {
 
 Configure which paths correspond to modules that will be treated as CSS Modules. A regular string needs to be configured. Defaults to files ending in `.module.(css|scss|sass|less)`.
 
-##### `css.modules.identName`
+##### `css.modules.indentName`
 
 - **default**: `[name]-[hash]`
 
@@ -642,14 +674,10 @@ Configure which target browsers or browser versions to enable, for example:
 ```ts
 import { defineConfig } from "@farmfe/core";
 
-function defineConfig(config: UserConfig) {
-  return config;
-}
-
 export default defineConfig({
   compilation: {
     css: {
-      prefix: {
+      prefixer: {
         targets: ["last 2 versions", "Firefox ESR", "> 1%", "ie >= 11"],
       },
     },
@@ -685,7 +713,7 @@ Configure whether to enable sourcemap, optional configuration items and descript
 
 ### partialBundling
 
-Configure the behavior of Farm's partial bundling. For details, please refer to [Partial Bundling](/docs/features/partial-bundling)
+Configure the behavior of Farm's partial bundling. For details, please refer to [Partial Bundling](/docs/advanced/partial-bundling)
 
 ```ts
 export interface FarmPartialBundlingConfig {
@@ -830,7 +858,7 @@ Whether to enable lazy compilation, configure to false to close. See [lazy compi
 
 - **default**: `false` in development mode, `true` in build mode
 
-Whether to enable tree shake, set to false to close. See [Tree Shake](/docs/features/tree-shake).
+Whether to enable tree shake, set to false to close. See [Tree Shake](/docs/advanced/tree-shake).
 
 ### minify
 
@@ -842,6 +870,9 @@ Whether to enable compression, the product will be compressed and confused after
 type MinifyOptions = boolean | {
   compress?: ToSnakeCaseProperties<TerserCompressOptions> | boolean;
   mangle?: ToSnakeCaseProperties<TerserMangleOptions> | boolean;
+  include?: string[];
+  exclude?: string[];
+  mangleExports?: boolean;
 };
 ```
 The `compress` and `mangle` options is the same as [swc's minify config](https://swc.rs/docs/configuration/minification).
@@ -865,23 +896,21 @@ compress variable parameters
 - **default**: `[]`
 - **type**: `string[]`
 
-contains modules that need to be compressed, defaults to all, only takes effect when `minify.mode` is `minify-module`.
+Contains modules that need to be compressed. When empty, all matching modules are included.
 
 #### `minify.exclude`
 
-- **default**: `["*.min.js"]`
+- **default**: `[".+\\.min\\.(js|css|html)$"]`
 - **type**: `string[]`
 
-exclude unnecessary compression modules, only takes effect when `minify.mode` is `minify-module`.
+Excludes modules that should not be compressed.
 
-#### `minify.mode`
+#### `minify.mangleExports`
 
-- **default**: `'minify-module'`
-- **type**: `'minify-module' | 'minify-resource-pot'`
+- **default**: `true`
+- **type**: `boolean`
 
-`minify-module` module level `minify`, you can control which modules need to be minified through parameters, the compression is more refined and the efficiency is better
-
-`minify-resource-pot` `ResourcePot` level `minify`, specific modules cannot be controlled through parameters
+Whether to mangle internal export names during minification.
 
 ### presetEnv
 
@@ -907,7 +936,7 @@ By default, polyfills will not be injected into modules under node_modules, if n
 
 Include additional modules that require polyfill, configure regular strings, for example `include: ['node_modules/(es6-package|my-package)/']`
 
-#### `presetEnv. exclude`
+#### `presetEnv.exclude`
 
 - **default**: `['node_modules/']`
 
@@ -923,7 +952,7 @@ Options passed to swc preset env, see https://swc.rs/docs/configuration/compilat
 
 - **default**: `true`
 
-Options for [Persistent Cache](/docs/features/persistent-cache). Configuring it `false` to disable cache.
+Options for [Persistent Cache](/docs/advanced/persistent-cache). Configuring it `false` to disable cache.
 
 ```ts
 export type PersistentCache =
@@ -972,13 +1001,15 @@ import { defineConfig } from "@farmfe/core";
 import path from "node:path";
 
 export default defineConfig({
-  persistentCache: {
-    buildDependencies: [
-      // a file path
-      path.resolve(process.cwd(), "./plugins/my-plugin.js"),
-      // a package name, note that this package must expose package.json
-      "farm-plugin-custom-xxx",
-    ],
+  compilation: {
+    persistentCache: {
+      buildDependencies: [
+        // a file path
+        path.resolve(process.cwd(), "./plugins/my-plugin.js"),
+        // a package name, note that this package must expose package.json
+        "farm-plugin-custom-xxx",
+      ],
+    },
   },
 });
 ```
@@ -994,7 +1025,7 @@ How to generate cache key when trying to reuse cache. if `timestamp` is true and
 
 #### `persistentCache.envs`
 
-- **default**: [Farm Env](/docs/config/farm-config#environment-variable)
+- **default**: [Farm Env](/docs/features/env)
 
 Envs used to invalidate cache, if the configured env changed, then all cache will be invalidated.
 

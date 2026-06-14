@@ -31,11 +31,12 @@ such as react template
 
 ```ts
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 import electron from '@farmfe/js-plugin-electron';
 
 export default defineConfig({
   plugins: [
-    '@farmfe/plugin-react',
+    react(),
     electron({
       main: {
         input: 'electron/main.ts',

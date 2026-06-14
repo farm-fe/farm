@@ -1,0 +1,22 @@
+[package]
+name = "farmfe_svgr_rs"
+version = "0.2.0"
+description = "A tool to transform SVG into React components (Farm fork of svgr-rs)."
+authors = ["SyMind <dacongsama@live.com>", "Farm Authors"]
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+regex = "1.7.3"
+lazy_static = "1.5.0"
+linked_hash_set = "0.1.4"
+thiserror = "1.0.56"
+swc_atoms = { workspace = true }
+swc_common = { workspace = true }
+swc_ecma_ast = { workspace = true }
+swc_ecma_codegen = { workspace = true }
+swc_ecma_parser = { workspace = true }
+swc_ecma_visit = { workspace = true }
+swc_xml = "21.0.0"

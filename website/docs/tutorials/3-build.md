@@ -2,11 +2,11 @@
 By default, Farm has enabled support for the following features for production builds:
 * **`Tree Shake`**: Crop and filter irrelevant modules and code
 * **`Compression`**: Compress and mangle the output resources.
-* **`Automatically inject Polyfill`**: Farm downgrades to modern browsers(ES7) by default, if you need legacy browsers support, configuring [`targetEnv`](/docs/config/compilation-options#output-targetenv)
+* **`Syntax downgrade and polyfills`**: If you need legacy browser support, configure [`output.targetEnv`](/docs/config/compilation-options#output-targetenv), for example `browser-legacy` or `browser-es2015`.
 * **`Automatic partial packaging`**: Based on dependencies and size, the project is partially bundled. For each resource request, about 25 resources are generated to ensure parallel loading performance and improve cache hits rate as much as possible.
 
 ## Output Formats
-Farm supports multiple output formats: `esm`, `cjs`, `umd`, `iife`, `system`, and `amd`. You can also pass an array of formats to build multiple outputs at once. Configure via [`output.format`](/docs/config/compilation-options#outputformat):
+Farm supports multiple output formats: `esm`, `cjs`, `umd`, `iife`, `system`, and `amd`. You can also pass an array of formats to build multiple library outputs at once. Configure via [`output.format`](/docs/config/compilation-options#output-format):
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -14,7 +14,7 @@ import { defineConfig } from '@farmfe/core';
 export default defineConfig({
   compilation: {
     output: {
-      format: 'esm', // or 'cjs', 'umd', 'iife', 'system', 'amd', or ['esm', 'cjs']
+      format: 'esm', // or 'cjs', 'umd', 'iife', 'system', 'amd'
     }
   }
 })
@@ -59,7 +59,7 @@ If you want to custom the path that the resources emitted to, you can use:
 * [`output.assetsFilename`](/docs/config/compilation-options#outputassetsfilename)
 
 ```ts title="farm.config.ts"
-import defineConfig from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 
 export default defineConfig({
   compilation: {
@@ -95,12 +95,7 @@ $ npm run preview
 open `http://localhost:1911/` to preview your project.
 
 ## Browser Compatibility
-By default, Farm build projects to Modern Browsers that natively support `async/await`:
-
-* Chrome >= 62
-* Firefox >= 63
-* Safari >= 13.1
-* Edge >= 79
+By default, Farm builds browser projects without a versioned downgrade preset. Configure `output.targetEnv` when you need a specific browser compatibility target.
 
 You can use [output.targetEnv](/docs/config/compilation-options#output-targetenv) to configuring your target browsers:
 
@@ -127,7 +122,7 @@ pnpm add -D core-js@3
 :::
 
 ## Configure Tree Shake and Minify
-Production optimization like `treeShake` and `minify` are **disabled** by default in `development` for performance reasons, and **enabled** by default in `production`. But if `treeShake` or `minify` are configured manually, the default value will be used regardless of `development` or `production`.
+Production optimization like `treeShaking` and `minify` are **disabled** by default in `development` for performance reasons, and **enabled** by default in `production`. But if `treeShaking` or `minify` are configured manually, the configured value will be used regardless of `development` or `production`.
 
 For details about tree shake and minify, see:
 * [Tree Shake](/docs/advanced/tree-shake)

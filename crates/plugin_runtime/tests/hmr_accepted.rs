@@ -35,13 +35,11 @@ fn hmr_accepted() {
     .unwrap();
 
     let mut module = Module::new("any".into());
-    module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(Box::new(
-      ScriptModuleMetaData {
-        ast: ast.ast,
-        comments: ast.comments.into(),
-        ..Default::default()
-      },
-    )));
+    *module.meta = farmfe_core::module::ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
+      ast: ast.ast,
+      comments: ast.comments.into(),
+      ..Default::default()
+    }));
     context
       .meta
       .set_module_source_map(&"any".into(), ast.source_map);

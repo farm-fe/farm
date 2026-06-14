@@ -1,0 +1,48 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-dts
+
+Rust plugin that emits `.d.ts` files for matched TypeScript modules during a Farm build.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-dts</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-dts</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-dts</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import dts from "@farmfe/plugin-dts";
+
+export default defineConfig({
+  plugins: [
+    dts({
+      include: [".(ts|tsx)$"],
+      exclude: ["node_modules/"],
+    }),
+  ],
+});
+```
+
+## Options
+
+- `include?: string[]` — regular expression strings for source modules to process. Defaults to `[".(ts|tsx)$"]`.
+- `exclude?: string[]` — regular expression strings for modules to skip. Defaults to `["node_modules/"]`.
+
+The plugin writes `.d.ts` next to the matched module path in the emitted resources and rewrites import paths to `.d.ts` when they resolve through Farm aliases.
+
+:::note
+Currently only `.d.ts` output is supported for `.ts` and `.tsx` inputs.
+:::

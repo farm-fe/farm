@@ -252,7 +252,7 @@ export default 'default';
       .contains(&UsedExportsIdent::Default));
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
-    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
     stmts.sort();
     assert_eq!(stmts, vec![2, 3, 4, 6, 7, 8, 9]);
 
@@ -307,7 +307,7 @@ export { a };
       .contains(&UsedExportsIdent::SwcIdent("foo".to_string())));
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
-    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
     stmts.sort();
     assert_eq!(stmts, vec![0, 1, 2]);
 
@@ -362,7 +362,7 @@ export const b = 2;
       .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
-    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
     stmts.sort();
     assert_eq!(stmts, vec![0, 1]);
 
@@ -426,7 +426,7 @@ export * from './bar';
       .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
-    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
     stmts.sort();
 
     assert_eq!(stmts, vec![0, 1, 2]);

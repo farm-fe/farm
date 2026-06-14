@@ -21,8 +21,10 @@ fn load_parse_and_analyze_deps() {
   fixture(
     "tests/fixtures/load_parse_analyze/**/index.*",
     |file: PathBuf, _| {
-      let mut config = Config::default();
-      config.minify = Box::new(BoolOrObj::Bool(true));
+      let config = Config {
+        minify: Box::new(BoolOrObj::Bool(true)),
+        ..Default::default()
+      };
       let plugin_script = farmfe_plugin_script::FarmPluginScript::new(&config);
       let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
       let id = file.to_string_lossy().to_string();
@@ -87,7 +89,7 @@ fn load_parse_and_analyze_deps() {
 
       let ast = module_meta.as_script().ast.clone();
       let mut module = Module::new("any".into());
-      module.meta = Box::new(module_meta);
+      *module.meta = module_meta;
       module.module_type = loaded.module_type;
 
       assert_eq!(module.meta.as_script().ast.body.len(), 5);

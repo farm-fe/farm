@@ -44,7 +44,7 @@ export function logError(err: Error, throwErrorFlag = true) {
   let errorMessages: string[] = [];
   try {
     errorMessages = JSON.parse(err.message);
-  } catch (_) {
+  } catch (_: any) {
     throw new Error(err.message);
   }
 

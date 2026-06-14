@@ -1,0 +1,92 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-tailwindcss
+
+Rust-based TailwindCSS integration for Farm. It scans Farm modules with Tailwind's Oxide scanner and compiles CSS roots that contain Tailwind directives.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-tailwindcss tailwindcss</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+Register the Rust plugin in `farm.config.ts`:
+
+```ts {5}
+import { defineConfig } from '@farmfe/core';
+import tailwindcss from '@farmfe/plugin-tailwindcss';
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      config: {
+        theme: {
+          extend: {}
+        }
+      }
+    })
+  ]
+});
+```
+
+Then import Tailwind from a CSS entry:
+
+```css
+@import "tailwindcss";
+```
+
+## Options
+
+```ts
+export interface TailwindCSSOptions {
+  /**
+   * Reserved for future explicit file/glob scanning. Current builds scan Farm
+   * modules that pass through the compilation graph and exclude node_modules.
+   */
+  content?: string[];
+
+  /**
+   * JSON-serializable TailwindCSS configuration.
+   *
+   * When omitted, Tailwind's default configuration is used.
+   */
+  config?: Record<string, unknown>;
+}
+```
+
+### `content`
+
+`content` is part of the public options shape but is reserved for future explicit file/glob scanning. Current builds scan candidate classes from Farm modules that pass through the compilation graph (`js`, `jsx`, `ts`, `tsx`, `vue`, `svelte`, `html`, and `css`) and skip files under `node_modules`.
+
+### `config`
+
+Pass a JSON-serializable TailwindCSS configuration object. If `config` is omitted, Tailwind's default configuration is used.
+
+:::note
+The Rust wrapper serializes options before passing them to the underlying TailwindCSS processor, so pass `config` as plain data instead of a JavaScript config file with functions.
+:::
+
+## How it works
+
+The plugin runs in two phases:
+
+1. During `transform`, it scans non-CSS source modules for Tailwind class candidates and records CSS root files that contain `@tailwind`, `@apply`, or `@import "tailwindcss"`.
+2. During `freezeModule`, it compiles the recorded CSS root with the complete candidate set, rewrites URLs, and updates the CSS module content.
+
+Use `@farmfe/plugin-tailwindcss` when you want the Rust integration. Use [`@farmfe/js-plugin-tailwindcss`](./js-tailwindcss) when you specifically need the JavaScript plugin pipeline or its filter options.
+
+:::note Known limitations
+The current Rust plugin scans modules that Farm compiles; it does not yet expand the `content` option into additional filesystem globs. It also accepts JSON-serializable config objects instead of loading arbitrary JavaScript Tailwind config files.
+:::

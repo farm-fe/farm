@@ -147,7 +147,7 @@ pub fn transform_cjs_to_esm(
   // 1. export_items.len() > 0 is true, which means the module is imported by esm
   // 2. export_ident_map contains EXPORT_NAMESPACE, which means the module is imported/exported by esm
   // 3. ambiguous_export_ident_map contains AMBIGUOUS_EXPORT_ALL, which means the module is exported by export * from
-  let should_add_cjs_exports = export_items.len() > 0
+  let should_add_cjs_exports = !export_items.is_empty()
     || meta.export_ident_map.contains_key(EXPORT_NAMESPACE)
     || meta
       .ambiguous_export_ident_map
@@ -315,48 +315,49 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
 
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     if let Expr::Call(call_expr) = expr {
-      if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
-        if call_expr.args.len() > 0 {
-          if let ExprOrSpread {
-            expr: box Expr::Lit(Lit::Str(str)),
-            ..
-          } = &call_expr.args[0]
+      if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr)
+        && !call_expr.args.is_empty()
+      {
+        if let ExprOrSpread {
+          expr: box Expr::Lit(Lit::Str(str)),
+          ..
+        } = &call_expr.args[0]
+        {
+          let source = str.value.to_string_lossy().into_owned();
+
+          if let Some((_, module_system)) = self
+            .cjs_require_map
+            .get(&(self.module_id.clone(), source.clone()))
           {
-            let source = str.value.to_string_lossy().into_owned();
-
-            if let Some((_, module_system)) = self
-              .cjs_require_map
-              .get(&(self.module_id.clone(), source.clone()))
-            {
-              // require cjs
-              if *module_system != ModuleSystem::EsModule {
-                // import { require } from 'source';
-                let ident = if let Some(ident) = self.extra_import_require_sources.get(&source) {
-                  ident.clone()
-                } else {
-                  let ident = self.create_require_ident();
-                  self
-                    .extra_import_require_sources
-                    .insert(source, ident.clone());
-
-                  ident
-                };
-
-                *expr = create_call_expr(Expr::Ident(ident.clone()), vec![]);
+            // require cjs
+            if *module_system != ModuleSystem::EsModule {
+              // import { require } from 'source';
+              let ident = if let Some(ident) = self.extra_import_require_sources.get(&source) {
+                ident.clone()
               } else {
-                // require esm
-                let ident = self.create_export_namespace_ident();
-                // if the dep module is an es module
-                if !self.extra_import_sources.contains_key(&source) {
-                  self.extra_import_sources.insert(source, ident.clone());
-                }
-                // transform require expr to a local ident
-                *expr = Expr::Ident(ident)
-              }
-            }
+                let ident = self.create_require_ident();
+                self
+                  .extra_import_require_sources
+                  .insert(source, ident.clone());
 
-            // for external require, visit children and replace require to FARM_NODE_REQUIRE
+                ident
+              };
+
+              *expr = create_call_expr(Expr::Ident(ident.clone()), vec![]);
+            } else {
+              // require esm
+              let ident = self.create_export_namespace_ident();
+              // if the dep module is an es module
+              self
+                .extra_import_sources
+                .entry(source)
+                .or_insert_with(|| ident.clone());
+              // transform require expr to a local ident
+              *expr = Expr::Ident(ident)
+            }
           }
+
+          // for external require, visit children and replace require to FARM_NODE_REQUIRE
         }
       }
     }

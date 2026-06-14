@@ -33,7 +33,8 @@
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
     "build": "tsc -b",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "engines": {
     "node": ">= 16"

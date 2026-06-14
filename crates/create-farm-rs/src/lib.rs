@@ -1,6 +1,6 @@
 use anyhow::Context;
 use clap::Parser;
-use std::{ffi::OsString, fmt::Debug, fs, process::exit};
+use std::{ffi::OsString, fs, process::exit};
 use utils::prompts;
 
 use crate::{
@@ -111,7 +111,7 @@ where
     Some(template) => template,
     None => {
       let selected_template =
-        prompts::select("Select a framework:", &templates_no_flavors, Some(0))?.unwrap();
+        prompts::select("Select a framework:", templates_no_flavors, Some(0))?.unwrap();
 
       match selected_template {
         Template::Tauri(None) => {

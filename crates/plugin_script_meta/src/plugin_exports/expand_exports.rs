@@ -71,7 +71,7 @@ pub fn expand_exports_of_module_graph(
 pub fn expand_dynamic_entry_exports(module_graph: &mut ModuleGraph) {
   let mut expand_context = ExpandModuleExportsContext::new();
 
-  for (dynamic_entry_id, _) in &module_graph.dynamic_entries {
+  for dynamic_entry_id in module_graph.dynamic_entries.keys() {
     expand_module_exports_dfs(dynamic_entry_id, module_graph, &mut expand_context);
   }
 
@@ -472,6 +472,7 @@ fn expand_module_exports_dfs(
   }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn expand_unresolved_import_dfs(
   imported_str: &str,
   ident: &SwcId,
@@ -503,7 +504,7 @@ fn expand_unresolved_import_dfs(
     return;
   }
 
-  let source_module = module_graph.module(&source_module_id).unwrap();
+  let source_module = module_graph.module(source_module_id).unwrap();
 
   if source_module.external
     || !source_module.module_type.is_script()
@@ -559,13 +560,13 @@ fn expand_unresolved_import_dfs(
             expand_context.get_export_ident(&new_source_module_id, imported_str)
           {
             expand_context.insert_ambiguous_export_ident(
-              &source_module_id,
+              source_module_id,
               imported_str.to_string(),
               export_ident.clone(),
             );
             found_ambiguous_ident = true;
 
-            if !expand_context.contains_export_ident(&source_module_id, imported_str) {
+            if !expand_context.contains_export_ident(source_module_id, imported_str) {
               expand_context.insert_export_ident(
                 source_module_id,
                 imported_str.to_string(),
@@ -579,7 +580,7 @@ fn expand_unresolved_import_dfs(
           {
             for ambiguous_ident in ambiguous_idents {
               expand_context.insert_ambiguous_export_ident(
-                &source_module_id,
+                source_module_id,
                 imported_str.to_string(),
                 ambiguous_ident,
               );
@@ -668,7 +669,7 @@ impl ExpandModuleExportsContext {
     source_module_id: &ModuleId,
     module_graph: &ModuleGraph,
   ) {
-    let source_module = module_graph.module(&source_module_id).unwrap();
+    let source_module = module_graph.module(source_module_id).unwrap();
 
     if source_module.external {
       return;
@@ -679,11 +680,11 @@ impl ExpandModuleExportsContext {
     }
 
     self.insert_export_ident(
-      &source_module_id,
+      source_module_id,
       EXPORT_NAMESPACE.to_string(),
       ModuleExportIdent::new(
         source_module_id.clone(),
-        create_export_namespace_ident(&source_module_id)
+        create_export_namespace_ident(source_module_id)
           .to_id()
           .into(),
         ModuleExportIdentType::VirtualNamespace,

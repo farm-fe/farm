@@ -1,0 +1,10 @@
+---
+source: rust-ecosystem/tailwindcss-node/tests/instrumentation.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+Hits:
+  Potato × 4
+
+Timers:
+[TIME] Foo
+[TIME]   ↳ Bar × 100

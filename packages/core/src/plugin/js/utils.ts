@@ -244,7 +244,7 @@ export function transformResourceInfo2RollupRenderedChunk(
 
   return {
     dynamicImports: [],
-    fileName: name,
+    fileName: name ?? '',
     implicitlyLoadedBefore: [],
     importedBindings: {},
     imports: [],
@@ -252,11 +252,11 @@ export function transformResourceInfo2RollupRenderedChunk(
     referencedFiles: [],
     exports: [],
     facadeModuleId: null,
-    isDynamicEntry,
-    isEntry,
+    isDynamicEntry: isDynamicEntry ?? false,
+    isEntry: isEntry ?? false,
     isImplicitEntry: false,
-    moduleIds,
-    name,
+    moduleIds: moduleIds ?? [],
+    name: name ?? '',
     type: 'chunk'
   } satisfies RenderedChunk;
 }
@@ -272,7 +272,7 @@ export function transformResourceInfo2RollupResource(
       type: 'chunk',
       code: source,
       name: resource.name,
-      map: undefined,
+      map: null,
       sourcemapFileName: null,
       preliminaryFileName: resource.origin.value
     } satisfies OutputChunk;
@@ -296,13 +296,13 @@ export function transformRollupResource2FarmResource(
       ...originResource,
       bytes: Array.from(Buffer.from(chunk.code)) as number[],
       emitted: originResource.emitted,
-      name: chunk.name
+      name: chunk.name ?? originResource.name
     };
   } else {
     return {
       bytes: Array.from(chunk.source as Uint8Array) as number[],
       emitted: originResource.emitted,
-      name: chunk.name,
+      name: chunk.name ?? originResource.name,
       origin: originResource.origin,
       resourceType: originResource.resourceType
     };
@@ -317,27 +317,29 @@ const notSupport: (method: string) => (...args: any[]) => any =
 const noop: (...args: any) => any = () => void 0;
 
 function transformFarmFormatToRollupFormat(
-  config: Config['config']['output']
+  config: NonNullable<Config['config']>['output']
 ): InternalModuleFormat {
-  if (config.format === 'esm') {
+  if (config?.format === 'esm') {
     return 'es';
-  } else if (config.format === 'cjs') {
-    if (config.targetEnv === 'node') return 'cjs';
+  } else if (config?.format === 'cjs') {
+    if (config?.targetEnv === 'node') return 'cjs';
     return 'amd';
   }
+  return 'es';
 }
 
 export function transformFarmConfigToRollupNormalizedOutputOptions(
   config: Config['config']
 ): NormalizedOutputOptions {
+  const output = config?.output;
   return {
     amd: { autoId: false, define: 'define', forceJsExtensionForImports: false },
-    assetFileNames: config.output.assetsFilename,
-    chunkFileNames: config.output.filename,
-    compact: Boolean(config.minify),
-    dir: config.output.path,
+    assetFileNames: output?.assetsFilename ?? '',
+    chunkFileNames: output?.filename ?? '',
+    compact: Boolean(config?.minify),
+    dir: output?.path ?? '',
     dynamicImportInCjs: true,
-    entryFileNames: config.output.entryFilename,
+    entryFileNames: output?.entryFilename ?? '',
     esModule: 'if-default-prop',
     experimentalMinChunkSize: config?.partialBundling?.targetMinSize || 1,
     exports: 'auto',
@@ -345,7 +347,9 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     externalImportAssertions: false,
     // externalImportAttributes: true,
     externalLiveBindings: true,
-    format: transformFarmFormatToRollupFormat(config.output),
+    format: transformFarmFormatToRollupFormat(
+      output ?? ({} as NonNullable<Config['config']>['output'])
+    ),
     freeze: false,
     generatedCode: {
       arrowFunctions: false,
@@ -365,7 +369,7 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     paths: {},
     plugins: [],
     preserveModules: false,
-    sourcemap: Boolean(config.sourcemap),
+    sourcemap: Boolean(config?.sourcemap),
     sourcemapExcludeSources: false,
     strict: true,
     systemNullSetters: true,
@@ -389,7 +393,7 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     sourcemapFile: undefined,
     sourcemapFileNames: undefined,
     sourcemapPathTransform: undefined
-  } satisfies NormalizedOutputOptions;
+  } as NormalizedOutputOptions;
 }
 
 export function transformFarmConfigToRollupNormalizedInputOptions(
@@ -399,7 +403,7 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     context: 'undefined',
     experimentalCacheExpiry: 10,
     experimentalLogSideEffects: false,
-    input: config.input,
+    input: config?.input,
     logLevel: 'info',
     makeAbsoluteExternalsRelative: 'ifRelativeSource',
     maxParallelFileOps: 20,
@@ -409,7 +413,7 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     preserveSymlinks: false,
     shimMissingExports: false,
     strictDeprecations: false,
-    treeshake: config.treeShaking && {
+    treeshake: config?.treeShaking && {
       moduleSideEffects: () => false,
       annotations: true,
       correctVarValueBeforeDeclaration: false,
@@ -429,7 +433,7 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     onLog: noop,
     onwarn: noop,
     preserveModules: undefined
-  } satisfies NormalizedInputOptions;
+  } as unknown as NormalizedInputOptions;
 }
 
 export function logCompatibilityWarning(

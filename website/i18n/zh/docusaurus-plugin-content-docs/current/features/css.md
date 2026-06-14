@@ -23,16 +23,15 @@ export function Comp() {
 }
 ```
 
-您可以通过[`css.modules`](/docs/config/farm-config#cssmodules)配置CSS模块。 例如，您可以将 `css.modules.paths` 设置为 `['.css|sass|less|scss']` 那么所有 css 文件将被视为 css 模块。
+您可以通过 [`css.modules`](/zh/docs/config/compilation-options#cssmodules) 配置 CSS 模块。 例如，您可以将 `css.modules.paths` 设置为 `['.css|sass|less|scss']`，那么所有 css 文件将被视为 css 模块。
 
 ### CSS Modules 本地类名转换
 Farm 支持通过 [`css.modules.localsConversion`](/zh/docs/config/compilation-options#cssmoduleslocalsconversion) 转换 CSS 模块类名的命名规范。可用模式：
 
 - `asIs` — 类名按原样导出（默认）
-- `camelCase` — 类名转换为 camelCase
-- `camelCaseOnly` — 类名转换为 camelCase 并移除原始名称
-- `dashes` — 仅将类名中的短横线转换为 camelCase
-- `dashesOnly` — 仅转换短横线，并移除原始名称
+- `lowerCamel` — 类名转换为小驼峰，例如 `foo-bar` 变为 `fooBar`
+- `upperCamel` — 类名转换为大驼峰，例如 `foo-bar` 变为 `FooBar`
+- `snake` — 类名转换为 snake_case，例如 `foo-bar` 变为 `foo_bar`
 
 ```ts title="farm.config.ts"
 import { defineConfig } from '@farmfe/core';
@@ -41,7 +40,7 @@ export default defineConfig({
   compilation: {
     css: {
       modules: {
-        localsConversion: 'camelCase',
+        localsConversion: 'lowerCamel',
       }
     }
   }
@@ -67,7 +66,7 @@ export default defineConfig({
 Farm 官方提供了 sass、less、postcss 插件。
 
 ### Sass
-Farm Sass 插件是一个 Rust 插件，使用 `sass-embeded`（后面我们可能会迁移到纯 Rust 编写的 [`grass`](https://github.com/connorskees/grass)）。
+Farm Sass 插件是一个 Rust 插件，底层使用纯 Rust 编写的 [`grass`](https://github.com/connorskees/grass)。
 
 在 Farm 中编译 `sass/scss` 模块的步骤如下：
 
@@ -80,13 +79,14 @@ npm install @farmfe/plugin-sass
 2. 配置插件
 ```ts
 import type { UserConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default <UserConfig> {
   // ...
-  plugins: ['@farmfe/plugin-sass'] // 配置 Rust 插件的包名即可引入和使用该插件
+  plugins: [sass()] // 像 JS 插件一样导入并以工厂函数形式调用
   // 如果你希望配置 plugin-sass 的参数，可以使用如下形式的配置
   // plugins: [
-  //   ['@farmfe/plugin-sass', { sourceMap: false }]
+  //   sass({ sourceMap: false })
   // ]
 };
 ```
@@ -98,28 +98,24 @@ import './index.scss';
 
 如果要将 `sass` 与 `css modules` 一起使用，请将文件名从 `index.scss` 更改为 `index.module.scss`，请参阅 [css modules](#css-modules)。
 
-`@farmfe/plugin-sass` 支持很多选项，使用 plugins 的数组配置指定插件 sass 的选项：
+`@farmfe/plugin-sass` 支持很多选项，将选项对象传给工厂函数即可：
 
 ```ts
 import type { UserConfig } from '@farmfe/core';
+import sass from '@farmfe/plugin-sass';
 
 export default <UserConfig> {
   plugins: [
-    // 通过数组语法指定插件以及配置
-    [
-      '@farmfe/plugin-sass',
-      // 所有支持的选项如下
-      {
-        sourceMap: true // bool
-        sourceMapIncludeSources: true, // bool
-        alertAscii: true, // bool
-        alertColor: true, // bool
-        charset: true, // bool
-        quietDeps: true, // bool
-        verbose: false, // bool
-        style: 'expanded' | 'compressed' // output code style
-      }
-    ]
+    sass({
+      sourceMap: true, // bool
+      sourceMapIncludeSources: true, // bool
+      alertAscii: true, // bool
+      alertColor: true, // bool
+      charset: true, // bool
+      quietDeps: true, // bool
+      verbose: false, // bool
+      style: 'expanded' | 'compressed' // output code style
+    })
   ]
 };
 ```

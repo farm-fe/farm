@@ -9,16 +9,17 @@ Adding Rust plugins by `plugins` option:
 
 ```ts title="farm.config.ts" {3,7}
 import { defineConfig } from "@farmfe/core";
+import sass from "@farmfe/plugin-sass";
 
 export default defineConfig({
   // configuring it in plugins
   plugins: [
-    ['@farmfe/plugin-sass', { /** plugin options here */ }]
+    sass({ /** plugin options here */ })
   ],
 });
 ```
 
-Configuring the Rust plugin package name(or path) in string and its options in object.
+Import the rust plugin's default export and call it like a JS plugin, optionally passing options as the first argument.
 
 ## Writing Rust Plugin
 See [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin) for details.
@@ -628,6 +629,38 @@ pub struct PluginFinalizeModuleHookParam<'a> {
 
 Do any thing you want before seal the module. Note that you can only modify `param.module`.
 
+## freeze_module
+- **required: `false`**
+- **hook type: `serial`**
+- **default:**
+```rust
+fn freeze_module(
+  &self,
+  _param: &mut PluginFreezeModuleHookParam,
+  _context: &Arc<CompilationContext>,
+) -> Result<Option<()>> {
+  Ok(None)
+}
+```
+
+Runs after module graph construction reaches the module-freezing phase. You can still modify a module here, but after this hook module-level transformations should be considered complete.
+
+## module_graph_build_end
+- **required: `false`**
+- **hook type: `serial`**
+- **default:**
+```rust
+fn module_graph_build_end(
+  &self,
+  _module_graph: &mut ModuleGraph,
+  _context: &Arc<CompilationContext>,
+) -> Result<Option<()>> {
+  Ok(None)
+}
+```
+
+Runs when the module graph has been constructed and finalized. Use this hook for graph-level additions or removals; if you update a module's AST here, update related module metadata manually.
+
 ## build_end
 - **required: `false`**
 - **hook type: `parallel`**
@@ -671,6 +704,22 @@ fn optimize_module_graph(
 }
 ```
 You can do optimization of the `module_graph` here. For internal plugins, Farm does tree shaking, minification in this hook.
+
+## freeze_module_graph_meta
+- **required: `false`**
+- **hook type: `serial`**
+- **default:**
+```rust
+fn freeze_module_graph_meta(
+  &self,
+  _module_graph: &mut ModuleGraph,
+  _context: &Arc<CompilationContext>,
+) -> Result<Option<()>> {
+  Ok(None)
+}
+```
+
+Runs after module graph optimization. This is the final point for module graph metadata changes before grouping and bundling.
 
 ## analyze_module_graph
 - **required: `false`**
@@ -778,12 +827,12 @@ Called before resource pots render. After rendering resource pots, executable `h
 `render_start` is only called once for the first compilation. `HMR` or `Lazy Compilation` won't trigger `render_start` hook.
 :::
 
-## render_resource_pot_modules
+## render_resource_pot
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
 ```rust
-fn render_resource_pot_modules(
+fn render_resource_pot(
   &self,
   _resource_pot: &ResourcePot,
   _context: &Arc<CompilationContext>,
@@ -813,7 +862,7 @@ pub struct ResourcePotMetaData {
 }
 ```
 
-Render the given `ResourcePot` to `rendered_content` and `rendered_source_map_chain`. This hook is used to render `module's ast` to bundled code. If you just want to modify the bundled code, use [render_resource_pot](#render_resource_pot) instead.
+Render the given `ResourcePot` to `rendered_content` and `rendered_source_map_chain`. This hook is used to render module AST data to bundled code. If you only want to modify already-rendered bundled code, use [process_rendered_resource_pot](#process_rendered_resource_pot) instead.
 
 If you really need to use this hook, refer to [plugin_runtime](https://github.com/farm-fe/farm/blob/main/crates/plugin_runtime/src/lib.rs#L320) for best practice.
 
@@ -821,48 +870,33 @@ If you really need to use this hook, refer to [plugin_runtime](https://github.co
 Normally you should not override this hook for natively supported module types like `js/jsx/ts/tsx/css/html`, you should only use this hook when you ensure you want to override the default behavior for internal module types in Farm, or you want to support **custom module types**. 
 :::
 
-## render_resource_pot
+## process_rendered_resource_pot
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
 ```rust
-fn render_resource_pot(
+fn process_rendered_resource_pot(
   &self,
-  _param: &PluginRenderResourcePotHookParam,
+  _resource_pot: &mut ResourcePot,
   _context: &Arc<CompilationContext>,
-) -> Result<Option<PluginRenderResourcePotHookResult>> {
+) -> Result<Option<()>> {
   Ok(None)
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginRenderResourcePotHookParam {
-  pub content: Arc<String>,
-  pub source_map_chain: Vec<Arc<String>>,
-  pub resource_pot_info: ResourcePotInfo,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PluginRenderResourcePotHookResult {
-  pub content: String,
-  pub source_map: Option<String>,
 }
 ```
 
-Transform the rendered bundled code for the given `ResourcePot`. Return `rendered content` and `source map`.
+Process the rendered bundled code for the given `ResourcePot`. Mutate `resource_pot.meta.rendered_content` and its source-map chain when you need to change output after rendering.
 
 ```rust
 impl Plugin for MyPlugin {
-  fn render_resource_pot(
+  fn process_rendered_resource_pot(
     &self,
-    param: &PluginRenderResourcePotHookParam,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
-  ) -> Result<Option<PluginRenderResourcePotHookResult>> {
-    if (param.resource_pot_info.resource_pot_type == ResourcePotType::Css) {
-      return Ok(Some(PluginRenderResourcePotHookResult {
-        content: param.content.replaceAll("<--layer-->", replaced_code),
-        source_map: replaced_map,
-      }))
+  ) -> Result<Option<()>> {
+    if resource_pot.resource_pot_type == ResourcePotType::Css {
+      resource_pot.meta.rendered_content =
+        Arc::new(resource_pot.meta.rendered_content.as_ref().replace("<--layer-->", replaced_code));
+      return Ok(Some(()));
     }
 
     Ok(None)
@@ -871,14 +905,14 @@ impl Plugin for MyPlugin {
 ```
 In above example, we transformed the content of a css `Resource Pot`, replaced all `<--layer-->` to `replaced_code`.
 
-## augment_resource_hash
+## augment_resource_pot_hash
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
 ```rust
-fn augment_resource_hash(
+fn augment_resource_pot_hash(
   &self,
-  _render_pot_info: &ResourcePotInfo,
+  _render_pot: &ResourcePot,
   _context: &Arc<CompilationContext>,
 ) -> Result<Option<String>> {
   Ok(None)
@@ -974,6 +1008,38 @@ Generate final resource for the give rendered resource pot. return `generated re
 :::note
 For natively supported `ModuleTypes` like `js/ts/jsx/tsx/css/html/static assets`, normally you do not need to implement this hook. Use this hook when you want to support a new type of resource that not natively supported by Farm.
 :::
+
+## process_generated_resources
+- **required: `false`**
+- **hook type: `serial`**
+- **default:**
+```rust
+fn process_generated_resources(
+  &self,
+  _resources: &mut PluginGenerateResourcesHookResult,
+  _context: &Arc<CompilationContext>,
+) -> Result<Option<()>> {
+  Ok(None)
+}
+```
+
+Runs after generated resources have file names and content. Use it for post-generation changes before entry resources and finalization.
+
+## handle_entry_resource
+- **required: `false`**
+- **hook type: `serial`**
+- **default:**
+```rust
+fn handle_entry_resource(
+  &self,
+  _resource: &mut PluginHandleEntryResourceHookParam,
+  _context: &Arc<CompilationContext>,
+) -> Result<Option<()>> {
+  Ok(None)
+}
+```
+
+Runs after resources are generated and processed. Farm's HTML handling uses this stage to connect generated resources to entry resources.
 
 ## finalize_resources
 - **required: `false`**

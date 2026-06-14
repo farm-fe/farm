@@ -78,7 +78,7 @@ impl Plugin for FarmfePluginWasm {
         filename_config: assets_filename_config,
         name: file_name,
         name_hash: "",
-        bytes: &param.module_id.as_bytes(),
+        bytes: param.module_id.as_bytes(),
         ext,
         special_placeholders: &Default::default(),
       };

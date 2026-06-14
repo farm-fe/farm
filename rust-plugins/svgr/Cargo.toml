@@ -1,5 +1,5 @@
 [package]
-edition = "2021"
+edition = "2024"
 name = "farm_plugin_svgr"
 version = "0.0.0"
 
@@ -14,6 +14,6 @@ farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
 farmfe_toolkit = { version = "*", path = "../../crates/toolkit" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-svgr-rs = "0.2.0"
+farmfe_svgr_rs = { path = "../../rust-ecosystem/svgr-rs" }
 globset = "0.4"
 xmltree = "0.11.0"

@@ -24,30 +24,27 @@ pub struct UselessHotUpdateStmtRemover;
 impl VisitMut for UselessHotUpdateStmtRemover {
   // detects whether an if statement contains module.meta.hot
   fn visit_mut_stmt(&mut self, stmt: &mut Stmt) {
-    match stmt {
-      Stmt::If(if_stmt) => {
-        if let Expr::Member(MemberExpr {
-          obj:
-            box Expr::Member(MemberExpr {
-              obj: box Expr::Ident(Ident { sym: module, .. }),
-              prop: MemberProp::Ident(IdentName { sym: meta, .. }),
-              ..
-            }),
-          prop: MemberProp::Ident(IdentName { sym: hot, .. }),
-          ..
-        }) = &*if_stmt.test
+    if let Stmt::If(if_stmt) = stmt {
+      if let Expr::Member(MemberExpr {
+        obj:
+          box Expr::Member(MemberExpr {
+            obj: box Expr::Ident(Ident { sym: module, .. }),
+            prop: MemberProp::Ident(IdentName { sym: meta, .. }),
+            ..
+          }),
+        prop: MemberProp::Ident(IdentName { sym: hot, .. }),
+        ..
+      }) = &*if_stmt.test
+      {
+        // use `&` to circumvent additional heap allocations
+        if &module.to_string() == "module"
+          && &meta.to_string() == "meta"
+          && &hot.to_string() == "hot"
         {
-          // use `&` to circumvent additional heap allocations
-          if &module.to_string() == "module"
-            && &meta.to_string() == "meta"
-            && &hot.to_string() == "hot"
-          {
-            // set test tuning to false
-            *stmt = Stmt::Empty(EmptyStmt { span: DUMMY_SP })
-          }
+          // set test tuning to false
+          *stmt = Stmt::Empty(EmptyStmt { span: DUMMY_SP })
         }
       }
-      _ => (),
     }
     stmt.visit_mut_children_with(self);
   }

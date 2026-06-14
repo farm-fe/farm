@@ -1,7 +1,12 @@
-#![feature(box_patterns)]
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
 #![allow(clippy::blocks_in_conditions)]
+// Rust 2024 made `unsafe-op-in-unsafe-fn` warn-by-default. The napi FFI shims
+// in this crate are already declared `unsafe fn`, so calling unsafe APIs in
+// their bodies kept the same audit boundary as on edition 2021. Allow the
+// lint crate-wide to preserve that behavior without adding mechanical
+// `unsafe {}` wrapping that would not improve safety.
+#![allow(unsafe_op_in_unsafe_fn)]
 use std::{
   path::{Path, PathBuf},
   sync::Arc,
@@ -420,7 +425,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resources_map(&self, e: Env) -> HashMap<String, Unknown> {
+  pub fn resources_map(&self, e: Env) -> HashMap<String, Unknown<'_>> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
     let mut resources_map = HashMap::default();

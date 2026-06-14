@@ -328,7 +328,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
 
     let mut result = source.to_string();
     // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = self.alias.iter().map(|a| a).collect();
+    let mut alias_list: Vec<_> = self.alias.iter().collect();
 
     alias_list.sort_by_key(|item| {
       let key = match &item.find {
@@ -873,8 +873,8 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
                         _ => None,
                       };
 
-                      if k.is_some() && v.is_some() {
-                        query_str.push_str(&format!("{}={}&", k.unwrap(), v.unwrap()));
+                      if let (Some(k), Some(v)) = (k, v) {
+                        query_str.push_str(&format!("{k}={v}&"));
                       }
                     }
                     _ => {}

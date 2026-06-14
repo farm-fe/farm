@@ -1,7 +1,7 @@
 [package]
 name = "farmfe_macro_cache_item"
 version = "2.1.0"
-edition = "2021"
+edition = "2024"
 description = "Macro to create a farm cache item"
 license = "MIT"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]

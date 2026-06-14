@@ -142,26 +142,26 @@ export default defineConfig({
 
 静态资源输出的文件名配置，占位符和 `output.filename` 相同。
 
-#### `output.targetEnv`
+#### `output.targetEnv` {#output-targetenv}
 
-- **默认**：`"browser-es2017"`
+- **默认**：应用构建为 `"browser"`
 
-配置产物的执行环境，可以是 `浏览器` 或 `节点` 。 Farm 会自动为您指定的 `targetEnv` 注入 `polyfill` 和降级语法（对于脚本和 css），支持的 `targetEnv` 如下：
+配置产物的执行环境。构建库产物时请显式设置为 `"library"`。生产构建中，带版本的目标会选择 Farm 的兼容性预设，包括适用场景下的浏览器语法降级和 preset-env 行为。支持的 `targetEnv` 如下：
 
 针对 `浏览器` ：
 * **`browser-es2017`**：将项目编译到原生支持 `async wait` 的浏览器。
 * **`browser-es2015`**：将项目编译到原生支持 `es6 features` 的浏览器。
 * **`browser-legacy`**：将项目编译为`ES5`，例如`IE9`。 请注意，这可能会引入大量的填充，从而使生产规模更大。 确保您确实需要支持 `IE9` 等旧版浏览器。
 * **`browser-esnext`**：将项目编译到最新的现代浏览器，不会注入任何polyfill。
-* **`浏览器`**：`browser-es2017`的别名
+* **`browser`**：不带版本降级预设的浏览器产物
 
 针对 `Node.js` ：
 * **`node16`**：将项目编译到`Node 16`。
 * **`node-legacy`**：将项目编译到 `Node 10` 。
 * **`node-next`**：将项目编译到最新的 Node 版本，不会注入任何 polyfill。
-* **`node`**：`node16`的别名
+* **`node`**：不带版本降级预设的 Node.js 产物
 
-#### `output.format`
+#### `output.format` {#output-format}
 
 - **默认值**: `"esm"`
 
@@ -170,6 +170,22 @@ export default defineConfig({
 :::note
 该选项只对 Js 产物有效
 :::
+
+#### `output.libraryBundleType` {#output-librarybundletype}
+
+- **类型**: 编译器层面的 `"single-bundle" | "multiple-bundle" | "bundle-less"`
+
+当 `output.targetEnv` 为 `"library"` 时，该编译器字段控制库模式的打包策略。
+
+:::caution
+当前 `@farmfe/core` 的 TypeScript `UserConfig` 和校验 schema 尚未向 `farm.config.ts` 暴露该字段。在 JavaScript 配置 API 暴露前，请将其视为编译器行为参考。
+:::
+
+#### `output.externalGlobals` {#outputexternalglobals}
+
+- **默认值**: `{}`
+
+将外部模块名映射到全局变量名，例如 `{ react: "React" }`。
 
 ### resolve
 
@@ -266,7 +282,7 @@ export default defineConfig({
 });
 ```
 
-### external
+### external {#externals}
 
 - **默认值**: `[]`
 - **类型**: `(string | Record<string, string>)[]`
@@ -395,10 +411,10 @@ export default defineConfig({
 - **options**: 传给 swc 插件的配置项
 - **filters**: 对哪些模块执行该插件，必须配置，支持 `resolvedPaths` 和 `moduleTypes` 这两个过滤项，两者如果同时指定，取并集。
 
-对于 Vue 项目支持 JSX 的配置示例如下：
+对于 Vue 项目支持 JSX 的配置示例如下。如果需要 Vue SFC 支持，请注册当前的 Rust 插件 `@farmfe/plugin-vue`：
 
 ```ts
-import jsPluginVue from "@farmfe/js-plugin-vue";
+import vue from "@farmfe/plugin-vue";
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -421,7 +437,7 @@ export default {
       ],
     },
   },
-  plugins: [jsPluginVue()],
+  plugins: [vue()],
 };
 ```
 
@@ -495,7 +511,7 @@ interface FarmCssModulesConfig {
 
 配置哪些路径对应的模块会被视为 CSS Modules。需要配置正则字符串。默认是以 `.module.(css|scss|sass|less)` 结尾的文件。
 
-##### `css.modules.identName`
+##### `css.modules.indentName`
 
 - **默认值**: `[name]-[hash]`
 
@@ -740,6 +756,16 @@ Default to `0.8`, immutable module will have 80% request numbers. For example, i
 
 是否启用压缩，开启后将会对产物进行压缩和混淆。参考 [压缩](/docs/advanced/tree-shake)。
 
+```ts
+type MinifyOptions = boolean | {
+  compress?: ToSnakeCaseProperties<TerserCompressOptions> | boolean;
+  mangle?: ToSnakeCaseProperties<TerserMangleOptions> | boolean;
+  include?: string[];
+  exclude?: string[];
+  mangleExports?: boolean;
+};
+```
+
 #### `minify.compress`
 
 - **默认值**: `{}`
@@ -759,23 +785,21 @@ Default to `0.8`, immutable module will have 80% request numbers. For example, i
 - **默认值**: `[]`
 - **类型**: `string[]`
 
-包含需要压缩的模块，默认全部，仅在 `minify.mode` 为 `minify-module` 生效
+包含需要压缩的模块。为空时会包含所有匹配模块。
 
 #### `minify.exclude`
 
-- **默认值**: `["*.min.(js|css|html)"]`
+- **默认值**: `[".+\\.min\\.(js|css|html)$"]`
 - **类型**: `string[]`
 
-排除不需要压缩模块，仅在 `minify.mode` 为 `minify-module` 生效
+排除不需要压缩的模块。
 
-#### `minify.mode`
+#### `minify.mangleExports`
 
-- **默认值**: `'minify-module'`
-- **类型**: `'minify-module' | 'minify-resource-pot'`
+- **默认值**: `true`
+- **类型**: `boolean`
 
-`minify-module` 模块级别 `minify`，可以通过参数控制需要 minify 哪些模块，压缩的更为精细，效率更好
-
-`minify-resource-pot` `ResourcePot` 级别 `minify`，无法通过参数控制具体的模块
+是否在压缩时混淆内部导出名称。
 
 ### presetEnv
 
@@ -858,13 +882,15 @@ import { defineConfig } from "@farmfe/core";
 import path from "node:path";
 
 export default defineConfig({
-  persistentCache: {
-    buildDependencies: [
-      // a file path
-      path.resolve(process.cwd(), "./plugins/my-plugin.js"),
-      // a package name, note that this package must expose package.json
-      "farm-plugin-custom-xxx",
-    ],
+  compilation: {
+    persistentCache: {
+      buildDependencies: [
+        // a file path
+        path.resolve(process.cwd(), "./plugins/my-plugin.js"),
+        // a package name, note that this package must expose package.json
+        "farm-plugin-custom-xxx",
+      ],
+    },
   },
 });
 ```
@@ -875,12 +901,12 @@ export default defineConfig({
 
 控制复用缓存时，如何生成缓存的键。如果 `timestamp` 被设置为 true，并且模块没有倍改过，那么该模块所有的构建步骤将会被跳过（如`load`, `transform` 等钩子），缓存的模块将会被复用。如果`hash`设置成 true，并且 timestamp 没有命中，那么会调用 `load` 以及 `transform` 钩子来获取模块的内容，如果模块内容没有变更，那么缓存将会被复用，剩余构建步骤会被跳过。
 
-- `timestamp`: 是否检查模块的 timestamp，性能最优，但是如果某些插件依赖前一次的构建状态，可能存在问题，见[注意事项](/docs/features/persistent-cache#caveats-for-plugins).
+- `timestamp`: 是否检查模块的 timestamp，性能最优，但是如果某些插件依赖前一次的构建状态，可能存在问题，见[注意事项](/zh/docs/advanced/persistent-cache)。
 - `hash`: 是否检查 load 和 transform 后的内容。
 
 #### `persistentCache.envs`
 
-- **default**: [Farm Env](/docs/features/env)
+- **default**: [Farm Env](/zh/docs/features/env)
 
 可能影响构建过程的环境变量，如果任意一个环境变化了，缓存将会过期。
 

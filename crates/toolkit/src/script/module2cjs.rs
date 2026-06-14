@@ -706,7 +706,7 @@ fn transform_export_named(
 
   ExportModuleItem {
     declare_items: items,
-    export_items: export_items,
+    export_items,
   }
 }
 
@@ -723,14 +723,14 @@ fn transform_export_default_decl(
         DUMMY_SP,
         SyntaxContext::empty(),
       );
-      return create_export_class_decl_stmts(
+      create_export_class_decl_stmts(
         class_decl.ident,
         exported_ident,
         class_decl.class,
         callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
-      );
+      )
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
       let exported_ident = Ident::new(
@@ -738,14 +738,14 @@ fn transform_export_default_decl(
         DUMMY_SP,
         SyntaxContext::empty(),
       );
-      return create_export_fn_decl_stmts(
+      create_export_fn_decl_stmts(
         fn_decl.ident,
         exported_ident,
         fn_decl.function,
         callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
-      );
+      )
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::TsInterfaceDecl(_) => unreachable!(),
   }
@@ -821,7 +821,7 @@ fn get_name_from_src(src: &str) -> String {
     .to_string();
   let val_name = regex.replace_all(&val_name, "_");
 
-  assert!(val_name.len() > 0);
+  assert!(!val_name.is_empty());
 
   format!("_f_{val_name}")
 }
@@ -1035,14 +1035,14 @@ fn create_module_helper_item(
 
 fn create_module_helper_call_expr(helper: Box<Expr>, args: Vec<ExprOrSpread>) -> CallExpr {
   let callee = Callee::Expr(helper);
-  let call_expr = CallExpr {
+
+  CallExpr {
     span: DUMMY_SP,
     callee,
     args,
     type_args: None,
     ctxt: SyntaxContext::empty(),
-  };
-  call_expr
+  }
 }
 
 fn create_define_export_property_ident_call_expr(
@@ -1189,7 +1189,7 @@ impl VisitMut for ImportBindingsHandler {
   }
 }
 
-const CJS_GLOBAL_IDENTS: [&'static str; 3] = ["require", "module", "exports"];
+const CJS_GLOBAL_IDENTS: [&str; 3] = ["require", "module", "exports"];
 
 struct CjsGlobalIdentsRenameVisitor {
   renamed_map: HashMap<Id, String>,
@@ -1350,7 +1350,7 @@ export * from './e';
         },
       );
 
-      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
+      let code_bytes = codegen_module(&ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");
@@ -1453,7 +1453,7 @@ export const f = 1, h = 2;
         },
       );
 
-      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
+      let code_bytes = codegen_module(&ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");

@@ -1,8 +1,8 @@
 {
   "name": "@farmfe/plugin-replace-dirname",
-  "version": "2.0.0-beta.0",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "version": "2.0.0-beta.1",
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -27,9 +27,9 @@
   },
   "exports": {
     ".": {
-      "import": "./index.js",
-      "types": "./index.d.ts",
-      "default": "./index.js"
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -39,8 +39,6 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "index.js",
-    "index.d.ts",
-    "func.js"
+    "scripts"
   ]
 }

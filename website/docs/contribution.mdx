@@ -89,9 +89,7 @@ You can install them in the extension
 
 ### Setup Other Dependencies
 
-- Install [protoc](https://grpc.io/docs/protoc-installation/) for building `sass-embedded`.
 
-**TIP:** When you run `pnpm bootstrap` and you use mac or linux systems, farm will automatically install protoc for you system
 
 ## Start running
 
@@ -137,12 +135,10 @@ pnpm test
 
 ## Quickly create plugins through scaffold
 
-If you want to develop a plugin for farm, farm provides a scaffolding to help you quickly create a plugin, which you can create with the following command.
-You can go to the `cd packages/ cli` directory, run `npm link` or global installation `@ farmfe/ cli` to use this CLI, after the installation is complete, You can create a plugin through `farm plugin create`.
-Farm supports the creation of rust and js plugins.
+If you want to develop a plugin for Farm, use the standalone scaffold to quickly create a JS or Rust plugin:
 
 ```bash
-$ farm plugin create <plugin-name> # create a plugin support js or rust
+$ pnpm create farm-plugin <plugin-name> # create a plugin supporting JS or Rust
 ```
 
 ## Pull Request Preface Tip

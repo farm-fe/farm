@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-tailwindcss",
-  "version": "2.0.0-beta.10",
+  "version": "2.0.0-beta.11",
   "description": "support tailwindcss for farm.",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "farm build",
-    "type-check": "tsc -p ./tsconfig.build.json --noEmit",
+    "type-check": "tsc -p ./tsconfig.json --noEmit",
     "dev": "farm watch"
   },
   "keywords": [

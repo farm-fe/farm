@@ -75,9 +75,7 @@
 
 ### 其他依赖
 
-- 在构建 `sass-embedded` 需要用到 [protoc](https://grpc.io/docs/protoc-installation/) 所以您的本地开发环境还需要安装 [protoc](https://grpc.io/docs/protoc-installation/)。
 
-**TIP:** 当您在初次开发时, 请确保您的本地环境已经安装了 `protoc`。如果您的本地环境没有安装 `protoc`，则在执行 `pnpm bootstrap` 时会触发脚本, 针对 `mac` `linux` 用户会自动安装 `protoc`, 针对 `windows` 用户不会自动安装, 但是可以根据提示自行下载安装。
 
 ## 运行项目
 
@@ -129,12 +127,10 @@ pnpm test
 
 ## 通过脚手架快速创建插件
 
-Farm 提供了一个脚手架来帮助您快速创建一个插件, 您可以通过以下命令来创建一个插件。
-您可以 `cd packages/cli` 目录下, 运行 `npm link` 或者全局安装 `@farmfe/cli` 来使用,
-安装完成之后, 您可以通过 `farm plugin create` 来创建一个插件, 支持 `rust` 和 `js` 插件
+Farm 提供了独立的插件脚手架来帮助您快速创建 JS 或 Rust 插件：
 
 ```bash
-$ farm plugin create <plugin-name> # create a plugin support js or rust
+$ pnpm create farm-plugin <plugin-name> # 创建支持 JS 或 Rust 的插件
 ```
 
 ## 小提示

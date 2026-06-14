@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom component styles using Tailwind classes for reference */
+.btn {
+  @apply inline-flex items-center justify-center rounded-md font-medium;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 px-4 py-2;
+}
+
+.card {
+  @apply rounded-xl shadow-md bg-white overflow-hidden;
+}

@@ -12,7 +12,7 @@ export function throwError(type: string, error: Error) {
 export async function tryRead(filename: string) {
   try {
     return await fs.promises.readFile(filename, 'utf-8');
-  } catch (e) {
+  } catch (e: any) {
     throwError('read', e);
   }
 }

@@ -76,7 +76,7 @@ export function callWithErrorHandle<
   try {
     const result = fn.call(_this, ...args) as ReturnType<U>;
     return result;
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
   }
 }
@@ -272,7 +272,7 @@ export function ensureArray<T>(value: T | T[]) {
 export async function tryRead(filename: string) {
   try {
     return await fs.promises.readFile(filename, 'utf-8');
-  } catch (e) {
+  } catch (e: any) {
     throwError('readFile', e);
   }
 }
@@ -362,7 +362,7 @@ export async function runParallel<T>(
 export async function tryToReadFileSync(path: string) {
   try {
     return await fs.promises.readFile(path, 'utf-8');
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[Farm Plugin Dts]: ${error.type}: ${error.message}`);
     return null;
   }

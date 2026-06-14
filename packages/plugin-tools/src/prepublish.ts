@@ -23,7 +23,7 @@ export async function prepublish(): Promise<void> {
     await fs.writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2));
 
     // execute npm publish under the pkg directory
-    execSync(`npm publish`, {
+    execSync(`npm publish --access public`, {
       cwd: path.join(npmDir, pkg),
       stdio: 'inherit'
     });

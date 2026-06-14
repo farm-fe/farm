@@ -9,13 +9,14 @@ Farm 采用完全插件化的形式，提供了多种类型的插件来干预 Fa
 To use a Rust plugin, configuring `plugins` in `farm.config.ts`.
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
+import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
-defineFarmConfig({
+defineConfig({
   // ...
   plugins: [
     { /*..*/ }, // Js plugin, a object with hook defined
-    '@farmfe/plugin-react', // rust plugin package name
+    react(), // rust plugin imported and called as a factory function
   ]
 })
 
@@ -23,5 +24,5 @@ defineFarmConfig({
 
 Farm support both rust plugins and js plugins:
 
-* [Rust Plugin](/docs/plugins/rust-plugin)
-* [Js plugin](/docs/plugins/js-plugin)
+* [Rust Plugin](/docs/plugins/writing-plugins/rust-plugin)
+* [Js plugin](/docs/plugins/writing-plugins/js-plugin)

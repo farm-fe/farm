@@ -64,7 +64,6 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         entry_name: Some(entry_name.clone()),
         output_file: Some(format_output_name(name)),
         ignore_emitted_field: false,
-        ..Default::default()
       },
     );
   }

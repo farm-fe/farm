@@ -28,17 +28,15 @@ farm.config.ts
 
 ```typescript
 import { defineConfig } from '@farmfe/core';
+import yaml from '@farmfe/plugin-yaml';
 
 export default defineConfig({
   plugins: [
-    [
-      '@farmfe/plugin-yaml',
-      {
-        documentMode: 'single' | 'multi', // default single
-        include: Regex, // default None,
-        exclude: Regex, // default None
-      },
-    ],
+    yaml({
+      documentMode: 'single' | 'multi', // default single
+      include: Regex, // default None,
+      exclude: Regex, // default None
+    }),
   ],
 });
 ```

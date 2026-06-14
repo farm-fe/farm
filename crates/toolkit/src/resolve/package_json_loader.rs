@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -42,6 +42,12 @@ impl Default for Options {
   }
 }
 
+impl Default for PackageJsonLoader {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl PackageJsonLoader {
   pub fn new() -> Self {
     Self {
@@ -49,7 +55,7 @@ impl PackageJsonLoader {
     }
   }
 
-  pub fn get_cache_key(&self, path: &PathBuf, options: &Options) -> String {
+  pub fn get_cache_key(&self, path: &Path, options: &Options) -> String {
     format!(
       "{}{}{}",
       path.to_string_lossy(),

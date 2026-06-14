@@ -1,0 +1,138 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-vue
+
+Compile [Vue 3 Single-File Components](https://vuejs.org/guide/scaling-up/sfc.html) using the [`fervid`](https://github.com/phoenix-ru/fervid) Rust compiler.
+
+This plugin is the Farm-native equivalent of [`unplugin-vue`](https://github.com/unplugin/unplugin-vue) / [`@vitejs/plugin-vue`](https://github.com/vitejs/vite-plugin-vue), but written entirely in Rust — no JavaScript orchestration is required at compile time.
+
+:::caution Experimental
+`fervid`'s SFC compiler is still maturing (the upstream README marks the compile entry point as "not production-ready yet"). Expect rough edges on edge cases such as advanced `<script setup>` macros and SSR codegen. Please file issues with reproductions; we'll forward to the upstream as needed.
+:::
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-vue vue</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-vue vue</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-vue vue</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+`@farmfe/plugin-vue` is a Rust plugin — import it and call it inside the `plugins` array of your `farm.config.ts`, the same as a JS plugin.
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import vue from "@farmfe/plugin-vue";
+
+export default defineConfig({
+  plugins: [
+    vue({
+      // options (see below) — may be omitted entirely
+    }),
+  ],
+});
+```
+
+If you don't need any options, simply call it with no arguments:
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import vue from "@farmfe/plugin-vue";
+
+export default defineConfig({
+  plugins: [vue()],
+});
+```
+
+## Options
+
+| Option                                       | Type                                                  | Default        | Description                                                                                                                                              |
+| -------------------------------------------- | ----------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `include`                                    | `string \| RegExp \| (string \| RegExp)[]`            | `/\.vue$/`     | Files matched by this filter are treated as Vue SFCs.                                                                                                    |
+| `exclude`                                    | `string \| RegExp \| (string \| RegExp)[]`            | `[]`           | Files excluded from the Vue SFC pipeline.                                                                                                                |
+| `isProduction`                               | `boolean`                                             | derived        | Force production-mode codegen regardless of Farm's compilation mode.                                                                                     |
+| `ssr`                                        | `boolean`                                             | `false`        | Enable fervid's SSR codegen path. Experimental.                                                                                                          |
+| `sourceMap`                                  | `boolean`                                             | `true`         | Request source maps from fervid.                                                                                                                         |
+| `customElement`                              | `boolean \| string \| RegExp \| (string \| RegExp)[]` | deprecated     | Backward-compatible alias; prefer `features.customElement`.                                                                                               |
+| `features.optionsAPI`                        | `boolean`                                             | `true`         | Drives the `__VUE_OPTIONS_API__` runtime define flag.                                                                                                    |
+| `features.prodDevtools`                      | `boolean`                                             | `false`        | Drives `__VUE_PROD_DEVTOOLS__`.                                                                                                                          |
+| `features.prodHydrationMismatchDetails`      | `boolean`                                             | `false`        | Drives `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__`.                                                                                                        |
+| `features.propsDestructure`                  | `boolean`                                             | fervid default | Enable reactive destructure for `defineProps`.                                                                                                           |
+| `features.customElement`                     | `boolean \| string \| RegExp \| (string \| RegExp)[]` | `/\.ce\.vue$/` | Files matching this pattern are compiled in custom-element mode.                                                                                         |
+
+### Auto-injected `define` flags
+
+In the `config` hook the plugin populates `compilation.define` with the standard Vue feature flags if you have not set them yourself:
+
+- `__VUE_OPTIONS_API__` &nbsp;→ `true`
+- `__VUE_PROD_DEVTOOLS__` &nbsp;→ `false`
+- `__VUE_PROD_HYDRATION_MISMATCH_DETAILS__` &nbsp;→ `false`
+
+`vue` is also added to `resolve.dedupe` (except when the build targets Node).
+
+### Style sub-blocks
+
+Each `<style>` block is exposed as a virtual sub-module with a stable query format:
+
+```
+foo.vue?vue&type=style&idx=<N>&lang=<lang>&scoped=<bool>
+```
+
+For native CSS the virtual module is emitted as `ModuleType::Css` and handled by Farm's built-in CSS pipeline. For non-CSS languages (`scss`, `sass`, `less`, `stylus`) it is emitted as `ModuleType::Custom("<lang>")` so a downstream preprocessor plugin (e.g. `@farmfe/plugin-sass`) can claim it.
+
+### Custom blocks
+
+Custom SFC blocks are exposed as virtual modules so user plugins can opt into blocks such as `<i18n>` or `<docs>`:
+
+```
+foo.vue?vue&type=custom&idx=<N>&block=<tag>&lang=<tag>
+```
+
+The module type is `ModuleType::Custom("<tag>")`. If no downstream plugin claims that module type, Farm's normal unknown-module behavior applies.
+
+### HMR and scoped preprocessors
+
+The plugin caches descriptor metadata during transform (source hash, style block metadata, custom block metadata, custom-element mode, and virtual ids). This is the Rust-side foundation for granular HMR, but the current safe fallback is still full SFC invalidation when Farm cannot express a narrower update.
+
+Scoped native CSS is handled by `fervid`. Scoped preprocessed blocks are passed to downstream preprocessors as `ModuleType::Custom("<lang>")`; post-preprocessor re-scoping is still gated on a Farm hook that can run after Sass/Less compilation without moving those preprocessors into plugin-vue.
+
+## Reference example
+
+See `examples/vue/` for a small Vue 3 app using `@farmfe/plugin-vue`, Vue Router, Pinia, scoped CSS, and an SCSS SFC style block.
+
+## Feature support (Phase 2)
+
+The plugin intentionally covers the `fervid`-backed subset of `unplugin-vue`; features that require upstream compiler support are gated instead of being silently emulated.
+
+| Capability                                                | Status |
+| --------------------------------------------------------- | ------ |
+| `.vue` load + main module transform                       | ✅      |
+| `<script setup>` / Options API                            | ✅      |
+| Scoped CSS for native `<style>` blocks                    | ✅      |
+| `v-bind(var)` CSS variables (native CSS)                  | ✅      |
+| Custom elements via `.ce.vue` or `features.customElement` | ✅      |
+| `__VUE_*__` define flag injection                         | ✅      |
+| `<style lang="scss">` etc. handed off to CSS preprocessor | ✅      |
+| Custom blocks (`<i18n>`, …) virtual modules               | ✅      |
+| Descriptor cache for HMR decisions                        | ✅ foundation; current fallback is full SFC reload |
+| Granular HMR (template-only / style-only)                 | Gated on Farm/fervid hooks |
+| Preprocessor re-scoping (scope id injected post-sass)     | Gated on Farm post-preprocessor hook ordering |
+| `inlineTemplate: false` / external template split         | Gated on fervid per-block template codegen |
+| Type-only `defineProps<…>()` cross-file deps              | Gated on fervid type dependency metadata |
+| `componentIdGenerator`                                    | Gated on fervid configurable id support |
+| `<script src>` / `<template src>` external blocks         | Experimental; verify against fervid before relying on it |
+| Custom `compiler` (pin `vue/compiler-sfc` version)        | Dropped — fervid is the compiler |
+
+## Comparison to `unplugin-vue` / `@vitejs/plugin-vue`
+
+`@farmfe/plugin-vue` ports the bundler-facing behaviour of `unplugin-vue`'s Farm hooks (define flag injection, virtual style modules, custom-element filter) to Rust while delegating actual SFC compilation to `fervid` instead of `vue/compiler-sfc`. Most options carry over with the same names; the table above lists the ones that intentionally do not.

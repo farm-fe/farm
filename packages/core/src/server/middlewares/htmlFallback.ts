@@ -22,24 +22,24 @@ export function htmlFallbackMiddleware(
     ) {
       return next();
     }
-    const url = cleanUrl(req.url);
+    const url = cleanUrl(req.url ?? '');
     const pathname = removeSlash(decodeURIComponent(url));
-    const headers = app.config.server.headers;
+    const headers = app.config.server?.headers;
 
     if (pathname.endsWith('.html')) {
-      const html = app.compiler.resource(pathname);
+      const html = app.compiler?.resource(pathname);
       if (html) {
         send(req, res, html, pathname, { headers });
         return next();
       }
     } else if (pathname === '') {
-      const html = app.compiler.resource('index.html');
+      const html = app.compiler?.resource('index.html');
       if (html) {
         send(req, res, html, pathname, { headers });
         return next();
       }
     } else {
-      const html = app.compiler.resource(pathname + '.html');
+      const html = app.compiler?.resource(pathname + '.html');
 
       if (html) {
         send(req, res, html, pathname, { headers });
@@ -47,7 +47,7 @@ export function htmlFallbackMiddleware(
       }
     }
     if (app.serverOptions.appType === 'spa') {
-      const html = app.compiler.resource('index.html');
+      const html = app.compiler?.resource('index.html');
       html && send(req, res, html, pathname, { headers });
     }
 

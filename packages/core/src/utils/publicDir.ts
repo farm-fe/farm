@@ -35,17 +35,19 @@ export async function checkPublicFile(url: string, config: UserConfig) {
 export async function initPublicFiles(
   config: UserConfig
 ): Promise<Set<string> | undefined> {
+  const publicDir = config.publicDir;
+  if (!publicDir) return;
   let fileNames: string[];
   try {
-    fileNames = await recursiveReaddir(config.publicDir);
-  } catch (e) {
+    fileNames = await recursiveReaddir(publicDir);
+  } catch (e: any) {
     if (e.code === ERR_SYMLINK_IN_RECURSIVE_READDIR) {
       return;
     }
     throw e;
   }
   const publicFiles = new Set(
-    fileNames.map((fileName) => fileName.slice(config.publicDir.length))
+    fileNames.map((fileName) => fileName.slice(publicDir.length))
   );
   publicFilesMap.set(config, publicFiles);
 

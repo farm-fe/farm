@@ -292,7 +292,7 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
                       strip_context: params.strip_context,
                       module_graph: params.module_graph,
                       module_ids: params.module_ids,
-                      source: &source,
+                      source,
                     },
                   ));
                 }
@@ -375,14 +375,14 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
             if statement.defined_idents.is_empty() {
               // export default '123' => var module_default = '123';
               let default_ident = create_export_default_ident(module_id);
-              rename_handler.rename_ident_if_conflict(&module_id, &default_ident.to_id().into());
+              rename_handler.rename_ident_if_conflict(module_id, &default_ident.to_id().into());
               result.ast.body[statement.id] = create_export_default_expr_item(expr, default_ident);
             } else {
               // export default function foo() {}
               // =>
               // function foo() {}
               for defined_ident in &statement.defined_idents {
-                rename_handler.rename_ident_if_conflict(&module_id, defined_ident);
+                rename_handler.rename_ident_if_conflict(module_id, defined_ident);
               }
               result.ast.body[statement.id] = ModuleItem::Stmt(Stmt::Decl(if expr.is_fn_expr() {
                 let fn_expr = expr.expect_fn_expr();
@@ -416,7 +416,7 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
               // a module decl statement may have multiple named exports like export const { foo, bar } = window;
               // we should only replace the module decl statement once after all named exports are handled
               is_replace_module_decl = true;
-              rename_handler.rename_ident_if_conflict(&module_id, local);
+              rename_handler.rename_ident_if_conflict(module_id, local);
             } else if !statements_to_remove.contains(&statement.id) {
               statements_to_remove.push(statement.id);
             }
@@ -599,7 +599,7 @@ pub fn handle_external_module_idents(
   let mut statements_to_remove = vec![];
 
   // add temporary import statement and reuse logic from handle_external_module
-  let temp_import_stmt = create_import_stmt(create_import_specifiers(idents), &source_module_id);
+  let temp_import_stmt = create_import_stmt(create_import_specifiers(idents), source_module_id);
 
   let temp_import_stmt_id = params.result.ast.body.len();
   let temp_statement = analyze_statement_info(&temp_import_stmt_id, &temp_import_stmt);
@@ -610,7 +610,7 @@ pub fn handle_external_module_idents(
 
   handle_external_module(HandleExternalModuleOptions::from(
     params,
-    &source_module_id,
+    source_module_id,
     &temp_statement.into(),
   ));
 

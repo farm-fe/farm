@@ -1,5 +1,3 @@
-#![feature(path_file_prefix)]
-
 use farmfe_core::{
   config::Config,
   parking_lot::RwLock,

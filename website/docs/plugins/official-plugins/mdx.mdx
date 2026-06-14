@@ -1,0 +1,65 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-mdx
+
+Rust plugin that loads `.md` and `.mdx` files and compiles them to JSX with `mdxjs`.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-mdx @farmfe/plugin-react</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-mdx @farmfe/plugin-react</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-mdx @farmfe/plugin-react</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+
+```ts
+import { defineConfig } from "@farmfe/core";
+import mdx from "@farmfe/plugin-mdx";
+import react from "@farmfe/plugin-react";
+
+export default defineConfig({
+  plugins: [
+    mdx({
+      include: "\\.(md|mdx)$",
+    }),
+    react({ runtime: "automatic" }),
+  ],
+});
+```
+
+Then import MDX as a component:
+
+```tsx
+import Page from "./page.mdx";
+
+export default () => <Page />;
+```
+
+## Options
+
+The Rust implementation accepts MDX compiler options plus Farm filters:
+
+- `include?: string` — regular expression string; when set, only matching resolved paths are transformed.
+- `exclude?: string` — regular expression string; matching resolved paths are skipped.
+- `development?: boolean` — passed to `mdxjs`. Defaults to `false`.
+- `providerImportSource?: string`
+- `jsx?: boolean` — defaults to `false`.
+- `jsxRuntime?: "automatic" | "classic"` — defaults to `"automatic"`.
+- `pragma?: string` — defaults to `"React.createElement"`.
+- `pragmaFrag?: string` — defaults to `"React.Fragment"`.
+- `pragmaImportSource?: string` — defaults to `"react"`.
+- `jsxImportSource?: string` — defaults to `"react"`.
+- `filepath?: string`
+- `parse?: object` — passed to `mdxjs` parse options.
+
+`jsx` and `jsxRuntime` are passed through to `mdxjs` together: `jsx` controls whether JSX is preserved in the output, while `jsxRuntime` controls the runtime mode used when MDX compiles JSX. If `jsx` is `false`, MDX compiles JSX away using the selected runtime mode.
