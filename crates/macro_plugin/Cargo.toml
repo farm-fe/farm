@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_macro_plugin"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2024"
 license = "MIT"
 description = "macro for farm plugins"

@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0](https://github.com/farm-fe/farm/compare/create-farm-v2.0.1...create-farm-v2.1.0) - 2026-06-14
+
+### Added
+
+- migrate all Rust and JavaScript plugins to current repo ([#2282](https://github.com/farm-fe/farm/pull/2282))
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+- deno create & add dry-run flag ([#2247](https://github.com/farm-fe/farm/pull/2247))
+
+### Other
+
+- Add empty changeset for lint/type-check fixes ([#2306](https://github.com/farm-fe/farm/pull/2306))
+- sync v2 docs from code and rename docs/ to website/ ([#2283](https://github.com/farm-fe/farm/pull/2283))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/create-farm-v2.0.0...create-farm-v2.0.1) - 2025-09-21
 
 ### Other

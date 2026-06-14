@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_html-v2.1.0...farmfe_plugin_html-v2.1.1) - 2026-06-14
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+
+### Other
+
+- Add empty changeset for lint/type-check fixes ([#2306](https://github.com/farm-fe/farm/pull/2306))
+
 ## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_plugin_html-v2.0.0...farmfe_plugin_html-v2.1.0) - 2025-09-21
 
 ### Added

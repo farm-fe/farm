@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_macro_plugin-v2.0.0...farmfe_macro_plugin-v2.0.1) - 2026-06-14
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+
 ## [0.0.4](https://github.com/farm-fe/farm/compare/farmfe_macro_plugin-v0.0.3...farmfe_macro_plugin-v0.0.4) - 2024-03-24
 
 ### Other

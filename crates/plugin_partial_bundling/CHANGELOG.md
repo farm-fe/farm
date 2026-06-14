@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_plugin_partial_bundling-v2.0.1...farmfe_plugin_partial_bundling-v2.1.0) - 2026-06-14
+
+### Added
+
+- add support for emitting multiple resources in farm library mode ([#2280](https://github.com/farm-fe/farm/pull/2280))
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+
+### Other
+
+- Add empty changeset for lint/type-check fixes ([#2306](https://github.com/farm-fe/farm/pull/2306))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_partial_bundling-v2.0.0...farmfe_plugin_partial_bundling-v2.0.1) - 2025-09-21
 
 ### Other
