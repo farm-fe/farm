@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-vuetify",
-  "version": "0.0.1",
+  "version": "0.0.2-beta.0",
   "description": "Farm plugin for Vuetify",
   "main": "./build/cjs/index.cjs",
   "types": "./build/esm/index.d.ts",
