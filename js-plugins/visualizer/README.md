@@ -10,29 +10,29 @@
 
 ## Getting Started
 
-To begin, you'll need to install `@farmfe/visualizer`:
+To begin, you'll need to install `@farmfe/js-plugin-visualizer`:
 
 ```console
-npm install @farmfe/visualizer --save-dev
+npm install @farmfe/js-plugin-visualizer --save-dev
 ```
 
 or
 
 ```console
-yarn add -D @farmfe/visualizer
+yarn add -D @farmfe/js-plugin-visualizer
 ```
 
 or
 
 ```console
-pnpm add -D @farmfe/visualizer
+pnpm add -D @farmfe/js-plugin-visualizer
 ```
 
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
 import { defineFarmConfig } from '@farmfe/core/dist/config';
-import visualizer from '@farmfe/visualizer'; //  import the plugin
+import visualizer from '@farmfe/js-plugin-visualizer'; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
