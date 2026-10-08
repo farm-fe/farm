@@ -323,7 +323,12 @@ fn walk(
         longest = Some(key.as_str());
       } else if key.len() > 1 {
         if let Some(tmp) = key.find('*') {
-          let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
+          // Only `*` is a wildcard; the prefix and suffix are literal paths.
+          let pattern = format!(
+            r"\A{}(.*){}\z",
+            regex::escape(&key[..tmp]),
+            regex::escape(&key[tmp + 1..])
+          );
           let regex = regex::Regex::new(&pattern).unwrap();
 
           if let Some(captures) = regex.captures(&entry) {
@@ -367,5 +372,65 @@ fn walk(
   ResolveExportsOrImportsResult {
     resolved: v,
     warnings: vec![],
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn wildcard_subpaths_match_literal_prefixes() {
+    let mapping = BTreeMap::from([(
+      "./modules/v1.0+/*".to_string(),
+      Value::String("./modules/*.js".to_string()),
+    )]);
+    let options = ConditionOptions {
+      unsafe_flag: false,
+      require: false,
+      browser: false,
+      conditions: HashSet::default(),
+    };
+    assert_eq!(
+      walk("mypkg", &mapping, "./modules/v1.0+/a", &options)
+        .resolved
+        .as_deref(),
+      Some("./modules/a.js")
+    );
+    assert!(walk("mypkg", &mapping, "./modules/v1X00/a", &options)
+      .resolved
+      .is_none());
+  }
+
+  #[test]
+  fn wildcard_subpaths_match_literal_suffixes() {
+    let mapping = BTreeMap::from([
+      (
+        "./modules/*".to_string(),
+        Value::String("./modules/*.js".to_string()),
+      ),
+      (
+        "./modules/*.js".to_string(),
+        Value::String("./modules/*.js".to_string()),
+      ),
+    ]);
+    let options = ConditionOptions {
+      unsafe_flag: false,
+      require: false,
+      browser: false,
+      conditions: HashSet::default(),
+    };
+
+    for (input, expected) in [
+      ("./modules/a.plain.b", "./modules/a.plain.b.js"),
+      ("./modules/a.json.b", "./modules/a.json.b.js"),
+      ("./modules/a.json.b.js", "./modules/a.json.b.js"),
+      ("./modules/aXjs", "./modules/aXjs.js"),
+      ("./modules/a.js.extra", "./modules/a.js.extra.js"),
+    ] {
+      let result = walk("mypkg", &mapping, input, &options);
+      assert_eq!(result.resolved.as_deref(), Some(expected), "{input}");
+      assert!(result.warnings.is_empty(), "{input}: {:?}", result.warnings);
+    }
   }
 }
