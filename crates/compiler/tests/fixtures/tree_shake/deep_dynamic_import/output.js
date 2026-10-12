@@ -28,7 +28,7 @@
 
 
 //index.js:
- (function(){const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('dynamic-import.ts');
 }
@@ -37,7 +37,7 @@ function initModuleSystem$1() {
 }
 initModuleSystem(__farm_internal_module_system__);
 initModuleSystem$1(__farm_internal_module_system__);
-}());(function(moduleSystem, modules) {
+}}());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
         module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_5d9ba667c884d5ac6d698f0fb795aedf_js";
@@ -57,4 +57,4 @@ initModuleSystem$1(__farm_internal_module_system__);
         console.log(farmRequire.f(_f_main));
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'dep-8b0076db.js', type: 0 }],{ '05ee5ec7': [0] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'dep-8b0076db.js', type: 0 }],{ '05ee5ec7': [0] });var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

@@ -1,21 +1,21 @@
 use crate::utils::{get_reexport_named_local, is_reexport_all};
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
-    meta_data::script::{
-      statement::{ExportSpecifierInfo, ImportSpecifierInfo},
-      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
-    },
     Module, ModuleId, ModuleSystem,
+    meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleExportIdent, ModuleExportIdentType,
+      statement::{ExportSpecifierInfo, ImportSpecifierInfo},
+    },
   },
   parking_lot::Mutex,
   plugin::ResolveKind,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::{
     EmptyStmt, ExportNamedSpecifier, ExportSpecifier, Ident, ModuleDecl, ModuleExportName,
     ModuleItem, NamedExport, Stmt,
   },
-  HashMap, HashSet,
 };
 use farmfe_toolkit::script::{
   analyze_statement::analyze_statements, concatenate_modules::EXPORT_NAMESPACE,
@@ -367,6 +367,12 @@ pub fn update_exports_meta_and_module_decl(
                           named.orig.atom().to_string(),
                           src.as_ref().unwrap().value.to_string_lossy().into_owned(),
                         )) {
+                          // `export { name } from ...` exports its original name.
+                          // Renaming only the source binding must not rename the
+                          // public export that the entry facade still reads.
+                          if named.exported.is_none() {
+                            named.exported = Some(named.orig.clone());
+                          }
                           match &mut named.orig {
                             ModuleExportName::Ident(ident) => {
                               ident.sym = mangled_ident.as_str().into();

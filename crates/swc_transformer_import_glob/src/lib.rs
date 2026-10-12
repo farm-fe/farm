@@ -17,12 +17,13 @@
 use std::path::Component;
 use std::path::PathBuf;
 
+use farmfe_core::HashMap;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::ModuleId;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
-use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_ecma_ast::IdentName;
 use farmfe_core::swc_ecma_ast::Tpl;
 use farmfe_core::swc_ecma_ast::{
@@ -31,7 +32,6 @@ use farmfe_core::swc_ecma_ast::{
   Module as SwcModule, ModuleItem, ObjectLit, Pat, Prop, PropOrSpread,
 };
 use farmfe_core::wax::Glob;
-use farmfe_core::HashMap;
 
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
@@ -47,6 +47,9 @@ pub trait ImportMetaGlobResolver {
   fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String>;
 }
 
+/// Patterns, matched relative paths, and whether file contents are inlined.
+pub type ImportMetaGlobSnapshot = Vec<(Vec<String>, Vec<String>, bool)>;
+
 pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   ast: &mut SwcModule,
   root: String,
@@ -55,6 +58,20 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   alias: &Vec<AliasItem>,
   resolver: R,
 ) -> farmfe_core::error::Result<()> {
+  transform_import_meta_glob_with_snapshot(ast, root, importer, cur_dir, alias, resolver)
+    .map(|_| ())
+}
+
+/// Transform glob expressions while retaining the filesystem inputs needed to
+/// validate a cached expansion on a subsequent compilation.
+pub fn transform_import_meta_glob_with_snapshot<R: ImportMetaGlobResolver>(
+  ast: &mut SwcModule,
+  root: String,
+  importer: &ModuleId,
+  cur_dir: String,
+  alias: &Vec<AliasItem>,
+  resolver: R,
+) -> farmfe_core::error::Result<ImportMetaGlobSnapshot> {
   let mut visitor: ImportGlobVisitor<'_, _> =
     ImportGlobVisitor::new(importer, root, cur_dir, alias, resolver);
   ast.visit_mut_with(&mut visitor);
@@ -64,6 +81,18 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
       visitor.errors.join("\n"),
     ));
   }
+
+  let snapshot = visitor
+    .import_globs
+    .iter()
+    .map(|info| {
+      (
+        info.sources.clone(),
+        info.globed_sources.clone(),
+        info.glob_import_as.as_deref() == Some("raw"),
+      )
+    })
+    .collect();
 
   // insert import statements
   for (index, meta_info) in visitor.import_globs.into_iter().enumerate() {
@@ -137,7 +166,7 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
     }
   }
 
-  Ok(())
+  Ok(snapshot)
 }
 
 /// import { <import> as __glob__0_0 } from './dir/foo.js'
@@ -460,7 +489,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
   }
 
   /// Glob the sources and filter negative sources, return globs relative paths
-  fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
+  pub fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
     let mut paths = vec![];
 
     for source in sources {
@@ -808,11 +837,13 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
         return None;
       }
 
-      Some(vec![quasis
-        .iter()
-        .map(|item| item.raw.to_string())
-        .collect::<Vec<_>>()
-        .join("")])
+      Some(vec![
+        quasis
+          .iter()
+          .map(|item| item.raw.to_string())
+          .collect::<Vec<_>>()
+          .join(""),
+      ])
     }
     _ => None,
   }

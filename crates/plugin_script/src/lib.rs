@@ -4,49 +4,50 @@ use std::{path::Path, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
+  HashSet,
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{
+    Module, ModuleId, ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
     meta_data::script::{
-      CommentsMetaData, ScriptModuleMetaData, FARM_RUNTIME_MODULE_HELPER_ID,
-      FARM_RUNTIME_MODULE_SYSTEM_ID,
+      CommentsMetaData, FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID,
+      ScriptModuleMetaData,
     },
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
-    ModuleId, ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
   },
   plugin::{
     GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult,
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam,
-    PluginProcessModuleHookParam, PluginResolveHookParam, ResolveKind,
+    PluginProcessModuleHookParam, PluginResolveHookParam, PluginUpdateModulesHookParam,
+    ResolveKind, UpdateType,
   },
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
+    meta_data::{ResourcePotMetaData, js::JsResourcePotMetaData},
+    resource_pot::{ResourcePot, ResourcePotType},
   },
-  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
+  swc_common::{GLOBALS, Globals, Mark, SourceMap, comments::SingleThreadedComments},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
-  HashSet,
 };
 use farmfe_swc_transformer_import_glob::{
-  transform_import_meta_glob, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
+  ImportGlobVisitor, ImportMetaGlobResolver, ImportMetaGlobResolverParams, ImportMetaGlobSnapshot,
+  transform_import_meta_glob_with_snapshot,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
-    codegen_module,
-    concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstOptions},
+    CodeGenCommentsConfig, ParseScriptModuleResult, codegen_module,
+    concatenate_modules::{ConcatenateModulesAstOptions, concatenate_modules_ast},
     create_codegen_config, module_type_from_id, parse_module, syntax_from_module_type,
     transform_to_esm::{
       self, get_cjs_require_only_modules, update_module_graph_edges_of_cjs_modules,
     },
-    CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
-    build_sourcemap, collapse_sourcemap_chain, load_source_original_sourcemap,
-    trace_module_sourcemap, CollapseSourcemapOptions, SourceMap as JsonSourceMap,
+    CollapseSourcemapOptions, SourceMap as JsonSourceMap, build_sourcemap,
+    collapse_sourcemap_chain, load_source_original_sourcemap, trace_module_sourcemap,
   },
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
@@ -65,6 +66,8 @@ mod swc_script_transforms;
 mod transform_import_meta_url;
 
 use transform_import_meta_url::transform_url_with_import_meta_url;
+
+const IMPORT_META_GLOB_CACHE: &str = "farm:import-meta-glob";
 
 #[cfg(feature = "swc_plugin")]
 use crate::swc_plugins::compile_wasm_plugins;
@@ -250,30 +253,151 @@ impl Plugin for FarmPluginScript {
 
       transform_url_with_import_meta_url(ast, &comments);
 
-      let resolved_path = param.module_id.resolved_path(&context.config.root);
-      let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
-        context.config.root.clone()
-      } else {
-        Path::new(&resolved_path)
-          .parent()
-          .unwrap()
-          .to_string_lossy()
-          .to_string()
-      };
+      let cur_dir = import_meta_glob_cur_dir(param.module_id, &context.config.root);
 
-      transform_import_meta_glob(
+      let snapshot = transform_import_meta_glob_with_snapshot(
         ast,
         context.config.root.clone(),
         param.module_id,
+        cur_dir.clone(),
+        &context.config.resolve.alias,
+        ImportMetaGlobResolverImpl {
+          context: context.clone(),
+        },
+      )?;
+      script.set_comments(comments.into());
+      let bytes = farmfe_core::serde_json::to_vec(&snapshot)
+        .map_err(|error| CompilationError::GenericError(error.to_string()))?;
+      script
+        .custom
+        .insert(IMPORT_META_GLOB_CACHE.to_string(), Box::new(bytes));
+
+      // Raw globs inline file contents, so they need explicit content watch
+      // dependencies in addition to membership validation.
+      let watched = snapshot
+        .iter()
+        .filter(|(_, _, inline)| *inline)
+        .flat_map(|(_, files, _)| files)
+        .map(|file| {
+          let path = Path::new(&cur_dir).join(file);
+          ModuleId::new(&path.to_string_lossy(), "", &context.config.root)
+        })
+        .filter(|id| id != param.module_id)
+        .collect();
+      context.add_watch_files(param.module_id.clone(), watched)?;
+    }
+
+    Ok(Some(()))
+  }
+
+  fn handle_persistent_cached_module(
+    &self,
+    module: &Module,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<bool>> {
+    if !module.module_type.is_script() {
+      return Ok(None);
+    }
+    let cur_dir = import_meta_glob_cur_dir(&module.id, &context.config.root);
+    let mut custom = module.meta.as_script().custom.clone();
+    let Some(bytes) = custom.get_cache::<Vec<u8>>(IMPORT_META_GLOB_CACHE) else {
+      // Old caches predate membership snapshots. Rebuild their glob importers
+      // once so a user need not clear the cache after upgrading.
+      if !module.content.contains("glob") {
+        return Ok(None);
+      }
+      let Some(syntax) =
+        syntax_from_module_type(&module.module_type, context.config.script.parser.clone())
+      else {
+        return Ok(None);
+      };
+      let Ok(mut parsed) = parse_module(
+        &module.id,
+        module.content.clone(),
+        syntax,
+        EsVersion::EsNext,
+      ) else {
+        return Ok(Some(true));
+      };
+      let snapshot = transform_import_meta_glob_with_snapshot(
+        &mut parsed.ast,
+        context.config.root.clone(),
+        &module.id,
         cur_dir,
         &context.config.resolve.alias,
         ImportMetaGlobResolverImpl {
           context: context.clone(),
         },
       )?;
-      script.set_comments(comments.into())
+      return Ok((!snapshot.is_empty()).then_some(true));
+    };
+    let Ok(snapshot) = farmfe_core::serde_json::from_slice::<ImportMetaGlobSnapshot>(&bytes) else {
+      return Ok(Some(true));
+    };
+    if snapshot.is_empty() {
+      return Ok(None);
     }
+    let mut visitor = ImportGlobVisitor::new(
+      &module.id,
+      context.config.root.clone(),
+      cur_dir,
+      &context.config.resolve.alias,
+      ImportMetaGlobResolverImpl {
+        context: context.clone(),
+      },
+    );
+    for (patterns, expected, _) in snapshot {
+      let mut actual = visitor
+        .glob_and_filter_sources(&patterns)
+        .into_keys()
+        .collect::<Vec<_>>();
+      actual.sort();
+      if !visitor.errors.is_empty() || actual != expected {
+        return Ok(Some(true));
+      }
+    }
+    Ok(None)
+  }
 
+  fn update_modules(
+    &self,
+    param: &mut PluginUpdateModulesHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if !param
+      .paths
+      .iter()
+      .any(|(_, kind)| matches!(kind, UpdateType::Added | UpdateType::Removed))
+    {
+      return Ok(None);
+    }
+    // New matches have no module/watch edge yet. Recheck glob importers on
+    // membership events, releasing the graph lock before plugin resolution.
+    let modules: Vec<Module> = context
+      .module_graph
+      .read()
+      .modules()
+      .into_iter()
+      .filter(|module| {
+        if !module.module_type.is_script() {
+          return false;
+        }
+        let mut custom = module.meta.as_script().custom.clone();
+        custom
+          .get_cache::<Vec<u8>>(IMPORT_META_GLOB_CACHE)
+          .is_some_and(|bytes| bytes.len() > 2)
+          || module.content.contains("glob")
+      })
+      .cloned()
+      .collect();
+    for module in modules {
+      if self.handle_persistent_cached_module(&module, context)? == Some(true) {
+        let path = module.id.resolved_path_with_query(&context.config.root);
+        if !param.paths.iter().any(|(existing, _)| *existing == path) {
+          param.paths.push((path, UpdateType::Updated));
+        }
+      }
+    }
     Ok(Some(()))
   }
 
@@ -499,6 +623,19 @@ impl Plugin for FarmPluginScript {
     } else {
       Ok(None)
     }
+  }
+}
+
+fn import_meta_glob_cur_dir(module_id: &ModuleId, root: &str) -> String {
+  let resolved_path = module_id.resolved_path(root);
+  if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
+    root.to_string()
+  } else {
+    Path::new(&resolved_path)
+      .parent()
+      .unwrap_or(Path::new(root))
+      .to_string_lossy()
+      .to_string()
   }
 }
 

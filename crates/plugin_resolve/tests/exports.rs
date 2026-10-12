@@ -9,6 +9,33 @@ use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
 
 #[test]
+fn resolve_exports_does_not_partially_match_json_in_extensionless_names() {
+  let cwd = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    .join("tests/fixtures/resolve-node-modules/exports");
+  let resolver = Resolver::new();
+  for file in ["a.plain.b", "a.json.b", "a.json.b.js"] {
+    let resolved = resolver
+      .resolve(
+        &format!("wildcard-suffix/modules/{file}"),
+        cwd.clone(),
+        &ResolveKind::Import,
+        &ResolveOptions::default(),
+        &Arc::new(CompilationContext::default()),
+      )
+      .unwrap();
+    let file = if file.ends_with(".js") {
+      file.to_string()
+    } else {
+      format!("{file}.js")
+    };
+    assert_eq!(
+      std::path::Path::new(&resolved.resolved_path),
+      cwd.join("node_modules/wildcard-suffix/modules").join(file)
+    );
+  }
+}
+
+#[test]
 fn resolve_exports_basic() {
   fixture!(
     "tests/fixtures/resolve-node-modules/exports/index.ts",

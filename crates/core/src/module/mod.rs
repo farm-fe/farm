@@ -21,6 +21,14 @@ pub mod module_group;
 pub mod watch_graph;
 
 pub const VIRTUAL_MODULE_PREFIX: &str = "virtual:";
+pub const FARM_RUNTIME_PACKAGE: &str = "@farmfe/runtime";
+
+/// Built-in runtime module ids are synthetic paths, including during updates.
+pub fn is_farm_runtime_module_id(path: &str) -> bool {
+  path
+    .strip_prefix(FARM_RUNTIME_PACKAGE)
+    .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
 
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
@@ -313,6 +321,7 @@ impl ModuleId {
     // if self.relative_path is absolute path, return it directly
     if Path::new(self.relative_path()).is_absolute()
       || self.relative_path().starts_with(VIRTUAL_MODULE_PREFIX)
+      || is_farm_runtime_module_id(self.relative_path())
     {
       return self.relative_path().to_string();
     }
@@ -404,6 +413,28 @@ mod tests {
 
   use super::{Module, ModuleId, ModuleMetaData, ModuleType};
   use crate::{HashMap, HashSet};
+
+  #[test]
+  fn runtime_module_ids_keep_their_synthetic_paths() {
+    let root = if cfg!(windows) {
+      "C:/farm-project"
+    } else {
+      "/farm-project"
+    };
+    for id in [
+      "@farmfe/runtime",
+      "@farmfe/runtime/src/module-system.ts.farm-runtime",
+    ] {
+      assert_eq!(ModuleId::new(id, "", root).resolved_path(root), id);
+    }
+    for id in [
+      "@farmfe/runtime-addon/file.js",
+      "@farmfe/runtime2/file.js",
+      "@farmfe/core/file.js",
+    ] {
+      assert!(std::path::Path::new(&ModuleId::new(id, "", root).resolved_path(root)).is_absolute());
+    }
+  }
 
   #[test]
   fn module_type() {

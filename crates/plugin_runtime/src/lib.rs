@@ -3,27 +3,27 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv},
+  HashSet,
+  config::{AliasItem, Config, FARM_MODULE_SYSTEM, ModuleFormat, StringOrRegex, TargetEnv},
   context::CompilationContext,
   error::CompilationError,
-  module::{meta_data::script::FARM_RUNTIME_SUFFIX, ModuleType},
+  module::{ModuleType, meta_data::script::FARM_RUNTIME_SUFFIX},
   plugin::{
     Plugin, PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
   },
   relative_path::RelativePath,
   resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::{ResourcePot, ResourcePotType},
     ResourceType,
+    meta_data::{ResourcePotMetaData, js::JsResourcePotMetaData},
+    resource_pot::{ResourcePot, ResourcePotType},
   },
   serde_json,
   swc_common::Globals,
-  HashSet,
 };
 
 use farmfe_toolkit::{
-  fs::{read_file_utf8, transform_output_filename, TransformOutputFileNameParams},
+  fs::{TransformOutputFileNameParams, read_file_utf8, transform_output_filename},
   html::get_farm_global_this,
   script::{
     merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -51,7 +51,7 @@ pub mod render_resource_pot;
 
 const PLUGIN_NAME: &str = "FarmPluginRuntime";
 pub const RUNTIME_INPUT_SCOPE: &str = "farm_internal_runtime";
-pub const RUNTIME_PACKAGE: &str = "@farmfe/runtime";
+pub const RUNTIME_PACKAGE: &str = farmfe_core::module::FARM_RUNTIME_PACKAGE;
 
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
@@ -118,7 +118,7 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
-    if param.source.starts_with(RUNTIME_PACKAGE) {
+    if farmfe_core::module::is_farm_runtime_module_id(&param.source) {
       if context.config.runtime.path.is_empty() {
         return Err(CompilationError::GenericError(
           "config.runtime.path is not set, please set or remove config.runtime.path in farm.config.ts. normally you should not set config.runtime.path manually".to_string(),
@@ -126,7 +126,9 @@ impl Plugin for FarmPluginRuntime {
       }
 
       return Ok(Some(PluginResolveHookResult {
-        resolved_path: if param.source == RUNTIME_PACKAGE {
+        resolved_path: if param.source == RUNTIME_PACKAGE
+          || param.source.ends_with(FARM_RUNTIME_SUFFIX)
+        {
           param.source.to_string()
         } else {
           format!("{}{}", param.source, FARM_RUNTIME_SUFFIX)
@@ -181,8 +183,10 @@ impl Plugin for FarmPluginRuntime {
         return Ok(None);
       };
 
-    if resolved_path.starts_with(RUNTIME_PACKAGE) {
-      let rest_str = resolved_path.replace(RUNTIME_PACKAGE, "");
+    if farmfe_core::module::is_farm_runtime_module_id(resolved_path) {
+      let rest_str = resolved_path
+        .strip_prefix(RUNTIME_PACKAGE)
+        .unwrap_or(resolved_path);
       let relative_path = RelativePath::new(&rest_str);
       let resolved_path = relative_path
         .to_logical_path(&context.config.runtime.path)
@@ -369,6 +373,24 @@ impl Plugin for FarmPluginRuntime {
       )?
       .map(|mut res| {
         for resource in &mut res.resources {
+          // Entries may mix embedded and standalone runtime code. Guard the
+          // shared generated code so neither form replaces the module registry,
+          // cache, or dynamic loader initialized by an earlier entry.
+          let farm_global_this = get_farm_global_this(
+            &context.config.runtime.namespace,
+            &context.config.output.target_env,
+          );
+          // Workers receive the browser runtime, which creates its window alias
+          // during initialization. Do not read that alias before it exists.
+          let runtime_global_type = if context.config.output.target_env.is_node() {
+            "global"
+          } else {
+            "window"
+          };
+          let runtime_code = String::from_utf8_lossy(&resource.resource.bytes);
+          resource.resource.bytes = format!(
+            "(function(){{if(typeof {runtime_global_type}==='undefined'||!{farm_global_this}||!{farm_global_this}.{FARM_MODULE_SYSTEM}){{{runtime_code}}}}}());"
+          ).into_bytes();
           resource.resource.name = transform_output_filename(TransformOutputFileNameParams {
             filename_config: context.config.output.filename.clone(),
             name: &resource.resource.name,

@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const code = fs.readFileSync(process.argv[2], 'utf8');
+const context = vm.createContext({});
+assert.equal(vm.runInContext('typeof window', context), 'undefined');
+vm.runInContext(code, context);
+assert(vm.runInContext("window === globalThis && !!window['__farm_default_namespace__'].m", context));
+const system = vm.runInContext("window['__farm_default_namespace__'].m", context);
+system.g('worker-fixture', module => { module.exports = { state: {} }; });
+const first = system.r('worker-fixture');
+vm.runInContext(code, context);
+assert.equal(vm.runInContext("window['__farm_default_namespace__'].m", context), system);
+assert.equal(system.r('worker-fixture'), first);
+console.log('worker-runtime-loaded');
