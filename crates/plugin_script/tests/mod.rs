@@ -1,18 +1,18 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::{bool_or_obj::BoolOrObj, Config},
-  context::{create_swc_source_map, CompilationContext},
+  HashMap,
+  config::{Config, bool_or_obj::BoolOrObj},
+  context::{CompilationContext, create_swc_source_map},
   module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
   resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
+    meta_data::{ResourcePotMetaData, js::JsResourcePotMetaData},
     resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   },
-  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 
@@ -149,7 +149,7 @@ fn load_parse_and_analyze_deps() {
       assert_eq!(
         lines,
         vec![
-         "import a from\"./a\";import b from\"./b\";export*from\"./c\";export{d}from\"./d\";console.log(a,b);"
+          "import a from\"./a\";import b from\"./b\";export*from\"./c\";export{d}from\"./d\";console.log(a,b);"
         ]
       );
 
@@ -159,4 +159,106 @@ fn load_parse_and_analyze_deps() {
       // )
     },
   );
+}
+
+#[test]
+fn glob_cache_invalidates_when_membership_changes() {
+  use farmfe_core::plugin::{
+    PluginProcessModuleHookParam, PluginUpdateModulesHookParam, UpdateType,
+  };
+  use farmfe_core::{deserialize, rkyv, serialize};
+  use std::time::{SystemTime, UNIX_EPOCH};
+
+  let root = std::env::temp_dir().join(format!(
+    "farm-glob-cache-{}-{}",
+    std::process::id(),
+    SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .unwrap()
+      .as_nanos()
+  ));
+  std::fs::create_dir_all(root.join("routes")).unwrap();
+  std::fs::write(root.join("routes/a.js"), "export default 'a'").unwrap();
+  let mut config = Config::default();
+  config.root = root.to_string_lossy().to_string();
+  let plugin = farmfe_plugin_script::FarmPluginScript::new(&config);
+  let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+  let mut module = Module::new("index.js".into());
+  module.module_type = ModuleType::Js;
+  module.content = Arc::new("export const routes = import.meta.glob(['./routes/*.js', '!./routes/ignored*.js'], { eager: true });".to_string());
+  *module.meta = plugin
+    .parse(
+      &PluginParseHookParam {
+        module_id: module.id.clone(),
+        resolved_path: module.id.resolved_path(&context.config.root),
+        query: vec![],
+        module_type: ModuleType::Js,
+        content: module.content.clone(),
+      },
+      &context,
+      &Default::default(),
+    )
+    .unwrap()
+    .unwrap();
+  plugin
+    .process_module(
+      &mut PluginProcessModuleHookParam {
+        module_id: &module.id,
+        module_type: &module.module_type,
+        content: &mut module.content,
+        meta: &mut module.meta,
+        source_map_chain: &mut module.source_map_chain,
+      },
+      &context,
+    )
+    .unwrap();
+
+  let bytes = serialize!(&module);
+  let module = deserialize!(&bytes, Module);
+
+  // A new plugin instance represents a restart: metadata must travel with the cached module.
+  let warm_plugin = farmfe_plugin_script::FarmPluginScript::new(&context.config);
+  assert_ne!(
+    warm_plugin
+      .handle_persistent_cached_module(&module, &context)
+      .unwrap(),
+    Some(true)
+  );
+  std::fs::write(root.join("routes/ignored.js"), "export default 'ignored'").unwrap();
+  assert_ne!(
+    warm_plugin
+      .handle_persistent_cached_module(&module, &context)
+      .unwrap(),
+    Some(true)
+  );
+  std::fs::write(root.join("routes/b.js"), "export default 'b'").unwrap();
+  assert_eq!(
+    warm_plugin
+      .handle_persistent_cached_module(&module, &context)
+      .unwrap(),
+    Some(true)
+  );
+  context.module_graph.write().add_module(module.clone());
+  let mut update = PluginUpdateModulesHookParam {
+    paths: vec![(
+      root.join("routes/b.js").to_string_lossy().to_string(),
+      UpdateType::Added,
+    )],
+  };
+  warm_plugin.update_modules(&mut update, &context).unwrap();
+  assert!(
+    update.paths.iter().any(|(path, kind)| {
+      path == &module.id.resolved_path(&context.config.root) && matches!(kind, UpdateType::Updated)
+    }),
+    "adding a matching file must rebuild the glob importer"
+  );
+  std::fs::remove_file(root.join("routes/b.js")).unwrap();
+  std::fs::remove_file(root.join("routes/a.js")).unwrap();
+  assert_eq!(
+    warm_plugin
+      .handle_persistent_cached_module(&module, &context)
+      .unwrap(),
+    Some(true)
+  );
+  std::fs::remove_dir_all(&root).unwrap();
 }

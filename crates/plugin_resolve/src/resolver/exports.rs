@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, fmt, str::FromStr, sync::Arc};
 
 use farmfe_core::{
+  HashSet,
   common::PackageJsonInfo,
   config::Mode,
   context::CompilationContext,
@@ -9,7 +10,6 @@ use farmfe_core::{
   rayon::iter::{IntoParallelRefIterator, ParallelIterator},
   regex,
   serde_json::Value,
-  HashSet,
 };
 
 use super::utils::get_field_value_from_package_json_info;
@@ -323,14 +323,14 @@ fn walk(
         longest = Some(key.as_str());
       } else if key.len() > 1 {
         if let Some(tmp) = key.find('*') {
-          let pattern = format!("^{}(.*){}", &key[..tmp], &key[tmp + 1..]);
-          let regex = regex::Regex::new(&pattern).unwrap();
-
-          if let Some(captures) = regex.captures(&entry) {
-            if let Some(match_group) = captures.get(1) {
-              replace = Some(match_group.as_str().to_string());
-              longest = Some(key.as_str());
-            }
+          // Package map keys are literal strings around a wildcard, not regex.
+          // Require the entire suffix so `.js` cannot match the middle of `.json`.
+          if let Some(matched) = entry
+            .strip_prefix(&key[..tmp])
+            .and_then(|rest| rest.strip_suffix(&key[tmp + 1..]))
+          {
+            replace = Some(matched.to_string());
+            longest = Some(key.as_str());
           }
         }
       }
@@ -367,5 +367,54 @@ fn walk(
   ResolveExportsOrImportsResult {
     resolved: v,
     warnings: vec![],
+  }
+}
+
+#[cfg(test)]
+mod pattern_tests {
+  use super::*;
+
+  #[test]
+  fn wildcard_patterns_match_literal_prefixes_and_complete_suffixes() {
+    let options = ConditionOptions {
+      unsafe_flag: false,
+      require: false,
+      browser: false,
+      conditions: HashSet::default(),
+    };
+    let mapping = BTreeMap::from([
+      ("./modules/*".into(), Value::String("./modules/*.js".into())),
+      (
+        "./modules/*.js".into(),
+        Value::String("./modules/*.js".into()),
+      ),
+    ]);
+    for input in [
+      "./modules/a.plain.b",
+      "./modules/a.json.b",
+      "./modules/a.json.b.js",
+    ] {
+      let expected = if input.ends_with(".js") {
+        input.to_string()
+      } else {
+        format!("{input}.js")
+      };
+      assert_eq!(
+        walk("mypkg", &mapping, input, &options).resolved,
+        Some(expected)
+      );
+    }
+    for prefix in ["./literal[+](", "#literal[+]("] {
+      let mapping = BTreeMap::from([(format!("{prefix}*.js"), Value::String("./*.js".into()))]);
+      assert_eq!(
+        walk("mypkg", &mapping, &format!("{prefix}a.js"), &options).resolved,
+        Some("./a.js".into())
+      );
+      assert!(
+        walk("mypkg", &mapping, &format!("{prefix}a.jsx"), &options)
+          .resolved
+          .is_none()
+      );
+    }
   }
 }

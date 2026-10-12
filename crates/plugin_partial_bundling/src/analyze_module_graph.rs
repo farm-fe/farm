@@ -1,12 +1,12 @@
-use farmfe_core::module::module_group::{ModuleGroupId, ModuleGroupType};
 use farmfe_core::HashMap;
+use farmfe_core::module::module_group::{ModuleGroupId, ModuleGroupType};
 use farmfe_core::{
+  HashSet,
   module::{
+    ModuleId,
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph},
-    ModuleId,
   },
-  HashSet,
 };
 use std::collections::VecDeque;
 
@@ -35,7 +35,8 @@ pub fn module_group_graph_from_entries(
   let mut visited = HashSet::default();
 
   for entry in entries.iter().cloned() {
-    if visited.contains(&entry) {
+    let entry_group_id = ModuleGroupId::new(&entry, &ModuleGroupType::Entry);
+    if !visited.insert(entry_group_id) {
       continue;
     }
 
@@ -50,17 +51,17 @@ pub fn module_group_graph_from_entries(
 
     module_group_graph.add_module_group(group);
 
-    visited.insert(entry);
     let mut queue = VecDeque::from(dynamic_dependencies);
 
     while !queue.is_empty() {
       let head = queue.pop_front().unwrap();
 
-      if visited.contains(&head) {
+      // A configured entry can also be dynamically imported. These groups have
+      // different consumers and must both exist, regardless of traversal order.
+      let dynamic_group_id = ModuleGroupId::new(&head, &ModuleGroupType::DynamicImport);
+      if !visited.insert(dynamic_group_id) {
         continue;
       }
-
-      visited.insert(head.clone());
 
       let (group, dynamic_dependencies) =
         module_group_from_entry(&head, ModuleGroupType::DynamicImport, module_graph);
@@ -191,11 +192,11 @@ mod tests {
   use std::sync::Arc;
 
   use farmfe_core::{
+    HashMap, HashSet,
     context::CompilationContext,
     module::module_group::{ModuleGroupId, ModuleGroupType},
     parking_lot::RwLock,
     plugin::{Plugin, PluginHookContext, ResolveKind},
-    HashMap, HashSet,
   };
   #[cfg(test)]
   use farmfe_testing_helpers::construct_test_module_graph;
@@ -301,16 +302,20 @@ mod tests {
       module_group.modules(),
       &HashSet::from_iter(["A".into(), "C".into()])
     );
-    assert!(graph
-      .module(&"A".into())
-      .unwrap()
-      .module_groups
-      .contains(&module_group.id));
-    assert!(graph
-      .module(&"C".into())
-      .unwrap()
-      .module_groups
-      .contains(&module_group.id));
+    assert!(
+      graph
+        .module(&"A".into())
+        .unwrap()
+        .module_groups
+        .contains(&module_group.id)
+    );
+    assert!(
+      graph
+        .module(&"C".into())
+        .unwrap()
+        .module_groups
+        .contains(&module_group.id)
+    );
   }
 
   #[test]
@@ -359,12 +364,66 @@ mod tests {
       assert_eq!(mg_modules, modules);
 
       for m in modules {
-        assert!(graph
-          .module(&m.into())
-          .unwrap()
-          .module_groups
-          .contains(&mg.id));
+        assert!(
+          graph
+            .module(&m.into())
+            .unwrap()
+            .module_groups
+            .contains(&mg.id)
+        );
       }
+    }
+  }
+
+  #[test]
+  fn entries_remain_distinct_from_dynamic_import_groups_in_either_order() {
+    use farmfe_core::module::{
+      Module,
+      module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+    };
+    for entries in [["A", "B"], ["B", "A"]] {
+      let mut graph = ModuleGraph::new();
+      for id in ["A", "B"] {
+        graph.add_module(Module::new(id.into()));
+      }
+      // Include a self import and a cycle, alongside an import of another entry.
+      for (from, to) in [("A", "B"), ("B", "A"), ("A", "A")] {
+        graph
+          .add_edge_item(
+            &from.into(),
+            &to.into(),
+            ModuleGraphEdgeDataItem {
+              source: to.into(),
+              kind: ResolveKind::DynamicImport,
+              order: 0,
+            },
+          )
+          .unwrap();
+      }
+      let entries = entries.map(Into::into);
+      let groups = super::module_group_graph_from_entries(&entries, &mut graph);
+      for id in ["A", "B"] {
+        for ty in [ModuleGroupType::Entry, ModuleGroupType::DynamicImport] {
+          let group_id = ModuleGroupId::new(&id.into(), &ty);
+          assert!(groups.has(&group_id));
+          assert!(
+            graph
+              .module(&id.into())
+              .unwrap()
+              .module_groups
+              .contains(&group_id)
+          );
+        }
+      }
+      assert_eq!(groups.len(), 4);
+      graph.entries = HashMap::from_iter([("A".into(), "A".into()), ("B".into(), "B".into())]);
+      graph.dynamic_entries.insert("B".into(), "worker".into());
+      let groups = super::module_group_graph_from_module_graph(&mut graph);
+      assert!(groups.has(&ModuleGroupId::new(
+        &"B".into(),
+        &ModuleGroupType::DynamicEntry
+      )));
+      assert_eq!(groups.len(), 5);
     }
   }
 

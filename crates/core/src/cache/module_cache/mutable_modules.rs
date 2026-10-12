@@ -5,16 +5,17 @@ use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
+  HashMap,
   cache::{
-    store::{constant::CacheStoreTrait, CacheStoreKey},
     CacheContext,
+    store::{CacheStoreKey, constant::CacheStoreTrait},
   },
   deserialize,
   module::ModuleId,
-  serialize, HashMap,
+  serialize,
 };
 
-use super::{module_memory_store::ModuleMemoryStore, CachedModule};
+use super::{CachedModule, module_memory_store::ModuleMemoryStore};
 
 /// In memory store for mutable modules
 pub struct MutableModulesMemoryStore {
@@ -22,6 +23,34 @@ pub struct MutableModulesMemoryStore {
   store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use crate::module::Module;
+
+  #[test]
+  fn invalidated_module_requires_freeze_even_when_content_hash_is_unchanged() {
+    let store = MutableModulesMemoryStore::new(Arc::new(CacheContext::default()));
+    let mut module = Module::new("style.css".into());
+    module.content_hash = "unchanged-css-input".into();
+    store.set_cache(
+      module.id.clone(),
+      CachedModule {
+        module: module.clone(),
+        dependencies: vec![],
+        watch_dependencies: vec![],
+        is_expired: false,
+      },
+    );
+    store.write_cache();
+    assert!(!store.is_cache_changed(&module));
+
+    store.invalidate_cache(&module.id);
+
+    assert!(store.is_cache_changed(&module));
+  }
 }
 // TODO: cache unit test
 impl MutableModulesMemoryStore {
@@ -140,6 +169,13 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {
+    if self
+      .cached_modules
+      .get(&module.id)
+      .is_some_and(|cached| cached.is_expired)
+    {
+      return true;
+    }
     self
       .store
       .is_cache_changed(&self.gen_cache_store_key(module))

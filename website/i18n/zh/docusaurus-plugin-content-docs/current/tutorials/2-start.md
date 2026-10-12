@@ -258,7 +258,7 @@ export default defineConfig({
 
 
 ## 配置 Alias 以及 Externals
-Alias 和 externals 是最常用的配置之一, 在 Farm 中，可以使用 `compilation.resolve.alias` 和 `compilation.externals` 配置项:
+Alias 和 externals 是最常用的配置之一, 在 Farm 中，可以使用 `compilation.resolve.alias` 和 `compilation.external` 配置项:
 
 ```ts title="farm.config.ts"
 // ...
@@ -268,12 +268,10 @@ export default defineConfig({
     resolve: {
       alias: {
         '@/': path.join(process.cwd(), 'src')
-      },
-      externals: [
-        'node:fs'
-      ]
-    }
-  }
+      }
+    },
+    external: ['node:fs']
+  },
   // ...
 });
 ```

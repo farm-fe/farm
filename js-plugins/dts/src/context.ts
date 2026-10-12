@@ -80,8 +80,7 @@ export default class Context {
         declaration: true,
         noEmit: false,
         emitDeclarationOnly: true,
-        composite: false,
-        allowJs: true
+        composite: false
       } as CompilerOptions),
       tsConfigFilePath: tsConfigPath,
       skipAddingFilesFromTsConfig: true,
@@ -89,6 +88,12 @@ export default class Context {
     };
 
     this.project = new Project(tsCompilerOptions);
+    const effectiveCompilerOptions = this.project.getCompilerOptions();
+    if (effectiveCompilerOptions.allowJs === undefined) {
+      this.project.compilerOptions.set({
+        allowJs: !effectiveCompilerOptions.isolatedDeclarations
+      });
+    }
     const tsConfigOptions = getTsConfig(
       tsConfigPath,
       this.project.getFileSystem().readFileSync

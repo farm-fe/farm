@@ -27,9 +27,65 @@ export class HmrClient {
     ((data: any) => void | Promise<void>)[]
   >();
 
-  constructor(private moduleSystem: ModuleSystem) {}
+  private pageActive = true;
+  private pageHidden = false;
+  private reloadAllowed = true;
+  private recovery: AbortController | undefined;
+
+  constructor(private moduleSystem: ModuleSystem) {
+    window.addEventListener('beforeunload', () => {
+      const socket = this.socket;
+      const wasDisconnected = socket?.readyState === WebSocket.CLOSED;
+      this.pageActive = false;
+      this.reloadAllowed = false;
+      this.recovery?.abort();
+      // A canceled navigation leaves its socket open. Firefox starts closing
+      // the socket before pagehide, even while the next document is loading.
+      setTimeout(() => {
+        if (this.pageHidden || this.socket !== socket) return;
+        if (socket?.readyState < WebSocket.CLOSING) {
+          this.pageActive = true;
+          this.reloadAllowed = true;
+        } else if (wasDisconnected) {
+          // An already disconnected socket cannot reveal whether navigation
+          // was canceled. Reconnect without reloading the departing document.
+          this.pageActive = true;
+          this.connect();
+        }
+      }, 0);
+    });
+    window.addEventListener('pagehide', () => {
+      // Firefox closes WebSockets when navigating. This is not a server restart.
+      this.pageActive = false;
+      this.pageHidden = true;
+      this.recovery?.abort();
+      if (this.socket) this.closeConnectionGracefully();
+    });
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted && !this.pageActive) {
+        this.pageHidden = false;
+        this.pageActive = true;
+        this.reloadAllowed = true;
+        this.connect();
+      }
+    });
+    const resumeReload = (event: Event) => {
+      // Reconnecting alone cannot distinguish cancellation from a slow
+      // navigation. Input in this document confirms that it remains in use.
+      if (event.isTrusted && this.pageActive && !this.pageHidden) {
+        const wasSuppressed = !this.reloadAllowed;
+        this.reloadAllowed = true;
+        if (wasSuppressed && this.socket?.readyState === WebSocket.CLOSED) {
+          this.connect();
+        }
+      }
+    };
+    window.addEventListener('pointerdown', resumeReload);
+    window.addEventListener('keydown', resumeReload);
+  }
 
   connect() {
+    this.recovery?.abort();
     logger.debug('connecting to the server...');
 
     // setup websocket connection
@@ -63,18 +119,36 @@ export class HmrClient {
     );
 
     socket.addEventListener('close', async () => {
+      if (!this.pageActive || this.socket !== socket) return;
       // TODO Do you want to do an elegant cleaning?
       // if (wasClean) return;
 
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
 
+      if (!this.reloadAllowed) return;
+
       logger.debug(
         'disconnected from the server, Please refresh the page manually. If you still encounter errors, this may be a farm bug. Please submit an issue. https://github.com/farm-fe/farm/issues'
       );
 
-      await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
-      location.reload();
+      this.recovery?.abort();
+      const recovery = new AbortController();
+      this.recovery = recovery;
+      const serverAvailable = await waitForSuccessfulPing(
+        socketProtocol,
+        socketHostUrl,
+        recovery.signal
+      );
+      if (
+        serverAvailable &&
+        !recovery.signal.aborted &&
+        this.pageActive &&
+        this.reloadAllowed &&
+        this.socket === socket
+      ) {
+        location.reload();
+      }
     });
 
     return socket;
@@ -288,21 +362,28 @@ function hasErrorOverlay() {
   return document.querySelectorAll(overlayId).length;
 }
 
-export function waitForWindowShow() {
+export function waitForWindowShow(signal?: AbortSignal) {
   return new Promise<void>((resolve) => {
-    const onChange = async () => {
+    const finish = () => {
+      document.removeEventListener('visibilitychange', onChange);
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    const onChange = () => {
       if (document.visibilityState === 'visible') {
-        resolve();
-        document.removeEventListener('visibilitychange', onChange);
+        finish();
       }
     };
+    if (signal?.aborted) return resolve();
     document.addEventListener('visibilitychange', onChange);
+    signal?.addEventListener('abort', finish, { once: true });
   });
 }
 
 async function waitForSuccessfulPing(
   socketProtocol: string,
   hostAndPath: string,
+  signal: AbortSignal,
   ms = 1000
 ) {
   const pingHostProtocol = socketProtocol === 'wss' ? 'https' : 'http';
@@ -313,6 +394,7 @@ async function waitForSuccessfulPing(
     // When running on middleware mode, it returns status 426, and an cors error happens if mode is not no-cors
     try {
       await fetch(`${pingHostProtocol}://${hostAndPath}`, {
+        signal,
         mode: 'no-cors',
         headers: {
           // Custom headers won't be included in a request with no-cors so (ab)use one of the
@@ -320,7 +402,7 @@ async function waitForSuccessfulPing(
           Accept: 'text/x-farm-ping'
         }
       });
-      return true;
+      return !signal.aborted;
     } catch {
       /* empty */
     }
@@ -328,22 +410,32 @@ async function waitForSuccessfulPing(
   };
 
   if (await ping()) {
-    return;
+    return true;
   }
-  await wait(ms);
+  await wait(ms, signal);
 
-  while (true) {
+  while (!signal.aborted) {
     if (document.visibilityState === 'visible') {
       if (await ping()) {
-        break;
+        return true;
       }
-      await wait(ms);
+      await wait(ms, signal);
     } else {
-      await waitForWindowShow();
+      await waitForWindowShow(signal);
     }
   }
+  return false;
 }
 
-export function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export function wait(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (signal?.aborted) return resolve();
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', finish);
+      resolve();
+    };
+    const timer = setTimeout(finish, ms);
+    signal?.addEventListener('abort', finish, { once: true });
+  });
 }

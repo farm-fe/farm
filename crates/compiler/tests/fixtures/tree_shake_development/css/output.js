@@ -1,5 +1,5 @@
 //index.js:
- (function(){const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('dynamic-import.ts');
 }
@@ -12,7 +12,7 @@ function initModuleSystem$2() {
 initModuleSystem(__farm_internal_module_system__);
 initModuleSystem$1(__farm_internal_module_system__);
 initModuleSystem$2(__farm_internal_module_system__);
-}());(function(moduleSystem, modules) {
+}}());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
         module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_4246c5a73c533faa1833de3dea159778_js";
@@ -83,7 +83,7 @@ initModuleSystem$2(__farm_internal_module_system__);
         exports.default = "/logo1-cbaed8.png";
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("index.ts");var __farm_entry_c__=__farm_entry__.c;export {__farm_entry_c__ as c};
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("index.ts");var __farm_entry_c__=__farm_entry__.c;export {__farm_entry_c__ as c};
 
 //logo-73d4a8.png:
  

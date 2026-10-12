@@ -5,11 +5,11 @@ use farmfe_core::{
   context::CompilationContext,
   deserialize,
   module::{
-    meta_data::{
-      script::{CommentsMetaData, ScriptModuleMetaData},
-      ArchivedModuleMetaData,
-    },
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
+    meta_data::{
+      ArchivedModuleMetaData,
+      script::{CommentsMetaData, ScriptModuleMetaData},
+    },
   },
   plugin::{PluginFinalizeModuleHookParam, PluginProcessModuleHookParam, ResolveKind},
   rayon::prelude::*,
@@ -23,11 +23,10 @@ use farmfe_toolkit::{
   css::codegen_css_stylesheet,
   hash::base64_encode,
   script::{
-    parse_module,
+    ParseScriptModuleResult, parse_module,
     swc_try_with::{resolve_module_mark, try_with},
-    ParseScriptModuleResult,
   },
-  sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions, SourceMap},
+  sourcemap::{CollapseSourcemapOptions, SourceMap, collapse_sourcemap_chain},
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,
 };
@@ -55,14 +54,24 @@ pub fn transform_css_to_script_modules(
           let m = module_graph.module(&module_id).unwrap();
           m.content_hash.clone()
         };
+        let watch_hash = if context.cache_manager.module_cache.has_cache(&module_id) {
+          context
+            .cache_manager
+            .module_cache
+            .get_cache_ref(&module_id)
+            .watch_dependencies_hash()
+        } else {
+          String::new()
+        };
         // try read custom css transform cache
         let store_key = CacheStoreKey {
           name: module_id.to_string() + "-transform_css_to_script_modules",
           key: sha256(
             format!(
-              "transform_css_to_script_modules_{}_{}",
+              "transform_css_to_script_modules_{}_{}_{}",
               content_hash,
-              module_id.to_string()
+              module_id.to_string(),
+              watch_hash
             )
             .as_bytes(),
             32,
