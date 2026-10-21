@@ -50,4 +50,4 @@ TS CI 缺少 plugin-tools 的构建步骤，导致六个 artifact-copy 用例无
 
 Windows 正常临时路径的两个测试通过。Windows junction 探针在修复前后均通过，因此没有提供 macOS 差异的红绿复现；真目录 symlink 创建受到本机权限限制，没有提升权限。以上是基于路径身份契约的测试设置修正，macOS 通过仍须后续 CI 实证，不把 Windows 成功替代为 macOS 验收。
 
-另补 Unix 受控回归：创建指向 canonical 临时目录的真实 symlink，在独立测试子进程中将 TMPDIR 指向该 alias，精确执行原 hash-cache 回归并要求实际运行一项测试。子进程不修改主测试进程的环境，全部原缓存断言仍执行；目标路径提前 canonicalize，避免人为叠加宿主 /var 祖先别名。该 Unix 用例不在 Windows 本地执行，等待 Linux/macOS CI 验证。
+另补 Unix 受控回归：在 canonical 临时父目录内创建指向同级 physical 目录的真实相对 symlink，在独立测试子进程中将 TMPDIR 指向该 alias，精确执行原 hash-cache 回归并要求实际运行一项测试。子进程不修改主测试进程的环境，全部原缓存断言仍执行；父目录提前 canonicalize，避免人为叠加宿主 /var 祖先别名；受控相对 link 使用当前 resolver 的相对路径解析契约。该 Unix 用例不在 Windows 本地执行，等待 Linux/macOS CI 验证。

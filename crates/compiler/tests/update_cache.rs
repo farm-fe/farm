@@ -181,13 +181,12 @@ fn explicit_update_rebuilds_generated_styles_under_symlinked_temp_root() {
       .as_nanos()
   ));
   std::fs::create_dir(&base).unwrap();
+  // Isolate one relative alias from the host's own temp-directory ancestry.
+  let base = std::fs::canonicalize(base).unwrap();
   let physical = base.join("physical");
   std::fs::create_dir(&physical).unwrap();
-  // Canonicalize the link target so this controlled alias does not introduce
-  // a second alias through the host's own temporary-directory ancestry.
-  let physical = std::fs::canonicalize(physical).unwrap();
   let logical = base.join("logical");
-  std::os::unix::fs::symlink(&physical, &logical).unwrap();
+  std::os::unix::fs::symlink("physical", &logical).unwrap();
   let output = std::process::Command::new(std::env::current_exe().unwrap())
     .args([
       "explicit_update_rebuilds_generated_styles_with_hash_cache",
