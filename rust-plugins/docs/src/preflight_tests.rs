@@ -1,24 +1,10 @@
 use super::*;
-use farmfe_core::{config::TargetEnv, HashMap};
-
-struct Fixture(PathBuf);
-impl Drop for Fixture {
-  fn drop(&mut self) {
-    let _ = fs::remove_dir_all(&self.0);
-  }
-}
+use farmfe_core::{HashMap, config::TargetEnv};
 
 fn fixture(preflight: bool, test: impl FnOnce(&FarmPluginDocs, &Arc<CompilationContext>)) {
-  let nonce = std::time::SystemTime::now()
-    .duration_since(std::time::UNIX_EPOCH)
-    .unwrap()
-    .as_nanos();
-  let root = std::env::temp_dir().join(format!(
-    "farm-docs-preflight-{}-{nonce}",
-    std::process::id()
-  ));
-  fs::create_dir_all(root.join("docs")).unwrap();
-  let _owner = Fixture(root.clone());
+  let owner = super::preflight_fixture::FixtureRoot::new().unwrap();
+  let root = owner.path();
+  fs::create_dir(root.join("docs")).unwrap();
   fs::write(root.join("docs/index.md"), "# Preflight\n").unwrap();
   let mut config = Config::default();
   config.root = root.to_string_lossy().into_owned();

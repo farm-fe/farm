@@ -1067,6 +1067,8 @@ impl Plugin for FarmPluginDocs {
 }
 
 #[cfg(test)]
+mod preflight_fixture;
+#[cfg(test)]
 mod preflight_tests;
 
 #[cfg(test)]
