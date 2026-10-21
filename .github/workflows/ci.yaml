@@ -265,6 +265,9 @@ jobs:
         run: npx changeset status --since=origin/main
 
   ts-test:
+    # Vitest runs in node/forks; browser E2E jobs keep their downloads.
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     name: Typescript Test
     runs-on: ${{ matrix.settings.os }}
     needs: call-rust-build-user
