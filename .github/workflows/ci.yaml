@@ -316,6 +316,8 @@ jobs:
           pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
+      - name: Build Plugin Tools test prerequisite
+        run: pnpm --filter @farmfe/plugin-tools run build
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
       # - name: Setup tmate session

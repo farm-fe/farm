@@ -35,3 +35,11 @@ Vercel 的编译工具、网络、磁盘、构建时限及访问保护均由实�
 部署在准备 Rust 工具链之前运行 `scripts/farm-docs-source-paths.mjs`：以 `git ls-files` 的精确大小写清单检查 `website/src` 的静态 import/export 与字面量动态 import，支持直接文件、扩展名、目录 index 和资源 query。使用 TypeScript 解析源码，忽略注释中的伪 import；不依赖 Windows 的 `existsSync`。此检查仅涵盖相对字面量引用，不验证 alias、包导出或运行时生成路径，实际官网构建仍必需。现有部署测试在两种 CI 系统上执行相同检查，包含错大小写、缺文件、正确 index 与资源路径回归。
 
 Windows 修复后检查点：精确路径检查覆盖 45 条相对引用，部署测试 6/6；单任务重建 Core 与公开 Core 包、验证产物、官网和 NOTICE 均通过。真实预览覆盖 334 路由、16 项既有浏览器观察、NOTICE 原文字节及双语未知路径 404。11 个外部原生插件复用并核对哈希；这不替代新的 Linux CI 或 Vercel 实际部署。
+
+## 通用 CI 消费者前置
+
+旧 head 的 examples jobs 在 Linux/Windows 均报 `@farmfe/docs/dist/index.js` 缺失。通用 examples 构建器现在只在选中的示例依赖 `@farmfe/docs` 时，从其实际 manifest 纳入七个原生插件依赖，并在首次 Docs 示例之前依次构建 plugin-tools、缺少的原生产物、Docs 与默认主题公共包。已有 CI 原生产物继续走原有复用判断；没有的插件通过其公开构建脚本生成。非 Docs 示例不引入这些前置。Windows 正常单示例入口已通过，本地复用了原生插件，不能据此宣称远端缺产物的源码构建已通过。
+
+TS CI 缺少 plugin-tools 的构建步骤，导致六个 artifact-copy 用例无法导入 dist；工作流已补公开 build。Windows 相对根目录测试改在 checkout 所在盘创建临时目录，以保证真实相对路径，未改变产品路径逻辑。freezeModule 快照的一行 source map 文件名由旧转义形式改为原始 `index.ts?foo=bar`，与用例原有的显式 sources 断言一致；其余字段及映射不变。候选通过正常单用例更新生成，再在非更新模式下验证；没有批量更新快照。
+
+本地后续验证：example 前置计划 2 项通过，正常 `docs-features` 单示例入口通过（CI 模式复用已有原生文件）；JS/TS 全套单 worker 在 CI 模式且无 `NO_COLOR` 的环境下 39 文件/150 测试通过，没有快照更新或 worker 异常。最初本地 `NO_COLOR` 造成的五个颜色用例失败日志保留。

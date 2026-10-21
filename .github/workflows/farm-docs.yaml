@@ -64,7 +64,7 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
       - name: Check clean deployment prerequisite ordering and fail-fast behavior
-        run: node --test scripts/farm-docs-vercel-build.test.mjs
+        run: node --test scripts/farm-docs-vercel-build.test.mjs scripts/farm-docs-example-prerequisites.test.mjs
       - name: Check platform manifest preparation without native compilation
         run: node --experimental-strip-types --test scripts/farm-docs-platform-preparation.test.mjs
       - name: Check distribution contracts and fixture chain without native compilation

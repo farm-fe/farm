@@ -21,7 +21,7 @@ export default 'freeze-module-return-value';
     ],
   ],
   "sourceMapChain": [
-    "{"version":3,"sources":["index.ts_foo_bar"],"names":[],"mappings":"AAAA,OAAO,SAAS,WAAW;AAE3B,QAAQ,GAAG,CAAC;AAEZ,eAAe,6BAA6B"}",
+    "{"version":3,"sources":["index.ts?foo=bar"],"names":[],"mappings":"AAAA,OAAO,SAAS,WAAW;AAE3B,QAAQ,GAAG,CAAC;AAEZ,eAAe,6BAA6B"}",
   ],
 }
 `;

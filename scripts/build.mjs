@@ -66,6 +66,18 @@ export const executeStartProject = async () =>
     stdio: "inherit",
   });
 
+export function docsExamplePrerequisites(pkg) {
+  const dependencies = { ...pkg.dependencies, ...pkg.devDependencies };
+  if (!dependencies["@farmfe/docs"]) return { native: [], public: [] };
+  const docs = JSON.parse(fs.readFileSync(resolve(CWD, "packages/docs/package.json"), "utf8"));
+  return {
+    native: Object.keys(docs.dependencies)
+      .filter((name) => name.startsWith("@farmfe/plugin-"))
+      .map((name) => name.slice("@farmfe/plugin-".length)),
+    public: ["docs", "docs-theme-default"],
+  };
+}
+
 export const buildExamples = async ({ startFrom, example } = {}) => {
   const examples = fs.readdirSync("./examples").sort((a, b) =>
     a.localeCompare(b),
@@ -109,6 +121,8 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
         ...Object.keys(pkg.dependencies || {}),
         ...Object.keys(pkg.devDependencies || {}),
       ];
+
+      for (const name of docsExamplePrerequisites(pkg).native) result.add(name);
 
       for (const depName of depNames) {
         if (!depName.startsWith("@farmfe/plugin-")) {
@@ -154,8 +168,14 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
       : examples;
   console.log("Building", examplesToBuild.length, "examples...");
 
+  let docsPrepared = false;
   for (const example of examplesToBuild) {
     const examplePath = join("./examples", example);
+    const manifestPath = join(examplePath, "package.json");
+    const docsPrerequisites = existsSync(manifestPath)
+      ? docsExamplePrerequisites(JSON.parse(fs.readFileSync(manifestPath, "utf8")))
+      : { native: [], public: [] };
+    if (docsPrerequisites.public.length && !docsPrepared) await buildPluginTools();
     const rustPluginNames = resolveRustPluginsForExample(example, examplePath);
 
     for (const rustPluginName of rustPluginNames) {
@@ -191,6 +211,12 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
 
     if (!existsSync(join(examplePath, "package.json"))) {
       continue;
+    }
+    if (docsPrerequisites.public.length && !docsPrepared) {
+      for (const name of docsPrerequisites.public) {
+        await execa("npm", ["run", "build"], { cwd: resolve(CWD, "packages", name) });
+      }
+      docsPrepared = true;
     }
     console.log("Building", examplePath);
 
