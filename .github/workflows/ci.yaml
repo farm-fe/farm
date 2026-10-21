@@ -257,6 +257,8 @@ jobs:
         run: pnpm --filter @farmfe/runtime run build
       - name: Build Babel Plugin Types
         run: pnpm --filter @farmfe/js-plugin-babel exec tsc -p tsconfig.json --emitDeclarationOnly
+      - name: Build Docs Public Types
+        run: pnpm --filter @farmfe/docs run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
