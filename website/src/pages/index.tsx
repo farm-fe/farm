@@ -1,6 +1,4 @@
-import { Link } from "@farmfe/docs/client";
-import { SiteText } from "../site-text";
-import { useColorMode, useLocale } from "@farmfe/docs/client";
+import { Link, useColorMode, useLocale } from "@farmfe/docs/client";
 import clsx from "clsx";
 import React from "react";
 import Benchmark from "../components/Benchmark";
@@ -10,6 +8,7 @@ import BentoGridCard from "../components/MagicUi/card";
 import NeonGradientCard from "../components/MagicUi/neon-gradient-card";
 import StarrySky from "../components/StarrySky";
 import { AuroraBackground } from "../components/ui/aurora-back";
+import { SiteText } from "../site-text";
 import styles from "./index.module.css";
 
 const homeLinks = { en: { quick: "/docs/quick-start", why: "/docs/why-farm", contribution: "/docs/contribution" }, zh: { quick: "/zh/docs/quick-start", why: "/zh/docs/why-farm", contribution: "/zh/docs/contribution" } };

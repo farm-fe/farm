@@ -1,7 +1,8 @@
+import { type CommandTabsProps, CommandTabs as CompiledCommandTabs } from '@farmfe/docs/snippets-runtime';
 import { Children, isValidElement } from 'react';
-import { CommandTabs as CompiledCommandTabs, type CommandTabsProps } from '@farmfe/docs/snippets-runtime';
 
 export { CodeBlock } from '@farmfe/docs/snippets-runtime';
+
 const order = ['npm', 'yarn', 'pnpm', 'bun'];
 const storageMigration = { key: 'tabs.package.manager', values: order };
 

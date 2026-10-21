@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import React from "react";
-import FarmCard from "../Card";
 import { SiteText } from "../../site-text";
+import FarmCard from "../Card";
 import TeamMembersItem from "../TeamMembersItem";
 import styles from "./index.module.css";
 

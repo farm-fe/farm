@@ -1,5 +1,5 @@
-import React from "react";
 import type { PageMetadata } from "@farmfe/docs";
+import React from "react";
 import { TeamMembers } from "../components/TeamMembers";
 import { members } from "./data";
 

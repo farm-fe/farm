@@ -1,5 +1,5 @@
-import {useState} from 'react';
 import {usePage} from '@farmfe/docs/client';
+import {useState} from 'react';
 export default function Counter() {
   const [count,setCount]=useState(0);
   return <section>

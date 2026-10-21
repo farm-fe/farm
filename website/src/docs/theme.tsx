@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react';
 import { Link } from '@farmfe/docs/client';
 import type { ThemeProps } from '@farmfe/docs/theme';
 import { ColorModeControl, MobileNavigation, Search } from '@farmfe/docs-theme-default';
+import { createContext, useContext, useEffect, useState } from 'react';
+
 export { default as Footer } from '../theme/Footer';
 
 const Mobile = createContext(false);

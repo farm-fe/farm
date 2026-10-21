@@ -1,7 +1,7 @@
-import React from 'react';
+import type { PageMetadata } from '@farmfe/docs';
 import { useLocale, useSite } from '@farmfe/docs/client';
 import { SearchPage } from '@farmfe/docs-theme-default';
-import type { PageMetadata } from '@farmfe/docs';
+import React from 'react';
 
 export const metadata = {
   title: 'Search the documentation',

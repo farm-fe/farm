@@ -1,8 +1,8 @@
 import { Link } from "@farmfe/docs/client";
-import { SiteText } from "../../site-text";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { SiteText } from "../../site-text";
 import farmCard from "../Card";
 import ShinyTextEx from "../MagicUi/shiny-text";
 import styles from "./index.module.css";

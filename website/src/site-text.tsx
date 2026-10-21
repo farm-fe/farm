@@ -1,5 +1,5 @@
-import React from 'react';
 import { useLocale } from '@farmfe/docs/client';
+import React from 'react';
 import messages from './locales/messages.json';
 
 export type SiteMessageKey = keyof typeof messages.en;

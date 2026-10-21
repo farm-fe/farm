@@ -1,5 +1,5 @@
-import React from 'react';
 import type { PageMetadata } from '@farmfe/docs';
+import React from 'react';
 import { Timeline } from "../components/ui/timeline";
 
 export const metadata = {
