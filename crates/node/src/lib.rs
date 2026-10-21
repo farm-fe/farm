@@ -404,29 +404,36 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn get_parent_files(&self, resolved_path: String) -> Vec<String> {
+  pub fn get_parent_files(&self, resolved_path: String) -> napi::Result<Vec<String>> {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
     let path = Path::new(&resolved_path);
     let module_id = if path.is_absolute() {
       ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root)
     } else {
-      resolved_path.into()
+      resolved_path.clone().into()
     };
     let current_exec_order = module_graph
       .module(&module_id)
-      .map(|m| m.execution_order)
-      .unwrap_or(usize::MAX);
+      .ok_or_else(|| {
+        napi::Error::new(
+          Status::InvalidArg,
+          format!("Module {resolved_path:?} is not present in the module graph"),
+        )
+      })?
+      .execution_order;
     let parents = module_graph.dependents_ids(&module_id);
 
-    parents
-      .into_iter()
-      .filter(|id| {
-        let module = module_graph.module(id).unwrap();
-        module.execution_order > current_exec_order
-      })
-      .map(|p| p.resolved_path_with_query(&context.config.root))
-      .collect()
+    Ok(
+      parents
+        .into_iter()
+        .filter(|id| {
+          let module = module_graph.module(id).unwrap();
+          module.execution_order > current_exec_order
+        })
+        .map(|p| p.resolved_path_with_query(&context.config.root))
+        .collect(),
+    )
   }
 
   #[napi]

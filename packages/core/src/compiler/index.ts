@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, realpathSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
@@ -187,7 +187,20 @@ export class Compiler {
   }
 
   getParentFiles(idOrResolvedPath: string): string[] {
-    return this._bindingCompiler.getParentFiles(idOrResolvedPath);
+    // Match the resolver's physical file identity, retaining query variants.
+    // Virtual IDs and symlinks:false keep their original identity.
+    let resolved = idOrResolvedPath;
+    if (this.config.compilation?.resolve?.symlinks !== false) {
+      const filename = cleanUrl(idOrResolvedPath);
+      const root =
+        this.config.compilation?.root ?? this.config.root ?? process.cwd();
+      const absolute = path.resolve(root, filename);
+      if (existsSync(absolute)) {
+        resolved =
+          realpathSync(absolute) + idOrResolvedPath.slice(filename.length);
+      }
+    }
+    return this._bindingCompiler.getParentFiles(resolved);
   }
 
   resources(): Record<string, Buffer> {
