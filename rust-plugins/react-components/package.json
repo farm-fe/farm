@@ -39,28 +39,7 @@
       "types": "./scripts/index.d.ts",
       "default": "./scripts/index.js"
     },
-    "./package.json": "./package.json",
-    "./types/preact": {
-      "types": "./types/preact.d.ts"
-    },
-    "./types/raw": {
-      "types": "./types/raw.d.ts"
-    },
-    "./types/react": {
-      "types": "./types/react.d.ts"
-    },
-    "./types/svelte": {
-      "types": "./types/svelte.d.ts"
-    },
-    "./types/svelte3": {
-      "types": "./types/svelte3.d.ts"
-    },
-    "./types/svelte4": {
-      "types": "./types/svelte4.d.ts"
-    },
-    "./types/vue": {
-      "types": "./types/vue3.d.ts"
-    }
+    "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
