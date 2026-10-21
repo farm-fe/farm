@@ -1,0 +1,3 @@
+# Preserve original license bytes and the published aggregate across platforms.
+licenses/*.txt -text
+static/THIRD_PARTY_NOTICES.txt -text
