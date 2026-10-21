@@ -126,8 +126,12 @@ jobs:
         run: |
           pnpm --dir examples/docs-minimal run build
           pnpm --dir examples/docs-features run build
+      - name: Verify third-party notice sources before the website build
+        run: node scripts/farm-docs-notices.test.mjs --source-only
       - name: Build the real website with its independent Farm configuration
         run: pnpm --dir website run build:farm
+      - name: Verify published third-party notices
+        run: node scripts/farm-docs-notices.test.mjs
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
       - name: Exercise public theme, runtime, and full blog build/dev behavior

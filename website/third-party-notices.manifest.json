@@ -1,0 +1,579 @@
+{
+  "schemaVersion": 1,
+  "scope": "Third-party package license texts for mapped browser modules; native CSS generator templates included separately. Existing repository images are unchanged assets, outside this package list.",
+  "packageVersions": 75,
+  "sources": [
+    {
+      "name": "@emotion/is-prop-valid",
+      "version": "1.4.0",
+      "sha256": "6e8d23763cf7cb707ad8f6677aa502ebeca1dda447e6d6e57f6549c1625b9c4a",
+      "origin": "installed package",
+      "originalText": "licenses/6e8d23763cf7cb707ad8f6677aa502ebeca1dda447e6d6e57f6549c1625b9c4a.txt"
+    },
+    {
+      "name": "@floating-ui/dom",
+      "version": "1.6.12",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "origin": "installed package",
+      "originalText": "licenses/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt"
+    },
+    {
+      "name": "@floating-ui/react-dom",
+      "version": "2.1.2",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "origin": "installed package",
+      "originalText": "licenses/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt"
+    },
+    {
+      "name": "@floating-ui/utils",
+      "version": "0.2.8",
+      "sha256": "0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce",
+      "origin": "installed package",
+      "originalText": "licenses/0e4c9a9b6c71019cbbea3bdc20b01223110a9035700f9c960c8fcbf78c2325ce.txt"
+    },
+    {
+      "name": "@radix-ui/primitive",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-arrow",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-compose-refs",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-context",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-context",
+      "version": "1.1.1",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "gitHead": "157415ed1f34c53b5afbf53a047895ed6a7f957f"
+    },
+    {
+      "name": "@radix-ui/react-dismissable-layer",
+      "version": "1.1.1",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "gitHead": "157415ed1f34c53b5afbf53a047895ed6a7f957f"
+    },
+    {
+      "name": "@radix-ui/react-icons",
+      "version": "1.3.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "installed package",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt"
+    },
+    {
+      "name": "@radix-ui/react-id",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-popper",
+      "version": "1.2.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-portal",
+      "version": "1.1.2",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "gitHead": "157415ed1f34c53b5afbf53a047895ed6a7f957f"
+    },
+    {
+      "name": "@radix-ui/react-presence",
+      "version": "1.1.1",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "gitHead": "157415ed1f34c53b5afbf53a047895ed6a7f957f"
+    },
+    {
+      "name": "@radix-ui/react-primitive",
+      "version": "2.0.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-tooltip",
+      "version": "1.1.3",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/157415ed1f34c53b5afbf53a047895ed6a7f957f/LICENSE",
+      "gitHead": "157415ed1f34c53b5afbf53a047895ed6a7f957f"
+    },
+    {
+      "name": "@radix-ui/react-use-callback-ref",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-use-controllable-state",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-use-layout-effect",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-use-size",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@radix-ui/react-visually-hidden",
+      "version": "1.1.0",
+      "sha256": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
+      "origin": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "originalText": "licenses/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/radix-ui/primitives/704069ee4c40c3b6f342c104dff5ad873ee39c43/LICENSE",
+      "gitHead": "704069ee4c40c3b6f342c104dff5ad873ee39c43"
+    },
+    {
+      "name": "@react-spring/animated",
+      "version": "9.7.5",
+      "sha256": "51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02",
+      "origin": "installed package",
+      "originalText": "licenses/51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02.txt"
+    },
+    {
+      "name": "@react-spring/core",
+      "version": "9.7.5",
+      "sha256": "51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02",
+      "origin": "installed package",
+      "originalText": "licenses/51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02.txt"
+    },
+    {
+      "name": "@react-spring/rafz",
+      "version": "9.7.5",
+      "sha256": "51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02",
+      "origin": "installed package",
+      "originalText": "licenses/51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02.txt"
+    },
+    {
+      "name": "@react-spring/shared",
+      "version": "9.7.5",
+      "sha256": "51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02",
+      "origin": "installed package",
+      "originalText": "licenses/51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02.txt"
+    },
+    {
+      "name": "@react-spring/web",
+      "version": "9.7.5",
+      "sha256": "51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02",
+      "origin": "installed package",
+      "originalText": "licenses/51863a051d919d260e725327cb58df68d04289919d90fa64283beb9c646a2b02.txt"
+    },
+    {
+      "name": "@react-three/drei",
+      "version": "9.112.1",
+      "sha256": "2e36b208b403882158daf95cae207087bbb830db4d434a79ebafffca177244c8",
+      "origin": "installed package",
+      "originalText": "licenses/2e36b208b403882158daf95cae207087bbb830db4d434a79ebafffca177244c8.txt"
+    },
+    {
+      "name": "@react-three/fiber",
+      "version": "8.17.7",
+      "sha256": "ebd6a29bec64bdfcf8795388f2eceaf1479c14d343c0846de347ab8609d66139",
+      "origin": "https://raw.githubusercontent.com/pmndrs/react-three-fiber/4c154d97041790d6f988d7641250aeb041e9c313/LICENSE",
+      "originalText": "licenses/ebd6a29bec64bdfcf8795388f2eceaf1479c14d343c0846de347ab8609d66139.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/pmndrs/react-three-fiber/4c154d97041790d6f988d7641250aeb041e9c313/LICENSE",
+      "gitHead": "4c154d97041790d6f988d7641250aeb041e9c313"
+    },
+    {
+      "name": "@stitches/react",
+      "version": "1.2.8",
+      "sha256": "ea48daa7b5303f761fa0219535ab95b5684e5a012c110cd0e1488950c6f848d0",
+      "origin": "https://raw.githubusercontent.com/modulz/stitches/c268db3938e2cf6bdbaa3d30f3ce7b67c0492a41/LICENSE.md",
+      "originalText": "licenses/ea48daa7b5303f761fa0219535ab95b5684e5a012c110cd0e1488950c6f848d0.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/modulz/stitches/c268db3938e2cf6bdbaa3d30f3ce7b67c0492a41/LICENSE.md",
+      "gitHead": "c268db3938e2cf6bdbaa3d30f3ce7b67c0492a41"
+    },
+    {
+      "name": "@tabler/icons-react",
+      "version": "3.19.0",
+      "sha256": "d5a3f948ae5cb95bfc4d2f767ef2bf6a778815b0ddb2d1c48037744cf636518e",
+      "origin": "installed package",
+      "originalText": "licenses/d5a3f948ae5cb95bfc4d2f767ef2bf6a778815b0ddb2d1c48037744cf636518e.txt"
+    },
+    {
+      "name": "@use-gesture/core",
+      "version": "10.3.1",
+      "sha256": "b99672ef9af57432e6d025a66d34f8b968564e4e0a1e2005ea9018457a7e38dc",
+      "origin": "installed package",
+      "originalText": "licenses/b99672ef9af57432e6d025a66d34f8b968564e4e0a1e2005ea9018457a7e38dc.txt"
+    },
+    {
+      "name": "@use-gesture/react",
+      "version": "10.3.1",
+      "sha256": "b99672ef9af57432e6d025a66d34f8b968564e4e0a1e2005ea9018457a7e38dc",
+      "origin": "installed package",
+      "originalText": "licenses/b99672ef9af57432e6d025a66d34f8b968564e4e0a1e2005ea9018457a7e38dc.txt"
+    },
+    {
+      "name": "assign-symbols",
+      "version": "1.0.0",
+      "sha256": "0798f37cff4a3f438c071316e41f94ffe110116a313ab0fc4f8caa07218f1f0f",
+      "origin": "installed package",
+      "originalText": "licenses/0798f37cff4a3f438c071316e41f94ffe110116a313ab0fc4f8caa07218f1f0f.txt"
+    },
+    {
+      "name": "attr-accept",
+      "version": "2.2.5",
+      "sha256": "d75a1dcd7216692931683668052a2801767bdd0ca19711633098ce87ebade863",
+      "origin": "installed package",
+      "originalText": "licenses/d75a1dcd7216692931683668052a2801767bdd0ca19711633098ce87ebade863.txt"
+    },
+    {
+      "name": "clsx",
+      "version": "1.2.1",
+      "sha256": "9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97",
+      "origin": "installed package",
+      "originalText": "licenses/9a9edad7baae52622bddf3c15b2ef8a33d2c89f2d25408ad13e8a7481c6b0c97.txt"
+    },
+    {
+      "name": "colord",
+      "version": "2.9.3",
+      "sha256": "7613d4594ee8b6163926af3435dae61c9e3d5a27cd137bd76a543ba40002d8fc",
+      "origin": "installed package",
+      "originalText": "licenses/7613d4594ee8b6163926af3435dae61c9e3d5a27cd137bd76a543ba40002d8fc.txt"
+    },
+    {
+      "name": "debounce",
+      "version": "1.2.1",
+      "sha256": "87c2f96d275cd4fb2b047e23f792f34704ffb798949039da60392b7122685412",
+      "origin": "installed package",
+      "originalText": "licenses/87c2f96d275cd4fb2b047e23f792f34704ffb798949039da60392b7122685412.txt"
+    },
+    {
+      "name": "dequal",
+      "version": "2.0.3",
+      "sha256": "306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae",
+      "origin": "installed package",
+      "originalText": "licenses/306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae.txt"
+    },
+    {
+      "name": "extend-shallow",
+      "version": "2.0.1",
+      "sha256": "daca23d50b0f54d36d6da1b16c82dfea6461e2ae20de0e869957e44cc6d34781",
+      "origin": "installed package",
+      "originalText": "licenses/daca23d50b0f54d36d6da1b16c82dfea6461e2ae20de0e869957e44cc6d34781.txt"
+    },
+    {
+      "name": "extend-shallow",
+      "version": "3.0.2",
+      "sha256": "9580cc528a1c38d1560a9d36e34404fe1ea9d8e6f44c596dac2a3104ef63cdab",
+      "origin": "installed package",
+      "originalText": "licenses/9580cc528a1c38d1560a9d36e34404fe1ea9d8e6f44c596dac2a3104ef63cdab.txt"
+    },
+    {
+      "name": "fflate",
+      "version": "0.6.10",
+      "sha256": "62249119bb7df6e54300f37a37145c26a6d4420410aac8881a119c5b427cf751",
+      "origin": "installed package",
+      "originalText": "licenses/62249119bb7df6e54300f37a37145c26a6d4420410aac8881a119c5b427cf751.txt"
+    },
+    {
+      "name": "file-selector",
+      "version": "0.5.0",
+      "sha256": "01949dbb7502b2f1a424c53a043892db5e842bf6bb9201efab5d96ffeac15f1e",
+      "origin": "installed package",
+      "originalText": "licenses/01949dbb7502b2f1a424c53a043892db5e842bf6bb9201efab5d96ffeac15f1e.txt"
+    },
+    {
+      "name": "for-in",
+      "version": "1.0.2",
+      "sha256": "f4a48aa8354a257785aa534bab2ac5ff2c2a98cd59cdf4a637bb68ee185683f7",
+      "origin": "installed package",
+      "originalText": "licenses/f4a48aa8354a257785aa534bab2ac5ff2c2a98cd59cdf4a637bb68ee185683f7.txt"
+    },
+    {
+      "name": "framer-motion",
+      "version": "11.11.1",
+      "sha256": "5ff46083b88563822b0560dd6221ab89d2f74bc97a52d4c97a75020fd62c6f32",
+      "origin": "installed package",
+      "originalText": "licenses/5ff46083b88563822b0560dd6221ab89d2f74bc97a52d4c97a75020fd62c6f32.txt"
+    },
+    {
+      "name": "get-value",
+      "version": "2.0.6",
+      "sha256": "3672fb6ef1c214578dfee689643516c2685f61ab08d130517ca8ea24f383a840",
+      "origin": "installed package",
+      "originalText": "licenses/3672fb6ef1c214578dfee689643516c2685f61ab08d130517ca8ea24f383a840.txt"
+    },
+    {
+      "name": "is-extendable",
+      "version": "0.1.1",
+      "sha256": "0798f37cff4a3f438c071316e41f94ffe110116a313ab0fc4f8caa07218f1f0f",
+      "origin": "installed package",
+      "originalText": "licenses/0798f37cff4a3f438c071316e41f94ffe110116a313ab0fc4f8caa07218f1f0f.txt"
+    },
+    {
+      "name": "is-extendable",
+      "version": "1.0.1",
+      "sha256": "4922620a5741e9d1bb43dde132021a982ae7c545eed1c6e00b555d6fe978005f",
+      "origin": "installed package",
+      "originalText": "licenses/4922620a5741e9d1bb43dde132021a982ae7c545eed1c6e00b555d6fe978005f.txt"
+    },
+    {
+      "name": "is-plain-object",
+      "version": "2.0.4",
+      "sha256": "4cd903859549d4b20b571041f96dfae1136ed079c476126268f9d7cc1b611150",
+      "origin": "installed package",
+      "originalText": "licenses/4cd903859549d4b20b571041f96dfae1136ed079c476126268f9d7cc1b611150.txt"
+    },
+    {
+      "name": "isobject",
+      "version": "3.0.1",
+      "sha256": "0ead7e8cd8b0bc66a981ee69acaf1297ffa838cfce1b156a039bb24f997c0a27",
+      "origin": "installed package",
+      "originalText": "licenses/0ead7e8cd8b0bc66a981ee69acaf1297ffa838cfce1b156a039bb24f997c0a27.txt"
+    },
+    {
+      "name": "its-fine",
+      "version": "1.2.5",
+      "sha256": "978e8e1b1678b5e73758171a2d1a3cc1b2732495874a5e82d4a73a290e66158b",
+      "origin": "installed package",
+      "originalText": "licenses/978e8e1b1678b5e73758171a2d1a3cc1b2732495874a5e82d4a73a290e66158b.txt"
+    },
+    {
+      "name": "leva",
+      "version": "0.9.35",
+      "sha256": "40be7e7f17ab0f656286c9938f9f0e2601129d0d1aed2b16758b7a3b479726e9",
+      "origin": "https://raw.githubusercontent.com/pmndrs/leva/b333a284f71ef9b581cdc2f6db046eab845f9ccd/LICENSE",
+      "originalText": "licenses/40be7e7f17ab0f656286c9938f9f0e2601129d0d1aed2b16758b7a3b479726e9.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/pmndrs/leva/b333a284f71ef9b581cdc2f6db046eab845f9ccd/LICENSE",
+      "gitHead": "b333a284f71ef9b581cdc2f6db046eab845f9ccd"
+    },
+    {
+      "name": "lucide-react",
+      "version": "0.394.0",
+      "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+      "origin": "installed package",
+      "originalText": "licenses/1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc.txt"
+    },
+    {
+      "name": "merge-value",
+      "version": "1.0.0",
+      "sha256": "f2274cb4b0e7ce5e4d6e9049a44981dd49cbd7b4b0a71aaaeb7b96a0d8d3439d",
+      "origin": "installed package",
+      "originalText": "licenses/f2274cb4b0e7ce5e4d6e9049a44981dd49cbd7b4b0a71aaaeb7b96a0d8d3439d.txt"
+    },
+    {
+      "name": "mixin-deep",
+      "version": "1.3.2",
+      "sha256": "9580cc528a1c38d1560a9d36e34404fe1ea9d8e6f44c596dac2a3104ef63cdab",
+      "origin": "installed package",
+      "originalText": "licenses/9580cc528a1c38d1560a9d36e34404fe1ea9d8e6f44c596dac2a3104ef63cdab.txt"
+    },
+    {
+      "name": "object-assign",
+      "version": "4.1.1",
+      "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c",
+      "origin": "installed package",
+      "originalText": "licenses/6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c.txt"
+    },
+    {
+      "name": "prop-types",
+      "version": "15.8.1",
+      "sha256": "f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce",
+      "origin": "installed package",
+      "originalText": "licenses/f657f99d3fb9647db92628e96007aabb46e5f04f33e49999075aab8e250ca7ce.txt"
+    },
+    {
+      "name": "react",
+      "version": "18.2.0",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "origin": "installed package",
+      "originalText": "licenses/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt"
+    },
+    {
+      "name": "react-colorful",
+      "version": "5.6.1",
+      "sha256": "f23e00b31b9d88bf16e445d423936272ef5c7245782970f3092765aa8160cb31",
+      "origin": "installed package",
+      "originalText": "licenses/f23e00b31b9d88bf16e445d423936272ef5c7245782970f3092765aa8160cb31.txt"
+    },
+    {
+      "name": "react-dom",
+      "version": "18.2.0",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "origin": "installed package",
+      "originalText": "licenses/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt"
+    },
+    {
+      "name": "react-dropzone",
+      "version": "12.1.0",
+      "sha256": "7b93b62069ec28d00cc7cf3696b5d243ad9887517f8e709dce4811747f0e2dc2",
+      "origin": "installed package",
+      "originalText": "licenses/7b93b62069ec28d00cc7cf3696b5d243ad9887517f8e709dce4811747f0e2dc2.txt"
+    },
+    {
+      "name": "react-intersection-observer",
+      "version": "9.13.0",
+      "sha256": "6c6d295c4af5a9252d64200b9e3cb01374d9d3efd80b301fd94b04e280043f8e",
+      "origin": "installed package",
+      "originalText": "licenses/6c6d295c4af5a9252d64200b9e3cb01374d9d3efd80b301fd94b04e280043f8e.txt"
+    },
+    {
+      "name": "react-is",
+      "version": "16.13.1",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "origin": "installed package",
+      "originalText": "licenses/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt"
+    },
+    {
+      "name": "react-reconciler",
+      "version": "0.27.0",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "origin": "installed package",
+      "originalText": "licenses/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt"
+    },
+    {
+      "name": "scheduler",
+      "version": "0.21.0",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "origin": "installed package",
+      "originalText": "licenses/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt"
+    },
+    {
+      "name": "scheduler",
+      "version": "0.23.2",
+      "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85",
+      "origin": "installed package",
+      "originalText": "licenses/52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85.txt"
+    },
+    {
+      "name": "set-value",
+      "version": "2.0.1",
+      "sha256": "f4a48aa8354a257785aa534bab2ac5ff2c2a98cd59cdf4a637bb68ee185683f7",
+      "origin": "installed package",
+      "originalText": "licenses/f4a48aa8354a257785aa534bab2ac5ff2c2a98cd59cdf4a637bb68ee185683f7.txt"
+    },
+    {
+      "name": "split-string",
+      "version": "3.1.0",
+      "sha256": "f2274cb4b0e7ce5e4d6e9049a44981dd49cbd7b4b0a71aaaeb7b96a0d8d3439d",
+      "origin": "installed package",
+      "originalText": "licenses/f2274cb4b0e7ce5e4d6e9049a44981dd49cbd7b4b0a71aaaeb7b96a0d8d3439d.txt"
+    },
+    {
+      "name": "suspend-react",
+      "version": "0.1.3",
+      "sha256": "997e79b828d8b85d6f18730c8dbf58074811360a199506bd84e1263e17c227a2",
+      "origin": "installed package",
+      "originalText": "licenses/997e79b828d8b85d6f18730c8dbf58074811360a199506bd84e1263e17c227a2.txt"
+    },
+    {
+      "name": "tailwind-merge",
+      "version": "2.5.5",
+      "sha256": "d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5",
+      "origin": "installed package",
+      "originalText": "licenses/d4c70c7ce38cea8778f0aed3fc0bef0a9dbd27f13bd8b6773cbd6d37941971e5.txt"
+    },
+    {
+      "name": "three",
+      "version": "0.168.0",
+      "sha256": "4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454",
+      "origin": "installed package",
+      "originalText": "licenses/4c40a1ef62450b857c3b2aaf294936304cd552d965fbcd9d32d4c5bcf4ba4454.txt"
+    },
+    {
+      "name": "three-stdlib",
+      "version": "2.33.0",
+      "sha256": "28eb7edf059a39094aa3d169db1fec46ac4a6279c921a90f965828d92ec86e79",
+      "origin": "installed package",
+      "originalText": "licenses/28eb7edf059a39094aa3d169db1fec46ac4a6279c921a90f965828d92ec86e79.txt"
+    },
+    {
+      "name": "v8n",
+      "version": "1.5.1",
+      "sha256": "600a3c22d28e0c5d5bcda00a54e40086ea7b19923999a2e83d605b4d30880585",
+      "origin": "installed package",
+      "originalText": "licenses/600a3c22d28e0c5d5bcda00a54e40086ea7b19923999a2e83d605b4d30880585.txt"
+    },
+    {
+      "name": "zustand",
+      "version": "3.7.2",
+      "sha256": "c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417",
+      "origin": "installed package",
+      "originalText": "licenses/c1e6e266563517467b1bf874817d23e426f3149252bd7d42758cd697514b8417.txt"
+    }
+  ],
+  "css": {
+    "source": "../rust-plugins/tailwindcss/LICENSE",
+    "sha256": "ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439"
+  },
+  "noticeSha256": "359e9a2bef4666714b7e762717406ed840154c63ab5c4adafa530971f4551aa4"
+}

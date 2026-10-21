@@ -67,7 +67,7 @@ export default function FooterWrapper(): JSX.Element {
               <DiscordLogoIcon className='h-5 w-5 sm:h-6 sm:w-6 text-white hover:text-gray-300' />
             </a>
           </ul>
-          <p className="text-xs sm:text-sm text-center text-gray-100">Copyright © 2024 Farm Community. Built with Farm.</p>
+          <p className="text-xs sm:text-sm text-center text-gray-100">Copyright © 2024 Farm Community. Built with Farm. <a href="/THIRD_PARTY_NOTICES.txt" target="_blank" rel="noopener noreferrer" className="underline">Third-party notices</a></p>
         </div>
       </div>
     </section>
