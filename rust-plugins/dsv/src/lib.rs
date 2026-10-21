@@ -120,19 +120,7 @@ impl Plugin for FarmPluginDsv {
       return Ok(None);
     }
 
-    let mut records = vec![];
-    for result in reader.unwrap().records() {
-      let record = result.map_err(|error| CompilationError::TransformError {
-        resolved_path: param.resolved_path.to_string(),
-        msg: error.to_string(),
-      })?;
-      let json_record: Value = record
-        .iter()
-        .map(|field| Value::String(field.to_string()))
-        .collect();
-      records.push(json_record);
-    }
-    let json_string = serde_json::to_string(&records).unwrap();
+    let json_string = records_to_json(reader.unwrap(), param.resolved_path)?;
 
     Ok(Some(PluginTransformHookResult {
       content: format!("export default {json_string}"),
@@ -141,6 +129,25 @@ impl Plugin for FarmPluginDsv {
       ignore_previous_source_map: true,
     }))
   }
+}
+
+fn records_to_json(mut reader: Reader<&[u8]>, resolved_path: &str) -> HookResult<String> {
+  let error = |error: csv::Error| CompilationError::TransformError {
+    resolved_path: resolved_path.to_string(),
+    msg: error.to_string(),
+  };
+  let headers = reader.headers().map_err(error)?.clone();
+  let mut rows = Vec::new();
+  for record in reader.records() {
+    let record = record.map_err(error)?;
+    let row: serde_json::Map<String, Value> = headers
+      .iter()
+      .zip(record.iter())
+      .map(|(header, value)| (header.to_string(), Value::String(value.to_string())))
+      .collect();
+    rows.push(Value::Object(row));
+  }
+  Ok(serde_json::to_string(&rows).unwrap())
 }
 
 #[cfg(test)]
@@ -226,6 +233,61 @@ mod tests {
     assert!(matches!(
       plugin.load_path(input.path()),
       Err(CompilationError::LoadError { .. })
+    ));
+  }
+  #[test]
+  fn csv_rows_match_documented_header_objects() {
+    let param = Param {
+      module_id: "fruit.csv".to_string(),
+      content: "type,count\napples,7\npears,4\n".to_string(),
+    };
+    let json = records_to_json(get_reader(&param).unwrap(), &param.module_id).unwrap();
+    assert_eq!(
+      serde_json::from_str::<Value>(&json).unwrap(),
+      serde_json::json!([{"type":"apples","count":"7"},{"type":"pears","count":"4"}])
+    );
+  }
+
+  #[test]
+  fn tsv_rows_keep_named_shipping_fields_and_string_values() {
+    let param = Param {
+      module_id: "shipping.tsv".to_string(),
+      content: "destination\tcents\tfreeAbove\ndomestic\t500\t10000\n".to_string(),
+    };
+    let json = records_to_json(get_reader(&param).unwrap(), &param.module_id).unwrap();
+    assert_eq!(
+      serde_json::from_str::<Value>(&json).unwrap(),
+      serde_json::json!([{"destination":"domestic","cents":"500","freeAbove":"10000"}])
+    );
+  }
+
+  #[test]
+  fn quoted_csv_fields_keep_commas_and_header_only_input_is_empty() {
+    for (content, expected) in [
+      (
+        "name,value\n\"last, first\",42\n",
+        serde_json::json!([{"name":"last, first","value":"42"}]),
+      ),
+      ("name,value\n", serde_json::json!([])),
+    ] {
+      let param = Param {
+        module_id: "quoted.csv".to_string(),
+        content: content.to_string(),
+      };
+      let json = records_to_json(get_reader(&param).unwrap(), &param.module_id).unwrap();
+      assert_eq!(serde_json::from_str::<Value>(&json).unwrap(), expected);
+    }
+  }
+
+  #[test]
+  fn malformed_row_width_is_a_transform_error() {
+    let param = Param {
+      module_id: "bad.csv".to_string(),
+      content: "name,value\nonly-one-field\n".to_string(),
+    };
+    assert!(matches!(
+      records_to_json(get_reader(&param).unwrap(), &param.module_id),
+      Err(CompilationError::TransformError { .. })
     ));
   }
 }
