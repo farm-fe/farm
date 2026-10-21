@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   config::Config,
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam},
-  HashMap,
 };
 use farmfe_plugin_tailwindcss::FarmPluginTailwindCSS;
 use farmfe_testing_helpers::fixture;
@@ -54,45 +54,36 @@ fn tailwindcss_transform_at_apply() {
     let resolved_path = file.to_string_lossy().to_string();
     let config = Config::default();
     let plugin = Arc::new(FarmPluginTailwindCSS::new(&config, "{}".to_string()));
-    let context = CompilationContext::new(config, vec![plugin.clone()]).unwrap();
+    let context = Arc::new(CompilationContext::new(config, vec![plugin]).unwrap());
     let content = read_file_utf8(&resolved_path).unwrap();
 
-    let result = plugin
+    // A transform may return no type override. The real driver must retain
+    // the incoming CSS type rather than interpreting None as a missing type.
+    let transformed = context
+      .plugin_driver
       .transform(
-        &PluginTransformHookParam {
+        PluginTransformHookParam {
           resolved_path: &resolved_path,
-          content: content.clone(),
+          content,
           module_type: ModuleType::Css,
           query: vec![],
           meta: HashMap::from_iter([]),
           module_id: resolved_path.clone(),
           source_map_chain: vec![],
         },
-        &Arc::new(context),
+        &context,
       )
       .unwrap();
-
-    // CSS with @apply should be detected and processed
-    match result {
-      Some(transformed) => {
-        let css = normalize_css(&transformed.content);
-        assert!(
-          css.contains("@apply") || css.contains("padding"),
-          "Transformed CSS should contain @apply or processed output"
-        );
-        assert_eq!(
-          transformed.module_type,
-          Some(ModuleType::Css),
-          "Module type should remain CSS"
-        );
-      }
-      None => {
-        // If compile returns no features, it returns None.
-        // This is acceptable since we don't have the full tailwindcss
-        // runtime in test - the @apply feature is detected but
-        // compilation may not produce output without full tailwindcss.
-      }
-    }
+    let css = normalize_css(&transformed.content);
+    assert!(
+      css.contains("@apply") || css.contains("padding"),
+      "Transformed CSS should contain @apply or processed output"
+    );
+    assert_eq!(
+      transformed.module_type,
+      Some(ModuleType::Css),
+      "Module type should remain CSS through the plugin driver"
+    );
   });
 }
 
