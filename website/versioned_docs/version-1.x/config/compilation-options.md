@@ -552,7 +552,7 @@ Configure whether to enable sourcemap, optional configuration items and descript
 
 ### partialBundling
 
-Configure the behavior of Farm's partial bundling. For details, please refer to [Partial Bundling](/docs/features/partial-bundling)
+Configure the behavior of Farm's partial bundling. For details, please refer to [Partial Bundling](../advanced/partial-bundling.md)
 
 ```ts
 export interface FarmPartialBundlingConfig {
@@ -697,7 +697,7 @@ Whether to enable lazy compilation, configure to false to close. See [lazy compi
 
 - **default**: `false` in development mode, `true` in build mode
 
-Whether to enable tree shake, set to false to close. See [Tree Shake](/docs/features/tree-shake).
+Whether to enable tree shake, set to false to close. See [Tree Shake](../advanced/tree-shake.md).
 
 ### minify
 
@@ -790,7 +790,7 @@ Options passed to swc preset env, see https://swc.rs/docs/configuration/compilat
 
 - **default**: `true`
 
-Options for [Persistent Cache](/docs/features/persistent-cache). Configuring it `false` to disable cache.
+Options for [Persistent Cache](../advanced/persistent-cache.md). Configuring it `false` to disable cache.
 
 ```ts
 export type PersistentCache =
@@ -853,7 +853,7 @@ How to generate cache key when trying to reuse cache. if `timestamp` is true and
 
 #### `persistentCache.envs`
 
-- **default**: [Farm Env](/docs/config/farm-config#environment-variable)
+- **default**: [Farm Env](../features/env.md)
 
 Envs used to invalidate cache, if the configured env changed, then all cache will be invalidated.
 

@@ -2,9 +2,6 @@
 @use "./admonition";
 @use "./token.css";
 
-@tailwind components;
-@tailwind base;
-@tailwind utilities;
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -250,6 +247,12 @@ a {
 .DocSearch-Button {
   width: 250px;
   border-radius: 8px !important;
+}
+
+@media screen and (max-width: 996px) {
+  .DocSearch-Button {
+    width: auto;
+  }
 }
 
 .dropdown > .navbar__link:after {

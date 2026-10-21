@@ -56,7 +56,7 @@ export default defineConfig({
 import './index.scss';
 ```
 
-To use sass with css modules, change the file name from `index.scss` to `index.module.scss`, see [css modules](/docs/config/farm-config#cssmodules).
+To use sass with css modules, change the file name from `index.scss` to `index.module.scss`, see [css modules](../config/compilation-options.md#cssmodules).
 
 `@farmfe/plugin-sass` supports a lot of options, use the array syntax of `plugins` to specify options for plugin sass:
 
@@ -110,7 +110,7 @@ export default defineConfig({
 import './index.less';
 ```
 
-To use sass with css modules, change the file name from `index.less` to `index.module.less`, see [css modules](/docs/config/farm-config#cssmodules)
+To use sass with css modules, change the file name from `index.less` to `index.module.less`, see [css modules](../config/compilation-options.md#cssmodules)
 
 ### Postcss
 The Farm postcss plugin is a JS plugin. The steps to introduce postcss in Farm are as follows:

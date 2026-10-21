@@ -1,11 +1,11 @@
-import { PackageManagerTabs } from "../../../../../../src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # @farmfe/plugin-react
 支持 `React Jsx` 和 `React Refresh`
 
 ## Installation
 
-<PackageManagerTabs command="pnpm add @farmfe/plugin-react" />
+<PackageManagerTabs commands={{"npm":"npm add @farmfe/plugin-react","pnpm":"pnpm add @farmfe/plugin-react","yarn":"yarn add @farmfe/plugin-react","bun":"bun add @farmfe/plugin-react"}} />
 
 ## Usage
 导入 `@farmfe/plugin-react` 并在 `farm.config.ts` 的 `plugins` 字段中以工厂函数的形式调用，与 JS 插件用法一致。

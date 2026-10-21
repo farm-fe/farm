@@ -1,9 +1,9 @@
-import Link from "@docusaurus/Link";
-import Translate from "@docusaurus/Translate";
+import { Link } from "@farmfe/docs/client";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import farmCard from "../Card";
+import { SiteText } from "../../site-text";
+import farmCard from "../card";
 import ShinyTextEx from "../MagicUi/shiny-text";
 import styles from "./index.module.css";
 import { ProgressBar } from "./ProgressBar";
@@ -120,12 +120,12 @@ const BENCHMARK_DATA = {
 };
 export default function Benchmark() {
   const SCENE = [
-    { name: <Translate>ColdStart</Translate>, title: "ColdStart" },
-    { name: <Translate>HotStart</Translate>, title: "HotStart" },
-    { name: <Translate>HmrRoot</Translate>, title: "HmrRoot" },
-    { name: <Translate>HmrLeaf</Translate>, title: "HmrLeaf" },
-    { name: <Translate>ColdBuild</Translate>, title: "ColdBuild" },
-    { name: <Translate>HotBuild</Translate>, title: "HotBuild" },
+    { name: <SiteText id="benchmark.coldStart" />, title: "ColdStart" },
+    { name: <SiteText id="benchmark.hotStart" />, title: "HotStart" },
+    { name: <SiteText id="benchmark.hmrRoot" />, title: "HmrRoot" },
+    { name: <SiteText id="benchmark.hmrLeaf" />, title: "HmrLeaf" },
+    { name: <SiteText id="benchmark.coldBuild" />, title: "ColdBuild" },
+    { name: <SiteText id="benchmark.hotBuild" />, title: "HotBuild" },
   ];
   const [activeScene, setActiveScene] = useState("ColdStart");
   const { ref, inView } = useInView({
@@ -184,7 +184,7 @@ export default function Benchmark() {
                       key={info.name}
                       className="flex flex-center justify-start my-8 flex-col sm:flex-row"
                     >
-                      {inView && (
+                      {(
                         <>
                           <div
                             className="flex items-center text-light-500  text-center font-bold"
@@ -194,6 +194,7 @@ export default function Benchmark() {
                           </div>
                           <ProgressBar
                             value={info.time}
+                            animate={inView}
                             max={Math.max(
                               ...performanceInfoList.map((info) => info.time)
                             )}
@@ -208,7 +209,7 @@ export default function Benchmark() {
                     rel="stylesheet"
                     href="https://github.com/farm-fe/performance-compare"
                   >
-                    {/* <Translate>See benchmark details</Translate> */}
+                    {/* <SiteText id="benchmark.details" /> */}
                     <ShinyTextEx />
                   </Link>
                 </div>

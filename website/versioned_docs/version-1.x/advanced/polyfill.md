@@ -50,7 +50,7 @@ export default {
 
 Note that if your project does not require browser compatibility, you can use set a looser value for `targets`, then less polyfills will be injected and output sizes will be smaller.
 
-Refer to [compilation.presetEnv](/docs/config/farm-config#presetenv) for more options.
+Refer to [compilation.presetEnv](../config/compilation-options.md#presetenv) for more options.
 
 ### Configuring `script.target`
 `script.target` is used to control the target env when generate code. If you want to downgrade your project to `ES5`, you should set both:

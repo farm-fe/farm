@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "../src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Benchmarks
 
@@ -15,11 +15,11 @@ Using Turbopack's bench cases (1000 React components), see https://turbo.build/p
 
 #### Install dependencies
 
-<PackageManagerTabs command="pnpm install" />
+<PackageManagerTabs commands={{"npm":"npm install","pnpm":"pnpm install","yarn":"yarn install","bun":"bun install"}} />
 
 #### run benchmark
 
-<PackageManagerTabs command="pnpm benchmark" />
+<PackageManagerTabs commands={{"npm":"npm benchmark","pnpm":"pnpm benchmark","yarn":"yarn benchmark","bun":"bun benchmark"}} />
 
 
 ### Data

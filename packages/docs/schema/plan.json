@@ -1,0 +1,1369 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DocPlan",
+  "description": "Private build artifact. It is never emitted by browser/server child builds.",
+  "type": "object",
+  "required": [
+    "blogIndexes",
+    "contentInputs",
+    "diagnostics",
+    "inputs",
+    "modules",
+    "notFound",
+    "publicDiagnostics",
+    "routes",
+    "schemaVersion",
+    "seo",
+    "sidebars",
+    "site",
+    "snapshotId",
+    "ssg",
+    "styles"
+  ],
+  "properties": {
+    "assets": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PreparedAsset"
+      }
+    },
+    "blogIndexes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PublicBlogIndex"
+      }
+    },
+    "contentInputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ContentDirectoryInput"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PlanInput"
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PreparedModule"
+      }
+    },
+    "notFound": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/NotFoundPlan"
+      }
+    },
+    "publicDiagnostics": {
+      "description": "Safe projection for the published build report; private diagnostics stay local.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "routes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/RenderRoute"
+      }
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "seo": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/PublicSeoHead"
+      }
+    },
+    "sidebars": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PublicSidebar"
+      }
+    },
+    "site": {
+      "$ref": "#/definitions/PublicSiteConfig"
+    },
+    "snapshotId": {
+      "type": "string"
+    },
+    "ssg": {
+      "$ref": "#/definitions/SsgConfig"
+    },
+    "staticFiles": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PreparedAsset"
+      }
+    },
+    "staticInputs": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/StaticDirectoryInput"
+      }
+    },
+    "styles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "themeComponents": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "AlgoliaOptions": {
+      "type": "object",
+      "required": [
+        "apiKey",
+        "appId",
+        "indexName"
+      ],
+      "properties": {
+        "apiKey": {
+          "description": "Browser search key, part of the explicitly public configuration.",
+          "type": "string"
+        },
+        "appId": {
+          "type": "string"
+        },
+        "indexName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AtomConfig": {
+      "type": "object",
+      "required": [
+        "author",
+        "updated"
+      ],
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CollectionKind": {
+      "type": "string",
+      "enum": [
+        "doc",
+        "blog",
+        "page"
+      ]
+    },
+    "ColorMode": {
+      "type": "string",
+      "enum": [
+        "system",
+        "light",
+        "dark"
+      ]
+    },
+    "ContentDirectoryInput": {
+      "type": "object",
+      "required": [
+        "entriesHash",
+        "path",
+        "scripts"
+      ],
+      "properties": {
+        "entriesHash": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "scripts": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ContentLanguage": {
+      "type": "string",
+      "enum": [
+        "markdown",
+        "jsx",
+        "ts",
+        "tsx"
+      ]
+    },
+    "FallbackIndexing": {
+      "type": "string",
+      "enum": [
+        "noindex",
+        "index"
+      ]
+    },
+    "NavLink": {
+      "type": "object",
+      "required": [
+        "label",
+        "to"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotFoundConfig": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NotFoundLabels"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotFoundLabels": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "default": "The requested page could not be found.",
+          "type": "string"
+        },
+        "homeLabel": {
+          "default": "Return home",
+          "type": "string"
+        },
+        "title": {
+          "default": "Page not found",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotFoundPlan": {
+      "description": "Required auxiliary rendering metadata, separate from content identities.",
+      "type": "object",
+      "required": [
+        "description",
+        "headHtml",
+        "heading",
+        "home",
+        "homeLabel",
+        "locale",
+        "outputPath",
+        "routeBase",
+        "title"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "discoveryLinks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicDiscoveryLink"
+          }
+        },
+        "headHtml": {
+          "type": "string"
+        },
+        "heading": {
+          "type": "string"
+        },
+        "home": {
+          "type": "string"
+        },
+        "homeLabel": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "outputPath": {
+          "type": "string"
+        },
+        "routeBase": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OpenSearchConfig": {
+      "type": "object",
+      "required": [
+        "description",
+        "pageId",
+        "shortName"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string"
+        },
+        "shortName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageAlternate": {
+      "type": "object",
+      "required": [
+        "collection",
+        "locale",
+        "missing",
+        "routePath"
+      ],
+      "properties": {
+        "collection": {
+          "type": "string"
+        },
+        "key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locale": {
+          "type": "string"
+        },
+        "missing": {
+          "type": "boolean"
+        },
+        "routePath": {
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageLayout": {
+      "type": "string",
+      "enum": [
+        "default",
+        "none"
+      ]
+    },
+    "PageNavigation": {
+      "type": "object",
+      "required": [
+        "href",
+        "id",
+        "key",
+        "label"
+      ],
+      "properties": {
+        "href": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageSource": {
+      "type": "object",
+      "required": [
+        "collection",
+        "id",
+        "key",
+        "locale",
+        "routePath"
+      ],
+      "properties": {
+        "collection": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "routePath": {
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PlanInput": {
+      "type": "object",
+      "required": [
+        "hash",
+        "path"
+      ],
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PreparedAsset": {
+      "type": "object",
+      "required": [
+        "key",
+        "outputPath",
+        "sourceHash",
+        "sourcePath"
+      ],
+      "properties": {
+        "isStatic": {
+          "default": false,
+          "type": "boolean"
+        },
+        "key": {
+          "type": "string"
+        },
+        "outputPath": {
+          "type": "string"
+        },
+        "sourceHash": {
+          "type": "string"
+        },
+        "sourcePath": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PreparedModule": {
+      "type": "object",
+      "required": [
+        "code",
+        "key",
+        "sourceHash",
+        "sourcePath"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "generatedSource": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "key": {
+          "type": "string"
+        },
+        "language": {
+          "default": "markdown",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ContentLanguage"
+            }
+          ]
+        },
+        "sourceHash": {
+          "type": "string"
+        },
+        "sourceMap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sourcePath": {
+          "type": "string"
+        },
+        "staticAnchors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogAuthor": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogIndex": {
+      "type": "object",
+      "required": [
+        "collection",
+        "posts",
+        "tags",
+        "undated",
+        "years"
+      ],
+      "properties": {
+        "collection": {
+          "type": "string"
+        },
+        "posts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicBlogTagIndex"
+          }
+        },
+        "undated": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "years": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicBlogYearIndex"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogPost": {
+      "type": "object",
+      "required": [
+        "authors",
+        "tags"
+      ],
+      "properties": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicBlogAuthor"
+          }
+        },
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "publishedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicBlogTag"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogTag": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogTagIndex": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "posts"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "posts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogView": {
+      "type": "object",
+      "required": [
+        "kind",
+        "posts"
+      ],
+      "properties": {
+        "fullContent": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "posts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicBlogYearIndex": {
+      "type": "object",
+      "required": [
+        "posts",
+        "year"
+      ],
+      "properties": {
+        "posts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "year": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicCollection": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "locale",
+        "routeBase"
+      ],
+      "properties": {
+        "group": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/CollectionKind"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "routeBase": {
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicDiscoveryLink": {
+      "type": "object",
+      "required": [
+        "href",
+        "rel",
+        "title",
+        "type"
+      ],
+      "properties": {
+        "href": {
+          "type": "string"
+        },
+        "rel": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicDocsConfig": {
+      "type": "object",
+      "required": [
+        "defaultVersion"
+      ],
+      "properties": {
+        "defaultVersion": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicFooterConfig": {
+      "type": "object",
+      "required": [
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NavLink"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicHeading": {
+      "type": "object",
+      "required": [
+        "depth",
+        "id",
+        "title"
+      ],
+      "properties": {
+        "depth": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicLocales": {
+      "type": "object",
+      "required": [
+        "default",
+        "items"
+      ],
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicLogoConfig": {
+      "type": "object",
+      "required": [
+        "alt",
+        "href",
+        "src"
+      ],
+      "properties": {
+        "alt": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicPage": {
+      "type": "object",
+      "required": [
+        "canonicalPath",
+        "collection",
+        "headings",
+        "id",
+        "key",
+        "kind",
+        "locale",
+        "routePath",
+        "title"
+      ],
+      "properties": {
+        "alternates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PageAlternate"
+          }
+        },
+        "blog": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PublicBlogPost"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blogView": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PublicBlogView"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "canonicalPath": {
+          "type": "string"
+        },
+        "collection": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "fallbackSource": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PageSource"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "headings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicHeading"
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "layout": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PageLayout"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "locale": {
+          "type": "string"
+        },
+        "next": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PageNavigation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PageNavigation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "routePath": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicSeoHead": {
+      "type": "object",
+      "required": [
+        "alternates",
+        "canonicalUrl",
+        "html",
+        "robots"
+      ],
+      "properties": {
+        "alternates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SeoAlternate"
+          }
+        },
+        "canonicalUrl": {
+          "type": "string"
+        },
+        "discoveryLinks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicDiscoveryLink"
+          }
+        },
+        "html": {
+          "type": "string"
+        },
+        "robots": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicSidebar": {
+      "type": "object",
+      "required": [
+        "collection",
+        "items"
+      ],
+      "properties": {
+        "collection": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicSidebarItem"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicSidebarItem": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "href",
+            "id",
+            "key",
+            "label",
+            "type"
+          ],
+          "properties": {
+            "href": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "key": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "doc"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "items",
+            "label",
+            "type"
+          ],
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PublicSidebarItem"
+              }
+            },
+            "label": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "category"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "href",
+            "label",
+            "type"
+          ],
+          "properties": {
+            "href": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "link"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PublicSiteConfig": {
+      "type": "object",
+      "required": [
+        "basePath",
+        "collections",
+        "docs",
+        "locales",
+        "notFound",
+        "schemaVersion",
+        "seo",
+        "theme",
+        "title",
+        "trailingSlash",
+        "url"
+      ],
+      "properties": {
+        "basePath": {
+          "type": "string"
+        },
+        "collections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PublicCollection"
+          }
+        },
+        "docs": {
+          "$ref": "#/definitions/PublicDocsConfig"
+        },
+        "locales": {
+          "$ref": "#/definitions/PublicLocales"
+        },
+        "notFound": {
+          "$ref": "#/definitions/NotFoundConfig"
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "format": "uint32",
+          "maximum": 1.0,
+          "minimum": 1.0
+        },
+        "search": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/SearchConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "seo": {
+          "$ref": "#/definitions/SeoConfig"
+        },
+        "theme": {
+          "$ref": "#/definitions/PublicThemeConfig"
+        },
+        "title": {
+          "type": "string"
+        },
+        "trailingSlash": {
+          "$ref": "#/definitions/TrailingSlash"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicThemeConfig": {
+      "type": "object",
+      "required": [
+        "colorMode",
+        "footer",
+        "navbar"
+      ],
+      "properties": {
+        "colorMode": {
+          "$ref": "#/definitions/ColorMode"
+        },
+        "footer": {
+          "$ref": "#/definitions/PublicFooterConfig"
+        },
+        "logo": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PublicLogoConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "navbar": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NavLink"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RenderRoute": {
+      "type": "object",
+      "required": [
+        "outputPath",
+        "page"
+      ],
+      "properties": {
+        "outputPath": {
+          "type": "string"
+        },
+        "page": {
+          "$ref": "#/definitions/PublicPage"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SearchConfig": {
+      "type": "object",
+      "required": [
+        "provider"
+      ],
+      "properties": {
+        "openSearch": {
+          "$ref": "#/definitions/OpenSearchConfig"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AlgoliaOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider": {
+          "$ref": "#/definitions/SearchProvider"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SearchProvider": {
+      "type": "string",
+      "enum": [
+        "none",
+        "algolia"
+      ]
+    },
+    "SeoAlternate": {
+      "type": "object",
+      "required": [
+        "href",
+        "locale"
+      ],
+      "properties": {
+        "href": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SeoConfig": {
+      "type": "object",
+      "properties": {
+        "atom": {
+          "$ref": "#/definitions/AtomConfig"
+        },
+        "fallbackIndexing": {
+          "default": "noindex",
+          "allOf": [
+            {
+              "$ref": "#/definitions/FallbackIndexing"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "SsgConfig": {
+      "description": "Private build execution limits; never part of PublicSiteConfig.",
+      "type": "object",
+      "properties": {
+        "concurrency": {
+          "default": 4,
+          "type": "integer",
+          "format": "uint32",
+          "maximum": 32.0,
+          "minimum": 1.0
+        },
+        "timeoutMs": {
+          "default": 30000,
+          "type": "integer",
+          "format": "uint32",
+          "maximum": 300000.0,
+          "minimum": 100.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "StaticDirectoryInput": {
+      "type": "object",
+      "required": [
+        "entriesHash",
+        "path"
+      ],
+      "properties": {
+        "entriesHash": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TrailingSlash": {
+      "type": "string",
+      "enum": [
+        "always",
+        "never"
+      ]
+    }
+  }
+}

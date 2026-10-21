@@ -287,7 +287,7 @@ export default {
 
 **Cause**: Plugin hook signatures or names have changed.
 
-**Solution**: Check the updated [Plugin API documentation](../api/) for the latest hook specifications.
+**Solution**: Check the updated [JavaScript Plugin API](../api/js-plugin-api.md) and [Rust Plugin API](../api/rust-plugin-api.md) for the latest hook specifications.
 
 ## Getting Help
 

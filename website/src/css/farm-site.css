@@ -1,0 +1,45 @@
+/* Website presentation only. All utility generation stays in native Tailwind. */
+.farm-site-shell { --farm-docs-link: var(--ifm-color-primary); }
+.farm-site-shell > .farm-docs-skip { z-index: 1004; }
+.farm-site-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1002;
+  min-height: 60px;
+  padding: .5rem 1rem;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  background: var(--farm-docs-bg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .1);
+}
+.farm-site-navbar .farm-docs-brand { color: var(--ifm-color-primary); font-size: 1.5rem; text-decoration: none; white-space: nowrap; }
+.farm-site-navbar .farm-docs-brand img { width: 32px; height: 32px; object-fit: contain; }
+.farm-site-links { flex: 1; gap: .8rem; font-size: .9rem; }
+.farm-site-links a { color: var(--farm-docs-text); text-decoration: none; white-space: nowrap; }
+.farm-site-controls { display: flex; align-items: center; gap: .75rem; }
+.farm-site-controls .farm-docs-color-control { font-size: 0; gap: 0; }
+.farm-site-controls .farm-docs-color-control select { font-size: .85rem; max-width: 5rem; }
+.farm-site-alternate { position: relative; }
+.farm-site-alternate > summary { cursor: pointer; white-space: nowrap; }
+.farm-site-alternate > nav { position: absolute; right: 0; top: 100%; min-width: 8rem; flex-direction: column; gap: .5rem; padding: .75rem; background: var(--farm-docs-bg); border: 1px solid var(--farm-docs-border); border-radius: .5rem; }
+.farm-site-shell--home > .farm-docs-layout { display: block; max-width: none; padding: 0; margin: 0; }
+.farm-site-shell--home > .farm-docs-layout article { max-width: none; }
+.farm-site-shell--home > .farm-docs-layout > .farm-docs-toc { display: none; }
+.farm-site-footer { position: relative; }
+.farm-site-menu > button { width: 32px; height: 36px; padding: 0; border: 0; font-size: 0; background: transparent; color: var(--farm-docs-text); }
+.farm-site-menu > button::before { content: '☰'; font-size: 24px; }
+@media (max-width: 996px) {
+  .farm-site-navbar { flex-wrap: wrap; min-height: 60px; padding: .5rem 1rem; gap: .75rem; }
+  .farm-site-shell--mobile .farm-site-navbar { height: 60px; flex-wrap: nowrap; }
+  .farm-site-shell--mobile .farm-site-navbar > .farm-site-links, .farm-site-shell--mobile .farm-site-navbar > .farm-site-controls { display: none; }
+  .farm-site-navbar .farm-site-links { flex-wrap: wrap; }
+  .farm-site-menu .farm-docs-mobile-dialog nav { display: flex; flex-direction: column; gap: .75rem; }
+  .farm-site-menu .farm-site-alternate > nav { position: static; }
+  .farm-site-navbar .farm-docs-brand { margin-right: auto; }
+  .farm-site-navbar > button { width: 36px; height: 36px; border: 0; padding: 0; border-radius: .5rem; background: rgb(128 128 128 / .12); font-size: 0; }
+  .farm-site-navbar > button::before { content: '⌕'; font-size: 28px; color: var(--farm-docs-text); }
+  .farm-site-shell > .farm-docs-layout,
+  .farm-site-shell > .farm-docs-layout:has(> .farm-docs-sidebar-slot:not(:empty)) { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+  .farm-site-shell--mobile > .farm-docs-layout > .farm-docs-sidebar-slot, .farm-site-shell--mobile > .farm-docs-layout > .farm-docs-toc { display: none; }
+  .farm-site-shell--home > .farm-docs-layout { padding: 0; }
+}

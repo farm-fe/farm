@@ -24,10 +24,8 @@
     Bitstream Vera Sans Mono, Courier New, monospace;
 }
 
-:global(.dark) {
-  .progress-bar-inner-container {
-    background: #fba;
-  }
+:global(.dark) .progress-bar-inner-container {
+  background: #fba;
 }
 
 @media (max-width: 768px) {

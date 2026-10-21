@@ -107,3 +107,28 @@ Whether to enable file watching, or detailed [chokidar](https://github.com/paulm
 - **default**: `undefined`
 
 Provide a custom logger instance to replace Farm's built-in logger.
+
+## workflow
+
+- **default**: `undefined`
+
+Frameworks can provide a trusted local command runner to coordinate multiple Farm compilations and static rendering. A workflow is command orchestration, not a JavaScript compilation plugin. Compilation transforms still belong to compiler plugins.
+
+```ts
+export default defineConfig({
+  workflow: {
+    module: './site-workflow.mjs',
+    options: { title: 'My documentation' },
+  },
+  compilation: { input: { index: './index.html' } },
+});
+```
+
+The runner module exports `async function run({ command, config, options, signal })`. Farm dispatches `dev`, `build`, `watch`, or `preview` after resolving configuration and before creating a compiler or server. `config` is the resolved configuration with `workflow` removed, so a runner can use Farm APIs without dispatching itself recursively. Runner failures propagate to the caller.
+
+`module` accepts a local relative path (relative to the project root), an absolute path, a file URL, or a locally resolvable package entry. Use only trusted project modules. Projects without `workflow` retain the standard Farm command behavior. Normal configuration resolution, including compilation input defaults, still applies before dispatch.
+
+
+The optional runtime signal is passed through build(config, { signal }); it is separate from serialized configuration. Build workflows also receive cooperative SIGINT/SIGTERM cancellation, with listeners removed when the runner finishes. The runner must observe the signal at safe boundaries and finish any commit or recovery already in progress. Native compilation is not interrupted automatically.
+
+Trusted workflow implementations can use OutputDirectoryLock from @farmfe/core for an OS-backed exclusive lock on an absolute regular file path. Keep the returned object alive until release(), and release it in finally. Competing acquisition throws DOCS_OUTPUT_LOCKED. The lock file must retain its identity: do not unlink or replace it while coordinating writers. This low-level bridge does not validate a framework's output paths or implement its recovery protocol.

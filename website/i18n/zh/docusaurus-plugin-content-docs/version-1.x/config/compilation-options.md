@@ -842,7 +842,7 @@ export default defineConfig({
 
 控制复用缓存时，如何生成缓存的键。如果 `timestamp` 被设置为 true，并且模块没有倍改过，那么该模块所有的构建步骤将会被跳过（如`load`, `transform` 等钩子），缓存的模块将会被复用。如果`hash`设置成 true，并且 timestamp 没有命中，那么会调用 `load` 以及 `transform` 钩子来获取模块的内容，如果模块内容没有变更，那么缓存将会被复用，剩余构建步骤会被跳过。
 
-- `timestamp`: 是否检查模块的 timestamp，性能最优，但是如果某些插件依赖前一次的构建状态，可能存在问题，见[注意事项](/docs/features/persistent-cache#caveats-for-plugins).
+- `timestamp`: 是否检查模块的 timestamp，性能最优，但是如果某些插件依赖前一次的构建状态，可能存在问题，见[注意事项](../advanced/persistent-cache.md#插件注意事项).
 - `hash`: 是否检查 load 和 transform 后的内容。
 
 #### `persistentCache.envs`

@@ -1,0 +1,2 @@
+@use './tokens';
+.panel { color: tokens.$brand; padding: 7px; }

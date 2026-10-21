@@ -1,19 +1,15 @@
-import type { WrapperProps } from '@docusaurus/types';
 import { DiscordLogoIcon, GitHubLogoIcon } from '@radix-ui/react-icons';
-import type FooterType from '@theme/Footer';
 import React from 'react';
 import { FaXTwitter } from "react-icons/fa6";
 
 
-type Props = WrapperProps<typeof FooterType>;
-
-export default function FooterWrapper(props: Props): JSX.Element {
+export default function FooterWrapper(): JSX.Element {
   return (
-    <section className="py-8 bg-zinc-950 sm:py-10 lg:py-12 text-white z-50">
+    <section role="contentinfo" className="farm-site-footer py-8 bg-zinc-950 sm:py-10 lg:py-12 text-white z-50">
       <div className="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
         <div className='flex flex-col items-center sm:items-start gap-8 sm:flex-row sm:justify-between'>
           <div className='flex flex-col items-center sm:items-start gap-4'>
-            <img className="h-12 w-36 sm:h-14 sm:w-40" src="https://www.farmfe.org/img/logo-farm.png" alt="" />
+            <img className="h-12 w-36 sm:h-14 sm:w-40" src="/img/logo-farm.png" alt="" />
             <span className='text-lg sm:text-xl font-bold text-center sm:text-left'>Extremely Fast Web Build Tool Written in Rust</span>
           </div>
           <div className="w-full sm:w-auto">
@@ -71,7 +67,7 @@ export default function FooterWrapper(props: Props): JSX.Element {
               <DiscordLogoIcon className='h-5 w-5 sm:h-6 sm:w-6 text-white hover:text-gray-300' />
             </a>
           </ul>
-          <p className="text-xs sm:text-sm text-center text-gray-100">Copyright © 2024 Farm Community. Built with Docusaurus.</p>
+          <p className="text-xs sm:text-sm text-center text-gray-100">Copyright © 2024 Farm Community. Built with Farm. <a href="/THIRD_PARTY_NOTICES.txt" target="_blank" rel="noopener noreferrer" className="underline">Third-party notices</a></p>
         </div>
       </div>
     </section>

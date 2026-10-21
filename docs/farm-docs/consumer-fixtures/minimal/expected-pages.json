@@ -1,0 +1,11 @@
+{
+  "basePath":"/",
+  "routeSet":"complete-content-routes; auxiliary 404 is separate",
+  "pages": [
+    {"route":"/","heading":"Orchard Handbook","body":"This original body must be readable without JavaScript."},
+    {"route":"/advanced/setup/","heading":"Deep setup","body":"Deep route body from the isolated consumer."}
+  ],
+  "notFound": "/missing-consumer-page/",
+  "image": {"alt":"Orchard mark","width":19,"height":17},
+  "counter": {"before":"Harvest 0","after":"Harvest 1"}
+}

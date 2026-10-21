@@ -1,0 +1,10 @@
+{
+  "items": [
+    { "type": "doc", "id": "index" },
+    {
+      "type": "category",
+      "label": "Learn",
+      "items": [{ "type": "doc", "id": "getting-started" }]
+    }
+  ]
+}

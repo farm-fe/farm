@@ -6,3 +6,5 @@ packages:
   - js-plugins/*
   - bench/
   - website/
+  - rust-plugins/*/npm/*
+  - packages/core/npm/*

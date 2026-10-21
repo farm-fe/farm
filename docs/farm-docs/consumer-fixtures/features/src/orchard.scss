@@ -1,0 +1,5 @@
+$orchard-color: rgb(23, 87, 41);
+.orchard-marker {
+  color: $orchard-color;
+  button { border: 3px solid $orchard-color; }
+}

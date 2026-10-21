@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Vanilla
 
@@ -10,7 +10,7 @@ import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs"
 
 ### 创建 Vanilla 项目
 
-<PackageManagerTabs command="npm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 在 `Select Framework` 中选择 `Vanilla` 模版
 
@@ -18,14 +18,14 @@ import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs"
 
 开发环境时运行
 
-<PackageManagerTabs command="npm run dev" />
+<PackageManagerTabs commands={{"npm":"npm run dev","pnpm":"pnpm run dev","yarn":"yarn run dev","bun":"bun run dev"}} />
 
 在生产环境下进行打包
 
-<PackageManagerTabs command="npm run build" />
+<PackageManagerTabs commands={{"npm":"npm run build","pnpm":"pnpm run build","yarn":"yarn run build","bun":"bun run build"}} />
 
 预览生产环境打包之后构建的产物
 
-<PackageManagerTabs command="npm run preview" />
+<PackageManagerTabs commands={{"npm":"npm run preview","pnpm":"pnpm run preview","yarn":"yarn run preview","bun":"bun run preview"}} />
 
 如若想查看示例详情: [Vanilla 示例](https://github.com/farm-fe/farm/tree/main/crates/create-farm-rs/template/vanilla)
