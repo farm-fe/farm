@@ -2,7 +2,6 @@ import type { ModuleSystem } from '@farmfe/runtime';
 import type { HotModuleState } from './hot-module-state.js';
 import { logger } from './logger.js';
 import { ErrorOverlay, overlayId } from './overlay.js';
-import { captureUpdateSnapshot, type PrepareUpdateTransaction, type UpdateTransactionParticipant } from './update-transaction.js';
 import type {
   HMRPayload,
   HmrUpdateResult,
