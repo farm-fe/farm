@@ -13,9 +13,9 @@
       "types": "./dist/plugin/qiankun-farm-plugin.d.ts"
     },
     "./helper": {
-      "import": "./dist/helper/esm/qiankun-farm-helper.mjs",
-      "require": "./dist/helper/cjs/qiankun-farm-helper.cjs",
-      "types": "./dist/helper/qiankun-farm-helper.d.ts"
+      "import": "./dist/helper/esm/qiankun-farm-plugin-helper.mjs",
+      "require": "./dist/helper/cjs/qiankun-farm-plugin-helper.cjs",
+      "types": "./dist/helper/qiankun-farm-plugin-helper.d.ts"
     }
   },
   "scripts": {
