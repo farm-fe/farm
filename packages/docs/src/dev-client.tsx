@@ -2,8 +2,8 @@ import * as initialApplication from 'docs:application';
 import { beginRefreshTransaction, flushRefresh } from 'farm:react-refresh';
 import { createRoot } from 'react-dom/client';
 import { BrowserRuntime, updateHead, updateNotFoundHead } from './browser-runtime-core.js';
+import { type DevelopmentTransaction, restoreTogether, validateTogether } from './development-transaction.js';
 import { createPageLoader, type PageLoader } from './page-loader-core.js';
-import { restoreTogether, validateTogether, type DevelopmentTransaction } from './development-transaction.js';
 
 const container = document.getElementById('__FARM_DOCS_ROOT__');
 if (!container) throw new Error('[DOCS_DEVELOPMENT] missing root');
@@ -154,7 +154,7 @@ if (import.meta.hot) {
         alert.id = 'farm-docs-development-error';
         alert.setAttribute('role', 'alert');
         alert.textContent = 'Update failed. Showing the last working page.';
-        container!.after(alert);
+        container?.after(alert);
       }
     };
   });
@@ -168,18 +168,19 @@ function showInitialError(error: unknown, retryLoading?: () => void) {
   const alert = document.createElement('aside');
   alert.id = 'farm-docs-development-error';
   alert.setAttribute('role', 'alert');
-  alert.textContent = error instanceof Error ? error.message : String(error);
+  const message = document.createTextNode(error instanceof Error ? error.message : String(error));
+  alert.append(message);
   const retry = document.createElement('button');
   retry.textContent = 'Retry loading';
   retry.onclick = () => {
     if (retryLoading) { retryLoading(); return; }
     alert.remove();
     void mount().catch((failure: unknown) => {
-      alert.firstChild!.textContent = failure instanceof Error ? failure.message : String(failure);
-      container!.after(alert);
+      message.textContent = failure instanceof Error ? failure.message : String(failure);
+      container?.after(alert);
     });
   };
   alert.append(retry);
-  container!.after(alert);
+  container?.after(alert);
 }
 const initialReady = mount().catch((error: unknown) => showInitialError(error));

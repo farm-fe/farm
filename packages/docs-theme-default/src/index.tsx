@@ -4,9 +4,10 @@ import type { ReactNode } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CodeBlock } from './code-block.js';
 import { Search } from './search.js';
-export { Search, type SearchProps } from './search.js';
-export { SearchPage, type SearchPageProps, type SearchPageLabels } from './search-page.js';
+
 export { CodeBlock, type CodeBlockProps } from './code-block.js';
+export { Search, type SearchProps } from './search.js';
+export { SearchPage, type SearchPageLabels, type SearchPageProps } from './search-page.js';
 
 function useMobileNavigation() {
   const [mobile, setMobile] = useState(false);

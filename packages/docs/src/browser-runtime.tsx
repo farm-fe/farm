@@ -1,5 +1,5 @@
 import * as application from 'docs:application';
-import { BrowserRuntime as Runtime, updateHead as head } from './browser-runtime-core.js';
+import { updateHead as head, BrowserRuntime as Runtime } from './browser-runtime-core.js';
 import type { PublicPage } from './config.generated.js';
 import type { PageLoader } from './page-loader-core.js';
 export function BrowserRuntime(props: { initialKey: string | null; loader?: PageLoader }) {

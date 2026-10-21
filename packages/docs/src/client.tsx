@@ -1,7 +1,8 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { type ColorModeState, useColorModeState } from './color-mode.js';
 import type { PublicPage, PublicSiteConfig } from './config.generated.js';
-import { useColorModeState, type ColorModeState } from './color-mode.js';
+
 export type { ColorModeState } from './color-mode.js';
 export type { ColorMode } from './config.generated.js';
 

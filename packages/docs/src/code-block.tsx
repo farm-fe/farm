@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
 import type { HTMLAttributes } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface CodeBlockProps extends HTMLAttributes<HTMLPreElement> {
   'data-code'?: string;

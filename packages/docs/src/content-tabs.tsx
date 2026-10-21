@@ -1,5 +1,5 @@
-import { Children, isValidElement, useEffect, useId, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
+import { Children, isValidElement, useEffect, useId, useState } from 'react';
 import { useSite } from './client.js';
 
 export interface TabItemProps { value: string; label: ReactNode; disabled?: boolean; children: ReactNode }

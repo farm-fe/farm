@@ -1,7 +1,7 @@
-import { Children, isValidElement } from 'react';
 import type { ReactNode } from 'react';
+import { Children, isValidElement } from 'react';
 import { CodeBlock, type CodeBlockProps } from './code-block.js';
-import { Tabs, TabItem, type TabsStorageMigration } from './content-tabs.js';
+import { TabItem, Tabs, type TabsStorageMigration } from './content-tabs.js';
 import type { CommandTool } from './snippets.js';
 
 export { CodeBlock, type CodeBlockProps };

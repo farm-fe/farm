@@ -16,7 +16,7 @@ beforeEach(() => {
   vi.stubGlobal('__FARM_ENABLE_RUNTIME_PLUGIN__', false);
   vi.stubGlobal('__FARM_ENABLE_TOP_LEVEL_AWAIT__', false);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); });
 
 it.each(['component-first', 'dependency-first'])('invalidates the whole HMR batch before evaluating a boundary (%s)', async order => {
   const { __farm_internal_module_system__: modules } = await import('../../runtime/src/module-system.js');

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { ModuleInitialization } from '../../runtime/src/module-system.js';
+import type { FarmHmrPayload, RawHmrUpdateResult } from './types.js';
 
 vi.mock('./overlay.js', () => ({ ErrorOverlay: class {}, overlayId: 'overlay' }));
 
@@ -7,12 +8,12 @@ beforeEach(() => {
   vi.resetModules();
   vi.stubGlobal('window', { location: { port: '4397', hostname: 'localhost' } });
   vi.stubGlobal('location', { protocol: 'http:', reload: vi.fn() });
-  vi.stubGlobal('document', { querySelectorAll: () => [] });
+  vi.stubGlobal('document', { querySelectorAll: (): Element[] => [] });
   for (const [name, value] of Object.entries({ FARM_HMR_HOST: false, FARM_HMR_PROTOCOL: '', FARM_HMR_PATH: '/__hmr',
     __FARM_RUNTIME_TARGET_ENV__: 'browser', __FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__: 'browser',
     __FARM_ENABLE_EXTERNAL_MODULES__: false, __FARM_ENABLE_RUNTIME_PLUGIN__: false, __FARM_ENABLE_TOP_LEVEL_AWAIT__: false })) vi.stubGlobal(name, value);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); });
 
 function gate() {
   let release!: () => void;
@@ -66,7 +67,7 @@ it('restores factories caches and hot registrations after a controlled batch fai
     events.push(next.version);
   });
   hot.accept(accept);
-  const result = { added: ['new'], changed: ['component'], removed: ['deleted'],
+  const result: RawHmrUpdateResult = { added: ['new'], changed: ['component'], removed: ['deleted'],
     boundaries: { component: [['component']] }, immutableModules: '',
     mutableModules: "this.moduleSystem.u('component', (_, exports) => { exports.version = 'bad'; }); this.moduleSystem.g('new', () => {});",
     dynamicResources: null, dynamicModuleResourcesMap: null };
@@ -135,7 +136,7 @@ it('attempts every cleanup and registry restoration then blocks later batches af
   const events: string[] = [];
   client.registerUpdateParticipant('first', () => ({ rollback() { events.push('first'); }, recover() { events.push('recover'); } }));
   client.registerUpdateParticipant('second', () => ({ rollback() { events.push('second'); throw Error('cleanup failed'); } }));
-  const payload = { type: 'farm-update' as const, result: { added: [], changed: ['component'], removed: [],
+  const payload: FarmHmrPayload = { type: 'farm-update', result: { added: [], changed: ['component'], removed: [],
     boundaries: { component: [['component']] }, immutableModules: '',
     mutableModules: "this.moduleSystem.u('component', (_, exports) => { exports.version = 'bad'; });",
     dynamicResources: null, dynamicModuleResourcesMap: null } };
@@ -159,7 +160,7 @@ it('rejects an asynchronous finalizer and blocks later updates', async () => {
   client.registeredHotModulesMap.set('component', hot); hot.accept(() => {});
   const prepare = vi.fn(() => ({ async commit() { throw Error('async-finalizer-failed'); } }));
   client.registerUpdateParticipant('invalid', prepare);
-  const payload = { type: 'farm-update' as const, result: { added: [], changed: ['component'], removed: [],
+  const payload: FarmHmrPayload = { type: 'farm-update', result: { added: [], changed: ['component'], removed: [],
     boundaries: { component: [['component']] }, immutableModules: '', mutableModules: '',
     dynamicResources: null, dynamicModuleResourcesMap: null } };
   await expect(client.handleMessage(payload)).rejects.toThrow(/synchronous/);
