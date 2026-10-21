@@ -3,5 +3,10 @@
   "framework": null,
   "installCommand": "node ../scripts/farm-docs-vercel-build.mjs --install",
   "buildCommand": "node ../scripts/farm-docs-vercel-build.mjs",
-  "outputDirectory": "build-farm"
+  "outputDirectory": "build-farm",
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
 }

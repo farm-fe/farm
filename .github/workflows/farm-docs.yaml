@@ -64,7 +64,7 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
       - name: Check local source prerequisites and registry-only consumer rejection paths
-        run: node --test scripts/farm-docs-registry-consumer.test.mjs scripts/farm-docs-example-prerequisites.test.mjs
+        run: node --test scripts/farm-docs-registry-consumer.test.mjs scripts/farm-docs-example-prerequisites.test.mjs scripts/farm-docs-main-deploy-gate.test.mjs scripts/farm-docs-vercel-build.test.mjs
       - name: Check platform manifest preparation without native compilation
         run: node --experimental-strip-types --test scripts/farm-docs-platform-preparation.test.mjs
       - name: Check distribution contracts and fixture chain without native compilation
