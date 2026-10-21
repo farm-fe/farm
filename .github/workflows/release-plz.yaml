@@ -1,11 +1,18 @@
 # Name of the workflow: you can change it.
 name: Release-plz
 
-# The action runs on every push to the main branch.
+# Publishing is manual. A merge to main must never publish packages or tags.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Explicit release preparation or publication; publishing requires a separate release decision
+        required: true
+        type: choice
+        default: release-pr
+        options:
+          - release-pr
+          - release
 
 jobs:
   # Release unpublished packages.
@@ -13,6 +20,7 @@ jobs:
   # and you want to handle `cargo publish` and git tag push by yourself,
   # remove this job.
   release-plz-release:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'
     name: Release-plz release
     runs-on: ubuntu-latest
     # Used to push tags, and create releases.
@@ -49,6 +57,7 @@ jobs:
   # and you want to update `Cargo.toml` versions and changelogs by yourself,
   # remove this job.
   release-plz-pr:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release-pr'
     name: Release-plz PR
     runs-on: ubuntu-latest
     permissions:
