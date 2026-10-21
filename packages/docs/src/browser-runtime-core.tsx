@@ -202,8 +202,9 @@ export function BrowserRuntime({ initialKey, loader: providedLoader, application
       const previous = history.state && typeof history.state === 'object' ? history.state : {};
       history.pushState({ ...previous, __farmDocsEntry: currentEntry.current, __farmDocsOwner: instance, __farmDocsIndex: currentIndex.current }, '', candidate.url);
     } else if (candidate.action === 'pop') {
-      currentEntry.current = candidate.entry!;
-      currentIndex.current = candidate.index!;
+      if (candidate.entry === undefined || candidate.index === undefined) throw new Error('[DOCS_HISTORY] pop navigation is missing its history identity');
+      currentEntry.current = candidate.entry;
+      currentIndex.current = candidate.index;
     } else if (candidate.action === 'push') {
       // A newer click can select the URL of an uncommitted pop. There is no
       // push in that case, but the committed identity must adopt that actual
