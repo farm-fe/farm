@@ -62,6 +62,9 @@ var route1_ts_namespace_farm_internal_ = {
     get registerAction () {
         return registerAction;
     },
+    get registerEngine () {
+        return registerEngine;
+    },
     __esModule: true
 };
 defineExportStar(route1_ts_namespace_farm_internal_, __farm_cjs_exports__$2);

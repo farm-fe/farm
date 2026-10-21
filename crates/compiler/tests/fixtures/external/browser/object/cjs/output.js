@@ -16,7 +16,7 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_jquery = farmRequire.i(farmRequire('jquery'));
+        var _f_jquery = farmRequire.i(farmRequire("jquery"));
         console.log(farmRequire.f(_f_jquery).find);
     }
 });

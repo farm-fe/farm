@@ -49,6 +49,9 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire.o(exports, "Route1", function() {
             return Route1;
         });
+        farmRequire.o(exports, "registerEngine", function() {
+            return _f_dep1.registerEngine;
+        });
         var _f_module_helper_ts = farmRequire("@farmfe/runtime/src/modules/module-helper.ts.farm-runtime");
         var _f_dep = farmRequire.w(farmRequire("01800dfe"));
         var dep_cjs_ambiguous_export_all_farm_internal_ = _f_dep;

@@ -18,7 +18,7 @@ import { runConfiguredWorkflow } from '../src/workflow.js';
 
 test('package workflows resolve from a relative project root', async () => {
   const root = await mkdtemp(
-    path.join(await realpath(os.tmpdir()), 'farm-workflow-relative-')
+    path.join(await realpath(process.cwd()), '.farm-workflow-relative-')
   );
   try {
     const runner = path.join(root, 'node_modules', 'fixture-workflow');

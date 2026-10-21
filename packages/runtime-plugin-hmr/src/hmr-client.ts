@@ -8,6 +8,7 @@ import type {
   HmrUpdateResult,
   RawHmrUpdateResult
 } from './types.js';
+import { captureUpdateSnapshot, type PrepareUpdateTransaction, type UpdateTransactionParticipant } from './update-transaction.js';
 
 // Inject during compile time
 const usingClientHost = typeof FARM_HMR_HOST === 'boolean'; // using client host/port by default

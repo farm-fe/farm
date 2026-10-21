@@ -5,6 +5,8 @@ import { HmrClient } from './hmr-client.js';
 import { createHotContext } from './hot-module-state.js';
 export type { PrepareUpdateTransaction, UpdateTransactionParticipant } from './update-transaction.js';
 
+export type { PrepareUpdateTransaction, UpdateTransactionParticipant } from './update-transaction.js';
+
 let hmrClient: HmrClient;
 
 export default {

@@ -1,7 +1,9 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import type { ModuleSystem } from '../src/module-system.js';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 test('a detached dynamic resource snapshot restores later lazy imports', async () => {
   vi.resetModules();

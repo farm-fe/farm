@@ -24,7 +24,7 @@ initModuleSystem$2(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "index.ts": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_node_fs = farmRequire.i(farmRequire('node:fs'));
+        var _f_node_fs = farmRequire.i(farmRequire("node:fs"));
         console.log(farmRequire.f(_f_node_fs));
     }
 });
