@@ -193,7 +193,7 @@ mod tests {
   use farmfe_core::{
     context::CompilationContext,
     module::module_group::{ModuleGroupId, ModuleGroupType},
-    parking_lot::RwLock,
+    sync::RwLock,
     plugin::{Plugin, PluginHookContext, ResolveKind},
     HashMap, HashSet,
   };
