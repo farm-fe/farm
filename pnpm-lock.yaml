@@ -234,7 +234,7 @@ importers:
         specifier: workspace:*
         version: link:../../rust-plugins/react
       '@farmfe/plugin-svgr':
-        specifier: ^2.0.0-beta.1
+        specifier: ^2.0.0
         version: link:../../rust-plugins/svgr
       core-js:
         specifier: ^3.30.1
@@ -3778,6 +3778,34 @@ importers:
   packages/utils: {}
 
   rust-plugins/auto-import:
+    optionalDependencies:
+      '@farmfe/plugin-auto-import-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-auto-import-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-auto-import-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-auto-import-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-auto-import-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-auto-import-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-auto-import-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-auto-import-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-auto-import-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -3802,6 +3830,34 @@ importers:
   rust-plugins/auto-import/npm/win32-x64-msvc: {}
 
   rust-plugins/compress:
+    optionalDependencies:
+      '@farmfe/plugin-compress-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-compress-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-compress-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-compress-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-compress-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-compress-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-compress-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-compress-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-compress-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -3954,6 +4010,34 @@ importers:
   rust-plugins/docs/npm/win32-x64-msvc: {}
 
   rust-plugins/dsv:
+    optionalDependencies:
+      '@farmfe/plugin-dsv-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-dsv-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-dsv-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-dsv-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-dsv-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-dsv-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-dsv-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-dsv-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-dsv-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -3978,6 +4062,34 @@ importers:
   rust-plugins/dsv/npm/win32-x64-msvc: {}
 
   rust-plugins/dts:
+    optionalDependencies:
+      '@farmfe/plugin-dts-darwin-arm64':
+        specifier: 1.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-dts-darwin-x64':
+        specifier: 1.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-dts-linux-arm64-gnu':
+        specifier: 1.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-dts-linux-arm64-musl':
+        specifier: 1.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-dts-linux-x64-gnu':
+        specifier: 1.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-dts-linux-x64-musl':
+        specifier: 1.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-dts-win32-arm64-msvc':
+        specifier: 1.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-dts-win32-ia32-msvc':
+        specifier: 1.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-dts-win32-x64-msvc':
+        specifier: 1.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4362,6 +4474,34 @@ importers:
   rust-plugins/strip/npm/win32-x64-msvc: {}
 
   rust-plugins/svgr:
+    optionalDependencies:
+      '@farmfe/plugin-svgr-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-svgr-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-svgr-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-svgr-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-svgr-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-svgr-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-svgr-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-svgr-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-svgr-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4518,6 +4658,34 @@ importers:
   rust-plugins/virtual/npm/win32-x64-msvc: {}
 
   rust-plugins/vue:
+    optionalDependencies:
+      '@farmfe/plugin-vue-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-vue-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-vue-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-vue-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-vue-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-vue-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-vue-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-vue-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-vue-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4566,6 +4734,34 @@ importers:
   rust-plugins/vue/npm/win32-x64-msvc: {}
 
   rust-plugins/wasm:
+    optionalDependencies:
+      '@farmfe/plugin-wasm-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-wasm-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-wasm-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-wasm-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-wasm-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-wasm-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-wasm-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-wasm-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-wasm-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4593,6 +4789,34 @@ importers:
   rust-plugins/wasm/npm/win32-x64-msvc: {}
 
   rust-plugins/worker:
+    optionalDependencies:
+      '@farmfe/plugin-worker-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-worker-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-worker-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-worker-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-worker-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-worker-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-worker-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-worker-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-worker-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4617,6 +4841,34 @@ importers:
   rust-plugins/worker/npm/win32-x64-msvc: {}
 
   rust-plugins/yaml:
+    optionalDependencies:
+      '@farmfe/plugin-yaml-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-yaml-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-yaml-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-yaml-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-yaml-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-yaml-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-yaml-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-yaml-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-yaml-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*

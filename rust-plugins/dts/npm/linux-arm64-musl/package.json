@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-dts-linux-arm64-musl",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "os": [
     "linux"
   ],
@@ -16,6 +16,6 @@
     "node": ">= 10"
   },
   "libc": [
-    "glibc"
+    "musl"
   ]
 }

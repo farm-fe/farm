@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-vue",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "description": "Farm Rust plugin to compile Vue 3 SFCs, powered by fervid.",
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
@@ -38,5 +38,16 @@
   },
   "files": [
     "scripts"
-  ]
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-vue-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-vue-darwin-x64": "2.0.0",
+    "@farmfe/plugin-vue-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-vue-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-vue-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-vue-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-vue-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-vue-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-vue-win32-x64-msvc": "2.0.0"
+  }
 }

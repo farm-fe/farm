@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-dts-win32-x64-msvc",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "os": [
     "win32"
   ],

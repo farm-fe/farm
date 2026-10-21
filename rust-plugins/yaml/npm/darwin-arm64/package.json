@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-yaml-darwin-arm64",
-  "version": "0.0.2",
+  "version": "2.0.0",
   "os": [
     "darwin"
   ],
