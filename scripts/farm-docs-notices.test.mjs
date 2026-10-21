@@ -18,8 +18,10 @@ for (const source of manifest.sources) {
   assert.equal(sha(original), source.sha256, `${source.name}: original license digest`);
   assert.ok(notice.includes(original), `${source.name}: original license bytes missing from notice`);
 }
-const css = fs.readFileSync(path.resolve(website, manifest.css.source));
+const css = fs.readFileSync(path.resolve(website, manifest.css.originalText));
 assert.equal(sha(css), manifest.css.sha256);
+const currentCssLicense = fs.readFileSync(path.resolve(website, manifest.css.source), 'utf8').replace(/\r\n/g, '\n');
+assert.equal(sha(currentCssLicense), manifest.css.sourceNormalizedSha256, 'CSS generator source license text changed');
 assert.ok(notice.includes(css), 'CSS generator license bytes missing');
 const footer = fs.readFileSync(path.join(website, 'src/theme/Footer/index.tsx'), 'utf8');
 assert.ok(footer.includes('href="/THIRD_PARTY_NOTICES.txt"'));

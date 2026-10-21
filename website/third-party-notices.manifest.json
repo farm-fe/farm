@@ -573,7 +573,9 @@
   ],
   "css": {
     "source": "../rust-plugins/tailwindcss/LICENSE",
-    "sha256": "ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439"
+    "sha256": "ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439",
+    "originalText": "licenses/ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439.txt",
+    "sourceNormalizedSha256": "e22600195c1bf9d060613e649c33f55d842c18440c617ceaf2bd7257afb19786"
   },
   "noticeSha256": "359e9a2bef4666714b7e762717406ed840154c63ab5c4adafa530971f4551aa4"
 }

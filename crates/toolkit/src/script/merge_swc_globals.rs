@@ -13,6 +13,8 @@ use farmfe_core::{
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 
+type SourceMapRelocations = HashMap<ModuleId, Vec<(BytePos, BytePos, BytePos)>>;
+
 pub fn merge_comments(
   comments: &mut Vec<(ModuleId, CommentsMetaData)>,
   cm: Arc<SourceMap>,
@@ -31,7 +33,7 @@ pub fn merge_comments(
       if byte_pos.is_dummy() || byte_pos.is_reserved_for_comments() {
         byte_pos
       } else {
-        start_pos + byte_pos
+        BytePos(start_pos.0 + byte_pos.0 - 1)
       }
     };
 
@@ -57,9 +59,51 @@ pub fn merge_comments(
 
 pub fn merge_sourcemap(
   module_asts: &mut Vec<(ModuleId, SwcModule)>,
-  mut source_maps: HashMap<ModuleId, Arc<SourceMap>>,
+  source_maps: HashMap<ModuleId, Arc<SourceMap>>,
   context: &Arc<CompilationContext>,
 ) -> Arc<SourceMap> {
+  merge_sourcemap_with_relocations(module_asts, source_maps, context).0
+}
+
+/// Keep comments attached to the same source positions as their AST, including
+/// scope-hoisted modules whose source map already contains multiple files.
+pub fn merge_sourcemap_and_comments(
+  module_asts: &mut Vec<(ModuleId, SwcModule)>,
+  comments: &mut Vec<(ModuleId, CommentsMetaData)>,
+  source_maps: HashMap<ModuleId, Arc<SourceMap>>,
+  context: &Arc<CompilationContext>,
+) -> (Arc<SourceMap>, SingleThreadedComments) {
+  let (source_map, relocations) =
+    merge_sourcemap_with_relocations(module_asts, source_maps, context);
+  let merged = SingleThreadedComments::default();
+  for (module_id, metadata) in comments {
+    let updater = SpanUpdater {
+      ranges: &relocations[module_id],
+    };
+    let metadata = std::mem::take(metadata);
+    for (trailing, items) in [(false, metadata.leading), (true, metadata.trailing)] {
+      for item in items {
+        let position = updater.relocate(item.byte_pos);
+        for mut comment in item.comment {
+          comment.span.lo = updater.relocate(comment.span.lo);
+          comment.span.hi = updater.relocate(comment.span.hi);
+          if trailing {
+            merged.add_trailing(position, comment);
+          } else {
+            merged.add_leading(position, comment);
+          }
+        }
+      }
+    }
+  }
+  (source_map, merged)
+}
+
+fn merge_sourcemap_with_relocations(
+  module_asts: &mut Vec<(ModuleId, SwcModule)>,
+  mut source_maps: HashMap<ModuleId, Arc<SourceMap>>,
+  context: &Arc<CompilationContext>,
+) -> (Arc<SourceMap>, SourceMapRelocations) {
   let module_ids: Vec<_> = module_asts.iter().map(|item| &item.0).collect();
   let new_cm = Arc::new(SourceMap::default());
   let mut relocations = HashMap::default();
@@ -92,7 +136,7 @@ pub fn merge_sourcemap(
     });
   });
 
-  new_cm
+  (new_cm, relocations)
 }
 
 struct SpanUpdater<'a> {
@@ -171,6 +215,70 @@ mod tests {
         Arc::new(get_swc_sourcemap_filename(&expected.into()))
       );
       assert_eq!(location.col.0, 0, "nested merge column of {expected}");
+    }
+  }
+
+  #[test]
+  fn nested_merge_relocates_license_comments_with_their_statements() {
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+    let mut modules = vec![];
+    let mut comments = vec![];
+    for (name, content) in [
+      ("a.js", "/* @license A */\nconst alpha = 1;"),
+      ("b.js", "/* @license B */\nconst beta = 2;"),
+    ] {
+      let id: ModuleId = name.into();
+      let parsed = parse_module(
+        &id,
+        Arc::new(content.into()),
+        Default::default(),
+        EsVersion::EsNext,
+      )
+      .unwrap();
+      context.meta.set_module_source_map(&id, parsed.source_map);
+      comments.push((id.clone(), parsed.comments.into()));
+      modules.push((id, parsed.ast));
+    }
+    let (first, first_comments) =
+      merge_sourcemap_and_comments(&mut modules, &mut comments, Default::default(), &context);
+    for (_, module) in &modules {
+      assert!(first_comments.has_leading(module.body[0].span().lo));
+    }
+    let root: ModuleId = "a.js".into();
+    let mut combined = modules.remove(0).1;
+    combined.body.extend(modules.remove(0).1.body);
+    let prefix: ModuleId = "prefix.js".into();
+    let parsed = parse_module(
+      &prefix,
+      Arc::new("const prefix = 0;".into()),
+      Default::default(),
+      EsVersion::EsNext,
+    )
+    .unwrap();
+    context
+      .meta
+      .set_module_source_map(&prefix, parsed.source_map);
+    let mut modules = vec![(prefix.clone(), parsed.ast), (root.clone(), combined)];
+    let mut comments = vec![
+      (prefix, parsed.comments.into()),
+      (root.clone(), first_comments.into()),
+    ];
+    let (second, merged_comments) = merge_sourcemap_and_comments(
+      &mut modules,
+      &mut comments,
+      HashMap::from_iter([(root, first)]),
+      &context,
+    );
+    for (item, expected) in modules[1].1.body.iter().zip(["a.js", "b.js"]) {
+      let leading = merged_comments
+        .get_leading(item.span().lo)
+        .expect("license remains attached");
+      assert_eq!(leading.len(), 1);
+      assert!(leading[0].text.contains("@license"));
+      assert_eq!(
+        second.lookup_char_pos(leading[0].span.lo).file.name,
+        Arc::new(get_swc_sourcemap_filename(&expected.into()))
+      );
     }
   }
 }

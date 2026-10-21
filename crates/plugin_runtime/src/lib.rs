@@ -3,31 +3,30 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::{AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv},
   context::CompilationContext,
   error::CompilationError,
-  module::{meta_data::script::FARM_RUNTIME_SUFFIX, ModuleType},
+  module::{ModuleType, meta_data::script::FARM_RUNTIME_SUFFIX},
   plugin::{
     Plugin, PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
   },
   relative_path::RelativePath,
   resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::{ResourcePot, ResourcePotType},
     ResourceType,
+    meta_data::{ResourcePotMetaData, js::JsResourcePotMetaData},
+    resource_pot::{ResourcePot, ResourcePotType},
   },
   serde_json,
   swc_common::Globals,
-  HashSet,
 };
 
 use farmfe_toolkit::{
-  fs::{read_file_utf8, transform_output_filename, TransformOutputFileNameParams},
+  fs::{TransformOutputFileNameParams, read_file_utf8, transform_output_filename},
   html::get_farm_global_this,
   script::{
-    merge_swc_globals::{merge_comments, merge_sourcemap},
-    module_type_from_id,
+    merge_swc_globals::merge_sourcemap_and_comments, module_type_from_id,
     swc_try_with::resolve_module_mark,
   },
   swc_ecma_visit::VisitMutWith,
@@ -308,13 +307,12 @@ impl Plugin for FarmPluginRuntime {
       sorted_modules.extend(rendered_module.hoisted_module_ids);
     }
 
-    let merged_sourcemap = merge_sourcemap(&mut module_asts, source_maps, context);
+    let (merged_sourcemap, comments) =
+      merge_sourcemap_and_comments(&mut module_asts, &mut comments, source_maps, context);
     // update the source map for the resource pot in the global meta so that it can be used in the next step
     context
       .meta
       .set_resource_pot_source_map(&resource_pot.id, merged_sourcemap.clone());
-
-    let comments = merge_comments(&mut comments, merged_sourcemap);
 
     let merged_ast = merge_rendered_module::merge_rendered_module(&mut module_asts, context);
     let wrapped_resource_pot_ast =

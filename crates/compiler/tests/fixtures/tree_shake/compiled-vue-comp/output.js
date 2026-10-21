@@ -20,7 +20,7 @@ initModuleSystem(__farm_internal_module_system__);
     },
     "ae8e2392": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_vue = farmRequire('vue');
+        var _f_vue = farmRequire("vue");
         var _f_vue1 = farmRequire("vue");
         const _imports_0 = "URL_ADDRESS";
         const _hoisted_1 = {

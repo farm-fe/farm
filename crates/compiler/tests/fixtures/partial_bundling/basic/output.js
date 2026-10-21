@@ -87,7 +87,7 @@ initModuleSystem$1(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_module = farmRequire.i(farmRequire('module'));
+        var _f_module = farmRequire.i(farmRequire("module"));
         var _f_merge = farmRequire.i(farmRequire("726cd210"));
         function defineConfig(config) {
             farmRequire.f(_f_merge)(config, {

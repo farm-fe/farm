@@ -38,7 +38,7 @@ use crate::script::concatenate_modules::{
 };
 
 use super::{
-  merge_swc_globals::{merge_comments, merge_sourcemap},
+  merge_swc_globals::merge_sourcemap_and_comments,
   swc_try_with::{resolve_module_mark, try_with},
 };
 
@@ -160,8 +160,9 @@ pub fn concatenate_modules_ast(
     sorted_modules.push(module_id);
   }
 
-  let merged_source_map = merge_sourcemap(&mut module_asts, Default::default(), context);
-  let merged_comments = merge_comments(&mut comments, merged_source_map.clone()).into();
+  let (merged_source_map, merged_comments) =
+    merge_sourcemap_and_comments(&mut module_asts, &mut comments, Default::default(), context);
+  let merged_comments = merged_comments.into();
 
   // merge comments, module_asts and preserved_module_decls back to strip_module_results
   let stripped_results = comments
