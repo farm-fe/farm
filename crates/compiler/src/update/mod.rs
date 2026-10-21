@@ -52,6 +52,8 @@ mod patch_module_group_graph;
 mod regenerate_resources;
 mod update_context;
 
+type DynamicResourcesMap = HashMap<ModuleId, Vec<(String, ResourceType)>>;
+
 enum ResolveModuleResult {
   Cached(ModuleId),
   /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
@@ -833,7 +835,7 @@ impl Compiler {
     removed_modules: HashMap<ModuleId, Module>,
     callback: F,
     sync: bool,
-  ) -> Result<Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>>
+  ) -> Result<Option<DynamicResourcesMap>>
   where
     F: FnOnce() + Send + Sync + 'static,
   {
