@@ -128,6 +128,26 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
       name: '@farmfe/js-plugin-tailwindcss:generate',
       priority: 101,
 
+      // A lazy import may introduce candidates that none of the existing CSS
+      // roots watched during the initial graph. Rebuild the aggregate roots in
+      // the same update, after all source transforms have populated metadata.
+      updateModules: {
+        executor(param) {
+          const paths: typeof param.paths = [...param.paths];
+          const seen = new Set(paths.map(([id]) => id));
+          for (const id of roots.keys()) {
+            const rootId = path.isAbsolute(id)
+              ? id
+              : path.resolve(config?.root ?? process.cwd(), id);
+            if (!seen.has(rootId)) {
+              paths.push([rootId, 'updated']);
+              seen.add(rootId);
+            }
+          }
+          if (paths.length !== param.paths.length) return paths;
+        }
+      },
+
       freezeModule: {
         filters: { resolvedPaths: ['\\.css'] },
         async executor(param, context) {
