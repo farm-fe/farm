@@ -62,6 +62,8 @@ fn assert_explicit_update_rebuilds_generated_styles(timestamp: bool) {
       .as_nanos(),
   ));
   std::fs::create_dir(&root).unwrap();
+  // Match resolver identity when the OS temp directory has symlinked ancestors.
+  let root = farmfe_toolkit::resolve::follow_symlinks(root);
   let stylesheet = root.join("styles.css");
   std::fs::write(&stylesheet, ".source{color:red}").unwrap();
   std::fs::write(
@@ -94,7 +96,11 @@ fn assert_explicit_update_rebuilds_generated_styles(timestamp: bool) {
   compiler.compile().unwrap();
   let context = compiler.context();
   let css_id = "styles.css".into();
-  assert!(context.cache_manager.module_cache.has_cache(&css_id));
+  assert!(
+    context.cache_manager.module_cache.has_cache(&css_id),
+    "missing root-relative CSS cache for root {}",
+    context.config.root
+  );
   let old_cache = context.cache_manager.module_cache.get_cache(&css_id);
   assert!(
     codegen_css_stylesheet(&old_cache.module.meta.as_css().ast, false, None, false)

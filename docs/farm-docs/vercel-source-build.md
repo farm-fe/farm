@@ -43,3 +43,9 @@ Windows 修复后检查点：精确路径检查覆盖 45 条相对引用，部�
 TS CI 缺少 plugin-tools 的构建步骤，导致六个 artifact-copy 用例无法导入 dist；工作流已补公开 build。Windows 相对根目录测试改在 checkout 所在盘创建临时目录，以保证真实相对路径，未改变产品路径逻辑。freezeModule 快照的一行 source map 文件名由旧转义形式改为原始 `index.ts?foo=bar`，与用例原有的显式 sources 断言一致；其余字段及映射不变。候选通过正常单用例更新生成，再在非更新模式下验证；没有批量更新快照。
 
 本地后续验证：example 前置计划 2 项通过，正常 `docs-features` 单示例入口通过（CI 模式复用已有原生文件）；JS/TS 全套单 worker 在 CI 模式且无 `NO_COLOR` 的环境下 39 文件/150 测试通过，没有快照更新或 worker 异常。最初本地 `NO_COLOR` 造成的五个颜色用例失败日志保留。
+
+## 缓存回归的临时目录身份
+
+新 macOS 单元 job 119068225252 在 `update_cache` 的初始 `has_cache(styles.css)` 断言失败；尚未执行显式更新断言。测试配置使用 OS 临时目录的原始路径，而 resolver 默认对目录及祖先调用 `follow_symlinks`，模块 ID 再相对 config.root 计算。测试现在以同一 helper 规范化已创建的根目录，并保留全部缓存命中、更新内容、mtime 和未变 sibling 断言；补充失败时的根目录诊断。产品缓存与解析代码未改。
+
+Windows 正常临时路径的两个测试通过。Windows junction 探针在修复前后均通过，因此没有提供 macOS 差异的红绿复现；真目录 symlink 创建受到本机权限限制，没有提升权限。以上是基于路径身份契约的测试设置修正，macOS 通过仍须后续 CI 实证，不把 Windows 成功替代为 macOS 验收。
