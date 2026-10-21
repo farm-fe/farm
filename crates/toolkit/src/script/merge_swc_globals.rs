@@ -33,7 +33,7 @@ pub fn merge_comments(
       if byte_pos.is_dummy() || byte_pos.is_reserved_for_comments() {
         byte_pos
       } else {
-        BytePos(start_pos.0 + byte_pos.0 - 1)
+        start_pos + byte_pos
       }
     };
 
@@ -180,6 +180,55 @@ mod tests {
   use super::*;
   use crate::script::parse_module;
   use farmfe_core::{config::Config, swc_common::Spanned, swc_ecma_ast::EsVersion};
+
+  #[test]
+  fn legacy_css_merge_preserves_comment_positions_relative_to_rules() {
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+    let mut modules = vec![];
+    let mut comments = vec![];
+    let mut attachments = vec![];
+    for (name, content) in [
+      ("a.css", "/* first */\n.a { color: red; }"),
+      ("b.css", "/* second */\n.b { color: blue; }"),
+    ] {
+      let id: ModuleId = name.into();
+      let parsed = crate::css::parse_css_stylesheet(name, Arc::new(content.into())).unwrap();
+      let metadata: CommentsMetaData = parsed.comments.into();
+      let rule_start = i64::from(parsed.ast.rules[0].span().lo.0);
+      let positions = metadata
+        .leading
+        .iter()
+        .map(|item| (true, item))
+        .chain(metadata.trailing.iter().map(|item| (false, item)))
+        .map(|(leading, item)| {
+          (
+            leading,
+            i64::from(item.byte_pos.0) - rule_start,
+            item.comment.clone(),
+          )
+        })
+        .collect::<Vec<_>>();
+      assert!(!positions.is_empty(), "CSS parser captured the comment");
+      attachments.push(positions);
+      context.meta.set_module_source_map(&id, parsed.source_map);
+      comments.push((id.clone(), metadata));
+      modules.push((id, parsed.ast));
+    }
+    let source_map = crate::css::merge_css_sourcemap(&mut modules, &context);
+    let merged = merge_comments(&mut comments, source_map);
+    for ((_, module), positions) in modules.iter().zip(attachments) {
+      for (leading, offset, expected) in positions {
+        let position = BytePos((i64::from(module.rules[0].span().lo.0) + offset) as u32);
+        let actual = if leading {
+          merged.get_leading(position)
+        } else {
+          merged.get_trailing(position)
+        }
+        .expect("CSS comment keeps its position relative to the rule");
+        assert_eq!(actual, expected);
+      }
+    }
+  }
 
   #[test]
   fn nested_merge_preserves_each_original_file_and_column() {
