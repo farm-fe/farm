@@ -108,6 +108,8 @@ async function main() {
     return;
   }
   if (process.argv.includes('--verify-artifacts')) { await verifyArtifacts(); return; }
+  const { assertWebsiteSourcePaths } = await import('./farm-docs-source-paths.mjs');
+  console.log('[farm-docs-deploy] exact source paths:', assertWebsiteSourcePaths());
   await prepareRust(env);
   await runStages(buildStages, stage => stage.verifyArtifacts ? verifyArtifacts() : stage.nodeScript
     ? command(process.execPath, [stage.nodeScript], { env })

@@ -3,7 +3,7 @@ import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { SiteText } from "../../site-text";
-import farmCard from "../Card";
+import farmCard from "../card";
 import ShinyTextEx from "../MagicUi/shiny-text";
 import styles from "./index.module.css";
 import { ProgressBar } from "./ProgressBar";

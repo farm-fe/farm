@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { buildStages, runStages, parseToolchain } from './farm-docs-vercel-build.mjs';
 
@@ -46,4 +49,31 @@ test('the actual repository TOML supplies the pinned Rust channel and all requir
   assert.equal(actual.channel, 'nightly-2026-04-10');
   assert.deepEqual(actual.components, ['clippy', 'rustfmt', 'rust-src', 'rustc-dev']);
   assert.throws(() => parseToolchain('[toolchain]\nchannel = "nightly"\n'), /Cannot read/);
+});
+
+
+test('website relative source imports match exact tracked Git paths on every host', async () => {
+  const { assertWebsiteSourcePaths, relativeImports, unresolvedImports } = await import('./farm-docs-source-paths.mjs');
+  const tracked = new Set(['website/src/components/card/index.tsx', 'website/src/icon.svg']);
+  const filename = 'website/src/components/Team/index.tsx';
+  assert.equal(unresolvedImports(filename, ['../Card'], tracked).length, 1);
+  assert.equal(unresolvedImports(filename, ['../Missing'], tracked).length, 1);
+  assert.deepEqual(unresolvedImports(filename, ['../card', '../card/index.js', '../../icon.svg?url'], tracked), []);
+  assert.deepEqual(relativeImports('import A from "../card"; export { A } from "../card"; import("./lazy"); // import("./fake")', filename), ['../card', '../card', './lazy']);
+  assert.ok(assertWebsiteSourcePaths().checked > 0);
+});
+
+
+test('the deployment bootstrap starts before workspace dependencies are installed', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-docs-bootstrap-'));
+  try {
+    const entry = path.join(directory, 'build.mjs');
+    fs.copyFileSync(new URL('./farm-docs-vercel-build.mjs', import.meta.url), entry);
+    const result = spawnSync(process.execPath, [entry, '--plan'], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).length, buildStages.length);
+  } finally {
+    assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir()) + path.sep));
+    fs.rmSync(directory, { recursive: true });
+  }
 });

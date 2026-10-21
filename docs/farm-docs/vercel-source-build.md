@@ -27,3 +27,11 @@
 Vercel 的编译工具、网络、磁盘、构建时限及访问保护均由实际运行确认。入口正确不等于部署已通过；不得使用本地缓存成功代替远端干净环境验收。未运行版本更新、npm 发布、合并或生产部署。
 
 官方配置依据：https://vercel.com/docs/project-configuration/vercel-json
+
+## 大小写敏感源码检查
+
+后续 Vercel 日志已进入 `build:farm`，报 TeamMembers 无法解析 `../Card`。Git 实际跟踪的是 `components/card/index.tsx`；Benchmark 存在同样引用，两个 import 已统一为 `../card`。文件并未漏提交，也不是缺少 pnpm 包。
+
+部署在准备 Rust 工具链之前运行 `scripts/farm-docs-source-paths.mjs`：以 `git ls-files` 的精确大小写清单检查 `website/src` 的静态 import/export 与字面量动态 import，支持直接文件、扩展名、目录 index 和资源 query。使用 TypeScript 解析源码，忽略注释中的伪 import；不依赖 Windows 的 `existsSync`。此检查仅涵盖相对字面量引用，不验证 alias、包导出或运行时生成路径，实际官网构建仍必需。现有部署测试在两种 CI 系统上执行相同检查，包含错大小写、缺文件、正确 index 与资源路径回归。
+
+Windows 修复后检查点：精确路径检查覆盖 45 条相对引用，部署测试 6/6；单任务重建 Core 与公开 Core 包、验证产物、官网和 NOTICE 均通过。真实预览覆盖 334 路由、16 项既有浏览器观察、NOTICE 原文字节及双语未知路径 404。11 个外部原生插件复用并核对哈希；这不替代新的 Linux CI 或 Vercel 实际部署。
