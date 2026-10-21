@@ -9,7 +9,7 @@
 //! left-most first), `apply_variants` walks them in reverse to compose
 //! selector transforms and at-rule wrappers, producing the final CSS AST.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::ast::{AstNode, AtRule, StyleRule};
 
@@ -21,6 +21,7 @@ use crate::ast::{AstNode, AtRule, StyleRule};
 /// in [`apply_variants`] and friends and does **not** consult this registry.
 pub struct VariantRegistry {
   variants: HashSet<&'static str>,
+  variant_order: HashMap<String, usize>,
   /// User-defined custom variants registered from `@custom-variant` rules in
   /// the source CSS. Maps the variant name to a selector template containing
   /// `&` (e.g. `&:hover`, `&[data-state="open"]`) or an `@<at-rule>(<params>)`
@@ -37,7 +38,7 @@ impl Default for VariantRegistry {
 impl VariantRegistry {
   /// Create the built-in variant registry.
   pub fn builtin() -> Self {
-    let variants: HashSet<&'static str> = [
+    let names = [
       // Pseudo-classes
       "hover",
       "focus",
@@ -95,18 +96,18 @@ impl VariantRegistry {
       "contrast-more",
       "contrast-less",
       "starting",
-      // Breakpoints (Tailwind v4 defaults)
+      // Max-width rules: broad conditions precede narrow overrides.
+      "max-2xl",
+      "max-xl",
+      "max-lg",
+      "max-md",
+      "max-sm",
+      // Min-width rules: mobile-first, increasing breakpoint width.
       "sm",
       "md",
       "lg",
       "xl",
       "2xl",
-      // Max-width counterparts
-      "max-sm",
-      "max-md",
-      "max-lg",
-      "max-xl",
-      "max-2xl",
       // Container queries
       "@container",
       "@sm",
@@ -122,12 +123,17 @@ impl VariantRegistry {
       // Group / peer
       "group",
       "peer",
-    ]
-    .into_iter()
-    .collect();
+    ];
+    let variant_order = names
+      .iter()
+      .enumerate()
+      .map(|(index, name)| (name.to_string(), index))
+      .collect();
+    let variants = names.into_iter().collect();
 
     Self {
       variants,
+      variant_order,
       user_variants: std::collections::HashMap::new(),
     }
   }
@@ -139,7 +145,27 @@ impl VariantRegistry {
   /// `&:hover`) which replaces the current selector, or an at-rule form
   /// `@media (...)` / `@supports (...)` which wraps the rule.
   pub fn register_custom_variant(&mut self, name: String, body: String) {
+    let order = self.variant_order.len();
+    self.variant_order.entry(name.clone()).or_insert(order);
     self.user_variants.insert(name, body);
+  }
+
+  /// A stable variant-set key. Empty stacks precede conditional overrides;
+  /// the highest registered variant determines a composed stack's position.
+  /// Structural/arbitrary variants use their spelling as a deterministic
+  /// fallback rather than depending on a caller's hash-set iteration order.
+  pub(crate) fn order_key(&self, variants: &[String]) -> Vec<(usize, String)> {
+    let mut order: Vec<_> = variants
+      .iter()
+      .map(|name| {
+        (
+          self.variant_order.get(name).copied().unwrap_or(usize::MAX),
+          name.clone(),
+        )
+      })
+      .collect();
+    order.sort_unstable_by(|left, right| right.cmp(left));
+    order
   }
 
   /// Look up a registered custom variant by name.

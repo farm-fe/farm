@@ -14,11 +14,11 @@ struct CacheableCustomMetaDataMap {
 }
 
 fn get_bytes_map(value: &InternalCustomMetaDataMap) -> HashMap<String, Vec<u8>> {
-  value
-    .map
-    .iter()
-    .map(|(k, v)| (k.clone(), v.serialize_bytes().unwrap()))
-    .collect()
+  let mut bytes = value.bytes_map.clone();
+  for (key, data) in &value.map {
+    bytes.insert(key.clone(), data.serialize_bytes().unwrap());
+  }
+  bytes
 }
 
 impl From<CacheableCustomMetaDataMap> for InternalCustomMetaDataMap {
@@ -116,7 +116,7 @@ impl CustomMetaDataMap {
   }
 
   pub fn is_empty(&self) -> bool {
-    self.internal.map.is_empty()
+    self.internal.map.is_empty() && self.internal.bytes_map.is_empty()
   }
 
   pub fn iter(&self) -> Iter<'_, String, Box<dyn Cacheable>> {
@@ -167,8 +167,77 @@ impl Clone for CustomMetaDataMap {
     Self {
       internal: InternalCustomMetaDataMap {
         map: Default::default(),
-        bytes_map: self.internal.bytes_map.clone(),
+        bytes_map: map,
       },
     }
+  }
+}
+
+#[cfg(test)]
+mod persistence_tests {
+  use super::*;
+
+  #[cache_item]
+  struct PluginData {
+    generated_css: String,
+  }
+
+  fn fixture() -> CustomMetaDataMap {
+    let mut metadata = CustomMetaDataMap::new();
+    metadata.insert(
+      "plugin".into(),
+      Box::new(PluginData {
+        generated_css: ".generated{display:grid}".into(),
+      }),
+    );
+    metadata
+  }
+
+  fn restore(metadata: &CustomMetaDataMap) -> Box<CustomMetaDataMap> {
+    CustomMetaDataMap::deserialize_bytes(metadata.serialize_bytes().unwrap())
+      .unwrap()
+      .downcast::<CustomMetaDataMap>()
+      .ok()
+      .unwrap()
+  }
+
+  #[test]
+  fn clone_preserves_runtime_plugin_metadata_independently() {
+    let mut original = fixture();
+    let mut cloned = original.clone();
+    original
+      .get_mut::<PluginData>("plugin")
+      .unwrap()
+      .generated_css = ".changed{}".into();
+    assert_eq!(
+      cloned
+        .get_ref::<PluginData>("plugin")
+        .map(|data| data.generated_css.as_str()),
+      Some(".generated{display:grid}"),
+      "clone must preserve runtime plugin metadata"
+    );
+  }
+
+  #[test]
+  fn unread_plugin_metadata_survives_second_serialization() {
+    let unread = restore(&fixture());
+    assert!(unread.internal.map.is_empty());
+    let mut restored = restore(&unread);
+    assert_eq!(
+      restored
+        .get_ref::<PluginData>("plugin")
+        .map(|data| data.generated_css.as_str()),
+      Some(".generated{display:grid}"),
+      "unread plugin metadata must survive reserialization"
+    );
+  }
+
+  #[test]
+  fn unread_plugin_metadata_is_not_empty() {
+    let unread = restore(&fixture());
+    assert!(
+      !unread.is_empty(),
+      "unread plugin metadata must not report empty"
+    );
   }
 }

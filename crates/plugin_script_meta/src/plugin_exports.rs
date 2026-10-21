@@ -191,6 +191,10 @@ impl Plugin for FarmPluginScriptMetaExports {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !self.should_expand_exports {
+      // Lazy updates can introduce workers after initial graph optimization.
+      // Their concatenated output still needs CommonJS import/export metadata.
+      let mut module_graph = context.module_graph.write();
+      expand_dynamic_entry_exports(&mut module_graph);
       return Ok(None);
     }
 
@@ -229,5 +233,165 @@ impl Plugin for FarmPluginScriptMetaExports {
     }
 
     Ok(None)
+  }
+}
+
+#[cfg(test)]
+mod dynamic_entry_update_tests {
+  use std::sync::Arc;
+
+  use farmfe_core::{
+    HashSet,
+    config::{Mode, bool_or_obj::BoolOrObj, persistent_cache::PersistentCacheConfig},
+    context::CompilationContext,
+    module::{
+      Module, ModuleMetaData, ModuleSystem, ModuleType,
+      meta_data::script::{
+        ModuleExportIdent, ModuleExportIdentType,
+        statement::{ImportInfo, ImportSpecifierInfo, Statement, SwcId},
+      },
+      module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+    },
+    plugin::PluginModuleGraphUpdatedHookParam,
+  };
+
+  use super::*;
+
+  fn browser_context(dynamic_entry: bool) -> Arc<CompilationContext> {
+    let mut config = Config::default();
+    config.mode = Mode::Development;
+    *config.tree_shaking = BoolOrObj::Bool(false);
+    *config.minify = BoolOrObj::Bool(false);
+    *config.persistent_cache = PersistentCacheConfig::Bool(false);
+    assert!(!FarmPluginScriptMetaExports::should_expand_exports(&config));
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let mut graph = ModuleGraph::new();
+    for name in ["worker.js", "parser.cjs", "unrelated.js"] {
+      let mut module = Module::new(name.into());
+      module.module_type = ModuleType::Js;
+      *module.meta = ModuleMetaData::Script(Box::default());
+      module.meta.as_script_mut().module_system = if name == "parser.cjs" {
+        ModuleSystem::CommonJs
+      } else {
+        ModuleSystem::EsModule
+      };
+      graph.add_module(module);
+    }
+    graph
+      .module_mut(&"worker.js".into())
+      .unwrap()
+      .meta
+      .as_script_mut()
+      .statements
+      .push(Statement::new(
+        0,
+        None,
+        Some(ImportInfo {
+          source: "papaparse".into(),
+          specifiers: vec![ImportSpecifierInfo::Default(SwcId::new("Papa".into(), 0))],
+          stmt_id: 0,
+        }),
+        HashSet::default(),
+        false,
+      ));
+    graph
+      .add_edge_item(
+        &"worker.js".into(),
+        &"parser.cjs".into(),
+        ModuleGraphEdgeDataItem {
+          source: "papaparse".into(),
+          kind: ResolveKind::Import,
+          order: 0,
+        },
+      )
+      .unwrap();
+    if dynamic_entry {
+      graph
+        .dynamic_entries
+        .insert("worker.js".into(), "worker".into());
+    }
+    // Browser-only export metadata must remain outside dynamic-entry analysis.
+    graph
+      .module_mut(&"unrelated.js".into())
+      .unwrap()
+      .meta
+      .as_script_mut()
+      .export_ident_map
+      .insert(
+        "Sentinel".into(),
+        ModuleExportIdent::new(
+          "unrelated.js".into(),
+          SwcId::new("Sentinel".into(), 0),
+          ModuleExportIdentType::Declaration,
+        ),
+      );
+    *context.module_graph.write() = graph;
+    context
+  }
+
+  fn update(context: &Arc<CompilationContext>) {
+    FarmPluginScriptMetaExports::new(&context.config)
+      .module_graph_updated(
+        &PluginModuleGraphUpdatedHookParam {
+          added_modules_ids: vec!["worker.js".into(), "parser.cjs".into()],
+          updated_modules_ids: vec![],
+          removed_modules_ids: vec![],
+          deps_changes: vec![],
+        },
+        context,
+      )
+      .unwrap();
+  }
+
+  #[test]
+  fn lazy_worker_update_preserves_commonjs_default_import_metadata() {
+    let context = browser_context(true);
+    update(&context);
+    let graph = context.module_graph.read();
+    assert!(
+      graph
+        .module(&"parser.cjs".into())
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+        .contains_key(EXPORT_DEFAULT),
+      "a lazily added worker must connect its CommonJS default import before concatenation"
+    );
+    assert!(
+      graph
+        .module(&"unrelated.js".into())
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+        .contains_key("Sentinel"),
+      "the browser fast path must not expand unrelated modules"
+    );
+  }
+
+  #[test]
+  fn browser_update_without_dynamic_entries_keeps_export_analysis_disabled() {
+    let context = browser_context(false);
+    update(&context);
+    let graph = context.module_graph.read();
+    assert!(
+      graph
+        .module(&"parser.cjs".into())
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+        .is_empty()
+    );
+    assert!(
+      graph
+        .module(&"unrelated.js".into())
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+        .contains_key("Sentinel")
+    );
   }
 }

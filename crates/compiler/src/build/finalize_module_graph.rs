@@ -9,7 +9,7 @@ use farmfe_core::{
   },
   plugin::hooks::freeze_module::PluginFreezeModuleHookParam,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
-  HashMap,
+  HashMap, HashSet,
 };
 
 use super::module_cache::set_module_graph_cache;
@@ -69,7 +69,8 @@ pub(super) fn freeze_module_of_module_graph(
     })
     .collect::<Vec<_>>();
 
-  let module_resolved_deps = call_freeze_module_with_params(hook_params, context)?;
+  let module_resolved_deps =
+    call_freeze_module_with_params(hook_params, &HashSet::default(), context)?;
 
   update_modules_resolved_deps(module_resolved_deps, &mut module_graph);
 
@@ -117,11 +118,20 @@ pub type ModuleResolvedDeps = Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>;
 
 pub fn call_freeze_module_with_params(
   mut hook_params: Vec<PluginFreezeModuleHookParam>,
+  explicitly_updated_modules: &HashSet<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<ModuleResolvedDeps> {
-  hook_params
-    .par_iter_mut()
-    .try_for_each(|param| call_freeze_module_hook(param, context))?;
+  hook_params.par_iter_mut().try_for_each(|param| {
+    // Update roots are rebuilt even when their source bytes are unchanged.
+    // Their generated content may depend on metadata from newly added modules
+    // (for example Tailwind candidates discovered during lazy compilation).
+    // Newly added cached dependencies still use the normal cache decision.
+    if explicitly_updated_modules.contains(&param.module.id) {
+      context.plugin_driver.freeze_module(param, context)
+    } else {
+      call_freeze_module_hook(param, context)
+    }
+  })?;
 
   Ok(
     hook_params
@@ -143,5 +153,108 @@ pub fn update_modules_resolved_deps(
         module_graph.add_edge(&module_id, &dep_id, edge).unwrap();
       }
     }
+  }
+}
+
+#[cfg(test)]
+mod explicit_update_freeze_tests {
+  use super::*;
+  use farmfe_core::{
+    cache::module_cache::CachedModule,
+    config::{persistent_cache::PersistentCacheConfig, Config},
+    module::Module,
+    plugin::Plugin,
+  };
+  use std::sync::atomic::{AtomicUsize, Ordering};
+
+  struct CountFreeze(Arc<AtomicUsize>);
+
+  impl Plugin for CountFreeze {
+    fn name(&self) -> &str {
+      "CountFreeze"
+    }
+
+    fn freeze_module(
+      &self,
+      _param: &mut PluginFreezeModuleHookParam,
+      _context: &Arc<CompilationContext>,
+    ) -> farmfe_core::error::Result<Option<()>> {
+      self.0.fetch_add(1, Ordering::SeqCst);
+      Ok(Some(()))
+    }
+  }
+
+  fn fixture() -> (Arc<CompilationContext>, Arc<AtomicUsize>, Module) {
+    let mut config = Config::default();
+    let mut cache = PersistentCacheConfig::get_default_config(&config.root).as_obj(&config.root);
+    cache.memory = true;
+    config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache));
+    let calls = Arc::new(AtomicUsize::new(0));
+    let context = Arc::new(
+      CompilationContext::new(config, vec![Arc::new(CountFreeze(calls.clone()))]).unwrap(),
+    );
+    let mut module = Module::new(ModuleId::from("styles.css"));
+    module.content_hash = "unchanged-css-source".to_string();
+    context.cache_manager.module_cache.set_cache(
+      module.id.clone(),
+      CachedModule {
+        module: module.clone(),
+        dependencies: vec![],
+        watch_dependencies: vec![],
+        is_expired: false,
+      },
+    );
+    context.cache_manager.module_cache.write_cache();
+    assert!(!context.cache_manager.module_cache.is_cache_changed(&module));
+    (context, calls, module)
+  }
+
+  #[test]
+  fn explicitly_updated_unchanged_module_runs_freeze() {
+    let (context, calls, mut module) = fixture();
+    let mut updated = HashSet::default();
+    updated.insert(module.id.clone());
+    call_freeze_module_with_params(
+      vec![PluginFreezeModuleHookParam {
+        module: &mut module,
+        resolved_deps: vec![],
+      }],
+      &updated,
+      &context,
+    )
+    .unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+  }
+
+  #[test]
+  fn cached_dependency_outside_explicit_update_set_keeps_frozen_output() {
+    let (context, calls, mut module) = fixture();
+    let mut updated = HashSet::default();
+    updated.insert(ModuleId::from("other-updated.ts"));
+    call_freeze_module_with_params(
+      vec![PluginFreezeModuleHookParam {
+        module: &mut module,
+        resolved_deps: vec![],
+      }],
+      &updated,
+      &context,
+    )
+    .unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+  }
+
+  #[test]
+  fn initial_build_keeps_cached_freeze_output() {
+    let (context, calls, mut module) = fixture();
+    call_freeze_module_with_params(
+      vec![PluginFreezeModuleHookParam {
+        module: &mut module,
+        resolved_deps: vec![],
+      }],
+      &HashSet::default(),
+      &context,
+    )
+    .unwrap();
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
   }
 }

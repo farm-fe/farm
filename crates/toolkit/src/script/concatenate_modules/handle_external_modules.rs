@@ -1,13 +1,14 @@
 use std::borrow::Cow;
 
 use farmfe_core::{
+  HashSet,
   module::{
+    ModuleId,
     meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, EXPORT_NAMESPACE, FARM_RUNTIME_MODULE_HELPER_ID, ModuleExportIdentType,
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, Statement, SwcId},
-      ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_NAMESPACE, FARM_RUNTIME_MODULE_HELPER_ID,
     },
     module_graph::ModuleGraph,
-    ModuleId,
   },
   plugin::ResolveKind,
   swc_common::DUMMY_SP,
@@ -15,14 +16,13 @@ use farmfe_core::{
     BinaryOp, Ident, ImportDecl, ImportDefaultSpecifier, ImportNamedSpecifier, ImportSpecifier,
     ImportStarAsSpecifier, ModuleDecl, ModuleExportName, ModuleItem,
   },
-  HashSet,
 };
 use swc_ecma_visit::VisitMutWith;
 
 use crate::script::{
-  analyze_statement::{analyze_statement_info, AnalyzedStatementInfo},
+  analyze_statement::{AnalyzedStatementInfo, analyze_statement_info},
   concatenate_modules::{
-    strip_module_decl::{is_module_external, StripModuleDeclStatementParams},
+    strip_module_decl::{StripModuleDeclStatementParams, is_module_external},
     utils::{
       create_bin_expr, create_define_export_star_item, create_export_all_item,
       create_import_farm_define_export_helper_stmt, create_member_expr, create_var_decl_item,
@@ -33,10 +33,10 @@ use crate::script::{
 };
 
 use super::{
+  StripModuleContext,
   strip_module_decl::{PreservedImportDeclItem, PreservedImportDeclType, StripModuleDeclResult},
   unique_idents::{RenameVisitor, TopLevelIdentsRenameHandler},
   utils::{create_import_external_namespace_stmt, replace_module_decl},
-  StripModuleContext,
 };
 
 pub struct HandleExternalModuleOptions<'a> {

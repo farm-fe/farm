@@ -48,6 +48,22 @@ struct ModuleSystemAnalyzer {
   contain_esm: bool,
 }
 
+fn merge_analyzed_module_systems(
+  dependencies: ModuleSystem,
+  syntax: ModuleSystem,
+  contains_esm: bool,
+  contains_module_exports: bool,
+) -> ModuleSystem {
+  // createRequire adds Require dependencies without changing an ESM module's
+  // export system. Lowering its static imports to require changes conditional
+  // exports and loses their original import semantics.
+  if contains_esm && !contains_module_exports {
+    return ModuleSystem::EsModule;
+  }
+
+  dependencies.merge(syntax)
+}
+
 impl Visit for ModuleSystemAnalyzer {
   fn visit_ident(&mut self, node: &Ident) {
     if (node.sym == "module" || node.sym == "exports") && node.ctxt.outer() == self.unresolved_mark
@@ -164,10 +180,12 @@ pub fn set_module_system_for_module_meta(
     .unwrap();
   }
 
-  let mut v = [module_system_from_deps_option, module_system_from_ast]
-    .into_iter()
-    .reduce(|a, b| a.merge(b))
-    .unwrap_or(ModuleSystem::UnInitial);
+  let mut v = merge_analyzed_module_systems(
+    module_system_from_deps_option,
+    module_system_from_ast,
+    analyzer.contain_esm,
+    analyzer.contain_module_exports,
+  );
 
   if matches!(v, ModuleSystem::UnInitial) {
     // v = ModuleSystem::Hybrid;
@@ -178,4 +196,33 @@ pub fn set_module_system_for_module_meta(
   meta.module_system = v;
   meta.contains_esm_decl = analyzer.contain_esm;
   meta.contains_module_exports = analyzer.contain_module_exports;
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn hybrid_esm_imports_keep_esm_when_create_require_only_adds_dependencies() {
+    assert_eq!(
+      merge_analyzed_module_systems(ModuleSystem::Hybrid, ModuleSystem::EsModule, true, false),
+      ModuleSystem::EsModule
+    );
+    assert_eq!(
+      merge_analyzed_module_systems(ModuleSystem::CommonJs, ModuleSystem::EsModule, true, false),
+      ModuleSystem::EsModule
+    );
+  }
+
+  #[test]
+  fn hybrid_esm_real_commonjs_exports_remain_hybrid() {
+    assert_eq!(
+      merge_analyzed_module_systems(ModuleSystem::Hybrid, ModuleSystem::Hybrid, true, true),
+      ModuleSystem::Hybrid
+    );
+    assert_eq!(
+      merge_analyzed_module_systems(ModuleSystem::CommonJs, ModuleSystem::CommonJs, false, true),
+      ModuleSystem::CommonJs
+    );
+  }
 }

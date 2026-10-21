@@ -1,4 +1,4 @@
-use parking_lot::RwLock;
+use crate::sync::RwLock;
 
 use crate::{
   module::{

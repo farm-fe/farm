@@ -237,11 +237,7 @@ pub fn render_resource_pots_and_generate_resources(
     }
   }
 
-  let mut resources_map: farmfe_core::parking_lot::lock_api::MutexGuard<
-    '_,
-    farmfe_core::parking_lot::RawMutex,
-    HashMap<String, farmfe_core::resource::Resource>,
-  > = context.resources_map.lock();
+  let mut resources_map = context.resources_map.lock();
 
   for resource in resources.lock().drain(..) {
     resources_map.insert(resource.name.clone(), resource);

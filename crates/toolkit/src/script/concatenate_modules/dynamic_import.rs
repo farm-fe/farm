@@ -1,9 +1,9 @@
 use farmfe_core::{
-  module::{meta_data::script::EXPORT_NAMESPACE, module_graph::ModuleGraph, ModuleId},
-  plugin::ResolveKind,
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Callee, Expr, Ident, IdentName, MemberExpr, MemberProp},
   HashMap, HashSet,
+  module::{ModuleId, meta_data::script::EXPORT_NAMESPACE, module_graph::ModuleGraph},
+  plugin::ResolveKind,
+  swc_common::{DUMMY_SP, Mark, SyntaxContext},
+  swc_ecma_ast::{CallExpr, Callee, Expr, Ident, IdentName, MemberExpr, MemberProp},
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 

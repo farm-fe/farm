@@ -2,6 +2,7 @@ import type { ModuleSystem } from '@farmfe/runtime';
 import type { HotModuleState } from './hot-module-state.js';
 import { logger } from './logger.js';
 import { ErrorOverlay, overlayId } from './overlay.js';
+import { captureUpdateSnapshot, type PrepareUpdateTransaction, type UpdateTransactionParticipant } from './update-transaction.js';
 import type {
   HMRPayload,
   HmrUpdateResult,
@@ -19,6 +20,10 @@ const socketHostUrl = `${hmrHost}:${hmrPort}${FARM_HMR_PATH}`;
 
 export class HmrClient {
   socket: WebSocket;
+  private messageQueue: Promise<void> = Promise.resolve();
+  private controlledUpdate = false;
+  private updatesBlocked = false;
+  private updateParticipants = new Map<string, PrepareUpdateTransaction>();
   registeredHotModulesMap = new Map<string, HotModuleState>();
   disposeMap = new Map<string, (data: any) => void | Promise<void>>();
   pruneMap = new Map<string, (data: any) => void | Promise<void>>();
@@ -28,6 +33,58 @@ export class HmrClient {
   >();
 
   constructor(private moduleSystem: ModuleSystem) {}
+
+  registerUpdateParticipant(id: string, prepare: PrepareUpdateTransaction) {
+    this.updateParticipants.set(id, prepare);
+    return () => { if (this.updateParticipants.get(id) === prepare) this.updateParticipants.delete(id); };
+  }
+
+  private async handleControlledFarmUpdate(result: RawHmrUpdateResult): Promise<boolean> {
+    const participants: UpdateTransactionParticipant[] = [];
+    let restore: (() => void) | undefined;
+    try {
+      for (const prepare of [...this.updateParticipants.values()]) participants.push(await prepare(this.moduleSystem));
+      restore = captureUpdateSnapshot(this.moduleSystem, this.registeredHotModulesMap,
+        [this.disposeMap, this.pruneMap, this.updateParticipants], this.customListenersMap);
+      this.controlledUpdate = true;
+      await this.handleFarmUpdate(result);
+      do {
+        for (const participant of participants) await participant.validate?.();
+      } while (participants.some(participant => participant.ready?.() === false));
+    } catch (error) {
+      this.controlledUpdate = false;
+      const cleanupErrors: unknown[] = [];
+      for (const participant of [...participants].reverse()) {
+        try { await participant.rollback?.(); } catch (failure) { cleanupErrors.push(failure); }
+      }
+      try { restore?.(); } catch (failure) { cleanupErrors.push(failure); }
+      if (cleanupErrors.length === 0) {
+        for (const participant of participants) {
+          try { await participant.recover?.(); } catch (failure) { cleanupErrors.push(failure); }
+        }
+      }
+      if (cleanupErrors.length) {
+        this.updatesBlocked = true;
+        throw new AggregateError([error, ...cleanupErrors], 'Hot update recovery failed');
+      }
+      logger.error(`Hot update rolled back: ${error}`);
+      return false;
+    } finally {
+      this.controlledUpdate = false;
+    }
+    // Finalizers must only discard retained state; failures propagate to the existing reload policy.
+    try {
+      for (const participant of participants) {
+        const completion: unknown = participant.commit?.();
+        if (completion && typeof (completion as PromiseLike<unknown>).then === 'function') {
+          void Promise.resolve(completion).catch(error => logger.error(`Asynchronous hot update finalizer failed: ${error}`));
+          throw new Error('Hot update finalizer must be synchronous');
+        }
+      }
+    }
+    catch (error) { this.updatesBlocked = true; throw error; }
+    return true;
+  }
 
   connect() {
     logger.debug('connecting to the server...');
@@ -50,7 +107,14 @@ export class HmrClient {
         this.closeConnectionGracefully();
         return;
       }
-      this.handleMessage(result);
+      // WebSocket listeners do not await async handlers. Preserve frame order
+      // while a previous batch is disposing or accepting modules.
+      this.messageQueue = this.messageQueue
+        .then(() => this.handleMessage(result))
+        .catch((error) => {
+          logger.error(`Error occurred while handling HMR message: ${error}`);
+          location.reload();
+        });
     });
 
     socket.addEventListener(
@@ -117,6 +181,7 @@ export class HmrClient {
 
     for (const id of result.changed) {
       if (!result.boundaries[id]) {
+        if (this.controlledUpdate) throw new Error(`No hot update boundary for ${id}`);
         // do not found boundary module, reload the window
         location.reload();
       }
@@ -129,13 +194,25 @@ export class HmrClient {
       );
     }
 
+    // A boundary may also depend on another changed module in this batch.
+    // Invalidate every chain before evaluating any boundary so its imports
+    // cannot capture a dependency that is still cached from the previous build.
+    const invalidatedModules = new Set<string>();
     for (const chains of Object.values(result.boundaries)) {
       for (const chain of chains) {
-        // clear the cache of the boundary module and its dependencies
-        for (const id of chain) {
-          moduleSystem.a(id);
-        }
+        for (const id of chain) invalidatedModules.add(id);
+      }
+    }
+    for (const id of invalidatedModules) moduleSystem.a(id);
 
+    const acceptancePlans: Array<{
+      id: string;
+      callbacks: HotModuleState['acceptCallbacks'];
+      data: any;
+      dispose?: (data: any) => void | Promise<void>;
+    }> = [];
+    for (const chains of Object.values(result.boundaries)) {
+      for (const chain of chains) {
         try {
           // require the boundary module
           const boundary = chain[chain.length - 1];
@@ -168,28 +245,61 @@ export class HmrClient {
               const acceptHotContext =
                 this.registeredHotModulesMap.get(acceptedId);
 
-              const disposer = this.disposeMap.get(acceptedId);
-              if (disposer) await disposer(acceptHotContext.data);
-
-              const acceptedExports = moduleSystem.r(acceptedId);
-
-              for (const { deps, fn } of acceptedCallbacks) {
-                fn(
-                  deps.map((dep) =>
-                    dep === acceptedId ? acceptedExports : undefined
-                  )
-                );
+              const existing = acceptancePlans.find(plan => plan.id === acceptedId);
+              if (existing) {
+                for (const callback of acceptedCallbacks) {
+                  if (!existing.callbacks.some(previous => previous.fn === callback.fn)) {
+                    existing.callbacks.push(callback);
+                  }
+                }
+              } else {
+                acceptancePlans.push({
+                  id: acceptedId,
+                  callbacks: acceptedCallbacks,
+                  data: acceptHotContext?.data,
+                  dispose: this.disposeMap.get(acceptedId)
+                });
               }
               // break the loop, only the first accept callback will be called
               break;
             }
           }
         } catch (err) {
+          if (this.controlledUpdate) throw err;
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
           logger.error(`Error occurred while applying hot updates: ${err}`);
           location.reload();
         }
+      }
+    }
+
+    // A newly evaluated dependency can replace its hot callbacks and disposer.
+    // Finish the previous build's cleanup before any new factory runs, and use
+    // the captured accept callbacks even if their hot contexts are re-created.
+    const disposedModules = new Set<string>();
+    for (const plan of acceptancePlans) {
+      if (disposedModules.has(plan.id)) continue;
+      disposedModules.add(plan.id);
+      try {
+        if (plan.dispose) await plan.dispose(plan.data);
+      } catch (err) {
+        if (this.controlledUpdate) throw err;
+        logger.error(`Error occurred while disposing hot updates: ${err}`);
+        location.reload();
+        return;
+      }
+    }
+    for (const plan of acceptancePlans) {
+      try {
+        const acceptedExports = moduleSystem.r(plan.id);
+        for (const { deps, fn } of plan.callbacks) {
+          await fn(deps.map((dep) => dep === plan.id ? acceptedExports : undefined));
+        }
+      } catch (err) {
+        if (this.controlledUpdate) throw err;
+        logger.error(`Error occurred while applying hot updates: ${err}`);
+        location.reload();
       }
     }
   }
@@ -209,9 +319,15 @@ export class HmrClient {
   async handleMessage(payload: HMRPayload) {
     switch (payload.type) {
       case 'farm-update':
-        this.notifyListeners('farm:beforeUpdate', payload);
-        this.handleFarmUpdate(payload.result);
-        this.notifyListeners('farm:afterUpdate', payload);
+        if (this.updatesBlocked) return;
+        await this.notifyListeners('farm:beforeUpdate', payload);
+        if (this.updateParticipants.size > 0) {
+          const committed = await this.handleControlledFarmUpdate(payload.result);
+          await this.notifyListeners(committed ? 'farm:afterUpdate' : 'farm:updateRolledBack', payload);
+        } else {
+          await this.handleFarmUpdate(payload.result);
+          await this.notifyListeners('farm:afterUpdate', payload);
+        }
         break;
       case 'error': {
         this.notifyListeners('vite:error', payload);
@@ -237,11 +353,17 @@ export class HmrClient {
         this.notifyListeners('vite:afterUpdate', payload);
         break;
       case 'custom':
-        this.notifyListeners(payload.event, payload.data);
+        await this.notifyListeners(payload.event, payload.data);
         break;
       case 'full-reload':
         this.notifyListeners('vite:beforeFullReload', payload);
-        location.reload();
+        if (payload.origin) {
+          const target = new URL(location.href);
+          const origin = new URL(payload.origin);
+          target.protocol = origin.protocol;
+          target.host = origin.host;
+          location.assign(target.href);
+        } else location.reload();
         break;
       case 'prune':
         this.notifyListeners('vite:beforePrune', payload);
@@ -253,14 +375,14 @@ export class HmrClient {
     }
   }
 
-  handleFarmUpdate(result: RawHmrUpdateResult) {
+  async handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
 
     // #fix 2262, using eval instead of new Function to avoid the context issue in micro frontend
     eval(`${result.immutableModules}`);
     eval(`${result.mutableModules}`);
 
-    this.applyHotUpdates(
+    await this.applyHotUpdates(
       {
         added: result.added,
         changed: result.changed,

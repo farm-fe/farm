@@ -551,8 +551,6 @@ impl Plugin for FarmPluginCss {
         modules.push(module);
       }
 
-      let resources_map = context.resources_map.lock();
-
       let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
       let rendered_comments = Mutex::new(Vec::with_capacity(modules.len()));
 
@@ -561,6 +559,10 @@ impl Plugin for FarmPluginCss {
         let mut css_stylesheet = module.meta.as_css().ast.clone();
         let globals = context.meta.get_globals(&module.id);
         try_with(cm, globals.value(), || {
+          // Keep this guard inside synchronous URL replacement. Holding it
+          // across Rayon work lets a worker reenter a sibling CSS renderer
+          // while the suspended outer renderer still owns the same mutex.
+          let resources_map = context.resources_map.lock();
           source_replace(
             &mut css_stylesheet,
             &module.id,

@@ -40,6 +40,33 @@ struct ScopeManifest {
   scope_keys: HashMap<IdType, HashSet<String>>,
 }
 
+impl ScopeManifest {
+  fn cache_key(&self) -> String {
+    // Hash logical relationships, not randomized HashMap/HashSet archive
+    // ordering. Only identifiers are copied; cached payloads are untouched.
+    let mut names = self
+      .name_keys
+      .iter()
+      .map(|(name, reference)| (name.clone(), reference.clone()))
+      .collect::<Vec<_>>();
+    names.sort_unstable();
+    let mut scopes = self
+      .scope_keys
+      .iter()
+      .map(|(id, references)| {
+        let mut references = references.iter().cloned().collect::<Vec<_>>();
+        references.sort_unstable();
+        match id {
+          IdType::Reference(value) => (0u8, value.clone(), references),
+          IdType::Scope(value) => (1u8, value.clone(), references),
+        }
+      })
+      .collect::<Vec<_>>();
+    scopes.sort_unstable();
+    hash::sha256(&serialize!(&(names, scopes)), 32)
+  }
+}
+
 pub struct CacheScopeStore {
   store: Box<dyn CacheStoreTrait>,
   data: DashMap<String, Box<dyn Cacheable>>,
@@ -245,7 +272,7 @@ impl CacheScopeStore {
       .write_single_cache(
         CacheStoreKey {
           name: "scopeManifest".to_string(),
-          key: hash::sha256(&manifest_scopes, 32),
+          key: manifest.cache_key(),
         },
         manifest_scopes,
       )
@@ -278,12 +305,155 @@ impl CacheScopeStore {
 
 #[cfg(test)]
 mod tests {
+  use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+  };
+
   use farmfe_macro_cache_item::cache_item;
 
   use crate::{
     cache::scope::{CacheScopeStore, IdType},
     module::{Module, ModuleId},
+    Cacheable,
   };
+
+  #[test]
+  fn scope_manifest_key_ignores_map_and_set_insertion_order() {
+    let make_manifest = |reverse: bool| {
+      let mut indices = (0..32).collect::<Vec<_>>();
+      if reverse {
+        indices.reverse();
+      }
+      super::ScopeManifest {
+        name_keys: indices
+          .iter()
+          .map(|index| (format!("name-{index}"), format!("ref-{index}")))
+          .collect(),
+        scope_keys: [
+          IdType::Reference("same".to_string()),
+          IdType::Scope("same".to_string()),
+        ]
+        .into_iter()
+        .map(|id| {
+          (
+            id,
+            indices.iter().map(|index| format!("ref-{index}")).collect(),
+          )
+        })
+        .collect(),
+      }
+    };
+    assert_eq!(
+      make_manifest(false).cache_key(),
+      make_manifest(true).cache_key()
+    );
+  }
+
+  #[test]
+  fn scope_manifest_key_tracks_names_reference_ids_kinds_and_members() {
+    let make_manifest = |id, name: &str, reference: &str, members: &[&str]| super::ScopeManifest {
+      name_keys: HashMap::from([(name.to_string(), reference.to_string())]),
+      scope_keys: HashMap::from([(
+        id,
+        members
+          .iter()
+          .map(|value| value.to_string())
+          .collect::<HashSet<_>>(),
+      )]),
+    };
+    let reference = || IdType::Reference("same".to_string());
+    let baseline = make_manifest(reference(), "entry", "ref", &["a", "b"]).cache_key();
+    for (label, changed) in [
+      (
+        "name",
+        make_manifest(reference(), "other", "ref", &["a", "b"]),
+      ),
+      (
+        "reference",
+        make_manifest(reference(), "entry", "other", &["a", "b"]),
+      ),
+      (
+        "kind",
+        make_manifest(
+          IdType::Scope("same".to_string()),
+          "entry",
+          "ref",
+          &["a", "b"],
+        ),
+      ),
+      (
+        "scope id",
+        make_manifest(
+          IdType::Reference("other".to_string()),
+          "entry",
+          "ref",
+          &["a", "b"],
+        ),
+      ),
+      (
+        "member",
+        make_manifest(reference(), "entry", "ref", &["a", "c"]),
+      ),
+      (
+        "member count",
+        make_manifest(reference(), "entry", "ref", &["a", "b", "c"]),
+      ),
+    ] {
+      assert_ne!(
+        changed.cache_key(),
+        baseline,
+        "Lost manifest change: {label}"
+      );
+    }
+  }
+
+  #[test]
+  fn unchanged_scope_manifest_does_not_replace_cached_bytes() {
+    let context = Arc::new(crate::cache::CacheContext::default());
+    let store = CacheScopeStore::new(context.clone());
+    for index in 0..32 {
+      store.set(
+        format!("metadata-{index}"),
+        format!("value-{index}"),
+        Some(vec![
+          IdType::Reference(format!("group-{}", index % 4)),
+          IdType::Scope(format!("group-{}", index % 4)),
+        ]),
+      );
+    }
+    store.write_cache();
+    let before = store.store.read_cache("scopeManifest").unwrap();
+    let baseline = super::ScopeManifest::deserialize_bytes(before.clone())
+      .unwrap()
+      .downcast::<super::ScopeManifest>()
+      .ok()
+      .unwrap();
+    for _ in 0..8 {
+      store.write_cache();
+      let after = store.store.read_cache("scopeManifest").unwrap();
+      let restored = super::ScopeManifest::deserialize_bytes(after.clone())
+        .unwrap()
+        .downcast::<super::ScopeManifest>()
+        .ok()
+        .unwrap();
+      assert_eq!(restored.name_keys, baseline.name_keys);
+      assert_eq!(restored.scope_keys, baseline.scope_keys);
+      assert!(
+        after == before,
+        "Unchanged logical manifest replaced cached bytes"
+      );
+    }
+    store.set("extra", "new value".to_string(), None);
+    store.write_cache();
+    assert_ne!(store.store.read_cache("scopeManifest").unwrap(), before);
+    let reopened = CacheScopeStore::new(context);
+    assert_eq!(
+      &*reopened.get::<String>("extra", None).unwrap(),
+      "new value"
+    );
+    assert_eq!(reopened.get_scope::<String>("group-0").len(), 8);
+  }
 
   #[test]
   fn t1() {

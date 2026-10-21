@@ -3,13 +3,13 @@ use std::sync::Arc;
 use farmfe_core::{
   config::TargetEnv,
   error::CompilationError,
-  swc_common::{input::SourceFileInput, DUMMY_SP},
+  swc_common::{DUMMY_SP, input::SourceFileInput},
   swc_html_ast::{Attribute, Child, Document, Element, Namespace, Text},
 };
 use swc_error_reporters::handler::try_with_handler;
 use swc_html_codegen::{
-  writer::basic::{BasicHtmlWriter, BasicHtmlWriterConfig},
   CodeGenerator, CodegenConfig, Emit,
+  writer::basic::{BasicHtmlWriter, BasicHtmlWriterConfig},
 };
 use swc_html_parser::{
   lexer::Lexer,
@@ -54,12 +54,27 @@ pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error
 
 /// Generate code from a html [Document] and output the code [String]
 pub fn codegen_html_document(document: &Document, minify: bool) -> String {
+  codegen_html_document_with_quotes(document, minify, None)
+}
+
+/// Keep attribute boundaries when a template will receive escaped values later.
+/// Other minification, including optional tag omission, remains enabled.
+pub fn codegen_html_document_with_quoted_attributes(document: &Document, minify: bool) -> String {
+  codegen_html_document_with_quotes(document, minify, Some(true))
+}
+
+fn codegen_html_document_with_quotes(
+  document: &Document,
+  minify: bool,
+  quotes: Option<bool>,
+) -> String {
   let mut html_code = String::new();
   let html_writer = BasicHtmlWriter::new(&mut html_code, None, BasicHtmlWriterConfig::default());
   let mut html_gen = CodeGenerator::new(
     html_writer,
     CodegenConfig {
       minify,
+      quotes,
       ..Default::default()
     },
   );

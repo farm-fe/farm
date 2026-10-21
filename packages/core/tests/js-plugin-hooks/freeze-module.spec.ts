@@ -19,6 +19,9 @@ test('Js Plugin Execution - freezeModule', async () => {
           },
           executor: async (param) => {
             expect(param.content).toContain(`${hookName}-return-value`);
+            expect(JSON.parse(param.sourceMapChain[0]).sources).toEqual([
+              'index.ts?foo=bar'
+            ]);
 
             expect(param).matchSnapshot();
             calledHooks.push(hookName);

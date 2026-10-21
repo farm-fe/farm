@@ -6,7 +6,7 @@ css: .foo {
   color: red;
 }
 
-map: {"version":3,"sources":[],"names":[],"mappings":""}
+map: {"version":3,"sources":["input.css"],"sourcesContent":[".foo { color: red; }"],"names":[],"mappings":"AAAA;EAAO"}
 deps: /tmp/input.css
 has_config: true
 features: false

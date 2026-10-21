@@ -2,9 +2,9 @@ use std::collections::VecDeque;
 use std::hash::Hash;
 
 use petgraph::{
+  EdgeDirection,
   graph::{DefaultIx, NodeIndex},
   stable_graph::StableDiGraph,
-  EdgeDirection,
 };
 
 use crate::error::{CompilationError, Result};
@@ -175,7 +175,9 @@ impl WatchGraph {
 
     while !queue.is_empty() {
       let item = queue.pop_front().unwrap();
-      visited.insert(item);
+      if !visited.insert(item) {
+        continue;
+      }
 
       result.push(item);
 
@@ -264,6 +266,96 @@ mod tests {
     let mut r = watch_graph.relation_roots(&"v_d".into());
     r.sort();
     assert_eq!(r, [&"a".into(), &"v_c".into()])
+  }
+
+  #[test]
+  fn relation_dependencies_visits_shared_descendants_once() {
+    let mut graph = WatchGraph::new();
+    let ids: Vec<ModuleId> = ["root", "left", "right", "shared", "leaf"]
+      .into_iter()
+      .map(ModuleId::from)
+      .collect();
+    for id in &ids {
+      graph.add_node(id.clone());
+    }
+    for (from, to) in [(0, 1), (0, 2), (1, 3), (2, 3), (3, 4)] {
+      graph.add_edge(&ids[from], &ids[to]).unwrap();
+    }
+
+    let dependencies = graph.relation_dependencies(&ids[0]);
+    let mut expected_order = graph.dependencies(&ids[0]);
+    expected_order.extend([&ids[3], &ids[4]]);
+    assert_eq!(dependencies, expected_order);
+    let mut dependencies = dependencies;
+    dependencies.sort();
+    let mut expected: Vec<_> = ids[1..].iter().collect();
+    expected.sort();
+    assert_eq!(dependencies, expected);
+  }
+
+  #[test]
+  fn relation_dependencies_visits_layered_diamonds_once() {
+    let mut graph = WatchGraph::new();
+    let root = ModuleId::from("root");
+    graph.add_node(root.clone());
+    let mut previous = vec![root.clone()];
+    let mut expected = vec![];
+    for layer in 0..10 {
+      let next: Vec<ModuleId> = (0..2)
+        .map(|branch| ModuleId::from(format!("layer-{layer}-{branch}")))
+        .collect();
+      for id in &next {
+        graph.add_node(id.clone());
+        for parent in &previous {
+          graph.add_edge(parent, id).unwrap();
+        }
+      }
+      expected.extend(next.iter().cloned());
+      previous = next;
+    }
+
+    let mut dependencies: Vec<_> = graph
+      .relation_dependencies(&root)
+      .into_iter()
+      .cloned()
+      .collect();
+    dependencies.sort();
+    expected.sort();
+    assert_eq!(dependencies, expected);
+  }
+
+  #[test]
+  fn relation_dependencies_keeps_a_self_watch_once() {
+    let mut graph = WatchGraph::new();
+    let root = ModuleId::from("root");
+    graph.add_node(root.clone());
+    graph.add_edge(&root, &root).unwrap();
+    assert_eq!(graph.relation_dependencies(&root), vec![&root]);
+  }
+
+  #[test]
+  fn relation_dependencies_terminates_watch_cycles() {
+    let mut graph = WatchGraph::new();
+    let ids: Vec<ModuleId> = ["root", "left", "right"]
+      .into_iter()
+      .map(ModuleId::from)
+      .collect();
+    for id in &ids {
+      graph.add_node(id.clone());
+    }
+    // Construct the WatchImport topology directly: add_edge also maintains
+    // reverse RootImport shortcuts, which are separate from this traversal.
+    for (from, to) in [(0, 1), (1, 2), (2, 0)] {
+      graph.g.add_edge(
+        graph.id_index_map[&ids[from]],
+        graph.id_index_map[&ids[to]],
+        super::EdgeMode::WatchImport,
+      );
+    }
+    assert_eq!(
+      graph.relation_dependencies(&ids[0]),
+      vec![&ids[1], &ids[2], &ids[0]]
+    );
   }
 
   #[test]

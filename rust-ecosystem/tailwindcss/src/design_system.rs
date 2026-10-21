@@ -121,14 +121,25 @@ impl DesignSystem {
   pub fn compile_candidates(&self, candidates: &[String]) -> Vec<AstNode> {
     let mut result = Vec::new();
 
-    for raw in candidates {
-      if let Some(candidate) = parse_candidate(raw) {
-        let nodes =
-          self
-            .utilities
-            .generate_with_variants(&candidate, &self.theme, Some(&self.variants));
-        result.extend(nodes);
-      }
+    let mut parsed: Vec<_> = candidates
+      .iter()
+      .filter_map(|raw| parse_candidate(raw))
+      .collect();
+    // Hosts collect candidates concurrently and commonly pass a HashSet.
+    // CSS cascade order must not depend on that incidental enumeration.
+    parsed.sort_by_cached_key(|candidate| {
+      (
+        self.variants.order_key(&candidate.variants),
+        candidate.raw.clone(),
+      )
+    });
+    parsed.dedup_by(|left, right| left.raw == right.raw);
+    for candidate in parsed {
+      let nodes =
+        self
+          .utilities
+          .generate_with_variants(&candidate, &self.theme, Some(&self.variants));
+      result.extend(nodes);
     }
 
     result

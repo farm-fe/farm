@@ -202,6 +202,7 @@ function proxyContext<V extends JsPlugin>(plugins: V[]): V[] {
                   return;
                 }
 
+                processedPlugin.add(fn);
                 context[name] = fn;
               }
 

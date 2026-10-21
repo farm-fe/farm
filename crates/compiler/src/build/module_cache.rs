@@ -1,17 +1,17 @@
 use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
+  HashMap, HashSet,
   cache::module_cache::{
     CachedModule, CachedModuleDependency, CachedWatchDependency, MetadataOption,
   },
-  context::{create_swc_source_map, CompilationContext},
+  context::{CachedEmittedResources, CompilationContext, create_swc_source_map},
   dashmap::DashMap,
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
   resource::{Resource, ResourceOrigin},
   swc_common::Globals,
-  HashMap, HashSet,
 };
 use farmfe_toolkit::script::{
   analyze_statement::analyze_statements, swc_try_with::resolve_module_mark,
@@ -161,6 +161,14 @@ pub fn try_get_module_cache_by_hash(
 }
 
 pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<CompilationContext>) {
+  set_module_graph_cache_with_forced_updates(module_ids, &HashSet::default(), context);
+}
+
+pub(crate) fn set_module_graph_cache_with_forced_updates(
+  module_ids: Vec<ModuleId>,
+  forced_updates: &HashSet<ModuleId>,
+  context: &Arc<CompilationContext>,
+) {
   farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
   let mut cacheable_modules = HashSet::default();
@@ -179,7 +187,9 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
     // when content of `index.vue` is changed, the content hash of `index.vue?vue&setup&lang.tsx` may not be changed,
     // but the cached timestamp of `index.vue?vue&setup&lang.tsx` should be updated to make sure the cache is always up-to-date.
     // otherwise, cache of `index.vue` is used but cache of `index.vue?vue&setup&lang.tsx` is not used, which would cause a bug like transform error.
-    if (!context.config.persistent_cache.timestamp_enabled() || module.id.query_string().is_empty())
+    if !forced_updates.contains(&module.id)
+      && (!context.config.persistent_cache.timestamp_enabled()
+        || module.id.query_string().is_empty())
       && !context.cache_manager.module_cache.is_cache_changed(module)
     {
       continue;
@@ -244,10 +254,17 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
         is_expired: false,
       };
 
-      context
-        .cache_manager
-        .module_cache
-        .set_cache(module.id.clone(), cached_module);
+      if forced_updates.contains(&module.id) {
+        context
+          .cache_manager
+          .module_cache
+          .set_updated_cache(module.id.clone(), cached_module);
+      } else {
+        context
+          .cache_manager
+          .module_cache
+          .set_cache(module.id.clone(), cached_module);
+      }
     });
 }
 
@@ -299,14 +316,22 @@ pub fn handle_cached_modules(
   cached_module.module.resource_pots = Default::default();
   cached_module.module.used_exports.clear();
 
-  if let Some(resource) = context.read_metadata::<Resource>(
-    "builtin:emit_file",
-    Some(MetadataOption::default().refer(vec![cached_module.module.id.clone()])),
-  ) {
-    let origin = resource.origin.clone();
-    let name = resource.name.clone();
-    if matches!(origin, ResourceOrigin::Module(_)) {
-      context.resources_map.lock().insert(name, *resource);
+  let options = || Some(MetadataOption::default().refer(vec![cached_module.module.id.clone()]));
+  let resources = if let Some(cached) =
+    context.read_metadata::<CachedEmittedResources>("builtin:emit_files", options())
+  {
+    cached.resources
+  } else {
+    // Read caches written by versions that supported only one emitted file.
+    context
+      .read_metadata::<Resource>("builtin:emit_file", options())
+      .map(|resource| vec![*resource])
+      .unwrap_or_default()
+  };
+  let mut resource_map = context.resources_map.lock();
+  for resource in resources {
+    if matches!(resource.origin, ResourceOrigin::Module(_)) {
+      resource_map.insert(resource.name.clone(), resource);
     }
   }
 

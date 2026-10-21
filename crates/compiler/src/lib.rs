@@ -22,6 +22,7 @@ pub use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 pub use farmfe_plugin_runtime::RUNTIME_INPUT_SCOPE;
 
 pub mod build;
+mod cache_tasks;
 pub mod generate;
 pub mod trace_module_graph;
 pub mod update;
@@ -31,6 +32,7 @@ pub mod write;
 pub struct Compiler {
   context: Arc<CompilationContext>,
   pub last_fail_module_ids: Mutex<Vec<ModuleId>>,
+  cache_tasks: cache_tasks::CacheTasks,
 }
 
 impl Compiler {
@@ -133,6 +135,7 @@ impl Compiler {
     Ok(Self {
       context: Arc::new(context),
       last_fail_module_ids: Mutex::new(vec![]),
+      cache_tasks: Default::default(),
     })
   }
 
@@ -209,7 +212,17 @@ impl Compiler {
         #[cfg(feature = "profile")]
         write_cache(self.context.clone());
         #[cfg(not(feature = "profile"))]
-        write_cache_async(self.context.clone());
+        self
+          .cache_tasks
+          .spawn({
+            let context = self.context.clone();
+            move || write_cache(context)
+          })
+          .map_err(|error| {
+            farmfe_core::error::CompilationError::GenericError(format!(
+              "Could not start Farm cache writer: {error}"
+            ))
+          })?;
       } else {
         write_cache(self.context.clone());
       }
@@ -223,15 +236,18 @@ impl Compiler {
   pub fn context(&self) -> &Arc<CompilationContext> {
     &self.context
   }
+
+  /// Wait for already scheduled background cache writes after compilation has
+  /// stopped. This does not admit or trigger another compilation.
+  pub fn flush_cache(&self) -> Result<()> {
+    self
+      .cache_tasks
+      .drain()
+      .map_err(farmfe_core::error::CompilationError::GenericError)
+  }
 }
 
 fn write_cache(context: Arc<CompilationContext>) {
   farm_profile_function!("write_cache".to_string());
   context.cache_manager.write_cache();
-}
-
-pub fn write_cache_async(context: Arc<CompilationContext>) {
-  std::thread::spawn(move || {
-    write_cache(context);
-  });
 }

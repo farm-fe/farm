@@ -1,35 +1,35 @@
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
+    Module, ModuleId,
     meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, CommentsMetaData, ModuleExportIdentType, ModuleReExportIdentType,
+      ScriptModuleMetaData,
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, StatementId, SwcId},
-      CommentsMetaData, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
-      AMBIGUOUS_EXPORT_ALL,
     },
     module_graph::ModuleGraph,
-    Module, ModuleId,
   },
   swc_ecma_ast::{
     ClassDecl, Decl, Expr, FnDecl, Ident, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
   },
-  HashMap, HashSet,
 };
 
 use crate::script::{
   analyze_statement::analyze_statement_info,
   concatenate_modules::{
     handle_external_modules::{
-      add_ambiguous_ident_decl, handle_ambiguous_export_all, HandleAmbiguousExportAllOptions,
-      HandleExternalModuleOptions,
+      HandleAmbiguousExportAllOptions, HandleExternalModuleOptions, add_ambiguous_ident_decl,
+      handle_ambiguous_export_all,
     },
     utils::{create_import_specifiers, create_import_stmt},
   },
 };
 
 use super::{
-  handle_external_modules::handle_external_module,
-  unique_idents::{TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE},
-  utils::{create_export_default_expr_item, create_export_default_ident, replace_module_decl},
   StripModuleContext,
+  handle_external_modules::handle_external_module,
+  unique_idents::{EXPORT_DEFAULT, EXPORT_NAMESPACE, TopLevelIdentsRenameHandler},
+  utils::{create_export_default_expr_item, create_export_default_ident, replace_module_decl},
 };
 
 #[derive(Debug)]

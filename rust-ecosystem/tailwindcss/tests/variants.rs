@@ -248,7 +248,7 @@ fn has_named_alias() {
 fn group_hover_compounds_descendant() {
   let output = generate(&["group-hover"]);
   assert!(output.contains(":where(.group):hover"), "got: {output}");
-  assert!(output.contains(".flex"));
+  assert!(output.contains(r".group-hover\:flex"));
 }
 
 #[test]
@@ -269,13 +269,16 @@ fn group_arbitrary_with_ampersand() {
 #[test]
 fn arbitrary_variant_replaces_ampersand_descendant() {
   let output = generate(&["[&_p]"]);
-  assert!(output.contains(".flex p"), "got: {output}");
+  assert!(output.contains(r".\[\&_p\]\:flex p"), "got: {output}");
 }
 
 #[test]
 fn arbitrary_variant_pseudo_chain() {
   let output = generate(&["[&:is(a,b)]"]);
-  assert!(output.contains(".flex:is(a,b)"), "got: {output}");
+  assert!(
+    output.contains(r".\[\&\:is\(a\,b\)\]\:flex:is(a,b)"),
+    "got: {output}"
+  );
 }
 
 #[test]

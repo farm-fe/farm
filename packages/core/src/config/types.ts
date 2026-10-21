@@ -285,7 +285,16 @@ type AvailableUserConfigKeys = Exclude<
 /**
  * Interface for user configuration, defining various configuration options for the project.
  */
+export interface WorkflowConfig {
+  /** Trusted local module exporting an async `run` function. No compiler hooks. */
+  module: string;
+  /** Framework options forwarded unchanged to the workflow. */
+  options?: Record<string, unknown>;
+}
+
 export interface UserConfig {
+  /** Optional framework command orchestration, such as dual builds and SSG. */
+  workflow?: WorkflowConfig;
   /**
    * The root directory of the current project, defaulting to the current working directory.
    *

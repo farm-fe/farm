@@ -1,4 +1,4 @@
-export { Resolver } from '../binding/index.js';
+export { OutputDirectoryLock, Resolver } from '../binding/index.js';
 export * from './compiler/index.js';
 export * from './config/index.js';
 export { defineFarmConfig as defineConfig } from './config/index.js';
@@ -25,11 +25,14 @@ import {
   PersistentCacheBrand
 } from './utils/index.js';
 import { watchFileChangeAndRebuild } from './watcher/index.js';
+import type { WorkflowExecutionOptions } from './workflow.js';
+import { runConfiguredWorkflow, throwIfWorkflowCancelled } from './workflow.js';
 
 export type {
   Compiler as BindingCompiler,
   ModuleType
 } from './types/binding.js';
+export type { WorkflowContext, WorkflowExecutionOptions } from './workflow.js';
 
 import type { PersistentCacheConfig } from './types/binding.js';
 import { convertErrorMessage } from './utils/error.js';
@@ -37,11 +40,19 @@ import { convertErrorMessage } from './utils/error.js';
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
+  let resolvedUserConfig: ResolvedUserConfig | undefined;
   try {
-    const server = await Server.createServer(inlineConfig);
+    resolvedUserConfig = await resolveConfig(
+      inlineConfig ?? {},
+      'dev',
+      'development'
+    );
+    if (await runConfiguredWorkflow(resolvedUserConfig, 'dev')) return;
+    const server = await Server.createServer(inlineConfig, resolvedUserConfig);
     await server.listen();
     server.printUrls();
   } catch (error: any) {
+    if (resolvedUserConfig?.workflow) throw error;
     new Logger().error('Failed to start the server', { exit: false, error });
   }
 }
@@ -50,10 +61,18 @@ export async function preview(
   inlineConfig: FarmCliOptions & UserConfig = {}
 ): Promise<void> {
   const previewServer = new PreviewServer(inlineConfig);
+  let resolvedUserConfig: ResolvedUserConfig | undefined;
   try {
-    await previewServer.createPreviewServer();
+    resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      'preview',
+      'production'
+    );
+    if (await runConfiguredWorkflow(resolvedUserConfig, 'preview')) return;
+    await previewServer.createPreviewServer(resolvedUserConfig);
     previewServer.listen();
   } catch (error: any) {
+    if (!resolvedUserConfig || resolvedUserConfig.workflow) throw error;
     previewServer.logger.error('Failed to start the preview server', {
       exit: false,
       error
@@ -120,13 +139,18 @@ async function _internalBuild(
 }
 
 export async function build(
-  inlineConfig: FarmCliOptions & UserConfig = {}
+  inlineConfig: FarmCliOptions & UserConfig = {},
+  execution: WorkflowExecutionOptions = {}
 ): Promise<void> {
+  throwIfWorkflowCancelled(execution.signal);
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     'build',
     'production'
   );
+  throwIfWorkflowCancelled(execution.signal);
+  if (await runConfiguredWorkflow(resolvedUserConfig, 'build', execution))
+    return;
   const compiler = createCompiler(resolvedUserConfig);
 
   await _internalBuild(compiler, resolvedUserConfig);
@@ -136,6 +160,7 @@ export async function watch(
   inlineConfig: FarmCliOptions & UserConfig = {}
 ): Promise<void> {
   const resolvedUserConfig = await resolveConfig(inlineConfig, 'watch');
+  if (await runConfiguredWorkflow(resolvedUserConfig, 'watch')) return;
   const compiler = createCompiler(resolvedUserConfig);
 
   if (resolvedUserConfig.compilation?.lazyCompilation) {

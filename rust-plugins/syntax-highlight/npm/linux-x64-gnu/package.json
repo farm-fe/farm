@@ -1,0 +1,21 @@
+{
+  "name": "@farmfe/plugin-syntax-highlight-linux-x64-gnu",
+  "version": "0.0.1",
+  "main": "index.farm",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "license": "MIT",
+  "files": [
+    "index.farm",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
+  ],
+  "libc": [
+    "glibc"
+  ]
+}

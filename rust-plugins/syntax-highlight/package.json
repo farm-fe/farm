@@ -1,0 +1,46 @@
+{
+  "name": "@farmfe/plugin-syntax-highlight",
+  "version": "0.0.1",
+  "type": "module",
+  "license": "MIT",
+  "main": "scripts/index.js",
+  "types": "scripts/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./scripts/index.d.ts",
+      "import": "./scripts/func.js",
+      "default": "./scripts/index.js"
+    },
+    "./package.json": "./package.json",
+    "./style.css": "./style.css"
+  },
+  "files": [
+    "scripts",
+    "style.css",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
+  ],
+  "napi": {
+    "binaryName": "farm-plugin-syntax-highlight",
+    "targets": [
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../packages/plugin-tools/bin/farm-plugin-tools.mjs build --platform -p farmfe_plugin_syntax_highlight --release"
+  },
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@farmfe/plugin-syntax-highlight-darwin-arm64": "0.0.1",
+    "@farmfe/plugin-syntax-highlight-darwin-x64": "0.0.1",
+    "@farmfe/plugin-syntax-highlight-linux-arm64-gnu": "0.0.1",
+    "@farmfe/plugin-syntax-highlight-linux-x64-gnu": "0.0.1",
+    "@farmfe/plugin-syntax-highlight-win32-x64-msvc": "0.0.1"
+  }
+}

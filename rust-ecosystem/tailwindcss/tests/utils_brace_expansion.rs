@@ -1,7 +1,7 @@
 //! Ported from upstream
 //! `packages/tailwindcss/src/utils/brace-expansion.test.ts`.
 
-use farmfe_ecosystem_tailwindcss::utils::brace_expansion::{expand, BraceExpansionError};
+use farmfe_ecosystem_tailwindcss::utils::brace_expansion::{BraceExpansionError, expand};
 
 fn sorted(mut v: Vec<String>) -> Vec<String> {
   v.sort();
