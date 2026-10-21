@@ -3259,6 +3259,9 @@ importers:
       '@babel/plugin-syntax-jsx':
         specifier: ^7.25.9
         version: 7.27.1(@babel/core@7.29.0)
+      '@farmfe/js-plugin-babel':
+        specifier: workspace:^
+        version: link:../babel
       babel-plugin-react-compiler:
         specifier: 19.0.0-beta-37ed2a7-20241206
         version: 19.0.0-beta-37ed2a7-20241206
@@ -3272,9 +3275,6 @@ importers:
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@farmfe/js-plugin-babel':
-        specifier: workspace:*
-        version: link:../babel
       '@farmfe/js-plugin-dts':
         specifier: workspace:*
         version: link:../dts
