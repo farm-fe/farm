@@ -49,3 +49,5 @@ TS CI 缺少 plugin-tools 的构建步骤，导致六个 artifact-copy 用例无
 新 macOS 单元 job 119068225252 在 `update_cache` 的初始 `has_cache(styles.css)` 断言失败；尚未执行显式更新断言。测试配置使用 OS 临时目录的原始路径，而 resolver 默认对目录及祖先调用 `follow_symlinks`，模块 ID 再相对 config.root 计算。测试现在以同一 helper 规范化已创建的根目录，并保留全部缓存命中、更新内容、mtime 和未变 sibling 断言；补充失败时的根目录诊断。产品缓存与解析代码未改。
 
 Windows 正常临时路径的两个测试通过。Windows junction 探针在修复前后均通过，因此没有提供 macOS 差异的红绿复现；真目录 symlink 创建受到本机权限限制，没有提升权限。以上是基于路径身份契约的测试设置修正，macOS 通过仍须后续 CI 实证，不把 Windows 成功替代为 macOS 验收。
+
+另补 Unix 受控回归：创建指向 canonical 临时目录的真实 symlink，在独立测试子进程中将 TMPDIR 指向该 alias，精确执行原 hash-cache 回归并要求实际运行一项测试。子进程不修改主测试进程的环境，全部原缓存断言仍执行；目标路径提前 canonicalize，避免人为叠加宿主 /var 祖先别名。该 Unix 用例不在 Windows 本地执行，等待 Linux/macOS CI 验证。

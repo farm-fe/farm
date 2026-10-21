@@ -168,3 +168,44 @@ fn explicit_update_rebuilds_generated_styles_with_timestamp_cache() {
 fn explicit_update_rebuilds_generated_styles_with_hash_cache() {
   assert_explicit_update_rebuilds_generated_styles(false);
 }
+
+#[cfg(unix)]
+#[test]
+fn explicit_update_rebuilds_generated_styles_under_symlinked_temp_root() {
+  let base = std::env::temp_dir().join(format!(
+    "farm-cache-temp-alias-{}-{}",
+    std::process::id(),
+    std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .unwrap()
+      .as_nanos()
+  ));
+  std::fs::create_dir(&base).unwrap();
+  let physical = base.join("physical");
+  std::fs::create_dir(&physical).unwrap();
+  // Canonicalize the link target so this controlled alias does not introduce
+  // a second alias through the host's own temporary-directory ancestry.
+  let physical = std::fs::canonicalize(physical).unwrap();
+  let logical = base.join("logical");
+  std::os::unix::fs::symlink(&physical, &logical).unwrap();
+  let output = std::process::Command::new(std::env::current_exe().unwrap())
+    .args([
+      "explicit_update_rebuilds_generated_styles_with_hash_cache",
+      "--exact",
+      "--test-threads=1",
+    ])
+    .env("TMPDIR", &logical)
+    .env_remove("FARM_UPDATE_SNAPSHOTS")
+    .env_remove("INSTA_UPDATE")
+    .output()
+    .unwrap();
+  let stdout = String::from_utf8_lossy(&output.stdout);
+  assert!(
+    output.status.success() && stdout.contains("1 passed"),
+    "cache regression under aliased temp root failed:\n{stdout}\n{}",
+    String::from_utf8_lossy(&output.stderr)
+  );
+  std::fs::remove_file(logical).unwrap();
+  std::fs::remove_dir(physical).unwrap();
+  std::fs::remove_dir(base).unwrap();
+}
