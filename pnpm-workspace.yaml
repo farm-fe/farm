@@ -8,3 +8,4 @@ packages:
   - website/
   - rust-plugins/*/npm/*
   - packages/core/npm/*
+  - packages/create-farm/npm/*

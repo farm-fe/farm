@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-modular-import",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",
@@ -52,5 +52,16 @@
   "files": [
     "scripts",
     "options.d.ts"
-  ]
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-modular-import-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-modular-import-darwin-x64": "2.0.0",
+    "@farmfe/plugin-modular-import-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-modular-import-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-modular-import-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-modular-import-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-modular-import-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-modular-import-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-modular-import-win32-x64-msvc": "2.0.0"
+  }
 }

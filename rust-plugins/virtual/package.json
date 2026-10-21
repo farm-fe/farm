@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-virtual",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0",
   "private": false,
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
@@ -50,5 +50,16 @@
   ],
   "devDependencies": {
     "@farmfe/plugin-tools": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@farmfe/plugin-virtual-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-virtual-darwin-x64": "2.0.0",
+    "@farmfe/plugin-virtual-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-virtual-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-virtual-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-virtual-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-virtual-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-virtual-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-virtual-win32-x64-msvc": "2.0.0"
   }
 }

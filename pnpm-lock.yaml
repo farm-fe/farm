@@ -3628,6 +3628,34 @@ importers:
   packages/core/npm/win32-x64-msvc: {}
 
   packages/create-farm:
+    optionalDependencies:
+      create-farm-darwin-arm64:
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      create-farm-darwin-x64:
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      create-farm-linux-arm64-gnu:
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      create-farm-linux-arm64-musl:
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      create-farm-linux-x64-gnu:
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      create-farm-linux-x64-musl:
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      create-farm-win32-arm64-msvc:
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      create-farm-win32-ia32-msvc:
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      create-farm-win32-x64-msvc:
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@napi-rs/cli':
         specifier: 3.0.4
@@ -3653,6 +3681,24 @@ importers:
       prompts:
         specifier: ^2.4.2
         version: 2.4.2
+
+  packages/create-farm/npm/darwin-arm64: {}
+
+  packages/create-farm/npm/darwin-x64: {}
+
+  packages/create-farm/npm/linux-arm64-gnu: {}
+
+  packages/create-farm/npm/linux-arm64-musl: {}
+
+  packages/create-farm/npm/linux-x64-gnu: {}
+
+  packages/create-farm/npm/linux-x64-musl: {}
+
+  packages/create-farm/npm/win32-arm64-msvc: {}
+
+  packages/create-farm/npm/win32-ia32-msvc: {}
+
+  packages/create-farm/npm/win32-x64-msvc: {}
 
   packages/docs:
     dependencies:
@@ -4114,6 +4160,34 @@ importers:
   rust-plugins/dts/npm/win32-x64-msvc: {}
 
   rust-plugins/icons:
+    optionalDependencies:
+      '@farmfe/plugin-icons-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-icons-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-icons-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-icons-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-icons-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-icons-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-icons-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-icons-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-icons-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4138,6 +4212,34 @@ importers:
   rust-plugins/icons/npm/win32-x64-msvc: {}
 
   rust-plugins/image:
+    optionalDependencies:
+      '@farmfe/plugin-image-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-image-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-image-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-image-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-image-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-image-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-image-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-image-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-image-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4214,6 +4316,34 @@ importers:
   rust-plugins/mdx/npm/win32-x64-msvc: {}
 
   rust-plugins/modular-import:
+    optionalDependencies:
+      '@farmfe/plugin-modular-import-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-modular-import-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-modular-import-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-modular-import-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-modular-import-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-modular-import-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-modular-import-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-modular-import-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-modular-import-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4272,6 +4402,34 @@ importers:
         version: link:../../packages/plugin-tools
 
   rust-plugins/react-components:
+    optionalDependencies:
+      '@farmfe/plugin-react-components-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-react-components-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-react-components-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-react-components-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-react-components-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-react-components-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-react-components-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-react-components-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-react-components-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4450,6 +4608,34 @@ importers:
   rust-plugins/ssr-css/npm/win32-x64-msvc: {}
 
   rust-plugins/strip:
+    optionalDependencies:
+      '@farmfe/plugin-strip-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-strip-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-strip-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-strip-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-strip-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-strip-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-strip-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-strip-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-strip-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4610,6 +4796,34 @@ importers:
   rust-plugins/tailwindcss/npm/win32-x64-msvc: {}
 
   rust-plugins/url:
+    optionalDependencies:
+      '@farmfe/plugin-url-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-url-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-url-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-url-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-url-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-url-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-url-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-url-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-url-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
@@ -4634,6 +4848,34 @@ importers:
   rust-plugins/url/npm/win32-x64-msvc: {}
 
   rust-plugins/virtual:
+    optionalDependencies:
+      '@farmfe/plugin-virtual-darwin-arm64':
+        specifier: 2.0.0
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-virtual-darwin-x64':
+        specifier: 2.0.0
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-virtual-linux-arm64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-virtual-linux-arm64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-virtual-linux-x64-gnu':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-virtual-linux-x64-musl':
+        specifier: 2.0.0
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-virtual-win32-arm64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-virtual-win32-ia32-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-virtual-win32-x64-msvc':
+        specifier: 2.0.0
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
