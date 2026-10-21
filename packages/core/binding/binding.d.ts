@@ -6,6 +6,11 @@ export declare class Compiler {
   traceModuleGraph(): object
   /** async compile, return promise */
   compile(): object
+  /**
+   * Drain on a dedicated OS thread: cache writes themselves use the Rayon
+   * pool, so blocking that pool here could starve the writes being joined.
+   */
+  flushCache(): object
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */
@@ -29,6 +34,11 @@ export declare class Compiler {
   readMetadataByScope(scope: string): Array<string>
 }
 export type JsCompiler = Compiler
+
+export declare class OutputDirectoryLock {
+  constructor(path: string)
+  release(): void
+}
 
 export declare class Resolver {
   constructor(config: object)
