@@ -8,8 +8,10 @@ const moduleUrl = new URL('../dist/copy-artifacts.js', import.meta.url).href;
 const abi = 'win32-x64-msvc';
 
 async function fixture(source: Buffer, destination?: Buffer) {
-  const directory = await fs.mkdtemp(
-    path.join(os.tmpdir(), 'farm-copy-artifact-')
+  // macOS exposes /var temp paths while child cwd resolves /private/var.
+  // Use the actual directory identity so the replacement hook is exercised.
+  const directory = await fs.realpath(
+    await fs.mkdtemp(path.join(os.tmpdir(), 'farm-copy-artifact-'))
   );
   const from = path.join(directory, `probe.${abi}.node`);
   const to = path.join(directory, 'npm', abi, 'index.farm');

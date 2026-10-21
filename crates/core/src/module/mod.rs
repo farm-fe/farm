@@ -437,6 +437,24 @@ mod tests {
     });
   }
 
+  #[cfg(windows)]
+  #[test]
+  fn module_id_cross_volume_round_trip() {
+    let root = r"C:\consumer\site";
+    let target = "D:/farm/runtime.js.farm-runtime";
+    let id = ModuleId::new(target, "raw", root);
+    assert_eq!(id.relative_path(), target);
+    assert_eq!(id.resolved_path(root), target);
+    assert_eq!(id.resolved_path_with_query(root), format!("{target}?raw"));
+    assert_eq!(
+      ModuleId::from_resolved_path_with_query(&format!("{target}?raw"), root),
+      id
+    );
+    assert_ne!(
+      id,
+      ModuleId::new("E:/farm/runtime.js.farm-runtime", "raw", root)
+    );
+  }
   #[test]
   fn module_id() {
     #[cfg(not(target_os = "windows"))]

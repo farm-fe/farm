@@ -114,6 +114,12 @@ pub fn relative(from: &str, to: &str) -> String {
     panic!("failed to get relative path from {from} to {to}");
   });
 
+  // Different Windows volumes (or UNC shares) have no relative path. Keep
+  // pathdiff's absolute target so module IDs can resolve it without losing
+  // its volume identity. ModuleId::resolved_path already handles this form.
+  if rp.is_absolute() {
+    return rp.to_string_lossy().replace('\\', "/");
+  }
   // make sure the relative path is platform independent
   // this can ensure that the relative path and hash stable across platforms
   let mut result = String::new();
@@ -193,6 +199,18 @@ mod tests {
     assert_eq!(str, "?a=b".to_string());
   }
 
+  #[cfg(windows)]
+  #[test]
+  fn test_relative_cross_volume_preserves_absolute_target() {
+    assert_eq!(
+      relative(r"C:\consumer\site", r"D:\farm\runtime.js.farm-runtime"),
+      "D:/farm/runtime.js.farm-runtime"
+    );
+    assert_eq!(
+      relative("file:///C:/consumer/site", "file:///D:/farm/runtime.js?raw"),
+      "D:/farm/runtime.js?raw"
+    );
+  }
   #[test]
   fn test_relative() {
     let from = if cfg!(windows) {
