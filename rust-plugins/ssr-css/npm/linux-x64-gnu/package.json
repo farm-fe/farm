@@ -1,0 +1,19 @@
+{
+  "name": "@farmfe/plugin-ssr-css-linux-x64-gnu",
+  "version": "0.0.1",
+  "main": "index.farm",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "license": "MIT",
+  "files": [
+    "index.farm",
+    "LICENSE"
+  ],
+  "libc": [
+    "glibc"
+  ]
+}

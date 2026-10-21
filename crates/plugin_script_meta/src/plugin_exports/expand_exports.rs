@@ -1,18 +1,18 @@
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
+  HashMap, HashSet,
   context::CompilationContext,
   module::{
+    ModuleId,
     meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleExportIdent, ModuleExportIdentType,
+      ModuleReExportIdentType, ScriptModuleMetaData,
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
-      ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
-      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
     },
     module_graph::ModuleGraph,
-    ModuleId,
   },
   plugin::ResolveKind,
-  HashMap, HashSet,
 };
 
 use farmfe_toolkit::script::{
@@ -42,6 +42,8 @@ pub fn expand_exports_of_module_graph(
       .unwrap();
     }
   }
+
+  complete_cyclic_exports(module_graph, &mut expand_context, Some(context));
 
   // update the exports of module
   for module in module_graph.modules_mut() {
@@ -74,6 +76,8 @@ pub fn expand_dynamic_entry_exports(module_graph: &mut ModuleGraph) {
   for dynamic_entry_id in module_graph.dynamic_entries.keys() {
     expand_module_exports_dfs(dynamic_entry_id, module_graph, &mut expand_context);
   }
+
+  complete_cyclic_exports(module_graph, &mut expand_context, None);
 
   for (module_id, export_ident_map) in expand_context.export_ident_map {
     let module = module_graph.module_mut(&module_id).unwrap();
@@ -159,6 +163,57 @@ pub(crate) fn get_basic_module_export_ident(
   module_export_idents
 }
 
+/// A back edge can read a barrel before its star exports have been expanded.
+/// Replay those readers, then propagate actual metadata changes to dependents.
+/// Acyclic graphs retain the single DFS pass.
+fn complete_cyclic_exports(
+  module_graph: &ModuleGraph,
+  expand_context: &mut ExpandModuleExportsContext,
+  context: Option<&Arc<CompilationContext>>,
+) {
+  let mut pending = std::mem::take(&mut expand_context.incomplete_readers);
+  if pending.is_empty() {
+    return;
+  }
+  let mut dependents: HashMap<ModuleId, Vec<ModuleId>> = HashMap::default();
+  for module in module_graph.modules() {
+    if module.module_type.is_script() && !module.external {
+      for (dependency, _) in module_graph.dependencies(&module.id) {
+        dependents
+          .entry(dependency)
+          .or_default()
+          .push(module.id.clone());
+      }
+    }
+  }
+  let mut queue: VecDeque<_> = pending.iter().cloned().collect();
+  while let Some(module_id) = queue.pop_front() {
+    pending.remove(&module_id);
+    let previous_exports = expand_context.get_export_ident_map(&module_id);
+    let previous_ambiguous = expand_context.get_ambiguous_export_ident_map(&module_id);
+    expand_context.visited.remove(&module_id);
+    if let Some(context) = context {
+      let cm = context.meta.get_module_source_map(&module_id);
+      let globals = context.meta.get_globals(&module_id);
+      try_with(cm, globals.value(), || {
+        expand_module_exports_dfs(&module_id, module_graph, expand_context);
+      })
+      .unwrap();
+    } else {
+      expand_module_exports_dfs(&module_id, module_graph, expand_context);
+    }
+    if previous_exports != expand_context.get_export_ident_map(&module_id)
+      || previous_ambiguous != expand_context.get_ambiguous_export_ident_map(&module_id)
+    {
+      for dependent in dependents.get(&module_id).into_iter().flatten() {
+        if pending.insert(dependent.clone()) {
+          queue.push_back(dependent.clone());
+        }
+      }
+    }
+  }
+}
+
 fn expand_module_exports_dfs(
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
@@ -166,11 +221,20 @@ fn expand_module_exports_dfs(
 ) {
   let module = module_graph.module(module_id).unwrap();
   // skip
-  if module.external || !module.module_type.is_script() || expand_context.is_visited(module_id) {
+  if module.external || !module.module_type.is_script() {
+    return;
+  }
+  if expand_context.is_visited(module_id) {
+    if expand_context.active.contains(module_id) {
+      expand_context
+        .incomplete_readers
+        .extend(expand_context.active.iter().cloned());
+    }
     return;
   }
 
   expand_context.mark_visited(module_id);
+  expand_context.active.insert(module_id.clone());
 
   let module_script_meta = module.meta.as_script();
 
@@ -331,7 +395,12 @@ fn expand_module_exports_dfs(
               // override the ambiguous ident with declaration ident
             }
             _ => {
-              println!("[Farm warn] export {} is already declared in {}. The declaration in {} will be ignored", export_str, existing_ident.module_id.to_string(), module_export_ident.module_id.to_string());
+              println!(
+                "[Farm warn] export {} is already declared in {}. The declaration in {} will be ignored",
+                export_str,
+                existing_ident.module_id.to_string(),
+                module_export_ident.module_id.to_string()
+              );
               continue;
             }
           }
@@ -470,6 +539,7 @@ fn expand_module_exports_dfs(
       expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
     }
   }
+  expand_context.active.remove(module_id);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -608,6 +678,8 @@ struct ExpandModuleExportsContext {
   reexport_ident_map: HashMap<ModuleId, HashMap<String, ModuleReExportIdentType>>,
   ambiguous_export_ident_map: HashMap<ModuleId, HashMap<String, Vec<ModuleExportIdent>>>,
   visited: HashSet<ModuleId>,
+  active: HashSet<ModuleId>,
+  incomplete_readers: HashSet<ModuleId>,
 }
 
 impl ExpandModuleExportsContext {
@@ -617,6 +689,8 @@ impl ExpandModuleExportsContext {
       reexport_ident_map: HashMap::default(),
       ambiguous_export_ident_map: HashMap::default(),
       visited: HashSet::default(),
+      active: HashSet::default(),
+      incomplete_readers: HashSet::default(),
     }
   }
 
@@ -655,13 +729,15 @@ impl ExpandModuleExportsContext {
     export_str: String,
     export_ident: ModuleExportIdent,
   ) {
-    self
+    let idents = self
       .ambiguous_export_ident_map
       .entry(module_id.clone())
       .or_default()
       .entry(export_str)
-      .or_default()
-      .push(export_ident);
+      .or_default();
+    if !idents.contains(&export_ident) {
+      idents.push(export_ident);
+    }
   }
 
   fn insert_export_namespace_ident(
@@ -740,5 +816,192 @@ impl ExpandModuleExportsContext {
       .ambiguous_export_ident_map
       .get(module_id)
       .and_then(|ambiguous_export_ident_map| ambiguous_export_ident_map.get(export_str).cloned())
+  }
+}
+
+#[cfg(test)]
+mod cyclic_star_tests {
+  use super::*;
+  use farmfe_core::{
+    config::{Config, persistent_cache::PersistentCacheConfig},
+    module::{
+      Module, ModuleMetaData, ModuleSystem, ModuleType,
+      meta_data::script::statement::{ExportInfo, ImportInfo, Statement},
+      module_graph::ModuleGraphEdgeDataItem,
+    },
+    swc_common::{Globals, SourceMap},
+  };
+
+  #[test]
+  fn cyclic_import_during_star_expansion_preserves_all_entry_exports() {
+    for order in [
+      ["api.js", "leaf.js", "entry.js"],
+      ["entry.js", "api.js", "leaf.js"],
+      ["leaf.js", "entry.js", "api.js"],
+    ] {
+      for dynamic in [false, true] {
+        for named in [false, true] {
+          check_cyclic_exports(order, dynamic, named);
+        }
+      }
+    }
+  }
+
+  fn check_cyclic_exports(order: [&str; 3], dynamic: bool, named: bool) {
+    let mut config = Config::default();
+    *config.persistent_cache = PersistentCacheConfig::Bool(false);
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let mut graph = ModuleGraph::new();
+    // api -> leaf -> entry -> api is one cycle. Starting from the barrel is
+    // a valid traversal order; entry must not cache its partially expanded API.
+    for (order, name) in order.into_iter().enumerate() {
+      let mut module = Module::new(name.into());
+      module.module_type = ModuleType::Js;
+      module.execution_order = order;
+      *module.meta = ModuleMetaData::Script(Box::default());
+      module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+      context
+        .meta
+        .set_module_source_map(&module.id, Arc::new(SourceMap::default()));
+      context.meta.set_globals(&module.id, Globals::new());
+      graph.add_module(module);
+    }
+    for (module_name, exported) in [
+      ("entry.js", "run"),
+      ("leaf.js", "Model"),
+      ("leaf.js", "default"),
+    ] {
+      let ident = SwcId::new(exported.into(), 0);
+      graph
+        .module_mut(&module_name.into())
+        .unwrap()
+        .meta
+        .as_script_mut()
+        .statements
+        .push(Statement::new(
+          0,
+          Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Named {
+              local: ident.clone(),
+              exported: None,
+            }],
+            stmt_id: 0,
+          }),
+          None,
+          HashSet::from_iter([ident]),
+          false,
+        ));
+    }
+    for (parent, child) in [("entry.js", "api.js"), ("api.js", "leaf.js")] {
+      let source = format!("./{child}");
+      let meta = graph
+        .module_mut(&parent.into())
+        .unwrap()
+        .meta
+        .as_script_mut();
+      let id = meta.statements.len();
+      meta.statements.push(Statement::new(
+        id,
+        Some(ExportInfo {
+          source: Some(source.clone()),
+          specifiers: if named && parent == "entry.js" {
+            vec![ExportSpecifierInfo::Named {
+              local: SwcId::new("Model".into(), 0),
+              exported: Some(SwcId::new("SelectedModel".into(), 0)),
+            }]
+          } else {
+            vec![ExportSpecifierInfo::All]
+          },
+          stmt_id: id,
+        }),
+        None,
+        HashSet::default(),
+        false,
+      ));
+      graph
+        .add_edge_item(
+          &parent.into(),
+          &child.into(),
+          ModuleGraphEdgeDataItem {
+            source,
+            kind: ResolveKind::ExportFrom,
+            order: 0,
+          },
+        )
+        .unwrap();
+    }
+    graph
+      .module_mut(&"leaf.js".into())
+      .unwrap()
+      .meta
+      .as_script_mut()
+      .statements
+      .push(Statement::new(
+        1,
+        None,
+        Some(ImportInfo {
+          source: "./entry.js".into(),
+          specifiers: vec![ImportSpecifierInfo::Named {
+            local: SwcId::new("run".into(), 0),
+            imported: None,
+          }],
+          stmt_id: 1,
+        }),
+        HashSet::default(),
+        false,
+      ));
+    graph
+      .add_edge_item(
+        &"leaf.js".into(),
+        &"entry.js".into(),
+        ModuleGraphEdgeDataItem {
+          source: "./entry.js".into(),
+          kind: ResolveKind::Import,
+          order: 0,
+        },
+      )
+      .unwrap();
+
+    if dynamic {
+      graph.dynamic_entries.insert("api.js".into(), "api".into());
+      expand_dynamic_entry_exports(&mut graph);
+    } else {
+      expand_exports_of_module_graph(&mut graph, &context);
+    }
+    let entry = graph.module(&"entry.js".into()).unwrap().meta.as_script();
+    let name = if named { "SelectedModel" } else { "Model" };
+    assert!(
+      entry.export_ident_map.contains_key(name),
+      "entry must retain Model through completed cyclic barrel"
+    );
+    assert!(!entry.export_ident_map.contains_key(EXPORT_DEFAULT));
+    if named {
+      assert!(matches!(entry.reexport_ident_map.get(name),
+        Some(ModuleReExportIdentType::FromExportNamed { local, from_module_id })
+          if local.as_ref() == "Model" && from_module_id == &ModuleId::from("api.js")));
+    } else {
+      assert!(matches!(entry.reexport_ident_map.get(name),
+        Some(ModuleReExportIdentType::FromExportAll(source)) if source == &ModuleId::from("api.js")));
+    }
+    let model = entry.export_ident_map.get(name).unwrap().as_internal();
+    assert_eq!(model.module_id, ModuleId::from("leaf.js"));
+    assert_eq!(model.ident.sym.as_ref(), "Model");
+    drop(model);
+    let before = entry.export_ident_map.clone();
+    if dynamic {
+      expand_dynamic_entry_exports(&mut graph);
+    } else {
+      expand_exports_of_module_graph(&mut graph, &context);
+    }
+    assert_eq!(
+      before,
+      graph
+        .module(&"entry.js".into())
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+    );
   }
 }

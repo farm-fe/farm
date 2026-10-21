@@ -37,6 +37,13 @@ impl ResourcePotMemoryStore {
       .is_cache_changed(&CacheStoreKey { name, key: hash })
   }
 
+  pub fn invalidate_cache(&self, name: &str) {
+    self.cached_resources.remove(name);
+    // Discard the manifest without restoring bytes that will never be used.
+    // The disk writer restores any unchanged siblings before publishing a shard.
+    self.store.remove_cache_only(name);
+  }
+
   fn read_cache_internal(&self, name: &str) -> Option<()> {
     let cache = self.store.remove_cache(name)?;
     let resource = deserialize!(&cache, CachedResourcePot);

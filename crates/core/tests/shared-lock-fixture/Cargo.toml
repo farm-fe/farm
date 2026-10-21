@@ -1,0 +1,7 @@
+[workspace]
+members = ["host", "plugin"]
+resolver = "2"
+
+[workspace.dependencies]
+farmfe_core = { path = "../.." }
+libloading = "0.8.6"

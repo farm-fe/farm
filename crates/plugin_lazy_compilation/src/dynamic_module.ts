@@ -6,6 +6,7 @@ interface Resource {
 interface RawLazyCompileResult {
   dynamicResources: Resource[];
   dynamicModuleResourcesMap: Record<string, number[]>;
+  changedModules?: string[];
 }
 
 interface LazyCompilationQueueItem {
@@ -20,6 +21,18 @@ const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
 const moduleId = 'MODULE_ID';
 const modulePath = 'MODULE_PATH';
 const serverUrl = 'FARM_LAZY_COMPILE_SERVER_URL';
+
+function refreshUpdatedStyles(changedModules: string[] = []) {
+  if (!globalThis.document || changedModules.length === 0) return;
+  const loadedStyles = new Set(
+    Array.from(document.querySelectorAll('style[data-farm-id]'), style =>
+      style.getAttribute('data-farm-id'))
+  );
+  const updatedStyles = [...new Set(changedModules)].filter(id => loadedStyles.has(id));
+  // Invalidate the whole batch before evaluating CSS imports of another style.
+  for (const id of updatedStyles) delete FarmModuleSystem.c()[id];
+  for (const id of updatedStyles) FarmModuleSystem.r(id);
+}
 
 function getServerUrl() {
   // server url is not defined, return empty string instead
@@ -150,6 +163,7 @@ if (compilingModules.has(modulePath)) {
             result.dynamicModuleResourcesMap
           );
         }
+        refreshUpdatedStyles(result.changedModules);
         FarmModuleSystem._rg = true; // reRegisterModules = true
         const promises: Promise<any>[] = [];
 

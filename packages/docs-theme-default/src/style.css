@@ -1,0 +1,65 @@
+:root { color-scheme: light; --farm-docs-bg: #fff; --farm-docs-text: #20232a; --farm-docs-border: #d7dae0; --farm-docs-link: #3261ce; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { color-scheme: dark; --farm-docs-bg: #171923; --farm-docs-text: #e7e9ef; --farm-docs-border: #444854; --farm-docs-link: #8fb1ff; } }
+:root[data-theme="dark"] { color-scheme: dark; --farm-docs-bg: #171923; --farm-docs-text: #e7e9ef; --farm-docs-border: #444854; --farm-docs-link: #8fb1ff; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--farm-docs-bg); color: var(--farm-docs-text); font-family: system-ui, sans-serif; line-height: 1.65; }
+a { color: var(--farm-docs-link); text-underline-offset: .2em; }
+.farm-docs-navbar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--farm-docs-border); }
+.farm-docs-navbar > * { min-width: 0; max-width: 100%; }
+.farm-docs-navbar nav { flex-wrap: wrap; }
+.farm-docs-alternates > ul { display: flex; flex-wrap: wrap; gap: .75rem; list-style: none; padding: 0; margin: 0; }
+.farm-docs-tools { display: flex; justify-content: flex-end; padding: .5rem 2rem; max-width: 76rem; margin: auto; }
+.farm-docs-tools:empty { display: none; }
+.farm-docs-color-control { display: flex; align-items: center; gap: .5rem; }
+.farm-docs-color-control select { font: inherit; color: inherit; background: var(--farm-docs-bg); }
+.farm-docs-mobile-dialog { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(22rem, 100%); max-width: 100%; height: 100dvh; max-height: 100dvh; padding: 1rem; border: 0; border-right: 1px solid var(--farm-docs-border); overflow: auto; color: var(--farm-docs-text); background: var(--farm-docs-bg); }
+.farm-docs-mobile-dialog::backdrop { background: rgb(0 0 0 / .45); }
+.farm-docs-mobile-dialog .farm-docs-color-control { margin-block: 1rem; }
+.farm-docs-brand { font-weight: 700; font-size: 1.25rem; }
+nav, footer { display: flex; gap: 1.25rem; }
+.farm-docs-layout { display: grid; grid-template-columns: minmax(0, 1fr) 14rem; gap: 3rem; max-width: 76rem; margin: auto; padding: 2rem; }
+.farm-docs-layout:has(> .farm-docs-sidebar-slot:not(:empty)) { grid-template-columns: 13rem minmax(0, 1fr) 12rem; gap: 2rem; }
+.farm-docs-sidebar-slot:empty { display: none; }
+.farm-docs-sidebar-slot { min-width: 0; }
+.farm-docs-layout main { min-width: 0; }
+.farm-docs-sidebar { display: block; min-width: 0; }
+.farm-docs-sidebar ul { list-style: none; padding-inline-start: 1rem; }
+.farm-docs-sidebar > ul { padding-inline-start: 0; }
+.farm-docs-sidebar [aria-current="page"] { font-weight: 700; text-decoration-thickness: .15em; }
+.farm-docs-sidebar summary { cursor: pointer; }
+.farm-docs-pagination { justify-content: space-between; margin-top: 2rem; }
+.farm-docs-brand { display: inline-flex; align-items: center; gap: .5rem; overflow-wrap: anywhere; }
+.farm-docs-brand img { max-height: 2rem; max-width: 8rem; }
+article { max-width: 55rem; }
+pre { padding: 1rem; overflow: auto; border: 1px solid var(--farm-docs-border); border-radius: .5rem; }
+.farm-docs-code { min-width: 0; margin-block: 1rem; }
+.farm-docs-code-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem; }
+.farm-docs-code-header > span { overflow-wrap: anywhere; min-width: 0; }
+.farm-docs-code .farm-code-block[data-title]::before { display: none; }
+.farm-docs-code > [role="status"] { display: block; min-height: 1.5em; }
+.farm-docs-search { color: var(--farm-docs-text); background: var(--farm-docs-bg); border: 1px solid var(--farm-docs-border); border-radius: .5rem; width: min(40rem, calc(100% - 2rem)); max-width: calc(100% - 2rem); max-height: calc(100dvh - 2rem); overflow: auto; padding: 1rem; }
+.farm-docs-search::backdrop { background: rgb(0 0 0 / .5); }
+.farm-docs-search-page { max-width: 48rem; min-width: 0; }
+.farm-docs-search-page form { display: flex; align-items: end; flex-wrap: wrap; gap: .75rem; }
+.farm-docs-search-page label { display: block; flex: 1 1 16rem; min-width: 0; }
+.farm-docs-search-page input { display: block; box-sizing: border-box; width: 100%; min-width: 0; font: inherit; padding: .5rem; color: inherit; background: var(--farm-docs-bg); border: 1px solid var(--farm-docs-border); }
+.farm-docs-search-page li { overflow-wrap: anywhere; }
+.farm-docs-search label { display: block; margin-block: 1rem; }
+.farm-docs-search input { display: block; width: 100%; min-width: 0; font: inherit; color: inherit; background: var(--farm-docs-bg); border: 1px solid var(--farm-docs-border); padding: .5rem; }
+.farm-docs-search ul { padding-inline-start: 1.25rem; }
+.farm-docs-search li { margin-block: .75rem; overflow-wrap: anywhere; }
+.farm-docs-search li p { margin-block: .25rem; }
+.farm-admonition { border: 1px solid var(--farm-docs-border); border-inline-start: .3rem solid currentColor; border-radius: .5rem; padding: 1rem; margin-block: 1rem; overflow-wrap: anywhere; background: rgb(128 128 128 / .08); }
+.farm-admonition-title { font-weight: 700; margin-block-start: 0; }
+.farm-docs-tabs { min-width: 0; margin-block: 1rem; }
+.farm-docs-tab-list { display: flex; flex-wrap: wrap; gap: .5rem; border-bottom: 1px solid var(--farm-docs-border); }
+.farm-docs-tab-list > a { padding: .5rem .75rem; }
+.farm-docs-tab-list > [aria-selected="true"] { font-weight: 700; border-bottom: .2rem solid currentColor; }
+.farm-docs-tab-list > [aria-disabled="true"] { opacity: .6; }
+.farm-docs-tab-list > a:focus-visible { outline: .15rem solid currentColor; outline-offset: .15rem; }
+.farm-docs-tabs > [role="tabpanel"], .farm-docs-tabs > [role="region"] { padding-block: 1rem; }
+button { font: inherit; padding: .4rem .9rem; cursor: pointer; }
+footer { padding: 2rem; border-top: 1px solid var(--farm-docs-border); }
+.farm-docs-skip { position: fixed; left: 1rem; top: -5rem; z-index: 10; padding: .5rem; background: var(--farm-docs-bg); }
+.farm-docs-skip:focus { top: 1rem; }
+@media (max-width: 48rem) { .farm-docs-layout, .farm-docs-layout:has(> .farm-docs-sidebar-slot:not(:empty)) { grid-template-columns: minmax(0, 1fr); padding: 1rem; } .farm-docs-navbar { padding: 1rem; } .farm-docs-tools { padding-inline: 1rem; } }

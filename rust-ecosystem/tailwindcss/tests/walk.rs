@@ -1,5 +1,5 @@
 use farmfe_ecosystem_tailwindcss::ast::{AstNode, Declaration, StyleRule};
-use farmfe_ecosystem_tailwindcss::walk::{walk, WalkAction};
+use farmfe_ecosystem_tailwindcss::walk::{WalkAction, walk};
 
 #[test]
 fn test_walk_visits_all_nodes() {

@@ -1,3 +1,7 @@
+---
+id: tutorials/build
+slug: tutorials/build
+---
 # Build For Production
 By default, Farm has enabled support for the following features for production builds:
 * **`Tree Shake`**: Crop and filter irrelevant modules and code

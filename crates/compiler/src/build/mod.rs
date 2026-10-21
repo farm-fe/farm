@@ -276,6 +276,7 @@ impl Compiler {
     resolve_result: PluginResolveHookResult,
     module: &mut Module,
     context: &Arc<CompilationContext>,
+    use_module_cache: bool,
   ) -> Result<Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>> {
     // skip timestamp and content hash for modules
     module.last_update_timestamp = if module.immutable {
@@ -284,7 +285,8 @@ impl Compiler {
       get_timestamp_of_module(&module.id, &context.config.root)
     };
 
-    if let Some(cached_module) =
+    if use_module_cache
+      && let Some(cached_module) =
       try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
     {
       *module = cached_module.module;
@@ -334,7 +336,8 @@ impl Compiler {
     };
 
     // skip building if the module is already built and the cache is enabled
-    if let Some(cached_module) =
+    if use_module_cache
+      && let Some(cached_module) =
       try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
     {
       // should not overwrite the timestamp of current resolved module
@@ -507,6 +510,7 @@ impl Compiler {
             resolve_module_id_result.resolve_result,
             &mut module,
             &context,
+            true,
           ) {
             Err(e) => {
               err_sender.send(e).unwrap();

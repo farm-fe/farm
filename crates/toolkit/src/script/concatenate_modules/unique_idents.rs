@@ -1,13 +1,13 @@
 pub use farmfe_core::module::meta_data::script::{EXPORT_DEFAULT, EXPORT_NAMESPACE};
 use farmfe_core::{
-  module::{meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId},
+  HashMap,
+  module::{ModuleId, meta_data::script::statement::SwcId, module_graph::ModuleGraph},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
     AssignExpr, AssignOp, AssignTarget, BindingIdent, ExportSpecifier, Expr, Ident, IdentName,
     ImportSpecifier, KeyValuePatProp, KeyValueProp, MemberProp, ModuleExportName, ObjectPat,
     ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
   },
-  HashMap,
 };
 use swc_atoms::Atom;
 use swc_ecma_visit::{VisitMut, VisitMutWith};

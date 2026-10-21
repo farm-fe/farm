@@ -13,11 +13,20 @@ pub trait CacheStoreTrait: Send + Sync {
   fn read_cache(&self, name: &str) -> Option<Vec<u8>>;
   fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>>;
   fn remove_cache(&self, name: &str) -> Option<Vec<u8>>;
+  /// Invalidate an entry without restoring its payload from persistent storage.
   fn remove_cache_only(&self, name: &str);
   fn shutdown(&self) {}
 }
 
-pub const FARM_CACHE_VERSION: &str = "0.9.1";
+// Multi-file emit metadata cannot be reconstructed from the old single-file
+// cache. A new directory format forces one rebuild after upgrading.
+// Hybrid async modules must also be rendered again after the dependency-await
+// fix; old rendered resource pots contain synchronous imports of async modules.
+// Logical namespaces now have independent disk shards. Older shared-shard
+// directories remain on disk but must not be read with the new layout.
+// Earlier generated metadata/resources may be stale after a same-source update.
+// Preserve the shard layout but require one fresh build after this fix.
+pub const FARM_CACHE_VERSION: &str = "0.9.5";
 pub const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 pub trait CacheStoreFactory: Send + Sync {

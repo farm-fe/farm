@@ -1,3 +1,7 @@
+---
+id: tutorials/create
+slug: tutorials/create
+---
 # 1. 创建一个项目
 在本章中，我们将从头开始创建一个新的 Farm React 项目，并以开发模式启动它。
 
@@ -65,10 +69,10 @@ export default defineConfig({
 ```
 对于上面的配置文件，我们使用了`input`、`output`和`plugins`，这是Farm中最基本的配置。
 * **`input`**：配置入口点。 Farm 将根据条目编译并构建模块图。
-* **`输出`**：配置输出目录、文件名等。 有关完整选项，请参阅 [compilation.output](/docs/config/farm-config#output)。
+* **`输出`**：配置输出目录、文件名等。 有关完整选项，请参阅 [compilation.output](../config/compilation-options.md#output)。
 * **`plugins`**：配置farm插件，React、Vue SFC等所有扩展能力均由插件支持。 这里我们使用一个 Rust 插件（`@farmfe/plugin-react`）来支持编译 React jsx。
 
-查阅[配置参考](/docs/config/farm-config)以获取更多选项。
+查阅[配置参考](../config/configuring-farm.md)以获取更多选项。
 
 :::note
 在上面的例子中，我们将 input 配置为 `index: './src/index.html'`，如果我们不配置 `input`，则默认为 `index: './index.html'`。 并且我们可以在`input`中配置多个条目，详细信息请参见[多页面应用](/docs/features/html#multi-page-app)

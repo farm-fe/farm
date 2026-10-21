@@ -2,7 +2,7 @@
 //! (parse + toCss describes only; the `walk` describe relies on a separate
 //! value-AST walker not yet ported).
 
-use farmfe_ecosystem_tailwindcss::value_parser::{parse, to_css, ValueAstNode as N};
+use farmfe_ecosystem_tailwindcss::value_parser::{ValueAstNode as N, parse, to_css};
 
 fn word(v: &str) -> N {
   N::Word(v.to_string())
@@ -134,27 +134,35 @@ fn parse_calculations() {
 #[test]
 fn parse_media_query_params_with_functions() {
   assert_eq!(
-    parse("(min-width: 600px) and (max-width:theme(colors.red.500)) and (theme(--breakpoint-sm)<width<=theme(--breakpoint-md))"),
+    parse(
+      "(min-width: 600px) and (max-width:theme(colors.red.500)) and (theme(--breakpoint-sm)<width<=theme(--breakpoint-md))"
+    ),
     vec![
       func("", vec![word("min-width"), sep(": "), word("600px")]),
       sep(" "),
       word("and"),
       sep(" "),
-      func("", vec![
-        word("max-width"),
-        sep(":"),
-        func("theme", vec![word("colors.red.500")]),
-      ]),
+      func(
+        "",
+        vec![
+          word("max-width"),
+          sep(":"),
+          func("theme", vec![word("colors.red.500")]),
+        ]
+      ),
       sep(" "),
       word("and"),
       sep(" "),
-      func("", vec![
-        func("theme", vec![word("--breakpoint-sm")]),
-        sep("<"),
-        word("width"),
-        sep("<="),
-        func("theme", vec![word("--breakpoint-md")]),
-      ]),
+      func(
+        "",
+        vec![
+          func("theme", vec![word("--breakpoint-sm")]),
+          sep("<"),
+          word("width"),
+          sep("<="),
+          func("theme", vec![word("--breakpoint-md")]),
+        ]
+      ),
     ]
   );
 }

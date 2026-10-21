@@ -9,9 +9,11 @@ description = "Rust implementation of @tailwindcss/node compile utilities for Fa
 
 [dependencies]
 base64 = "0.22"
-farmfe_ecosystem_tailwindcss = { path = "../tailwindcss" }
+farmfe_ecosystem_tailwindcss = { version = "=0.1.0", path = "../tailwindcss" }
 lightningcss = { version = "1.0.0-alpha.71", features = ["serde"] }
 regex = "1"
+similar = "2.7"
+sourcemap = "9"
 
 [dev-dependencies]
-farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
+farmfe_testing_helpers = { version = "=3.0.0", path = "../../crates/testing_helpers" }

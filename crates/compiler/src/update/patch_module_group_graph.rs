@@ -3,9 +3,9 @@ use std::collections::VecDeque;
 use farmfe_core::module::module_graph::ModuleGraphEdge;
 use farmfe_core::module::module_group::{ModuleGroupId, ModuleGroupType};
 use farmfe_core::module::{
+  Module, ModuleId,
   module_graph::ModuleGraph,
   module_group::{ModuleGroup, ModuleGroupGraph},
-  Module, ModuleId,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 
@@ -91,6 +91,10 @@ pub fn patch_module_group_graph(
     .collect::<Vec<_>>();
 
   let mut final_affected_module_groups = HashSet::default();
+  // Memberships are fixed by the time this closure is expanded. A shared
+  // module can belong to hundreds of groups, but its identical group list
+  // only needs to be expanded once across the entire traversal.
+  let mut expanded_modules = HashSet::default();
   let mut queue = VecDeque::from(affected_module_groups);
   // makes sure that all module groups that are affected are included
   while !queue.is_empty() {
@@ -98,6 +102,9 @@ pub fn patch_module_group_graph(
     let module_group = module_group_graph.module_group(&module_group_id).unwrap();
 
     for module_id in module_group.modules() {
+      if !expanded_modules.insert(module_id.clone()) {
+        continue;
+      }
       let module = module_graph.module(module_id).unwrap();
 
       for module_group_id in &module.module_groups {
@@ -623,14 +630,17 @@ fn patch_any_module_group_for_toposort_modules(
             || should_ignore_cyclic_dependencies(&cyclic, id, &current_module_id)
         })
       {
-        let module_group = module_group_graph
-          .module_group_mut(module_group_id)
-          .unwrap_or_else(|| panic!("module group {module_group_id:?} not found"));
-
-        module_group.remove_module(&current_module_id);
         let current_module = module_graph.module_mut(&current_module_id).unwrap();
         affected_module_groups.extend(current_module.module_groups.clone());
         current_module.module_groups.remove(module_group_id);
+
+        // Earlier edge cleanup in this update may already have removed the
+        // group. Its captured parent IDs still need membership cleanup, but
+        // must not recreate the group or abort the remaining traversal.
+        let Some(module_group) = module_group_graph.module_group_mut(module_group_id) else {
+          continue;
+        };
+        module_group.remove_module(&current_module_id);
 
         let modules_len = module_group.modules().len();
 

@@ -1,5 +1,26 @@
 # @farmfe/plugin-tools
 
+## 2.0.0
+
+### Minor Changes
+
+- Add a prepare command that previews platform versions and optional dependencies without publishing. Use prepare --write to apply the reviewed manifest changes after validating all platform package names. Binary content, packing and installation remain separate acceptance steps.
+
+### Patch Changes
+
+- Correct Node engines to match the installed dependency ranges: core and CLI require Node 18 or Node 20+, while Rust plugin build tools require Node 22.20 or Node 24.12+. Runtime and native build-tool compatibility are separate. Node 16 and 19 are excluded from core/CLI support; Node 18/20 and early Node 22 are excluded from the build tools.
+- 5cf6af9: Fix Rust plugin build scripts and tooling compatibility with napi-rs CLI option parsing.
+
+  - Add backward compatibility in plugin-tools by stripping legacy `--cargo-name` before invoking `@napi-rs/cli`.
+  - Update Rust plugin build scripts to use `-p <cargo-package>` without the unsupported `--cargo-name` flag.
+  - Fix `@farmfe/plugin-react` `build:publish` script to target the correct Cargo package.
+  - Update create-farm-plugin Rust template and docs examples to generate the corrected build command.
+
+- 6e4352c: Publish native plugin packages with public access so first-time scoped package releases succeed.
+- 46bf9fd: Support passing a custom Rust build profile through `farm-plugin-tools build` without also forwarding the default `--release` flag.
+- Updated dependencies [47d569d]
+  - @farmfe/utils@2.0.0
+
 ## 2.0.0-beta.3
 
 ### Patch Changes

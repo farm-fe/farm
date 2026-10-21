@@ -1,3 +1,7 @@
+---
+id: tutorials/start
+slug: tutorials/start
+---
 # Develop With Farm
 
 In this chapter, we will introduce **commonly used configuration and plugins** to help you build complex production-ready web project with Farm.
@@ -32,7 +36,7 @@ pnpm add @farmfe/plugin-sass -D
 
 Then add this plugin to `plugins`:
 
-```ts title="farm.config.ts" {7}
+```ts title="farm.config.ts" {5}
 // ...
 
 export default defineConfig({
@@ -223,7 +227,7 @@ export default defineConfig({
 Now postcss is fully supported in Farm, you can use popular postcss plugins `tailwind`, `px2rem`, etc. We won't cover postcss details here, refer to postcss docs for more details.
 
 :::tip
-Refer to [Farm Plugins](/docs/plugins/overview) to learn more about Farm plugins.
+Refer to [Farm Plugins](../plugins/official-plugins/overview.md) to learn more about Farm plugins.
 :::
 
 ## Using Public Directory

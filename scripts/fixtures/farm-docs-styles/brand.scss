@@ -1,0 +1,2 @@
+@use './tokens';
+.brand { &-child { color: tokens.$brand; } }

@@ -4,32 +4,38 @@ use std::{
   sync::Arc,
 };
 
-use parking_lot::{Mutex, RwLock};
+use crate::sync::{Mutex, RwLock};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::{module_cache::MetadataOption, CacheManager, CacheOption, CacheType},
-  config::{persistent_cache::PersistentCacheConfig, Config},
+  Cacheable, HashMap,
+  cache::{CacheManager, CacheOption, CacheType, module_cache::MetadataOption},
+  config::{Config, persistent_cache::PersistentCacheConfig},
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
+    ModuleId, module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph,
   },
-  plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
+  plugin::{Plugin, PluginResolveHookParam, PluginResolveHookResult, plugin_driver::PluginDriver},
   resource::{
-    resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap, Resource, ResourceOrigin,
-    ResourceType,
+    Resource, ResourceOrigin, ResourceType, resource_pot::ResourcePotId,
+    resource_pot_map::ResourcePotMap,
   },
   stats::Stats,
-  Cacheable, HashMap,
 };
 
 use self::log_store::LogStore;
 
 pub mod log_store;
 pub(crate) const EMPTY_STR: &str = "";
+
+#[farmfe_macro_cache_item::cache_item]
+#[derive(Debug, Clone)]
+pub struct CachedEmittedResources {
+  pub resources: Vec<Resource>,
+}
 
 lazy_static::lazy_static! {
   pub static ref REPLACE_FILENAME_REGEX: Regex = Regex::new(r"[^a-zA-Z0-9._/\\]").unwrap();
@@ -185,18 +191,22 @@ impl CompilationContext {
       special_placeholders: Default::default(),
     };
 
+    // Serialize emits under the resource lock: plugins may emit multiple files
+    // concurrently for the same module.
+    let mut resources = self.resources_map.lock();
     if self.cache_manager.enable() {
-      self.write_metadata(
-        "builtin:emit_file",
-        resource.clone(),
-        Some(MetadataOption::default().refer(vec![module_id])),
-      );
+      let options = || Some(MetadataOption::default().refer(vec![module_id.clone()]));
+      let mut cached = self
+        .read_metadata::<CachedEmittedResources>("builtin:emit_files", options())
+        .unwrap_or_else(|| Box::new(CachedEmittedResources { resources: vec![] }));
+      cached
+        .resources
+        .retain(|previous| previous.name != resource.name);
+      cached.resources.push(resource.clone());
+      self.write_metadata("builtin:emit_files", *cached, options());
     }
 
-    self
-      .resources_map
-      .lock()
-      .insert(params.name.clone(), resource);
+    resources.insert(params.name.clone(), resource);
   }
 
   pub fn sourcemap_enabled(&self, id: &str) -> bool {
@@ -399,10 +409,29 @@ impl Default for ContextMetaData {
 /// get swc source map filename from module id.
 /// you can get module id from sourcemap filename too, by
 pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
-  // replace all invalid characters to _ to make sure the filename is valid
-  let module_id = module_id.to_string();
-  let module_id = REPLACE_FILENAME_REGEX.replace_all(&module_id, "_");
+  // This is a source identity, not a path that will be written to disk.
+  // Lossy character replacement makes distinct modules collide and prevents
+  // the final map from finding their transform chains in the module graph.
   FileName::Real(PathBuf::from(module_id.to_string()))
+}
+
+#[cfg(test)]
+mod source_identity_tests {
+  use super::*;
+
+  #[test]
+  fn source_map_filename_preserves_module_identity() {
+    for name in [
+      "docs/farm-docs/brand.scss",
+      "docs/farm_docs/brand.scss",
+      "文档/示例.scss",
+      "page.mdx?variant=dark",
+      "virtual:docs/route",
+    ] {
+      let id: ModuleId = name.into();
+      assert_eq!(get_swc_sourcemap_filename(&id).to_string(), id.to_string());
+    }
+  }
 }
 
 /// create a swc source map from a source
@@ -473,6 +502,54 @@ pub struct EmitFileParams {
 
 #[cfg(test)]
 mod tests {
+
+  #[test]
+  fn caches_all_files_emitted_by_one_module() {
+    use super::*;
+    use crate::config::persistent_cache::PersistentCacheConfigObj;
+    let context = CompilationContext::new(
+      Config {
+        persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+          memory: true,
+          ..Default::default()
+        })),
+        ..Default::default()
+      },
+      vec![],
+    )
+    .unwrap();
+    for name in ["index.d.ts", "models.d.ts", "models.d.ts"] {
+      context.emit_file(EmitFileParams {
+        resolved_path: "src/index.ts".to_string(),
+        name: name.to_string(),
+        content: name.as_bytes().to_vec(),
+        resource_type: ResourceType::Custom("d.ts".to_string()),
+      });
+    }
+    let cached = context
+      .read_metadata::<CachedEmittedResources>(
+        "builtin:emit_files",
+        Some(MetadataOption::default().refer(vec![ModuleId::from("src/index.ts")])),
+      )
+      .expect("all emitted files must be cached together");
+    assert_eq!(
+      cached.resources.len(),
+      2,
+      "re-emitting a name must replace its previous value"
+    );
+    assert!(
+      cached
+        .resources
+        .iter()
+        .any(|resource| resource.name == "index.d.ts")
+    );
+    assert!(
+      cached
+        .resources
+        .iter()
+        .any(|resource| resource.name == "models.d.ts")
+    );
+  }
 
   mod add_watch_files {
 

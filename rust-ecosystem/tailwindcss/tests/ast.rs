@@ -1,5 +1,5 @@
 use farmfe_ecosystem_tailwindcss::ast::{
-  optimize_ast, to_css, AstNode, AtRule, Declaration, StyleRule,
+  AstNode, AtRule, Declaration, StyleRule, optimize_ast, to_css,
 };
 
 #[test]

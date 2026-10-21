@@ -1,4 +1,5 @@
 [package]
+license.workspace = true
 edition = "2024"
 name = "farmfe_plugin_sass"
 version = "0.0.1"
@@ -7,13 +8,15 @@ version = "0.0.1"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-farmfe_core = { version = "*", path = "../../crates/core" }
-farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
-farmfe_toolkit = { path = "../../crates/toolkit" }
-farmfe_utils = { path = "../../crates/utils" }
-grass = { version = "0.13.4", default-features = false, features = ["random"] }
+farmfe_core = { version = "=3.0.0", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "=2.0.0", path = "../../crates/macro_plugin" }
+farmfe_toolkit = { version = "=3.0.0", path = "../../crates/toolkit" }
+farmfe_utils = { version = "=2.1.1", path = "../../crates/utils" }
+grass = { package = "farmfe_grass", path = "../../rust-ecosystem/grass", default-features = false, features = ["random"] }
 serde = { version = "1.0", features = ["derive"] }
+similar = "2.7.0"
+sourcemap = "9"
 
 [dev-dependencies]
-farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
-farmfe_compiler = { path = "../../crates/compiler" }
+farmfe_testing_helpers = { version = "=3.0.0", path = "../../crates/testing_helpers" }
+farmfe_compiler = { version = "=3.0.0", path = "../../crates/compiler" }

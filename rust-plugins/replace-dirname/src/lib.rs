@@ -2,7 +2,7 @@
 #![deny(clippy::all)]
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::{Config, config_regex::ConfigRegex},
   context::CompilationContext,
   error::CompilationError,
   module::ModuleMetaData,
@@ -10,7 +10,7 @@ use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{Callee, Expr, Lit, MemberExpr, MemberProp, MetaPropKind, Module, Str},
 };
-use std::{env, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 use url::Url;
 
 use farmfe_macro_plugin::farm_plugin;
@@ -54,7 +54,7 @@ impl Plugin for FarmPluginReplaceDirname {
   fn process_module(
     &self,
     param: &mut PluginProcessModuleHookParam,
-    _: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> Result<Option<()>, CompilationError> {
     let filter = PathFilter::new(&self.options.include, &self.options.exclude);
     if !filter.execute(param.module_id.relative_path()) {
@@ -65,9 +65,7 @@ impl Plugin for FarmPluginReplaceDirname {
       return Ok(None);
     }
 
-    let file_path = env::current_dir()
-      .unwrap()
-      .join(param.module_id.relative_path());
+    let file_path = param.module_id.resolved_path(&context.config.root);
 
     let dir_path: &str = Path::new(&file_path)
       .parent()
@@ -75,7 +73,7 @@ impl Plugin for FarmPluginReplaceDirname {
 
     let ast = &mut param.meta.as_script_mut().ast;
 
-    replace_dirname_with_ast(ast, dir_path, file_path.to_str().unwrap());
+    replace_dirname_with_ast(ast, dir_path, &file_path);
     Ok(Some(()))
   }
 }
@@ -147,3 +145,6 @@ pub fn replace_dirname_with_ast(ast: &mut Module, dir_path: &str, file_path: &st
 
   ast.visit_mut_with(&mut visitor);
 }
+
+#[cfg(test)]
+mod tests;

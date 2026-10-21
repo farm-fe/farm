@@ -1,8 +1,6 @@
-import Link from "@docusaurus/Link";
-import Translate from "@docusaurus/Translate";
-import { useColorMode } from "@docusaurus/theme-common";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
-import Layout from "@theme/Layout";
+import { Link } from "@farmfe/docs/client";
+import { SiteText } from "../site-text";
+import { useColorMode, useLocale } from "@farmfe/docs/client";
 import clsx from "clsx";
 import React from "react";
 import Benchmark from "../components/Benchmark";
@@ -14,7 +12,12 @@ import StarrySky from "../components/StarrySky";
 import { AuroraBackground } from "../components/ui/aurora-back";
 import styles from "./index.module.css";
 
+const homeLinks = { en: { quick: "/docs/quick-start", why: "/docs/why-farm", contribution: "/docs/contribution" }, zh: { quick: "/zh/docs/quick-start", why: "/zh/docs/why-farm", contribution: "/zh/docs/contribution" } };
+
+export const metadata = { title: "Farm Documentation", description: "Description will go into a meta tag in <head />" };
+
 function HomepageHeader() {
+  const links = homeLinks[useLocale() === "zh" ? "zh" : "en"];
   return (
     <header
       className={clsx(
@@ -28,26 +31,26 @@ function HomepageHeader() {
           <div className="font-extrabold text-3xl sm:text-6xl lg:text-7xl text-left mb-6 flex flex-col gap-2">
             <div>
               <span>
-                <Translate>Extremely</Translate>
+                <SiteText id="home.extremely" />
               </span>
               <span className={clsx(styles.banner)}>
-                <Translate> Fast </Translate>
+                <SiteText id="home.fast" />
               </span>
               <span>
-                <Translate>Web</Translate>
+                <SiteText id="home.web" />
               </span>
             </div>
             <div>
               <span className={clsx(styles.banner)}>
-                <Translate> Build Tool</Translate>
+                <SiteText id="home.buildTool" />
               </span>
             </div>
             <div>
               <span>
-                <Translate>Written in</Translate>
+                <SiteText id="home.writtenIn" />
               </span>
               <span className={clsx(styles.banner, "my-6")}>
-                <Translate> Rust</Translate>
+                <SiteText id="home.rust" />
               </span>
             </div>
           </div>
@@ -57,31 +60,28 @@ function HomepageHeader() {
           <div className="font-semibold brand-color mb-6 text-1xl sm:text-2xl lg:text-xl tracking-wide text-left  flex flex-col gap-2">
             <div>
               <span className={clsx(styles.banner, "font-extrabold")}>
-                <Translate>Farm </Translate>
+                <SiteText id="home.farm" />
               </span>
               <span className="font-sans">
-                <Translate>
-                  is a Rust-Based Web Building Engine to Facilitate Your Web
-                  Program and JavaScript Library
-                </Translate>
+                <SiteText id="home.description" />
               </span>
             </div>
           </div>
         </BlurFade>
         <div className={clsx(styles.buttons, "my-2")}>
-          <Link to="/docs/quick-start" style={{ textDecoration: "none" }}>
+          <Link to={links.quick} style={{ textDecoration: "none" }}>
             <div
               className={clsx(
                 styles.farmButton,
                 "flex w-36 sm:w-40 items-center justify-center font-bold",
               )}
             >
-              <Translate>Quick Start</Translate>
+              <SiteText id="home.quickStart" />
             </div>
           </Link>
           <Link
             style={{ textDecoration: "none" }}
-            to="/docs/why-farm"
+            to={links.why}
           >
             <div
               className={clsx(
@@ -89,10 +89,10 @@ function HomepageHeader() {
                 "flex w-36 sm:w-40  items-center justify-center font-bold",
               )}
             >
-              <Translate>Why Farm?</Translate>
+              <SiteText id="home.whyFarm" />
             </div>
           </Link>
-          <Link to="/docs/contribution" style={{
+          <Link to={links.contribution} style={{
             textDecoration: "none"
           }}>
             <div
@@ -101,7 +101,7 @@ function HomepageHeader() {
                 "flex w-36 sm:w-40 items-center justify-center font-bold",
               )}
             >
-              <Translate>Contribute</Translate>
+              <SiteText id="home.contribute" />
             </div>
           </Link>
         </div>
@@ -111,22 +111,22 @@ function HomepageHeader() {
 }
 
 const HomeBaseContent = () => {
-  const { colorMode } = useColorMode();
+  const { resolvedColorMode } = useColorMode();
 
   const mainContent = React.useMemo(() => {
     return (
-      <main className="mb-20 my-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8max-w-6xl">
+      <div className="mb-20 my-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8max-w-6xl">
         <AnimatedGradientStarWithGithub />
         <HomepageHeader />
         <NeonGradientCard>
         </NeonGradientCard>
         <Benchmark />
         <BentoGridCard />
-      </main>
+      </div>
     );
   }, []);
 
-  if (colorMode === "dark") {
+  if (resolvedColorMode === "dark") {
     return (
       <>
         <StarrySky />
@@ -144,14 +144,5 @@ const HomeBaseContent = () => {
 };
 
 export default function Home() {
-  const { siteConfig } = useDocusaurusContext();
-  return (
-    <Layout
-      //@ts-ignore
-      title={`${siteConfig.title} Documentation`}
-      description="Description will go into a meta tag in <head />"
-    >
-      <HomeBaseContent />
-    </Layout>
-  );
+  return <HomeBaseContent />;
 }

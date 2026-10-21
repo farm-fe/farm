@@ -1,0 +1,10 @@
+[
+  { "route": "/guide/docs/", "heading": "Current documentation", "locale": "en" },
+  { "route": "/guide/docs/modern/", "heading": "Current version feature", "locale": "en" },
+  { "route": "/guide/docs/untranslated/", "heading": "Content from English", "locale": "en" },
+  { "route": "/guide/zh/docs/", "heading": "当前版本文档", "locale": "zh" },
+  { "route": "/guide/zh/docs/modern/", "heading": "当前版本新增功能", "locale": "zh" },
+  { "route": "/guide/zh/docs/untranslated/", "heading": "Content from English", "locale": "zh", "sourceLocale": "en" },
+  { "route": "/guide/v1/docs/", "heading": "Previous documentation", "locale": "en" },
+  { "route": "/guide/zh/v1/docs/", "heading": "历史版本文档", "locale": "zh" }
+]

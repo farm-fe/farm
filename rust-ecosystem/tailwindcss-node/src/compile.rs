@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::css_origins::MappedCss;
 use crate::resolve::{self, CustomResolver};
 use crate::urls;
 pub use farmfe_ecosystem_tailwindcss::compiler::{
@@ -239,17 +240,18 @@ fn ensure_source_detection_root_exists(root: &Option<SourceRoot>) -> io::Result<
 /// This is a simplified version of what the core tailwindcss compiler does.
 /// It recursively resolves `@import` directives and inlines the imported CSS.
 fn resolve_imports(
-  css: &str,
+  input: &MappedCss,
   base: &str,
   root_base: &str,
   should_rewrite_urls: bool,
   on_dependency: &dyn Fn(&str),
   custom_css_resolver: Option<&CustomResolver>,
   seen: &mut HashMap<String, bool>,
-) -> io::Result<(String, Features)> {
+) -> io::Result<(MappedCss, Features)> {
+  let css = &input.text;
   let import_re = regex::Regex::new(r#"@import\s+['"]([^'"]+)['"]"#).unwrap();
 
-  let mut result = String::new();
+  let mut result = input.empty();
   let mut features = Features::NONE;
   let mut last_end = 0;
 
@@ -257,7 +259,7 @@ fn resolve_imports(
     let full_match = cap.get(0).unwrap();
     let import_path = &cap[1];
 
-    result.push_str(&css[last_end..full_match.start()]);
+    result.append_slice(input, last_end..full_match.start());
     last_end = full_match.end();
 
     // Also skip the trailing semicolon + newline if present
@@ -272,11 +274,10 @@ fn resolve_imports(
       }
     }
 
-    // Handle special imports (tailwindcss directives)
+    // Tailwind's package stylesheet includes theme and preflight layers, not
+    // just utilities. Resolve it through the same loader as other CSS imports.
     if import_path == "tailwindcss" || import_path.starts_with("tailwindcss/") {
       features |= Features::UTILITIES;
-      result.push_str(&format!("@import \"{import_path}\";\n"));
-      continue;
     }
 
     // Try to resolve and inline the import
@@ -286,13 +287,17 @@ fn resolve_imports(
         if seen.contains_key(&sheet_key) {
           continue; // Already inlined
         }
-        seen.insert(sheet_key, true);
+        seen.insert(sheet_key.clone(), true);
 
-        let mut content = sheet.content.clone();
+        let mut content = MappedCss::new(
+          &sheet.content,
+          input.is_mapped().then_some(sheet_key.as_str()),
+        );
 
         // Rewrite URLs if needed
         if should_rewrite_urls {
-          content = urls::rewrite_urls(&content, &sheet.base, root_base);
+          let rewritten = urls::rewrite_urls(&content.text, &sheet.base, root_base);
+          content = content.rewritten(rewritten);
         }
 
         // Recursively resolve imports in the inlined CSS
@@ -306,16 +311,19 @@ fn resolve_imports(
           seen,
         )?;
         features |= inner_features;
-        result.push_str(&resolved_content);
+        result.append(&resolved_content);
       }
       Err(_) => {
         // If we can't resolve, keep the original import
-        result.push_str(&format!("@import \"{import_path}\";\n"));
+        result.append(&MappedCss::new(
+          &format!("@import \"{import_path}\";\n"),
+          None,
+        ));
       }
     }
   }
 
-  result.push_str(&css[last_end..]);
+  result.append_slice(input, last_end..css.len());
 
   // Detect features in the CSS
   if css.contains("@apply ") {
@@ -336,10 +344,41 @@ fn resolve_imports(
 /// package. It resolves `@import` directives, rewrites URLs, tracks
 /// dependencies, and returns a [`Compiler`] that can produce the final output.
 pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
+  let prepared = prepare_stylesheet(css, &options)?;
+  let mut compiler = farmfe_ecosystem_tailwindcss::compiler::compile(
+    &prepared.content,
+    CompilerOptions {
+      features: prepared.features,
+      polyfills: options.polyfills,
+      dependencies: prepared.dependencies,
+      source_maps_enabled: options.from.is_some(),
+      config: options.config.clone(),
+    },
+  )
+  .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Compile error: {}", e)))?;
+
+  if let Some(map) = prepared.source_map {
+    compiler.set_input_source_map(map);
+  }
+  ensure_source_detection_root_exists(&None)?;
+  Ok(compiler)
+}
+
+/// Import/URL preparation must precede Farm dependency analysis. Candidate
+/// expansion can then wait until every script module has been scanned.
+pub struct PreparedStylesheet {
+  pub content: String,
+  pub source_map: Option<sourcemap::SourceMap>,
+  pub dependencies: Vec<String>,
+  pub features: Features,
+}
+
+pub fn prepare_stylesheet(css: &str, options: &CompileOptions) -> io::Result<PreparedStylesheet> {
   let mut seen = HashMap::new();
+  let input = MappedCss::new(css, options.from.as_deref());
 
   let (processed_css, features) = resolve_imports(
-    css,
+    &input,
     &options.base,
     &options.base,
     options.should_rewrite_urls,
@@ -348,21 +387,13 @@ pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
     &mut seen,
   )?;
 
-  let compiler = farmfe_ecosystem_tailwindcss::compiler::compile(
-    &processed_css,
-    CompilerOptions {
-      features,
-      polyfills: options.polyfills,
-      dependencies: seen.keys().cloned().collect(),
-      source_maps_enabled: options.from.is_some(),
-      config: options.config.clone(),
-    },
-  )
-  .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Compile error: {}", e)))?;
-
-  ensure_source_detection_root_exists(&None)?;
-
-  Ok(compiler)
+  let source_map = processed_css.source_map();
+  Ok(PreparedStylesheet {
+    content: processed_css.text,
+    source_map,
+    dependencies: seen.keys().cloned().collect(),
+    features,
+  })
 }
 /// Compile a pre-parsed AST with the given options.
 ///

@@ -1,0 +1,17 @@
+[package]
+name = "farmfe_plugin_docs"
+version = "0.0.1"
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_docs_config = { path = "../../rust-ecosystem/docs-config" }
+farmfe_docs_plan = { path = "../../rust-ecosystem/docs-plan" }
+farmfe_core = { version = "=3.0.0", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "=2.0.0", path = "../../crates/macro_plugin" }
+farmfe_toolkit_plugin_types = { version = "=3.0.0", path = "../../crates/toolkit_plugin_types" }
+farmfe_toolkit = { version = "=3.0.0", path = "../../crates/toolkit" }
+serde = { version = "1.0", features = ["derive"] }

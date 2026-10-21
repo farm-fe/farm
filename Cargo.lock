@@ -343,6 +343,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
+
+[[package]]
 name = "base64-simd"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -429,6 +435,21 @@ dependencies = [
  "shlex",
  "syn 2.0.117",
 ]
+
+[[package]]
+name = "bit-set"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
+dependencies = [
+ "bit-vec",
+]
+
+[[package]]
+name = "bit-vec"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bitflags"
@@ -2095,6 +2116,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649"
 
 [[package]]
+name = "fancy-regex"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "998b056554fbe42e03ae0e152895cd1a7e1002aec800fdc6635d20270260c46f"
+dependencies = [
+ "bit-set",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
 name = "farm_plugin_svgr"
 version = "0.0.0"
 dependencies = [
@@ -2103,7 +2135,7 @@ dependencies = [
  "farmfe_svgr_rs",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "globset",
  "serde",
  "serde_json",
@@ -2112,7 +2144,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_compiler"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "enhanced-magic-string",
  "farmfe_core",
@@ -2137,19 +2169,19 @@ dependencies = [
  "farmfe_testing",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "sourcemap",
 ]
 
 [[package]]
 name = "farmfe_core"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "blake2",
  "dashmap 6.2.1",
  "downcast-rs 2.0.2",
  "farmfe_macro_cache_item",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "globset",
  "heck 0.5.0",
  "hex",
@@ -2179,12 +2211,90 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_docs_config"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "schemars",
+ "serde",
+ "serde_json",
+ "url",
+]
+
+[[package]]
+name = "farmfe_docs_content"
+version = "0.1.0"
+dependencies = [
+ "cssparser",
+ "farmfe_syntax_highlight",
+ "markdown",
+ "mdxjs",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "sourcemap",
+ "swc_common 21.0.2",
+ "swc_core 27.0.6",
+ "swc_html_ast 21.0.1",
+ "swc_html_parser 21.0.0",
+ "yaml-rust",
+]
+
+[[package]]
+name = "farmfe_docs_plan"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "farmfe_docs_config",
+ "farmfe_docs_content",
+ "mdxjs",
+ "percent-encoding",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2",
+ "swc_common 21.0.2",
+ "swc_ecma_ast 23.0.1",
+ "swc_ecma_parser 39.1.1",
+ "swc_ecma_visit 23.0.0",
+ "tempfile",
+ "unicode-normalization",
+ "url",
+]
+
+[[package]]
+name = "farmfe_docs_seo"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "farmfe_docs_config",
+ "farmfe_docs_plan",
+ "quick-xml",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "farmfe_docs_snapshot"
+version = "0.1.0"
+dependencies = [
+ "farmfe_docs_config",
+ "farmfe_docs_plan",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+]
+
+[[package]]
 name = "farmfe_ecosystem_tailwindcss"
 version = "0.1.0"
 dependencies = [
  "farmfe_testing_helpers",
  "regex",
  "serde_json",
+ "sourcemap",
  "thiserror 1.0.69",
 ]
 
@@ -2197,6 +2307,22 @@ dependencies = [
  "farmfe_testing_helpers",
  "lightningcss",
  "regex",
+ "similar",
+ "sourcemap",
+]
+
+[[package]]
+name = "farmfe_grass"
+version = "0.13.4-farm.1"
+dependencies = [
+ "codemap",
+ "indexmap 2.14.0",
+ "lasso",
+ "once_cell",
+ "phf",
+ "rand 0.8.6",
+ "sourcemap",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2244,7 +2370,7 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "glob",
  "regress",
  "serde",
@@ -2267,24 +2393,81 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "rkyv 0.8.16",
 ]
 
 [[package]]
 name = "farmfe_plugin_define"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
+]
+
+[[package]]
+name = "farmfe_plugin_docs"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_docs_config",
+ "farmfe_docs_plan",
+ "farmfe_macro_plugin",
+ "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
+ "serde",
+]
+
+[[package]]
+name = "farmfe_plugin_docs_seo"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_docs_config",
+ "farmfe_docs_plan",
+ "farmfe_docs_seo",
+ "farmfe_macro_plugin",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "farmfe_plugin_docs_snapshot"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_docs_config",
+ "farmfe_docs_plan",
+ "farmfe_docs_snapshot",
+ "farmfe_macro_plugin",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "farmfe_plugin_docs_snippets"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_docs_content",
+ "farmfe_macro_plugin",
+ "farmfe_syntax_highlight",
+ "farmfe_toolkit",
+ "markdown",
+ "mdxjs",
+ "serde",
+ "serde_json",
+ "sha2",
 ]
 
 [[package]]
@@ -2317,14 +2500,14 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_file_size"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "colored",
  "farmfe_core",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "flate2",
  "once_cell",
  "unicode-width 0.2.2",
@@ -2332,7 +2515,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_html"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2350,7 +2533,7 @@ dependencies = [
  "farmfe_svgr_rs",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "fervid",
  "loading",
  "once_cell",
@@ -2378,7 +2561,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_json"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2387,32 +2570,32 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
 ]
 
 [[package]]
 name = "farmfe_plugin_library"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
 ]
 
 [[package]]
 name = "farmfe_plugin_mangle_exports"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
 ]
 
 [[package]]
@@ -2420,6 +2603,7 @@ name = "farmfe_plugin_mdx"
 version = "0.0.0"
 dependencies = [
  "farmfe_core",
+ "farmfe_docs_content",
  "farmfe_macro_plugin",
  "farmfe_toolkit_plugin_types",
  "mdxjs",
@@ -2429,7 +2613,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_minify"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2450,7 +2634,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_partial_bundling"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2459,7 +2643,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_polyfill"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2468,7 +2652,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_progress"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "console 0.15.11",
  "farmfe_core",
@@ -2497,7 +2681,7 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "glob",
  "rustc-hash 2.1.2",
  "serde",
@@ -2519,24 +2703,24 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "once_cell",
 ]
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "enhanced-magic-string",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "rkyv 0.8.16",
  "sourcemap",
 ]
@@ -2547,24 +2731,26 @@ version = "0.0.1"
 dependencies = [
  "farmfe_compiler",
  "farmfe_core",
+ "farmfe_grass",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
- "grass",
+ "farmfe_utils 2.1.1",
  "serde",
+ "similar",
+ "sourcemap",
 ]
 
 [[package]]
 name = "farmfe_plugin_script"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_script_meta",
  "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "once_cell",
  "swc_ecma_loader",
  "swc_plugin_backend_wasmer",
@@ -2577,23 +2763,32 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_script_meta"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
+]
+
+[[package]]
+name = "farmfe_plugin_ssr_css"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_toolkit_plugin_types",
 ]
 
 [[package]]
 name = "farmfe_plugin_static_assets"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "base64 0.21.7",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "mime_guess",
  "rkyv 0.8.16",
 ]
@@ -2611,6 +2806,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_syntax_highlight"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_syntax_highlight",
+ "farmfe_toolkit_plugin_types",
+]
+
+[[package]]
 name = "farmfe_plugin_tailwindcss"
 version = "0.0.1"
 dependencies = [
@@ -2621,19 +2826,19 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "serde",
  "tailwindcss-oxide",
 ]
 
 [[package]]
 name = "farmfe_plugin_tree_shake"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
 ]
 
 [[package]]
@@ -2645,7 +2850,7 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "lazy_static",
  "mime_guess",
  "serde",
@@ -2719,7 +2924,7 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "regress",
  "rkyv 0.8.16",
  "rustc-hash 2.1.2",
@@ -2759,12 +2964,20 @@ dependencies = [
 
 [[package]]
 name = "farmfe_swc_transformer_import_glob"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
+]
+
+[[package]]
+name = "farmfe_syntax_highlight"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "two-face",
 ]
 
 [[package]]
@@ -2782,7 +2995,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing_helpers"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "insta",
@@ -2790,13 +3003,13 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit"
-version = "2.1.0"
+version = "3.0.0"
 dependencies = [
  "anyhow",
  "bytes-str",
  "farmfe_core",
  "farmfe_testing_helpers",
- "farmfe_utils 2.1.0",
+ "farmfe_utils 2.1.1",
  "itertools 0.14.0",
  "par-core 2.0.0",
  "preset_env_base",
@@ -2826,7 +3039,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "2.0.1"
+version = "3.0.0"
 dependencies = [
  "farmfe_core",
  "lazy_static",
@@ -2846,7 +3059,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -2944,7 +3157,6 @@ dependencies = [
 [[package]]
 name = "fervid_parser"
 version = "0.2.0"
-source = "git+https://github.com/phoenix-ru/fervid.git?rev=4f26ab48f81eb9688fb84e9fa14541373d5bca7d#4f26ab48f81eb9688fb84e9fa14541373d5bca7d"
 dependencies = [
  "fervid_core",
  "swc_core 35.0.0",
@@ -3391,30 +3603,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef89398e90033fc6bc65e9bd42fd29bbbfd483bda5b56dc5562f455550618165"
 dependencies = [
  "gl_generator",
-]
-
-[[package]]
-name = "grass"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7a68216437ef68f0738e48d6c7bb9e6e6a92237e001b03d838314b068f33c94"
-dependencies = [
- "getrandom 0.2.17",
- "grass_compiler",
-]
-
-[[package]]
-name = "grass_compiler"
-version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d9e3df7f0222ce5184154973d247c591d9aadc28ce7a73c6cd31100c9facff6"
-dependencies = [
- "codemap",
- "indexmap 2.14.0",
- "lasso",
- "once_cell",
- "phf",
- "rand 0.8.6",
 ]
 
 [[package]]
@@ -5558,6 +5746,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
+name = "plist"
+version = "1.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2896bade328c13f7042a297ea5ac5b0951f6cf989dea5f32c2fd98da398195cb"
+dependencies = [
+ "base64 0.23.1",
+ "indexmap 2.14.0",
+ "quick-xml",
+ "serde",
+ "time",
+]
+
+[[package]]
 name = "png"
 version = "0.17.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5831,6 +6032,15 @@ dependencies = [
  "bitflags 1.3.2",
  "memchr",
  "unicase",
+]
+
+[[package]]
+name = "quick-xml"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b1177fdf999d2321d3fb46ff47159d9c1fb9ad66a4879f8c50a0b504615e9b"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -7081,6 +7291,7 @@ dependencies = [
  "swc_allocator",
  "swc_atoms 5.0.0",
  "swc_eq_ignore_macros",
+ "swc_sourcemap 9.3.4",
  "swc_visit",
  "tracing",
  "unicode-width 0.1.14",
@@ -8807,6 +9018,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "syntect"
+version = "5.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "656b45c05d95a5704399aeef6bd0ddec7b2b3531b7c9e900abbf7c4d2190c925"
+dependencies = [
+ "bincode 1.3.3",
+ "fancy-regex",
+ "flate2",
+ "fnv",
+ "once_cell",
+ "plist",
+ "regex-syntax",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "thiserror 2.0.18",
+ "walkdir",
+ "yaml-rust",
+]
+
+[[package]]
 name = "tailwindcss-oxide"
 version = "0.1.0"
 source = "git+https://github.com/tailwindlabs/tailwindcss?tag=v4.1.12#6791e8133c3cf496727d1e7c55e3a35bfffc0e69"
@@ -9283,6 +9515,17 @@ name = "ttf-parser"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31"
+
+[[package]]
+name = "two-face"
+version = "0.5.2+bat-0.26.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "915be7adc2ff6f4338acbf71f3eda0a146f46003b992a1669c674308610efdac"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "syntect",
+]
 
 [[package]]
 name = "twox-hash"
@@ -10955,6 +11198,15 @@ name = "xxhash-rust"
 version = "0.8.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fdd20c5420375476fbd4394763288da7eb0cc0b8c11deed431a91562af7335d3"
+
+[[package]]
+name = "yaml-rust"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
+dependencies = [
+ "linked-hash-map",
+]
 
 [[package]]
 name = "yoke"

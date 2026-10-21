@@ -22,4 +22,5 @@ if (process.stderr._handle != null) {
 const Compiler = binding.Compiler;
 const JsFileWatcher = binding.JsFileWatcher;
 const Resolver = binding.Resolver;
-export { Compiler, bindingPath, JsFileWatcher, Resolver };
+const OutputDirectoryLock = binding.OutputDirectoryLock;
+export { Compiler, bindingPath, JsFileWatcher, Resolver, OutputDirectoryLock };

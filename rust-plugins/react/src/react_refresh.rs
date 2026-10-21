@@ -26,7 +26,7 @@ lazy_static! {
     prevRefreshReg = window.$RefreshReg$;
     prevRefreshSig = window.$RefreshSig$;
     window.$RefreshReg$ = (type, id) => {{
-      RefreshRuntime.register(type, {FARM_MODULE}.id + " " + id);
+      ReactRefreshUtil.register(type, {FARM_MODULE}.id + " " + id);
     }};
     window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
     "#
@@ -89,18 +89,18 @@ const POST_CODE: &str = r#"
 window.$RefreshReg$ = prevRefreshReg;
 window.$RefreshSig$ = prevRefreshSig;
 if (import.meta.hot) {
-  setTimeout(() => {
+  ReactRefreshUtil.scheduleRegistration(() => {
     ReactRefreshUtil.registerExportsForReactRefresh(module.exports, module.id);
 
-    import.meta.hot.accept(nextExport => {
-      const message = ReactRefreshUtil.validateRefreshBoundaryAndEnqueueUpdate(module.exports, nextExport);
+    import.meta.hot.accept(async nextExport => {
+      const message = await ReactRefreshUtil.validateRefreshBoundaryAndEnqueueUpdate(module.exports, nextExport);
 
       if (message) {
         import.meta.hot.invalidate(message);
       }
     });
 
-    ReactRefreshUtil.enqueueUpdate();
+    void ReactRefreshUtil.enqueueUpdate().catch(error => console.error(error));
   })
 }
 "#;

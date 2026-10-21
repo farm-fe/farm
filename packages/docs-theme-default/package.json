@@ -1,0 +1,18 @@
+{
+  "name": "@farmfe/docs-theme-default",
+  "version": "0.0.1",
+  "description": "Default theme for Farm Docs",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./style.css": "./src/style.css",
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "src/style.css"],
+  "scripts": { "build": "tsc -p tsconfig.json", "type-check": "tsc -p tsconfig.json --noEmit" },
+  "peerDependencies": { "@farmfe/docs": "0.0.1", "react": "^18.2.0" },
+  "devDependencies": { "typescript": "5.6.3", "@types/react": "18", "react": "18.2.0", "@farmfe/docs": "workspace:*" }
+}

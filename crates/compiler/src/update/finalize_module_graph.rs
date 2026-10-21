@@ -60,7 +60,9 @@ pub(super) fn freeze_module_of_affected_module_graph(
     })
     .collect::<Vec<_>>();
 
-  let module_resolved_deps = call_freeze_module_with_params(hook_params, context)?;
+  let explicitly_updated_modules = updated_modules.iter().cloned().collect();
+  let module_resolved_deps =
+    call_freeze_module_with_params(hook_params, &explicitly_updated_modules, context)?;
 
   update_modules_resolved_deps(module_resolved_deps, &mut module_graph);
 

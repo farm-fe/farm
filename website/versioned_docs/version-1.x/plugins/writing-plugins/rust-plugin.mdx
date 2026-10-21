@@ -1,6 +1,6 @@
-import CodeBlock from "@theme/CodeBlock";
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
+import { CodeBlock as CodeBlock } from "@farmfe/docs/snippets";
+import { Tabs as Tabs } from "@farmfe/docs/mdx";
+import { TabItem as TabItem } from "@farmfe/docs/mdx";
 
 # Writing Rust Plugins
 Rust plugins are the recommended way to write your plugins cause Rust plugins are much **faster and powerful** than Js Plugins. A Rust plugin is a `struct` that implements `farmfe_core::plugin::Plugin` trait, example:
@@ -74,14 +74,14 @@ Farm provides official templates to help your create your rust plugins quickly:
 <>
     <Tabs>
       <TabItem value="pnpm" label="pnpm">
-          <CodeBlock>pnpm create farm-plugin</CodeBlock>
+          <CodeBlock language="javascript" code={"pnpm create farm-plugin"} />
               </TabItem>
           <TabItem value="npm" label="npm">
-              <CodeBlock>npm create farm-plugin@latest</CodeBlock>
+              <CodeBlock language="javascript" code={"npm create farm-plugin@latest"} />
               </TabItem>
 
   <TabItem value="yarn" label="yarn">
-          <CodeBlock>yarn create farm-plugin</CodeBlock>
+          <CodeBlock language="javascript" code={"yarn create farm-plugin"} />
               </TabItem>
           </Tabs>
 </>
@@ -91,14 +91,14 @@ then follow the prompts to create your plugin.
 or you can create a plugin derectly by running the following command:
 <Tabs>
       <TabItem value="pnpm" label="pnpm">
-          <CodeBlock>pnpm create farm-plugin my-farm-plugin --type rust</CodeBlock>
+          <CodeBlock language="javascript" code={"pnpm create farm-plugin my-farm-plugin --type rust"} />
               </TabItem>
           <TabItem value="npm" label="npm">
-              <CodeBlock>npm create my-farm-plugin --type rust</CodeBlock>
+              <CodeBlock language="javascript" code={"npm create my-farm-plugin --type rust"} />
               </TabItem>
 
   <TabItem value="yarn" label="yarn">
-          <CodeBlock>yarn create my-farm-plugin --type rust</CodeBlock>
+          <CodeBlock language="javascript" code={"yarn create my-farm-plugin --type rust"} />
               </TabItem>
           </Tabs>
 Above command will create new rust plugin with name `my-farm-plugin` in the current directory. `--type` can be `rust` or `js`

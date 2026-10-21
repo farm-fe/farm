@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # React
 
@@ -10,7 +10,7 @@ Create a `React` project based on `Farm`.
 
 ### Creating a React Project
 
-<PackageManagerTabs command="npm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 Select `React` template in `Select Framework`
 
@@ -105,14 +105,14 @@ export default defineConfig(async (env) => {
 
 If you want to start DevServer
 
-<PackageManagerTabs command="pnpm dev" />
+<PackageManagerTabs commands={{"npm":"npm dev","pnpm":"pnpm dev","yarn":"yarn dev","bun":"bun dev"}} />
 
 If you need to run the build production environment product command
 
-<PackageManagerTabs command="pnpm build" />
+<PackageManagerTabs commands={{"npm":"npm build","pnpm":"pnpm build","yarn":"yarn build","bun":"bun build"}} />
 
 If you need to preview your build product
 
-<PackageManagerTabs command="pnpm preview" />
+<PackageManagerTabs commands={{"npm":"npm preview","pnpm":"pnpm preview","yarn":"yarn preview","bun":"bun preview"}} />
 
 For more example details: [React Example](https://github.com/farm-fe/farm/tree/main/examples/react)

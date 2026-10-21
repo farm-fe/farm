@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::partial_bundling::PartialBundlingEnforceResourceConfig,
   context::CompilationContext,
   error::CompilationError,
   module::{
+    Module, ModuleId,
     module_graph::ModuleGraph,
     module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupType},
-    Module, ModuleId,
   },
   plugin::PluginHookContext,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     resource_pot_map::ResourcePotMap,
   },
-  HashSet,
 };
 
 pub fn partial_bundling(
@@ -152,9 +152,7 @@ pub fn fill_necessary_fields_for_resource_pot(
         if let Some(entry_module_id) = &entry_module {
           panic!(
             "a resource pot({}) can only have one entry module, but both {:?} and {:?} are entry modules",
-            resource_pot.id,
-            entry_module_id,
-            module_id
+            resource_pot.id, entry_module_id, module_id
           );
         }
         entry_module = Some(module_id.clone());
@@ -306,7 +304,7 @@ mod tests {
 
   use farmfe_core::{
     config::{
-      config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+      Config, config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig,
     },
     context::CompilationContext,
     plugin::{Plugin, PluginHookContext},
@@ -315,6 +313,94 @@ mod tests {
   use farmfe_testing_helpers::{assert_resource_pots, construct_test_module_graph_complex};
 
   use super::generate_resource_pot_map;
+
+  #[test]
+  fn batched_fill_matches_individual_fill_for_shared_and_worker_groups() {
+    use farmfe_core::{
+      module::{
+        Module,
+        module_group::{ModuleGroup, ModuleGroupType},
+      },
+      resource::resource_pot::{ResourcePot, ResourcePotType},
+    };
+    let make = || {
+      let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+      {
+        let mut graph = context.module_graph.write();
+        for id in ["entry", "lazy", "shared", "worker"] {
+          graph.add_module(Module::new(id.into()));
+        }
+        graph.entries.insert("entry".into(), "entry".into());
+        let mut groups = context.module_group_graph.write();
+        for (id, kind) in [
+          ("entry", ModuleGroupType::Entry),
+          ("lazy", ModuleGroupType::DynamicImport),
+          ("worker", ModuleGroupType::DynamicEntry),
+        ] {
+          let mut group = ModuleGroup::new(id.into(), kind);
+          for member in [id, "shared"] {
+            group.add_module(member.into());
+            graph
+              .module_mut(&member.into())
+              .unwrap()
+              .module_groups
+              .insert(group.id.clone());
+          }
+          groups.add_module_group(group);
+        }
+      }
+      let pots = [vec!["entry", "shared"], vec!["lazy"], vec!["shared"]]
+        .into_iter()
+        .enumerate()
+        .map(|(index, members)| {
+          let mut pot = ResourcePot::new(&format!("pot-{index}"), "", ResourcePotType::Js);
+          for member in members {
+            pot.add_module(member.into());
+          }
+          pot
+        })
+        .collect::<Vec<_>>();
+      (context, pots)
+    };
+    let (individual, mut expected) = make();
+    for pot in &mut expected {
+      super::fill_necessary_fields_for_resource_pot(vec![pot], &individual);
+    }
+    let (batched, mut actual) = make();
+    super::fill_necessary_fields_for_resource_pot(actual.iter_mut().collect(), &batched);
+    for (actual, expected) in actual.iter().zip(&expected) {
+      assert_eq!(actual.entry_module, expected.entry_module);
+      assert_eq!(
+        actual.dynamic_imported_entry_module,
+        expected.dynamic_imported_entry_module
+      );
+      assert_eq!(actual.module_groups, expected.module_groups);
+      assert!(!actual.module_groups.iter().any(|id| id
+        == &farmfe_core::module::module_group::ModuleGroupId::new(
+          &"worker".into(),
+          &ModuleGroupType::DynamicEntry
+        )));
+    }
+    let actual_graph = batched.module_graph.read();
+    let expected_graph = individual.module_graph.read();
+    for module in actual_graph.modules() {
+      assert_eq!(
+        module.resource_pots,
+        expected_graph.module(&module.id).unwrap().resource_pots
+      );
+    }
+    let actual_groups = batched.module_group_graph.read();
+    let expected_groups = individual.module_group_graph.read();
+    for group in actual_groups.module_groups() {
+      assert_eq!(
+        group.resource_pots(),
+        expected_groups
+          .module_group(&group.id)
+          .unwrap()
+          .resource_pots()
+      );
+    }
+  }
 
   #[test]
   fn test_generate_resource_pot_map() {

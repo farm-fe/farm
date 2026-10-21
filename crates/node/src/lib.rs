@@ -12,26 +12,26 @@ use std::{
   sync::Arc,
 };
 
-use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
+use farmfe_compiler::{Compiler, trace_module_graph::TracedModuleGraph};
 
 pub mod plugin_adapters;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
 use farmfe_core::{
+  HashMap,
   cache::module_cache::MetadataOption,
   config::{Config, Mode},
   context::CompilationContext,
   module::ModuleId,
   plugin::ResolveKind,
-  HashMap,
 };
 
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use napi::{
+  Env, JsValue, Status, Unknown,
   bindgen_prelude::{Buffer, FromNapiValue, JsObjectValue, Object, ObjectRef, Undefined},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Env, JsValue, Status, Unknown,
 };
 
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
@@ -41,6 +41,7 @@ extern crate napi_derive;
 
 #[cfg(feature = "file_watcher")]
 pub mod file_watcher;
+pub mod output_lock;
 pub mod plugin_toolkit;
 
 #[napi(object)]
@@ -151,8 +152,12 @@ impl JsCompiler {
       let rust_plugin_options = rust_plugin[1].clone();
 
       let rust_plugin = Arc::new(
-        RustPluginAdapter::new(&rust_plugin_path, &config, rust_plugin_options)
-          .unwrap_or_else(|e| panic!("load rust plugin error: {e:?}")),
+        RustPluginAdapter::new(&rust_plugin_path, &config, rust_plugin_options).map_err(|e| {
+          napi::Error::new(
+            Status::GenericFailure,
+            format!("load rust plugin error: {e}"),
+          )
+        })?,
       ) as _;
       plugins_adapters.push(rust_plugin);
     }
@@ -232,6 +237,23 @@ impl JsCompiler {
       }
     });
 
+    result.create_ref()
+  }
+
+  /// Drain on a dedicated OS thread: cache writes themselves use the Rayon
+  /// pool, so blocking that pool here could starve the writes being joined.
+  #[napi]
+  pub fn flush_cache(&self, e: Env) -> napi::Result<ObjectRef> {
+    let (promise, result) =
+      e.create_deferred::<Undefined, Box<dyn FnOnce(Env) -> napi::Result<Undefined>>>()?;
+    let compiler = self.compiler.clone();
+    std::thread::Builder::new()
+      .name("farm-cache-drain".into())
+      .spawn(move || match compiler.flush_cache() {
+        Ok(()) => promise.resolve(Box::new(|_| Ok(()))),
+        Err(error) => promise.reject(napi::Error::new(Status::GenericFailure, error.to_string())),
+      })
+      .map_err(|error| napi::Error::new(Status::GenericFailure, error.to_string()))?;
     result.create_ref()
   }
 

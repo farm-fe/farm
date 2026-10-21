@@ -1,5 +1,107 @@
 # @farmfe/core
 
+## 2.0.0
+
+### Patch Changes
+
+- Persist explicit module updates even when source bytes are unchanged, invalidate their generated resource caches, and restore plugin metadata across process restarts. Preserve unloaded sibling modules and newer in-memory entries when refreshing immutable package caches. Bump the persistent cache format so previous cache entries are rebuilt after upgrading.
+- Normalize HMR handshake origins independently of public paths, including IPv6 hosts, so browser connections to loopback addresses receive updates without allowing untrusted origins.
+- Correct Node engines to match the installed dependency ranges: core and CLI require Node 18 or Node 20+, while Rust plugin build tools require Node 22.20 or Node 24.12+. Runtime and native build-tool compatibility are separate. Node 16 and 19 are excluded from core/CLI support; Node 18/20 and early Node 22 are excluded from the build tools.
+- Wait for asynchronous ESM dependencies in hybrid modules that also use CommonJS. This fixes WASM packages such as json_typegen_wasm in development and production. Invalidate the previous persistent cache so upgraded builds regenerate affected modules.
+- Publish the dependencies referenced by core's public TypeScript declarations so independent consumers can type-check with strict NodeNext resolution and skipLibCheck disabled.
+- 629aba4: Fix SWC plugin transforms hanging during example builds on macOS and Windows
+  CI runners (reproducible at `FARM_THREAD_NUMS=2`).
+
+  The hang was traced to wasmer's `Engine::compile` / `Engine::validate` paths
+  contending on an internal `std::sync::Mutex` when multiple Farm rayon worker
+  threads ran wasm plugin transforms in parallel. We now serialize the
+  `transform_plugin_executor.transform()` call via a process-wide mutex while
+  keeping every other build phase fully parallel.
+
+  In addition, the plugin host's `block_on` now always runs on a dedicated,
+  process-wide multi-threaded tokio runtime (constructed once instead of
+  per-call) and uses `tokio::task::block_in_place` when invoked from inside an
+  ambient tokio runtime, avoiding worker-thread starvation.
+
+- Wait for active compilation to finish before HMR queries the native module graph, so file changes during compilation preserve their updates without blocking the Node event loop on a native graph lock.
+- 9021edf: improve cache perf, support js cache api
+- Fix persistent-cache map lookups by making archived string keys use the same hash as their original values. Prepare farmfe_utils 2.1.1 and pin SDK consumers to the repaired implementation; serialized string bytes remain unchanged. Declare the required rkyv bytes support in utils so standalone consumers can compile it without relying on another crate's features.
+- 7266d47: Fix: cjs require doesn't be handled correctly when targetEnv is library
+- 23b6fc9: Fix unexpected process exit when hmr failed with syntax error
+- e560875: Fix issues:
+
+  1. Move all custom config from `config.custom` to the corresponding config field. For example, move `config.custom.external` to `config.external`.
+  2. Fix visualizer plugin not working issue.
+  3. `?url` does not be removed in plugin static asset
+
+- 874f034: feat: add env manual control thread max nums
+- Resolve named re-exports using the source export name when preserving imports across resource boundaries. This fixes missing bindings for aliases such as `export { default as Model }`, which could cause a production ReferenceError when consuming ECharts.
+
+  Keep named re-export metadata aligned with mangled source export names so concatenation can resolve the same bindings as the rewritten module declarations.
+
+  Represent rewritten star re-exports with explicit source names, preserving bindings when multiple barrels assign different short names to the same export.
+
+  Remove stale re-export metadata after tree shaking removes a binding from an intermediate barrel, propagating that removal through parent barrels instead of emitting an unbound export getter.
+
+- 4ef38cd: Feat(core): Support output.format=umd
+- Generate Rust plugins with exact core 3.0.0 and macro 2.0.0 dependencies and the compiler's nightly-2026-04-10 toolchain. Remove the obsolete bundled Cargo.lock so each new project resolves its pinned SDK instead of inheriting core 0.7.0.
+- Preserve Node's CommonJS external require values in ESM output so dependencies extending exported constructors, such as EventEmitter, can start correctly.
+- Include Accept-Encoding in preview response Vary headers when gzip negotiation is enabled, preserving configured Vary fields and wildcard values so HTTP caches distinguish compressed and identity responses.
+
+  Honor explicit gzip refusals and invalid quality values instead of sending gzip to clients that reject it.
+
+- Accept four-octet IPv4 preview hosts such as 127.0.0.1 and 0.0.0.0 consistently with the dev server, and reject the previously accepted two-octet form.
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- Keep Worker-specific CommonJS conversion on a separate module graph so dependencies shared with browser chunks retain their original AST and resolution edges.
+
+  Restore dynamic entry registration when a module is reused from persistent cache so cached builds continue to emit Worker scripts.
+
+  Cache and restore every file emitted by a module, replacing repeated output names instead of retaining only the last file. This preserves SDK declaration dependencies on warm builds.
+
+  Invalidate the previous persistent-cache format once after upgrading so incomplete single-file metadata is rebuilt; existing cache directories are preserved.
+
+  Release graph and resource locks before synchronous update callbacks and update_finished hooks, allowing Worker plugins and queued updates to access generated resources without deadlocking.
+
+  Include generated CSS in the development CSS-to-script cache key so watched inputs that change frozen stylesheet output do not reuse stale style injection code.
+
+  Keep development resource requests waiting through asynchronous regeneration, queued updates and updates started by completion listeners, preventing premature synchronous access to native resource locks.
+
+  Notify update completion only after all update_finished hooks finish, so resource readers and subsequent updates cannot race with plugin finalization.
+
+  Preserve source export names in development: whole-graph export mangling is limited to production because changed-source imports must continue to resolve unchanged modules during HMR. Other minification settings are unaffected.
+
+  Restore the documented DSV object-row contract, load CSV/TSV files without an additional loader, and report malformed rows as compilation errors instead of panicking. Consumers of earlier beta field-array output must replace numeric row indices with header keys; field values remain strings.
+
+  Complete the default Tailwind 4.1.12 color palette so utilities resolve every standard color family and the 950 shades, including emerald colors used by the Commerce Lab fixture.
+
+- Treat an advertised resource cache whose payload cannot be read as a cache miss and regenerate the resource instead of panicking during compilation or HMR.
+- Validate disk-cache shard archives before deserialization and rebuild damaged or interrupted caches instead of crashing. Publish cache shards and manifests with atomic replacement so stopping the dev server during background cache writes preserves the previous complete file.
+- Release the cache resource-lock map shard before waiting for a resource mutex, avoiding a lock-order cycle when a cache reader needs another resource while a contender waits.
+- Update existing query modules when their source file changes, including when another consumer such as Tailwind also watches the file. Avoid creating an extra bare module during update grouping, which could trigger a full page reload on the next edit.
+- Return Rust plugin library and ABI compatibility errors through the Node API instead of panicking and aborting the process. Reject incompatible ABI values before looking up the plugin constructor.
+- Use platform locks for compiler context shared with dynamically loaded Rust plugins, so a plugin releasing a graph or resource lock wakes waiting host threads. The Rust plugin ABI is now 0.5.2; rebuild plugins against the matching core and toolchain.
+
+  Clarify that plugin compatibility requires the exact ABI rather than an npm version or ABI prefix, and direct plugin authors to the matching checkout's pinned Rust toolchain.
+
+- ba8bf31: Fixed the issue of nested public and output config
+- c4e6901: Fix: incorrect html fallback and hmr port doesn't work as expected
+- Invalidate generated resource caches when dependency export mappings change. Adding an export can rename existing production exports; unchanged importers must be regenerated rather than call a different function through an old mangled name.
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+- Preserve ESM static import conditions when a module also uses a locally bound `createRequire`. Include external default and named re-exports in concatenated module namespaces using getters so live bindings remain observable.
+- 38b9673: Fix(v2-beta): tailwindcss next bugs
+- 2f9ef0e: Update all SWC related crates to latest versions (swc_core v59.0.1)
+- 4ef38cd: Feat(core): support css.transformToScript
+- Updated dependencies
+- Updated dependencies [5cf6af9]
+- Updated dependencies [47d569d]
+- Updated dependencies [61aae5b]
+- Updated dependencies [6fafa25]
+  - @farmfe/plugin-replace-dirname@2.0.0
+  - @farmfe/utils@2.0.0
+  - @farmfe/runtime-plugin-hmr@4.0.0
+  - @farmfe/runtime@2.0.0
+  - @farmfe/runtime-plugin-import-meta@2.0.0
+
 ## 2.0.0-beta.11
 
 ### Patch Changes

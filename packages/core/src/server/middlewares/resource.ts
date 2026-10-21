@@ -2,7 +2,6 @@ import path from 'node:path/posix';
 import type Connect from 'connect';
 import type { IncomingMessage } from 'http';
 import sirv from 'sirv';
-import { Compiler } from '../../compiler/index.js';
 import {
   cleanUrl,
   generateFileTree,
@@ -39,6 +38,26 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     }
     const url = cleanUrl(req.url ?? '');
     const { compiler, config, publicPath } = app;
+
+    if (app.runtimeMode) {
+      try {
+        await app.waitForRuntimeReady();
+        const result = findResource(
+          req,
+          requireDefined(app.runtime),
+          publicPath ?? '/'
+        );
+        if (result && result !== true) {
+          send(req, res, result.resource, url, {
+            headers: config.server?.headers
+          });
+          return;
+        }
+        return next();
+      } catch (error) {
+        return next(error);
+      }
+    }
 
     await waitForCompilerReady(app);
 
@@ -99,7 +118,7 @@ export function resourceDiskMiddleware(
 
 export function findResource(
   req: IncomingMessage,
-  compiler: Compiler,
+  compiler: { resource(name: string): Buffer | null | undefined },
   publicPath: string
 ): true | undefined | RealResourcePath {
   const { resourceWithoutPublicPath } = normalizePathByPublicPath(
@@ -134,7 +153,11 @@ export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
     try {
       const { compiler } = app;
       if (!compiler) return next();
-      const files = Object.keys(compiler.resources()).sort();
+      const files = Object.keys(
+        app.runtimeMode
+          ? (app.runtime?.resources() ?? {})
+          : compiler.resources()
+      ).sort();
 
       const fileTree = generateFileTree(files);
 
@@ -148,4 +171,11 @@ export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
       }
     }
   };
+}
+
+function requireDefined<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) {
+    throw new Error('Expected initialized server state');
+  }
+  return value;
 }

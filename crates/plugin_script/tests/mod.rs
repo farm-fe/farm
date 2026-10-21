@@ -1,20 +1,100 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::{bool_or_obj::BoolOrObj, Config},
-  context::{create_swc_source_map, CompilationContext},
+  HashMap,
+  config::{Config, bool_or_obj::BoolOrObj},
+  context::{CompilationContext, create_swc_source_map},
   module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
   resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
+    meta_data::{ResourcePotMetaData, js::JsResourcePotMetaData},
     resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   },
-  HashMap,
 };
 use farmfe_testing_helpers::fixture;
+
+#[test]
+fn worker_processing_preserves_shared_commonjs_module() {
+  use farmfe_core::module::{
+    ModuleSystem,
+    meta_data::script::{FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID},
+  };
+
+  let config = Config::default();
+  let plugin = farmfe_plugin_script::FarmPluginScript::new(&config);
+  let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+  let hook_context = PluginHookContext {
+    caller: None,
+    meta: HashMap::default(),
+  };
+  let shared_id = "shared-parser.js";
+  for (id, content) in [
+    (shared_id, "module.exports = { value: 7 };"),
+    (
+      FARM_RUNTIME_MODULE_SYSTEM_ID,
+      "export const farmRegister = () => {};",
+    ),
+    (
+      FARM_RUNTIME_MODULE_HELPER_ID,
+      "export const helper = () => {};",
+    ),
+  ] {
+    let meta = plugin
+      .parse(
+        &PluginParseHookParam {
+          module_id: id.into(),
+          resolved_path: id.to_string(),
+          query: vec![],
+          module_type: ModuleType::Js,
+          content: Arc::new(content.to_string()),
+        },
+        &context,
+        &hook_context,
+      )
+      .unwrap()
+      .unwrap();
+    let mut module = Module::new(id.into());
+    module.module_type = ModuleType::Js;
+    *module.meta = meta;
+    module.meta.as_script_mut().module_system = if id == shared_id {
+      ModuleSystem::CommonJs
+    } else {
+      ModuleSystem::EsModule
+    };
+    context.module_graph.write().add_module(module);
+  }
+  let original_ast = context
+    .module_graph
+    .read()
+    .module(&shared_id.into())
+    .unwrap()
+    .meta
+    .as_script()
+    .ast
+    .clone();
+  let mut worker = ResourcePot::new(
+    &ResourcePotId::from("worker"),
+    "worker",
+    ResourcePotType::DynamicEntryJs,
+  );
+  worker.add_module(shared_id.into());
+  worker.entry_module = Some(shared_id.into());
+  plugin
+    .process_resource_pots(&mut vec![&mut worker], &context)
+    .unwrap();
+
+  let graph = context.module_graph.read();
+  let shared = graph.module(&shared_id.into()).unwrap();
+  assert_eq!(
+    shared.meta.as_script().module_system,
+    ModuleSystem::CommonJs
+  );
+  assert_eq!(shared.meta.as_script().ast, original_ast);
+  assert!(graph.dependencies(&shared.id).is_empty());
+}
 
 #[test]
 fn load_parse_and_analyze_deps() {
@@ -149,7 +229,7 @@ fn load_parse_and_analyze_deps() {
       assert_eq!(
         lines,
         vec![
-         "import a from\"./a\";import b from\"./b\";export*from\"./c\";export{d}from\"./d\";console.log(a,b);"
+          "import a from\"./a\";import b from\"./b\";export*from\"./c\";export{d}from\"./d\";console.log(a,b);"
         ]
       );
 

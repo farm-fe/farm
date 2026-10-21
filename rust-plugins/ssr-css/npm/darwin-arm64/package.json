@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe/plugin-ssr-css-darwin-arm64",
+  "version": "0.0.1",
+  "main": "index.farm",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "license": "MIT",
+  "files": [
+    "index.farm",
+    "LICENSE"
+  ]
+}

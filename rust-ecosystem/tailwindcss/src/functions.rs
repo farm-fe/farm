@@ -1,6 +1,6 @@
 use crate::ast::AstNode;
 use crate::theme::Theme;
-use crate::walk::{walk, WalkAction};
+use crate::walk::{WalkAction, walk};
 
 /// Substitute `theme()` calls in CSS declaration values with resolved theme
 /// values.
@@ -23,44 +23,92 @@ pub fn substitute_css_functions(nodes: Vec<AstNode>, theme: &Theme) -> Vec<AstNo
 /// Replace all `theme(...)` occurrences in a CSS value string with the
 /// resolved theme values.
 fn replace_theme_functions(value: &str, theme: &Theme) -> String {
-  if !value.contains("theme(") {
-    return value.to_string();
+  // Scan once, preserving quoted strings and unknown functions. In particular,
+  // an unresolved theme() must not restart the scan at the same position.
+  let mut result = String::new();
+  let bytes = value.as_bytes();
+  let mut cursor = 0;
+  let mut literal_start = 0;
+  while cursor < bytes.len() {
+    if bytes[cursor] == b'\\' {
+      cursor = (cursor + 2).min(bytes.len());
+      continue;
+    }
+    if bytes[cursor] == b'\'' || bytes[cursor] == b'"' {
+      let quote = bytes[cursor];
+      cursor += 1;
+      while cursor < bytes.len() {
+        if bytes[cursor] == b'\\' {
+          cursor = (cursor + 2).min(bytes.len());
+        } else if bytes[cursor] == quote {
+          cursor += 1;
+          break;
+        } else {
+          cursor += 1;
+        }
+      }
+      continue;
+    }
+    let boundary = cursor == 0
+      || (bytes[cursor - 1].is_ascii()
+        && !matches!(bytes[cursor - 1], b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-'));
+    let internal = boundary && bytes[cursor..].starts_with(b"--theme(");
+    let legacy = boundary && bytes[cursor..].starts_with(b"theme(");
+    if !internal && !legacy {
+      cursor += 1;
+      continue;
+    }
+    let open = cursor + if internal { 7 } else { 5 };
+    let Some(close) = closing_parenthesis(bytes, open) else {
+      break;
+    };
+    let arguments = &value[open + 1..close];
+    let replacement = if internal {
+      // Tailwind's internal --theme() becomes a native CSS variable lookup;
+      // its complete comma-separated fallback is preserved.
+      format!("var({})", replace_theme_functions(arguments, theme))
+    } else {
+      theme
+        .resolve_by_key_path(arguments.trim())
+        .unwrap_or_else(|| value[cursor..=close].to_string())
+    };
+    result.push_str(&value[literal_start..cursor]);
+    result.push_str(&replacement);
+    cursor = close + 1;
+    literal_start = cursor;
   }
+  result.push_str(&value[literal_start..]);
+  result
+}
 
-  let mut result = value.to_string();
-
-  // Iteratively replace the first theme() found
-  while let Some(start) = result.find("theme(") {
-    let after_paren = &result[start + 6..];
-    let mut depth = 1usize;
-    let mut end = None;
-
-    for (i, ch) in after_paren.char_indices() {
+fn closing_parenthesis(bytes: &[u8], open: usize) -> Option<usize> {
+  let mut depth = 1;
+  let mut quote = None;
+  let mut cursor = open + 1;
+  while cursor < bytes.len() {
+    let ch = bytes[cursor];
+    if ch == b'\\' {
+      cursor += 2;
+      continue;
+    }
+    if let Some(current) = quote {
+      if ch == current {
+        quote = None;
+      }
+    } else {
       match ch {
-        '(' => depth += 1,
-        ')' => {
+        b'\'' | b'"' => quote = Some(ch),
+        b'(' => depth += 1,
+        b')' => {
           depth -= 1;
           if depth == 0 {
-            end = Some(i);
-            break;
+            return Some(cursor);
           }
         }
         _ => {}
       }
     }
-
-    let Some(end_idx) = end else {
-      break;
-    };
-
-    let key_path = after_paren[..end_idx].trim();
-    let replacement = theme
-      .resolve_by_key_path(key_path)
-      .unwrap_or_else(|| format!("theme({})", key_path));
-
-    let full_end = start + 6 + end_idx + 1;
-    result.replace_range(start..full_end, &replacement);
+    cursor += 1;
   }
-
-  result
+  None
 }

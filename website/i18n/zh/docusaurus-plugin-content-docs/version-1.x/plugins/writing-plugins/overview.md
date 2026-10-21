@@ -23,5 +23,5 @@ defineFarmConfig({
 
 Farm support both rust plugins and js plugins:
 
-* [Rust Plugin](/docs/plugins/rust-plugin)
-* [Js plugin](/docs/plugins/js-plugin)
+* [Rust Plugin](./rust-plugin.mdx)
+* [Js plugin](./js-plugin.mdx)

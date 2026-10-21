@@ -1,8 +1,12 @@
-use std::sync::Arc;
+use std::sync::{
+  atomic::{AtomicU64, Ordering},
+  Arc,
+};
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
+use parking_lot::Mutex;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
@@ -47,6 +51,9 @@ pub struct ImmutableModulesMemoryStore {
   /// moduleId -> PackageKey
   manifest: DashMap<ModuleId, String>,
   manifest_reversed: DashMap<String, HashSet<ModuleId>>,
+  dirty_packages: DashMap<String, u64>,
+  next_revision: AtomicU64,
+  package_locks: Mutex<HashMap<String, Arc<Mutex<()>>>>,
 }
 
 impl ImmutableModulesMemoryStore {
@@ -80,6 +87,9 @@ impl ImmutableModulesMemoryStore {
       cached_modules: DashMap::new(),
       manifest: manifest.into_iter().collect(),
       manifest_reversed,
+      dirty_packages: DashMap::new(),
+      next_revision: AtomicU64::new(1),
+      package_locks: Mutex::new(HashMap::default()),
       cache_dir: cache_dir_str.to_string(),
     }
   }
@@ -90,12 +100,32 @@ impl ImmutableModulesMemoryStore {
     Some(deserialize!(&cache, CachedPackage))
   }
 
+  fn package_lock(&self, key: &str) -> Arc<Mutex<()>> {
+    self
+      .package_locks
+      .lock()
+      .entry(key.to_owned())
+      .or_insert_with(|| Arc::new(Mutex::new(())))
+      .clone()
+  }
+
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {
-    if let Some(package_key) = self.manifest.get(module_id) {
-      let package = self.read_cached_package(package_key.value())?;
+    if let Some(package_key) = self
+      .manifest
+      .get(module_id)
+      .map(|entry| entry.value().clone())
+    {
+      let lock = self.package_lock(&package_key);
+      let _guard = lock.lock();
+      let package = self.read_cached_package(&package_key)?;
 
       for module in package.list {
-        self.cached_modules.insert(module.module.id.clone(), module);
+        if self.manifest.contains_key(&module.module.id) {
+          self
+            .cached_modules
+            .entry(module.module.id.clone())
+            .or_insert(module);
+        }
       }
 
       return Some(());
@@ -103,54 +133,59 @@ impl ImmutableModulesMemoryStore {
 
     None
   }
-}
 
-impl ModuleMemoryStore for ImmutableModulesMemoryStore {
-  fn has_cache(&self, key: &crate::module::ModuleId) -> bool {
-    self.get_cache_ref(key).is_some_and(|m| !m.is_expired)
+  fn mark_package_dirty(&self, key: String) {
+    let revision = self.next_revision.fetch_add(1, Ordering::Relaxed);
+    self.dirty_packages.insert(key, revision);
   }
 
-  fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
-    self.store.remove_cache_only(&key.to_string());
-    self.cached_modules.insert(key, module);
-  }
-
-  fn get_cache(&self, key: &crate::module::ModuleId) -> Option<super::CachedModule> {
-    self.get_cache_ref(key).map(|v| v.value().clone())
-  }
-
-  fn get_cache_ref(
-    &self,
-    key: &crate::module::ModuleId,
-  ) -> Option<dashmap::mapref::one::Ref<'_, crate::module::ModuleId, super::CachedModule>> {
-    if !self.manifest.contains_key(key) {
-      return None;
+  fn acknowledge_written_packages(&self, revisions: &HashMap<String, u64>) {
+    for (key, revision) in revisions {
+      self
+        .dirty_packages
+        .remove_if(key, |_, current| current == revision);
     }
-
-    if !self.cached_modules.contains_key(key) {
-      self.read_package(key);
-    }
-
-    self.cached_modules.get(key)
   }
 
-  fn get_cache_mut_ref(
-    &self,
-    key: &crate::module::ModuleId,
-  ) -> Option<dashmap::mapref::one::RefMut<'_, crate::module::ModuleId, super::CachedModule>> {
-    if self.cached_modules.contains_key(key) {
-      return Some(self.cached_modules.get_mut(key).unwrap());
+  fn remove_expired_modules(&self, pending: &HashSet<ModuleId>) -> HashSet<ModuleId> {
+    let mut removed = HashSet::default();
+    for key in pending {
+      let Some(package) = self.manifest.get(key).map(|entry| entry.value().clone()) else {
+        continue;
+      };
+      let lock = self.package_lock(&package);
+      let _guard = lock.lock();
+      if self
+        .cached_modules
+        .remove_if(key, |_, module| module.is_expired)
+        .is_none()
+      {
+        continue;
+      }
+      self.manifest.remove(key);
+      self.manifest_reversed.iter_mut().for_each(|mut item| {
+        item.value_mut().remove(key);
+      });
+      removed.insert(key.clone());
     }
-
-    self.read_package(key);
-
-    self.cached_modules.get_mut(key)
+    removed
   }
 
-  fn write_cache(&self) {
+  pub fn set_updated_cache(&self, key: ModuleId, module: CachedModule) {
+    let package =
+      CachedPackage::gen_key(&module.module.package_name, &module.module.package_version);
+    let lock = self.package_lock(&package);
+    let _guard = lock.lock();
+    self.manifest.insert(key.clone(), package.clone());
+    self.set_cache(key, module);
+    // Publish the revision after the replacement; a writer must not acknowledge
+    // a new revision while still observing the previous in-memory module.
+    self.mark_package_dirty(package);
+  }
+  fn write_cache_with_revisions(&self, dirty_revisions: HashMap<String, u64>) {
     let mut packages = HashMap::default();
     let mut pending_remove_modules = HashSet::default();
-    let mut maybe_remove_package = HashSet::default();
+    let mut expired_packages = HashSet::default();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
@@ -159,7 +194,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
       if module.is_expired {
         pending_remove_modules.insert(item.key().clone());
-        maybe_remove_package.insert(package_key);
+        expired_packages.insert(package_key);
         continue;
       }
 
@@ -169,22 +204,18 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       self.manifest.insert(item.key().clone(), package_key);
     }
 
-    for key in pending_remove_modules {
-      self.cached_modules.remove(&key);
-      self.manifest.remove(&key);
-      self.manifest_reversed.iter_mut().for_each(|mut item| {
-        if item.value_mut().contains(&key) {
-          item.value_mut().remove(&key);
-        }
-      })
+    let pending_remove_modules = self.remove_expired_modules(&pending_remove_modules);
+
+    // A dirty package can contain only unloaded surviving members. It still
+    // needs the merge path, even when every loaded member was removed.
+    for package in dirty_revisions.keys() {
+      packages.entry(package.clone()).or_insert_with(Vec::new);
     }
 
-    for package in maybe_remove_package {
-      if packages.contains_key(&package) {
-        return;
-      }
-
-      self.store.remove_cache_only(&package);
+    // Invalidation can happen after the dirty snapshot. Every package seen
+    // with an expired member must merge its unloaded survivors as well.
+    for package in &expired_packages {
+      packages.entry(package.clone()).or_insert_with(Vec::new);
     }
 
     let manifest = self
@@ -199,6 +230,60 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
     let mut cache_map = packages
       .into_par_iter()
       .filter_map(|(key, modules)| {
+        if dirty_revisions.contains_key(&key) || expired_packages.contains(&key) {
+          // A forced update may keep every module ID and source hash unchanged.
+          // Merge the persisted package with memory, preserving unloaded members.
+          let previous = self.read_cached_package(&key);
+          let mut members = previous
+            .as_ref()
+            .map(|package| {
+              package
+                .list
+                .iter()
+                .filter(|module| !pending_remove_modules.contains(&module.module.id))
+                .map(|module| (module.module.id.clone(), module.clone()))
+                .collect::<HashMap<_, _>>()
+            })
+            .unwrap_or_default();
+          for id in modules {
+            if let Some(module) = self.cached_modules.get(&id) {
+              if module.is_expired {
+                members.remove(&id);
+              } else {
+                members.insert(id, module.value().clone());
+              }
+            }
+          }
+          let mut list = members.into_values().collect::<Vec<_>>();
+          list.sort_by_key(|module| module.module.id.to_string());
+          let identity = list
+            .first()
+            .map(|module| {
+              (
+                module.module.package_name.clone(),
+                module.module.package_version.clone(),
+              )
+            })
+            .or_else(|| {
+              previous
+                .as_ref()
+                .map(|package| (package.name.clone(), package.version.clone()))
+            })
+            .unwrap_or_default();
+          let package = CachedPackage {
+            name: identity.0,
+            version: identity.1,
+            list,
+          };
+          let bytes = crate::serialize!(&package);
+          return Some((
+            CacheStoreKey {
+              name: key,
+              key: sha256(&bytes, 32),
+            },
+            bytes,
+          ));
+        }
         let gen_cache_store_key = |mut modules: Vec<String>| {
           modules.sort();
 
@@ -276,11 +361,75 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
     );
 
     self.store.write_cache(cache_map);
+    // A concurrent later replacement remains dirty. Revisions never restart
+    // when a package is acknowledged, avoiding an ABA on the package name.
+    self.acknowledge_written_packages(&dirty_revisions);
+  }
+}
+
+impl ModuleMemoryStore for ImmutableModulesMemoryStore {
+  fn has_cache(&self, key: &crate::module::ModuleId) -> bool {
+    self.get_cache_ref(key).is_some_and(|m| !m.is_expired)
+  }
+
+  fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
+    self.store.remove_cache_only(&key.to_string());
+    self.cached_modules.insert(key, module);
+  }
+
+  fn get_cache(&self, key: &crate::module::ModuleId) -> Option<super::CachedModule> {
+    self.get_cache_ref(key).map(|v| v.value().clone())
+  }
+
+  fn get_cache_ref(
+    &self,
+    key: &crate::module::ModuleId,
+  ) -> Option<dashmap::mapref::one::Ref<'_, crate::module::ModuleId, super::CachedModule>> {
+    if !self.manifest.contains_key(key) {
+      return None;
+    }
+
+    if !self.cached_modules.contains_key(key) {
+      self.read_package(key);
+    }
+
+    self.cached_modules.get(key)
+  }
+
+  fn get_cache_mut_ref(
+    &self,
+    key: &crate::module::ModuleId,
+  ) -> Option<dashmap::mapref::one::RefMut<'_, crate::module::ModuleId, super::CachedModule>> {
+    if self.cached_modules.contains_key(key) {
+      return Some(self.cached_modules.get_mut(key).unwrap());
+    }
+
+    self.read_package(key);
+
+    self.cached_modules.get_mut(key)
+  }
+
+  fn write_cache(&self) {
+    let dirty_revisions = self
+      .dirty_packages
+      .iter()
+      .map(|entry| (entry.key().clone(), *entry.value()))
+      .collect::<HashMap<_, _>>();
+    self.write_cache_with_revisions(dirty_revisions);
   }
 
   fn invalidate_cache(&self, key: &ModuleId) {
-    if let Some(mut m) = self.get_cache_mut_ref(key) {
+    let package = if let Some(mut m) = self.get_cache_mut_ref(key) {
       m.is_expired = true;
+      Some(CachedPackage::gen_key(
+        &m.module.package_name,
+        &m.module.package_version,
+      ))
+    } else {
+      None
+    };
+    if let Some(package) = package {
+      self.mark_package_dirty(package);
     }
   }
 
@@ -291,5 +440,187 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
   fn cache_outdated(&self, key: &ModuleId) -> bool {
     !self.cached_modules.contains_key(key)
+  }
+}
+
+#[cfg(test)]
+mod forced_package_tests {
+  use super::*;
+  use crate::module::{Module, ModuleMetaData, ModuleType};
+
+  const PACKAGE: &str = "fixture@1.0.0";
+
+  fn module(id: &str, generated_async: bool) -> CachedModule {
+    let mut module = Module::new(id.into());
+    module.immutable = true;
+    module.module_type = ModuleType::Js;
+    module.package_name = "fixture".into();
+    module.package_version = "1.0.0".into();
+    module.content_hash = "same-source".into();
+    module.meta = Box::new(ModuleMetaData::Script(Default::default()));
+    module.meta.as_script_mut().is_async = generated_async;
+    CachedModule {
+      module,
+      dependencies: vec![],
+      watch_dependencies: vec![],
+      is_expired: false,
+    }
+  }
+
+  fn seeded() -> Arc<CacheContext> {
+    let context = Arc::new(CacheContext {
+      cache_enable: true,
+      ..Default::default()
+    });
+    let store = ImmutableModulesMemoryStore::new(context.clone());
+    store.set_cache("a.js".into(), module("a.js", false));
+    store.set_cache("b.js".into(), module("b.js", false));
+    store.write_cache();
+    context
+  }
+
+  #[test]
+  fn forced_package_update_preserves_unloaded_members() {
+    let context = seeded();
+    let store = ImmutableModulesMemoryStore::new(context.clone());
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    assert!(!store.cached_modules.contains_key(&ModuleId::from("b.js")));
+    store.write_cache();
+    let restored = ImmutableModulesMemoryStore::new(context);
+    assert!(
+      restored
+        .get_cache(&"a.js".into())
+        .unwrap()
+        .module
+        .meta
+        .as_script()
+        .is_async
+    );
+    assert!(
+      !restored
+        .get_cache(&"b.js".into())
+        .unwrap()
+        .module
+        .meta
+        .as_script()
+        .is_async
+    );
+    assert_eq!(
+      restored.read_cached_package(PACKAGE).unwrap().key(),
+      PACKAGE
+    );
+  }
+
+  #[test]
+  fn reading_sibling_keeps_new_in_memory_metadata() {
+    let context = seeded();
+    let store = ImmutableModulesMemoryStore::new(context);
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    assert!(store.get_cache(&"b.js".into()).is_some());
+    assert!(
+      store
+        .get_cache(&"a.js".into())
+        .unwrap()
+        .module
+        .meta
+        .as_script()
+        .is_async
+    );
+  }
+
+  #[test]
+  fn package_reload_and_rewrite_do_not_revive_expired_member() {
+    let context = seeded();
+    let store = ImmutableModulesMemoryStore::new(context.clone());
+    store.invalidate_cache(&"a.js".into());
+    store.cached_modules.remove(&ModuleId::from("b.js"));
+    assert!(store.get_cache(&"b.js".into()).is_some());
+    assert!(!store.has_cache(&"a.js".into()));
+    store.write_cache();
+    let restored = ImmutableModulesMemoryStore::new(context);
+    assert!(!restored.has_cache(&"a.js".into()));
+    assert!(restored.get_cache(&"b.js".into()).is_some());
+  }
+
+  #[test]
+  fn earlier_write_acknowledgement_preserves_later_dirty_revision() {
+    let store = ImmutableModulesMemoryStore::new(seeded());
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    let first = *store.dirty_packages.get(PACKAGE).unwrap();
+    store.set_updated_cache("a.js".into(), module("a.js", false));
+    store.acknowledge_written_packages(&[(PACKAGE.into(), first)].into_iter().collect());
+    assert!(*store.dirty_packages.get(PACKAGE).unwrap() > first);
+  }
+
+  #[test]
+  fn acknowledged_package_revision_never_restarts() {
+    let store = ImmutableModulesMemoryStore::new(seeded());
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    let first = *store.dirty_packages.get(PACKAGE).unwrap();
+    let previous = [(PACKAGE.into(), first)].into_iter().collect();
+    store.acknowledge_written_packages(&previous);
+    assert!(!store.dirty_packages.contains_key(PACKAGE));
+    store.set_updated_cache("a.js".into(), module("a.js", false));
+    store.acknowledge_written_packages(&previous);
+    assert!(*store.dirty_packages.get(PACKAGE).unwrap() > first);
+  }
+
+  #[test]
+  fn expiring_only_loaded_member_preserves_unloaded_sibling() {
+    let context = seeded();
+    let store = ImmutableModulesMemoryStore::new(context.clone());
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    assert!(!store.cached_modules.contains_key(&ModuleId::from("b.js")));
+    store.invalidate_cache(&"a.js".into());
+    store.write_cache();
+    let restored = ImmutableModulesMemoryStore::new(context);
+    assert!(
+      restored.has_cache(&"b.js".into()),
+      "expired loaded member must preserve unloaded sibling"
+    );
+    assert!(!restored.has_cache(&"a.js".into()));
+  }
+
+  #[test]
+  fn expired_scan_preserves_replacement_published_after_scan() {
+    let store = ImmutableModulesMemoryStore::new(seeded());
+    store.invalidate_cache(&"a.js".into());
+    let scanned = [ModuleId::from("a.js")].into_iter().collect();
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    let removed = store.remove_expired_modules(&scanned);
+    assert!(
+      removed.is_empty(),
+      "expired scan must preserve a replacement"
+    );
+    assert!(
+      store
+        .get_cache(&"a.js".into())
+        .unwrap()
+        .module
+        .meta
+        .as_script()
+        .is_async
+    );
+  }
+
+  #[test]
+  fn invalidation_after_dirty_snapshot_preserves_unloaded_sibling() {
+    let context = seeded();
+    let store = ImmutableModulesMemoryStore::new(context.clone());
+    store.set_updated_cache("a.js".into(), module("a.js", true));
+    store.write_cache();
+    assert!(store.dirty_packages.is_empty());
+    assert!(!store.cached_modules.contains_key(&ModuleId::from("b.js")));
+    // Deterministic interleaving: writer captures no dirty revisions, then
+    // another operation invalidates A before that writer scans memory.
+    let snapshot = HashMap::default();
+    store.invalidate_cache(&"a.js".into());
+    store.write_cache_with_revisions(snapshot);
+    let restored = ImmutableModulesMemoryStore::new(context);
+    assert!(
+      restored.has_cache(&"b.js".into()),
+      "invalidation after dirty snapshot must preserve unloaded sibling"
+    );
+    assert!(!restored.has_cache(&"a.js".into()));
   }
 }

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  context::CompilationContext,
-  module::{module_graph::ModuleGraph, ModuleId},
   HashMap, HashSet,
+  context::CompilationContext,
+  module::{ModuleId, module_graph::ModuleGraph},
 };
 
 pub fn find_hmr_boundaries(
@@ -103,14 +103,14 @@ mod tests {
   use std::sync::Arc;
 
   use farmfe_core::{
+    HashMap, HashSet,
     config::{Config, Mode},
     context::CompilationContext,
     module::{
-      meta_data::script::ScriptModuleMetaData, module_graph::ModuleGraph, ModuleMetaData,
-      ModuleType,
+      ModuleMetaData, ModuleType, meta_data::script::ScriptModuleMetaData,
+      module_graph::ModuleGraph,
     },
-    parking_lot::RwLock,
-    HashMap, HashSet,
+    sync::RwLock,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 

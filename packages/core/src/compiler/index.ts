@@ -27,6 +27,12 @@ export interface UpdateQueueItem {
   resolve: (res: JsUpdateResult) => void;
 }
 
+interface PendingUpdate extends UpdateQueueItem {
+  sync: boolean;
+  generateUpdateResource: boolean;
+  reject: (error: unknown) => void;
+}
+
 export interface TracedModuleGraph {
   root: string;
   modules: Array<{
@@ -41,7 +47,7 @@ export interface TracedModuleGraph {
 
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
-  private _updateQueue: UpdateQueueItem[] = [];
+  private _updateQueue: PendingUpdate[] = [];
   private _onUpdateFinishQueue: (() => void | Promise<void>)[] = [];
 
   public compiling = false;
@@ -102,17 +108,30 @@ export class Compiler {
     // Initialize with a no-op that is immediately overwritten by the synchronous
     // Promise executor; avoids TS2454 with strictNullChecks
     let resolve: (res: JsUpdateResult) => void = () => {};
+    let reject: (error: unknown) => void = () => {};
 
-    const promise = new Promise<JsUpdateResult>((r) => {
+    const promise = new Promise<JsUpdateResult>((r, j) => {
       resolve = r;
+      reject = j;
     });
 
     // if there is already a update process, we need to wait for it to finish
     if (this.isCompilingAndCheckIgnored(ignoreCompilingCheck)) {
-      this._updateQueue.push({ paths, resolve });
+      this._updateQueue.push({
+        paths,
+        sync,
+        generateUpdateResource,
+        resolve,
+        reject
+      });
       return promise;
     }
 
+    // Reuse the readiness promise while draining queued updates. The binding
+    // returns an update result before asynchronous resource generation ends.
+    if (!this._compileFinishPromise) {
+      this._createCompileFinishPromise();
+    }
     this.compiling = true;
 
     try {
@@ -124,12 +143,13 @@ export class Compiler {
           if (next) {
             await this.update(
               next.paths,
+              next.sync,
               true,
-              true,
-              generateUpdateResource
-            ).then(next.resolve);
+              next.generateUpdateResource
+            ).then(next.resolve, next.reject);
           } else {
             this.compiling = false;
+            this._resolveCompileFinishPromise();
             while (this._onUpdateFinishQueue.length) {
               if (this.compiling) {
                 break;
@@ -147,7 +167,13 @@ export class Compiler {
 
       return res as JsUpdateResult;
     } catch (e: any) {
+      // A failed native update may never invoke its completion callback. Settle
+      // every waiting caller instead of leaving requests pending indefinitely.
+      for (const queued of this._updateQueue.splice(0)) {
+        queued.reject(e);
+      }
       this.compiling = false;
+      this._resolveCompileFinishPromise();
       throw e;
     }
   }
@@ -240,9 +266,15 @@ export class Compiler {
   }
 
   async waitForCompileFinish() {
-    if (this.compiling && this._compileFinishPromise) {
+    while (this.compiling && this._compileFinishPromise) {
       await this._compileFinishPromise;
     }
+  }
+
+  /** Drain native cache writes after callers stop admitting compilation. */
+  async flushCache(): Promise<void> {
+    await this.waitForCompileFinish();
+    await this._bindingCompiler.flushCache();
   }
 
   private _createCompileFinishPromise() {

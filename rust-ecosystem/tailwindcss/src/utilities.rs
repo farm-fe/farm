@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::ast::{AstNode, Declaration};
 use crate::candidate::ParsedCandidate;
 use crate::theme::{Theme, ThemeOptions};
+mod effects;
 
 /// A list of CSS property-value pairs that form a utility class.
 type DeclList = Vec<(&'static str, &'static str)>;
@@ -26,6 +27,8 @@ impl UtilityRegistry {
   /// Create the built-in utility registry.
   pub fn builtin() -> Self {
     let mut m: HashMap<&'static str, DeclList> = HashMap::new();
+    m.insert("filter", vec![("filter", effects::FILTER)]);
+    m.insert("filter-none", vec![("filter", "none")]);
 
     // Display
     m.insert("block", vec![("display", "block")]);
@@ -51,6 +54,12 @@ impl UtilityRegistry {
     m.insert("sticky", vec![("position", "sticky")]);
 
     // Flexbox direction
+    // Keep the percentage basis: an absolute zero changes intrinsic sizing in
+    // indefinite column flex containers and can overlap following content.
+    m.insert("flex-1", vec![("flex", "1 1 0%")]);
+    m.insert("flex-auto", vec![("flex", "1 1 auto")]);
+    m.insert("flex-initial", vec![("flex", "0 1 auto")]);
+    m.insert("flex-none", vec![("flex", "none")]);
     m.insert("flex-row", vec![("flex-direction", "row")]);
     m.insert("flex-row-reverse", vec![("flex-direction", "row-reverse")]);
     m.insert("flex-col", vec![("flex-direction", "column")]);
@@ -366,6 +375,12 @@ impl UtilityRegistry {
 
     // Opacity
     f.insert("opacity", handle_opacity);
+    f.insert("animate", handle_animation);
+    f.insert("content", effects::content);
+    f.insert("blur", effects::blur);
+    f.insert("invert", effects::invert);
+    f.insert("mix-blend", effects::mix_blend);
+    f.insert("will-change", effects::will_change);
 
     // Z-index
     f.insert("z", handle_z);
@@ -431,7 +446,7 @@ impl UtilityRegistry {
   ) -> Vec<AstNode> {
     // Arbitrary property: [color:red]
     if let Some((ref property, ref value)) = candidate.arbitrary_property {
-      let class_name = format!("[{}:{}]", property, value);
+      let class_name = build_class_name(candidate);
       let decl = Declaration {
         property: property.clone(),
         value: Some(value.clone()),
@@ -604,47 +619,30 @@ fn build_base_selector_with_pseudo_classes(
 // ── helpers ────────────────────────────────────────────────────────────────
 
 pub(crate) fn build_class_name(candidate: &ParsedCandidate) -> String {
-  let base = match &candidate.arbitrary_value {
-    Some(val) => {
-      let type_prefix = match &candidate.type_hint {
-        Some(hint) => format!("{}:", hint),
-        None => String::new(),
-      };
-      format!("{}-[{}{}]", candidate.utility_root, type_prefix, val)
-    }
-    None => match &candidate.utility_value {
-      Some(val) => format!("{}-{}", candidate.utility_root, val),
-      None => candidate.utility_root.clone(),
-    },
-  };
-  let with_modifier = match &candidate.modifier {
-    Some(m) if candidate.modifier_is_arbitrary => format!("{}/{}", base, m),
-    Some(m) => format!("{}/{}", base, m),
-    None => base,
-  };
-  let with_negative = if candidate.negative {
-    format!("-{}", with_modifier)
-  } else {
-    with_modifier
-  };
-  if candidate.important {
-    format!("{}!", with_negative)
-  } else {
-    with_negative
-  }
+  // Match the original HTML token, including variants and arbitrary spelling.
+  candidate.raw.clone()
 }
 
 pub(crate) fn escape_class_name(name: &str) -> String {
-  name
-    .replace(':', "\\:")
-    .replace('/', "\\/")
-    .replace('.', "\\.")
-    .replace('[', "\\[")
-    .replace(']', "\\]")
-    .replace('(', "\\(")
-    .replace(')', "\\)")
-    .replace('#', "\\#")
-    .replace('!', "\\!")
+  let mut escaped = String::with_capacity(name.len());
+  let first = name.chars().next();
+  for (index, ch) in name.chars().enumerate() {
+    if ch == '\0' {
+      escaped.push('\u{fffd}');
+    } else if ch.is_ascii_control()
+      || (ch.is_ascii_digit() && (index == 0 || (index == 1 && first == Some('-'))))
+    {
+      escaped.push_str(&format!("\\{:x} ", ch as u32));
+    } else if ch == '-' && name.len() == 1 {
+      escaped.push_str("\\-");
+    } else if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || !ch.is_ascii() {
+      escaped.push(ch);
+    } else {
+      escaped.push('\\');
+      escaped.push(ch);
+    }
+  }
+  escaped
 }
 
 // ═══ Functional utility helpers ════════════════════════════════════════════
@@ -1167,6 +1165,24 @@ fn handle_border_y(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, Strin
 }
 
 // Opacity
+fn handle_animation(c: &ParsedCandidate, theme: &Theme) -> Option<Vec<(String, String)>> {
+  if c.negative || c.modifier.is_some() {
+    return None;
+  }
+  let value = if let Some(value) = &c.arbitrary_value {
+    value.clone()
+  } else if c.utility_value.as_deref() == Some("none") {
+    "none".into()
+  } else {
+    theme.resolve(
+      c.utility_value.as_deref(),
+      &["--animate"],
+      ThemeOptions::NONE,
+    )?
+  };
+  Some(vec![("animation".into(), value)])
+}
+
 fn handle_opacity(c: &ParsedCandidate, _t: &Theme) -> Option<Vec<(String, String)>> {
   if let Some(arb) = &c.arbitrary_value {
     return Some(vec![("opacity".into(), arb.clone())]);

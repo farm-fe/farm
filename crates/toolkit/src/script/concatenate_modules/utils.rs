@@ -1,14 +1,15 @@
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
-    meta_data::script::{
-      statement::{Statement, SwcId},
-      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL,
-      FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID,
-    },
     ModuleId,
+    meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID,
+      ModuleExportIdent, ModuleExportIdentType,
+      statement::{Statement, SwcId},
+    },
   },
   regex::Regex,
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::{
     BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, EmptyStmt, ExportAll,
     ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread, ExprStmt, GetterProp, Ident,
@@ -17,12 +18,11 @@ use farmfe_core::{
     NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str, VarDecl,
     VarDeclKind, VarDeclarator,
   },
-  HashMap, HashSet,
 };
 
 use super::{
   strip_module_decl::StripModuleDeclResult,
-  unique_idents::{TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE},
+  unique_idents::{EXPORT_DEFAULT, EXPORT_NAMESPACE, TopLevelIdentsRenameHandler},
 };
 
 // replace the module decl statement to empty statement
@@ -81,7 +81,7 @@ pub(crate) fn create_var_namespace_item(
         && *key != AMBIGUOUS_EXPORT_ALL
         && matches!(
           module_export_ident.as_internal().export_type,
-          ModuleExportIdentType::Declaration
+          ModuleExportIdentType::Declaration | ModuleExportIdentType::External
         )
     })
     .map(|(key, org_module_export_ident)| {
@@ -94,8 +94,12 @@ pub(crate) fn create_var_namespace_item(
 
       let value_expr = Box::new(Expr::Ident(renamed_ident.into()));
 
-      // for cyclic import, using get method
-      let prop = if cyclic_idents.contains(&org_module_export_ident) {
+      // External import bindings remain live even without an internal cycle.
+      let prop = if cyclic_idents.contains(&org_module_export_ident)
+        || matches!(
+          module_export_ident.export_type,
+          ModuleExportIdentType::External
+        ) {
         Prop::Getter(GetterProp {
           span: DUMMY_SP,
           key: PropName::Ident(key.as_str().into()),
@@ -149,6 +153,52 @@ pub(crate) fn create_var_namespace_item(
       definite: false,
     }],
   }))))
+}
+
+#[cfg(test)]
+mod namespace_tests {
+  use super::*;
+  use farmfe_core::swc_common::{GLOBALS, Globals};
+
+  #[test]
+  fn hybrid_esm_namespace_retains_live_external_default_reexport() {
+    GLOBALS.set(&Globals::new(), || {
+      let external_id: ModuleId = "external-package".into();
+      let bridge_id: ModuleId = "bridge.js".into();
+      let original = SwcId::new("external_default".into(), 0);
+      let mut renames = TopLevelIdentsRenameHandler::default();
+      renames.rename_ident(
+        external_id.clone(),
+        original.clone(),
+        SwcId::new("bound_default".into(), 0),
+      );
+      let exports = HashMap::from_iter([(
+        "default".into(),
+        ModuleExportIdent::new(external_id, original, ModuleExportIdentType::External),
+      )]);
+      let item = create_var_namespace_item(&bridge_id, &exports, &HashSet::default(), &renames);
+      let ModuleItem::Stmt(Stmt::Decl(Decl::Var(declaration))) = item else {
+        panic!("Expected namespace variable");
+      };
+      let Some(box Expr::Object(namespace)) = &declaration.decls[0].init else {
+        panic!("Expected namespace object");
+      };
+      let getter = namespace.props.iter().find_map(|property| match property {
+        PropOrSpread::Prop(box Prop::Getter(getter))
+          if matches!(&getter.key, PropName::Ident(name) if name.sym == "default") =>
+        {
+          Some(getter)
+        }
+        _ => None,
+      });
+      let getter = getter.expect("External default must be exposed as a live namespace getter");
+      assert!(matches!(
+        &getter.body.as_ref().unwrap().stmts[0],
+        Stmt::Return(ReturnStmt { arg: Some(box Expr::Ident(ident)), .. })
+          if ident.sym == "bound_default"
+      ));
+    });
+  }
 }
 
 /// Get the filename from the module id. Replace all non-alphanumeric characters with `_`.

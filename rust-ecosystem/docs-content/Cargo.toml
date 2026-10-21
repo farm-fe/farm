@@ -1,0 +1,23 @@
+[package]
+name = "farmfe_docs_content"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+cssparser = "0.33.0"
+swc_common = { workspace = true }
+swc_html_ast = { workspace = true }
+swc_html_parser = { workspace = true }
+farmfe_syntax_highlight = { path = "../syntax-highlight" }
+mdxjs = { version = "1.0.4", features = ["serializable"] }
+markdown = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+yaml-rust = "=0.4.5"
+swc_core = { version = "27.0.6", features = ["common", "common_sourcemap", "ecma_ast", "ecma_codegen", "ecma_visit"] }
+
+[dev-dependencies]
+sha2 = "0.10"
+sourcemap = "9"

@@ -10,22 +10,37 @@ export function formatTime(time: number, totalTime: number) {
   }
 }
 
-export function ProgressBar({ value, max }) {
-  const [elapsedTime, setElapsedTime] = useState(0);
+export function ProgressBar({ value, max, animate = false }) {
   const TOTAL_TIME = value * 1000;
-  const isMobile = window.innerWidth < 768;
+  const [elapsedTime, setElapsedTime] = useState(TOTAL_TIME);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
   const progressBarWidth = isMobile ? 80 : 18;
   const formattedTime = formatTime(elapsedTime, TOTAL_TIME);
-  const props = useSpring({
-    width: "100%",
-    from: { width: "0%" },
-    config: {
-      duration: TOTAL_TIME,
-    },
-    onChange(data) {
-      setElapsedTime((parseFloat(data.value.width) / 100) * TOTAL_TIME);
-    },
-  });
+  const [props, api] = useSpring(() => ({ width: "100%" }));
+  useEffect(() => {
+    if (!animate) {
+      api.set({ width: "100%" });
+      setElapsedTime(TOTAL_TIME);
+      return;
+    }
+    setElapsedTime(0);
+    api.start({
+      from: { width: "0%" },
+      to: { width: "100%" },
+      reset: true,
+      config: { duration: TOTAL_TIME },
+      onChange(data) {
+        setElapsedTime((parseFloat(data.value.width) / 100) * TOTAL_TIME);
+      },
+    });
+    return () => { api.stop(); };
+  }, [api, animate, TOTAL_TIME]);
 
   return (
     <div

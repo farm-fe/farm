@@ -148,7 +148,8 @@ export class httpServer {
 
       httpServer.listen(port, host, () => {
         httpServer.removeListener('error', onError);
-        resolve(port);
+        const address = httpServer.address();
+        resolve(address && typeof address === 'object' ? address.port : port);
       });
     });
   }
