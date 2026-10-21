@@ -1,4 +1,6 @@
 [package]
+# Native implementation is distributed through npm platform packages.
+publish = false
 edition = "2024"
 name = "farmfe_plugin_compress"
 version = "0.0.0"
