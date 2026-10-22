@@ -9,13 +9,13 @@
 
 .progress-bar-inner-container {
   height: 25px;
-  background: #9f1a8f;
+  background: var(--farm-docs-accent-soft);
   border-radius: 2px;
 }
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(to right, rgb(192 38 211), #d2269e);
+  background: var(--farm-docs-link);
   border-radius: 2px;
 }
 
@@ -25,7 +25,7 @@
 }
 
 :global(.dark) .progress-bar-inner-container {
-  background: #fba;
+  background: var(--farm-docs-accent-soft);
 }
 
 @media (max-width: 768px) {

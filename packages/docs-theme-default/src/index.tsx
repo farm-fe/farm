@@ -220,3 +220,5 @@ export function NotFound({ data }: NotFoundProps) {
   return <main id="farm-docs-content" tabIndex={-1}><h1>{data.notFound.heading}</h1><p>{data.notFound.description}</p><Link to={data.notFound.home}>{data.notFound.homeLabel}</Link></main>;
 }
 export const components = { pre: CodeBlock };
+
+export { LanguageIcon, NavigationIconLink, NavigationMenu } from './navigation.js';

@@ -100,3 +100,111 @@
 .farm-docs-theme .farm-editorial-actions a.farm-editorial-primary { color: var(--farm-docs-bg); }
 
 .farm-docs-theme .farm-editorial-install { margin: 22px 0 0; }
+
+/* Restore the live site's content, with the selected editorial presentation. */
+.farm-original-home { max-width: 1180px; margin: auto; padding: 36px 40px 70px; }
+.farm-original-introduction { text-align: center; max-width: 900px; margin: auto; }
+.farm-original-star { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--farm-docs-border); border-radius: 24px; padding: 5px 15px; font-size: 12px; background: var(--farm-docs-panel); color: var(--farm-docs-link); }
+.farm-original-star svg { width: 16px; height: 16px; }
+.farm-docs-theme .farm-original-introduction h1 { text-align: center; font-size: 54px; line-height: 1.12; letter-spacing: -1.8px; font-weight: 650; margin: 30px auto 22px; }
+.farm-original-introduction h1 > span { display: block; }
+.farm-original-introduction h1 em { font-style: normal; color: var(--farm-docs-link); }
+.farm-original-introduction h1 > span:last-child { font-size: 35px; font-weight: 500; margin-top: 8px; letter-spacing: -.8px; }
+.farm-docs-theme .farm-original-description { max-width: 690px; margin: 0 auto; color: var(--farm-docs-muted); font-size: 16px; line-height: 1.8; }
+.farm-original-description strong { color: var(--farm-docs-text); }
+.farm-original-actions { display: flex; justify-content: center; gap: 14px; margin: 28px 0 0; }
+.farm-docs-theme .farm-original-actions a { padding: 11px 24px; border-radius: 8px; border: 1px solid var(--farm-docs-border); font-size: 14px; font-weight: 600; text-decoration: none; }
+.farm-docs-theme .farm-original-actions a.farm-original-primary { color: var(--farm-docs-bg); background: var(--farm-docs-link); border-color: var(--farm-docs-link); }
+.farm-docs-theme .farm-original-actions a.farm-original-secondary { background: var(--farm-docs-panel); color: var(--farm-docs-text); }
+.farm-original-benchmark { max-width: 780px; margin: 46px auto 55px; }
+.farm-home-benchmark-chart { border: 1px solid var(--farm-docs-border); border-radius: 12px; padding: 22px 28px; background: var(--farm-docs-panel); }
+.farm-home-benchmark-tabs { display: flex; overflow: auto; gap: 5px; padding-bottom: 8px; margin-bottom: 20px; }
+.farm-home-benchmark-tabs > button { border: 0; border-bottom: 2px solid transparent; border-radius: 5px 5px 0 0; padding: 8px 12px; font-size: 12px; color: var(--farm-docs-muted); background: transparent; white-space: nowrap; }
+.farm-home-benchmark-tabs > [aria-selected="true"] { color: var(--farm-docs-link); border-color: var(--farm-docs-link); background: var(--farm-docs-accent-soft); }
+.farm-home-benchmark-row { display: flex; align-items: center; gap: 20px; margin: 19px 0; font-size: 13px; }
+.farm-home-benchmark-row > span { width: 82px; flex: 0 0 82px; font-weight: 600; }
+.farm-docs-theme .farm-home-benchmark-details { display: inline-flex; margin-top: 18px; font-size: 13px; font-weight: 600; color: var(--farm-docs-link); }
+.farm-docs-theme .farm-original-benchmark-source { color: var(--farm-docs-muted); font-size: 11px; line-height: 1.6; margin: 12px 2px; }
+.farm-original-features > div { gap: 20px; grid-auto-rows: auto; }
+.farm-original-features [class*="group/bento"] { background: var(--farm-docs-panel); border: 1px solid var(--farm-docs-border) !important; box-shadow: none; padding: 24px; }
+.farm-original-features [class*="group/bento"] > div:first-child { max-height: 170px; min-height: 100px; overflow: hidden; }
+.farm-original-features [class*="group/bento"] .text-xl { color: var(--farm-docs-text); font-size: 18px; line-height: 1.4; margin-block: 12px; }
+.farm-original-features [class*="group/bento"] .text-sm { color: var(--farm-docs-muted); font-size: 13px; line-height: 1.8; }
+.farm-original-features [class*="group/bento"] .bg-soft { background: var(--farm-docs-accent-soft); }
+.farm-original-footer-logo { width: 145px; max-width: 100%; height: auto; }
+.farm-site-announcement { padding: 7px 45px 7px 24px; text-align: center; color: var(--farm-docs-text); background: var(--farm-docs-accent-soft); border-bottom: 1px solid var(--farm-docs-border); font-size: 12px; position: relative; }
+.farm-site-announcement a { color: var(--farm-docs-link); text-decoration: underline; }
+.farm-site-announcement button { position: absolute; right: 14px; top: 1px; color: var(--farm-docs-text); background: transparent; border: 0; padding: 4px; font-size: 18px; }
+@media (max-width: 996px) {
+  .farm-original-home { padding: 30px 24px 45px; }
+  .farm-docs-theme .farm-original-introduction h1 { font-size: 38px; letter-spacing: -1px; }
+  .farm-original-introduction h1 > span:last-child { font-size: 26px; }
+  .farm-docs-theme .farm-original-description { font-size: 14px; }
+  .farm-original-benchmark { margin: 34px auto; min-width: 0; }
+  .farm-home-benchmark-chart { padding: 16px; }
+  .farm-home-benchmark-row { gap: 10px; }
+  .farm-home-benchmark-row > span { width: 62px; flex-basis: 62px; font-size: 12px; }
+  .farm-home-benchmark-tabs > button { padding: 7px 9px; }
+  .farm-original-features [class*="group/bento"] { padding: 20px; }
+  .farm-site-announcement { padding-left: 18px; font-size: 11px; }
+}
+
+.farm-editorial-footer nav.farm-original-social { gap: 18px; justify-content: flex-start; margin-top: 26px; }
+.farm-original-social svg { width: 20px; height: 20px; }
+
+/* First-migration homepage composition: original content, independent of docs reading layout. */
+.farm-original-home { max-width: 1400px; padding: 38px 40px 80px; position: relative; isolation: isolate; }
+.farm-original-home::before { content: ""; position: absolute; inset: -38px 0 45%; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 15% 28%, #f4d6ee66, transparent 45%), radial-gradient(ellipse at 82% 20%, #d7dffa88, transparent 48%), radial-gradient(ellipse at 65% 60%, #f8d7ef66, transparent 42%); }
+[data-theme="dark"] .farm-original-home::before { opacity: .25; }
+.farm-first-hero-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; gap: 48px; min-height: 650px; }
+.farm-original-introduction { width: 100%; max-width: 680px; }
+.farm-docs-theme .farm-original-introduction h1 { font-size: clamp(42px, 4.5vw, 68px); font-weight: 800; line-height: 1.08; letter-spacing: -2px; margin: 30px auto 24px; }
+.farm-original-introduction h1 em { background: linear-gradient(45deg, #8c2678, #ee83cb 78%); background-clip: text; -webkit-background-clip: text; color: transparent; }
+[data-theme="dark"] .farm-original-introduction h1 em { background-image: linear-gradient(45deg, #c67ab4, #ffb5e4 78%); }
+.farm-original-introduction h1 > span:last-child { font-size: .72em; font-weight: 750; }
+.farm-docs-theme .farm-original-description { font-size: 18px; font-weight: 550; }
+.farm-original-actions { flex-wrap: wrap; gap: 12px; }
+.farm-docs-theme .farm-original-actions a { padding: 12px 18px; }
+.farm-original-benchmark { width: 100%; margin: 40px 0 0; }
+.farm-home-benchmark-chart { background: color-mix(in srgb, var(--farm-docs-panel) 75%, transparent); padding: 22px 20px; }
+.farm-home-benchmark-tabs { gap: 1px; }
+.farm-home-benchmark-tabs > button { padding: 8px; font-size: 11px; }
+.farm-home-benchmark-row { margin: 26px 0; gap: 12px; }
+.farm-original-features { margin-top: 30px; }
+.farm-original-features [class*="group/bento"] > div:first-child { max-height: 230px; min-height: 180px; }
+@media (max-width: 996px) {
+  .farm-original-home { padding: 28px 22px 50px; }
+  .farm-first-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; min-height: 0; }
+  .farm-docs-theme .farm-original-introduction h1 { font-size: 44px; letter-spacing: -1px; }
+  .farm-docs-theme .farm-original-description { font-size: 15px; }
+  .farm-original-benchmark { margin: 28px auto; max-width: 680px; }
+  .farm-original-features [class*="group/bento"] > div:first-child { min-height: 150px; }
+}
+
+@media (min-width: 997px) { .farm-first-title-web { display: block; } }
+
+/* Homepage reference treatment; deliberately scoped away from document pages. */
+.farm-original-home { padding-top: 24px; }
+.farm-original-home .farm-first-hero-grid { min-height: 550px; gap: 42px; }
+.farm-docs-theme .farm-original-home .farm-original-introduction h1 { margin-top: 23px; margin-bottom: 20px; }
+.farm-original-home .farm-original-introduction h1 > span:last-child { font-size: .9em; font-weight: 800; margin-top: 0; letter-spacing: -1.5px; }
+.farm-original-home .farm-original-actions { margin-top: 24px; }
+.farm-docs-theme .farm-original-home .farm-original-actions a { color: #fff; background: #111; border: 1px solid #b92bc6; box-shadow: 0 0 9px #b32cd080, 0 0 3px #e98bcc; border-radius: 10px; font-weight: 700; }
+.farm-docs-theme .farm-original-home .farm-original-actions a:hover { color: #fff; background: #211624; box-shadow: 0 0 13px #cb39d99c; }
+.farm-original-home .farm-original-benchmark { margin-top: 24px; }
+.farm-original-home .farm-home-benchmark-chart { background: transparent; border: 0; border-radius: 0; padding: 14px 0; box-shadow: none; }
+.farm-original-home .farm-home-benchmark-tabs { margin-bottom: 24px; padding-bottom: 8px; gap: 3px; }
+.farm-original-home .farm-home-benchmark-tabs > button { border: 0; border-radius: 5px; padding: 9px 8px; color: var(--farm-docs-text); font-weight: 650; }
+.farm-original-home .farm-home-benchmark-tabs > [aria-selected="true"] { color: #fff; background: #b819c8; }
+.farm-original-home .farm-home-benchmark-row { margin: 29px 0; }
+.farm-original-home .farm-home-benchmark-row > div { border-color: var(--farm-docs-border); background: transparent; }
+.farm-original-home .farm-home-benchmark-row > div > div:first-child { background: #9f1a8f18; }
+.farm-original-home .farm-home-benchmark-row > div > div:first-child > div { background: linear-gradient(to right, #c026d3, #d2269e); }
+.farm-original-home .farm-original-features { margin-top: 16px; }
+@media (max-width: 996px) {
+  .farm-original-home { padding-top: 24px; }
+  .farm-original-home .farm-first-hero-grid { min-height: 0; gap: 10px; }
+  .farm-original-home .farm-original-introduction h1 > span:last-child { font-size: .85em; letter-spacing: -.8px; }
+  .farm-original-home .farm-original-benchmark { margin-top: 20px; }
+  .farm-original-home .farm-home-benchmark-tabs > button { padding: 9px; }
+}

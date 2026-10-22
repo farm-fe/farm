@@ -16,5 +16,82 @@
     ],
     "homeLabel": "首页",
     "tocLabel": "本页目录"
+  },
+  "navigation": {
+    "primary": [
+      "Guides",
+      "Config",
+      "API",
+      "Plugins"
+    ],
+    "announcement": {
+      "text": "🎉 Farm will continue to release nightly versions. Please check out for details",
+      "label": "Farm Nightly",
+      "href": "https://farm-nightly.netlify.app/"
+    },
+    "community": {
+      "en": {
+        "label": "Community",
+        "items": [
+          {
+            "label": "Team",
+            "href": "/team"
+          },
+          {
+            "label": "Blog",
+            "href": "/blog/index"
+          },
+          {
+            "label": "Awesome Farm",
+            "href": "https://github.com/farm-fe/awesome-farm"
+          },
+          {
+            "label": "Discord",
+            "href": "https://discord.com/invite/mDErq9aFnF"
+          },
+          {
+            "label": "Twitter",
+            "href": "https://x.com/brightwwu46799"
+          },
+          {
+            "label": "WeChat Group",
+            "href": "https://github.com/farm-fe/farm?tab=readme-ov-file#chat-with-us"
+          }
+        ]
+      },
+      "zh": {
+        "label": "社区",
+        "items": [
+          {
+            "label": "团队",
+            "href": "/zh/team"
+          },
+          {
+            "label": "日志",
+            "href": "/zh/blog/index"
+          },
+          {
+            "label": "Awesome Farm",
+            "href": "https://github.com/farm-fe/awesome-farm"
+          },
+          {
+            "label": "Discord",
+            "href": "https://discord.com/invite/mDErq9aFnF"
+          },
+          {
+            "label": "Twitter",
+            "href": "https://x.com/brightwwu46799"
+          },
+          {
+            "label": "WeChat Group",
+            "href": "https://github.com/farm-fe/farm?tab=readme-ov-file#chat-with-us"
+          }
+        ]
+      }
+    },
+    "versionEntry": {
+      "zh": "/zh/docs/why-farm",
+      "en": "/docs/why-farm"
+    }
   }
 }

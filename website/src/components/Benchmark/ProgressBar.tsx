@@ -10,7 +10,7 @@ export function formatTime(time: number, totalTime: number) {
   }
 }
 
-export function ProgressBar({ value, max, animate = false }) {
+export function ProgressBar({ value, max, animate = false, contained = false }) {
   const TOTAL_TIME = value * 1000;
   const [elapsedTime, setElapsedTime] = useState(TOTAL_TIME);
   const [isMobile, setIsMobile] = useState(false);
@@ -46,14 +46,14 @@ export function ProgressBar({ value, max, animate = false }) {
     <div
       className={`${styles["progress-bar-container"]} flex justify-between items-center sm:pr-4`}
       style={{
-        width: `${progressBarWidth}vw`,
+        width: contained ? "100%" : `${progressBarWidth}vw`,
         flex: 1,
       }}
     >
       <div
         className={`${styles["progress-bar-inner-container"]} flex justify-between`}
         style={{
-          width: `${(value / max) * 0.8 * progressBarWidth}vw`,
+          width: contained ? `${(value / max) * 80}%` : `${(value / max) * 0.8 * progressBarWidth}vw`,
         }}
       >
         <animated.div className={styles["progress-bar"]} style={props} />

@@ -324,3 +324,10 @@ body:has(.farm-docs-theme) { background: var(--farm-docs-bg); color: var(--farm-
 /* Keep generated syntax categories while raising muted token contrast. */
 .farm-docs-theme .farm-code-token { color: color-mix(in srgb, var(--code-light) 45%, #292435 55%); }
 [data-theme="dark"] .farm-docs-theme .farm-code-token { color: color-mix(in srgb, var(--code-dark) 65%, #fff 35%); }
+
+.farm-docs-navigation-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 36px; border-radius: 6px; color: var(--farm-docs-text); }
+.farm-docs-navigation-icon svg { width: 22px; height: 22px; }
+.farm-docs-alternate > summary svg { width: 20px; height: 20px; flex: 0 0 20px; }
+.farm-docs-navbar-links .farm-docs-navigation-menu { font-weight: 500; }
+.farm-docs-navbar-links .farm-docs-navigation-menu > nav { min-width: 190px; z-index: 1010; }
+.farm-docs-mobile-dialog .farm-docs-navigation-menu > nav { position: static; }

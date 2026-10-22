@@ -43,3 +43,7 @@ JSON, not by discovering or rewriting routes in a React component.
 props. Site wrappers can translate these labels while retaining fallback notices,
 article content and previous/next navigation. The shared theme contains no Farm
 website category names or version policy.
+
+## Navigation controls
+
+NavigationMenu renders a native disclosure menu and restores its summary focus on Escape without closing an outer dialog. NavigationIconLink provides a labeled external icon link with safe new-tab attributes. LanguageIcon is decorative; its surrounding menu supplies the localized label. Site-specific destinations and brand icons remain in the site wrapper.

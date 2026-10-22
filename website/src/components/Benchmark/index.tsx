@@ -1,223 +1,142 @@
-import { Link } from "@farmfe/docs/client";
-import clsx from "clsx";
-import React, { useMemo, useState } from "react";
-import { useInView } from "react-intersection-observer";
-import { SiteText } from "../../site-text";
-import farmCard from "../card";
-import ShinyTextEx from "../MagicUi/shiny-text";
-import styles from "./index.module.css";
-import { ProgressBar } from "./ProgressBar";
+import React, { useState } from 'react';
+import { useInView } from 'react-intersection-observer';
+import { SiteText } from '../../site-text';
+import { ProgressBar } from './ProgressBar';
 
 const BENCHMARK_DATA = {
-  ColdStart: [
+  "ColdStart": [
     {
-      name: "farm",
-      time: 0.396,
+      "name": "Farm",
+      "time": 0.396
     },
     {
-      name: "rsbuild",
-      time: 0.468,
+      "name": "RsBuild",
+      "time": 0.468
     },
     {
-      name: "vite",
-      time: 1.700,
+      "name": "Vite",
+      "time": 1.7
     },
     {
-      name: "webpack",
-      time: 2.078,
-    },
+      "name": "Webpack",
+      "time": 2.078
+    }
   ],
-  HotStart: [
+  "HotStart": [
     {
-      name: "farm",
-      time: 0.273,
+      "name": "Farm",
+      "time": 0.273
     },
     {
-      name: "rsbuild",
-      time: 0.468,
+      "name": "RsBuild",
+      "time": 0.468
     },
     {
-      name: "vite",
-      time: 1.426,
+      "name": "Vite",
+      "time": 1.426
     },
     {
-      name: "webpack",
-      time: 0.945,
-    },
+      "name": "Webpack",
+      "time": 0.945
+    }
   ],
-  HmrRoot: [
+  "HmrRoot": [
     {
-      name: "farm",
-      time: 0.018,
+      "name": "Farm",
+      "time": 0.018
     },
     {
-      name: "rsbuild",
-      time: 0.087,
+      "name": "RsBuild",
+      "time": 0.087
     },
     {
-      name: "vite",
-      time: 0.022,
+      "name": "Vite",
+      "time": 0.022
     },
     {
-      name: "webpack",
-      time: 0.532,
-    },
+      "name": "Webpack",
+      "time": 0.532
+    }
   ],
-  HmrLeaf: [
+  "HmrLeaf": [
     {
-      name: "farm",
-      time: 0.013,
+      "name": "Farm",
+      "time": 0.013
     },
     {
-      name: "rsbuild",
-      time: 0.074,
+      "name": "RsBuild",
+      "time": 0.074
     },
     {
-      name: "vite",
-      time: 0.011,
+      "name": "Vite",
+      "time": 0.011
     },
     {
-      name: "webpack",
-      time: 0.165,
-    },
+      "name": "Webpack",
+      "time": 0.165
+    }
   ],
-  ColdBuild: [
+  "ColdBuild": [
     {
-      name: "farm",
-      time: 0.313,
+      "name": "Farm",
+      "time": 0.313
     },
     {
-      name: "rsbuild",
-      time: 0.363,
+      "name": "RsBuild",
+      "time": 0.363
     },
     {
-      name: "vite",
-      time: 1.543,
+      "name": "Vite",
+      "time": 1.543
     },
     {
-      name: "webpack",
-      time: 4.128,
-    },
+      "name": "Webpack",
+      "time": 4.128
+    }
   ],
-  HotBuild: [
+  "HotBuild": [
     {
-      name: "farm",
-      time: 0.16,
+      "name": "Farm",
+      "time": 0.16
     },
     {
-      name: "rsbuild",
-      time: 0.363,
+      "name": "RsBuild",
+      "time": 0.363
     },
     {
-      name: "vite",
-      time: 1.540,
+      "name": "Vite",
+      "time": 1.54
     },
     {
-      name: "webpack",
-      time: 0.527,
-    },
-  ],
+      "name": "Webpack",
+      "time": 0.527
+    }
+  ]
 };
 export default function Benchmark() {
-  const SCENE = [
-    { name: <SiteText id="benchmark.coldStart" />, title: "ColdStart" },
-    { name: <SiteText id="benchmark.hotStart" />, title: "HotStart" },
-    { name: <SiteText id="benchmark.hmrRoot" />, title: "HmrRoot" },
-    { name: <SiteText id="benchmark.hmrLeaf" />, title: "HmrLeaf" },
-    { name: <SiteText id="benchmark.coldBuild" />, title: "ColdBuild" },
-    { name: <SiteText id="benchmark.hotBuild" />, title: "HotBuild" },
+  const scenes = [
+    { label: <SiteText id="benchmark.coldStart" />, value: 'ColdStart' },
+    { label: <SiteText id="benchmark.hotStart" />, value: 'HotStart' },
+    { label: <SiteText id="benchmark.hmrRoot" />, value: 'HmrRoot' },
+    { label: <SiteText id="benchmark.hmrLeaf" />, value: 'HmrLeaf' },
+    { label: <SiteText id="benchmark.coldBuild" />, value: 'ColdBuild' },
+    { label: <SiteText id="benchmark.hotBuild" />, value: 'HotBuild' }
   ];
-  const [activeScene, setActiveScene] = useState("ColdStart");
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-  const performanceInfoList = useMemo(() => BENCHMARK_DATA[activeScene], [activeScene]);
-
-  const [visibleSection, setVisibleSection] = useState("ColdStart");
-
-  function Pill({ section }) {
-    return (
-      <div>
-        <div
-          className={clsx(
-            "flex-1 cursor-pointer rounded-md py-2 px-2 sm:px-4 text-center font-jakarta text-sm font-semibold",
-            visibleSection === section.title
-              ? "bg-fuchsia-600 text-white"
-              : "color-re"
-          )}
-          onClick={() => {
-            setVisibleSection(section.title);
-            setActiveScene(section.title);
-          }}
-        >
-          {section.name}
-        </div>
-      </div>
-    );
-  }
-
-  function PillTabs({ SCENE, children }) {
-    return (
-      <div className="overflow-x-auto">
-        <div className="inline-flex mb-4 items-center rounded-lg text-sm lg:text-base">
-          {SCENE.map((item, index) => {
-            return <Pill section={item} key={index}></Pill>;
-          })}
-        </div>
-        <div>{children}</div>
-      </div>
-    );
-  }
-  return (
-    <>
-      <div ref={ref} className="flex relative z-10">
-        <>
-          <div
-            className={`${styles.tabs} flex flex-col items-center my-4 z-1`}
-          >
-            <div className="flex h-20 w-full flex-1 items-center self-start lg:justify-end">
-              <div className="w-full">
-                <PillTabs SCENE={SCENE}>
-                  {performanceInfoList.map((info) => (
-                    <div
-                      key={info.name}
-                      className="flex flex-center justify-start my-8 flex-col sm:flex-row"
-                    >
-                      {(
-                        <>
-                          <div
-                            className="flex items-center text-light-500  text-center font-bold"
-                            style={{ minWidth: "100px" }}
-                          >
-                            {info.name}
-                          </div>
-                          <ProgressBar
-                            value={info.time}
-                            animate={inView}
-                            max={Math.max(
-                              ...performanceInfoList.map((info) => info.time)
-                            )}
-                          />
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </PillTabs>
-                <div className="font-bold cursor-pointer mt-6">
-                  <Link
-                    rel="stylesheet"
-                    href="https://github.com/farm-fe/performance-compare"
-                  >
-                    {/* <SiteText id="benchmark.details" /> */}
-                    <ShinyTextEx />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      </div>
-    </>
-  );
+  const [activeScene, setActiveScene] = useState('ColdStart');
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.1 });
+  const entries = BENCHMARK_DATA[activeScene];
+  return <div ref={ref} className="farm-home-benchmark-chart">
+    <div className="farm-home-benchmark-tabs" role="tablist" aria-label="Benchmark">
+      {scenes.map((scene, index) => <button key={scene.value} type="button" role="tab" id={`benchmark-tab-${scene.value}`} aria-selected={activeScene === scene.value} aria-controls="farm-benchmark-panel" tabIndex={activeScene === scene.value ? 0 : -1} onClick={() => setActiveScene(scene.value)} onKeyDown={event => {
+        const next = event.key === 'ArrowRight' ? (index + 1) % scenes.length : event.key === 'ArrowLeft' ? (index + scenes.length - 1) % scenes.length : event.key === 'Home' ? 0 : event.key === 'End' ? scenes.length - 1 : null;
+        if (next == null) return;
+        event.preventDefault(); setActiveScene(scenes[next].value);
+        event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('button')[next]?.focus();
+      }}>{scene.label}</button>)}
+    </div>
+    <div id="farm-benchmark-panel" role="tabpanel" aria-labelledby={`benchmark-tab-${activeScene}`}>
+      {entries.map(info => <div className="farm-home-benchmark-row" key={info.name}><span>{info.name}</span><ProgressBar value={info.time} max={Math.max(...entries.map(row => row.time))} animate={inView} contained /></div>)}
+    </div>
+    <a className="farm-home-benchmark-details" href="https://github.com/farm-fe/performance-compare" target="_blank" rel="noopener noreferrer">📈 See Benchmark Details</a>
+  </div>;
 }

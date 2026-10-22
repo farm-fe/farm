@@ -50,4 +50,4 @@ The package declares Node >=20 and React/React DOM 18 peers. Building native plu
 
 Rust-generated configuration schema is shipped under `schema/`. Unsupported fields, duplicate routes, invalid references and unavailable content are diagnosed by the native implementation. Preserve the source location and diagnostic code when reporting a failure.
 
-The repository's `docs/farm-docs/consumer-guide.md` contains migration and troubleshooting details. Final package installation, tarball consumers, platform support and CI results remain separate release checks. This package does not publish or deploy a site automatically.
+The website's `website/docs/farm-docs/overview.md` and `website/docs/farm-docs/usage.md` introduce the framework and its configuration, theme, build and preview workflow. Final package installation, tarball consumers, platform support and CI results remain separate release checks. This package does not publish or deploy a site automatically.

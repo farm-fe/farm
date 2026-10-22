@@ -1,6 +1,7 @@
 import { Link } from '@farmfe/docs/client';
 import type { ThemeProps } from '@farmfe/docs/theme';
-import { ColorModeControl, DocPage as DefaultDocPage, Sidebar as DefaultSidebar, MobileNavigation, Search } from '@farmfe/docs-theme-default';
+import { ColorModeControl, DocPage as DefaultDocPage, Sidebar as DefaultSidebar, LanguageIcon, MobileNavigation, NavigationIconLink, NavigationMenu, Search } from '@farmfe/docs-theme-default';
+import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { createContext, useContext, useEffect, useState } from 'react';
 import presentation from '../../farm-docs.presentation.json';
 
@@ -19,13 +20,24 @@ function homeTarget({ data, page }: ThemeProps) {
 }
 
 function MainNavigation({ site, page, data }: ThemeProps) {
-  return <nav className="farm-site-links farm-docs-navbar-links" aria-label="Main navigation">{site.theme.navbar.map(link => {
+  const community = presentation.navigation.community[page.locale === 'zh' ? 'zh' : 'en'];
+  return <nav className="farm-site-links farm-docs-navbar-links" aria-label="Main navigation">{site.theme.navbar.filter(link => presentation.navigation.primary.includes(link.label)).map(link => {
     const source = data.pages.find(candidate => candidate.routePath === link.to);
     const version = source?.version == null ? null : page.version ?? site.docs.defaultVersion;
-    // Choose an existing Rust target; never derive a locale/version URL here.
     const alternate = source?.alternates?.find(candidate => candidate.locale === page.locale && (candidate.version ?? null) === version);
     return <Link key={link.to} to={alternate?.routePath ?? link.to}>{page.locale === 'zh' ? chineseNavigation[link.label] ?? link.label : link.label}</Link>;
-  })}</nav>;
+  })}<NavigationMenu label={community.label} name={community.label}>{community.items.map(item => item.href.startsWith('https:') ? <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">{item.label}</a> : <Link key={item.href} to={item.href}>{item.label}</Link>)}</NavigationMenu></nav>;
+}
+
+function RepositoryLink({ site }: ThemeProps) {
+  const repository = site.theme.navbar.find(link => link.label === 'GitHub');
+  return repository ? <NavigationIconLink href={repository.to} label="GitHub repository"><GitHubLogoIcon aria-hidden="true" /></NavigationIconLink> : null;
+}
+
+function Announcement({ locale }: { locale: string }) {
+  const [visible, setVisible] = useState(true);
+  const notice = presentation.navigation.announcement;
+  return visible ? <aside className="farm-site-announcement">{notice.text} <a href={notice.href} target="_blank" rel="noopener noreferrer">{notice.label}</a><button type="button" aria-label={locale === 'zh' ? '关闭公告' : 'Close announcement'} onClick={() => setVisible(false)}>×</button></aside> : null;
 }
 
 /** Adapt the public theme slots to the original website shell. */
@@ -43,7 +55,8 @@ export function Layout(props: ThemeProps) {
   const home = props.page.kind === 'page' && props.page.routePath === homeTarget(props);
   return <Mobile.Provider value={mobile}>
     <div className={`farm-docs-theme farm-site-shell${home ? ' farm-site-shell--home' : ''}${mobile ? ' farm-site-shell--mobile' : ''}`}>
-      <a className="farm-docs-skip" href="#farm-docs-content">Skip to content</a>
+      <a className="farm-docs-skip" href="#farm-docs-content">{props.page.locale === 'zh' ? '跳到主要内容' : 'Skip to main content'}</a>
+      {home && <Announcement locale={props.page.locale} />}
       <slots.Navbar {...props} />
       <div className="farm-docs-layout">
         <div className="farm-docs-sidebar-slot">{!mobile && <slots.Sidebar {...props} />}</div>
@@ -55,13 +68,14 @@ export function Layout(props: ThemeProps) {
   </Mobile.Provider>;
 }
 
-function Alternates({ site, page }: ThemeProps) {
+function Alternates({ site, page, data }: ThemeProps) {
   const alternates = page.alternates ?? [];
   const languages = site.locales.items.flatMap(locale => alternates.filter(item => item.locale === locale && (item.version ?? null) === (page.version ?? null)));
-  const versions = alternates.filter(item => item.locale === page.locale);
-  return <>{([['Languages', languages], ['Versions', versions]] as const).map(([kind, items]) => items.length > 1 ? <details className="farm-site-alternate farm-docs-alternate" key={kind}>
-    <summary>{kind === 'Languages' ? languageLabels[page.locale] ?? page.locale : versionLabel(page.version ?? site.docs.defaultVersion, page.locale)}</summary>
-    <nav aria-label={kind}>{items.map(item => <Link key={item.collection} to={item.routePath} aria-current={item.collection === page.collection ? 'page' : undefined}>
+  const versionPage = page.version == null ? data.pages.find(candidate => candidate.routePath === presentation.navigation.versionEntry[page.locale === 'zh' ? 'zh' : 'en']) : page;
+  const versions = (versionPage?.alternates ?? []).filter(item => item.locale === page.locale);
+  return <>{([['Versions', versions], ['Languages', languages]] as const).map(([kind, items]) => items.length > 1 ? <details className="farm-site-alternate farm-docs-alternate" key={kind}>
+    <summary>{kind === 'Languages' && <LanguageIcon />}{kind === 'Languages' ? languageLabels[page.locale] ?? page.locale : versionLabel(page.version ?? site.docs.defaultVersion, page.locale)}</summary>
+    <nav aria-label={kind}>{items.map(item => <Link key={item.collection} to={item.routePath} lang={kind === 'Languages' ? item.locale : undefined} aria-current={item.collection === page.collection ? 'page' : undefined}>
       {kind === 'Languages' ? languageLabels[item.locale] ?? item.locale : versionLabel(item.version ?? site.docs.defaultVersion, page.locale)}{item.missing ? ' (page unavailable)' : ''}
     </Link>)}</nav>
   </details> : null)}</>;
@@ -74,10 +88,11 @@ export function Navbar(props: ThemeProps) {
     {mobile && <div className="farm-site-menu"><MobileNavigation {...props} navigation={<>
       <MainNavigation {...props} />
       <Alternates {...props} />
+      <RepositoryLink {...props} />
     </>} /></div>}
     <Link className="farm-docs-brand" to={homeTarget(props)}>{site.theme.logo && <img src={site.theme.logo.src} alt={site.theme.logo.alt} />}{site.title}</Link>
     <MainNavigation {...props} />
-    {!mobile && <div className="farm-site-controls farm-docs-controls"><Alternates {...props} /><ColorModeControl /></div>}
+    {!mobile && <div className="farm-site-controls farm-docs-controls"><Alternates {...props} /><RepositoryLink {...props} /><ColorModeControl /></div>}
     <Search site={site} />
   </header>;
 }
