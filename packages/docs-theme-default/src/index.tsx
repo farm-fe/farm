@@ -13,7 +13,7 @@ function useMobileNavigation() {
   const [mobile, setMobile] = useState(false);
   useEffect(() => {
     let media: MediaQueryList;
-    try { media = matchMedia('(max-width: 48rem)'); } catch { return; }
+    try { media = matchMedia('(max-width: 996px)'); } catch { return; }
     const update = () => setMobile(media.matches);
     update();
     media.addEventListener('change', update);
@@ -25,8 +25,15 @@ export function ColorModeControl() {
   const { colorMode, setColorMode } = useColorMode();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  return mounted ? <label className="farm-docs-color-control">Color theme <select value={colorMode} onChange={event => setColorMode(event.target.value as typeof colorMode)}><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label> : null;
+  const next = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light';
+  const label = `Color theme: ${colorMode}. Switch to ${next}.`;
+  return mounted ? <button className="farm-docs-color-control farm-docs-color-button" type="button" aria-label={label} title={label} data-color-mode={colorMode} onClick={() => setColorMode(next)}>
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      {colorMode === 'light' ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" /></> : colorMode === 'dark' ? <path d="M20.5 13A8.5 8.5 0 0 1 11 3.5a8.5 8.5 0 1 0 9.5 9.5Z" /> : <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></>}
+    </svg>
+  </button> : null;
 }
+
 export function MobileNavigation(props: ThemeProps & { navigation?: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -57,7 +64,7 @@ export function MobileNavigation(props: ThemeProps & { navigation?: ReactNode })
     };
   }, []);
   return <>
-    <button type="button" aria-haspopup="dialog" aria-controls={id} aria-expanded={open} onClick={() => {
+    <button className="farm-docs-menu-toggle" aria-label="Open navigation" type="button" aria-haspopup="dialog" aria-controls={id} aria-expanded={open} onClick={() => {
       const element = dialog.current;
       if (!element || element.open) return;
       element.showModal();
@@ -100,17 +107,16 @@ export function Layout(props: ThemeProps) {
   const mobile = useMobileNavigation();
   const slots = props.components;
   const Page = props.page.kind === 'blog' || props.page.blogView ? slots.BlogPage : slots.DocPage;
-  return <>
+  return <div className="farm-docs-theme">
     <a className="farm-docs-skip" href="#farm-docs-content">Skip to content</a>
     <slots.Navbar {...props} />
-    <div className="farm-docs-tools">{mobile ? <MobileNavigation {...props} /> : <ColorModeControl />}</div>
     <div className="farm-docs-layout">
       <div className="farm-docs-sidebar-slot">{!mobile && <slots.Sidebar {...props} />}</div>
       <Page {...props} />
       {!mobile && <slots.Toc {...props} />}
     </div>
     <slots.Footer {...props} />
-  </>;
+  </div>;
 }
 function AlternateNavigation({ site, data, page }: ThemeProps) {
   const alternates = page.alternates ?? [];
@@ -124,16 +130,26 @@ function AlternateNavigation({ site, data, page }: ThemeProps) {
 }
 export function Navbar(props: ThemeProps) {
   const { site, data } = props;
-  return <header className="farm-docs-navbar"><Link className="farm-docs-brand" to={data.home}>{site.theme.logo && <img src={site.theme.logo.src} alt={site.theme.logo.alt} />}{site.title}</Link><nav aria-label="Main navigation">{site.theme.navbar.map(link => <Link key={link.to} to={link.to}>{link.label}</Link>)}</nav><AlternateNavigation {...props} /><Search site={site} /></header>;
+  const mobile = useMobileNavigation();
+  const links = <nav className="farm-docs-navbar-links" aria-label="Main navigation">{site.theme.navbar.map(link => <Link key={link.to} to={link.to}>{link.label}</Link>)}</nav>;
+  return <header className="farm-docs-navbar">
+    {mobile && <MobileNavigation {...props} navigation={<>{links}<AlternateNavigation {...props} /></>} />}
+    <Link className="farm-docs-brand" to={data.home}>{site.theme.logo && <img src={site.theme.logo.src} alt={site.theme.logo.alt} />}{site.title}</Link>
+    {links}
+    <div className="farm-docs-controls"><AlternateNavigation {...props} /><ColorModeControl /></div>
+    <Search site={site} />
+  </header>;
 }
-function SidebarItems({ items, active }: { items: PublicSidebarItem[]; active: string }) {
+
+function SidebarItems({ items, active, expanded }: { items: PublicSidebarItem[]; active: string; expanded: readonly string[] }) {
+  const containsActive = (items: PublicSidebarItem[]): boolean => items.some(item => item.type === 'doc' ? item.key === active : item.type === 'category' && containsActive(item.items));
   return <ul>{items.map((item, index) => <li key={item.type === 'doc' ? item.key : `${item.type}:${index}`}>
-    {item.type === 'category' ? <details open><summary>{item.label}</summary><SidebarItems items={item.items} active={active} /></details> : <Link to={item.href} aria-current={item.type === 'doc' && item.key === active ? 'page' : undefined}>{item.label}</Link>}
+    {item.type === 'category' ? <details key={`${active}:${item.label}`} open={expanded.includes(item.label) || containsActive(item.items)}><summary>{item.label}</summary><SidebarItems items={item.items} active={active} expanded={expanded} /></details> : <Link to={item.href} aria-current={item.type === 'doc' && item.key === active ? 'page' : undefined}>{item.label}</Link>}
   </li>)}</ul>;
 }
-export function Sidebar({ data, page }: ThemeProps) {
+export function Sidebar({ data, page, expandedCategories = [] }: ThemeProps & { expandedCategories?: readonly string[] }) {
   const sidebar = data.sidebars.find(item => item.collection === page.collection);
-  return sidebar?.items.length ? <nav className="farm-docs-sidebar" aria-label="Documentation"><SidebarItems items={sidebar.items} active={page.key} /></nav> : null;
+  return sidebar?.items.length ? <nav className="farm-docs-sidebar" aria-label="Documentation"><SidebarItems items={sidebar.items} active={page.key} expanded={expandedCategories} /></nav> : null;
 }
 function PageContent({ page, children, beforeArticle }: { page: ThemeProps['page']; children: ReactNode; beforeArticle?: ReactNode }) {
   return <main id="farm-docs-content" tabIndex={-1}>
@@ -143,7 +159,26 @@ function PageContent({ page, children, beforeArticle }: { page: ThemeProps['page
     {(page.previous || page.next) && <nav aria-label="Previous and next pages" className="farm-docs-pagination">{page.previous && <Link to={page.previous.href} aria-label={`Previous: ${page.previous.label}`}>Previous: {page.previous.label}</Link>}{page.next && <Link to={page.next.href} aria-label={`Next: ${page.next.label}`}>Next: {page.next.label}</Link>}</nav>}
   </main>;
 }
-export function DocPage({ page, children }: ThemeProps) { return <PageContent page={page}>{children}</PageContent>; }
+function sidebarAncestors(items: PublicSidebarItem[], key: string, ancestors: string[] = []): string[] | null {
+  for (const item of items) {
+    if (item.type === 'doc' && item.key === key) return ancestors;
+    if (item.type === 'category') {
+      const found = sidebarAncestors(item.items, key, [...ancestors, item.label]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+export function DocPage(props: ThemeProps & { homeLabel?: string; versionLabel?: string | null; tocLabel?: string }) {
+  const { page, children, data, homeLabel = 'Home', versionLabel = page.version, tocLabel = 'On this page' } = props;
+  const ancestors = sidebarAncestors(data.sidebars.find(sidebar => sidebar.collection === page.collection)?.items ?? [], page.key) ?? [];
+  const metadata = page.kind === 'doc' ? <>
+    <nav className="farm-docs-breadcrumbs" aria-label="Breadcrumbs"><Link to={data.home}>{homeLabel}</Link><span aria-hidden="true">›</span>{ancestors.flatMap((label, index) => [<span key={`label:${index}`}>{label}</span>, <span key={`separator:${index}`} aria-hidden="true">›</span>])}<span>{page.title}</span></nav>
+    {versionLabel && <span className="farm-docs-version">Version: {versionLabel}</span>}
+    {page.headings.length > 0 && <details className="farm-docs-mobile-toc"><summary>{tocLabel}</summary><Toc {...props} /></details>}
+  </> : null;
+  return <PageContent page={page} beforeArticle={metadata}>{children}</PageContent>;
+}
 export function BlogPage(props: ThemeProps) {
   const { page, data } = props;
   if (page.blogView?.fullContent && !props.listingPosts) throw new Error('[DOCS_BLOG_CONTENT] full listing articles were not loaded');

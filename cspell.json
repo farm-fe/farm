@@ -847,6 +847,7 @@
     "rust-ecosystem/grass/src/**",
     "**/THIRD_PARTY_NOTICES.{md,txt}",
     "website/licenses/**",
+    "website/static/licenses/react-icons-5.3.0-LICENSE.txt",
     "pnpm-lock.yaml",
     "skills-lock.json",
     "**/package.json",

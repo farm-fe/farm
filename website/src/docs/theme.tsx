@@ -1,7 +1,8 @@
 import { Link } from '@farmfe/docs/client';
 import type { ThemeProps } from '@farmfe/docs/theme';
-import { ColorModeControl, MobileNavigation, Search } from '@farmfe/docs-theme-default';
+import { ColorModeControl, DocPage as DefaultDocPage, Sidebar as DefaultSidebar, MobileNavigation, Search } from '@farmfe/docs-theme-default';
 import { createContext, useContext, useEffect, useState } from 'react';
+import presentation from '../../farm-docs.presentation.json';
 
 export { default as Footer } from '../theme/Footer';
 
@@ -12,8 +13,13 @@ function versionLabel(version: string, locale: string) {
   return version === 'current' ? (locale === 'zh' ? '2.x（最新）' : '2.x (Latest)') : version;
 }
 
+function homeTarget({ data, page }: ThemeProps) {
+  const home = data.pages.find(candidate => candidate.routePath === data.home);
+  return home?.alternates?.find(candidate => candidate.locale === page.locale)?.routePath ?? data.home;
+}
+
 function MainNavigation({ site, page, data }: ThemeProps) {
-  return <nav className="farm-site-links" aria-label="Main navigation">{site.theme.navbar.map(link => {
+  return <nav className="farm-site-links farm-docs-navbar-links" aria-label="Main navigation">{site.theme.navbar.map(link => {
     const source = data.pages.find(candidate => candidate.routePath === link.to);
     const version = source?.version == null ? null : page.version ?? site.docs.defaultVersion;
     // Choose an existing Rust target; never derive a locale/version URL here.
@@ -34,9 +40,9 @@ export function Layout(props: ThemeProps) {
   }, []);
   const slots = props.components;
   const Page = props.page.kind === 'blog' || props.page.blogView ? slots.BlogPage : slots.DocPage;
-  const home = props.page.kind === 'page' && props.page.routePath === props.data.home;
+  const home = props.page.kind === 'page' && props.page.routePath === homeTarget(props);
   return <Mobile.Provider value={mobile}>
-    <div className={`farm-site-shell${home ? ' farm-site-shell--home' : ''}${mobile ? ' farm-site-shell--mobile' : ''}`}>
+    <div className={`farm-docs-theme farm-site-shell${home ? ' farm-site-shell--home' : ''}${mobile ? ' farm-site-shell--mobile' : ''}`}>
       <a className="farm-docs-skip" href="#farm-docs-content">Skip to content</a>
       <slots.Navbar {...props} />
       <div className="farm-docs-layout">
@@ -53,7 +59,7 @@ function Alternates({ site, page }: ThemeProps) {
   const alternates = page.alternates ?? [];
   const languages = site.locales.items.flatMap(locale => alternates.filter(item => item.locale === locale && (item.version ?? null) === (page.version ?? null)));
   const versions = alternates.filter(item => item.locale === page.locale);
-  return <>{([['Languages', languages], ['Versions', versions]] as const).map(([kind, items]) => items.length > 1 ? <details className="farm-site-alternate" key={kind}>
+  return <>{([['Languages', languages], ['Versions', versions]] as const).map(([kind, items]) => items.length > 1 ? <details className="farm-site-alternate farm-docs-alternate" key={kind}>
     <summary>{kind === 'Languages' ? languageLabels[page.locale] ?? page.locale : versionLabel(page.version ?? site.docs.defaultVersion, page.locale)}</summary>
     <nav aria-label={kind}>{items.map(item => <Link key={item.collection} to={item.routePath} aria-current={item.collection === page.collection ? 'page' : undefined}>
       {kind === 'Languages' ? languageLabels[item.locale] ?? item.locale : versionLabel(item.version ?? site.docs.defaultVersion, page.locale)}{item.missing ? ' (page unavailable)' : ''}
@@ -69,9 +75,18 @@ export function Navbar(props: ThemeProps) {
       <MainNavigation {...props} />
       <Alternates {...props} />
     </>} /></div>}
-    <Link className="farm-docs-brand" to={data.home}>{site.theme.logo && <img src={site.theme.logo.src} alt={site.theme.logo.alt} />}{site.title}</Link>
+    <Link className="farm-docs-brand" to={homeTarget(props)}>{site.theme.logo && <img src={site.theme.logo.src} alt={site.theme.logo.alt} />}{site.title}</Link>
     <MainNavigation {...props} />
-    {!mobile && <div className="farm-site-controls"><Alternates {...props} /><ColorModeControl /></div>}
+    {!mobile && <div className="farm-site-controls farm-docs-controls"><Alternates {...props} /><ColorModeControl /></div>}
     <Search site={site} />
   </header>;
+}
+
+export function Sidebar(props: ThemeProps) {
+  const locale = props.page.locale === 'zh' ? 'zh' : 'en';
+  return <DefaultSidebar {...props} expandedCategories={presentation[locale].expandedCategories} />;
+}
+export function DocPage(props: ThemeProps) {
+  const locale = props.page.locale === 'zh' ? 'zh' : 'en';
+  return <DefaultDocPage {...props} data={{ ...props.data, home: homeTarget(props) }} homeLabel={presentation[locale].homeLabel} tocLabel={presentation[locale].tocLabel} versionLabel={versionLabel(props.page.version ?? props.site.docs.defaultVersion, props.page.locale)} />;
 }

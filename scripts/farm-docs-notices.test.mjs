@@ -18,6 +18,13 @@ for (const source of manifest.sources) {
   assert.equal(sha(original), source.sha256, `${source.name}: original license digest`);
   assert.ok(notice.includes(original), `${source.name}: original license bytes missing from notice`);
 }
+for (const source of manifest.assetSources ?? []) {
+  const original = fs.readFileSync(path.join(website, source.originalText));
+  assert.equal(sha(original), source.sha256, `${source.collection}: icon source license digest`);
+  assert.ok(notice.includes(original), `${source.collection}: original icon license missing from notice`);
+  assert.deepEqual(fs.readFileSync(path.join(website, source.publishedLicense)), original);
+  for (const asset of source.assets) assert.equal(sha(fs.readFileSync(path.join(website, asset.path))), asset.sha256, `${asset.name}: icon bytes differ from recorded source`);
+}
 const css = fs.readFileSync(path.resolve(website, manifest.css.originalText));
 assert.equal(sha(css), manifest.css.sha256);
 const currentCssLicense = fs.readFileSync(path.resolve(website, manifest.css.source), 'utf8').replace(/\r\n/g, '\n');

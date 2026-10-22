@@ -577,5 +577,40 @@
     "originalText": "licenses/ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439.txt",
     "sourceNormalizedSha256": "e22600195c1bf9d060613e649c33f55d842c18440c617ceaf2bd7257afb19786"
   },
-  "noticeSha256": "359e9a2bef4666714b7e762717406ed840154c63ab5c4adafa530971f4551aa4"
+  "noticeSha256": "fcc8826779173d552f5c8735724bdc06808853031437e8800e40bde81e265012",
+  "assetSources": [
+    {
+      "collection": "Simple Icons",
+      "viaPackage": "react-icons",
+      "version": "5.3.0",
+      "sourceModule": "react-icons/si/index.mjs",
+      "sourceModuleSha256": "d1450eed7a5f6520bd21f7801efd382e29405295c23def12edae3596834481c5",
+      "declaredLicense": "CC0-1.0",
+      "originalText": "licenses/react-icons-5.3.0/LICENSE.txt",
+      "sha256": "a0c1e5484fb4c79e2a683834253864e640e1ca57cb57b807bd5bddb72bbbf74f",
+      "publishedLicense": "static/licenses/react-icons-5.3.0-LICENSE.txt",
+      "assets": [
+        {
+          "name": "npm",
+          "path": "static/img/package-managers/npm.svg",
+          "sha256": "d3ff7fe1285298b19cefbd7d8ccf5f65b5f26c04dcde33ae6577b215be6b2ca3"
+        },
+        {
+          "name": "yarn",
+          "path": "static/img/package-managers/yarn.svg",
+          "sha256": "c2c662343c9a7ea3123fd5c11c8fa6d359fcb6207a934a44b1e5be21be3206cf"
+        },
+        {
+          "name": "pnpm",
+          "path": "static/img/package-managers/pnpm.svg",
+          "sha256": "cbe24c6c3604c94df7a4fe9bbfd91e5a243ff300bf3b938fae828119e44a0962"
+        },
+        {
+          "name": "bun",
+          "path": "static/img/package-managers/bun.svg",
+          "sha256": "caa09951737f26bd975a97f6ae6bea6e6c82fa16b32192e7048e8d55ca252085"
+        }
+      ]
+    }
+  ]
 }

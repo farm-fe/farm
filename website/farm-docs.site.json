@@ -3,47 +3,209 @@
   "url": "https://farmfe.org",
   "basePath": "/",
   "trailingSlash": "never",
-  "canonicalOverrides": [{ "path": "/zh", "canonicalPath": "/zh/" }],
-  "locales": { "default": "en", "items": ["en", "zh"] },
+  "canonicalOverrides": [
+    {
+      "path": "/zh",
+      "canonicalPath": "/zh/"
+    }
+  ],
+  "locales": {
+    "default": "en",
+    "items": [
+      "en",
+      "zh"
+    ]
+  },
   "docs": {
     "defaultVersion": "current",
     "collections": [
-      { "id": "en-current", "group": "docs", "dir": "docs", "routeBase": "/docs/", "locale": "en", "version": "current" },
-      { "id": "zh-current", "group": "docs", "dir": "i18n/zh/docusaurus-plugin-content-docs/current", "routeBase": "/zh/docs/", "locale": "zh", "version": "current", "fallbackLocale": "en", "admonitionLabels": { "note": "备注", "tip": "提示", "warning": "注意", "caution": "警告", "danger": "危险" }, "exclude": ["concepts.md", "features/optimization.md", "benchmark.md", "using-plugins.md"] },
-      { "id": "en-1x", "group": "docs", "dir": "versioned_docs/version-1.x", "routeBase": "/docs/1.x/", "locale": "en", "version": "1.x" },
-      { "id": "zh-1x", "group": "docs", "dir": "i18n/zh/docusaurus-plugin-content-docs/version-1.x", "routeBase": "/zh/docs/1.x/", "locale": "zh", "version": "1.x", "fallbackLocale": "en", "admonitionLabels": { "note": "备注", "tip": "提示", "warning": "注意", "caution": "警告", "danger": "危险" }, "exclude": ["concepts.md", "features/optimization.md", "benchmark.md", "using-plugins.md"] }
+      {
+        "id": "en-current",
+        "group": "docs",
+        "dir": "docs",
+        "routeBase": "/docs/",
+        "locale": "en",
+        "version": "current",
+        "sidebar": "sidebars/en-current.json"
+      },
+      {
+        "id": "zh-current",
+        "group": "docs",
+        "dir": "i18n/zh/docusaurus-plugin-content-docs/current",
+        "routeBase": "/zh/docs/",
+        "locale": "zh",
+        "version": "current",
+        "fallbackLocale": "en",
+        "admonitionLabels": {
+          "note": "备注",
+          "tip": "提示",
+          "warning": "注意",
+          "caution": "警告",
+          "danger": "危险"
+        },
+        "exclude": [
+          "concepts.md",
+          "features/optimization.md",
+          "benchmark.md",
+          "using-plugins.md"
+        ],
+        "sidebar": "sidebars/zh-current.json"
+      },
+      {
+        "id": "en-1x",
+        "group": "docs",
+        "dir": "versioned_docs/version-1.x",
+        "routeBase": "/docs/1.x/",
+        "locale": "en",
+        "version": "1.x",
+        "sidebar": "sidebars/en-1x.json"
+      },
+      {
+        "id": "zh-1x",
+        "group": "docs",
+        "dir": "i18n/zh/docusaurus-plugin-content-docs/version-1.x",
+        "routeBase": "/zh/docs/1.x/",
+        "locale": "zh",
+        "version": "1.x",
+        "fallbackLocale": "en",
+        "admonitionLabels": {
+          "note": "备注",
+          "tip": "提示",
+          "warning": "注意",
+          "caution": "警告",
+          "danger": "危险"
+        },
+        "exclude": [
+          "concepts.md",
+          "features/optimization.md",
+          "benchmark.md",
+          "using-plugins.md"
+        ],
+        "sidebar": "sidebars/zh-1x.json"
+      }
     ]
   },
   "blog": {
     "collections": [
-      { "id": "en-blog", "group": "blog", "dir": "blog", "routeBase": "/blog/", "locale": "en", "blogListContent": "full" },
-      { "id": "zh-blog", "group": "blog", "dir": "blog", "routeBase": "/zh/blog/", "locale": "zh", "blogListContent": "full", "admonitionLabels": { "note": "备注", "tip": "提示", "warning": "注意", "caution": "警告", "danger": "危险" }, "blogLabels": { "title": "博客", "archive": "归档", "tags": "标签", "undated": "未注明日期", "noPosts": "暂无文章。" } }
+      {
+        "id": "en-blog",
+        "group": "blog",
+        "dir": "blog",
+        "routeBase": "/blog/",
+        "locale": "en",
+        "blogListContent": "full"
+      },
+      {
+        "id": "zh-blog",
+        "group": "blog",
+        "dir": "blog",
+        "routeBase": "/zh/blog/",
+        "locale": "zh",
+        "blogListContent": "full",
+        "admonitionLabels": {
+          "note": "备注",
+          "tip": "提示",
+          "warning": "注意",
+          "caution": "警告",
+          "danger": "危险"
+        },
+        "blogLabels": {
+          "title": "博客",
+          "archive": "归档",
+          "tags": "标签",
+          "undated": "未注明日期",
+          "noPosts": "暂无文章。"
+        }
+      }
     ]
   },
-  "pages": { "dir": "src/pages" },
-  "staticDirs": [{ "dir": "static", "routeBase": "/" }],
+  "pages": {
+    "dir": "src/pages"
+  },
+  "staticDirs": [
+    {
+      "dir": "static",
+      "routeBase": "/"
+    }
+  ],
   "theme": {
     "components": "src/docs/theme.tsx",
-    "customCss": ["src/css/custom.scss", "src/css/farm.css", "src/css/farm-site.css"],
-    "logo": { "src": "/img/logo.png", "alt": "Farm", "href": "/" },
-    "colorMode": "light",
+    "customCss": [
+      "src/css/custom.scss",
+      "src/css/farm.css",
+      "src/css/farm-site.css"
+    ],
+    "logo": {
+      "src": "/img/logo.png",
+      "alt": "Farm",
+      "href": "/"
+    },
+    "colorMode": "system",
     "navbar": [
-      { "label": "Guides", "to": "/docs/quick-start" },
-      { "label": "Config", "to": "/docs/config/configuring-farm" },
-      { "label": "API", "to": "/docs/api/rust-plugin-api" },
-      { "label": "Plugins", "to": "/docs/plugins/official-plugins/overview" },
-      { "label": "Team", "to": "/team" },
-      { "label": "Blog", "to": "/blog/index" },
-      { "label": "Roadmap", "to": "/roadmap" },
-      { "label": "GitHub", "to": "https://github.com/farm-fe/farm" }
+      {
+        "label": "Guides",
+        "to": "/docs/quick-start"
+      },
+      {
+        "label": "Config",
+        "to": "/docs/config/configuring-farm"
+      },
+      {
+        "label": "API",
+        "to": "/docs/api/rust-plugin-api"
+      },
+      {
+        "label": "Plugins",
+        "to": "/docs/plugins/official-plugins/overview"
+      },
+      {
+        "label": "Team",
+        "to": "/team"
+      },
+      {
+        "label": "Blog",
+        "to": "/blog/index"
+      },
+      {
+        "label": "Roadmap",
+        "to": "/roadmap"
+      },
+      {
+        "label": "GitHub",
+        "to": "https://github.com/farm-fe/farm"
+      }
     ]
   },
-  "notFound": { "labels": { "zh": { "title": "找不到页面", "description": "找不到请求的页面。", "homeLabel": "返回首页" } } },
+  "notFound": {
+    "labels": {
+      "zh": {
+        "title": "找不到页面",
+        "description": "找不到请求的页面。",
+        "homeLabel": "返回首页"
+      }
+    }
+  },
   "search": {
     "provider": "algolia",
-    "options": { "appId": "G3J92PUFY2", "apiKey": "2b0f3f1f06f381249d44682a21206f4f", "indexName": "farm-feio" },
-    "openSearch": { "pageId": "search", "shortName": "Farm", "description": "Search Farm" }
+    "options": {
+      "appId": "G3J92PUFY2",
+      "apiKey": "2b0f3f1f06f381249d44682a21206f4f",
+      "indexName": "farm-feio"
+    },
+    "openSearch": {
+      "pageId": "search",
+      "shortName": "Farm",
+      "description": "Search Farm"
+    }
   },
-  "seo": { "atom": { "updated": "2026-10-18T00:00:00Z", "author": "Farm contributors" } },
-  "ssg": { "concurrency": 2, "timeoutMs": 30000 }
+  "seo": {
+    "atom": {
+      "updated": "2026-10-18T00:00:00Z",
+      "author": "Farm contributors"
+    }
+  },
+  "ssg": {
+    "concurrency": 2,
+    "timeoutMs": 30000
+  }
 }

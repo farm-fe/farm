@@ -1,0 +1,20 @@
+{
+  "en": {
+    "expandedCategories": [
+      "Getting Started",
+      "Tutorial",
+      "Features"
+    ],
+    "homeLabel": "Home",
+    "tocLabel": "On this page"
+  },
+  "zh": {
+    "expandedCategories": [
+      "开始使用",
+      "教程",
+      "功能"
+    ],
+    "homeLabel": "首页",
+    "tocLabel": "本页目录"
+  }
+}
