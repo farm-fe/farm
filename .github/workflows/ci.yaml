@@ -217,7 +217,7 @@ jobs:
         run: pnpm run test:create-farm:candidates ${{ matrix.settings.abi }}
       - name: Preserve failed candidate diagnostics - ${{ matrix.settings.abi }}
         if: ${{ failure() && steps.create-farm-candidates.outputs.evidence != '' }}
-        uses: actions/upload-artifact@v4.1.3
+        uses: actions/upload-artifact@v4
         with:
           name: candidate-diagnostics-${{ github.sha }}-${{ matrix.settings.abi }}
           retention-days: 7
