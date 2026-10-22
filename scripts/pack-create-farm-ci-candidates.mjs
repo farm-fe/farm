@@ -29,7 +29,7 @@ for(const template of templates){
     add(name);if(range!=='^2.0.0'||!/^2\.\d+\.\d+$/.test(workspace.get(name).manifest.version))throw Error('Review candidate version/template constraint '+name+'@'+range);
   }
 }
-function command(args,cwd,log){const fd=fs.openSync(log,'wx');let result;try{result=spawnSync(process.execPath,args,{cwd,windowsHide:true,stdio:['ignore',fd,fd],timeout:120000});}finally{fs.closeSync(fd);}if(result.error)throw result.error;if(result.status!==0)throw Error('Pack failed: '+log);}
+function command(args,cwd,log){const fd=fs.openSync(log,'wx');let result;try{result=spawnSync(process.execPath,args,{cwd,windowsHide:true,stdio:['ignore',fd,fd],timeout:120000});}finally{fs.closeSync(fd);}if(result.error||result.status!==0){console.error(fs.readFileSync(log,'utf8').slice(-12000));if(result.error)throw result.error;throw Error('Pack failed: '+log+' exit '+result.status);}}
 function pack(dir,name){const destination=path.join(out,'packs',name.replace(/[@/]/g,'_'));fs.mkdirSync(destination,{recursive:true});command([pnpm,'pack','--pack-destination',destination],dir,path.join(destination,'pack.log'));const files=fs.readdirSync(destination).filter(f=>f.endsWith('.tgz'));if(files.length!==1)throw Error('Expected one normal pack');const archive=path.join(destination,files[0]),manifest=JSON.parse(execFileSync('tar',['-xOf',archive,'package/package.json'],{encoding:'utf8'}));if(manifest.name!==name)throw Error('Wrong packed package');for(const section of ['dependencies','devDependencies','optionalDependencies','peerDependencies'])for(const [dep,spec] of Object.entries(manifest[section]??{}))if(spec.startsWith('workspace:'))throw Error('Unconverted workspace reference '+dep);return{name,version:manifest.version,archive,sha256:hash(archive),manifest};}
 try{
   for(const name of selected){const row=workspace.get(name),manifestFile=path.join(row.dir,'package.json');
@@ -54,5 +54,5 @@ try{
     const p=pack(stage,platform.name);p.nativeSource=native;p.nativeSha256=hash(native);state.platforms.push(p);save();
   }
   if(head()!==state.head)throw Error('Source head changed');state.state='packed';
-}catch(error){state.state='failed';state.error=String(error.stack??error);process.exitCode=1;}
+}catch(error){state.state='failed';state.error=String(error.stack??error);console.error(state.error);process.exitCode=1;}
 state.ended=new Date().toISOString();save();

@@ -213,7 +213,20 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm
       - name: Test Create Farm candidate packages - ${{ matrix.settings.abi }}
+        id: create-farm-candidates
         run: pnpm run test:create-farm:candidates ${{ matrix.settings.abi }}
+      - name: Preserve failed candidate diagnostics - ${{ matrix.settings.abi }}
+        if: ${{ failure() && steps.create-farm-candidates.outputs.evidence != '' }}
+        uses: actions/upload-artifact@v4.1.3
+        with:
+          name: candidate-diagnostics-${{ github.sha }}-${{ matrix.settings.abi }}
+          retention-days: 7
+          path: |
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/*.log
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/producer.json
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/result.json
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
+            !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
 
   type-check:
     name: Type Check & Changesets

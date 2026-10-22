@@ -36,8 +36,11 @@ function run(args, cwd, log) {
   let result;
   try {result = spawnSync(process.execPath, args, {cwd, env: {...process.env, PATH: path.dirname(process.execPath)+path.delimiter+process.env.PATH}, windowsHide: true, stdio: ['ignore', fd, fd], timeout: 600000});}
   finally {fs.closeSync(fd);}
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw Error(`Exit ${result.status}: ${log}`);
+  if (result.error || result.status !== 0) {
+    console.error(fs.readFileSync(log, 'utf8').slice(-12000));
+    if (result.error) throw result.error;
+    throw Error(`Exit ${result.status}: ${log}`);
+  }
 }
 try {
   for (const template of templates) {
@@ -76,5 +79,5 @@ try {
     row.passed = true; row.ended = new Date().toISOString(); save();
   }
   state.passed = true;
-} catch(error) {state.passed = false; state.error = String(error.stack ?? error); process.exitCode = 1;}
+} catch(error) {state.passed = false; state.error = String(error.stack ?? error); console.error(state.error); process.exitCode = 1;}
 state.ended = new Date().toISOString(); save();

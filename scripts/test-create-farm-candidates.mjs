@@ -9,6 +9,7 @@ if(!pnpm||!fs.existsSync(pnpm)||!path.basename(pnpm).startsWith('pnpm'))throw Er
 const evidence=fs.mkdtempSync(path.join(os.tmpdir(),'farm-create-candidates-'));
 const templates=['react','vue3','solid','svelte','lit','vanilla','preact','vue2'];
 console.log('Create Farm candidate-package evidence: '+evidence);
+if(process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'evidence='+evidence+'\n');
 function run(script,args){const r=spawnSync(process.execPath,[path.join(root,'scripts',script),...args],{cwd:root,stdio:'inherit',windowsHide:true});if(r.error)throw r.error;if(r.status!==0)process.exit(r.status??1);}
 run('pack-create-farm-ci-candidates.mjs',[root,path.join(evidence,'packs'),pnpm,abi,...templates]);
 run('test-create-farm-candidate-local.mjs',[path.join(evidence,'packs/producer.json'),path.join(root,'packages/create-farm/create-farm.js'),path.join(evidence,'templates'),pnpm,...templates]);
