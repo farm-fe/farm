@@ -1,4 +1,14 @@
+import { SiteText } from "../../site-text";
 "use client";
+import { cn } from "../../lib/utils";
+import React from "react";
+import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
+import Rocket from "../../../static/img/rocket.png";
+import Plug from "../../../static/img/plug.png";
+import FeaturePng from "../../../static/img/feature.png";
+import Box from "../../../static/img/box.png";
+import Compatibility from "../../../static/img/compatible.png";
+import Consistency from "../../../static/img/consistency.png";
 import {
   IconBoxAlignRightFilled,
   IconClipboardCopy,
@@ -7,17 +17,7 @@ import {
   IconTableColumn,
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
-import React from "react";
-import Box from "../../../static/img/box.png";
-import Compatibility from "../../../static/img/compatible.png";
-import Consistency from "../../../static/img/consistency.png";
-import FeaturePng from "../../../static/img/feature.png";
-import Plug from "../../../static/img/plug.png";
-import Rocket from "../../../static/img/rocket.png";
-import { cn } from "../../lib/utils";
-import { SiteText } from "../../site-text";
 import { AnimatedBeamPig } from "../ui/beam";
-import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
 
 export default function BentoGridCard() {
   return (

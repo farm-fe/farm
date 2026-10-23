@@ -21,6 +21,7 @@ export function ProgressBar({ value, max, animate = false, contained = false }) 
     return () => window.removeEventListener("resize", update);
   }, []);
   const progressBarWidth = isMobile ? 80 : 18;
+  const bounded = contained || isMobile;
   const formattedTime = formatTime(elapsedTime, TOTAL_TIME);
   const [props, api] = useSpring(() => ({ width: "100%" }));
   useEffect(() => {
@@ -46,14 +47,17 @@ export function ProgressBar({ value, max, animate = false, contained = false }) 
     <div
       className={`${styles["progress-bar-container"]} flex justify-between items-center sm:pr-4`}
       style={{
-        width: contained ? "100%" : `${progressBarWidth}vw`,
+        width: bounded ? "100%" : `${progressBarWidth}vw`,
         flex: 1,
+        boxSizing: bounded ? "border-box" : undefined,
+        maxWidth: bounded ? "100%" : undefined,
+        minWidth: bounded ? 0 : undefined,
       }}
     >
       <div
         className={`${styles["progress-bar-inner-container"]} flex justify-between`}
         style={{
-          width: contained ? `${(value / max) * 80}%` : `${(value / max) * 0.8 * progressBarWidth}vw`,
+          width: bounded ? `${(value / max) * 80}%` : `${(value / max) * 0.8 * progressBarWidth}vw`,
         }}
       >
         <animated.div className={styles["progress-bar"]} style={props} />

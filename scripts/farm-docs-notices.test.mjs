@@ -18,6 +18,13 @@ for (const source of manifest.sources) {
   assert.equal(sha(original), source.sha256, `${source.name}: original license digest`);
   assert.ok(notice.includes(original), `${source.name}: original license bytes missing from notice`);
 }
+assert.ok(manifest.codeSources?.some(source => source.repository === 'https://github.com/farm-fe/farm-fe.github.io'), 'Original homepage source provenance missing');
+for (const source of manifest.codeSources) {
+  const original = fs.readFileSync(path.join(website, source.originalText));
+  assert.match(source.sourceCommit, /^[a-f0-9]{40}$/, `${source.name}: pinned source commit`);
+  assert.equal(sha(original), source.sha256, `${source.name}: original source license digest`);
+  assert.ok(notice.includes(original), `${source.name}: original source license bytes missing from public notice`);
+}
 for (const source of manifest.assetSources ?? []) {
   const original = fs.readFileSync(path.join(website, source.originalText));
   assert.equal(sha(original), source.sha256, `${source.collection}: icon source license digest`);

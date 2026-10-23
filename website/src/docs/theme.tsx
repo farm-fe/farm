@@ -9,7 +9,7 @@ export { default as Footer } from '../theme/Footer';
 
 const Mobile = createContext(false);
 const languageLabels: Record<string, string> = { en: 'English', zh: '简体中文' };
-const chineseNavigation: Record<string, string> = { Guides: '指南', Config: '配置', Plugins: '插件', Team: '团队', Blog: '日志' };
+const chineseNavigation: Record<string, string> = { Ecosystem: '生态', Guides: '指南', Config: '配置', Plugins: '插件', Team: '团队', Blog: '日志' };
 function versionLabel(version: string, locale: string) {
   return version === 'current' ? (locale === 'zh' ? '2.x（最新）' : '2.x (Latest)') : version;
 }
@@ -34,12 +34,6 @@ function RepositoryLink({ site }: ThemeProps) {
   return repository ? <NavigationIconLink href={repository.to} label="GitHub repository"><GitHubLogoIcon aria-hidden="true" /></NavigationIconLink> : null;
 }
 
-function Announcement({ locale }: { locale: string }) {
-  const [visible, setVisible] = useState(true);
-  const notice = presentation.navigation.announcement;
-  return visible ? <aside className="farm-site-announcement">{notice.text} <a href={notice.href} target="_blank" rel="noopener noreferrer">{notice.label}</a><button type="button" aria-label={locale === 'zh' ? '关闭公告' : 'Close announcement'} onClick={() => setVisible(false)}>×</button></aside> : null;
-}
-
 /** Adapt the public theme slots to the original website shell. */
 export function Layout(props: ThemeProps) {
   const [mobile, setMobile] = useState(false);
@@ -56,7 +50,6 @@ export function Layout(props: ThemeProps) {
   return <Mobile.Provider value={mobile}>
     <div className={`farm-docs-theme farm-site-shell${home ? ' farm-site-shell--home' : ''}${mobile ? ' farm-site-shell--mobile' : ''}`}>
       <a className="farm-docs-skip" href="#farm-docs-content">{props.page.locale === 'zh' ? '跳到主要内容' : 'Skip to main content'}</a>
-      {home && <Announcement locale={props.page.locale} />}
       <slots.Navbar {...props} />
       <div className="farm-docs-layout">
         <div className="farm-docs-sidebar-slot">{!mobile && <slots.Sidebar {...props} />}</div>

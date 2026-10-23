@@ -78,3 +78,24 @@ Validate routes, both language variants, resources, navigation, 404 and third-pa
 The package declares Node.js 20 or newer and React/React DOM 18 peers. Use compatible `@farmfe/docs`, `@farmfe/docs-theme-default`, `@farmfe/cli`, Core and native plugin packages from the same verified distribution. The framework's official v2 package release is a separate prerequisite; this guide does not imply that a currently installable release exists.
 
 Once matching official packages are available, install them with normal lifecycle scripts and optional dependencies enabled. Pin the verified versions and commit the package-manager lockfile. Do not use workspace links or arbitrary native binaries to validate an external consumer.
+
+## Migrating a Docusaurus site
+
+Migration uses the site's Farm configuration and explicit component replacements; Farm Docs does not ship a Docusaurus compatibility package or promise full compatibility.
+
+Use `compilation.resolve.alias` for paths such as `@site`. Keep application-specific adapters in the site rather than the framework:
+
+```ts
+import { fileURLToPath } from 'node:url';
+import { defineDocsConfig } from '@farmfe/docs';
+
+export default defineDocsConfig(site, {
+  compilation: {
+    resolve: { alias: { '@site': fileURLToPath(new URL('.', import.meta.url)) } }
+  }
+});
+```
+
+Replace `@theme/Tabs` and `@theme/TabItem` with named `Tabs` and `TabItem` imports from `@farmfe/docs/mdx`; each item needs an explicit `value` and `label`. Replace `@theme/CodeBlock` with the named `CodeBlock` marker from `@farmfe/docs/snippets`. Its code must be static so the existing Rust snippets compiler can compile and highlight it.
+
+Use `Link`, `useSite`, `usePage` and `useLocale` from `@farmfe/docs/client` for their documented contracts. Rewrite unsupported Docusaurus context, translation and internal theme APIs as site code when needed. An alias only resolves a path: it cannot reproduce another framework's runtime behavior or JavaScript plugin lifecycle. Validate routes, SSR, theme controls, tabs and code output after replacing imports. No Docusaurus runtime or build dependency is required.

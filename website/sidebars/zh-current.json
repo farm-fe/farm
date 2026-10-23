@@ -24,20 +24,6 @@
     },
     {
       "type": "category",
-      "label": "Farm Docs",
-      "items": [
-        {
-          "type": "doc",
-          "id": "farm-docs/overview"
-        },
-        {
-          "type": "doc",
-          "id": "farm-docs/usage"
-        }
-      ]
-    },
-    {
-      "type": "category",
       "label": "教程",
       "items": [
         {
@@ -250,6 +236,20 @@
       "type": "category",
       "label": "插件",
       "items": [
+        {
+          "type": "category",
+          "label": "Farm Docs",
+          "items": [
+            {
+              "type": "doc",
+              "id": "farm-docs/overview"
+            },
+            {
+              "type": "doc",
+              "id": "farm-docs/usage"
+            }
+          ]
+        },
         {
           "type": "doc",
           "id": "plugins/community-plugins"

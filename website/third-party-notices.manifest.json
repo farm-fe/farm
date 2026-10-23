@@ -577,7 +577,7 @@
     "originalText": "licenses/ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439.txt",
     "sourceNormalizedSha256": "e22600195c1bf9d060613e649c33f55d842c18440c617ceaf2bd7257afb19786"
   },
-  "noticeSha256": "fcc8826779173d552f5c8735724bdc06808853031437e8800e40bde81e265012",
+  "noticeSha256": "e97f13dca478202c0958ad6613cf7a6a879644c346c85f4ad145e0a4d1739927",
   "assetSources": [
     {
       "collection": "Simple Icons",
@@ -611,6 +611,16 @@
           "sha256": "caa09951737f26bd975a97f6ae6bea6e6c82fa16b32192e7048e8d55ca252085"
         }
       ]
+    }
+  ],
+  "codeSources": [
+    {
+      "name": "Original Farm homepage source",
+      "repository": "https://github.com/farm-fe/farm-fe.github.io",
+      "sourceCommit": "e8f521a0f9d7d74ce0efdfaf1421eb5fa0a666cd",
+      "originalText": "licenses/farm-fe.github.io-LICENSE.txt",
+      "sha256": "6746375d71f9f50961ef17946a6df018724aff5ddc742a96ae4425ff530ea81b",
+      "scope": "Transplanted homepage components and module styles; Farm Docs API and accessibility adaptations are local changes."
     }
   ]
 }

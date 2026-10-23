@@ -124,6 +124,8 @@ jobs:
           NODE_OPTIONS=${process.env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(path.resolve('scripts/farm-docs-native-guard.mjs')).href}
           `);
           NODE
+      - name: Verify Docs alias configuration
+        run: node scripts/farm-docs-config-alias.test.mjs
       - name: Build minimal and multilingual consumers
         run: |
           pnpm --dir examples/docs-minimal run build

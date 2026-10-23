@@ -22,13 +22,9 @@
       "Guides",
       "Config",
       "API",
-      "Plugins"
+      "Plugins",
+      "Ecosystem"
     ],
-    "announcement": {
-      "text": "🎉 Farm will continue to release nightly versions. Please check out for details",
-      "label": "Farm Nightly",
-      "href": "https://farm-nightly.netlify.app/"
-    },
     "community": {
       "en": {
         "label": "Community",

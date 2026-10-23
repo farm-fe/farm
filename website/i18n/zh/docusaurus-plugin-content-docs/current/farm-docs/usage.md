@@ -78,3 +78,24 @@ export function Footer({ site }: ThemeProps) {
 包声明要求 Node.js 20 或更新版本，以及 React/React DOM 18 peer 依赖。`@farmfe/docs`、`@farmfe/docs-theme-default`、`@farmfe/cli`、Core 与原生插件必须来自同一套经过验证的分发。正式 v2 包发布是独立前置条件，本指南不代表已有可立即安装的发行版。
 
 匹配正式包可用后，应启用正常生命周期脚本和 optional 依赖安装，固定验证过的版本并提交锁文件。不要使用工作区链接或任意原生二进制替代外部消费者验收。
+
+## 迁移 Docusaurus 站点
+
+迁移通过站点的 Farm 配置和明确的组件替换完成。Farm Docs 不提供 Docusaurus 兼容包，也不承诺完整兼容。
+
+`@site` 等路径可使用 `compilation.resolve.alias`。站点专用的小适配留在站点中，不加入框架：
+
+```ts
+import { fileURLToPath } from 'node:url';
+import { defineDocsConfig } from '@farmfe/docs';
+
+export default defineDocsConfig(site, {
+  compilation: {
+    resolve: { alias: { '@site': fileURLToPath(new URL('.', import.meta.url)) } }
+  }
+});
+```
+
+将 `@theme/Tabs`、`@theme/TabItem` 改为从 `@farmfe/docs/mdx` 命名导入 `Tabs`、`TabItem`，每个项显式提供 `value` 与 `label`。将 `@theme/CodeBlock` 改为从 `@farmfe/docs/snippets` 命名导入 `CodeBlock` 标记；代码必须是静态内容，由已有 Rust snippets 编译器编译和高亮。
+
+导航、站点和页面数据使用 `@farmfe/docs/client` 中有文档契约的 `Link`、`useSite`、`usePage`、`useLocale`。不支持的 Docusaurus context、翻译和主题内部 API 按实际需要改为站点代码。Alias 只负责解析路径，不能复现其他框架的运行时语义或 JavaScript 插件生命周期。替换后验收路由、SSR、主题控件、标签与代码输出；不需要 Docusaurus 运行时或构建依赖。

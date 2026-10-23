@@ -159,6 +159,10 @@
         "to": "/docs/plugins/official-plugins/overview"
       },
       {
+        "label": "Ecosystem",
+        "to": "/docs/farm-docs/overview"
+      },
+      {
         "label": "Team",
         "to": "/team"
       },

@@ -221,6 +221,70 @@ impl Compiler {
         })],
       }));
     }
+    if referenced.contains("--tw-gradient-stops") {
+      // Stops must not inherit from a parent gradient (including pseudo-elements).
+      utilities.push(AstNode::AtRule(ast::AtRule {
+        name: "@layer".into(),
+        params: "base".into(),
+        nodes: vec![AstNode::Rule(ast::StyleRule {
+          selector: "*, ::before, ::after".into(),
+          nodes: [
+            "--tw-gradient-stops",
+            "--tw-gradient-from",
+            "--tw-gradient-via",
+            "--tw-gradient-to",
+            "--tw-gradient-via-stops",
+            "--tw-gradient-from-position",
+            "--tw-gradient-via-position",
+            "--tw-gradient-to-position",
+          ]
+          .map(|property| {
+            AstNode::Declaration(ast::Declaration {
+              property: property.into(),
+              value: Some("initial".into()),
+              important: false,
+            })
+          })
+          .into(),
+        })],
+      }));
+    }
+    if referenced.iter().any(|name| {
+      [
+        "--tw-backdrop-blur",
+        "--tw-translate-x",
+        "--tw-translate-y",
+        "--tw-duration",
+        "--tw-ease",
+        "--tw-shadow",
+      ]
+      .contains(&name.as_str())
+    }) {
+      utilities.push(AstNode::AtRule(ast::AtRule {
+        name: "@layer".into(),
+        params: "base".into(),
+        nodes: vec![AstNode::Rule(ast::StyleRule {
+          selector: "*, ::before, ::after".into(),
+          nodes: [
+            "--tw-backdrop-blur",
+            "--tw-transform-gpu",
+            "--tw-translate-x",
+            "--tw-translate-y",
+            "--tw-duration",
+            "--tw-ease",
+            "--tw-shadow",
+          ]
+          .map(|property| {
+            AstNode::Declaration(ast::Declaration {
+              property: property.into(),
+              value: Some("initial".into()),
+              important: false,
+            })
+          })
+          .into(),
+        })],
+      }));
+    }
     if self.color_variables {
       let mut colors: Vec<_> = self
         .design_system
@@ -506,6 +570,19 @@ pub fn compile(css: &str, options: CompilerOptions) -> Result<Compiler, CompileE
     apply_external_config_theme(&mut theme, &config.data);
   }
   let mut design_system = DesignSystem::build(&ast, theme);
+  // This v3 configuration key is an explicit compatibility request, not a
+  // global change to the default modern border utility contract.
+  // It is deliberately not a full Tailwind v3 compatibility mode.
+  let preserve_border_width_style = options
+    .config
+    .as_ref()
+    .and_then(|config| config.data.pointer("/corePlugins/preflight"))
+    .and_then(Value::as_bool)
+    == Some(false);
+  design_system
+    .utilities
+    .set_preserve_border_width_style(preserve_border_width_style);
+
   if let Some(mode) = options
     .config
     .as_ref()

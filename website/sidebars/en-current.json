@@ -24,20 +24,6 @@
     },
     {
       "type": "category",
-      "label": "Farm Docs",
-      "items": [
-        {
-          "type": "doc",
-          "id": "farm-docs/overview"
-        },
-        {
-          "type": "doc",
-          "id": "farm-docs/usage"
-        }
-      ]
-    },
-    {
-      "type": "category",
       "label": "Tutorial",
       "items": [
         {
@@ -250,6 +236,20 @@
       "type": "category",
       "label": "Plugins",
       "items": [
+        {
+          "type": "category",
+          "label": "Farm Docs",
+          "items": [
+            {
+              "type": "doc",
+              "id": "farm-docs/overview"
+            },
+            {
+              "type": "doc",
+              "id": "farm-docs/usage"
+            }
+          ]
+        },
         {
           "type": "doc",
           "id": "plugins/community-plugins"

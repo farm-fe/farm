@@ -1,21 +1,21 @@
 .progress-bar-container {
   width: 50vw;
-  height: 35px;
+  height: 25px;
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 4px;
   box-sizing: content-box;
   border: 1px solid var(--farm--border);
 }
 
 .progress-bar-inner-container {
   height: 25px;
-  background: var(--farm-docs-accent-soft);
+  background: #9f1a8f;
   border-radius: 2px;
 }
 
 .progress-bar {
   height: 100%;
-  background: var(--farm-docs-link);
+  background: linear-gradient(to right, rgb(192 38 211), #d2269e);
   border-radius: 2px;
 }
 
@@ -24,8 +24,10 @@
     Bitstream Vera Sans Mono, Courier New, monospace;
 }
 
-:global(.dark) .progress-bar-inner-container {
-  background: var(--farm-docs-accent-soft);
+:global(.dark) {
+  .progress-bar-inner-container {
+    background: #fba;
+  }
 }
 
 @media (max-width: 768px) {
@@ -80,3 +82,7 @@
   align-items: center;
   width: 100%;
 }
+
+/* Keep labels readable and scroll only the scenario strip, never the chart. */
+.pills { min-width: max-content; white-space: nowrap; }
+.pills > div { flex-shrink: 0; }

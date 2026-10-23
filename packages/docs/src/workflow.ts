@@ -22,6 +22,7 @@ import type { DocsFarmConfig } from './index.js';
 import { assertNativePlugins } from './index.js';
 import { withOutputTransaction } from './output-transaction.js';
 import { startDocsPreview } from './preview.js';
+import { withFrameworkAliases } from './resolve-alias.js';
 import { renderPages } from './ssg-pool.js';
 
 interface Manifest {
@@ -308,7 +309,6 @@ export async function run({
       const require = createRequire(path.join(root, 'package.json'));
       const frameworkRequire = createRequire(import.meta.url);
       const aliases = {
-        ...farm.compilation?.resolve?.alias,
         react: path.dirname(require.resolve('react/package.json')),
         'react-dom': path.dirname(require.resolve('react-dom/package.json')),
         '@farmfe/docs/client$': fileURLToPath(
@@ -355,7 +355,13 @@ export async function run({
                 target === 'node' ? '[entryName].cjs' : '[entryName].[ext]',
               publicPath: site.basePath ?? '/'
             },
-            resolve: { ...farm.compilation?.resolve, alias: aliases },
+            resolve: {
+              ...farm.compilation?.resolve,
+              alias: withFrameworkAliases(
+                farm.compilation?.resolve?.alias,
+                aliases
+              )
+            },
             lazyCompilation: false,
             sourcemap: farm.compilation?.sourcemap ?? false
           },

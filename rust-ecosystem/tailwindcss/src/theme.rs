@@ -414,6 +414,26 @@ impl Theme {
     // ── Aspect ratio ────────────────────────────────────────────────────
     t.add("--aspect-video", "16 / 9", d);
 
+    for (key, value) in [
+      ("--blur-sm", "4px"),
+      (
+        "--shadow-lg",
+        "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      ),
+      (
+        "--shadow-xl",
+        "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+      ),
+      ("--container-md", "28rem"),
+      ("--container-lg", "32rem"),
+      ("--container-7xl", "80rem"),
+      ("--tracking-wide", "0.025em"),
+      ("--ease-in", "cubic-bezier(0.4, 0, 1, 1)"),
+      ("--ease-out", "cubic-bezier(0, 0, 0.2, 1)"),
+      ("--ease-in-out", "cubic-bezier(0.4, 0, 0.2, 1)"),
+    ] {
+      t.add(key, value, d);
+    }
     t
   }
 

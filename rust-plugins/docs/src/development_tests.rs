@@ -49,13 +49,6 @@ fn development_manifest_routes_follow_add_delete_and_reject_invalid_replacement(
   });
 }
 
-struct Fixture(PathBuf);
-impl Drop for Fixture {
-  fn drop(&mut self) {
-    let _ = fs::remove_dir_all(&self.0);
-  }
-}
-
 #[test]
 fn full_blog_wrapper_keeps_original_article_edges_for_css_and_lazy_content() {
   fixture(|_, context, root| {
@@ -227,16 +220,9 @@ fn full_blog_wrapper_invalidates_when_article_identity_changes_without_visible_i
 }
 
 fn fixture(test: impl FnOnce(&FarmPluginDocs, &Arc<CompilationContext>, &Path)) {
-  let nonce = std::time::SystemTime::now()
-    .duration_since(std::time::UNIX_EPOCH)
-    .unwrap()
-    .as_nanos();
-  let root = std::env::temp_dir().join(format!(
-    "farm-docs-development-{}-{nonce}",
-    std::process::id()
-  ));
-  fs::create_dir_all(root.join("docs")).unwrap();
-  let _owner = Fixture(root.clone());
+  let owner = crate::preflight_fixture::FixtureRoot::new().unwrap();
+  let root = owner.path();
+  fs::create_dir(root.join("docs")).unwrap();
   fs::write(root.join("docs/index.md"), "# Initial development body\n").unwrap();
   let mut config = Config::default();
   config.root = root.to_string_lossy().into_owned();
@@ -245,7 +231,7 @@ fn fixture(test: impl FnOnce(&FarmPluginDocs, &Arc<CompilationContext>, &Path)) 
   plugin
     .build_start(&context)
     .expect("Rust development mode prepares its own initial content plan");
-  test(&plugin, &context, &root);
+  test(&plugin, &context, root);
 }
 
 #[test]
