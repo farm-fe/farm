@@ -2,13 +2,6 @@ import { SiteText } from "../../site-text";
 
 "use client";
 
-import {
-  IconBoxAlignRightFilled,
-  IconClipboardCopy,
-  IconFileBroken,
-  IconSignature,
-  IconTableColumn,
-} from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import React from "react";
 import Box from "../../../static/img/box.png";
@@ -18,6 +11,13 @@ import FeaturePng from "../../../static/img/feature.png";
 import Plug from "../../../static/img/plug.png";
 import Rocket from "../../../static/img/rocket.png";
 import { cn } from "../../lib/utils";
+import {
+  IconBoxAlignRightFilled,
+  IconClipboardCopy,
+  IconFileBroken,
+  IconSignature,
+  IconTableColumn,
+} from "../../vendor/tabler-selected.mjs";
 import { AnimatedBeamPig } from "../ui/beam";
 import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
 
