@@ -865,7 +865,7 @@ fn maybe_neg(value: String, negative: bool) -> String {
 }
 
 /// Normalize arbitrary alpha to a percentage-valued color-mix weight.
-/// Opaque variables and unitless math use the conventional 0..1 alpha ratio.
+/// Opaque variables and math without a unit use the conventional 0..1 alpha ratio.
 /// Percentage-valued variables can be expressed as `calc(var(--alpha) + 0%)`;
 /// a variable's runtime dimension cannot otherwise be inferred at build time.
 fn normalize_arbitrary_alpha(raw: &str) -> Option<String> {

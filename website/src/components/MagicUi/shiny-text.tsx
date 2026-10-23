@@ -1,6 +1,6 @@
 import { ArrowRightIcon } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { CSSProperties, FC, ReactNode } from "react";
+import { cn } from "../../lib/utils";
 
 interface AnimatedShinyTextProps {
   children: ReactNode;

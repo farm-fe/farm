@@ -1,11 +1,12 @@
-import { SiteText } from "../../site-text";
-import { ProgressBar } from "./ProgressBar";
-import { useInView } from "react-intersection-observer";
-import styles from "./index.module.css";
 import { Link, useLocale } from "@farmfe/docs/client";
-import React, { useState } from "react";
 import clsx from "clsx";
+import React, { useState } from "react";
+import { useInView } from "react-intersection-observer";
+import { SiteText } from "../../site-text";
 import ShinyTextEx from "../MagicUi/shiny-text";
+import styles from "./index.module.css";
+import { ProgressBar } from "./ProgressBar";
+
 const BENCHMARK_DATA = {
   ColdStart: [
     {

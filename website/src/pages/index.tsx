@@ -1,5 +1,4 @@
 import { Link, useLocale } from "@farmfe/docs/client";
-import { SiteText } from "../site-text";
 // import useBaseUrl from '@docusaurus/useBaseUrl';
 // import ThemedImage from '@theme/ThemedImage';
 import clsx from "clsx";
@@ -8,6 +7,7 @@ import Benchmark from "../components/Benchmark";
 import AnimatedGradientStarWithGithub from "../components/MagicUi/animated-shiny-text";
 import BlurFade from "../components/MagicUi/blur-fade";
 import BentoGridCard from "../components/MagicUi/card";
+import { SiteText } from "../site-text";
 // import StarrySky from "../components/StarrySky";
 // import { AuroraBackground } from "../components/ui/aurora-back";
 import styles from "./index.module.css";
