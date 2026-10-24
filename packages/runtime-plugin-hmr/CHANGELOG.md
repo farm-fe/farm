@@ -1,5 +1,13 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0
+
+### Patch Changes
+
+- Invalidate every boundary chain before evaluating a batch update, and preserve old accept/dispose callbacks until cleanup completes. This prevents stale dependency exports and incorrect resource disposal when a component and its dependency change together.
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+
 ## 4.0.0-beta.2
 
 ### Patch Changes

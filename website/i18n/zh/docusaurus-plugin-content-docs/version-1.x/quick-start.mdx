@@ -2,17 +2,8 @@
 sidebar_position: 1
 ---
 
-import { PackageManagerTabs } from "../../../../src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
-:::warning
-如果您正在使用的是 2.0.0-nightly 版本。请注意以下几点：
-- Farm 正在为 2.0 版本努力, 我们重构了整个 node 端和 新增了很多实用的功能, 后续请查看 RoadMap
-- 此版本是一个夜间构建版本，可能包含未经过全面测试的新功能和修复。因此，可能会出现不稳定的行为或意外的错误。
-- 由于此版本处于开发阶段，功能和API可能会在未来的版本中发生变化。请定期查看更新日志以获取最新信息。
-- 建议不要在生产环境中使用此版本，除非您已做好应对潜在问题的准备。
-
-如果遇到了问题， 可以提供 Issues 来向我们反馈, 您的反馈对我们改进 Farm 的功能以及稳定性至关重要。
-:::
 
 # 快速开始
 
@@ -27,26 +18,21 @@ Farm 需要 **Node 16.18.0 及更高版本**。
 
 ## 1. 创建一个 Farm 项目
 
-<PackageManagerTabs command="npm create farm@latest" />
-
-:::warning
-如果使用的是nightly 版本则需要把 Farm 的依赖都安装成 nightly 版本, 所有核心包以及插件我们都已经提供nightly 版本
-<PackageManagerTabs command="pnpm add @farmfe/{cli,core}@nightly" />
-:::
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 
 :::note{title="然后按照提示操作！"}
 您还可以通过附加命令行选项直接指定项目名称和要使用的模板：
 :::
 
-<PackageManagerTabs command="pnpm create farm my-react-app --template react" />
+<PackageManagerTabs commands={{"npm":"npm create farm my-react-app --template react","pnpm":"pnpm create farm my-react-app --template react","yarn":"yarn create farm my-react-app --template react","bun":"bun create farm my-react-app --template react"}} />
 
 
 ## 2.启动项目
 
 选择您喜欢的包管理器，安装依赖项，然后启动项目。
 
-<PackageManagerTabs command="cd farm-project && pnpm i && pnpm start" />
+<PackageManagerTabs commands={{"npm":"cd farm-project && npm i && npm start","pnpm":"cd farm-project && pnpm i && pnpm start","yarn":"cd farm-project && yarn i && yarn start","bun":"cd farm-project && bun i && bun start"}} />
 
 
 默认情况下，该项目将从`http://localhost:9000`启动。
@@ -101,4 +87,3 @@ npm run build
 - [配置参考](/docs/config/configuring-farm)
 - [插件](/docs/plugins/official-plugins/overview)
 ---
-

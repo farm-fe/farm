@@ -2,9 +2,6 @@
 @use "./admonition";
 @use "./token.css";
 
-@tailwind components;
-@tailwind base;
-@tailwind utilities;
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -107,8 +104,6 @@
   --ifm-footer-background-color: #181818;
   --farm--border: #fafafa20;
   --docusaurus-highlighted-code-line-bg: rgba(143, 26, 127, 0.7);
-  --docsearch-primary-color: var(--ifm-color-primary-dark) !important;
-  --docsearch-searchbox-background: #3a3a3a !important;
 }
 
 .navbar__title {
@@ -250,6 +245,12 @@ a {
 .DocSearch-Button {
   width: 250px;
   border-radius: 8px !important;
+}
+
+@media screen and (max-width: 996px) {
+  .DocSearch-Button {
+    width: auto;
+  }
 }
 
 .dropdown > .navbar__link:after {

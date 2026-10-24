@@ -1,16 +1,16 @@
 use farmfe_core::{
+  HashMap, HashSet,
   context::CompilationContext,
   module::{
+    Module, ModuleId,
     module_graph::ModuleGraph,
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleId,
   },
   plugin::PluginHookContext,
   resource::{
     resource_pot::{ResourcePot, ResourcePotId},
     resource_pot_map,
   },
-  HashMap, HashSet,
 };
 use std::sync::Arc;
 
@@ -59,13 +59,27 @@ pub fn generate_and_diff_resource_pots(
   {
     let mut resource_pot_map = context.resource_pot_map.write();
 
-    enforce_resource_pot_ids.iter().for_each(|id| {
-      let resource_pot = resource_pot_map.resource_pot_mut(id).unwrap();
-      fill_necessary_fields_for_resource_pot(vec![resource_pot], context);
-    });
-    resources_pots.iter_mut().for_each(|rp| {
-      fill_necessary_fields_for_resource_pot(vec![rp], context);
-    });
+    // The helper snapshots all group entry IDs on every call. Memberships
+    // and entry IDs do not change while filling these pots, so batch them
+    // while keeping enforced and ordinary pots as separate phases.
+    if !enforce_resource_pot_ids.is_empty() {
+      let enforced = enforce_resource_pot_ids
+        .iter()
+        .cloned()
+        .collect::<HashSet<_>>();
+      let pots = resource_pot_map
+        .resource_pots_mut()
+        .into_iter()
+        .filter(|pot| enforced.contains(&pot.id))
+        .collect::<Vec<_>>();
+      assert_eq!(
+        pots.len(),
+        enforced.len(),
+        "enforced resource pot is missing"
+      );
+      fill_necessary_fields_for_resource_pot(pots, context);
+    }
+    fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
   }
 
   let mut new_resource_pot_ids =
@@ -308,48 +322,51 @@ fn diff_and_patch_resource_pot_map(
   let resources_pots_ids = resources_pots
     .iter()
     .map(|rp| rp.id.clone())
-    .collect::<Vec<_>>();
+    .collect::<HashSet<_>>();
+  // These memberships are queried for every pot in every affected group.
+  // Linear scans here multiply with shared groups on large documentation sites.
+  let enforce_resource_pot_ids = enforce_resource_pot_ids
+    .iter()
+    .cloned()
+    .collect::<HashSet<_>>();
 
   let mut module_graph = context.module_graph.write();
   let mut resource_pot_map = context.resource_pot_map.write();
   let mut module_group_graph = context.module_group_graph.write();
 
   let mut new_resource_pot_ids = HashSet::default();
+  let mut pruned_module_groups = HashSet::default();
 
-  for mut resource_pot in resources_pots {
-    let mut module_groups = HashSet::default();
-
-    for module_id in resource_pot.modules() {
-      let module = module_graph.module(module_id).unwrap();
-      module_groups.extend(module.module_groups.clone());
-    }
-
-    resource_pot.module_groups = module_groups.clone();
-
-    for module_group_id in module_groups {
+  for resource_pot in resources_pots {
+    // fill_necessary_fields_for_resource_pot already excludes DynamicEntry
+    // groups. Recomputing from shared modules would attach ordinary pots to
+    // worker groups and remove their independently bundled entry pots.
+    for module_group_id in &resource_pot.module_groups {
       let module_group = module_group_graph
-        .module_group_mut(&module_group_id)
+        .module_group_mut(module_group_id)
         .unwrap();
-      let mut resources_pots_to_remove = vec![];
+      // Retained IDs are fixed for this batch. Later visits only add IDs from
+      // resources_pots_ids, so pruning this same shared group again is redundant.
+      if pruned_module_groups.insert(module_group_id.clone()) {
+        let mut resources_pots_to_remove = vec![];
+        for resource_pot in module_group.resource_pots() {
+          if !resources_pots_ids.contains(resource_pot)
+            && !enforce_resource_pot_ids.contains(resource_pot)
+          {
+            resources_pots_to_remove.push(resource_pot.clone());
 
-      // Remove the old resource pots
-      for resource_pot in module_group.resource_pots() {
-        if !resources_pots_ids.contains(resource_pot)
-          && !enforce_resource_pot_ids.contains(resource_pot)
-        {
-          resources_pots_to_remove.push(resource_pot.clone());
-
-          remove_resource_pot(
-            resource_pot,
-            &mut resource_pot_map,
-            context,
-            &mut module_graph,
-          );
+            remove_resource_pot(
+              resource_pot,
+              &mut resource_pot_map,
+              context,
+              &mut module_graph,
+            );
+          }
         }
-      }
 
-      for resource_pot in resources_pots_to_remove {
-        module_group.remove_resource_pot(&resource_pot);
+        for resource_pot in resources_pots_to_remove {
+          module_group.remove_resource_pot(&resource_pot);
+        }
       }
 
       if module_group.has_resource_pot(&resource_pot.id) {

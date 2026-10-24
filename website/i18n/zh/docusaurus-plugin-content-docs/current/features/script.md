@@ -16,7 +16,7 @@ function ButtonGroup(props: ButtonProps) {
 }
 ```
 
-Farm 使用 SWC 来编译脚本，Farm 为脚本编译设置了合理的默认配置。 另外，您可以使用`compilation.script`来配置如何编译脚本文件。 有关详细信息，请参阅 [compilation.script](/docs/config/farm-config#compilation-options)。
+Farm 使用 SWC 来编译脚本，Farm 为脚本编译设置了合理的默认配置。 另外，您可以使用`compilation.script`来配置如何编译脚本文件。 有关详细信息，请参阅 [compilation.script](../config/compilation-options.md#script)。
 
 ## 配置 Swc 解析器
 
@@ -60,7 +60,7 @@ export default {
 };
 ```
 
-有关`presetEnv`的更多信息，请参阅 [Polyfill](/docs/features/polyfill)。
+有关`presetEnv`的更多信息，请参阅 [Polyfill](../advanced/polyfill.md)。
 
 ## 原生顶层 Await
 Farm 通过 [`compilation.script.nativeTopLevelAwait`](/zh/docs/config/compilation-options#scriptnativetoplevelawait) 支持原生顶层 `await`。启用后，Farm 会保留模块顶层的 `await` 而不是将其转换。
@@ -118,7 +118,7 @@ export default defineConfig({
 
 > Farm 提供了一个装饰器的示例，可以看 https://github.com/farm-fe/farm/tree/main/examples/decorators
 
-> 默认情况下, Farm 不会转译 `node_modules` 下的装饰器, 参考 [compilation.script.decorators.excludes](/docs/config/farm-config#scriptdecorators).
+> 默认情况下, Farm 不会转译 `node_modules` 下的装饰器, 参考 [compilation.script.decorators.excludes](../config/compilation-options.md#scriptdecorators).
 
 ## 使用 SWC 插件
 

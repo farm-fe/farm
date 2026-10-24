@@ -42,8 +42,8 @@ Supported values: `"esm"`, `"cjs"`, `"umd"`, `"iife"`, `"system"`, `"amd"`.
 
 Farm's compiler has three library bundle strategies, described in [`output.libraryBundleType`](/docs/config/compilation-options#output-librarybundletype):
 
-:::caution
-The current `@farmfe/core` TypeScript `UserConfig` and validation schema do not expose `output.libraryBundleType` for `farm.config.ts`. The modes below describe compiler behavior, not currently supported JavaScript config fields.
+:::note
+The V2 candidate JavaScript API accepts `compilation.output.libraryBundleType` when `targetEnv` is `library`. Choose `single-bundle`, `multiple-bundle`, or `bundle-less`; omitting the field preserves the compiler's `single-bundle` default. Use matching candidate packages until the formal V2 release is published.
 :::
 
 ### `single-bundle` (default)
@@ -62,7 +62,7 @@ Each entry produces its own output bundle. Internal modules that are shared betw
 
 Each source file is compiled independently and emitted as its own output file, **preserving the original directory structure**. This is the recommended approach for component libraries because it allows consumers to import individual modules and benefit from tree-shaking.
 
-With `bundle-less`, the output mirrors the source structure:
+With `bundle-less`, the output retains the source structure. The following filenames are schematic: default output can include content hashes; use `output.filename` and `output.entryFilename` to control naming.
 
 ```
 src/

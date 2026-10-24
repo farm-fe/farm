@@ -1,0 +1,9 @@
+{
+  "name": "@farmfe-examples/docs-minimal",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "farm build", "start": "farm start", "preview": "farm preview" },
+  "dependencies": { "@farmfe/docs": "workspace:*", "@farmfe/docs-theme-default": "workspace:*", "react": "18.2.0", "react-dom": "18.2.0" },
+  "devDependencies": { "@farmfe/core": "workspace:*", "@farmfe/cli": "workspace:*", "@types/react": "18", "@types/react-dom": "18" }
+}

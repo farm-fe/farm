@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::css_origins::MappedCss;
 use crate::resolve::{self, CustomResolver};
 use crate::urls;
 pub use farmfe_ecosystem_tailwindcss::compiler::{
@@ -21,6 +22,8 @@ pub use farmfe_ecosystem_tailwindcss::compiler::{
 
 /// Options passed to [`compile`] and [`compile_ast`].
 pub struct CompileOptions {
+  /// Optional controlled reader for bytes actually consumed by CSS imports.
+  pub read_file: Option<Box<FileReader>>,
   /// Base directory for resolving relative paths.
   pub base: String,
   /// Optional source file path (enables source-maps when present).
@@ -45,6 +48,7 @@ pub struct CompileOptions {
 impl Default for CompileOptions {
   fn default() -> Self {
     Self {
+      read_file: None,
       base: ".".to_string(),
       from: None,
       should_rewrite_urls: false,
@@ -152,11 +156,45 @@ pub fn load_stylesheet(
   on_dependency: &dyn Fn(&str),
   custom_css_resolver: Option<&CustomResolver>,
 ) -> io::Result<LoadedStylesheet> {
+  load_stylesheet_with_reader(id, base, on_dependency, custom_css_resolver, None)
+}
+
+pub type FileReader = dyn Fn(&Path) -> io::Result<Vec<u8>> + Send + Sync;
+
+#[derive(Debug)]
+struct ControlledReadError(io::Error);
+impl std::fmt::Display for ControlledReadError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.0)
+  }
+}
+impl std::error::Error for ControlledReadError {}
+
+fn load_stylesheet_with_reader(
+  id: &str,
+  base: &str,
+  on_dependency: &dyn Fn(&str),
+  custom_css_resolver: Option<&CustomResolver>,
+  read_file: Option<&FileReader>,
+) -> io::Result<LoadedStylesheet> {
   let resolved = resolve::resolve_css_id(id, base, custom_css_resolver)?;
 
   on_dependency(resolved.to_str().unwrap_or_default());
 
-  let content = std::fs::read_to_string(&resolved)?;
+  let bytes = match read_file {
+    Some(read) => {
+      read(&resolved).map_err(|error| io::Error::new(error.kind(), ControlledReadError(error)))?
+    }
+    None => std::fs::read(&resolved)?,
+  };
+  let content = String::from_utf8(bytes).map_err(|error| {
+    let error = io::Error::new(io::ErrorKind::InvalidData, error);
+    if read_file.is_some() {
+      io::Error::new(error.kind(), ControlledReadError(error))
+    } else {
+      error
+    }
+  })?;
   let sheet_base = resolved
     .parent()
     .unwrap_or(Path::new("."))
@@ -239,17 +277,19 @@ fn ensure_source_detection_root_exists(root: &Option<SourceRoot>) -> io::Result<
 /// This is a simplified version of what the core tailwindcss compiler does.
 /// It recursively resolves `@import` directives and inlines the imported CSS.
 fn resolve_imports(
-  css: &str,
+  input: &MappedCss,
   base: &str,
   root_base: &str,
   should_rewrite_urls: bool,
   on_dependency: &dyn Fn(&str),
   custom_css_resolver: Option<&CustomResolver>,
+  read_file: Option<&FileReader>,
   seen: &mut HashMap<String, bool>,
-) -> io::Result<(String, Features)> {
+) -> io::Result<(MappedCss, Features)> {
+  let css = &input.text;
   let import_re = regex::Regex::new(r#"@import\s+['"]([^'"]+)['"]"#).unwrap();
 
-  let mut result = String::new();
+  let mut result = input.empty();
   let mut features = Features::NONE;
   let mut last_end = 0;
 
@@ -257,7 +297,7 @@ fn resolve_imports(
     let full_match = cap.get(0).unwrap();
     let import_path = &cap[1];
 
-    result.push_str(&css[last_end..full_match.start()]);
+    result.append_slice(input, last_end..full_match.start());
     last_end = full_match.end();
 
     // Also skip the trailing semicolon + newline if present
@@ -272,27 +312,36 @@ fn resolve_imports(
       }
     }
 
-    // Handle special imports (tailwindcss directives)
+    // Tailwind's package stylesheet includes theme and preflight layers, not
+    // just utilities. Resolve it through the same loader as other CSS imports.
     if import_path == "tailwindcss" || import_path.starts_with("tailwindcss/") {
       features |= Features::UTILITIES;
-      result.push_str(&format!("@import \"{import_path}\";\n"));
-      continue;
     }
 
     // Try to resolve and inline the import
-    match load_stylesheet(import_path, base, on_dependency, custom_css_resolver) {
+    match load_stylesheet_with_reader(
+      import_path,
+      base,
+      on_dependency,
+      custom_css_resolver,
+      read_file,
+    ) {
       Ok(sheet) => {
         let sheet_key = sheet.path.to_string_lossy().to_string();
         if seen.contains_key(&sheet_key) {
           continue; // Already inlined
         }
-        seen.insert(sheet_key, true);
+        seen.insert(sheet_key.clone(), true);
 
-        let mut content = sheet.content.clone();
+        let mut content = MappedCss::new(
+          &sheet.content,
+          input.is_mapped().then_some(sheet_key.as_str()),
+        );
 
         // Rewrite URLs if needed
         if should_rewrite_urls {
-          content = urls::rewrite_urls(&content, &sheet.base, root_base);
+          let rewritten = urls::rewrite_urls(&content.text, &sheet.base, root_base);
+          content = content.rewritten(rewritten);
         }
 
         // Recursively resolve imports in the inlined CSS
@@ -303,19 +352,30 @@ fn resolve_imports(
           should_rewrite_urls,
           on_dependency,
           custom_css_resolver,
+          read_file,
           seen,
         )?;
         features |= inner_features;
-        result.push_str(&resolved_content);
+        result.append(&resolved_content);
+      }
+      Err(error)
+        if error
+          .get_ref()
+          .is_some_and(|inner| inner.is::<ControlledReadError>()) =>
+      {
+        return Err(error);
       }
       Err(_) => {
         // If we can't resolve, keep the original import
-        result.push_str(&format!("@import \"{import_path}\";\n"));
+        result.append(&MappedCss::new(
+          &format!("@import \"{import_path}\";\n"),
+          None,
+        ));
       }
     }
   }
 
-  result.push_str(&css[last_end..]);
+  result.append_slice(input, last_end..css.len());
 
   // Detect features in the CSS
   if css.contains("@apply ") {
@@ -336,33 +396,57 @@ fn resolve_imports(
 /// package. It resolves `@import` directives, rewrites URLs, tracks
 /// dependencies, and returns a [`Compiler`] that can produce the final output.
 pub fn compile(css: &str, options: CompileOptions) -> io::Result<Compiler> {
-  let mut seen = HashMap::new();
-
-  let (processed_css, features) = resolve_imports(
-    css,
-    &options.base,
-    &options.base,
-    options.should_rewrite_urls,
-    &*options.on_dependency,
-    options.custom_css_resolver.as_ref(),
-    &mut seen,
-  )?;
-
-  let compiler = farmfe_ecosystem_tailwindcss::compiler::compile(
-    &processed_css,
+  let prepared = prepare_stylesheet(css, &options)?;
+  let mut compiler = farmfe_ecosystem_tailwindcss::compiler::compile(
+    &prepared.content,
     CompilerOptions {
-      features,
+      features: prepared.features,
       polyfills: options.polyfills,
-      dependencies: seen.keys().cloned().collect(),
+      dependencies: prepared.dependencies,
       source_maps_enabled: options.from.is_some(),
       config: options.config.clone(),
     },
   )
   .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("Compile error: {}", e)))?;
 
+  if let Some(map) = prepared.source_map {
+    compiler.set_input_source_map(map);
+  }
   ensure_source_detection_root_exists(&None)?;
-
   Ok(compiler)
+}
+
+/// Import/URL preparation must precede Farm dependency analysis. Candidate
+/// expansion can then wait until every script module has been scanned.
+pub struct PreparedStylesheet {
+  pub content: String,
+  pub source_map: Option<sourcemap::SourceMap>,
+  pub dependencies: Vec<String>,
+  pub features: Features,
+}
+
+pub fn prepare_stylesheet(css: &str, options: &CompileOptions) -> io::Result<PreparedStylesheet> {
+  let mut seen = HashMap::new();
+  let input = MappedCss::new(css, options.from.as_deref());
+
+  let (processed_css, features) = resolve_imports(
+    &input,
+    &options.base,
+    &options.base,
+    options.should_rewrite_urls,
+    &*options.on_dependency,
+    options.custom_css_resolver.as_ref(),
+    options.read_file.as_deref(),
+    &mut seen,
+  )?;
+
+  let source_map = processed_css.source_map();
+  Ok(PreparedStylesheet {
+    content: processed_css.text,
+    source_map,
+    dependencies: seen.keys().cloned().collect(),
+    features,
+  })
 }
 /// Compile a pre-parsed AST with the given options.
 ///
@@ -379,6 +463,39 @@ pub fn compile_ast(ast: &[AstNode], options: CompileOptions) -> io::Result<Compi
     css.push_str(&node.to_css());
   }
   compile(&css, options)
+}
+
+#[cfg(test)]
+mod controlled_read_tests {
+  use super::*;
+
+  #[test]
+  fn controlled_import_failure_is_not_an_external_import_fallback() {
+    for kind in [io::ErrorKind::NotFound, io::ErrorKind::PermissionDenied] {
+      let options = CompileOptions {
+        custom_css_resolver: Some(Box::new(|_, _| Some("controlled.css".into()))),
+        read_file: Some(Box::new(move |_| {
+          Err(io::Error::new(kind, "controlled failure"))
+        })),
+        ..Default::default()
+      };
+      let error = prepare_stylesheet("@import './controlled.css';", &options)
+        .err()
+        .unwrap();
+      assert_eq!(error.kind(), kind);
+    }
+  }
+
+  #[test]
+  fn controlled_bytes_are_used_instead_of_a_second_filesystem_read() {
+    let options = CompileOptions {
+      custom_css_resolver: Some(Box::new(|_, _| Some("controlled.css".into()))),
+      read_file: Some(Box::new(|_| Ok(b".observed { color: red; }".to_vec()))),
+      ..Default::default()
+    };
+    let prepared = prepare_stylesheet("@import './controlled.css';", &options).unwrap();
+    assert!(prepared.content.contains(".observed"));
+  }
 }
 
 /// Load the design system from a CSS string.

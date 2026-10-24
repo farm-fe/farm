@@ -1,0 +1,26 @@
+[package]
+name = "farmfe_docs_plan"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+farmfe_docs_config = { path = "../docs-config" }
+farmfe_docs_content = { path = "../docs-content" }
+mdxjs = "=1.0.4"
+schemars = "=0.8.22"
+serde = { version = "1", features = ["derive", "rc"] }
+farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
+serde_json = "1"
+sha2 = "0.10"
+unicode-normalization = "=0.1.25"
+url = "2"
+percent-encoding = "=2.3.2"
+chrono = { version = "=0.4.44", default-features = false, features = ["std"] }
+swc_common = { workspace = true }
+swc_ecma_ast = { workspace = true }
+swc_ecma_parser = { workspace = true }
+swc_ecma_visit = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,4 +1,4 @@
-use farmfe_ecosystem_tailwindcss::{compile, CompilerOptions, Features, Polyfills, TailwindConfig};
+use farmfe_ecosystem_tailwindcss::{CompilerOptions, Features, Polyfills, TailwindConfig, compile};
 use farmfe_testing_helpers::assert_snapshot;
 use serde_json::json;
 

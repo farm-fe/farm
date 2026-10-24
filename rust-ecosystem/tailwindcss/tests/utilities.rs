@@ -1,5 +1,5 @@
 use farmfe_ecosystem_tailwindcss::ast::to_css;
-use farmfe_ecosystem_tailwindcss::candidate::{parse_candidate, ParsedCandidate};
+use farmfe_ecosystem_tailwindcss::candidate::{ParsedCandidate, parse_candidate};
 use farmfe_ecosystem_tailwindcss::theme::Theme;
 use farmfe_ecosystem_tailwindcss::utilities::UtilityRegistry;
 
@@ -476,13 +476,9 @@ fn grid_template_track_utilities() {
   let t = Theme::with_defaults();
   assert!(render("grid-cols-none", &t).contains("grid-template-columns: none"));
   assert!(render("grid-cols-subgrid", &t).contains("grid-template-columns: subgrid"));
-  assert!(
-    render("grid-cols-12", &t).contains("grid-template-columns: repeat(12, minmax(0, 1fr))")
-  );
+  assert!(render("grid-cols-12", &t).contains("grid-template-columns: repeat(12, minmax(0, 1fr))"));
   assert!(render("grid-rows-none", &t).contains("grid-template-rows: none"));
   assert!(render("grid-rows-subgrid", &t).contains("grid-template-rows: subgrid"));
-  assert!(
-    render("grid-rows-12", &t).contains("grid-template-rows: repeat(12, minmax(0, 1fr))")
-  );
+  assert!(render("grid-rows-12", &t).contains("grid-template-rows: repeat(12, minmax(0, 1fr))"));
   assert!(render("grid-rows-[200px]", &t).contains("grid-template-rows: 200px"));
 }

@@ -1,15 +1,12 @@
-import Link from "@docusaurus/Link";
-import Translate from "@docusaurus/Translate";
-import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import clsx from "clsx";
 import React from "react";
+import { SiteText } from "../../site-text";
 import FarmCard from "../card";
 import TeamMembersItem from "../TeamMembersItem";
 import styles from "./index.module.css";
 
 export function TeamMembers(props) {
   const { members, size } = props;
-  const { siteConfig } = useDocusaurusContext();
   const classes = clsx(styles.teamMembers, "small my-10");
   return (
     <div className={classes}>
@@ -19,7 +16,7 @@ export function TeamMembers(props) {
           "flex justify-center my-8 text-4xl font-bold"
         )}
       >
-        <Translate>Get to know our team</Translate>
+        <SiteText id="team.introduction" />
       </div>
       <div className={clsx("mt-10", styles.container)}>
         {members.map((member) => (

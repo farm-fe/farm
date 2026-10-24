@@ -1,3 +1,7 @@
+---
+id: tutorials/start
+slug: tutorials/start
+---
 # 2. 使用 Farm 开发项目
 在本章中，我们将介绍**常用的配置和插件**来帮助您使用 Farm 构建复杂的生产就绪的 Web 项目。
 
@@ -278,7 +282,7 @@ export default defineConfig({
 ```
 
 ## 配置开发服务器
-您可以在[Farm Dev Server Config](/docs/config/farm-config#devserver-options---server)中找到服务器配置。
+您可以在[Farm Dev Server Config](../config/dev-server.md)中找到服务器配置。
 
 ### 常用配置
 配置示例：

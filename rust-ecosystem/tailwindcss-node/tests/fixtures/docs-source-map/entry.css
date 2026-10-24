@@ -1,0 +1,3 @@
+@import './nested/piece.css';
+@tailwind utilities;
+.root { color: blue; }

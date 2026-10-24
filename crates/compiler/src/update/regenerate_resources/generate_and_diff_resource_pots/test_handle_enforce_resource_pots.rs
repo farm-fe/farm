@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::{
-    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+    Config, config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig,
   },
   context::CompilationContext,
   module::{
+    Module, ModuleType,
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleType,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
-  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_graph_complex};

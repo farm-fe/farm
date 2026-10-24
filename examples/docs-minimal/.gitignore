@@ -1,0 +1,13 @@
+/.farm-docs/
+/.farm-docs-locks/
+/build/
+/hoisted-require-*/
+/snippets-*/
+
+# Exact local test runs; preserve their files without staging them.
+/development-cache-matrix-XXXXXXKPA1l7/
+/development-generation-sync-XXXXXXjD8lLL/
+/development-generation-sync-XXXXXXLEgxgt/
+/development-generation-sync-XXXXXXna5eOQ/
+/development-https-proxy-XXXXXXeMtHsX/
+/proxy-drain-XXXXXXjccdXs/

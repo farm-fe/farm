@@ -1,12 +1,22 @@
 {
   "name": "@farmfe/core-linux-arm64-gnu",
-  "version": "0.0.0",
-  "os": ["linux"],
-  "cpu": ["arm64"],
+  "version": "2.0.0",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
   "main": "farm.linux-arm64-gnu.node",
-  "files": ["farm.linux-arm64-gnu.node"],
+  "files": [
+    "farm.linux-arm64-gnu.node",
+    "LICENSE"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "libc": [
+    "glibc"
+  ]
 }

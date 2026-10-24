@@ -2,7 +2,7 @@
   <a href="https://github.com/farm-fe/farm">
   <img src="./assets/logo.png" width="550" />
   </a>
-  <h3>Extremely fast, Vite-compatible web build tool written in Rust</h3>
+  <h3>Rust native web build tool with an official Rust plugin ecosystem</h3>
   <p>
     <span>English</span> |
     <a href="https://github.com/farm-fe/farm/blob/main/README.zh-CN.md">简体中文</a>  
@@ -33,7 +33,11 @@
 
 ## Intro
 
-Farm is an extremely fast, Vite-compatible web build tool written in Rust. Designed to be fast, powerful, and consistent, it delivers the best web development experience — the real next-generation build tool.
+Farm is a Rust native web build tool. Its compiler and built-in compilation plugins handle the module graph, transformation, bundling and optimization in Rust. Official Rust plugins extend this pipeline for frameworks, styling, assets and documentation.
+
+Node.js provides configuration, CLI and development-server orchestration. JavaScript plugins, React rendering and application runtimes remain part of the stack where needed. Vite-compatible plugin adapters provide a migration path; they are not the definition of Farm’s architecture.
+
+This branch contains the v2 release candidate. Source versions and plugin implementations do not establish registry availability or completed release acceptance. Use a matching verified candidate for v2 evaluation; `@latest` commands select the version currently published to the registry.
 
 ## Online experience
 
@@ -41,40 +45,17 @@ Farm is an extremely fast, Vite-compatible web build tool written in Rust. Desig
 
 ## Why Farm?
 
-> See [Why Farm](https://farmfe.org/docs/why-farm) for details.
-
-In short, tools like webpack are too slow, but new tools like Vite are not perfect, Vite has a lot of drawbacks when comes to a large project:
-
-- **A huge number of requests during development**：when there are hundreds or thousands modules per page, loading performance severely degraded, it may takes seconds or more when refresh the page.
-- **Inconsistency between development and production**: Using different strategy and tools in development and production, it's really inconsistent and it's hard to debug online issues.
-- **Inflexible Code Splitting**: It's hard to control the output of your bundles.
-
-Farm can solve these problems perfectly, and it's really fast cause it's written in Rust. Farm aims to be fast, consistent, flexible, which is the real next generation build tool.
+Farm puts the compiler and compilation extensions on a native Rust foundation, with one plugin architecture for development and production. It combines incremental compilation and configurable bundling with adapters for existing JavaScript tooling. See [Why Farm](https://farmfe.org/docs/why-farm) for architecture and migration details.
 
 ## Features
 
-> [!NOTE]
->
-> - Since Farm v0.13, Vite plugins can be used directly in Farm. Refer to [Using vite plugins in Farm](https://farmfe.org/docs/using-plugins#using-vite-plugins-in-farm)
-> - Since Farm v0.14, persistent disk cache enabled by default. Refer to [Incremental Building](https://farmfe.org/docs/advanced/persistent-cache)
-> - Now Farm is **1.0 stable** and **production ready!**. See [Farm official website](https://farmfe.org/) to get started.
+- **Rust native compilation**: a Rust compiler and built-in plugins for scripts, CSS, HTML, JSON, resolution and production optimization.
+- **Official Rust plugin families**: React/Vue, Sass/Tailwind CSS, import automation, SVG/icons, data and assets, workers/Wasm, and documentation tooling. See the [plugin overview](website/docs/plugins/official-plugins/overview.md) for source scope and candidate status. Feature coverage varies by plugin.
+- **Incremental workflows**: persistent caching, lazy compilation and hot updates; results depend on workload, configuration and cache state.
+- **Partial bundling**: control output grouping while keeping development and production on the same compiler foundation.
+- **Extensible migration**: Rust and JavaScript compilation plugins, runtime plugins and Vite-compatible adapters. Verify the hooks and framework features your project uses instead of assuming every Vite plugin is interchangeable.
 
-- ⚡ **Extremely Fast**: Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 20ms for most situations.
-- ⚡ **Incremental Building**: Support persistent cache, module level cache enabled by default, any module won't be compiled twice until it's changed!
-- 🧰 **Fully Pluggable and Vite Compatible**: Everything inside Farm is powered by plugins, Support Vite Plugins out of box. Supports Farm compilation plugins(both Rust and JavaScript plugins, and SWC plugins), Farm runtime plugins and Farm server plugin.
-- ⚙️ **Powerful**: Compiles JS/TS/JSX/TSX, CSS, CSS Modules, HTML, and static assets out of the box. Official compilation plugins for React, Vue, Sass, Less, PostCSS, and more.
-- ⏱️ **Lazy Compilation**: Dynamically imported resources are compiled only when requested, speed up compilation for large scale project. Just write a `dynamic import` and the imported module won't be compiled when it is executed.
-- 📦 **Partial Bundling**: Bundle your project into a few reasonable bundles automatically, speeding up resource loading without losing caching granularity. Refer to [RFC-003 Partial Bundling](https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md) for details.
-- 🔒 **Consistency**: What you see in development will be the same as what you get in production.
-- 🌳 **Compatibility**: Supports both legacy (ES5) and modern browsers.
-
-<br/>
-
-> Farm has implemented all features of a web build tool, including production optimization like tree shake and minification. It's now 1.0 stable. We have already migrated enterprise projects to Farm, and it works great!
-
-See [RFC-001 Architecture](https://github.com/farm-fe/rfcs/blob/main/rfcs/001-core-architecture/rfc.md#motivation) for design motivation and architecture.
-
-<br/>
+V2 package publication, platform payloads and release acceptance are tracked separately from the availability of source code.
 
 ## Getting Started
 
@@ -93,11 +74,7 @@ Visit [Farm Documentation](https://farmfe.org) to learn more about Farm.
 
 ## Benchmark
 
-Farm is much faster than similar tool， **20x** faster than webpack and **10x** faster than Vite in the benchmark:
-
-![benchmark](https://raw.githubusercontent.com/farm-fe/performance-compare/main/full.png)
-
-See [Benchmark](https://github.com/farm-fe/performance-compare) for details.
+Historical benchmark data and its workload are available in [performance-compare](https://github.com/farm-fe/performance-compare). These results are not measurements of this v2 candidate or guarantees for your project. Compare the same content, configuration, hardware and cache state when evaluating v2.
 
 ## Contribution
 

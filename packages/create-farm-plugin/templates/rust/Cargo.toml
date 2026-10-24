@@ -7,5 +7,5 @@ version = "0.0.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-farmfe_core = { version = "*" }
-farmfe_macro_plugin = { version = "*" }
+farmfe_core = { version = "=2.2.0" }
+farmfe_macro_plugin = { version = "=2.0.0" }

@@ -14,6 +14,21 @@ export interface Resource {
   type: 0 | 1;
 }
 
+export interface DynamicModuleResourcesSnapshot {
+  resources: Resource[];
+  moduleResources: Record<string, number[]>;
+}
+
+export interface DynamicResourceTransaction {
+  settle(): Promise<void>;
+  isSettled(): boolean;
+  restore(): unknown[];
+  validate(): Promise<void>;
+  finalize(): void;
+  commit(): Promise<void>;
+  rollback(): Promise<unknown[]>;
+}
+
 // Injected during compile time
 declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node';
 declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
@@ -25,6 +40,9 @@ const loadedResources: Record<string, boolean> = {};
 const loadingResources: Record<string, Promise<void> | null> = {};
 // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
 const publicPaths: string[] = [];
+const pendingImports = new Set<Promise<unknown>>();
+let resourceTransaction: { errors: unknown[]; elements: Set<HTMLElement> } | undefined;
+let resourceRevision = 0;
 
 let moduleSystem: ModuleSystem;
 
@@ -32,11 +50,95 @@ let moduleSystem: ModuleSystem;
 export function initModuleSystem(ms: ModuleSystem) {
   moduleSystem = ms;
   moduleSystem.pp = publicPaths;
-  moduleSystem.d = dynamicImport;
+  moduleSystem.d = id => trackImport(dynamicImport(id));
   moduleSystem.sp = setPublicPaths;
   moduleSystem.si = setInitialLoadedResources;
   moduleSystem.sd = setDynamicModuleResourcesMap;
-  moduleSystem.l = loadDynamicResourcesOnly;
+  moduleSystem.gd = getDynamicModuleResourcesMap;
+  moduleSystem.l = (id, force) => trackImport(loadDynamicResourcesOnly(id, force));
+  moduleSystem.beginResourceTransaction = beginResourceTransaction;
+}
+
+function trackImport<T>(promise: Promise<T>): Promise<T> {
+  resourceRevision++;
+  const owner = resourceTransaction;
+  pendingImports.add(promise);
+  void promise.then(
+    () => { pendingImports.delete(promise); },
+    error => {
+      pendingImports.delete(promise);
+      if (owner && !owner.errors.includes(error)) owner.errors.push(error);
+    }
+  );
+  return promise;
+}
+
+async function drainImports(): Promise<void> {
+  while (pendingImports.size) await Promise.allSettled([...pendingImports]);
+}
+
+async function beginResourceTransaction(): Promise<DynamicResourceTransaction> {
+  if (resourceTransaction) throw new Error('Dynamic resource transaction already active');
+  do { await drainImports(); } while (pendingImports.size);
+  if (resourceTransaction) throw new Error('Dynamic resource transaction already active');
+  const mapping = getDynamicModuleResourcesMap();
+  const previousLoaded = { ...loadedResources };
+  const previousPaths = [...publicPaths];
+  const transaction = { errors: [] as unknown[], elements: new Set<HTMLElement>() };
+  resourceTransaction = transaction;
+  let closing = false;
+  let validatedRevision: number | undefined;
+  let settledRevision: number | undefined;
+  const assertOpen = () => {
+    if (closing || resourceTransaction !== transaction) throw new Error('Dynamic resource transaction closed');
+    closing = true;
+  };
+  const isSettled = () => !closing && resourceTransaction === transaction && settledRevision === resourceRevision && !pendingImports.size;
+  const settle = async (): Promise<void> => {
+    assertOpen();
+    try {
+      do { await drainImports(); } while (pendingImports.size);
+      settledRevision = resourceRevision;
+    } finally { closing = false; }
+  };
+  const validate = async (): Promise<void> => {
+    validatedRevision = undefined;
+    do { await settle(); } while (!isSettled());
+    if (transaction.errors.length) throw new AggregateError(transaction.errors, 'Dynamic resource transaction failed');
+    validatedRevision = settledRevision;
+  };
+  const restore = (): unknown[] => {
+    if (closing || resourceTransaction !== transaction) throw new Error('Dynamic resource transaction closed');
+    if (!isSettled()) throw new Error('Dynamic resource transaction must be settled before restoration');
+    for (const element of transaction.elements) element.remove();
+    for (const key of Object.keys(loadedResources)) delete loadedResources[key];
+    Object.assign(loadedResources, previousLoaded);
+    setDynamicModuleResourcesMap(mapping.resources, mapping.moduleResources);
+    publicPaths.splice(0, publicPaths.length, ...previousPaths);
+    resourceTransaction = undefined;
+    return [...transaction.errors];
+  };
+  const finalize = (): void => {
+    if (closing || resourceTransaction !== transaction) throw new Error('Dynamic resource transaction closed');
+    if (validatedRevision !== resourceRevision || !isSettled() || transaction.errors.length) {
+      throw new Error('Dynamic resource transaction must be validated after its latest work');
+    }
+    resourceTransaction = undefined;
+  };
+  return {
+    settle,
+    isSettled,
+    restore,
+    validate,
+    finalize,
+    async commit() {
+      await validate(); finalize();
+    },
+    async rollback() {
+      do { await settle(); } while (!isSettled());
+      return restore();
+    }
+  };
 }
 
 function requireDynamicModule(id: string) {
@@ -107,6 +209,11 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
 }
 
 function load(resource: Resource, query?: string): Promise<void> {
+  // Promise.all for a page can reject while another script or stylesheet is still loading.
+  return trackImport(loadUntracked(resource, query));
+}
+
+function loadUntracked(resource: Resource, query?: string): Promise<void> {
   if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
     return loadResourceNode(resource);
   } else {
@@ -192,9 +299,7 @@ function loadResource(resource: Resource, index: number, query?: string): Promis
     promise = loadLink(url);
   }
 
-  loadingResources[resource.path] = promise;
-
-  promise
+  const loading = promise
     .then(() => {
       loadedResources[resource.path] = true;
       loadingResources[resource.path] = null;
@@ -215,12 +320,16 @@ function loadResource(resource: Resource, index: number, query?: string): Promis
       }
     });
 
-  return promise;
+  // Callers must await the retry/error chain itself. Returning the raw DOM
+  // promise both bypasses publicPath retries and leaves this rejection unowned.
+  loadingResources[resource.path] = loading;
+  return loading;
 }
 
 function loadScript(path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const script = document.createElement('script');
+    resourceTransaction?.elements.add(script);
     script.src = path;
     document.body.appendChild(script);
 
@@ -228,6 +337,8 @@ function loadScript(path: string): Promise<void> {
       resolve();
     };
     script.onerror = (e) => {
+      // A failed element is not a loaded resource and must not survive retry.
+      script.remove();
       reject(e);
     };
   });
@@ -236,6 +347,7 @@ function loadScript(path: string): Promise<void> {
 function loadLink(path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const link = document.createElement('link');
+    resourceTransaction?.elements.add(link);
     link.rel = 'stylesheet';
     link.href = path;
     document.head.appendChild(link);
@@ -244,6 +356,9 @@ function loadLink(path: string): Promise<void> {
       resolve();
     };
     link.onerror = (e) => {
+      // Chromium can expose an empty sheet even for a failed request. Leaving
+      // it behind makes consumers retain that stale sheet when deduplicating.
+      link.remove();
       reject(e);
     };
   });
@@ -259,12 +374,14 @@ function isResourceLoaded(path: string) {
 
 // The public paths are injected during compile time
 function setPublicPaths(p: string[]): void {
+  resourceRevision++;
   for (const key in p) {
     publicPaths[key] = p[key]
   }
 }
 
 function setInitialLoadedResources(resources: string[]) {
+  resourceRevision++;
   resources.forEach(resource => {
     setLoadedResource(resource);
   });
@@ -276,6 +393,14 @@ function setDynamicModuleResourcesMap(
     dr: Resource[],
     dmp: Record<string, number[]>,
   ): void {
-    dynamicResources = dr;
-    dynamicModuleResourcesMap = dmp;
+    resourceRevision++;
+    dynamicResources = dr.map(resource => ({ ...resource }));
+    dynamicModuleResourcesMap = Object.fromEntries(Object.entries(dmp).map(([id, indices]) => [id, [...indices]]));
   }
+
+function getDynamicModuleResourcesMap(): DynamicModuleResourcesSnapshot {
+  return {
+    resources: dynamicResources.map(resource => ({ ...resource })),
+    moduleResources: Object.fromEntries(Object.entries(dynamicModuleResourcesMap).map(([id, indices]) => [id, [...indices]]))
+  };
+}

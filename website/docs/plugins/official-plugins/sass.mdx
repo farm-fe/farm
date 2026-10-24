@@ -1,6 +1,6 @@
-import CodeBlock from "@theme/CodeBlock";
-import Tabs from "@theme/Tabs";
-import TabItem from "@theme/TabItem";
+import { CodeBlock as CodeBlock } from "@farmfe/docs/snippets";
+import { Tabs as Tabs } from "@farmfe/docs/mdx";
+import { TabItem as TabItem } from "@farmfe/docs/mdx";
 
 # @farmfe/plugin-sass
 
@@ -10,13 +10,13 @@ Support `Sass` for Farm.
 
 <Tabs>
   <TabItem value="npm" label="npm">
-    <CodeBlock>npm install @farmfe/plugin-sass</CodeBlock>
+    <CodeBlock language="javascript" code={"npm install @farmfe/plugin-sass"} />
   </TabItem>
   <TabItem value="yarn" label="yarn">
-    <CodeBlock>yarn add @farmfe/plugin-sass</CodeBlock>
+    <CodeBlock language="javascript" code={"yarn add @farmfe/plugin-sass"} />
   </TabItem>
   <TabItem value="pnpm" label="pnpm">
-    <CodeBlock>pnpm add @farmfe/plugin-sass</CodeBlock>
+    <CodeBlock language="javascript" code={"pnpm add @farmfe/plugin-sass"} />
   </TabItem>
 </Tabs>
 

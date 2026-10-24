@@ -1,3 +1,7 @@
+---
+id: tutorials/start
+slug: tutorials/start
+---
 # Develop With Farm
 
 In this chapter, we will introduce **commonly used configuration and plugins** to help you build complex production-ready web project with Farm.

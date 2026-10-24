@@ -212,22 +212,21 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm
-      - name: Test Create Farm React - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
-      - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
-      - name: Test Create Farm Solid - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
-      - name: Test Create Farm Svelte - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-svelte --template svelte && cd my-test-app-svelte && pnpm i && pnpm build
-      - name: Test Create Farm Lit - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-lit --template lit && cd my-test-app-lit && pnpm i && pnpm build
-      - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vanilla --template vanilla && cd my-test-app-vanilla && pnpm i && pnpm build
-      - name: Test Create Farm Preact - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-preact --template preact && cd my-test-app-preact && pnpm i && pnpm build
-      - name: Test Create Farm Vue2 - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
+      - name: Test Create Farm candidate packages - ${{ matrix.settings.abi }}
+        id: create-farm-candidates
+        run: pnpm run test:create-farm:candidates ${{ matrix.settings.abi }}
+      - name: Preserve failed candidate diagnostics - ${{ matrix.settings.abi }}
+        if: ${{ failure() && steps.create-farm-candidates.outputs.evidence != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-diagnostics-${{ github.sha }}-${{ matrix.settings.abi }}
+          retention-days: 7
+          path: |
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/*.log
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/producer.json
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/result.json
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
+            !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
 
   type-check:
     name: Type Check & Changesets
@@ -257,12 +256,17 @@ jobs:
         run: pnpm --filter @farmfe/runtime run build
       - name: Build Babel Plugin Types
         run: pnpm --filter @farmfe/js-plugin-babel exec tsc -p tsconfig.json --emitDeclarationOnly
+      - name: Build Docs Public Types
+        run: pnpm --filter @farmfe/docs run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
         run: npx changeset status --since=origin/main
 
   ts-test:
+    # Vitest runs in node/forks; browser E2E jobs keep their downloads.
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     name: Typescript Test
     runs-on: ${{ matrix.settings.os }}
     needs: call-rust-build-user
@@ -314,6 +318,8 @@ jobs:
           pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
+      - name: Build Plugin Tools test prerequisite
+        run: pnpm --filter @farmfe/plugin-tools run build
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
       # - name: Setup tmate session

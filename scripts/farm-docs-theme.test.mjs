@@ -1,0 +1,37 @@
+import './farm-docs-theme-presentation.test.mjs';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import http from 'node:http';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {test} from 'node:test';
+import {chromium} from 'playwright-chromium';
+import {evidenceDirectory} from './farm-docs-evidence.mjs';
+const repository=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');const evidence=await evidenceDirectory(repository,'p06');
+
+for(const variant of ['default','partial','invalid','invalid-null','blog'])test(`native theme ${variant} composes explicit slots with actual Rust sidebar data`,async()=>{
+ const parent=path.join(repository,'examples/docs-minimal');const root=await fs.mkdtemp(path.join(parent,'theme-fixture-'));let browser,server;
+ try{
+  await fs.mkdir(path.join(root,'docs'));await fs.writeFile(path.join(root,'docs/one.md'),'---\ntitle: First document\n---\n# First document\n\n## First section\n');await fs.writeFile(path.join(root,'docs/two.md'),'---\ntitle: Second document\n---\n# Second document\n');await fs.writeFile(path.join(root,'sidebar.json'),JSON.stringify({items:[{type:'category',label:'Guide category',items:[{type:'doc',id:'one'},{type:'doc',id:'two'}]}]}));
+  if(variant!=='default')await fs.writeFile(path.join(root,'theme.tsx'),variant.startsWith('invalid')?'export const Navbar='+ (variant==='invalid'?'42':'null')+';':variant==='blog'?`export function BlogPage({page,children}){return <main id='farm-docs-content' data-testid='blog-slot'><p>Blog slot {page.kind}</p>{children}</main>}`:`export function Navbar({site}){return <header data-testid='custom-navbar'>Custom {site.title}</header>}export function Sidebar({data,page}){return <nav aria-label='Documentation' data-testid='custom-sidebar'>Custom sidebar {data.sidebars.find(s=>s.collection===page.collection).items[0].label}</nav>}export const components={h2:props=><h2 data-testid='custom-heading' {...props}/>};`);
+  if(variant==='blog'){await fs.mkdir(path.join(root,'blog'));await fs.writeFile(path.join(root,'blog/2025-01-01-post.md'),'---\ntitle: Blog article\ntags: [release]\n---\n# Blog article\n');}
+  const site={...(variant==='blog'?{blog:{collections:[{id:'news',dir:'blog',routeBase:'/news/'}]}}:{}),title:'Theme fixture',url:'https://example.com',basePath:'/guide/',docs:{collections:[{id:'main',dir:'docs',routeBase:'/docs/',sidebar:'sidebar.json'}]},theme:{...(variant==='default'?{}:{components:'theme.tsx'}),navbar:[{label:'First',to:'/guide/docs/one/'}],footer:{copyright:'Theme copyright'}}};
+  const {run}=await import('../packages/docs/dist/workflow.js');const build=()=>run({command:'build',config:{root},options:{site,farm:{compilation:{output:{path:'build'},persistentCache:false,sourcemap:false}}}});
+  if(variant.startsWith('invalid')){await assert.rejects(build(),/DOCS_THEME.*Navbar.*component/);return;}await build();const output=path.join(root,'build');
+  server=http.createServer(async(request,response)=>{try{const url=new URL(request.url,'http://localhost');assert.ok(url.pathname.startsWith('/guide/'));let file=path.resolve(output,decodeURIComponent(url.pathname.slice(7)));assert.ok(file.startsWith(output+path.sep));if((await fs.stat(file)).isDirectory())file=path.join(file,'index.html');response.writeHead(200,{'Content-Type':file.endsWith('.html')?'text/html':file.endsWith('.css')?'text/css':'text/javascript'});response.end(await fs.readFile(file));}catch{response.writeHead(404).end();}});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;browser=await chromium.launch({headless:true});const errors=[];
+  if(variant==='blog'){
+   const report=JSON.parse(await fs.readFile(path.join(output,'docs-build-report.json'),'utf8'));const kinds=new Map([['/guide/news/','blog-index'],['/guide/news/archive/','blog-archive'],['/guide/news/tags/','blog-tags'],['/guide/news/tags/release/','blog-tag'],['/guide/news/2025/01/01/post/','blog']]);const routes=report.pages.filter(p=>kinds.has(p.routePath)).map(p=>({...p,kind:kinds.get(p.routePath)}));assert.equal(routes.length,5);
+   for(const javaScriptEnabled of [false,true]){const context=await browser.newContext({javaScriptEnabled});const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});for(const route of routes){await page.goto(origin+route.routePath);await page.getByTestId('blog-slot').getByText('Blog slot '+route.kind,{exact:true}).waitFor();}await context.close();}
+   assert.deepEqual(errors,[]);await fs.writeFile(path.join(evidence,'theme-blog-slots-browser.json'),JSON.stringify({kinds:routes.map(p=>p.kind),javaScriptAndNoJavaScript:true,errors},null,2));return;
+  }
+  for(const javaScriptEnabled of [false,true]){
+   const context=await browser.newContext({javaScriptEnabled});const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});await page.goto(origin+'/guide/docs/one/');await page.getByRole('heading',{name:'First document',exact:true}).waitFor();await page.getByRole('contentinfo').getByText('Theme copyright',{exact:true}).waitFor();
+   if(variant==='default'){
+    const sidebar=page.getByRole('navigation',{name:'Documentation',exact:true});await sidebar.waitFor();assert.equal(await sidebar.getByRole('link',{name:'First document',exact:true}).getAttribute('aria-current'),'page');assert.equal(await sidebar.getByRole('link',{name:'Second document',exact:true}).getAttribute('href'),'/guide/docs/two/');await sidebar.getByText('Guide category',{exact:true}).waitFor();
+   }else{await page.getByTestId('custom-navbar').getByText('Custom Theme fixture',{exact:true}).waitFor();await page.getByTestId('custom-sidebar').getByText('Custom sidebar Guide category',{exact:true}).waitFor();}
+   assert.equal(await page.locator('.farm-docs-layout').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),3,'slot layout must not depend on a custom Sidebar class name');if(variant==='partial')await page.getByTestId('custom-heading').getByText('First section',{exact:true}).waitFor();
+   assert.equal(await page.getByRole('link',{name:'Next: Second document',exact:true}).getAttribute('href'),'/guide/docs/two/');await page.getByRole('link',{name:'Next: Second document',exact:true}).click();await page.waitForURL(origin+'/guide/docs/two/');await page.getByRole('heading',{name:'Second document',exact:true}).waitFor();assert.equal(await page.getByRole('link',{name:'Previous: First document',exact:true}).getAttribute('href'),'/guide/docs/one/');if(variant==='default')assert.equal(await page.getByRole('navigation',{name:'Documentation',exact:true}).getByRole('link',{name:'Second document',exact:true}).getAttribute('aria-current'),'page');await context.close();
+  }
+  assert.deepEqual(errors,[]);await fs.writeFile(path.join(evidence,'theme-'+variant+'-browser.json'),JSON.stringify({javaScriptAndNoJavaScript:true,actualRustSidebar:true,partialSlots:variant==='partial',previousNext:true,errors},null,2));
+ }finally{await browser?.close();if(server){server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}assert.equal(path.dirname(root),parent);assert.ok(path.basename(root).startsWith('theme-fixture-'));await fs.rm(root,{recursive:true,force:true});}
+});

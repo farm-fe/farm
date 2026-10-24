@@ -1,3 +1,7 @@
+---
+id: tutorials/build
+slug: tutorials/build
+---
 # 3. 使用 Farm 构建生产项目
 默认情况下，Farm 已启用对生产版本的以下功能的支持：
 * **`Tree Shake`**：裁剪和过滤不相关的模块和代码

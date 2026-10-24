@@ -81,6 +81,12 @@ export class HmrEngine {
       (item) => !queue.includes(item)
     );
 
+    this.sendUpdate(result);
+    return result;
+  };
+
+  /** Broadcast an already completed update after its resources are published. */
+  sendUpdate(result: JsUpdateResult): void {
     let dynamicResourcesMap: Record<string, Resource[]> | null = null;
 
     if (result.dynamicResourcesMap) {
@@ -124,7 +130,7 @@ export class HmrEngine {
         }
       `);
     });
-  };
+  }
 
   async hmrUpdate(
     absPath: CompilerUpdateItem | CompilerUpdateItem[],
@@ -132,6 +138,9 @@ export class HmrEngine {
   ) {
     const compiler = this.devServer.compiler;
     if (!compiler) return;
+    // Native compilation may hold the module graph while waiting for JS hooks.
+    // Yield until it finishes before making synchronous graph queries.
+    await compiler.waitForCompileFinish();
     const pathItems = Array.isArray(absPath) ? absPath : [absPath];
     for (const item of pathItems) {
       if (

@@ -3,7 +3,6 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import chokidar from 'chokidar';
-import glob from 'fast-glob';
 import { Compiler, createInlineCompiler } from '../compiler/index.js';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import type { ResolvedUserConfig } from '../config/index.js';
@@ -32,7 +31,7 @@ interface IWatcher {
   filterWatchFile(file: string, root: string): boolean;
   getExtraWatchedFiles(compiler?: Compiler | null): string[];
   watchExtraFiles(): void;
-  createWatcher(): Promise<void>;
+  createWatcher(compiler?: Compiler | null): Promise<void>;
   resolveChokidarOptions(): void;
   close(): Promise<void>;
 }
@@ -103,14 +102,27 @@ export default class Watcher extends EventEmitter implements IWatcher {
     });
   }
 
-  async createWatcher() {
-    const compiler = await createInlineCompiler(this.config, {
-      progress: false
-    });
+  async createWatcher(compiler?: Compiler | null) {
+    // Runtime watch inputs are literal project/dependency paths. A bracket in
+    // a real directory name must not turn the project root into a glob.
+    this.resolvedWatchOptions.disableGlobbing ??= compiler === null;
+    // Linux's immediate change events are throttled by Chokidar for 50ms.
+    // A fast failed candidate followed by repair must not lose the repair.
+    if (compiler === null)
+      this.resolvedWatchOptions.awaitWriteFinish ??= {
+        stabilityThreshold: 10,
+        pollInterval: 10
+      };
+    const watchCompiler =
+      compiler === undefined
+        ? await createInlineCompiler(this.config, {
+            progress: false
+          })
+        : compiler;
     const enabledWatcher = this.config.watch !== null;
     const files: string[] = [
       this.config.root ?? process.cwd(),
-      ...this.getExtraWatchedFiles(compiler)
+      ...this.getExtraWatchedFiles(watchCompiler)
     ];
 
     this._watcher = enabledWatcher
@@ -127,14 +139,33 @@ export default class Watcher extends EventEmitter implements IWatcher {
       typeof userWatchOptions === 'object' ? userWatchOptions : {};
     const cacheDir = (persistentCache as PersistentCacheConfig)?.cacheDir;
     const outputPath = output?.path ?? '.farm';
+    const filesystemPath = (file: string) => {
+      const normalized = normalizePath(
+        path.resolve(root ?? process.cwd(), file)
+      );
+      return process.platform === 'win32'
+        ? normalized.toLowerCase()
+        : normalized;
+    };
+    const generated = [filesystemPath(outputPath)];
+    if (cacheDir) generated.push(filesystemPath(cacheDir));
+    const isGenerated = (file: string) => {
+      const normalized = filesystemPath(file);
+      return generated.some(
+        (directory) =>
+          normalized === directory ||
+          normalized.startsWith(directory.replace(/\/$/, '') + '/')
+      );
+    };
     const ignored = [
       '**/.git/**',
       '**/node_modules/**',
       '**/test-results/**',
-      glob.escapePath(path.resolve(root ?? process.cwd(), outputPath)) + '/**',
-      cacheDir ? glob.escapePath(cacheDir) + '/**' : undefined,
+      // These are filesystem roots, not glob patterns. In particular, Chokidar
+      // normalizes Windows separators before matching ignored glob strings.
+      isGenerated,
       ...arraify(ignoredList || [])
-    ].filter((v): v is string => v !== undefined && v !== null);
+    ].filter((value) => value !== undefined && value !== null);
 
     this.resolvedWatchOptions = {
       ignored,
@@ -164,11 +195,14 @@ export default class Watcher extends EventEmitter implements IWatcher {
     const { root, configFilePath, configFileDependencies, envFiles, logger } =
       this.config;
     const shortFile = getShortName(file, root ?? process.cwd());
-    const isConfigFile = configFilePath === file;
+    const isConfigFile =
+      configFilePath !== undefined && normalizePath(configFilePath) === file;
     const isConfigDependencyFile = (configFileDependencies ?? []).some(
-      (name) => file === name
+      (name) => file === normalizePath(name)
     );
-    const isEnvFile = (envFiles ?? []).some((name) => file === name);
+    const isEnvFile = (envFiles ?? []).some(
+      (name) => file === normalizePath(name)
+    );
 
     if (isConfigFile || isConfigDependencyFile || isEnvFile) {
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;

@@ -1,0 +1,14 @@
+[package]
+name = "farmfe_docs_config"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+schemars = "=0.8.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = "2"
+chrono = { version = "=0.4.44", default-features = false, features = ["std"] }
+
+farmfe_syntax_highlight = { path = "../syntax-highlight" }

@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap, HashSet,
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::CompilationError,
   module::{
+    Module, ModuleId, ModuleType,
     module_graph::ModuleGraphEdgeDataItem,
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleId,
   },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,
   serde::Serialize,
   serde_json::{self, json},
   stats::CompilationPluginHookStats,
-  HashMap, HashSet,
 };
 
 use farmfe_toolkit::resources::get_dynamic_resources_map;
@@ -23,17 +23,17 @@ use finalize_module_graph::{
 };
 
 use crate::{
+  Compiler,
   build::{
-    module_cache::handle_cached_modules, BuildModuleGraphThreadedParams, HandleDependenciesParams,
-    ResolvedModuleInfo,
+    BuildModuleGraphThreadedParams, HandleDependenciesParams, ResolvedModuleInfo,
+    module_cache::handle_cached_modules,
   },
   generate::finalize_resources::finalize_resources,
-  Compiler,
 };
 use farmfe_core::error::Result;
 
 use self::{
-  diff_and_patch_module_graph::{diff_module_graph, patch_module_graph, DiffResult},
+  diff_and_patch_module_graph::{DiffResult, diff_module_graph, patch_module_graph},
   handle_update_modules::handle_update_modules,
   module_cache::set_updated_modules_cache,
   patch_module_group_graph::patch_module_group_graph,
@@ -52,6 +52,8 @@ mod patch_module_group_graph;
 mod regenerate_resources;
 mod update_context;
 
+type DynamicResourcesMap = HashMap<ModuleId, Vec<(String, ResourceType)>>;
+
 enum ResolveModuleResult {
   Cached(ModuleId),
   /// This module is already in previous module graph before the update, and we met it again when resolving dependencies
@@ -60,6 +62,186 @@ enum ResolveModuleResult {
   ExistingWhenUpdate(ModuleId),
   /// This module is a full new resolved module, and we need to do the full building process
   Success(Box<ResolvedModuleInfo>),
+}
+
+#[cfg(test)]
+mod update_finished_lock_tests {
+  use super::*;
+  use farmfe_core::{config::Config, plugin::Plugin};
+
+  struct ResourceReader;
+
+  struct CompletionOrder(Arc<std::sync::atomic::AtomicBool>);
+
+  struct FinalizeFailure;
+  impl Plugin for FinalizeFailure {
+    fn name(&self) -> &str {
+      "FinalizeFailure"
+    }
+
+    fn finalize_resources(
+      &self,
+      _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParam,
+      _context: &Arc<CompilationContext>,
+    ) -> Result<Option<()>> {
+      Err(CompilationError::GenericError(
+        "P08 deliberate resource finalization failure".into(),
+      ))
+    }
+  }
+
+  struct RegenerationFailure;
+  impl Plugin for RegenerationFailure {
+    fn name(&self) -> &str {
+      "RegenerationFailure"
+    }
+
+    fn process_resource_pots(
+      &self,
+      _pots: &mut Vec<&mut farmfe_core::resource::resource_pot::ResourcePot>,
+      _context: &Arc<CompilationContext>,
+    ) -> Result<Option<()>> {
+      Err(CompilationError::GenericError(
+        "P08 deliberate regeneration failure".into(),
+      ))
+    }
+  }
+
+  struct CompletionFailure;
+  impl Plugin for CompletionFailure {
+    fn name(&self) -> &str {
+      "CompletionFailure"
+    }
+
+    fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
+      Err(CompilationError::GenericError(
+        "P08 deliberate completion failure".into(),
+      ))
+    }
+  }
+
+  #[test]
+  fn resource_finalization_error_is_returned_without_panic_or_success_callback() {
+    assert_failed_update(
+      Arc::new(FinalizeFailure),
+      "P08 deliberate resource finalization failure",
+    );
+  }
+
+  #[test]
+  fn resource_regeneration_error_is_returned_without_panic_or_success_callback() {
+    assert_failed_update(
+      Arc::new(RegenerationFailure),
+      "P08 deliberate regeneration failure",
+    );
+  }
+
+  #[test]
+  fn completion_hook_error_is_returned_without_panic_or_success_callback() {
+    assert_failed_update(
+      Arc::new(CompletionFailure),
+      "P08 deliberate completion failure",
+    );
+  }
+
+  fn assert_failed_update(plugin: Arc<dyn Plugin>, message: &str) {
+    let completed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let compiler = Compiler::new(Config::default(), vec![plugin]).unwrap();
+    let callback_completed = completed.clone();
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+      compiler.regenerate_resources(
+        HashSet::default(),
+        HashSet::default(),
+        &vec![],
+        DiffResult::default(),
+        HashMap::default(),
+        move || {
+          callback_completed.store(true, std::sync::atomic::Ordering::SeqCst);
+        },
+        true,
+      )
+    }));
+    assert!(outcome.is_ok(), "recoverable update error must not panic");
+    let error = outcome
+      .unwrap()
+      .expect_err("failed update must return its error");
+    assert!(
+      error.to_string().contains(message),
+      "the original diagnostic must reach the update caller"
+    );
+    assert!(!completed.load(std::sync::atomic::Ordering::SeqCst));
+  }
+
+  impl Plugin for CompletionOrder {
+    fn name(&self) -> &str {
+      "CompletionOrder"
+    }
+    fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
+      assert!(
+        !self.0.load(std::sync::atomic::Ordering::SeqCst),
+        "completion callback ran before update_finished hooks"
+      );
+      Ok(None)
+    }
+  }
+
+  #[test]
+  fn completion_callback_follows_update_finished_hooks() {
+    let completed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let compiler = Compiler::new(
+      Config::default(),
+      vec![Arc::new(CompletionOrder(completed.clone()))],
+    )
+    .unwrap();
+    let callback_completed = completed.clone();
+    compiler
+      .regenerate_resources(
+        HashSet::default(),
+        HashSet::default(),
+        &vec![],
+        DiffResult::default(),
+        HashMap::default(),
+        move || {
+          callback_completed.store(true, std::sync::atomic::Ordering::SeqCst);
+        },
+        true,
+      )
+      .unwrap();
+    assert!(completed.load(std::sync::atomic::Ordering::SeqCst));
+  }
+
+  impl Plugin for ResourceReader {
+    fn name(&self) -> &str {
+      "ResourceReader"
+    }
+
+    fn update_finished(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+      assert!(
+        context.resources_map.try_lock().is_some(),
+        "update_finished must be able to read generated resources"
+      );
+      assert!(context.module_graph.try_write().is_some());
+      assert!(context.module_group_graph.try_write().is_some());
+      assert!(context.resource_pot_map.try_write().is_some());
+      Ok(None)
+    }
+  }
+
+  #[test]
+  fn synchronous_update_releases_graph_and_resource_locks_before_hooks() {
+    let compiler = Compiler::new(Config::default(), vec![Arc::new(ResourceReader)]).unwrap();
+    compiler
+      .regenerate_resources(
+        HashSet::default(),
+        HashSet::default(),
+        &vec![],
+        DiffResult::default(),
+        HashMap::default(),
+        || {},
+        true,
+      )
+      .unwrap();
+  }
 }
 
 struct BuildUpdateModuleGraphThreadedParams {
@@ -152,6 +334,7 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
+    self.context.source_observations.begin_generation();
     self.context.stats.add_hmr_compilation_stats();
     self.context.stats.set_start_time();
 
@@ -232,10 +415,12 @@ impl Compiler {
       for error in errors {
         error_messages.push(error.to_string());
       }
-      let errors_json = json!(error_messages
-        .iter()
-        .map(|e| e.to_string())
-        .collect::<Vec<_>>());
+      let errors_json = json!(
+        error_messages
+          .iter()
+          .map(|e| e.to_string())
+          .collect::<Vec<_>>()
+      );
       return Err(CompilationError::GenericError(errors_json.to_string()));
     } else {
       self.set_last_fail_module_ids(&[]);
@@ -259,6 +444,27 @@ impl Compiler {
     self.set_module_group_graph_stats();
 
     freeze_module_of_affected_module_graph(&updated_module_ids, &diff_result, &self.context)?;
+
+    // Remember existing CSS before module_graph_updated converts it to script.
+    // Lazy navigation must update already-loaded styles, but must not duplicate
+    // every newly discovered page/dependency in the lazy response.
+    let lazy_css_modules = if !generate_update_resource
+      && self.context.config.lazy_compilation
+      && self.context.config.output.target_env.is_browser()
+    {
+      let graph = self.context.module_graph.read();
+      updated_module_ids
+        .iter()
+        .filter(|id| {
+          graph
+            .module(id)
+            .is_some_and(|module| module.module_type == ModuleType::Css)
+        })
+        .cloned()
+        .collect::<Vec<_>>()
+    } else {
+      vec![]
+    };
 
     // update cache
     if self.context.config.persistent_cache.enabled() {
@@ -296,10 +502,24 @@ impl Compiler {
       !module.module_type.is_script()
     });
 
-    let (immutable_resources, mutable_resources) = if should_reload_page {
+    let (immutable_resources, mutable_resources) = if should_reload_page && generate_update_resource
+    {
       ("window.location.reload()".to_string(), "{}".to_string())
     } else if generate_update_resource {
       render_and_generate_update_resource(&updated_module_ids, &diff_result, &self.context)?
+    } else if !lazy_css_modules.is_empty() {
+      let css_scripts = {
+        let graph = self.context.module_graph.read();
+        lazy_css_modules
+          .into_iter()
+          .filter(|id| {
+            graph
+              .module(id)
+              .is_some_and(|module| module.module_type.is_script())
+          })
+          .collect::<Vec<_>>()
+      };
+      render_and_generate_update_resource(&css_scripts, &DiffResult::default(), &self.context)?
     } else {
       ("{}".to_string(), "{}".to_string())
     };
@@ -315,7 +535,7 @@ impl Compiler {
       removed_modules,
       callback,
       sync,
-    );
+    )?;
 
     update_result
       .added_module_ids
@@ -433,6 +653,9 @@ impl Compiler {
             resolve_module_id_result.resolve_result,
             &mut module,
             &context,
+            // Explicit update roots must rebuild generated metadata even when
+            // their source bytes and timestamp are unchanged.
+            order.is_some(),
           ) {
             Ok(deps) => {
               let params = HandleUpdateDependenciesParams {
@@ -613,7 +836,7 @@ impl Compiler {
     removed_modules: HashMap<ModuleId, Module>,
     callback: F,
     sync: bool,
-  ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
+  ) -> Result<Option<DynamicResourcesMap>>
   where
     F: FnOnce() + Send + Sync + 'static,
   {
@@ -633,10 +856,9 @@ impl Compiler {
         &cloned_updated_module_ids,
         &removed_modules,
         &cloned_context,
-      )
-      .unwrap();
+      )?;
 
-      finalize_resources(&cloned_context).unwrap();
+      finalize_resources(&cloned_context)?;
       let module_group_graph = self.context.module_group_graph.read();
       let resource_pot_map = self.context.resource_pot_map.read();
       let resources_map = self.context.resources_map.lock();
@@ -655,13 +877,14 @@ impl Compiler {
       }
 
       dynamic_resources_map = Some(dynamic_resources);
-      callback();
-      self
-        .context
-        .plugin_driver
-        .update_finished(&self.context)
-        .unwrap();
+      // Hooks and queued updates may acquire these locks again.
+      drop(module_graph);
+      drop(resources_map);
+      drop(resource_pot_map);
+      drop(module_group_graph);
+      self.context.plugin_driver.update_finished(&self.context)?;
       self.context.stats.set_end_time();
+      callback();
     } else {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
@@ -676,16 +899,18 @@ impl Compiler {
         }
 
         finalize_resources(&cloned_context).unwrap();
-        callback();
         cloned_context
           .plugin_driver
           .update_finished(&cloned_context)
           .unwrap();
         cloned_context.stats.set_end_time();
+        callback();
       });
     }
 
-    dynamic_resources_map
+    // The legacy asynchronous branch completes through its callback. Callers
+    // requiring generation errors before publishing an update must use sync.
+    Ok(dynamic_resources_map)
   }
 }
 

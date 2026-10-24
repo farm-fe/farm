@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "renderer": "mermaid@12.2.0",
+  "authoringPackage": "@mermaid-js/mermaid-cli@12.0.0",
+  "driver": "playwright-core",
+  "diagrams": [
+    {
+      "source": "plugin-dispatch.mmd",
+      "sourceSha256": "4e91b9c312a7a4f7e635dd5bf0dfb58814c0b68810d07306a4381a87b933b694",
+      "outputs": {
+        "light": {
+          "file": "plugin-dispatch-light.svg",
+          "sha256": "44031726ce7809bf48bb17d2dc39ec42998857229f601f6408bda08ff5e5a01a",
+          "width": 677,
+          "height": 755
+        },
+        "dark": {
+          "file": "plugin-dispatch-dark.svg",
+          "sha256": "315a562b512c15c7f0a2c0a4d4bf5bb4d4d0ca1fc3dbe123f3256d01f1a355ce",
+          "width": 677,
+          "height": 755
+        }
+      }
+    },
+    {
+      "source": "runtime-hook-order.mmd",
+      "sourceSha256": "9cfe808d1310fa8c6cfcb7488782e2f45e7c24a070d72725f28af5d979a44e62",
+      "outputs": {
+        "light": {
+          "file": "runtime-hook-order-light.svg",
+          "sha256": "b5ffa60cf4ce3745709741d47ca045b46fd73df4296b0d867cb64e13bc7fe73d",
+          "width": 474,
+          "height": 1766
+        },
+        "dark": {
+          "file": "runtime-hook-order-dark.svg",
+          "sha256": "512d48965e63448827cc962b39eea56af26bc884fd61be1a8116f41e189b8b08",
+          "width": 474,
+          "height": 1766
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-build.mmd",
+      "sourceSha256": "bebb18ba81b2b741f42d93eff9c89ad3c61a49497069e8be92d1bd1e422abc0f",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-build-light.svg",
+          "sha256": "f399ec36079b6c4a25a3df451d2f98058d2b31cafff506a8e2026eb8d8088ce0",
+          "width": 544,
+          "height": 3222
+        },
+        "dark": {
+          "file": "rust-plugin-build-dark.svg",
+          "sha256": "d131d73e5ee77682340347d90d5c4a6541b832388d0d6c7ae3db8737dc77b418",
+          "width": 544,
+          "height": 3222
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-generate.mmd",
+      "sourceSha256": "8892bad9f4e404852445bc49f9dde69b2566d6d787e6b7c772e27b3c3dd9f971",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-generate-light.svg",
+          "sha256": "8bf50362a961ef983e9c420d0fd1b97d7bba7282ca94b797f493f13cc826a57c",
+          "width": 360,
+          "height": 2449
+        },
+        "dark": {
+          "file": "rust-plugin-generate-dark.svg",
+          "sha256": "aab1e6f550b32aeb20a73a49eb8b2e39e5afb9fd1690480c3312a90981a42330",
+          "width": 360,
+          "height": 2449
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-lifecycle.mmd",
+      "sourceSha256": "7c8326a07a76f9578a00e62868092203ac1cbf4abbcdf9b31d4398eb043f677b",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-lifecycle-light.svg",
+          "sha256": "5799c18e564107df1191f52610cde38c12d65c9b77a289d695ae5d77d2886686",
+          "width": 244,
+          "height": 2107
+        },
+        "dark": {
+          "file": "rust-plugin-lifecycle-dark.svg",
+          "sha256": "35b07a486e8216bff71d6a1a6a6e163c6ba71e02bbf19a411003a4bbd7c82170",
+          "width": 244,
+          "height": 2107
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-update.mmd",
+      "sourceSha256": "4e7527d41a6f79e26e113fb361e5aa5828043ba30b3d7cdb80b670a39076d4cc",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-update-light.svg",
+          "sha256": "02e89ef7f4ac9aea36b2ad9a916ca45a3fa030e1ed12763e4d6d7e6c9fa6a071",
+          "width": 361,
+          "height": 1106
+        },
+        "dark": {
+          "file": "rust-plugin-update-dark.svg",
+          "sha256": "bedc4dcf9affeded016afeba259e9df8584e282b85427727723ba15a140fe9dd",
+          "width": 361,
+          "height": 1106
+        }
+      }
+    }
+  ]
+}

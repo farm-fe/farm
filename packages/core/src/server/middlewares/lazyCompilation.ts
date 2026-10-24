@@ -86,11 +86,15 @@ export function lazyCompilationMiddleware(
 
       const responseData = {
         dynamicResources,
-        dynamicModuleResourcesMap
+        dynamicModuleResourcesMap,
+        ...(!isNodeEnvironment ? { changedModules: result.changed } : {})
       };
 
       const lazyCompilationContent = !isNodeEnvironment
-        ? `export default ${JSON.stringify(responseData)}`
+        ? // The compiler emits only updates of existing CSS here, not newly
+          // discovered page modules. Register those factories before the lazy
+          // runtime refreshes the styles. This is ordinary generated ESM, not eval.
+          `${result.immutableModules ?? ''}\n${result.mutableModules ?? ''}\nexport default ${JSON.stringify(responseData)}`
         : JSON.stringify(responseData);
 
       const contentType = !isNodeEnvironment

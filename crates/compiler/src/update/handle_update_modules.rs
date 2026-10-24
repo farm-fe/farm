@@ -1,12 +1,102 @@
 use std::sync::Arc;
 
+#[cfg(test)]
+mod watch_query_tests {
+  use super::*;
+  use farmfe_core::{config::Config, module::Module};
+
+  #[test]
+  fn query_only_source_without_watch_dependents_does_not_create_bare_module() {
+    let mut config = Config::default();
+    config.root = std::env::temp_dir().to_string_lossy().into_owned();
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let path = std::path::Path::new(&context.config.root)
+      .join("product.svg")
+      .to_string_lossy()
+      .into_owned();
+    for query in ["?dom", "?media"] {
+      context
+        .module_graph
+        .write()
+        .add_module(Module::new(ModuleId::new(
+          &path,
+          query,
+          &context.config.root,
+        )));
+    }
+    let paths = handle_update_modules(
+      vec![(path.clone(), UpdateType::Updated)],
+      &[],
+      &context,
+      &mut UpdateResult::default(),
+    )
+    .unwrap();
+    assert_eq!(paths.len(), 2);
+    assert!(paths.iter().all(|(p, _)| {
+      !ModuleId::from_resolved_path_with_query(p, &context.config.root)
+        .query_string()
+        .is_empty()
+    }));
+  }
+
+  #[test]
+  fn watched_source_keeps_its_query_modules_in_the_update_paths() {
+    let mut config = Config::default();
+    config.root = std::env::temp_dir().to_string_lossy().into_owned();
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let path = std::path::Path::new(&context.config.root)
+      .join("product.svg")
+      .to_string_lossy()
+      .into_owned();
+    let source = ModuleId::new(&path, "", &context.config.root);
+    let image = ModuleId::new(&path, "?dom", &context.config.root);
+    let media = ModuleId::new(&path, "?media", &context.config.root);
+    let css = ModuleId::new("styles.css", "", &context.config.root);
+    context
+      .module_graph
+      .write()
+      .add_module(Module::new(image.clone()));
+    context.module_graph.write().add_module(Module::new(media));
+    context
+      .module_graph
+      .write()
+      .add_module(Module::new(css.clone()));
+    context.add_watch_files(css.clone(), vec![source]).unwrap();
+    let paths = handle_update_modules(
+      vec![(path.clone(), UpdateType::Updated)],
+      &[],
+      &context,
+      &mut UpdateResult::default(),
+    )
+    .unwrap();
+    assert!(
+      paths
+        .iter()
+        .any(|(p, _)| p == &image.resolved_path_with_query(&context.config.root)),
+      "Update the existing query module"
+    );
+    assert!(
+      !paths.iter().any(
+        |(p, _)| ModuleId::from_resolved_path_with_query(p, &context.config.root)
+          == ModuleId::new(&path, "", &context.config.root)
+      ),
+      "Do not create a bare module without an HMR boundary"
+    );
+    assert!(
+      paths
+        .iter()
+        .any(|(p, _)| p == &css.resolved_path(&context.config.root))
+    );
+  }
+}
+
 use farmfe_core::{
+  HashMap,
   context::CompilationContext,
   module::ModuleId,
   plugin::{PluginUpdateModulesHookParam, UpdateResult, UpdateType},
   serde_json,
   stats::CompilationPluginHookStats,
-  HashMap,
 };
 
 pub fn handle_update_modules(
@@ -114,7 +204,14 @@ pub fn handle_update_modules(
       }
 
       let module_id = ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root);
-      let mut result = vec![resolved_path.clone()];
+      let has_bare_update = paths.iter().any(|path| {
+        ModuleId::from_resolved_path_with_query(path, &context.config.root) == module_id
+      });
+      let mut result = if has_bare_update {
+        vec![resolved_path.clone()]
+      } else {
+        vec![]
+      };
 
       for path in paths {
         // if /root/index.ts and /root/index.ts?foo=bar are both in paths, we should remove the query module
@@ -128,7 +225,7 @@ pub fn handle_update_modules(
 
           let dependents = module_graph.dependents_ids(&child_module_id);
 
-          if dependents.contains(&module_id) && dependents.len() == 1 {
+          if has_bare_update && dependents.contains(&module_id) && dependents.len() == 1 {
             let removed_module = module_graph.remove_module(&child_module_id);
 
             for module_group_id in removed_module.module_groups {
@@ -206,6 +303,20 @@ fn resolve_watch_graph_paths(
     .into_iter()
     .flat_map(|(path, update_type)| {
       let id = ModuleId::new(&path, "", &context.config.root);
+      let query_paths = if module_graph.has_module(&id) {
+        vec![]
+      } else {
+        module_graph
+          .module_ids_by_file(&id)
+          .into_iter()
+          .map(|module| {
+            (
+              module.resolved_path_with_query(&context.config.root),
+              update_type.clone(),
+            )
+          })
+          .collect::<Vec<_>>()
+      };
       if watch_graph.has_module(&id) {
         let r: Vec<(String, UpdateType)> = watch_graph
           .relation_roots(&id)
@@ -221,6 +332,9 @@ fn resolve_watch_graph_paths(
         if module_graph.has_module(&id) {
           return [r, vec![(path, update_type)]].concat();
         };
+        if !query_paths.is_empty() {
+          return [r, query_paths].concat();
+        }
 
         if !r.is_empty() {
           r
@@ -228,7 +342,11 @@ fn resolve_watch_graph_paths(
           vec![(path, update_type)]
         }
       } else {
-        vec![(path, update_type)]
+        if query_paths.is_empty() {
+          vec![(path, update_type)]
+        } else {
+          query_paths
+        }
       }
     })
     .collect()

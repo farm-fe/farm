@@ -1,3 +1,7 @@
+---
+id: tutorials/create
+slug: tutorials/create
+---
 # Create A Project
 In this chapter, we will create a new Farm React project **from scratch**, and launch it in development mode.
 

@@ -1,14 +1,14 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
+  HashMap, HashSet,
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{ModuleId, module_graph::ModuleGraph},
   resource::resource_pot::ResourcePot,
-  HashMap, HashSet,
 };
 use farmfe_toolkit::script::concatenate_modules::{
-  concatenate_modules_ast, ConcatenateModulesAstOptions, ConcatenateModulesAstResult,
+  ConcatenateModulesAstOptions, ConcatenateModulesAstResult, concatenate_modules_ast,
 };
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
@@ -122,6 +122,16 @@ pub fn build_scope_hoisted_module_groups(
         continue;
       }
 
+      // A require must retain its runtime boundary and conditional execution.
+      // Hoisting its target would execute it eagerly and remove its loader ID.
+      if module_graph
+        .dependents(&group.target_hoisted_module_id)
+        .iter()
+        .any(|(_, edge)| edge.contains_require())
+      {
+        continue;
+      }
+
       let dependents = module_graph.dependents_ids(&group.target_hoisted_module_id);
 
       // there dependents of this module are not in this resource pot
@@ -220,13 +230,62 @@ pub fn build_scope_hoisted_module_groups(
 #[cfg(test)]
 mod tests {
   use farmfe_core::{
+    HashSet,
     config::Config,
     context::CompilationContext,
     module::ModuleSystem,
     resource::resource_pot::{ResourcePot, ResourcePotType},
-    HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
+
+  #[test]
+  fn required_esm_keeps_its_runtime_boundary() {
+    use farmfe_core::module::{
+      Module, ModuleMetaData, ModuleType,
+      module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
+    };
+    use farmfe_core::plugin::ResolveKind;
+    let entry: farmfe_core::module::ModuleId = "entry.js".into();
+    let target: farmfe_core::module::ModuleId = "target.js".into();
+    let mut graph = ModuleGraph::new();
+    let mut pot = ResourcePot::new("require-boundary", "any", ResourcePotType::Js);
+    for id in [&entry, &target] {
+      let mut module = Module::new(id.clone());
+      module.module_type = ModuleType::Js;
+      *module.meta = ModuleMetaData::Script(Default::default());
+      module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+      pot.add_module(id.clone());
+      graph.add_module(module);
+    }
+    graph
+      .add_edge(
+        &entry,
+        &target,
+        ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+          source: "./target.js".into(),
+          kind: ResolveKind::Require,
+          order: 0,
+        }]),
+      )
+      .unwrap();
+    graph.update_execution_order_for_modules();
+    let context = CompilationContext::new(
+      Config {
+        concatenate_modules: true,
+        ..Default::default()
+      },
+      vec![],
+    )
+    .unwrap();
+    let groups =
+      super::build_scope_hoisted_module_groups(&pot, &graph, &std::sync::Arc::new(context));
+    assert_eq!(groups.len(), 2);
+    assert!(
+      groups
+        .iter()
+        .all(|group| group.hoisted_module_ids.len() == 1)
+    );
+  }
 
   #[test]
   fn test_build_scope_hoisted_module_groups() {

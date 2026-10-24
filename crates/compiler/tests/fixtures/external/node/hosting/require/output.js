@@ -4,10 +4,8 @@ function initModuleSystem() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
-}());import * as __farm_external_module_jquery from "jquery";
-global['__farm_default_namespace__'].m.se({
-    "jquery": __farm_external_module_jquery
-});
+}());import { createRequire as __farm_create_require__ } from 'node:module';
+global['__farm_default_namespace__'].m.r.nr = __farm_create_require__(import.meta.url);
 (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
@@ -16,7 +14,7 @@ global['__farm_default_namespace__'].m.se({
     }
 })(global["__farm_default_namespace__"].m, {
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
-        const xxx = farmRequire('jquery');
+        const xxx = farmRequire.nr('jquery');
         console.log({
             xxx
         });

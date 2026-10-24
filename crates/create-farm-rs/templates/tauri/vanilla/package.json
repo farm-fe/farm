@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1",
-    "@farmfe/cli": "beta",
-    "@farmfe/core": "beta",
+    "@farmfe/cli": "^2.0.0",
+    "@farmfe/core": "^2.0.0",
     "typescript": "^5.0.2"
   }
 }

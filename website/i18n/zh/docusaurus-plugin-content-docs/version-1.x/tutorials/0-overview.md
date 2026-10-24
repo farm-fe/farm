@@ -1,3 +1,7 @@
+---
+id: tutorials/overview
+slug: tutorials/overview
+---
 # 概述
 在本教程中，我们将从头开始创建一个 Farm React 项目，并介绍如何添加有用的组件库和 Farm 插件。
 

@@ -120,6 +120,10 @@ pub struct Compiler {
   pub polyfills: Polyfills,
   dependencies: Vec<String>,
   source_maps_enabled: bool,
+  original_css: String,
+  source_map: Option<String>,
+  input_source_map: Option<sourcemap::SourceMap>,
+  color_variables: bool,
   config: Option<TailwindConfig>,
 }
 
@@ -137,6 +141,10 @@ impl Compiler {
       polyfills: options.polyfills,
       dependencies: options.dependencies,
       source_maps_enabled: options.source_maps_enabled,
+      original_css: String::new(),
+      source_map: None,
+      input_source_map: None,
+      color_variables: false,
       config: options.config,
     }
   }
@@ -154,11 +162,6 @@ impl Compiler {
   ///      serialised to CSS.
   pub fn build(&mut self, candidates: &[String]) -> String {
     let mut ast = self.ast.clone();
-
-    // 0. Strip `@utility` / `@custom-variant` rules — they have been consumed
-    //    by the design system during `compile` and should not appear in the
-    //    serialised output.
-    ast = strip_user_definitions(ast);
 
     // 1. Substitute @apply against the design system. If substitution fails
     //    (unknown utility / @apply inside @keyframes), fall back to the
@@ -191,19 +194,159 @@ impl Compiler {
       utilities.insert(0, root);
     }
 
+    // Keep package theme variables in the theme cascade layer. Putting them
+    // inside utilities changes their priority relative to business CSS.
+    if insert_theme_definition_roots(&mut ast, &utilities) {
+      utilities.clear();
+    }
     utilities.extend(candidate_nodes);
+    utilities.extend(self.design_system.theme.get_keyframes().iter().cloned());
+    if referenced.contains("--tw-blur") || referenced.contains("--tw-invert") {
+      // Reset per element and pseudo-element even when preflight is disabled;
+      // otherwise a child with invert inherits its parent's blur variable.
+      utilities.push(AstNode::AtRule(ast::AtRule {
+        name: "@layer".into(),
+        params: "base".into(),
+        nodes: vec![AstNode::Rule(ast::StyleRule {
+          selector: "*, ::before, ::after".into(),
+          nodes: ["--tw-blur", "--tw-invert"]
+            .map(|property| {
+              AstNode::Declaration(ast::Declaration {
+                property: property.into(),
+                value: Some(String::new()),
+                important: false,
+              })
+            })
+            .into(),
+        })],
+      }));
+    }
+    if referenced.contains("--tw-gradient-stops") {
+      // Stops must not inherit from a parent gradient (including pseudo-elements).
+      utilities.push(AstNode::AtRule(ast::AtRule {
+        name: "@layer".into(),
+        params: "base".into(),
+        nodes: vec![AstNode::Rule(ast::StyleRule {
+          selector: "*, ::before, ::after".into(),
+          nodes: [
+            "--tw-gradient-stops",
+            "--tw-gradient-from",
+            "--tw-gradient-via",
+            "--tw-gradient-to",
+            "--tw-gradient-via-stops",
+            "--tw-gradient-from-position",
+            "--tw-gradient-via-position",
+            "--tw-gradient-to-position",
+          ]
+          .map(|property| {
+            AstNode::Declaration(ast::Declaration {
+              property: property.into(),
+              value: Some("initial".into()),
+              important: false,
+            })
+          })
+          .into(),
+        })],
+      }));
+    }
+    if referenced.iter().any(|name| {
+      [
+        "--tw-backdrop-blur",
+        "--tw-translate-x",
+        "--tw-translate-y",
+        "--tw-duration",
+        "--tw-ease",
+        "--tw-shadow",
+      ]
+      .contains(&name.as_str())
+    }) {
+      utilities.push(AstNode::AtRule(ast::AtRule {
+        name: "@layer".into(),
+        params: "base".into(),
+        nodes: vec![AstNode::Rule(ast::StyleRule {
+          selector: "*, ::before, ::after".into(),
+          nodes: [
+            "--tw-backdrop-blur",
+            "--tw-transform-gpu",
+            "--tw-translate-x",
+            "--tw-translate-y",
+            "--tw-duration",
+            "--tw-ease",
+            "--tw-shadow",
+          ]
+          .map(|property| {
+            AstNode::Declaration(ast::Declaration {
+              property: property.into(),
+              value: Some("initial".into()),
+              important: false,
+            })
+          })
+          .into(),
+        })],
+      }));
+    }
+    if self.color_variables {
+      let mut colors: Vec<_> = self
+        .design_system
+        .theme
+        .namespace("--color")
+        .into_iter()
+        .filter_map(|(name, value)| name.map(|name| (name, value)))
+        .collect();
+      colors.sort_by(|left, right| left.0.cmp(&right.0));
+      let declarations = colors
+        .into_iter()
+        .map(|(name, value)| {
+          AstNode::Declaration(ast::Declaration {
+            property: self.design_system.theme.prefix_key(&format!("--{name}")),
+            value: Some(value),
+            important: false,
+          })
+        })
+        .collect();
+      utilities.push(AstNode::AtRule(ast::AtRule {
+        name: "@layer".into(),
+        params: "base".into(),
+        nodes: vec![AstNode::Rule(ast::StyleRule {
+          selector: ":root".into(),
+          nodes: declarations,
+        })],
+      }));
+    }
+    ast = strip_user_definitions(ast);
     ast = inline_tailwind_markers(ast, &utilities);
+    ast = crate::functions::substitute_css_functions(ast, &self.design_system.theme);
 
     // 3. Optimise + serialise.
     let optimized = ast::optimize_ast(ast);
-    ast::to_css(&optimized)
+    if self.source_maps_enabled {
+      let (css, map) = ast::to_css_with_source_map(
+        &optimized,
+        &self.original_css,
+        self.input_source_map.as_ref(),
+      );
+      self.source_map = Some(map);
+      css
+    } else {
+      ast::to_css(&optimized)
+    }
   }
 
   pub fn build_source_map(&self) -> Option<String> {
-    if !self.source_maps_enabled {
-      return None;
-    }
-    Some(r#"{"version":3,"sources":[],"names":[],"mappings":""}"#.to_string())
+    self.source_map.clone()
+  }
+
+  /// Expose flattened color aliases in the base layer (disabled by default).
+  pub fn set_color_variables(&mut self, enabled: bool) {
+    self.color_variables = enabled;
+    self.source_map = None;
+  }
+
+  /// Compose parser origins with the host's import/URL preprocessing map.
+  /// Must be supplied before build; it describes `compile`'s exact CSS input.
+  pub fn set_input_source_map(&mut self, map: sourcemap::SourceMap) {
+    self.input_source_map = Some(map);
+    self.source_map = None;
   }
 
   pub fn dependencies(&self) -> &[String] {
@@ -223,6 +366,27 @@ impl Compiler {
   pub fn sources(&self) -> &[crate::design_system::SourceDirective] {
     self.design_system.sources()
   }
+}
+
+fn insert_theme_definition_roots(nodes: &mut Vec<AstNode>, roots: &[AstNode]) -> bool {
+  for index in 0..nodes.len() {
+    if matches!(&nodes[index], AstNode::AtRule(at) if at.name == "@theme"
+      && !at.params.split_whitespace().any(|option| option == "reference"))
+    {
+      nodes.splice(index..=index, roots.iter().cloned());
+      return true;
+    }
+    let inserted = match &mut nodes[index] {
+      AstNode::AtRule(at) => insert_theme_definition_roots(&mut at.nodes, roots),
+      AstNode::Rule(rule) => insert_theme_definition_roots(&mut rule.nodes, roots),
+      AstNode::Context(ctx) => insert_theme_definition_roots(&mut ctx.nodes, roots),
+      _ => false,
+    };
+    if inserted {
+      return true;
+    }
+  }
+  false
 }
 
 /// Return `true` if the given at-rule is a Tailwind injection marker — i.e.
@@ -253,6 +417,10 @@ fn inline_tailwind_markers(nodes: Vec<AstNode>, utilities: &[AstNode]) -> Vec<As
       AstNode::Rule(mut rule) => {
         rule.nodes = inline_tailwind_markers(rule.nodes, utilities);
         out.push(AstNode::Rule(rule));
+      }
+      AstNode::Context(mut ctx) => {
+        ctx.nodes = inline_tailwind_markers(ctx.nodes, utilities);
+        out.push(AstNode::Context(ctx));
       }
       other => out.push(other),
     }
@@ -363,6 +531,10 @@ fn strip_user_definitions(nodes: Vec<AstNode>) -> Vec<AstNode> {
         rule.nodes = strip_user_definitions(rule.nodes);
         out.push(AstNode::Rule(rule));
       }
+      AstNode::Context(mut ctx) => {
+        ctx.nodes = strip_user_definitions(ctx.nodes);
+        out.push(AstNode::Context(ctx));
+      }
       other => out.push(other),
     }
   }
@@ -397,15 +569,131 @@ pub fn compile(css: &str, options: CompilerOptions) -> Result<Compiler, CompileE
   if let Some(config) = &options.config {
     apply_external_config_theme(&mut theme, &config.data);
   }
-  let design_system = DesignSystem::build(&ast, theme);
+  let mut design_system = DesignSystem::build(&ast, theme);
+  // This v3 configuration key is an explicit compatibility request, not a
+  // global change to the default modern border utility contract.
+  // It is deliberately not a full Tailwind v3 compatibility mode.
+  let preserve_border_width_style = options
+    .config
+    .as_ref()
+    .and_then(|config| config.data.pointer("/corePlugins/preflight"))
+    .and_then(Value::as_bool)
+    == Some(false);
+  design_system
+    .utilities
+    .set_preserve_border_width_style(preserve_border_width_style);
 
-  Ok(Compiler::new(design_system, ast, features, options))
+  if let Some(mode) = options
+    .config
+    .as_ref()
+    .and_then(|config| config.data.get("darkMode"))
+  {
+    let name = mode.as_str().or_else(|| {
+      mode
+        .as_array()
+        .and_then(|items| items.first())
+        .and_then(Value::as_str)
+    });
+    if design_system.variants.custom_variant("dark").is_none() {
+      match name {
+        Some("class" | "selector") => {
+          let selector = mode
+            .as_array()
+            .and_then(|items| items.get(1))
+            .and_then(Value::as_str)
+            .unwrap_or(".dark");
+          design_system
+            .variants
+            .register_custom_variant("dark".into(), format!("&:where({selector}, {selector} *)"));
+        }
+        Some("media") => {}
+        _ => {
+          return Err(CompileError::ParseError(
+            "darkMode must be media, class or selector (with an optional selector)".into(),
+          ));
+        }
+      }
+    }
+  }
+
+  let ast = if options.source_maps_enabled {
+    crate::parser::parse_with_origins(css)
+  } else {
+    ast
+  };
+  let mut compiler = Compiler::new(design_system, ast, features, options);
+  compiler.original_css = css.to_string();
+  Ok(compiler)
 }
 
 fn apply_external_config_theme(theme: &mut Theme, config: &Value) {
   let Some(theme_config) = config.get("theme") else {
     return;
   };
+  for section in [Some(theme_config), theme_config.get("extend")]
+    .into_iter()
+    .flatten()
+  {
+    if let Some(animations) = section.get("animation").and_then(Value::as_object) {
+      for (name, value) in animations {
+        if let Some(value) = value.as_str() {
+          theme.add(&format!("--animate-{name}"), value, ThemeOptions::NONE);
+        }
+      }
+    }
+    if let Some(keyframes) = section.get("keyframes").and_then(Value::as_object) {
+      for (name, steps) in keyframes {
+        let Some(steps) = steps.as_object() else {
+          continue;
+        };
+        let mut nodes = vec![];
+        for (selector, declarations) in steps {
+          let Some(declarations) = declarations.as_object() else {
+            continue;
+          };
+          let declarations = declarations
+            .iter()
+            .filter_map(|(property, value)| {
+              let value = match value {
+                Value::String(value) => value.clone(),
+                Value::Number(value) => value.to_string(),
+                _ => return None,
+              };
+              let property = if property.starts_with("--") {
+                property.clone()
+              } else {
+                property
+                  .chars()
+                  .fold(String::new(), |mut output, character| {
+                    if character.is_ascii_uppercase() {
+                      output.push('-');
+                      output.push(character.to_ascii_lowercase());
+                    } else {
+                      output.push(character);
+                    }
+                    output
+                  })
+              };
+              Some(AstNode::Declaration(crate::ast::Declaration {
+                property,
+                value: Some(value),
+                important: false,
+              }))
+            })
+            .collect();
+          nodes.push(AstNode::Rule(crate::ast::StyleRule {
+            selector: selector.clone(),
+            nodes: declarations,
+          }));
+        }
+        theme.add_keyframes(AstNode::AtRule(crate::ast::AtRule {
+          name: "@keyframes".into(),
+          params: name.clone(),
+          nodes,
+        }));
+      }
+    }
+  }
 
   if let Some(colors) = theme_config.get("colors") {
     add_config_colors(theme, colors, &mut Vec::new());

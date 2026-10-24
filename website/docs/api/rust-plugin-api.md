@@ -27,45 +27,12 @@ See [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin) for detail
 
 ## Plugin Hooks Overview
 Farm provides many Rollup-style hooks. In v2, the lifecycle is best understood in three phases: `build`, `generate`, and `update` (HMR/incremental updates):
-![Farm Plugin Hooks](/img/farm-plugin-hooks.png)
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-lifecycle-light.svg"><img src="/diagrams/rust-plugin-lifecycle-light.svg" alt="Rust plugin lifecycle: initial compilation and separate update calls" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-lifecycle-dark.svg"><img src="/diagrams/rust-plugin-lifecycle-dark.svg" alt="Rust plugin lifecycle: initial compilation and separate update calls" /></a>
 
-```mermaid
-flowchart TD
-  A[config] --> B[plugin_cache_loaded]
-  B --> C[build_start]
-  C --> D[resolve]
-  D --> E[load]
-  E --> F[transform]
-  F --> G[parse]
-  G --> H[process_module]
-  H --> I[analyze_deps]
-  I --> J[finalize_module]
-  J --> K[freeze_module]
-  K --> L[module_graph_build_end]
-  L --> M[build_end]
+[Mermaid source](/diagrams/rust-plugin-lifecycle.mmd)
 
-  M --> N[generate_start]
-  N --> O[optimize_module_graph]
-  O --> P[freeze_module_graph_meta]
-  P --> Q[analyze_module_graph]
-  Q --> R[partial_bundling]
-  R --> S[process_resource_pots]
-  S --> T[render_start]
-  T --> U[render_resource_pot]
-  U --> V[process_rendered_resource_pot]
-  V --> W[augment_resource_pot_hash]
-  W --> X[optimize_resource_pot]
-  X --> Y[generate_resources]
-  Y --> Z[process_generated_resources]
-  Z --> AA[handle_entry_resource]
-  AA --> AB[finalize_resources]
-  AB --> AC[generate_end]
-  AC --> AD[finish]
 
-  AD --> AE[update_modules]
-  AE --> AF[module_graph_updated]
-  AF --> AG[update_finished]
-```
 
 The diagram above is an overview. For exact signatures and hook semantics, refer to each hook section below and the upstream `Plugin` trait.
 
@@ -76,6 +43,35 @@ There are three kinds of hooks (the same as Rollup):
 * `first`: The hooks execute in serial and return immediately when a hook returns a non-null value. (The null means null and undefined in JS, None in Rust).
 * `serial`: The hooks execute in serial, and every hook's result will pass to the next hook, using the last hook's result as the final result.
 * `parallel`: The hooks execute in parallel in a thread pool and should be isolated.
+
+
+### Phase details and cache branches
+
+A timestamp hit precedes load/transform; a transformed-content hash hit follows them. Resource-pot cache hits do not skip global generation hooks. Watch/API events trigger updates separately; they do not automatically follow finish.
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-build-light.svg"><img src="/diagrams/rust-plugin-build-light.svg" alt="Module graph and cache decisions" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-build-dark.svg"><img src="/diagrams/rust-plugin-build-dark.svg" alt="Module graph and cache decisions" /></a>
+
+[Mermaid source](/diagrams/rust-plugin-build.mmd)
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-generate-light.svg"><img src="/diagrams/rust-plugin-generate-light.svg" alt="Resource generation and pot-cache decisions" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-generate-dark.svg"><img src="/diagrams/rust-plugin-generate-dark.svg" alt="Resource generation and pot-cache decisions" /></a>
+
+[Mermaid source](/diagrams/rust-plugin-generate.mmd)
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-update-light.svg"><img src="/diagrams/rust-plugin-update-light.svg" alt="Separate incremental update lifecycle" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-update-dark.svg"><img src="/diagrams/rust-plugin-update-dark.svg" alt="Separate incremental update lifecycle" /></a>
+
+[Mermaid source](/diagrams/rust-plugin-update.mmd)
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/plugin-dispatch-light.svg"><img src="/diagrams/plugin-dispatch-light.svg" alt="Plugin callback dispatch: first, serial, parallel" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/plugin-dispatch-dark.svg"><img src="/diagrams/plugin-dispatch-dark.svg" alt="Plugin callback dispatch: first, serial, parallel" /></a>
+
+[Mermaid source](/diagrams/plugin-dispatch.mmd)
 
 :::note
 For full `Plugin Hooks` signature, see [Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)

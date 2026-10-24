@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Contribution Guide
 
@@ -95,7 +95,7 @@ You can install them in the extension
 
 Farm development is very simple. You only need to execute `pnpm bootstrap` in the root directory for development.
 
-<PackageManagerTabs command="pnpm bootstrap" />
+<PackageManagerTabs commands={{"npm":"npm bootstrap","pnpm":"pnpm bootstrap","yarn":"yarn bootstrap","bun":"bun bootstrap"}} />
 
 - use `pnpm bootstrap` to install dependencies and build core packages with series of initialization operations.
 
@@ -107,9 +107,9 @@ Farm development is very simple. You only need to execute `pnpm bootstrap` in th
 
 When you are developing node side code, the root directory executes pnpm start to debug the code in real time, and when you are developing rust side code, the root directory executes pnpm start:rs to debug the code in real time.
 
-<PackageManagerTabs command="pnpm start   // node side" />
+<PackageManagerTabs commands={{"npm":"npm start   // node side","pnpm":"pnpm start   // node side","yarn":"yarn start   // node side","bun":"bun start   // node side"}} />
 
-<PackageManagerTabs command="pnpm start:rs   // rust side" />
+<PackageManagerTabs commands={{"npm":"npm start:rs   // rust side","pnpm":"pnpm start:rs   // rust side","yarn":"yarn start:rs   // rust side","bun":"bun start:rs   // rust side"}} />
 
 ## Testing
 

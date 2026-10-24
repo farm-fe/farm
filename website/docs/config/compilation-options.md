@@ -197,16 +197,17 @@ This option is only valid for JS outputs.
 
 #### `output.libraryBundleType` {#output-librarybundletype}
 
-- **type**: compiler-level `"single-bundle" | "multiple-bundle" | "bundle-less"`
+- **type**: `"single-bundle" | "multiple-bundle" | "bundle-less"`
+- **default**: `"single-bundle"`
 
-This compiler-level field controls the library bundling strategy when `output.targetEnv` is `"library"`:
+This field controls the library bundling strategy when `output.targetEnv` is `"library"`:
 
 * **`single-bundle`**: one output bundle per format. This mode only supports a single entry.
 * **`multiple-bundle`**: each entry produces its own output bundle and shared chunks may be extracted.
 * **`bundle-less`**: each source module is emitted independently, preserving the source structure.
 
-:::caution
-The current `@farmfe/core` TypeScript `UserConfig` and validation schema do not expose this field for `farm.config.ts`. Treat this as compiler behavior reference until the JavaScript config API exposes it.
+:::note
+The V2 candidate JavaScript API accepts `compilation.output.libraryBundleType` when `targetEnv` is `library`. Choose `single-bundle`, `multiple-bundle`, or `bundle-less`; omitting the field preserves the compiler's `single-bundle` default. Use matching candidate packages until the formal V2 release is published.
 :::
 
 #### `output.clean`

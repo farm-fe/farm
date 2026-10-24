@@ -1,0 +1,78 @@
+diff --git a/es/Grid/interface.d.ts b/es/Grid/interface.d.ts
+index 42604e247487cc12caaa5638b504ff1b46812628..94ae6a62afdf67e250fc8fb5d662dd84d2e829cc 100644
+--- a/es/Grid/interface.d.ts
++++ b/es/Grid/interface.d.ts
+@@ -166,7 +166,7 @@ export interface GridProps extends Omit<HTMLAttributes<HTMLDivElement>, 'classNa
+ /**
+  * @title GridItem
+  */
+-export interface GridItemProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
++export interface GridItemProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'children'> {
+     style?: CSSProperties;
+     className?: string | string[];
+     /**
+diff --git a/es/Image/interface.d.ts b/es/Image/interface.d.ts
+index 5cbafdd1e87dbedca8154e6d2d65bcd87242cd37..8f26b3c37daa2336f0641609534dc589b38d7de4 100644
+--- a/es/Image/interface.d.ts
++++ b/es/Image/interface.d.ts
+@@ -242,7 +242,7 @@ export interface ImagePreviewGroupProps extends Omit<PartialImagePreviewProps, '
+  * @zh `<Image.Preview>` 中类型 `ImagePreviewActionProps` 详细参数。
+  * @en Detailed parameters of type `ImagePreviewActionProps` in `<Image.Preview>`.
+  */
+-export interface ImagePreviewActionProps extends HTMLAttributes<HTMLDivElement> {
++export interface ImagePreviewActionProps extends Omit<HTMLAttributes<HTMLDivElement>, 'content'> {
+     /**
+      * @zh 唯一标识
+      * @en Unique identifier
+diff --git a/es/Select/interface.d.ts b/es/Select/interface.d.ts
+index 8378b4fa66e316ebcc02d3d90e140f278035b97b..a72b47ef82515719fdbd0035088266a37893be8e 100644
+--- a/es/Select/interface.d.ts
++++ b/es/Select/interface.d.ts
+@@ -81,7 +81,7 @@ export interface SelectProps extends SelectViewCommonProps {
+      * @version 2.13.0, `{ formatter }` in 2.54.0
+      */
+     allowCreate?: boolean | {
+-        formatter: (inputValue: string, creating: boolean) => SelectProps['options'][number];
++        formatter: (inputValue: string, creating: boolean) => NonNullable<SelectProps['options']>[number];
+     };
+     /**
+      * @zh 是否在隐藏的时候销毁 DOM 结构
+diff --git a/lib/Grid/interface.d.ts b/lib/Grid/interface.d.ts
+index 42604e247487cc12caaa5638b504ff1b46812628..94ae6a62afdf67e250fc8fb5d662dd84d2e829cc 100644
+--- a/lib/Grid/interface.d.ts
++++ b/lib/Grid/interface.d.ts
+@@ -166,7 +166,7 @@ export interface GridProps extends Omit<HTMLAttributes<HTMLDivElement>, 'classNa
+ /**
+  * @title GridItem
+  */
+-export interface GridItemProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
++export interface GridItemProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'children'> {
+     style?: CSSProperties;
+     className?: string | string[];
+     /**
+diff --git a/lib/Image/interface.d.ts b/lib/Image/interface.d.ts
+index 5cbafdd1e87dbedca8154e6d2d65bcd87242cd37..8f26b3c37daa2336f0641609534dc589b38d7de4 100644
+--- a/lib/Image/interface.d.ts
++++ b/lib/Image/interface.d.ts
+@@ -242,7 +242,7 @@ export interface ImagePreviewGroupProps extends Omit<PartialImagePreviewProps, '
+  * @zh `<Image.Preview>` 中类型 `ImagePreviewActionProps` 详细参数。
+  * @en Detailed parameters of type `ImagePreviewActionProps` in `<Image.Preview>`.
+  */
+-export interface ImagePreviewActionProps extends HTMLAttributes<HTMLDivElement> {
++export interface ImagePreviewActionProps extends Omit<HTMLAttributes<HTMLDivElement>, 'content'> {
+     /**
+      * @zh 唯一标识
+      * @en Unique identifier
+diff --git a/lib/Select/interface.d.ts b/lib/Select/interface.d.ts
+index 8378b4fa66e316ebcc02d3d90e140f278035b97b..a72b47ef82515719fdbd0035088266a37893be8e 100644
+--- a/lib/Select/interface.d.ts
++++ b/lib/Select/interface.d.ts
+@@ -81,7 +81,7 @@ export interface SelectProps extends SelectViewCommonProps {
+      * @version 2.13.0, `{ formatter }` in 2.54.0
+      */
+     allowCreate?: boolean | {
+-        formatter: (inputValue: string, creating: boolean) => SelectProps['options'][number];
++        formatter: (inputValue: string, creating: boolean) => NonNullable<SelectProps['options']>[number];
+     };
+     /**
+      * @zh 是否在隐藏的时候销毁 DOM 结构

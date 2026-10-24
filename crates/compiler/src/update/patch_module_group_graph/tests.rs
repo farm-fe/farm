@@ -1,11 +1,11 @@
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
+    Module,
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module,
   },
   plugin::ResolveKind,
-  HashMap, HashSet,
 };
 use farmfe_plugin_partial_bundling::{
   module_group_graph_from_entries, module_group_graph_from_module_graph,
@@ -15,6 +15,168 @@ use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_
 use crate::update::diff_and_patch_module_graph::{diff_module_graph, patch_module_graph};
 
 use super::patch_module_group_graph;
+
+#[test]
+fn shared_module_group_closure_keeps_transitive_workers_and_excludes_disconnected_groups() {
+  use farmfe_core::module::module_group::{ModuleGroup, ModuleGroupGraph};
+  for count in [2, 8, 32] {
+    let mut graph = ModuleGraph::new();
+    for name in ["seed", "shared", "bridge", "leaf", "isolated"] {
+      graph.add_module(Module::new(name.into()));
+    }
+    let mut groups = ModuleGroupGraph::new();
+    let mut connected = HashSet::default();
+    for index in 0..count {
+      let kind = if index % 2 == 0 {
+        ModuleGroupType::DynamicImport
+      } else {
+        ModuleGroupType::DynamicEntry
+      };
+      let mut group = ModuleGroup::new(format!("page-{index}").as_str().into(), kind);
+      let mut entry = Module::new(group.entry_module_id.clone());
+      entry.module_groups.insert(group.id.clone());
+      graph.add_module(entry);
+      let mut members = vec!["shared"];
+      if index < 2 {
+        members.push("seed");
+      }
+      if index == count - 1 {
+        members.push("bridge");
+      }
+      for member in members {
+        group.add_module(member.into());
+        graph
+          .module_mut(&member.into())
+          .unwrap()
+          .module_groups
+          .insert(group.id.clone());
+      }
+      connected.insert(group.id.clone());
+      groups.add_module_group(group);
+    }
+    let mut leaf = ModuleGroup::new("leaf".into(), ModuleGroupType::DynamicImport);
+    for member in ["bridge", "leaf"] {
+      leaf.add_module(member.into());
+      graph
+        .module_mut(&member.into())
+        .unwrap()
+        .module_groups
+        .insert(leaf.id.clone());
+    }
+    connected.insert(leaf.id.clone());
+    groups.add_module_group(leaf);
+    let mut isolated = ModuleGroup::new("isolated".into(), ModuleGroupType::Entry);
+    isolated.add_module("isolated".into());
+    graph
+      .module_mut(&"isolated".into())
+      .unwrap()
+      .module_groups
+      .insert(isolated.id.clone());
+    groups.add_module_group(isolated);
+    let before: HashMap<_, _> = graph
+      .modules()
+      .into_iter()
+      .map(|module| (module.id.clone(), module.module_groups.clone()))
+      .collect();
+    let affected = patch_module_group_graph(
+      vec!["seed".into()],
+      &Default::default(),
+      &HashMap::default(),
+      &mut graph,
+      &mut groups,
+    );
+    assert_eq!(affected, connected);
+    for module in graph.modules() {
+      assert_eq!(module.module_groups, before[&module.id]);
+    }
+  }
+}
+
+#[test]
+fn removed_dynamic_group_does_not_panic_when_later_edge_cleanup_revisits_it() {
+  let mut graph = create_basic_graph();
+  graph
+    .update_edge(
+      &"a".into(),
+      &"b".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicImport,
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  let mut groups = module_group_graph_from_entries(&vec!["a".into()], &mut graph);
+  let removed = ModuleGroupId::new(&"b".into(), &ModuleGroupType::DynamicImport);
+  assert!(groups.has(&removed));
+  let mut affected = HashSet::default();
+  super::remove_dynamic_module_group(&removed, &mut graph, &mut groups, &mut affected);
+  graph.remove_edge(&"a".into(), &"b".into()).unwrap();
+  super::patch_any_module_group_for_toposort_modules(
+    vec!["b".into(), "c".into()],
+    vec![],
+    HashSet::from_iter([removed.clone()]),
+    &mut graph,
+    &mut groups,
+    &mut affected,
+  );
+  assert!(!groups.has(&removed));
+  for id in ["b", "c"] {
+    assert!(
+      !graph
+        .module(&id.into())
+        .unwrap()
+        .module_groups
+        .contains(&removed)
+    );
+  }
+}
+
+#[test]
+fn deleted_dynamic_page_keeps_other_entry_shared_dependency_and_memberships() {
+  let mut graph = create_basic_graph();
+  graph
+    .update_edge(
+      &"a".into(),
+      &"b".into(),
+      get_edge_info(ResolveKind::DynamicImport),
+    )
+    .unwrap();
+  graph.add_module(Module::new("other".into()));
+  graph
+    .add_edge(&"other".into(), &"c".into(), ModuleGraphEdge::default())
+    .unwrap();
+  let entries = vec!["a".into(), "other".into()];
+  let mut groups = module_group_graph_from_entries(&entries, &mut graph);
+  let mut updated = create_basic_graph();
+  updated.remove_module(&"b".into());
+  updated.add_module(Module::new("other".into()));
+  updated
+    .add_edge(&"other".into(), &"c".into(), ModuleGraphEdge::default())
+    .unwrap();
+  let start = vec!["a".into()];
+  let diff = diff_module_graph(start.clone(), &graph, &updated);
+  let removed = patch_module_graph(start.clone(), &diff, &mut graph, &mut updated);
+  patch_module_group_graph(start, &diff, &removed, &mut graph, &mut groups);
+  let old_group = ModuleGroupId::new(&"b".into(), &ModuleGroupType::DynamicImport);
+  assert!(!groups.has(&old_group));
+  let before: HashMap<_, _> = ["a", "c", "d", "other"]
+    .into_iter()
+    .map(|id| {
+      let module = graph.module(&id.into()).unwrap();
+      assert!(!module.module_groups.contains(&old_group));
+      (id, module.module_groups.clone())
+    })
+    .collect();
+  assert!(before["c"].contains(&ModuleGroupId::new(
+    &"other".into(),
+    &ModuleGroupType::Entry
+  )));
+  let rebuilt = module_group_graph_from_entries(&entries, &mut graph);
+  assert_eq!(groups, rebuilt);
+  for (id, membership) in before {
+    assert_eq!(membership, graph.module(&id.into()).unwrap().module_groups);
+  }
+}
 
 ///
 /// ```ignore

@@ -1,13 +1,19 @@
 {
   "name": "@farmfe/core",
-  "version": "2.0.0-beta.11",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/cjs/index.cjs",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      },
       "types": "./dist/index.d.ts"
     },
     "./client": {
@@ -57,7 +63,7 @@
   "scripts": {
     "start": "tsc -w -p tsconfig.build.json",
     "start:debug": "tsc -w -p tsconfig.build.json",
-    "build:cjs": "node scripts/build-cjs.mjs",
+    "build:cjs": "node scripts/build-cjs.mjs && node scripts/prepare-cjs-types.mjs",
     "build": "tsc -p tsconfig.build.json && npm run build:cjs",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:publish": "npm run build:rs:debug -- --profile release-publish",
@@ -73,13 +79,10 @@
   "devDependencies": {
     "@napi-rs/cli": "3.0.4",
     "@types/compression": "^1.7.5",
-    "@types/connect": "^3.4.38",
     "@types/cors": "^2.8.17",
     "@types/debug": "^4.1.12",
     "@types/etag": "^1.8.3",
     "@types/fs-extra": "^11.0.1",
-    "@types/http-proxy": "^1.17.14",
-    "@types/ws": "^8.5.8",
     "react-refresh": "^0.14.0"
   },
   "dependencies": {
@@ -90,6 +93,9 @@
     "@farmfe/utils": "workspace:*",
     "@polka/compression": "1.0.0-next.25",
     "@swc/helpers": "0.5.17",
+    "@types/connect": "^3.4.38",
+    "@types/http-proxy": "^1.17.14",
+    "@types/ws": "^8.5.8",
     "chokidar": "^3.5.3",
     "connect": "^3.7.0",
     "cors": "^2.8.5",
@@ -105,13 +111,15 @@
     "is-plain-object": "^5.0.0",
     "mime": "^4.0.4",
     "open": "10.1.0",
+    "rollup": "^3.29.4",
     "sirv": "^3.0.0",
+    "vite": "^5.2.6",
     "ws": "^8.14.2",
     "zod": "^3.23.8",
     "zod-validation-error": "^1.3.0"
   },
   "engines": {
-    "node": ">=16.15.1"
+    "node": "^18.0.0 || >=20.0.0"
   },
   "files": [
     "binding/binding.cjs",
@@ -123,6 +131,19 @@
     "dist",
     "cjs",
     "client.d.ts",
-    "types/**/*.d.ts"
-  ]
+    "types/**/*.d.ts",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
+  ],
+  "optionalDependencies": {
+    "@farmfe/core-darwin-arm64": "2.0.0",
+    "@farmfe/core-darwin-x64": "2.0.0",
+    "@farmfe/core-linux-arm64-gnu": "2.0.0",
+    "@farmfe/core-linux-arm64-musl": "2.0.0",
+    "@farmfe/core-linux-x64-gnu": "2.0.0",
+    "@farmfe/core-linux-x64-musl": "2.0.0",
+    "@farmfe/core-win32-arm64-msvc": "2.0.0",
+    "@farmfe/core-win32-ia32-msvc": "2.0.0",
+    "@farmfe/core-win32-x64-msvc": "2.0.0"
+  }
 }

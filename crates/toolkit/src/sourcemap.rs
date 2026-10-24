@@ -12,7 +12,7 @@ use farmfe_core::{
   relative_path::RelativePath,
   resource::{Resource, ResourceType},
   swc_common::{
-    source_map::SourceMapGenConfig, BytePos, FileName, LineCol, SourceMap as SwcSourceMap,
+    BytePos, FileName, LineCol, SourceMap as SwcSourceMap, source_map::SourceMapGenConfig,
   },
 };
 
@@ -68,8 +68,40 @@ pub fn append_sourcemap_comment(resource: &mut Resource, map: &Resource, config:
 }
 
 pub fn build_sourcemap(cm: Arc<SwcSourceMap>, mappings: &[(BytePos, LineCol)]) -> SourceMap {
+  // Generated scripts (including MDX JSX) can place multiple author lines on
+  // one intermediate line. Dropping columns makes transform-chain lookups
+  // resolve to an unrelated earlier expression on that line.
+  build_sourcemap_config(
+    cm,
+    mappings,
+    FarmSwcSourceMapConfig {
+      emit_columns: true,
+      ..Default::default()
+    },
+  )
+}
+
+pub(crate) fn build_css_sourcemap(
+  cm: Arc<SwcSourceMap>,
+  mappings: &[(BytePos, LineCol)],
+) -> SourceMap {
+  build_sourcemap_config(
+    cm,
+    mappings,
+    FarmSwcSourceMapConfig {
+      emit_columns: true,
+      ..Default::default()
+    },
+  )
+}
+
+fn build_sourcemap_config(
+  cm: Arc<SwcSourceMap>,
+  mappings: &[(BytePos, LineCol)],
+  config: FarmSwcSourceMapConfig,
+) -> SourceMap {
   // TODO investigate performance comparison of swc_sourcemap and sourcemap and normalize the usage of sourcemap crate
-  let swc_sourcemap = cm.build_source_map(mappings, None, FarmSwcSourceMapConfig::default());
+  let swc_sourcemap = cm.build_source_map(mappings, None, config);
 
   let mut slice = Vec::new();
   swc_sourcemap.to_writer(&mut slice).unwrap();
@@ -164,12 +196,14 @@ pub fn trace_module_sourcemap(
 
 pub struct FarmSwcSourceMapConfig {
   inline_sources_content: bool,
+  emit_columns: bool,
 }
 
 impl FarmSwcSourceMapConfig {
   pub fn new(inline_sources_content: bool) -> Self {
     Self {
       inline_sources_content,
+      emit_columns: false,
     }
   }
 }
@@ -178,6 +212,7 @@ impl Default for FarmSwcSourceMapConfig {
   fn default() -> Self {
     Self {
       inline_sources_content: true,
+      emit_columns: false,
     }
   }
 }
@@ -192,8 +227,7 @@ impl SourceMapGenConfig for FarmSwcSourceMapConfig {
   }
 
   fn emit_columns(&self, _f: &FileName) -> bool {
-    // TODO: make it configurable
-    false
+    self.emit_columns
   }
 }
 

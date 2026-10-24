@@ -15,8 +15,8 @@
     "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@farmfe/cli": "beta",
-    "@farmfe/core": "beta",
+    "@farmfe/cli": "^2.0.0",
+    "@farmfe/core": "^2.0.0",
     "@tauri-apps/cli": "^2.1.0",
     "@vitejs/plugin-vue": "6.0.1",
     "core-js": "^3.39.0",

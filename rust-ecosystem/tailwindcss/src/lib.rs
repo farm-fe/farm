@@ -23,5 +23,5 @@ pub mod walk;
 
 pub use candidate::parse_candidate;
 pub use compiler::{
-  compile, CompileError, Compiler, CompilerOptions, Features, Polyfills, TailwindConfig,
+  CompileError, Compiler, CompilerOptions, Features, Polyfills, TailwindConfig, compile,
 };

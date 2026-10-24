@@ -1,0 +1,83 @@
+{
+  "name": "@farmfe/docs",
+  "version": "0.0.1",
+  "description": "Rust-powered documentation sites built with Farm",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./dev-client": {
+      "types": "./dist/dev-client.d.ts",
+      "default": "./dist/dev-client.js"
+    },
+    "./mdx": {
+      "types": "./dist/mdx.d.ts",
+      "default": "./dist/mdx.js"
+    },
+    "./snippets": {
+      "types": "./dist/snippets.d.ts",
+      "default": "./dist/snippets.js"
+    },
+    "./snippets-runtime": {
+      "types": "./dist/snippets-runtime.d.ts",
+      "default": "./dist/snippets-runtime.js"
+    },
+    "./theme": {
+      "types": "./dist/theme.d.ts",
+      "default": "./dist/theme.js"
+    },
+    "./workflow": "./dist/workflow.js",
+    "./preview": {
+      "types": "./dist/preview.d.ts",
+      "default": "./dist/preview.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "schema",
+    "client.html"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test:ai": "node --test tests/machine-readable.test.mjs"
+  },
+  "dependencies": {
+    "@farmfe/core": "workspace:*",
+    "@farmfe/docs-theme-default": "workspace:*",
+    "@farmfe/plugin-docs": "workspace:*",
+    "@farmfe/plugin-docs-snippets": "workspace:*",
+    "@farmfe/plugin-docs-seo": "workspace:*",
+    "@farmfe/plugin-docs-snapshot": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
+    "@farmfe/plugin-ssr-css": "workspace:*",
+    "@farmfe/plugin-syntax-highlight": "workspace:*",
+    "mime": "^4.0.4",
+    "react-refresh": "0.17.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.67",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

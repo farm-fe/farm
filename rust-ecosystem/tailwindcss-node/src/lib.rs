@@ -18,6 +18,7 @@
 //! - Performance instrumentation (hit counts + timers) — [`instrumentation`]
 
 pub mod compile;
+mod css_origins;
 pub mod env;
 pub mod get_module_dependencies;
 pub mod instrumentation;

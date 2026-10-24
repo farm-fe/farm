@@ -1,0 +1,16 @@
+{
+  "title": "Farm Docs Features", "url": "https://example.com", "basePath": "/guide/",
+  "locales": { "default": "en", "items": ["en", "zh"] },
+  "docs": { "collections": [
+    { "id": "en-current", "group": "guide", "dir": "content/en-current", "locale": "en", "version": "current", "routeBase": "/docs/" },
+    { "id": "zh-current", "group": "guide", "fallbackLocale": "en", "dir": "content/zh-current", "locale": "zh", "version": "current", "routeBase": "/zh/docs/" },
+    { "id": "en-old", "group": "guide", "dir": "content/en-old", "locale": "en", "version": "previous", "routeBase": "/v1/docs/" },
+    { "id": "zh-old", "group": "guide", "dir": "content/zh-old", "locale": "zh", "version": "previous", "routeBase": "/zh/v1/docs/" }
+  ] },
+  "theme": { "navbar": [
+    { "label": "English current", "to": "/guide/docs/" },
+    { "label": "中文 current", "to": "/guide/zh/docs/" },
+    { "label": "English previous", "to": "/guide/v1/docs/" },
+    { "label": "中文 previous", "to": "/guide/zh/v1/docs/" }
+  ] }
+}

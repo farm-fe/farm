@@ -3,8 +3,8 @@
 //! from upstream comments.
 
 use farmfe_ecosystem_tailwindcss::utils::infer_data_type::{
-  infer_data_type, is_angle, is_fraction, is_length, is_number, is_percentage, is_positive_integer,
-  is_vector, DataType,
+  DataType, infer_data_type, is_angle, is_fraction, is_length, is_number, is_percentage,
+  is_positive_integer, is_vector,
 };
 
 #[test]
