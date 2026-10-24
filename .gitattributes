@@ -1,1 +1,5 @@
 *.svg binary
+# Preserve the exact upstream license bytes across Windows/Linux checkouts.
+rust-plugins/sass/**/licenses/grass-MIT.txt -text
+rust-plugins/svgr/**/licenses/svgr-rs-MIT.txt -text
+rust-plugins/tailwindcss/**/licenses/tailwindcss-MIT.txt -text

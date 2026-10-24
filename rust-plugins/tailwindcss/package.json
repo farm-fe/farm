@@ -37,7 +37,10 @@
     "@farmfe/plugin-tools": "workspace:*"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-tailwindcss-darwin-arm64": "2.0.0",

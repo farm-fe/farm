@@ -10,7 +10,9 @@
   "main": "farm.linux-arm64-musl.node",
   "files": [
     "farm.linux-arm64-musl.node",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
   ],
   "license": "MIT",
   "engines": {

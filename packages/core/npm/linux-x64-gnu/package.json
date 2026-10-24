@@ -10,7 +10,9 @@
   "main": "farm.linux-x64-gnu.node",
   "files": [
     "farm.linux-x64-gnu.node",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
   ],
   "license": "MIT",
   "engines": {

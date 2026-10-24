@@ -10,7 +10,9 @@
   "main": "farm.darwin-x64.node",
   "files": [
     "farm.darwin-x64.node",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
   ],
   "license": "MIT",
   "engines": {

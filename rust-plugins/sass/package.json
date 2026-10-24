@@ -39,7 +39,10 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-sass-darwin-arm64": "2.0.0",

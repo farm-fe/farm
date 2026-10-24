@@ -133,7 +133,8 @@
     "client.d.ts",
     "types/**/*.d.ts",
     "THIRD_PARTY_NOTICES.md",
-    "licenses"
+    "licenses",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/core-darwin-arm64": "2.0.0",
