@@ -8,6 +8,7 @@ import { captureNativeProvenance } from '../benchmark/native-provenance.mjs';
 import { captureSourceProvenance } from '../benchmark/source-provenance.mjs';
 import { browserOptions } from './browser-options.mjs';
 import { scaleProfile } from '../benchmark/scale-profiles.mjs';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const scale = process.env.COMMERCE_SCALE ?? 'baseline';
 const options = browserOptions(process.env);
@@ -40,10 +41,10 @@ try {
       }
     }, fixture);
     const page = await context.newPage();
-    const errors = [];
+    const health = monitorBrowserHealth(page);
+    const errors = health.evidence.pageErrors;
     const diagnostics = [];
     page.on('console', message => { if (message.text().includes('__COMMERCE_DIAGNOSTIC__')) diagnostics.push(message.text()); });
-    page.on('pageerror', error => errors.push(error.message));
     try {
       const deadline = Date.now() + 30000;
       while (true) {
@@ -737,11 +738,15 @@ try {
       report.connectionChecks = ['resource-selection', 'merchant-order-count', 'timeout-and-retry', 'permission-error', 'healthy-recovery', 'discard-stale-results', 'independent-net-revenue', 'merchant-reset', 'viewer-campaign-denied', 'viewer-orders-readable'];
       assert.deepEqual(errors, [], 'Every business flow must finish without uncaught page errors');
       assert.deepEqual(diagnostics, [], 'Production publication must not execute diagnostic traces');
+      health.assertHealthy();
+      report.browserHealth ??= {};
+      report.browserHealth[group] = health.evidence;
       report.groups.push({ group, success: true, ordersPerTenant: 10000, heights, checks: ['bounded-dom', 'row-height', 'details', 'ship', 'refund', 'scroll-last', 'tenant-reset', 'viewer-read-only', 'close-details', 'filter-reset', 'bulk-publish-across-search', 'product-edit-validation', 'product-price-stock', 'product-persistence', 'csv-upload', 'row-correction-revalidation', 'duplicate-sku-block', 'malformed-csv-block', 'import-and-publish', 'worker-start-failure-retry', 'file-read-failure-retry', 'worker-send-failure-retry', 'late-file-read-ignored', 'cancelled-worker-message-ignored'] });
     } catch (error) {
-      report.failure = { group, pageErrors: errors, rows: await page.getByTestId('order-row').allTextContents(), body: (await page.locator('body').innerText()).slice(-4000) };
+      report.failure = { group, browserHealth: health.evidence, pageErrors: errors, rows: await page.getByTestId('order-row').allTextContents(), body: (await page.locator('body').innerText()).slice(-4000) };
       throw error;
     } finally {
+      health.stop();
       await context.close();
       if (server.exitCode === null) {
         const exited = new Promise(resolve => server.once('exit', resolve));

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-chromium';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const baseURL = process.env.COMMERCE_URL ?? 'http://localhost:4310';
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
-const errors = [];
-page.on('pageerror', (error) => errors.push(error.message));
+const health = monitorBrowserHealth(page);
 try {
   await page.goto(baseURL);
   await page.getByTestId('workspace-ready').waitFor();
@@ -57,11 +57,12 @@ try {
   await page.getByLabel('Role').selectOption('viewer');
   await page.getByRole('link', { name: 'Campaigns', exact: true }).click();
   await page.getByText('Your role cannot access this workspace.').waitFor();
-  assert.deepEqual(errors, []);
+  health.assertHealthy();
   console.log(
     JSON.stringify({
       success: true,
       baseURL,
+      browserHealth: health.evidence,
       checks: [
         'worker-validation',
         'atomic-import',
@@ -76,5 +77,6 @@ try {
     }),
   );
 } finally {
+  health.stop();
   await browser.close();
 }

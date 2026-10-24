@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright-chromium';
 import fs from 'node:fs/promises';
 import Papa from 'papaparse';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const baseURL = process.env.COMMERCE_URL ?? 'http://localhost:4310';
 const browser = await chromium.launch({ headless: true });
+let health;
 try {
   const page = await browser.newPage();
+  health = monitorBrowserHealth(page);
   await page.goto(`${baseURL}/#/import`);
   await page.getByLabel('CSV contents').waitFor();
   const downloaded = page.waitForEvent('download');
@@ -31,7 +34,9 @@ try {
     padding: '24px', radius: '12px',
     background: 'oklch(0.95 0.052 163.051)', color: 'oklch(0.378 0.077 168.94)',
   });
-  console.log(JSON.stringify({ success: true, baseURL, checks: ['csv-download', 'tailwind-computed-style'] }));
+  health.assertHealthy();
+  console.log(JSON.stringify({ success: true, baseURL, browserHealth: health.evidence, checks: ['csv-download', 'tailwind-computed-style'] }));
 } finally {
+  health?.stop();
   await browser.close();
 }

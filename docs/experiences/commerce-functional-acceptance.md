@@ -56,6 +56,14 @@ builds and previews selected groups sequentially and writes its own reports.
 Use `COMMERCE_BROWSER_GROUPS` for an explicit subset. Its preview uses port 4352;
 check ownership before starting it. Do not run two drivers on that port.
 
+The smoke, orders and resource drivers record browser health: uncaught page
+errors, console errors, failed requests and HTTP responses with status 400 or
+above all fail acceptance. Successful response URLs, status codes and resource
+types remain in their evidence. Business errors simulated by `createMockApi`
+are application state, not an exemption for failed browser resource requests.
+The monitor detaches before the owned browser context shuts down so teardown
+does not count as an application failure.
+
 | Area | Required assertions |
 | --- | --- |
 | Tenants and roles | merchant isolation; viewer mutation refusal; forged tenant rejection |
