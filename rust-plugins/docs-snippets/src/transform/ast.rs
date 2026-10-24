@@ -75,3 +75,18 @@ pub fn style(light: &str, dark: &str, span: Span) -> Expr {
       .collect(),
   })
 }
+
+/// The caller must supply only compiler-escaped highlighted line/token markup.
+pub fn static_html(value: &str, span: Span) -> Expr {
+  Expr::Object(ObjectLit {
+    span,
+    props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+      key: PropName::Str(Str {
+        span,
+        value: "__html".into(),
+        raw: None,
+      }),
+      value: Box::new(string(value, span)),
+    })))],
+  })
+}
