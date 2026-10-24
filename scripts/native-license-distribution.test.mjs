@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
+// cspell:ignore Marsel Shaikhin
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packages = ['packages/core', 'rust-plugins/sass', 'rust-plugins/svgr', 'rust-plugins/tailwindcss'];
