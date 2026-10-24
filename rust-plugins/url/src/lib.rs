@@ -1,8 +1,8 @@
 #![deny(clippy::all)]
 
-use base64::{engine::general_purpose, Engine};
+use base64::{Engine, engine::general_purpose};
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::{Config, config_regex::ConfigRegex},
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginLoadHookResult, PluginTransformHookResult},
@@ -122,7 +122,7 @@ impl Plugin for FarmfePluginUrl {
           .unwrap_or("asset")
           .to_string();
         context.emit_file(EmitFileParams {
-          resolved_path: param.resolved_path.to_string(),
+          resolved_path: param.module_id.to_string(),
           name: filename.to_string(),
           content: raw_bytes.clone(),
           resource_type: ResourceType::Asset(ext),
@@ -150,5 +150,62 @@ impl Plugin for FarmfePluginUrl {
       source_map: None,
       ignore_previous_source_map: false,
     }))
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use farmfe_core::{config::persistent_cache::PersistentCacheConfig, resource::ResourceOrigin};
+  use std::sync::Arc;
+
+  #[test]
+  fn emitted_asset_keeps_query_qualified_module_owner() {
+    let file = std::env::temp_dir().join(format!("farm-url-owner-{}.svg", std::process::id()));
+    let bytes = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>";
+    std::fs::write(&file, bytes).unwrap();
+    let resolved_path = file.to_string_lossy().to_string();
+    let module_id = format!("{resolved_path}?media");
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap(),
+    );
+    let plugin = FarmfePluginUrl::new(&context.config, r#"{"limit":0,"include":[".*"]}"#.into());
+    let result = plugin
+      .transform(
+        &farmfe_core::plugin::PluginTransformHookParam {
+          module_id: module_id.clone(),
+          content: String::new(),
+          module_type: ModuleType::Asset,
+          resolved_path: &resolved_path,
+          query: vec![("media".into(), String::new())],
+          meta: Default::default(),
+          source_map_chain: vec![],
+        },
+        &context,
+      )
+      .unwrap()
+      .unwrap();
+    let resources = context.resources_map.lock();
+    let resource = resources
+      .get(file.file_name().unwrap().to_str().unwrap())
+      .unwrap();
+    assert_eq!(resource.bytes, bytes);
+    match &resource.origin {
+      ResourceOrigin::Module(owner) => assert_eq!(*owner, context.str_to_module_id(&module_id)),
+      _ => panic!("asset must belong to its importing module"),
+    }
+    assert!(
+      result
+        .content
+        .contains(file.file_name().unwrap().to_str().unwrap())
+    );
+    std::fs::remove_file(file).unwrap();
   }
 }
