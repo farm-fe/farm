@@ -81,7 +81,7 @@ impl Plugin for FarmPluginDts {
 
     let mut module: EcmaAstModule = meta.ast.clone();
 
-    emit_type_dependencies(&module, &param.module_id, &self.options, context)?;
+    emit_type_dependencies(&module, param.module_id, &self.options, context)?;
 
     module.visit_mut_with(&mut ImportPathRewriter {
       config: (*context.config).clone(),
