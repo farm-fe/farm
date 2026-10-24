@@ -1,1 +1,3 @@
 *.svg binary
+# Diagram manifests hash exact source bytes on every platform.
+website/static/diagrams/*.mmd text eol=lf
