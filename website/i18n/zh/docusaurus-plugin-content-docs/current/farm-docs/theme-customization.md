@@ -139,7 +139,7 @@ export const components = { h2: Heading };
 
 `@farmfe/docs/client` 的 `useColorMode()` 提供 `colorMode`、`resolvedColorMode`、`setColorMode`。可选值为 `system`、`light`、`dark`。初始采用 `theme.colorMode`（通常为 system），可用的持久选择按 base path 恢复。CSS 结合 `data-theme` 和系统偏好在 hydration 前后显示对应颜色。浏览器专有逻辑放 effect 中，不能在服务端 render 时访问 `window`、`localStorage`、`matchMedia`。
 
-Rust 同时生成代码 token 的深浅两套颜色。正文 fence 默认使用 VS Code Light 与 VS Code Dark，可通过统一的 `site.code` 选择 Farm Spectrum 或其他预设；`.farm-code-token` 通过框架高亮样式中的 `--code-light`、`--code-dark` 切换。修改 `theme.colorMode` 只是切换显示，不会运行 JavaScript tokenizer，也不会选择任意代码主题包。
+Rust 同时生成代码 token 的深浅两套颜色。正文 fence 默认使用 VS Code Light 与 VS Code Dark，可通过统一的 `site.code` 选择 Farm brand 或其他预设；`.farm-code-token` 通过框架高亮样式中的 `--code-light`、`--code-dark` 切换。修改 `theme.colorMode` 只是切换显示，不会运行 JavaScript tokenizer，也不会选择任意代码主题包。
 
 显式 `CodeBlock`、`CommandTabs` 从 `@farmfe/docs/snippets` 导入，由 Rust snippets 插件编译，并复用 `site.code`。预设包括 `farm-light`、`farm-dark`、`vscode-light`、`vscode-dark`、`inspired-github`、`base16-ocean-dark`；旧配置 `snippets.highlight.light`、`.dark` 仍可作为缺省回退，优先级参见配置参考。`snippets.rendererModule` 可指向导出 `CodeBlock`、`CommandTabs` 的展示模块。该工作流的 representation 由站点 `build.highlightRepresentation` 决定。源代码/标记必须可静态编译，不用动态表达式逃逸为运行时高亮。
 
@@ -162,4 +162,23 @@ Alias 只能解析路径，不能复现 Docusaurus context、插件生命周期�
 ```
 
 
-代码配色请参考配置参考中的 `site.code`：它与容器 CSS 分离，统一围栏、显式组件和静态行内签名。Farm Spectrum 为可选预设，不要求替换主题组件。
+代码配色请参考配置参考中的 `site.code`：它与容器 CSS 分离，统一围栏、显式组件和静态行内签名。Farm brand 为可选预设，不要求替换主题组件。
+
+## Farm 官网品牌配色
+
+官网显式选择 `farm-light` / `farm-dark`，并通过 `code.tokens.light`、`code.tokens.dark` 提供品牌配色。这是站点配置方案，不会改变框架预设的兼容默认值。Rust 在编译时统一处理围栏、代码组件和显式标记的行内签名，不增加浏览器高亮器。
+
+| Token 分类 | 浅色 | 深色 |
+| --- | --- | --- |
+| `foreground`、`variable` | `#292435` | `#eeecf2` |
+| `keyword`、`control`、`tag` | `#8f1a7f` | `#dc96cd` |
+| `type`、`class`、`attribute` | `#526b87` | `#a8b9ce` |
+| `function` | `#497774` | `#9fbebc` |
+| `parameter` | `#5f596b` | `#c7bfd1` |
+| `property` | `#676071` | `#b8b0c2` |
+| `string`、`number`、`constant` | `#8a6e42` | `#c8b391` |
+| `comment`、`punctuation` | `#746d7a` | `#9e99a4` |
+
+将每一分类分别写入对应模式的 token map，即可复用官网配色。代码容器背景（`#faf7fb` / `#211d25`）、间距和圆角仍由 CSS 定制；默认样式直接显示配置的 token 颜色，不再叠加第二套 CSS 混色。
+
+官方 Mermaid 流程图使用配对的明暗静态 SVG，保留可维护的 Mermaid 源码。可选的作者渲染步骤与 `farm build` 分离，读者不加载 Mermaid 运行时。替换图表视觉时，应保留可访问说明、源码链接及真实条件分支。

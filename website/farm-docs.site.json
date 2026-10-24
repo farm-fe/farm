@@ -3,6 +3,48 @@
   "url": "https://farmfe.org",
   "basePath": "/",
   "trailingSlash": "never",
+  "code": {
+    "light": "farm-light",
+    "dark": "farm-dark",
+    "tokens": {
+      "light": {
+        "foreground": "#292435",
+        "keyword": "#8f1a7f",
+        "control": "#8f1a7f",
+        "function": "#497774",
+        "type": "#526b87",
+        "class": "#526b87",
+        "variable": "#292435",
+        "parameter": "#5f596b",
+        "property": "#676071",
+        "string": "#8a6e42",
+        "number": "#8a6e42",
+        "comment": "#746d7a",
+        "tag": "#8f1a7f",
+        "attribute": "#526b87",
+        "constant": "#8a6e42",
+        "punctuation": "#746d7a"
+      },
+      "dark": {
+        "foreground": "#eeecf2",
+        "keyword": "#dc96cd",
+        "control": "#dc96cd",
+        "function": "#9fbebc",
+        "type": "#a8b9ce",
+        "class": "#a8b9ce",
+        "variable": "#eeecf2",
+        "parameter": "#c7bfd1",
+        "property": "#b8b0c2",
+        "string": "#c8b391",
+        "number": "#c8b391",
+        "comment": "#9e99a4",
+        "tag": "#dc96cd",
+        "attribute": "#a8b9ce",
+        "constant": "#c8b391",
+        "punctuation": "#9e99a4"
+      }
+    }
+  },
   "build": {
     "highlightRepresentation": "static-html",
     "targetConcurrency": 1

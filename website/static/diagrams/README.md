@@ -28,6 +28,18 @@ outputs, external resources, scripts, event attributes and `foreignObject`.
 Generated SVGs contain no embedded fonts. Pages retain captions, API prose and
 links to the public Mermaid sources for agents and accessible text readers.
 
+## Farm brand presentation
+
+The light and dark diagrams use the website's purple brand and neutral surfaces.
+Stage panels separate initial compilation, per-module/cache processing, resource
+generation and independent updates. Purple outlines indicate first/bail callbacks;
+neutral outlines indicate serial callbacks; muted teal outlines indicate parallel
+callbacks. These colors describe hook dispatch, not global compiler concurrency.
+The four Rust lifecycle sources include all 35 current hooks. Their original
+conditions, cache branches and observation seal remain explicit. The generator
+adds presentation classes; do not replace a conditional branch with a shorter
+linear path just to fit an image.
+
 The source includes conditional module/resource caches and a separate update
 entrypoint; `finish` does not automatically call `update_modules`. A runtime
 `first` hook stops on a truthy value, whereas Rust `first` dispatch uses an

@@ -24,7 +24,7 @@ await page.setContent('<!doctype html><html><body></body></html>');
 await page.addScriptTag({path:mermaidBundle});
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const manifest={schemaVersion:1,renderer:`mermaid@${mermaidVersion}`,authoringPackage:'@mermaid-js/mermaid-cli@12.0.0',driver:'playwright-core',diagrams:[]};
-const config={securityLevel:'strict',htmlLabels:false,deterministicIds:true,fontFamily:'system-ui, sans-serif',fontSize:15,flowchart:{htmlLabels:false,nodeSpacing:24,rankSpacing:32,useMaxWidth:false,curve:'linear'}};
+const config={securityLevel:'strict',htmlLabels:false,deterministicIds:true,markdownAutoWrap:false,fontFamily:'system-ui, sans-serif',fontSize:15,flowchart:{htmlLabels:false,nodeSpacing:28,rankSpacing:36,wrappingWidth:480,padding:16,useMaxWidth:false,curve:'linear'}};
 try{
 
  const names=(await fs.readdir(folder)).filter(n=>n.endsWith('.mmd')).sort();
@@ -33,10 +33,12 @@ try{
   if(/\bclick\s|https?:\/\//i.test(source.toString()))throw Error('Diagrams cannot link external resources');
   const entry={source:name,sourceSha256:hash(source),outputs:{}};
   for(const mode of ['light','dark']){
-   const selected={...config,theme:mode==='dark'?'dark':'base',themeVariables:mode==='light'?{primaryColor:'#f3eaf8',primaryTextColor:'#25232c',primaryBorderColor:'#8e32a7',lineColor:'#75627e',secondaryColor:'#eef2fa',tertiaryColor:'#faf8fc'}:undefined};
+   const tone=mode==='dark'?{bg:'#19171f',panel:'#211d25',text:'#eeecf2',muted:'#b1a9bd',border:'#36313f',brand:'#dc96cd',soft:'#2c2230',support:'#9fbebc'}:{bg:'#faf9fd',panel:'#ffffff',text:'#292435',muted:'#70697c',border:'#e7e3ee',brand:'#8f1a7f',soft:'#f5edf6',support:'#497774'};
+   const selected={...config,theme:'base',themeVariables:{fontFamily:'system-ui, sans-serif',fontSize:'15px',primaryColor:tone.panel,primaryTextColor:tone.text,primaryBorderColor:tone.border,lineColor:tone.muted,textColor:tone.text,clusterBkg:tone.soft,clusterBorder:tone.border,edgeLabelBackground:tone.bg},themeCSS:'.node rect,.node polygon,.cluster rect{filter:none!important}.cluster rect{rx:8;ry:8}.cluster-label text{font-weight:600}.edgePaths path,.flowchart-link{fill:none!important;stroke-width:1.2px!important}'};
+   const classes=`\nclassDef first fill:${tone.panel},stroke:${tone.brand},color:${tone.text},stroke-width:1.3px,rx:6,ry:6;\nclassDef serial fill:${tone.panel},stroke:${tone.border},color:${tone.text},rx:6,ry:6;\nclassDef parallel fill:${tone.panel},stroke:${tone.support},color:${tone.text},rx:6,ry:6;\nclassDef core fill:${tone.bg},stroke:${tone.border},color:${tone.muted},stroke-dasharray:3 4,rx:6,ry:6;\nclassDef gate fill:${tone.bg},stroke:${tone.border},color:${tone.text};\nclassDef reuse fill:${tone.soft},stroke:${tone.border},color:${tone.text},rx:6,ry:6;\n`;
 
    const destination=path.join(folder,name.replace('.mmd',`-${mode}.svg`));
-   let svg=await page.evaluate(async ({source,selected})=>{document.body.innerHTML='';mermaid.initialize({...selected,startOnLoad:false});return (await mermaid.render('farm-doc-diagram',source)).svg;},{source:source.toString('utf8'),selected});
+   let svg=await page.evaluate(async ({source,selected})=>{document.body.innerHTML='';mermaid.initialize({...selected,startOnLoad:false});return (await mermaid.render('farm-doc-diagram',source)).svg;},{source:source.toString('utf8')+classes,selected});
    if(/<\s*(?:script|foreignObject)\b|\son[a-z]+\s*=|<!DOCTYPE|<!ENTITY/i.test(svg))throw Error('Unsafe SVG structure: '+svg.match(/<\s*(?:script|foreignObject)\b|\son[a-z]+\s*=|<!DOCTYPE|<!ENTITY/i)?.[0]);
    if([...svg.matchAll(/(?:href|xlink:href)="([^"]*)"/g)].some(m=>!m[1].startsWith('#')))throw Error('External SVG reference');
    const view=svg.match(/viewBox="([^"]+)"/);if(!view)throw Error('Missing SVG viewBox');const [, ,width,height]=view[1].split(/\s+/).map(Number);

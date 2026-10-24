@@ -139,7 +139,7 @@ The default theme exports `SearchProvider`, `Search` and `SearchProps`. A site c
 
 `useColorMode()` from `@farmfe/docs/client` exposes `colorMode`, `resolvedColorMode` and `setColorMode`. Valid choices are `system`, `light`, `dark`. The default initial choice is `theme.colorMode` (normally `system`); an available saved selection is restored by base path. CSS responds to `data-theme` and the system preference before/around hydration. Do browser-only work in effects; avoid accessing `window`, `localStorage` or `matchMedia` while rendering on the server.
 
-Rust generates both light/dark code token colors. The compatibility default is VS Code Light/Dark. Select the optional Farm Spectrum pair or custom scope colors through `site.code`; see the unified code palette configuration reference. Their `.farm-code-token` markup selects `--code-light`/`--code-dark` through the shipped highlight stylesheet. Changing `theme.colorMode` selects display mode; it does not run a JavaScript tokenizer or select an arbitrary code-theme package.
+Rust generates both light/dark code token colors. The compatibility default is VS Code Light/Dark. Select the optional Farm brand pair or custom scope colors through `site.code`; see the unified code palette configuration reference. Their `.farm-code-token` markup selects `--code-light`/`--code-dark` through the shipped highlight stylesheet. Changing `theme.colorMode` selects display mode; it does not run a JavaScript tokenizer or select an arbitrary code-theme package.
 
 Explicit `CodeBlock`/`CommandTabs` markers come from `@farmfe/docs/snippets`, are compiled by the Rust snippets plugin, and share `site.code`. Presets include `farm-light`, `farm-dark`, `vscode-light`, `vscode-dark`, `inspired-github`, and `base16-ocean-dark`. Legacy `snippets.highlight.light` and `.dark` remain fallbacks for fields omitted from `site.code`; see the configuration reference for precedence. `snippets.rendererModule` can point to a presentation module exporting `CodeBlock` and `CommandTabs`. The site's `build.highlightRepresentation` controls the representation used by that workflow. Static source/markers must remain compilable; dynamic code expressions are not a runtime highlighting escape hatch.
 
@@ -152,6 +152,35 @@ Use Farm's `compilation.resolve.alias` for site paths, for example `@site` resol
 An alias resolves a path; it does not reproduce Docusaurus context, plugin lifecycle, theme internals or arbitrary MDX semantics. Replace old imports with actual `@farmfe/docs/client`, `/mdx`, `/snippets` APIs and keep small application adapters in the site. There is no package-level Docusaurus compatibility layer, swizzle command, arbitrary theme resolver, or automatic translation service.
 
 Before accepting a custom theme, build and preview the exact candidate, test both modes, locale/version links, mobile navigation, search errors, code copy, tabs and keyboard focus. HTML/AI output should keep the same routes and content semantics. Production deployment and official package availability require their own verification.
+
+## Farm website brand palette
+
+The website explicitly selects `farm-light` / `farm-dark` and supplies its brand
+colors through `code.tokens.light` and `code.tokens.dark`. This is a site
+configuration recipe, not a change to the framework's default presets. Rust
+applies the map during compilation to fences, code components and marked inline
+signatures; no browser tokenizer is added.
+
+| Token categories | Light | Dark |
+| --- | --- | --- |
+| `foreground`, `variable` | `#292435` | `#eeecf2` |
+| `keyword`, `control`, `tag` | `#8f1a7f` | `#dc96cd` |
+| `type`, `class`, `attribute` | `#526b87` | `#a8b9ce` |
+| `function` | `#497774` | `#9fbebc` |
+| `parameter` | `#5f596b` | `#c7bfd1` |
+| `property` | `#676071` | `#b8b0c2` |
+| `string`, `number`, `constant` | `#8a6e42` | `#c8b391` |
+| `comment`, `punctuation` | `#746d7a` | `#9e99a4` |
+
+Copy each category into the appropriate token map to reproduce the website
+palette. Container backgrounds (`#faf7fb` / `#211d25`), spacing and rounded corners
+remain CSS customization. The default stylesheet displays configured token
+colors directly; it does not recolor them with a second CSS palette.
+
+Official Mermaid diagrams are static, paired light/dark SVGs with editable
+Mermaid sources. The optional authoring renderer is separate from `farm build`;
+readers do not download a Mermaid runtime. Keep accessible captions and source
+links when replacing a diagram's presentation.
 
 ## Explicit inline API signatures
 

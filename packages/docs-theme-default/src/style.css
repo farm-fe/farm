@@ -328,8 +328,8 @@ body:has(.farm-docs-theme) { background: var(--farm-docs-bg); color: var(--farm-
 .farm-docs-theme a[aria-disabled="true"] { color: var(--farm-docs-muted); }
 
 /* Keep generated syntax categories while raising muted token contrast. */
-.farm-docs-theme .farm-code-token { color: color-mix(in srgb, var(--code-light) 45%, #292435 55%); }
-[data-theme="dark"] .farm-docs-theme .farm-code-token { color: color-mix(in srgb, var(--code-dark) 65%, #fff 35%); }
+.farm-docs-theme .farm-code-token { color: var(--code-light, inherit); }
+[data-theme="dark"] .farm-docs-theme .farm-code-token { color: var(--code-dark, inherit); }
 
 .farm-docs-navigation-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 36px; border-radius: 6px; color: var(--farm-docs-text); }
 .farm-docs-navigation-icon svg { width: 22px; height: 22px; }
@@ -419,23 +419,23 @@ body > .DocSearch-Container :is(a[href], button:not(:disabled), [role="button"]:
 
 /* Code presentation follows the source site's font/padding contract; Rust owns tokens. */
 .farm-docs-theme:not(.farm-site-shell--home) {
-  --farm-docs-code-bg: #fbfbfb; --farm-docs-code-text: #403f53;
+  --farm-docs-code-bg: #faf7fb; --farm-docs-code-text: #292435;
   --farm-docs-inline-bg: #f1edf4; --farm-docs-inline-border: #d8cfdf;
   --farm-docs-admonition-code-bg: #ffffff; --farm-docs-admonition-code-border: #cbbbd6;
 }
 [data-theme="dark"] .farm-docs-theme:not(.farm-site-shell--home) {
-  --farm-docs-code-bg: #191919; --farm-docs-code-text: #e6e4eb;
+  --farm-docs-code-bg: #211d25; --farm-docs-code-text: #eeecf2;
   --farm-docs-inline-bg: #302936; --farm-docs-inline-border: #65546f;
   --farm-docs-admonition-code-bg: #19151f; --farm-docs-admonition-code-border: #82718f;
 }
 .farm-docs-theme .farm-docs-code {
-  border: 1px solid var(--farm-docs-border); border-radius: 6px; background: var(--farm-docs-code-bg);
-  color: var(--farm-docs-code-text); box-shadow: 0 1px 2px #0000000d; min-width: 0; max-width: 100%;
+  border: 1px solid var(--farm-docs-border); border-radius: 12px; background: var(--farm-docs-code-bg);
+  color: var(--farm-docs-code-text); box-shadow: 0 8px 26px #170b210a; min-width: 0; max-width: 100%;
 }
 .farm-docs-theme article .farm-docs-code > pre,
 .farm-docs-theme article .farm-docs-code > pre code {
   font-family: var(--farm-docs-font-monospace, "SFMono-Regular", "Roboto Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace);
-  font-size: .95rem; line-height: 1.45; color: inherit;
+  font-size: .875rem; line-height: 1.8; color: inherit;
 }
 .farm-docs-theme article .farm-docs-code > pre {
   margin: 0; padding: 1rem; padding-inline-end: 60px; border: 0; border-radius: 6px;
@@ -476,7 +476,7 @@ body > .DocSearch-Container :is(a[href], button:not(:disabled), [role="button"]:
   color: var(--farm-docs-link); border-bottom-color: currentColor;
 }
 .farm-docs-theme .farm-docs-tabs > :is([role="tabpanel"], [role="region"]) { min-width: 0; max-width: 100%; padding: 0; }
-.farm-docs-theme .farm-docs-tabs .farm-docs-code { margin-block: 12px; border-radius: 6px; }
+.farm-docs-theme .farm-docs-tabs .farm-docs-code { margin-block: 12px; border-radius: 12px; }
 .farm-docs-theme article :not(pre) > code,
 [data-theme="dark"] .farm-docs-theme article :not(pre) > code {
   background: var(--farm-docs-inline-bg, var(--farm-docs-accent-soft));
@@ -529,7 +529,7 @@ html:root[data-theme="dark"] {
 }
 
 /* Authored static SVGs keep readable intrinsic text and scroll within the figure. */
-.farm-docs-diagram { display: block; max-width: 100%; overflow-x: auto; padding: 12px; margin: 1.25rem 0; border: 1px solid var(--farm-docs-border); border-radius: 8px; background: var(--farm-docs-panel); }
+.farm-docs-diagram { display: block; max-width: 100%; overflow-x: auto; padding: 20px; margin: 1.25rem 0; border: 1px solid var(--farm-docs-border); border-radius: 12px; background: var(--farm-docs-panel); }
 .farm-docs-diagram img { display: block; width: auto; max-width: none; min-width: 0; height: auto; }
 .farm-docs-diagram-dark { display: none; }
 [data-theme="dark"] .farm-docs-diagram-light { display: none; }

@@ -186,8 +186,8 @@ code: {
   light: 'farm-light',
   dark: 'farm-dark',
   tokens: {
-    light: { function: '#176a83', type: '#325caa' },
-    dark: { function: '#7dc6d5', type: '#9ebcf2' }
+    light: { function: '#497774', type: '#526b87' },
+    dark: { function: '#9fbebc', type: '#a8b9ce' }
   }
 }
 ```
