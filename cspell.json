@@ -6,6 +6,8 @@
   "language": "en",
   // words - list of words to be always considered correct
   "words": [
+    "Connor",
+    "Skees",
     // Farm Docs dependencies, APIs and regression-fixture tokens.
     "addfile",
     "arglist",

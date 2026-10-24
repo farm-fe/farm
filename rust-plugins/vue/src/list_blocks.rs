@@ -146,12 +146,11 @@ impl VisitMut for ListBlocks {
     if !self.is_helper(&call.callee, "renderList") {
       return;
     }
-    if let Some(callback) = call.args.get_mut(1) {
-      if let Expr::Arrow(arrow) = &mut *callback.expr {
-        if let BlockStmtOrExpr::Expr(body) = &mut *arrow.body {
-          self.repair_item(body);
-        }
-      }
+    if let Some(callback) = call.args.get_mut(1)
+      && let Expr::Arrow(arrow) = &mut *callback.expr
+      && let BlockStmtOrExpr::Expr(body) = &mut *arrow.body
+    {
+      self.repair_item(body);
     }
   }
 }
@@ -181,14 +180,13 @@ impl VisitMut for ScopeIds {
       PropName::Str(value) => value.value.as_str() == Some("__scopeId"),
       _ => false,
     };
-    if is_scope {
-      if let Expr::Lit(farmfe_core::swc_ecma_ast::Lit::Str(value)) = &mut *prop.value {
-        if value.value.as_str() != Some(&self.scope) {
-          value.value = self.scope.clone().into();
-          value.raw = None;
-          self.changed = true;
-        }
-      }
+    if is_scope
+      && let Expr::Lit(farmfe_core::swc_ecma_ast::Lit::Str(value)) = &mut *prop.value
+      && value.value.as_str() != Some(&self.scope)
+    {
+      value.value = self.scope.clone().into();
+      value.raw = None;
+      self.changed = true;
     }
   }
 }
@@ -238,21 +236,22 @@ pub fn normalize_vue_code(
       local.push('_');
     }
     for item in &mut parsed.ast.body {
-      if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item {
-        if import.src.value.as_str() == Some("vue") && !import.type_only {
-          import
-            .specifiers
-            .push(ImportSpecifier::Named(ImportNamedSpecifier {
-              span: DUMMY_SP,
-              local: Ident::new_no_ctxt(local.into(), DUMMY_SP),
-              imported: Some(ModuleExportName::Ident(Ident::new_no_ctxt(
-                "createBlock".into(),
-                DUMMY_SP,
-              ))),
-              is_type_only: false,
-            }));
-          break;
-        }
+      if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item
+        && import.src.value.as_str() == Some("vue")
+        && !import.type_only
+      {
+        import
+          .specifiers
+          .push(ImportSpecifier::Named(ImportNamedSpecifier {
+            span: DUMMY_SP,
+            local: Ident::new_no_ctxt(local.into(), DUMMY_SP),
+            imported: Some(ModuleExportName::Ident(Ident::new_no_ctxt(
+              "createBlock".into(),
+              DUMMY_SP,
+            ))),
+            is_type_only: false,
+          }));
+        break;
       }
     }
   }
@@ -332,6 +331,7 @@ pub fn normalize_vue_code(
 
 #[cfg(test)]
 mod tests {
+  // cspell:ignore AACA
   use super::*;
 
   #[test]

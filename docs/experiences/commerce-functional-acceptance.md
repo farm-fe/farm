@@ -22,7 +22,7 @@ The unit command does not load native plugins or require emitted workspace
 packages. `npm test` retains the complete suite, including native configuration
 purity and emitted-artifact provenance checks; run it after building prerequisites.
 The generator refuses to overwrite modified fixtures. Generated extensions and
-reports are ignored by Git. The catalog test transpiles its generated TypeScript
+reports are ignored by Git. The catalog test transforms its generated TypeScript
 before executing it, so it does not depend on Node's experimental TypeScript loader.
 
 ## Native prerequisites and provenance
