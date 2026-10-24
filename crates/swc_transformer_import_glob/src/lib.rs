@@ -456,6 +456,14 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       relative(&self.root, &result)
     };
 
+    // Glob patterns are relative to the walk root. A leading current-directory
+    // component is a filesystem spelling, not part of a matched entry's name.
+    // Windows root-relative inputs can retain this component after `relative`.
+    let rel_source = rel_source
+      .strip_prefix("./")
+      .unwrap_or(&rel_source)
+      .to_string();
+
     (root, rel_source)
   }
 
