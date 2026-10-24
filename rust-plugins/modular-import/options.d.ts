@@ -3,6 +3,6 @@ export interface IPluginOptions {
   libDir?: string,
   camel2Dash?: boolean,
   styleLibDir?: string,
-  styleLibraryName?: boolean,
+  styleLibraryName?: string,
   styleLibraryPath?: string,
 }
