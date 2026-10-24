@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { chromium } from 'playwright-chromium';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
+const health = monitorBrowserHealth(page);
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 const variant = process.env.COMMERCE_VUE_VARIANT ?? 'sfc';
@@ -33,11 +35,14 @@ try {
   result.scopedStyle = await page.getByRole('heading', { name: 'Merchant inventory' }).evaluate(node => getComputedStyle(node).color);
   assert.equal(result.scopedStyle, 'rgb(25, 78, 62)');
   assert.deepEqual(errors, []);
+  health.assertHealthy();
   result.success = true;
 } catch (error) {
   result.error = error.message;
   throw error;
 } finally {
+  result.browserHealth = health.evidence;
+  health.stop();
   await fs.mkdir('reports', { recursive: true });
   await fs.writeFile(`reports/vue-business-${variant}-${result.group}-${Date.now()}.json`, JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));

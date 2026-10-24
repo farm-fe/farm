@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { chromium } from 'playwright-chromium';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const baseURL = process.env.COMMERCE_URL ?? 'http://localhost:4320';
 const source = fileURLToPath(new URL('../apps/admin/pages/Components.tsx', import.meta.url));
@@ -13,8 +14,10 @@ const browser = await chromium.launch({ headless: true });
 let changed = false;
 const diagnostics = { pageErrors: [], consoleErrors: [] };
 let page;
+let health;
 try {
   page = await browser.newPage();
+  health = monitorBrowserHealth(page);
   const errors = [];
   page.on('pageerror', error => { errors.push(error.message); diagnostics.pageErrors.push(error.message); });
   page.on('console', message => { if (message.type() === 'error') diagnostics.consoleErrors.push(message.text()); });
@@ -36,11 +39,13 @@ try {
   await fs.writeFile(source, original);
   await page.getByRole('heading', { name: 'Built to work together', exact: true }).waitFor({ timeout: 30000 });
   changed = false;
+  health.assertHealthy();
 } catch (error) {
   console.log(JSON.stringify({ success: false, baseURL, scenario: 'hmr-leaf', error: error.message,
     ...diagnostics, pageText: page ? await page.locator('body').innerText().catch(() => '') : '' }));
   throw error;
 } finally {
   if (changed) await fs.writeFile(source, original);
+  health?.stop();
   await browser.close();
 }
