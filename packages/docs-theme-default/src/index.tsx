@@ -1,12 +1,14 @@
-import { Link, useColorMode } from '@farmfe/docs/client';
+import { Link, useColorMode, useLocale } from '@farmfe/docs/client';
 import type { NotFoundProps, PublicSidebarItem, ThemeProps } from '@farmfe/docs/theme';
 import type { ReactNode } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CodeBlock } from './code-block.js';
+import type { DocumentActionsLabels } from './document-actions.js';
 import { Search } from './search.js';
 
 export { CodeBlock, type CodeBlockProps } from './code-block.js';
-export { Search, type SearchProps } from './search.js';
+export { DocumentActions, type DocumentActionsLabels, type DocumentActionsProps } from './document-actions.js';
+export { Search, type SearchProps, SearchProvider } from './search.js';
 export { SearchPage, type SearchPageLabels, type SearchPageProps } from './search-page.js';
 
 function useMobileNavigation() {
@@ -23,10 +25,12 @@ function useMobileNavigation() {
 }
 export function ColorModeControl() {
   const { colorMode, setColorMode } = useColorMode();
+  const chinese = useLocale().startsWith('zh');
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const next = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light';
-  const label = `Color theme: ${colorMode}. Switch to ${next}.`;
+  const names = chinese ? { light: '浅色', dark: '深色', system: '跟随系统' } : { light: 'Light', dark: 'Dark', system: 'Follow system' };
+  const label = chinese ? `当前主题：${names[colorMode]}。点击切换为${names[next]}。` : `Current theme: ${names[colorMode]}. Click to switch to ${names[next]}.`;
   return mounted ? <button className="farm-docs-color-control farm-docs-color-button" type="button" aria-label={label} title={label} data-color-mode={colorMode} onClick={() => setColorMode(next)}>
     <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       {colorMode === 'light' ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" /></> : colorMode === 'dark' ? <path d="M20.5 13A8.5 8.5 0 0 1 11 3.5a8.5 8.5 0 1 0 9.5 9.5Z" /> : <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></>}
@@ -144,12 +148,13 @@ export function Navbar(props: ThemeProps) {
 function SidebarItems({ items, active, expanded }: { items: PublicSidebarItem[]; active: string; expanded: readonly string[] }) {
   const containsActive = (items: PublicSidebarItem[]): boolean => items.some(item => item.type === 'doc' ? item.key === active : item.type === 'category' && containsActive(item.items));
   return <ul>{items.map((item, index) => <li key={item.type === 'doc' ? item.key : `${item.type}:${index}`}>
-    {item.type === 'category' ? <details key={`${active}:${item.label}`} open={expanded.includes(item.label) || containsActive(item.items)}><summary>{item.label}</summary><SidebarItems items={item.items} active={active} expanded={expanded} /></details> : <Link to={item.href} aria-current={item.type === 'doc' && item.key === active ? 'page' : undefined}>{item.label}</Link>}
+    {item.type === 'category' ? <details key={`${active}:${item.label}`} open={expanded.includes(item.label) || containsActive(item.items)}><summary><svg className="farm-docs-sidebar-chevron" aria-hidden="true" focusable="false" viewBox="0 0 16 16" fill="none"><path d="m6 4 4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg><span className="farm-docs-sidebar-label">{item.label}</span></summary><SidebarItems items={item.items} active={active} expanded={expanded} /></details> : <Link to={item.href} aria-current={item.type === 'doc' && item.key === active ? 'page' : undefined}>{item.label}</Link>}
   </li>)}</ul>;
 }
-export function Sidebar({ data, page, expandedCategories = [] }: ThemeProps & { expandedCategories?: readonly string[] }) {
+export function Sidebar({ data, page, expandedCategories = [], items }: ThemeProps & { expandedCategories?: readonly string[]; items?: PublicSidebarItem[] }) {
   const sidebar = data.sidebars.find(item => item.collection === page.collection);
-  return sidebar?.items.length ? <nav className="farm-docs-sidebar" aria-label="Documentation"><SidebarItems items={sidebar.items} active={page.key} expanded={expandedCategories} /></nav> : null;
+  const visible = items ?? sidebar?.items ?? [];
+  return visible.length ? <nav className="farm-docs-sidebar" aria-label="Documentation"><SidebarItems items={visible} active={page.key} expanded={expandedCategories} /></nav> : null;
 }
 function PageContent({ page, children, beforeArticle }: { page: ThemeProps['page']; children: ReactNode; beforeArticle?: ReactNode }) {
   return <main id="farm-docs-content" tabIndex={-1}>
@@ -169,7 +174,7 @@ function sidebarAncestors(items: PublicSidebarItem[], key: string, ancestors: st
   }
   return null;
 }
-export function DocPage(props: ThemeProps & { homeLabel?: string; versionLabel?: string | null; tocLabel?: string }) {
+export function DocPage(props: ThemeProps & { homeLabel?: string; versionLabel?: string | null; tocLabel?: string; documentActionsLabels?: Partial<DocumentActionsLabels>; agentGuideUrl?: string | null }) {
   const { page, children, data, homeLabel = 'Home', versionLabel = page.version, tocLabel = 'On this page' } = props;
   const ancestors = sidebarAncestors(data.sidebars.find(sidebar => sidebar.collection === page.collection)?.items ?? [], page.key) ?? [];
   const metadata = page.kind === 'doc' ? <>
@@ -222,3 +227,5 @@ export function NotFound({ data }: NotFoundProps) {
 export const components = { pre: CodeBlock };
 
 export { LanguageIcon, NavigationIconLink, NavigationMenu } from './navigation.js';
+
+export { filterSidebarSection, sidebarSection } from './sidebar-section.js';

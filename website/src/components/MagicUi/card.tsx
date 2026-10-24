@@ -11,13 +11,6 @@ import FeaturePng from "../../../static/img/feature.png";
 import Plug from "../../../static/img/plug.png";
 import Rocket from "../../../static/img/rocket.png";
 import { cn } from "../../lib/utils";
-import {
-  IconBoxAlignRightFilled,
-  IconClipboardCopy,
-  IconFileBroken,
-  IconSignature,
-  IconTableColumn,
-} from "../../vendor/tabler-selected.mjs";
 import { AnimatedBeamPig } from "../ui/beam";
 import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
 
@@ -31,7 +24,6 @@ export default function BentoGridCard() {
           description={item.description}
           header={item.header}
           className={cn("[&>p:text-lg]", item.className)}
-          icon={item.icon}
         />
       ))}
     </BentoGrid>
@@ -214,7 +206,6 @@ const items = [
     ),
     header: <SkeletonOne />,
     className: "md:col-span-1",
-    icon: <IconClipboardCopy className="h-4 w-4 text-neutral-500" />,
   },
   {
     title: <SiteText id="features.incremental.title" />,
@@ -225,7 +216,6 @@ const items = [
     ),
     header: <SkeletonTwo />,
     className: "md:col-span-1",
-    icon: <IconFileBroken className="h-4 w-4 text-neutral-500" />,
   },
   {
     title: <SiteText id="features.bundling.title" />,
@@ -236,7 +226,6 @@ const items = [
     ),
     header: <SkeletonThree />,
     className: "md:col-span-1",
-    icon: <IconSignature className="h-4 w-4 text-neutral-500" />,
   },
   {
     title: <SiteText id="features.pluggable.title" />,
@@ -247,7 +236,6 @@ const items = [
     ),
     header: <SkeletonFour />,
     className: "md:col-span-2",
-    icon: <IconTableColumn className="h-4 w-4 text-neutral-500" />,
   },
 
   {
@@ -259,6 +247,5 @@ const items = [
     ),
     header: <SkeletonFive />,
     className: "md:col-span-1",
-    icon: <IconBoxAlignRightFilled className="h-4 w-4 text-neutral-500" />,
   },
 ];

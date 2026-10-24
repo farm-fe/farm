@@ -1,9 +1,10 @@
 import { Link } from '@farmfe/docs/client';
-import type { ThemeProps } from '@farmfe/docs/theme';
-import { ColorModeControl, DocPage as DefaultDocPage, Sidebar as DefaultSidebar, LanguageIcon, MobileNavigation, NavigationIconLink, NavigationMenu, Search } from '@farmfe/docs-theme-default';
+import type { PublicSidebarItem, ThemeProps } from '@farmfe/docs/theme';
+import { ColorModeControl, DocPage as DefaultDocPage, Sidebar as DefaultSidebar, filterSidebarSection, LanguageIcon, MobileNavigation, NavigationIconLink, NavigationMenu, Search, SearchProvider, sidebarSection } from '@farmfe/docs-theme-default';
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { createContext, useContext, useEffect, useState } from 'react';
 import presentation from '../../farm-docs.presentation.json';
+import { WebsiteSearch } from './search';
 
 export { default as Footer } from '../theme/Footer';
 
@@ -19,14 +20,27 @@ function homeTarget({ data, page }: ThemeProps) {
   return home?.alternates?.find(candidate => candidate.locale === page.locale)?.routePath ?? data.home;
 }
 
-function MainNavigation({ site, page, data }: ThemeProps) {
+function activeSection({ page, data }: ThemeProps) {
+  const sidebar = data.sidebars.find(item => item.collection === page.collection);
+  const findId = (items: PublicSidebarItem[]): string | undefined => {
+    for (const item of items) {
+      if (item.type === 'doc' && item.key === page.key) return item.id;
+      if (item.type === 'category') { const found = findId(item.items); if (found) return found; }
+    }
+  };
+  return sidebarSection(findId(sidebar?.items ?? []) ?? '', presentation.navigation.sections, presentation.navigation.defaultSection);
+}
+function MainNavigation(props: ThemeProps) {
+  const { site, page, data } = props;
+  const active = activeSection(props);
   const community = presentation.navigation.community[page.locale === 'zh' ? 'zh' : 'en'];
   return <nav className="farm-site-links farm-docs-navbar-links" aria-label="Main navigation">{site.theme.navbar.filter(link => presentation.navigation.primary.includes(link.label)).map(link => {
     const source = data.pages.find(candidate => candidate.routePath === link.to);
     const version = source?.version == null ? null : page.version ?? site.docs.defaultVersion;
     const alternate = source?.alternates?.find(candidate => candidate.locale === page.locale && (candidate.version ?? null) === version);
-    return <Link key={link.to} to={alternate?.routePath ?? link.to}>{page.locale === 'zh' ? chineseNavigation[link.label] ?? link.label : link.label}</Link>;
-  })}<NavigationMenu label={community.label} name={community.label}>{community.items.map(item => item.href.startsWith('https:') ? <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">{item.label}</a> : <Link key={item.href} to={item.href}>{item.label}</Link>)}</NavigationMenu></nav>;
+    const label = page.locale === 'zh' ? chineseNavigation[link.label] ?? link.label : link.label;
+    return <Link key={link.to} to={alternate?.routePath ?? link.to} aria-current={page.kind === 'doc' && active === link.label ? 'page' : undefined}>{label}</Link>;
+  })}<NavigationMenu hover={false} label={community.label} name={community.label}>{community.items.map(item => item.href.startsWith('https:') ? <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">{item.label}</a> : <Link key={item.href} to={item.href}>{item.label}</Link>)}</NavigationMenu></nav>;
 }
 
 function RepositoryLink({ site }: ThemeProps) {
@@ -47,7 +61,7 @@ export function Layout(props: ThemeProps) {
   const slots = props.components;
   const Page = props.page.kind === 'blog' || props.page.blogView ? slots.BlogPage : slots.DocPage;
   const home = props.page.kind === 'page' && props.page.routePath === homeTarget(props);
-  return <Mobile.Provider value={mobile}>
+  return <SearchProvider.Provider value={WebsiteSearch}><Mobile.Provider value={mobile}>
     <div className={`farm-docs-theme farm-site-shell${home ? ' farm-site-shell--home' : ''}${mobile ? ' farm-site-shell--mobile' : ''}`}>
       <a className="farm-docs-skip" href="#farm-docs-content">{props.page.locale === 'zh' ? '跳到主要内容' : 'Skip to main content'}</a>
       <slots.Navbar {...props} />
@@ -58,7 +72,7 @@ export function Layout(props: ThemeProps) {
       </div>
       <slots.Footer {...props} />
     </div>
-  </Mobile.Provider>;
+  </Mobile.Provider></SearchProvider.Provider>;
 }
 
 function Alternates({ site, page, data }: ThemeProps) {
@@ -66,12 +80,10 @@ function Alternates({ site, page, data }: ThemeProps) {
   const languages = site.locales.items.flatMap(locale => alternates.filter(item => item.locale === locale && (item.version ?? null) === (page.version ?? null)));
   const versionPage = page.version == null ? data.pages.find(candidate => candidate.routePath === presentation.navigation.versionEntry[page.locale === 'zh' ? 'zh' : 'en']) : page;
   const versions = (versionPage?.alternates ?? []).filter(item => item.locale === page.locale);
-  return <>{([['Versions', versions], ['Languages', languages]] as const).map(([kind, items]) => items.length > 1 ? <details className="farm-site-alternate farm-docs-alternate" key={kind}>
-    <summary>{kind === 'Languages' && <LanguageIcon />}{kind === 'Languages' ? languageLabels[page.locale] ?? page.locale : versionLabel(page.version ?? site.docs.defaultVersion, page.locale)}</summary>
-    <nav aria-label={kind}>{items.map(item => <Link key={item.collection} to={item.routePath} lang={kind === 'Languages' ? item.locale : undefined} aria-current={item.collection === page.collection ? 'page' : undefined}>
+  return <>{([['Versions', versions], ['Languages', languages]] as const).map(([kind, items]) => items.length > 1 ? <NavigationMenu hover className="farm-site-alternate" key={kind} name={kind} label={<>{kind === 'Languages' && <LanguageIcon />}{kind === 'Languages' ? languageLabels[page.locale] ?? page.locale : versionLabel(page.version ?? site.docs.defaultVersion, page.locale)}</>}>{items.map(item => <Link key={item.collection} to={item.routePath} lang={kind === 'Languages' ? item.locale : undefined} aria-current={item.collection === page.collection ? 'page' : undefined}>
       {kind === 'Languages' ? languageLabels[item.locale] ?? item.locale : versionLabel(item.version ?? site.docs.defaultVersion, page.locale)}{item.missing ? ' (page unavailable)' : ''}
-    </Link>)}</nav>
-  </details> : null)}</>;
+    </Link>)}
+  </NavigationMenu> : null)}</>;
 }
 
 export function Navbar(props: ThemeProps) {
@@ -92,9 +104,11 @@ export function Navbar(props: ThemeProps) {
 
 export function Sidebar(props: ThemeProps) {
   const locale = props.page.locale === 'zh' ? 'zh' : 'en';
-  return <DefaultSidebar {...props} expandedCategories={presentation[locale].expandedCategories} />;
+  const sidebar = props.data.sidebars.find(item => item.collection === props.page.collection);
+  const items = filterSidebarSection(sidebar?.items ?? [], presentation.navigation.sections, activeSection(props), presentation.navigation.defaultSection);
+  return <DefaultSidebar {...props} items={items} expandedCategories={presentation[locale].expandedCategories} />;
 }
 export function DocPage(props: ThemeProps) {
   const locale = props.page.locale === 'zh' ? 'zh' : 'en';
-  return <DefaultDocPage {...props} data={{ ...props.data, home: homeTarget(props) }} homeLabel={presentation[locale].homeLabel} tocLabel={presentation[locale].tocLabel} versionLabel={versionLabel(props.page.version ?? props.site.docs.defaultVersion, props.page.locale)} />;
+  return <DefaultDocPage {...props} data={{ ...props.data, home: homeTarget(props) }} documentActionsLabels={locale === 'zh' ? { region: '文档格式', copy: '复制 Markdown', copying: '正在复制…', copied: 'Markdown 已复制', copyFailed: '无法复制 Markdown，请打开 Markdown 链接查看。', view: '查看 Markdown', guide: 'Agent 指南' } : undefined} homeLabel={presentation[locale].homeLabel} tocLabel={presentation[locale].tocLabel} versionLabel={versionLabel(props.page.version ?? props.site.docs.defaultVersion, props.page.locale)} />;
 }

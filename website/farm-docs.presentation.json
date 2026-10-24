@@ -88,6 +88,38 @@
     "versionEntry": {
       "zh": "/zh/docs/why-farm",
       "en": "/docs/why-farm"
-    }
+    },
+    "sections": [
+      {
+        "id": "Guides",
+        "prefixes": []
+      },
+      {
+        "id": "Config",
+        "prefixes": [
+          "config",
+          "cli"
+        ]
+      },
+      {
+        "id": "API",
+        "prefixes": [
+          "api"
+        ]
+      },
+      {
+        "id": "Plugins",
+        "prefixes": [
+          "plugins"
+        ]
+      },
+      {
+        "id": "Ecosystem",
+        "prefixes": [
+          "farm-docs"
+        ]
+      }
+    ],
+    "defaultSection": "Guides"
   }
 }

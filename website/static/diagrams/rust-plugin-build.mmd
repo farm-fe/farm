@@ -1,0 +1,29 @@
+flowchart TD
+  accTitle: Module build and cache branches
+  accDescr: Resolve repeats for each dependency. A timestamp hit bypasses load and transform; a transformed-content hash hit bypasses parsing and later module hooks.
+  resolve["resolve<br/>first"]
+  load["load<br/>first"]
+  transform["transform<br/>serial transform chain"]
+  parse["parse<br/>first"]
+  process_module["process_module<br/>serial"]
+  analyze_deps["analyze_deps<br/>serial"]
+  finalize_module["finalize_module<br/>serial"]
+  freeze_module["freeze_module<br/>serial"]
+  module_graph_build_end["module_graph_build_end<br/>serial"]
+  build_end["build_end<br/>parallel"]
+  Entry["Entry / discovered dependency"] --> resolve --> Timestamp{"Valid timestamp + watch cache?"}
+  Timestamp -->|yes| TimeGate["handle_persistent_cached_module<br/>first"] --> TimeInvalid{"Invalidate?"}
+  TimeInvalid -->|yes| load
+  TimeInvalid -->|no| Reuse["Reuse cached module<br/>restore marks / statements / watches"]
+  Timestamp -->|no| load --> transform --> Hash{"Valid transformed-content + watch cache?"}
+  Hash -->|yes| HashGate["handle_persistent_cached_module<br/>first"] --> HashInvalid{"Invalidate?"}
+  HashInvalid -->|yes| parse
+  HashInvalid -->|no| Reuse
+  Hash -->|no| parse --> process_module --> analyze_deps --> finalize_module
+  finalize_module -. "each dependency" .-> resolve
+  finalize_module --> Barrier["All modules complete"]
+  Reuse --> Barrier
+  Barrier --> FreezeCheck{"Each module:<br/>changed or explicit update root?"}
+  FreezeCheck -->|yes| freeze_module --> Frozen["All module metadata ready"]
+  FreezeCheck -->|no| Frozen
+  Frozen --> module_graph_build_end --> build_end

@@ -1,9 +1,11 @@
 import { Link } from '@farmfe/docs/client';
 import type { ThemeProps } from '@farmfe/docs/theme';
-import { useEffect, useId, useRef, useState } from 'react';
+import type { ComponentType } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { useSearchQuery } from './search-query.js';
 
 export type SearchProps = Pick<ThemeProps, 'site'>;
+export const SearchProvider = createContext<ComponentType<SearchProps> | null>(null);
 function AlgoliaSearch({ site }: SearchProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -76,5 +78,7 @@ function AlgoliaSearch({ site }: SearchProps) {
 }
 
 export function Search({ site }: SearchProps) {
+  const Provider = useContext(SearchProvider);
+  if (Provider) return <Provider site={site} />;
   return site.search?.provider === 'algolia' && site.search.options ? <AlgoliaSearch site={site} /> : null;
 }

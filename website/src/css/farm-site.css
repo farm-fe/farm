@@ -112,3 +112,43 @@
 .farm-original-footer-logo { width: 145px; max-width: 100%; height: auto; }
 .farm-editorial-footer nav.farm-original-social { gap: 18px; justify-content: flex-start; margin-top: 26px; }
 .farm-original-social svg { width: 20px; height: 20px; }
+
+/* Farm brand belongs to the host; homepage presentation remains isolated. */
+.farm-site-shell:not(.farm-site-shell--home) .farm-site-navbar .farm-docs-brand { color: var(--farm-docs-link); }
+
+.farm-site-shell:not(.farm-site-shell--home) { --docsearch-primary-color: var(--farm-docs-search-primary); --docsearch-text-color: var(--farm-docs-text); --docsearch-searchbox-background: var(--farm-docs-panel); --docsearch-muted-color: var(--farm-docs-muted); }
+.farm-site-shell:not(.farm-site-shell--home) .DocSearch-Button { border: 1px solid var(--farm-docs-border); border-radius: 7px; font-size: 13px; height: 38px; margin-left: 10px; }
+
+/* The same header contract applies to homepage and documentation. */
+.farm-site-shell > .farm-site-navbar {
+  --farm-header-bg: #fbfbfd; --farm-header-text: #25232c; --farm-header-muted: #77727f;
+  --farm-header-line: #e9e7ed; --farm-header-brand: #8e32a7; --farm-header-hover: #f3edf8;
+  height: 76px; padding: 12px 28px; gap: 20px; background: var(--farm-header-bg);
+  color: var(--farm-header-text); border-bottom: 1px solid var(--farm-header-line); box-shadow: none;
+  font-family: var(--farm-docs-font-family, system-ui, sans-serif);
+}
+[data-theme="dark"] .farm-site-shell > .farm-site-navbar {
+  --farm-header-bg: #19181e; --farm-header-text: #eeecf2; --farm-header-muted: #b2acbd;
+  --farm-header-line: #35313e; --farm-header-brand: #d4a1e5; --farm-header-hover: #30263b;
+}
+.farm-site-shell > .farm-site-navbar .farm-docs-brand { color: var(--farm-header-brand); font-size: 24px; }
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links { gap: 8px; flex-wrap: nowrap; }
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links > a,
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links summary { font-size: 15px; font-weight: 560; padding: 9px 10px; border-radius: 6px; color: var(--farm-header-text); text-decoration: none; }
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links a:is(:hover, :focus-visible, [aria-current="page"]),
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links summary:is(:hover, :focus-visible) { color: var(--farm-header-brand); background: var(--farm-header-hover); }
+.farm-site-shell > .farm-site-navbar .farm-site-controls { gap: 14px; font-size: 12px; }
+.farm-site-shell > .farm-site-navbar .farm-site-alternate > summary { padding: 8px 6px; border-radius: 6px; }
+.farm-site-shell > .farm-site-navbar .farm-site-alternate > summary:is(:hover, :focus-visible) { color: var(--farm-header-brand); background: var(--farm-header-hover); }
+.farm-site-shell > .farm-site-navbar .farm-site-alternate > nav { background: var(--farm-header-bg); border-color: var(--farm-header-line); min-width: 150px; }
+@media (min-width: 997px) and (max-width: 1400px) {
+  .farm-site-shell > .farm-site-navbar { gap: 12px; padding-inline: 20px; }
+  .farm-site-shell > .farm-site-navbar .farm-docs-navbar-links { gap: 4px; }
+  .farm-site-shell > .farm-site-navbar .farm-docs-navbar-links > a,
+  .farm-site-shell > .farm-site-navbar .farm-docs-navbar-links summary { font-size: 14px; padding: 8px 6px; }
+  .farm-site-shell > .farm-site-navbar .farm-site-controls { gap: 8px; }
+  .farm-site-shell > .farm-site-navbar .DocSearch-Button { width: 170px; min-width: 0; }
+}
+@media (max-width: 996px) {
+  .farm-site-shell > .farm-site-navbar { height: 64px; padding: 10px 20px; gap: 14px; }
+}

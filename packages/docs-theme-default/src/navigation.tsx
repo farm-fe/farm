@@ -9,12 +9,24 @@ export function NavigationIconLink({ href, label, children }: { href: string; la
   return <a className="farm-docs-navigation-icon" href={href} aria-label={label} target="_blank" rel="noopener noreferrer">{children}</a>;
 }
 
-export function NavigationMenu({ label, name, children }: { label: ReactNode; name: string; children: ReactNode }) {
-  return <details className="farm-docs-alternate farm-docs-navigation-menu" onKeyDown={event => {
-    if (event.key !== 'Escape' || !event.currentTarget.open) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.open = false;
-    event.currentTarget.querySelector('summary')?.focus();
-  }}><summary>{label}</summary><nav aria-label={name}>{children}</nav></details>;
+export function NavigationMenu({ label, name, children, className = '', hover = false }: { label: ReactNode; name: string; children: ReactNode; className?: string; hover?: boolean }) {
+  return <details className={`farm-docs-alternate farm-docs-navigation-menu ${className}`}
+    onPointerEnter={event => { if (hover && event.pointerType === 'mouse') event.currentTarget.open = true; }}
+    onPointerLeave={event => {
+      if (!hover || event.pointerType !== 'mouse' || event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+      if (!event.currentTarget.contains(document.activeElement)) event.currentTarget.open = false;
+    }}
+    onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false; }}
+    onClick={event => { if ((event.target as Element).closest('a')) event.currentTarget.open = false; }}
+    onKeyDown={event => {
+      const menu = event.currentTarget;
+      const links = Array.from(menu.querySelectorAll<HTMLAnchorElement>('nav a[href]'));
+      const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+      if (event.key === 'Escape' && menu.open) { event.preventDefault(); event.stopPropagation(); menu.open = false; menu.querySelector('summary')?.focus(); }
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault(); menu.open = true;
+        const next = index < 0 ? (event.key === 'ArrowDown' ? 0 : links.length - 1) : (index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
+        links[next]?.focus();
+      }
+    }}><summary>{label}</summary><nav aria-label={name}>{children}</nav></details>;
 }

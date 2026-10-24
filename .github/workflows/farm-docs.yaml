@@ -90,15 +90,17 @@ jobs:
           done
       - name: Check CLI native error diagnostics
         run: node --test scripts/farm-docs-cli-diagnostics.test.mjs
+      - name: Check target cache identity and invalidation boundaries
+        run: node --test packages/docs/tests/build-cache.test.mjs
       - name: Check native content, blog planning and development invalidation
         run: |
-          cargo test -p farmfe_docs_content --lib -j 1
-          cargo test -p farmfe_docs_content --test content -j 1
-          cargo test -p farmfe_docs_content --test admonition_labels -j 1
-          cargo test -p farmfe_docs_config --test config -j 1
-          cargo test -p farmfe_docs_plan --test admonition_labels -j 1
-          cargo test -p farmfe_docs_plan --test blog_views -j 1
-          cargo test -p farmfe_plugin_docs --lib -j 1
+          cargo test -p farmfe_core -p farmfe_docs_content -p farmfe_docs_config -p farmfe_docs_plan -p farmfe_plugin_docs -p farmfe_docs_snapshot -p farmfe_plugin_docs_snapshot -p farmfe_plugin_docs_snippets --lib --tests -j 1 -- --test-threads=1
+      - name: Check real MDX and snippets highlighted SSR equivalence
+        env:
+          FARM_DOCS_HIGHLIGHT_FIXTURE_DIR: ${{ runner.temp }}/farm-docs-highlight
+        run: |
+          cargo test -p farmfe_plugin_docs_snippets react_runtime_fixture_uses_real_mdx_and_snippets_outputs -j 1
+          node rust-plugins/docs-snippets/tests/highlight-runtime.mjs "$FARM_DOCS_HIGHLIGHT_FIXTURE_DIR"
       - name: Record actual native loader paths and guard subsequent checks
         run: |
           node --input-type=module <<'NODE'
@@ -124,6 +126,8 @@ jobs:
           NODE_OPTIONS=${process.env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(path.resolve('scripts/farm-docs-native-guard.mjs')).href}
           `);
           NODE
+      - name: Verify maintained static diagrams
+        run: node --test scripts/check-doc-diagrams.test.mjs
       - name: Verify Docs alias configuration
         run: node scripts/farm-docs-config-alias.test.mjs
       - name: Build minimal and multilingual consumers

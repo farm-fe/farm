@@ -3,6 +3,15 @@
   "url": "https://farmfe.org",
   "basePath": "/",
   "trailingSlash": "never",
+  "build": {
+    "highlightRepresentation": "static-html",
+    "targetConcurrency": 1
+  },
+  "ai": {
+    "enabled": true,
+    "publicationStatus": "prerelease",
+    "agentGuideUrl": "/docs/farm-docs/ai-exports"
+  },
   "canonicalOverrides": [
     {
       "path": "/zh",

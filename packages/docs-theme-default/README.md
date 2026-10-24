@@ -47,3 +47,17 @@ website category names or version policy.
 ## Navigation controls
 
 NavigationMenu renders a native disclosure menu and restores its summary focus on Escape without closing an outer dialog. NavigationIconLink provides a labeled external icon link with safe new-tab attributes. LanguageIcon is decorative; its surrounding menu supplies the localized label. Site-specific destinations and brand icons remain in the site wrapper.
+
+## Document formats (prerelease candidate)
+
+`DocumentActions` accepts the native public page's `markdownUrl` and
+`markdownSha256`, an optional site-relative `agentGuideUrl`, and configurable
+labels. Both Markdown identity fields must be present before Copy or View appears.
+Copy fetches only a site-relative Markdown resource, rejects redirects and verifies
+its SHA256 before writing text. Errors are announced through an accessible status
+message. It does not install a skill, create an AI service or start a chat session.
+
+`DocPage` uses this component for eligible native document pages, with optional
+`documentActionsLabels` and `agentGuideUrl` presentation props. A host can translate
+the labels or export the standalone component in its own theme slot. Absent native
+metadata means absent Markdown controls; do not construct guessed URLs in a theme.

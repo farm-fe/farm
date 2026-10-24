@@ -1,0 +1,24 @@
+flowchart TD
+  accTitle: Resource generation and pot cache
+  accDescr: Global generation hooks run even when resource pots are cached. Only the per-pot rendering chain is skipped by a valid resource-pot cache.
+  generate_start["generate_start<br/>parallel"]
+  optimize_module_graph["optimize_module_graph<br/>serial"]
+  freeze_module_graph_meta["freeze_module_graph_meta<br/>serial"]
+  analyze_module_graph["analyze_module_graph<br/>first"]
+  partial_bundling["partial_bundling<br/>first"]
+  process_resource_pots["process_resource_pots<br/>serial"]
+  render_start["render_start<br/>serial"]
+  render_resource_pot["render_resource_pot<br/>first"]
+  process_rendered_resource_pot["process_rendered_resource_pot<br/>serial"]
+  augment_resource_pot_hash["augment_resource_pot_hash<br/>serial concatenation"]
+  optimize_resource_pot["optimize_resource_pot<br/>serial"]
+  generate_resources["generate_resources<br/>first"]
+  process_generated_resources["process_generated_resources<br/>serial"]
+  handle_entry_resource["handle_entry_resource<br/>serial"]
+  finalize_resources["finalize_resources<br/>serial"]
+  generate_end["generate_end<br/>parallel"]
+  generate_start --> optimize_module_graph --> freeze_module_graph_meta --> analyze_module_graph --> partial_bundling --> process_resource_pots --> render_start
+  render_start --> Each["For each resource pot<br/>bounded internal parallel work"] --> Hit{"Valid resource-pot cache?"}
+  Hit -->|yes| Reuse["Restore pot resources"] --> Barrier["All pot resources ready"]
+  Hit -->|no| render_resource_pot --> process_rendered_resource_pot --> augment_resource_pot_hash --> optimize_resource_pot --> generate_resources --> process_generated_resources --> Barrier
+  Barrier --> handle_entry_resource --> finalize_resources --> generate_end

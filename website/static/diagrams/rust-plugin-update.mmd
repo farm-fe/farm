@@ -1,0 +1,9 @@
+flowchart TD
+  accTitle: Incremental update lifecycle
+  accDescr: An external watch or API event initiates update. Reuse applicable module hooks; this is not another configuration lifecycle.
+  update_modules["update_modules<br/>serial"]
+  module_graph_updated["module_graph_updated<br/>serial"]
+  update_finished["update_finished<br/>parallel"]
+  Event["Watch event / Compiler.update()"] --> update_modules --> Build["Resolve / rebuild affected modules<br/>reuse module cache protocol"] --> Freeze["Freeze changed modules<br/>patch graph"] --> module_graph_updated
+  module_graph_updated --> Generate["Regenerate affected resources<br/>finalize_resources"] --> update_finished --> Callback["Update callback / HMR result"]
+  Note["No mandatory config / build_start / finish chain<br/>See module and resource cache diagrams"] -.-> Build
