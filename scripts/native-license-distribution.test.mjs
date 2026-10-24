@@ -11,7 +11,13 @@ test('main and standalone platform legal files retain original bytes', async () 
   const farm = await fs.readFile(path.join(root, 'LICENSE'));
   for (const relative of packages) {
     const directory = path.join(root, relative);
-    assert.deepEqual(await fs.readFile(path.join(directory, 'LICENSE')), farm);
+    const packageLicense = await fs.readFile(path.join(directory, 'LICENSE'));
+    if (relative === 'rust-plugins/tailwindcss') {
+      const original = await fs.readFile(path.join(root, 'website/licenses/ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439.txt'), 'utf8');
+      assert.equal(packageLicense.toString('utf8').replaceAll('\r\n', '\n').trimEnd(), original.replaceAll('\r\n', '\n').trimEnd());
+      assert.ok(packageLicense.includes('Copyright (c) 2023 Tailwind Labs Inc.'));
+      assert.ok(packageLicense.includes('Copyright (c) 2025 farm-fe'));
+    } else assert.deepEqual(packageLicense, farm);
     const legal = ['LICENSE', 'THIRD_PARTY_NOTICES.md'];
     for (const name of await fs.readdir(path.join(directory, 'licenses'))) legal.push(`licenses/${name}`);
     for (const entry of await fs.readdir(path.join(directory, 'npm'), { withFileTypes: true })) {

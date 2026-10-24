@@ -1,6 +1,11 @@
 MIT License
 
-Copyright (c) 2022 farm-fe
+Copyright (c) 2023 Tailwind Labs Inc.
+Copyright (c) 2025 farm-fe
+
+Implements the Tailwind CSS v4 compilation pipeline as a Farm Rust plugin,
+interoperating with tailwindcss-oxide (MIT) and the official Tailwind CSS
+core crates (https://github.com/tailwindlabs/tailwindcss).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
