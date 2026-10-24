@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createServer as createHttpServer } from 'node:http';
 import { runInNewContext } from 'node:vm';
 import { createServer } from 'vite';
 import { expect, test } from 'vitest';
@@ -7,9 +8,10 @@ const file = new URL('../binding/resolve-binding.cjs', import.meta.url);
 const source = readFileSync(file, 'utf8');
 
 test('native path resolver can be parsed by the Vite SSR test loader', async () => {
+  const hmrServer = createHttpServer();
   const server = await createServer({
     configFile: false,
-    server: { middlewareMode: true, hmr: false },
+    server: { middlewareMode: true, hmr: { server: hmrServer } },
     optimizeDeps: { noDiscovery: true },
     appType: 'custom'
   });
