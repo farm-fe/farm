@@ -9,7 +9,8 @@
   ],
   "main": "index.farm",
   "files": [
-    "index.farm"
+    "index.farm",
+    "LICENSE"
   ],
   "license": "MIT",
   "engines": {

@@ -10,7 +10,9 @@
   "main": "farm.win32-arm64-msvc.node",
   "files": [
     "farm.win32-arm64-msvc.node",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
   ],
   "license": "MIT",
   "engines": {

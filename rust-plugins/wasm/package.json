@@ -40,7 +40,8 @@
   "files": [
     "scripts",
     "types",
-    "options.d.ts"
+    "options.d.ts",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",

@@ -70,6 +70,9 @@ const outputSchema = z
     format: z
       .union([moduleFormatSchema, z.array(moduleFormatSchema)])
       .optional(),
+    libraryBundleType: z
+      .enum(['single-bundle', 'multiple-bundle', 'bundle-less'])
+      .optional(),
     showFileSize: z.boolean().optional(),
     asciiOnly: z.boolean().optional(),
     externalGlobals: z.record(z.string()).optional(),

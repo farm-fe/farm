@@ -39,7 +39,8 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-replace-dirname-darwin-arm64": "2.0.0",

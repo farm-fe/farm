@@ -52,7 +52,8 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
+    "options.d.ts",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-strip-darwin-arm64": "2.0.0",

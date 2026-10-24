@@ -1,0 +1,16 @@
+# Order operations
+
+An order follows paid → shipped → completed. A paid, shipped or completed order can be refunded; a refunded order cannot move back into fulfilment.
+
+## Review before changing status
+
+Open the order details to verify the customer, product, quantity and amount charged. Admin users can ship, complete or refund an order. Viewer users can review details without changing its status.
+
+## Revenue after a refund
+
+Refunded orders remain in customer history. Their charged amount is excluded from net revenue in the overview, channel reports and customer profile. Apply the same date and channel filters when comparing reports.
+
+```text
+paid -> shipped -> completed
+paid | shipped | completed -> refunded
+```

@@ -1,6 +1,7 @@
 import { defineConfig } from '@farmfe/core';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { renderDev } from '../ssr-utils/render-dev.mjs';
 import path from 'path';
 
 export default defineConfig({
@@ -24,6 +25,7 @@ export default defineConfig({
     cors: true,
     middlewares: [
       (server) => async (req, res, next) => {
+        try {
         if (!res.writableEnded) {
           console.log('ctx.url', req.url);
           const template = server
@@ -32,8 +34,9 @@ export default defineConfig({
             .toString();
           const projectRoot = path.dirname(fileURLToPath(import.meta.url));
           const moudlePath = path.join(projectRoot, 'dist', 'index.js');
-          const render = await import(pathToFileURL(moudlePath).toString()).then((m) => m['default']);
-          const renderedHtml = await render(req.url);
+          const renderedHtml = await renderDev(moudlePath, req.url, {
+            workerUrl: pathToFileURL(path.join(projectRoot, '../ssr-utils/render-worker.mjs'))
+          });
           const html = template.replace(
             '<div>app-html-to-replace</div>',
             renderedHtml
@@ -48,6 +51,9 @@ export default defineConfig({
         console.log('ctx.path outer', req.url);
 
         next();
+        } catch (error) {
+          next(error);
+        }
       }
     ]
   },

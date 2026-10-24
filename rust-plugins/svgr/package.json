@@ -37,7 +37,10 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
+    "options.d.ts",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",

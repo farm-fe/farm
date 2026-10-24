@@ -19,6 +19,77 @@ use farmfe_core::{
 
 use farmfe_plugin_vue::FarmPluginVue;
 
+#[test]
+fn parser_preserves_component_tags_that_collide_with_html_names() {
+  let mut errors = Vec::new();
+  let mut parser = fervid_parser::SfcParser::new(
+    "<template><div><Button /><button></button><Title /><title>native</title><Input /><input /></div></template>",
+    &mut errors,
+  );
+  let sfc = parser.parse_sfc().expect("valid SFC");
+  let template = sfc.template.expect("template block");
+  let fervid::Node::Element(root) = &template.roots[0] else {
+    panic!("expected root element");
+  };
+  let names: Vec<_> = root
+    .children
+    .iter()
+    .filter_map(|node| match node {
+      fervid::Node::Element(element) => Some(element.starting_tag.tag_name.to_string()),
+      _ => None,
+    })
+    .collect();
+  assert_eq!(
+    names,
+    ["Button", "button", "Title", "title", "Input", "input"]
+  );
+}
+
+#[test]
+fn parser_component_case_preserves_svg_raw_text_and_unicode_spans() {
+  let source = r#"<template><div>中文<Button></Button><Title/><textarea>literal &lt;Button&gt;</textarea><svg><linearGradient/><foreignObject><div>ok</div></foreignObject></svg></div></template><script>export default { data() { return { text: '<Title />' } } }</script><style>.card{color:red}</style>"#;
+  let mut errors = Vec::new();
+  let mut parser = fervid_parser::SfcParser::new(source, &mut errors);
+  let sfc = parser.parse_sfc().expect("valid SFC with raw text blocks");
+  let template = sfc.template.expect("template block");
+  fn collect(nodes: &[fervid::Node], source: &str, names: &mut Vec<String>) {
+    for node in nodes {
+      if let fervid::Node::Element(element) = node {
+        let name = element.starting_tag.tag_name.to_string();
+        let start = element.span.lo.0 as usize - 1;
+        assert!(
+          source[start..].starts_with(&format!("<{name}")),
+          "source span for {name}"
+        );
+        names.push(name);
+        collect(&element.children, source, names);
+      }
+    }
+  }
+  let mut names = Vec::new();
+  collect(&template.roots, source, &mut names);
+  assert_eq!(
+    names,
+    [
+      "div",
+      "Button",
+      "Title",
+      "textarea",
+      "svg",
+      "linearGradient",
+      "foreignObject",
+      "div"
+    ]
+  );
+  let (context, plugin) = make_plugin("");
+  let code = transform_content(&plugin, &context, "/tmp/ComponentCase.vue", source);
+  assert!(code.contains("<Title />"), "script string remains literal");
+  assert!(
+    code.contains("literal"),
+    "native textarea text remains present"
+  );
+}
+
 #[derive(Debug)]
 struct ScssToCssPlugin;
 
@@ -165,10 +236,12 @@ fn ignores_non_vue_paths() {
     caller: None,
     meta: Default::default(),
   };
-  assert!(plugin
-    .load(&load_param, &context, &hook_ctx)
-    .unwrap()
-    .is_none());
+  assert!(
+    plugin
+      .load(&load_param, &context, &hook_ctx)
+      .unwrap()
+      .is_none()
+  );
 }
 
 #[test]
@@ -240,10 +313,12 @@ fn style_virtual_module_id_format_is_stable() {
     caller: None,
     meta: Default::default(),
   };
-  assert!(plugin
-    .load(&load_param, &context, &hook_ctx)
-    .unwrap()
-    .is_some());
+  assert!(
+    plugin
+      .load(&load_param, &context, &hook_ctx)
+      .unwrap()
+      .is_some()
+  );
 }
 
 #[test]
@@ -292,7 +367,13 @@ fn descriptor_cache_threads_owner_and_scope_metadata_for_preprocessed_styles() {
   assert!(style.scoped);
   assert_eq!(style.owner_module_id, path.replace('\\', "/"));
   assert_eq!(style.owner_resolved_path, path.replace('\\', "/"));
-  assert_eq!(style.scope_id, format!("data-v-{}", descriptor.source_hash));
+  assert_eq!(
+    style.scope_id,
+    format!(
+      "data-v-{}",
+      fervid::compute_scope_id(&style.owner_module_id)
+    )
+  );
 }
 
 #[test]
@@ -387,12 +468,16 @@ fn scoped_preprocessor_styles_are_transformed_then_scoped_by_vue() {
     .expect("scss style virtual module should be transformed");
 
   assert_eq!(res.module_type, ModuleType::Css);
-  assert!(res
-    .content
-    .contains(&format!(".card[{}]", descriptor.styles[0].scope_id)));
-  assert!(res
-    .content
-    .contains(&format!("button[{}]", descriptor.styles[0].scope_id)));
+  assert!(
+    res
+      .content
+      .contains(&format!(".card[{}]", descriptor.styles[0].scope_id))
+  );
+  assert!(
+    res
+      .content
+      .contains(&format!("button[{}]", descriptor.styles[0].scope_id))
+  );
 }
 
 #[test]
@@ -534,7 +619,7 @@ fn update_modules_rehydrates_descriptor_when_cache_is_empty() {
 }
 
 #[test]
-fn update_modules_falls_back_to_main_sfc_for_scoped_style_changes() {
+fn update_modules_narrows_scoped_style_changes_without_reloading_script() {
   let (context, plugin) = make_plugin("");
   let first =
     r#"<template><p class="one">same</p></template><style scoped>.one{color:red}</style>"#;
@@ -551,7 +636,8 @@ fn update_modules_falls_back_to_main_sfc_for_scoped_style_changes() {
     .update_modules(&mut params, &context)
     .expect("update_modules ok");
 
-  assert_single_updated_path(&params, &path.replace('\\', "/"));
+  assert_eq!(params.paths.len(), 1);
+  assert!(params.paths[0].0.contains("?vue&type=style"));
 }
 
 #[test]
@@ -728,10 +814,12 @@ fn normalizes_windows_paths_for_virtual_style_imports() {
     caller: None,
     meta: Default::default(),
   };
-  assert!(plugin
-    .load(&load_param, &context, &hook_ctx)
-    .unwrap()
-    .is_some());
+  assert!(
+    plugin
+      .load(&load_param, &context, &hook_ctx)
+      .unwrap()
+      .is_some()
+  );
 }
 
 #[test]
@@ -749,10 +837,12 @@ fn respects_exclude_filter() {
     meta: Default::default(),
   };
   // Excluded -> load should return None and fall through to other plugins.
-  assert!(plugin
-    .load(&load_param, &context, &hook_ctx)
-    .unwrap()
-    .is_none());
+  assert!(
+    plugin
+      .load(&load_param, &context, &hook_ctx)
+      .unwrap()
+      .is_none()
+  );
 }
 
 #[test]
@@ -762,9 +852,11 @@ fn config_hook_injects_vue_define_flags() {
   plugin.config(&mut config).expect("config hook ok");
   assert!(config.define.contains_key("__VUE_OPTIONS_API__"));
   assert!(config.define.contains_key("__VUE_PROD_DEVTOOLS__"));
-  assert!(config
-    .define
-    .contains_key("__VUE_PROD_HYDRATION_MISMATCH_DETAILS__"));
+  assert!(
+    config
+      .define
+      .contains_key("__VUE_PROD_HYDRATION_MISMATCH_DETAILS__")
+  );
   assert!(config.resolve.dedupe.iter().any(|d| d == "vue"));
 }
 

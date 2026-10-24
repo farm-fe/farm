@@ -43,6 +43,8 @@ use farmfe_toolkit::{
 };
 
 use fervid::{CompileOptions, PropsDestructureConfig};
+mod list_blocks;
+mod script_hash;
 
 mod consts;
 pub mod descriptor;
@@ -52,13 +54,13 @@ mod styles;
 
 use crate::consts::{CE_VUE_SUFFIX, VUE_MODULE_TYPE, VUE_QUERY_KEY};
 use crate::descriptor::{
-  content_hash, narrow_virtual_updates, CustomBlockDescriptor, DescriptorCache, SfcDescriptor,
-  StyleDescriptor,
+  CustomBlockDescriptor, DescriptorCache, SfcDescriptor, StyleDescriptor, content_hash,
+  narrow_virtual_updates,
 };
 use crate::filter::{CustomElementFilter, Filter};
 use crate::options::VuePluginOptions;
 use crate::styles::{
-  custom_block_virtual_id, lang_to_module_type, style_virtual_id, StyleEntry, StyleRegistry,
+  StyleEntry, StyleRegistry, custom_block_virtual_id, lang_to_module_type, style_virtual_id,
 };
 
 #[farm_plugin]
@@ -127,7 +129,7 @@ impl FarmPluginVue {
   ) -> farmfe_core::error::Result<CompiledSfc> {
     let is_ce = self.is_custom_element(resolved_path);
 
-    let compile_result = fervid::compile(
+    let mut compile_result = fervid::compile(
       content,
       CompileOptions {
         filename: Cow::Borrowed(resolved_path),
@@ -156,6 +158,23 @@ impl FarmPluginVue {
       msg: format!("[plugin-vue] fervid failed to compile SFC: {e:?}"),
     })?;
 
+    // Each v-for item needs an independent Vue update block; otherwise the
+    // optimized keyed diff can leave nested stock cells and props unchanged.
+    let scope_id = format!(
+      "data-v-{}",
+      fervid::compute_scope_id(&normalize_path_for_import(module_id))
+    );
+    let original_scope_id = format!("data-v-{}", compile_result.file_hash);
+    let has_scoped_style = compile_result.styles.iter().any(|style| style.is_scoped);
+    let (code, source_map) = list_blocks::normalize_vue_code(
+      std::mem::take(&mut compile_result.code),
+      compile_result.source_map.take(),
+      resolved_path,
+      has_scoped_style.then_some(scope_id.as_str()),
+    )?;
+    compile_result.code = code;
+    compile_result.source_map = source_map;
+
     let import_base = normalize_path_for_import(resolved_path);
     let virtual_base = normalize_path_for_import(module_id);
     let mut prepend = String::new();
@@ -163,7 +182,6 @@ impl FarmPluginVue {
     let mut entries = Vec::new();
 
     for (idx, style) in compile_result.styles.into_iter().enumerate() {
-      let scope_id = format!("data-v-{}", compile_result.file_hash);
       let virtual_id = style_virtual_id(
         &virtual_base,
         idx,
@@ -172,7 +190,12 @@ impl FarmPluginVue {
         Some(&scope_id),
       );
       let module_type = lang_to_module_type(&style.lang);
-      let style_content_hash = content_hash(&style.code);
+      let style_content = if style.is_scoped {
+        style.code.replace(&original_scope_id, &scope_id)
+      } else {
+        style.code
+      };
+      let style_content_hash = content_hash(&style_content);
       prepend.push_str(&format!(
         "import {q}{base}?{query}{q};\n",
         q = '"',
@@ -182,7 +205,7 @@ impl FarmPluginVue {
       entries.push((
         virtual_id.clone(),
         StyleEntry {
-          content: style.code,
+          content: style_content,
           module_type,
         },
       ));
@@ -192,7 +215,7 @@ impl FarmPluginVue {
         scoped: style.is_scoped,
         owner_module_id: virtual_base.clone(),
         owner_resolved_path: import_base.clone(),
-        scope_id,
+        scope_id: scope_id.clone(),
         content_hash: style_content_hash,
         virtual_id,
       });
@@ -237,6 +260,11 @@ impl FarmPluginVue {
       prepend,
       descriptor,
       entries,
+      script_hash: if self.is_prod {
+        None
+      } else {
+        Some(script_hash::script_hash(content)?)
+      },
     })
   }
 
@@ -281,6 +309,7 @@ impl FarmPluginVue {
 }
 
 struct CompiledSfc {
+  script_hash: Option<String>,
   code: String,
   source_map: Option<String>,
   prepend: String,
@@ -542,6 +571,12 @@ impl Plugin for FarmPluginVue {
     // mainstream SFC toolchain — append it in dev so Vue Devtools can
     // locate the component source.
     if !self.is_prod {
+      if let Some(script_hash) = &compiled.script_hash {
+        code.push_str(&format!(
+          "\n{target} if (__farm_vue_sfc) __farm_vue_sfc.__farmScriptHash = \"{script_hash}\";\n",
+          target = sfc_runtime_target_statement()
+        ));
+      }
       code.push_str(&format!(
         "\n{target} if (__farm_vue_sfc) __farm_vue_sfc.__file = {q}{file}{q};\n",
         target = sfc_runtime_target_statement(),
@@ -666,10 +701,30 @@ fn vue_hmr_runtime_code(hmr_id: &str) -> String {
 if (__farm_vue_sfc) __farm_vue_sfc.__hmrId = {q}{hmr_id}{q};
 if (import.meta.hot && typeof window !== 'undefined' && window.__VUE_HMR_RUNTIME__ && __farm_vue_sfc) {{
   window.__VUE_HMR_RUNTIME__.createRecord(__farm_vue_sfc.__hmrId, __farm_vue_sfc);
+  if (import.meta.hot.data.__farmVueBeforeUpdate) {{
+    import.meta.hot.off('farm:beforeUpdate', import.meta.hot.data.__farmVueBeforeUpdate);
+  }}
+  import.meta.hot.data.__farmVueBeforeUpdate = (payload) => {{
+    var result = payload && payload.result;
+    var id = import.meta.hot.id;
+    var dependencyUpdate = result && Object.values(result.boundaries || {{}}).some((chains) =>
+      chains.some((chain) => chain.length > 1 && chain[chain.length - 1] === id));
+    import.meta.hot.data.__farmVueDirectUpdate = !!(result && result.changed.includes(id) && !dependencyUpdate);
+  }};
+  import.meta.hot.on('farm:beforeUpdate', import.meta.hot.data.__farmVueBeforeUpdate);
+  import.meta.hot.prune(() => {{
+    import.meta.hot.off('farm:beforeUpdate', import.meta.hot.data.__farmVueBeforeUpdate);
+  }});
   import.meta.hot.accept((mod) => {{
     if (!mod) return;
     var __farm_vue_updated = mod.default || (mod.exports && mod.exports.default);
-    if (__farm_vue_updated) window.__VUE_HMR_RUNTIME__.reload(__farm_vue_updated.__hmrId, __farm_vue_updated);
+    if (__farm_vue_updated) {{
+      if (import.meta.hot.data.__farmVueDirectUpdate && __farm_vue_updated.render && __farm_vue_updated.__farmScriptHash === __farm_vue_sfc.__farmScriptHash) {{
+        window.__VUE_HMR_RUNTIME__.rerender(__farm_vue_updated.__hmrId, __farm_vue_updated.render);
+      }} else {{
+        window.__VUE_HMR_RUNTIME__.reload(__farm_vue_updated.__hmrId, __farm_vue_updated);
+      }}
+    }}
   }});
 }}
 "#,

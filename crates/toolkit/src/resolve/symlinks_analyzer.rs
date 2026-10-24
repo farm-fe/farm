@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use farmfe_core::{dashmap::DashMap, relative_path::RelativePath};
 use farmfe_utils::diff_paths;
@@ -36,8 +36,7 @@ impl SymlinksAnalyzer {
         if cfg!(windows) {
           real_path = current.read_link().unwrap();
         } else {
-          real_path = RelativePath::new(current.read_link().unwrap().to_str().unwrap())
-            .to_logical_path(current.parent().unwrap());
+          real_path = resolve_link_target(current.parent().unwrap(), current.read_link().unwrap());
         }
 
         break;
@@ -57,5 +56,75 @@ impl SymlinksAnalyzer {
     self.cache.insert(path, real_path.clone());
 
     real_path
+  }
+}
+
+// Absolute targets must not be rebased onto the link parent. Canonicalizing
+// existing targets also resolves ancestor aliases such as macOS /var -> /private/var.
+fn resolve_link_target(parent: &Path, target: PathBuf) -> PathBuf {
+  let resolved = if target.is_absolute() {
+    target
+  } else {
+    RelativePath::new(target.to_str().unwrap()).to_logical_path(parent)
+  };
+  std::fs::canonicalize(&resolved).unwrap_or(resolved)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn absolute_link_target_is_not_rebased() {
+    let parent = std::env::temp_dir().join("farm-link-target-nonexistent-parent");
+    let target = parent.join("physical");
+    assert_eq!(resolve_link_target(&parent, target.clone()), target);
+  }
+
+  #[test]
+  fn relative_link_target_uses_link_parent() {
+    let parent = std::env::temp_dir().join("farm-link-target-nonexistent-parent");
+    assert_eq!(
+      resolve_link_target(&parent, PathBuf::from("../physical")),
+      parent.parent().unwrap().join("physical")
+    );
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn directory_alias_targets_preserve_child_identity() {
+    use std::{
+      fs,
+      os::unix::fs::symlink,
+      time::{SystemTime, UNIX_EPOCH},
+    };
+    let nonce = SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .unwrap()
+      .as_nanos();
+    let owner =
+      std::env::temp_dir().join(format!("farm-link-target-{}-{nonce}", std::process::id()));
+    fs::create_dir(&owner).unwrap();
+    struct Owner(PathBuf);
+    impl Drop for Owner {
+      fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+      }
+    }
+    let _owner = Owner(owner.clone());
+    let physical = owner.join("physical");
+    fs::create_dir(&physical).unwrap();
+    fs::write(physical.join("entry.js"), "export const value = 1;").unwrap();
+    let absolute = owner.join("absolute");
+    let relative = owner.join("relative");
+    let chained = owner.join("chained");
+    symlink(&physical, &absolute).unwrap();
+    symlink("physical", &relative).unwrap();
+    symlink(&absolute, &chained).unwrap();
+    let expected = fs::canonicalize(physical.join("entry.js")).unwrap();
+    let analyzer = SymlinksAnalyzer::new();
+    for alias in [absolute, relative, chained] {
+      assert_eq!(analyzer.follow_symlinks(alias.join("entry.js")), expected);
+    }
   }
 }

@@ -6,6 +6,8 @@
   "language": "en",
   // words - list of words to be always considered correct
   "words": [
+    "Connor",
+    "Skees",
     // Farm Docs dependencies, APIs and regression-fixture tokens.
     "addfile",
     "arglist",
@@ -842,6 +844,7 @@
     "ychannelselector",
     "zoomandpan"
   ],
+  "ignoreRegExpList": ["/\\\\u\\{[0-9a-fA-F]+\\}/g"],
   "ignorePaths": [
     // Preserve upstream vendor sources and original legal text.
     "rust-ecosystem/grass/src/**",

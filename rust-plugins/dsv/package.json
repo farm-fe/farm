@@ -47,7 +47,8 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
+    "options.d.ts",
+    "LICENSE"
   ],
   "devDependencies": {
     "@farmfe/plugin-tools": "workspace:*"

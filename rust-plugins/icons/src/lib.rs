@@ -5,9 +5,9 @@ mod options;
 // mod svg_id;
 mod cache;
 use cache::HttpClient;
-use compiler::{get_compiler, get_module_type_by_compiler, CompilerParams, GetCompilerParams};
+use compiler::{CompilerParams, GetCompilerParams, get_compiler, get_module_type_by_compiler};
 use farmfe_core::{
-  config::{persistent_cache::PersistentCacheConfig, Config},
+  config::{Config, persistent_cache::PersistentCacheConfig},
   module::ModuleType,
   plugin::{Plugin, PluginLoadHookResult, PluginResolveHookResult},
   serde_json,
@@ -16,8 +16,9 @@ use farmfe_macro_plugin::farm_plugin;
 use farmfe_utils::parse_query;
 use loader::{
   common::{
-    get_icon_data_by_iconify, get_path_meta, get_svg_by_custom_collections, get_svg_by_local_path,
-    is_icon_path, resolve_icons_path, GetIconPathDataParams, GetSvgByCustomCollectionsParams,
+    GetIconPathDataParams, GetSvgByCustomCollectionsParams, get_icon_data_by_iconify,
+    get_path_meta, get_svg_by_custom_collections, get_svg_by_local_path, is_icon_path,
+    resolve_icons_path,
   },
   icon_data::gen_svg_for_icon_data,
   struct_config::{IconifyIcon, IconifyLoaderOptions},
@@ -203,18 +204,22 @@ impl Plugin for FarmfePluginIcons {
           },
         );
 
-        if !svg_raw.is_empty() {
-          svg_raw = SvgBuilder::new(&svg_raw)
-            .fill(query_map.get("fill").cloned())
-            .stroke(query_map.get("stroke").cloned())
-            .stroke_width(query_map.get("stroke-width").cloned())
-            .width(query_map.get("width").cloned())
-            .height(query_map.get("height").cloned())
-            .class(self.options.default_class.clone())
-            .style(self.options.default_style.clone())
-            .view_box(None)
-            .build();
+        if svg_raw.is_empty() {
+          return Err(farmfe_core::error::CompilationError::GenericError(format!(
+            "Icon '{}' was not found in custom collection '{}'",
+            meta.icon, meta.collection
+          )));
         }
+        svg_raw = SvgBuilder::new(&svg_raw)
+          .fill(query_map.get("fill").cloned())
+          .stroke(query_map.get("stroke").cloned())
+          .stroke_width(query_map.get("stroke-width").cloned())
+          .width(query_map.get("width").cloned())
+          .height(query_map.get("height").cloned())
+          .class(self.options.default_class.clone())
+          .style(self.options.default_style.clone())
+          .view_box(None)
+          .build();
       } else {
         let data = get_icon_data_by_iconify(GetIconPathDataParams {
           path: source.to_string(),

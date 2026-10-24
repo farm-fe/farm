@@ -5,11 +5,10 @@ use serde_json::Value;
 use std::{
   fs::File,
   io::BufReader,
-  path::{Path, PathBuf},
+  path::{Component, Path, PathBuf},
   process::Command,
 };
 use tokio::runtime::Runtime;
-use walkdir::WalkDir;
 
 pub const URL_PREFIXES: [&str; 4] = ["/~icons/", "~icons/", "virtual:icons/", "virtual/icons/"];
 
@@ -43,7 +42,7 @@ pub fn remove_prefix(path: &str) -> String {
 
 pub fn resolve_icons_path(path: &str) -> ResolveResult {
   let path = remove_prefix(path);
-  let (path, _) = path.split_once(".").unzip();
+  let (path, _) = path.rsplit_once(".").unzip();
   let (collection, icon) = path.unwrap().split_once("/").unzip();
 
   ResolveResult {
@@ -118,20 +117,31 @@ pub fn get_svg_by_custom_collections(
     });
     return svg_raw;
   }
-  let icons_collection_path = Path::new(&project_dir).join(custom_collection_path);
-  let walker = WalkDir::new(icons_collection_path).into_iter();
-  let mut filtered_entries = walker.filter_map(Result::ok).filter(|e| {
-    e.file_type().is_file()
-      && e.path().extension().is_some()
-      && e.path().extension().unwrap() == "svg"
-  });
+  read_local_custom_icon(&Path::new(&project_dir).join(custom_collection_path), &icon)
+    .unwrap_or_default()
+}
 
-  if let Some(entry) = filtered_entries.next() {
-    let path = entry.path();
-    return read_file_utf8(path.to_str().unwrap()).unwrap();
+fn read_local_custom_icon(collection: &Path, icon: &str) -> Option<String> {
+  if icon.is_empty()
+    || Path::new(icon)
+      .components()
+      .any(|component| !matches!(component, Component::Normal(_)))
+  {
+    return None;
   }
-
-  String::new()
+  let root = collection.canonicalize().ok()?;
+  let selected = if root.is_file() {
+    if root.extension()? != "svg" || root.file_stem()?.to_str()? != icon {
+      return None;
+    }
+    root.clone()
+  } else {
+    root.join(format!("{icon}.svg")).canonicalize().ok()?
+  };
+  if !selected.is_file() || !selected.starts_with(&root) {
+    return None;
+  }
+  read_file_utf8(selected.to_str()?).ok()
 }
 
 fn is_valid_icon_path(icon_path: &str) -> bool {
@@ -245,5 +255,135 @@ fn check_lock_files(dir: &Path) -> Option<String> {
     Some("yarn".to_string())
   } else {
     None
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::{
+    fs,
+    sync::atomic::{AtomicU64, Ordering},
+    time::{SystemTime, UNIX_EPOCH},
+  };
+
+  struct Fixture {
+    root: PathBuf,
+    parent: PathBuf,
+  }
+
+  impl Fixture {
+    fn new() -> Self {
+      static NEXT: AtomicU64 = AtomicU64::new(0);
+      let parent = std::env::temp_dir().canonicalize().unwrap();
+      let root = parent.join(format!(
+        "farm-icons-local-{}-{}-{}",
+        std::process::id(),
+        SystemTime::now()
+          .duration_since(UNIX_EPOCH)
+          .unwrap()
+          .as_nanos(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+      ));
+      fs::create_dir(&root).unwrap();
+      Self { root, parent }
+    }
+  }
+
+  impl Drop for Fixture {
+    fn drop(&mut self) {
+      let resolved = self.root.canonicalize().unwrap();
+      assert_eq!(resolved.parent(), Some(self.parent.as_path()));
+      assert!(
+        resolved
+          .file_name()
+          .unwrap()
+          .to_string_lossy()
+          .starts_with("farm-icons-local-")
+      );
+      fs::remove_dir_all(resolved).unwrap();
+    }
+  }
+
+  #[test]
+  fn directory_loads_requested_icon_instead_of_first_svg() {
+    let fixture = Fixture::new();
+    fs::write(fixture.root.join("a-first.svg"), "<svg>inventory</svg>").unwrap();
+    fs::write(fixture.root.join("launch.svg"), "<svg>launch</svg>").unwrap();
+    assert_eq!(
+      read_local_custom_icon(&fixture.root, "launch").as_deref(),
+      Some("<svg>launch</svg>")
+    );
+    assert_eq!(
+      read_local_custom_icon(&fixture.root, "a-first").as_deref(),
+      Some("<svg>inventory</svg>")
+    );
+  }
+
+  #[test]
+  fn missing_icon_has_no_arbitrary_fallback() {
+    let fixture = Fixture::new();
+    fs::write(fixture.root.join("other.svg"), "<svg>other</svg>").unwrap();
+    assert!(read_local_custom_icon(&fixture.root, "missing").is_none());
+  }
+
+  #[test]
+  fn nested_and_dotted_names_keep_the_requested_identity() {
+    let fixture = Fixture::new();
+    fs::create_dir(fixture.root.join("nested")).unwrap();
+    fs::write(
+      fixture.root.join("nested/launch.v2.svg"),
+      "<svg>nested</svg>",
+    )
+    .unwrap();
+    assert_eq!(
+      read_local_custom_icon(&fixture.root, "nested/launch.v2").as_deref(),
+      Some("<svg>nested</svg>")
+    );
+    let resolved = resolve_icons_path("~icons/custom/nested/launch.v2.jsx");
+    assert_eq!(resolved.collection, "custom");
+    assert_eq!(resolved.icon, "nested/launch.v2");
+  }
+
+  #[test]
+  fn collection_boundary_rejects_parent_and_absolute_paths() {
+    let fixture = Fixture::new();
+    let collection = fixture.root.join("collection");
+    fs::create_dir(&collection).unwrap();
+    fs::write(fixture.root.join("outside.svg"), "<svg>outside</svg>").unwrap();
+    for name in ["../outside", "/outside", "", ".", "nested/../outside"] {
+      assert!(
+        read_local_custom_icon(&collection, name).is_none(),
+        "{name}"
+      );
+    }
+    assert!(
+      read_local_custom_icon(&collection, fixture.root.join("outside").to_str().unwrap()).is_none()
+    );
+  }
+
+  #[test]
+  fn explicit_file_collection_only_matches_its_name() {
+    let fixture = Fixture::new();
+    let file = fixture.root.join("launch.svg");
+    fs::write(&file, "<svg>launch</svg>").unwrap();
+    assert_eq!(
+      read_local_custom_icon(&file, "launch").as_deref(),
+      Some("<svg>launch</svg>")
+    );
+    assert!(read_local_custom_icon(&file, "inventory").is_none());
+  }
+
+  #[cfg(unix)]
+  #[test]
+  fn nested_symlink_cannot_escape_the_collection() {
+    let fixture = Fixture::new();
+    let collection = fixture.root.join("collection");
+    let outside = fixture.root.join("outside");
+    fs::create_dir(&collection).unwrap();
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("secret.svg"), "<svg>outside</svg>").unwrap();
+    std::os::unix::fs::symlink(&outside, collection.join("linked")).unwrap();
+    assert!(read_local_custom_icon(&collection, "linked/secret").is_none());
   }
 }

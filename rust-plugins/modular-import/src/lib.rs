@@ -36,8 +36,8 @@ impl Plugin for FarmfePluginComponent {
   fn transform(
     &self,
     param: &PluginTransformHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> HookResult<Option<PluginTransformHookResult>> {
-    transform(&self.options, param)
+    transform(&self.options, param, &context.config.script)
   }
 }

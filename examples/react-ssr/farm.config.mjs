@@ -1,5 +1,6 @@
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { renderDev } from '../ssr-utils/render-dev.mjs';
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -29,6 +30,7 @@ export default {
     middlewares: [
       (server) => 
         async (req, res, next) => {
+          try {
           if (!res.writableEnded) {
             // console.log('ctx.path', ctx.path);
             const template = server
@@ -37,8 +39,9 @@ export default {
               .toString();
             const projectRoot = path.dirname(fileURLToPath(import.meta.url));
             const moudlePath = path.join(projectRoot, 'dist', 'index.js');
-            const render = await import(pathToFileURL(moudlePath)).then((m) => m['default']);
-            const renderedHtml = render(req.url);
+            const renderedHtml = await renderDev(moudlePath, req.url, {
+              workerUrl: pathToFileURL(path.join(projectRoot, '../ssr-utils/render-worker.mjs'))
+            });
             // console.log(renderedHtml);
             const html = template.replace(
               '{app-html-to-replace}',
@@ -50,6 +53,9 @@ export default {
 
           console.log('req.url outer', req.url);
           next();
+          } catch (error) {
+            next(error);
+          }
         }
     ]
   },

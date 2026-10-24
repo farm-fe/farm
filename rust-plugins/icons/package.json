@@ -90,7 +90,10 @@
   "files": [
     "scripts",
     "types",
-    "options.d.ts"
+    "options.d.ts",
+    "LICENSE",
+    "licenses",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-icons-darwin-arm64": "2.0.0",
