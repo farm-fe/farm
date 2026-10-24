@@ -37,7 +37,10 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-vue-darwin-arm64": "2.0.0",

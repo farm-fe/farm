@@ -3,3 +3,4 @@
 rust-plugins/sass/**/licenses/grass-MIT.txt -text
 rust-plugins/svgr/**/licenses/svgr-rs-MIT.txt -text
 rust-plugins/tailwindcss/**/licenses/tailwindcss-MIT.txt -text
+rust-plugins/vue/**/licenses/fervid-Apache-2.0.txt -text

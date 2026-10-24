@@ -3,9 +3,30 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
+import { createHash } from 'node:crypto';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packages = ['packages/core', 'rust-plugins/sass', 'rust-plugins/svgr', 'rust-plugins/tailwindcss'];
+
+test('Vue standalone distributions retain pinned Fervid Apache terms and existing MIT attribution', async () => {
+  const directory = path.join(root, 'rust-plugins/vue');
+  const revision = '4f26ab48f81eb9688fb84e9fa14541373d5bca7d';
+  assert.ok((await fs.readFile(path.join(directory, 'Cargo.toml'), 'utf8')).includes(revision));
+  const platforms = await fs.readdir(path.join(directory, 'npm'));
+  assert.equal(platforms.length, 9);
+  for (const folder of [directory, ...platforms.map(platform => path.join(directory, 'npm', platform))]) {
+    const original = await fs.readFile(path.join(folder, 'licenses/fervid-Apache-2.0.txt'));
+    assert.equal(createHash('sha256').update(original).digest('hex'), 'c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4');
+    const notice = await fs.readFile(path.join(folder, 'THIRD_PARTY_NOTICES.md'), 'utf8');
+    assert.ok(notice.includes(revision));
+    assert.ok(notice.includes('Marsel Shaikhin'));
+    const mit = await fs.readFile(path.join(folder, 'LICENSE'), 'utf8');
+    assert.ok(mit.includes('Copyright (c) 2021-present Evan You'));
+    assert.ok(mit.includes('Copyright (c) 2025 farm-fe'));
+    const manifest = JSON.parse(await fs.readFile(path.join(folder, 'package.json'), 'utf8'));
+    for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses']) assert.ok(manifest.files.includes(name));
+  }
+});
 
 test('main and standalone platform legal files retain original bytes', async () => {
   const farm = await fs.readFile(path.join(root, 'LICENSE'));

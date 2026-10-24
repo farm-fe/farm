@@ -10,7 +10,9 @@
   "main": "index.farm",
   "files": [
     "index.farm",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
   ],
   "license": "MIT",
   "engines": {
