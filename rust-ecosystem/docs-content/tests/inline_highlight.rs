@@ -57,3 +57,33 @@ fn marked_inline_code_rejects_dynamic_and_unsupported_inputs() {
   .unwrap();
   assert!(parsed.machine_markdown().is_err());
 }
+
+#[test]
+fn fenced_and_explicit_inline_code_share_the_selected_custom_palette() {
+  let source = r#"# API
+
+```ts
+const value: Promise<void> = run();
+```
+
+<code data-language="ts">(id: string) =&gt; Promise&lt;void&gt;</code>
+"#;
+  let options: HighlightOptions = serde_json::from_value(serde_json::json!({"light":"farm-light","dark":"farm-dark","tokens":{"light":{"type":"#123456"},"dark":{"type":"#abcdef"}}})).unwrap();
+  for format in [ContentFormat::Markdown, ContentFormat::Mdx] {
+    let parsed = parse_content(
+      source,
+      &mdxjs::Options {
+        jsx: true,
+        ..Default::default()
+      },
+      Some(&options),
+      format,
+    )
+    .unwrap();
+    assert!(parsed.machine_markdown().unwrap().contains("Promise<void>"));
+    let output = emit_content(parsed, true).unwrap();
+    assert!(output.code.contains("farm-inline-code"));
+    assert!(output.code.matches("#123456").count() >= 2);
+    assert!(output.code.matches("#abcdef").count() >= 2);
+  }
+}

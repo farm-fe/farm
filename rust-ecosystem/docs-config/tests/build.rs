@@ -62,3 +62,30 @@ fn build_rejects_invalid_values_and_shapes() {
     );
   }
 }
+
+#[test]
+fn code_palette_is_validated_and_kept_out_of_public_site_metadata() {
+  let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/site");
+  let raw = json!({"title":"Code","url":"https://example.com","pages":{"dir":"docs"},"code":{"light":"farm-light","dark":"farm-dark","tokens":{"dark":{"type":"#AABBCC"}}}});
+  let config = parse_config(&raw.to_string(), &root).unwrap();
+  assert_eq!(
+    serde_json::to_value(&config.code).unwrap()["tokens"]["dark"]["type"],
+    "#aabbcc"
+  );
+  assert!(
+    serde_json::to_value(config.public)
+      .unwrap()
+      .get("code")
+      .is_none()
+  );
+  assert!(
+    serde_json::to_value(schema()).unwrap()["properties"]
+      .get("code")
+      .is_some()
+  );
+  assert!(
+    serde_json::to_value(public_schema()).unwrap()["properties"]
+      .get("code")
+      .is_none()
+  );
+}

@@ -55,6 +55,7 @@ pub struct ValidatedConfig {
   pub static_dirs: Vec<ResolvedStaticDir>,
   pub ssg: SsgConfig,
   pub build: BuildConfig,
+  pub code: farmfe_syntax_highlight::CodeThemeConfig,
 }
 
 impl SsgConfig {
@@ -652,5 +653,6 @@ pub(crate) fn validate(config: SiteConfig, root: &Path) -> Result<ValidatedConfi
     static_dirs,
     ssg: config.ssg,
     build: config.build,
+    code: config.code,
   })
 }

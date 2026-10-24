@@ -228,3 +228,28 @@ fn persistent_original_remains_shared_and_unmodified_after_route_consumption() {
       .contains("Private label")
   );
 }
+
+#[test]
+fn palette_and_custom_token_bytes_are_part_of_content_cache_identity() {
+  let mut cache = ContentCache::default();
+  cache.begin();
+  let configurations = [
+    serde_json::json!({"light":"vscode-light","dark":"vscode-dark"}),
+    serde_json::json!({"light":"farm-light","dark":"farm-dark"}),
+    serde_json::json!({"light":"farm-light","dark":"farm-dark","tokens":{"dark":{"type":"#aabbcc"}}}),
+  ];
+  for value in configurations {
+    let options: farmfe_docs_content::HighlightOptions = serde_json::from_value(value).unwrap();
+    let identity = serde_json::to_string(&options).unwrap();
+    cache
+      .parse_with_options(
+        "/same.md",
+        ContentFormat::Markdown,
+        "same-bytes",
+        &identity,
+        || Ok(parsed("# Same")),
+      )
+      .unwrap();
+  }
+  assert_eq!(cache.parse_calls(), 3);
+}

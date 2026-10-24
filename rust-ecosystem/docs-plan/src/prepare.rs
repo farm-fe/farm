@@ -14,6 +14,9 @@ use std::{
 
 pub(crate) fn highlight_options(config: &ValidatedConfig) -> HighlightOptions {
   HighlightOptions {
+    light: config.code.light,
+    dark: config.code.dark,
+    tokens: config.code.tokens.clone(),
     representation: match config.build.highlight_representation {
       farmfe_docs_config::HighlightRepresentation::Jsx => {
         farmfe_docs_content::HighlightRepresentation::Jsx
@@ -305,6 +308,9 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
     };
     logo.src = assets.metadata_url(config, &reference)?;
   }
+  let highlighting = highlight_options(config);
+  let highlight_identity =
+    serde_json::to_string(&highlighting).map_err(|e| format!("[DOCS_CODE_CONFIG] {e}"))?;
   let mut urls = HashMap::new();
   let mut documents = HashMap::new();
   for collection in &config.collections {
@@ -391,7 +397,7 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
               &source_path,
               format,
               &source_hash,
-              &format!("{:?}", config.build.highlight_representation),
+              &highlight_identity,
               || {
                 parse_content(
                   &source,
@@ -400,7 +406,7 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
                     jsx: true,
                     ..Default::default()
                   },
-                  Some(&highlight_options(config)),
+                  Some(&highlighting),
                   format,
                 )
               },

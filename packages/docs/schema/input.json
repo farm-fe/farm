@@ -49,6 +49,21 @@
         "$ref": "#/definitions/CanonicalOverride"
       }
     },
+    "code": {
+      "default": {
+        "light": "vscode-light",
+        "dark": "vscode-dark",
+        "tokens": {
+          "light": {},
+          "dark": {}
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/CodeThemeConfig"
+        }
+      ]
+    },
     "docs": {
       "default": {
         "defaultVersion": "current",
@@ -348,6 +363,39 @@
         },
         "path": {
           "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CodeThemeConfig": {
+      "type": "object",
+      "properties": {
+        "dark": {
+          "default": "vscode-dark",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ThemeName"
+            }
+          ]
+        },
+        "light": {
+          "default": "vscode-light",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ThemeName"
+            }
+          ]
+        },
+        "tokens": {
+          "default": {
+            "light": {},
+            "dark": {}
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/TokenOverrides"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -848,6 +896,141 @@
           "items": {
             "$ref": "#/definitions/NavLink"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ThemeName": {
+      "type": "string",
+      "enum": [
+        "inspired-github",
+        "base16-ocean-dark",
+        "vscode-light",
+        "vscode-dark",
+        "farm-light",
+        "farm-dark"
+      ]
+    },
+    "TokenColors": {
+      "type": "object",
+      "properties": {
+        "attribute": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "comment": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "constant": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "control": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "foreground": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "function": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "keyword": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parameter": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "property": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "punctuation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "string": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "variable": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TokenOverrides": {
+      "type": "object",
+      "properties": {
+        "dark": {
+          "default": {},
+          "allOf": [
+            {
+              "$ref": "#/definitions/TokenColors"
+            }
+          ]
+        },
+        "light": {
+          "default": {},
+          "allOf": [
+            {
+              "$ref": "#/definitions/TokenColors"
+            }
+          ]
         }
       },
       "additionalProperties": false

@@ -2216,6 +2216,7 @@ name = "farmfe_docs_config"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "farmfe_syntax_highlight",
  "schemars",
  "serde",
  "serde_json",
@@ -2982,7 +2983,9 @@ dependencies = [
 name = "farmfe_syntax_highlight"
 version = "0.1.0"
 dependencies = [
+ "schemars",
  "serde",
+ "serde_json",
  "two-face",
 ]
 

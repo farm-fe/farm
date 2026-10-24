@@ -139,9 +139,9 @@ export const components = { h2: Heading };
 
 `@farmfe/docs/client` 的 `useColorMode()` 提供 `colorMode`、`resolvedColorMode`、`setColorMode`。可选值为 `system`、`light`、`dark`。初始采用 `theme.colorMode`（通常为 system），可用的持久选择按 base path 恢复。CSS 结合 `data-theme` 和系统偏好在 hydration 前后显示对应颜色。浏览器专有逻辑放 effect 中，不能在服务端 render 时访问 `window`、`localStorage`、`matchMedia`。
 
-Rust 同时生成代码 token 的深浅两套颜色。正文 fence 当前使用 Inspired GitHub 与 Base16 Ocean Dark；`.farm-code-token` 通过框架高亮样式中的 `--code-light`、`--code-dark` 切换。修改 `theme.colorMode` 只是切换显示，不会运行 JavaScript tokenizer，也不会选择任意代码主题包。
+Rust 同时生成代码 token 的深浅两套颜色。正文 fence 默认使用 VS Code Light 与 VS Code Dark，可通过统一的 `site.code` 选择 Farm Spectrum 或其他预设；`.farm-code-token` 通过框架高亮样式中的 `--code-light`、`--code-dark` 切换。修改 `theme.colorMode` 只是切换显示，不会运行 JavaScript tokenizer，也不会选择任意代码主题包。
 
-显式 `CodeBlock`、`CommandTabs` 从 `@farmfe/docs/snippets` 导入，由 Rust snippets 插件编译。第二层配置的 `snippets.highlight.light`、`.dark` 仅接受 `vscode-light`、`vscode-dark`、`inspired-github`、`base16-ocean-dark`；`snippets.rendererModule` 可指向导出 `CodeBlock`、`CommandTabs` 的展示模块。该工作流的 representation 由站点 `build.highlightRepresentation` 决定。源代码/标记必须可静态编译，不用动态表达式逃逸为运行时高亮。
+显式 `CodeBlock`、`CommandTabs` 从 `@farmfe/docs/snippets` 导入，由 Rust snippets 插件编译，并复用 `site.code`。预设包括 `farm-light`、`farm-dark`、`vscode-light`、`vscode-dark`、`inspired-github`、`base16-ocean-dark`；旧配置 `snippets.highlight.light`、`.dark` 仍可作为缺省回退，优先级参见配置参考。`snippets.rendererModule` 可指向导出 `CodeBlock`、`CommandTabs` 的展示模块。该工作流的 representation 由站点 `build.highlightRepresentation` 决定。源代码/标记必须可静态编译，不用动态表达式逃逸为运行时高亮。
 
 `jsx` 保留生成的 token 子节点，适合需要检查它们的自定义 renderer。`static-html` 保留容器与交互，将已转义的生成 token 降为静态 HTML。覆写 `pre`/代码组件必须转发编译器的 props/属性，不要 stringify 或丢弃 HTML/token 表示。必须逐 token 访问 React children 的 renderer 应选择 jsx；不要换用 Prism、Shiki 等浏览器 tokenizer 替代 Rust 编译职责。
 
@@ -160,3 +160,6 @@ Alias 只能解析路径，不能复现 Docusaurus context、插件生命周期�
 ```html
 <code data-language="ts">(moduleId: string) =&gt; void | Promise&lt;void&gt;</code>
 ```
+
+
+代码配色请参考配置参考中的 `site.code`：它与容器 CSS 分离，统一围栏、显式组件和静态行内签名。Farm Spectrum 为可选预设，不要求替换主题组件。

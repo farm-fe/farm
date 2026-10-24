@@ -168,7 +168,7 @@ const search: NonNullable<SiteConfig['search']> = {
 
 第二个 `farm` 参数接受 Farm 编译设置、原生 Rust `plugins` 描述（字符串或 `[字符串, 选项]`）及 `snippets`。工作流与 `docs:site` 输入由 `defineDocsConfig` 管理，拒绝额外 workflow、`vitePlugins`、`jsPlugins` 和 JS 编译插件对象。`compilation.output.path` 指定站点内专用输出目录，默认 `build`；不接受无关的现存非空目录作为旧 Docs 输出。
 
-`snippets` 支持 `rendererModule` 以及 `highlight.light`/`highlight.dark`（仅 `vscode-light`、`vscode-dark`、`inspired-github`、`base16-ocean-dark`）。该工作流的 representation 由站点 build 设置决定。它们作用于显式 snippets 标记；正文 fence 当前固定使用 VS Code 风格 Light / Dark 两套主题，不存在任意主题文件或 JavaScript 高亮回调配置。详见[主题定制](./theme-customization.md)。
+`snippets` 支持 `rendererModule` 以及旧版 `highlight` 配色。建议使用下方统一的 `site.code`，让围栏、显式组件和行内签名共用主题。该工作流的 representation 由站点 build 设置决定，不存在任意主题文件或 JavaScript 高亮回调配置。详见[主题定制](./theme-customization.md)。
 
 ## 验证清单
 
@@ -176,3 +176,22 @@ const search: NonNullable<SiteConfig['search']> = {
 - 用实际内容构建并预览，检查语言/版本切换、404、资源、AI 与 SEO 公共输出。
 - 自定义槽位后检查导航、搜索、移动端和键盘操作。
 - 单独核验正式依赖及平台包：工作区构建、本地 tar 包安装、正式部署不是同一个验收结果。
+
+## 统一代码配色（预发布候选）
+
+`site.code` 统一控制 Markdown 围栏、显式 `CodeBlock`/`CommandTabs`，以及带 `data-language` 的静态行内签名；浏览器不执行高亮解析。可选 `light`、`dark` 支持 `farm-light`、`farm-dark`、`vscode-light`、`vscode-dark`、`inspired-github`、`base16-ocean-dark`。未配置时保留 VS Code 默认值以兼容已有项目。
+
+```ts
+code: {
+  light: 'farm-light',
+  dark: 'farm-dark',
+  tokens: {
+    light: { function: '#176a83', type: '#325caa' },
+    dark: { function: '#7dc6d5', type: '#9ebcf2' }
+  }
+}
+```
+
+`tokens.light`、`tokens.dark` 可覆盖 `foreground`、`keyword`、`control`、`function`、`type`、`class`、`variable`、`parameter`、`property`、`string`、`number`、`comment`、`tag`、`attribute`、`constant`、`punctuation`。颜色必须为 `#RRGGBB`；未知名称和不安全颜色表达式会被原生配置校验拒绝。`type` 覆盖类型族，包括内置类和命名空间；显式 `class` 配置进一步覆盖类作用域。语法能够区分时，`parameter` 等细分类别优先于 `variable` 等宽泛类别。分类来自语法作用域，不提供语言服务器级语义分析，不猜测任意自定义符号。
+
+显式 `site.code` 字段优先于旧的 `snippets.highlight`；缺失字段回退到旧配置，再回退到原生默认值。自定义 token 按明暗模式和类别合并。配置只解析为一份，传给 prepare 和两个构建目标；配色变化进入内容缓存身份。`build.highlightRepresentation` 仍单独控制 JSX/静态 HTML。背景、字体、边框和间距继续通过 `theme.customCss` 定制。

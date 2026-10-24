@@ -52,6 +52,8 @@ pub struct SiteConfig {
   #[serde(default)]
   pub build: BuildConfig,
   #[serde(default)]
+  pub code: farmfe_syntax_highlight::CodeThemeConfig,
+  #[serde(default)]
   pub not_found: NotFoundConfig,
   #[serde(default)]
   pub seo: SeoConfig,

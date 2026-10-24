@@ -24,6 +24,7 @@ import type {
   SiteConfig
 } from './config.generated.js';
 import { startDocsDevelopment } from './development.js';
+import { resolveDocsCodeTheme } from './highlight-config.js';
 import type { DocsFarmConfig } from './index.js';
 import { assertNativePlugins } from './index.js';
 import { validateMachineReadableResources } from './machine-readable.js';
@@ -293,9 +294,13 @@ export async function run({
   }
   if (command !== 'build')
     throw new Error(`[DOCS_COMMAND] ${command} is not implemented yet`);
-  const site = options?.site as SiteConfig | undefined;
+  const inputSite = options?.site as SiteConfig | undefined;
   const farm = (options?.farm ?? {}) as DocsFarmConfig;
-  if (!site) throw new Error('[DOCS_WORKFLOW] missing site configuration');
+  if (!inputSite) throw new Error('[DOCS_WORKFLOW] missing site configuration');
+  const { site, highlight: resolvedHighlight } = resolveDocsCodeTheme(
+    inputSite,
+    farm.snippets
+  );
   assertNativePlugins(farm);
   const root = await fs.realpath(config.root ?? process.cwd());
   const { snippets, ...coreFarm } = farm;
@@ -403,10 +408,7 @@ export async function run({
               docs(pluginOptions),
               snippetsPlugin({
                 ...snippets,
-                highlight: {
-                  ...snippets?.highlight,
-                  representation: site.build?.highlightRepresentation ?? 'jsx'
-                }
+                highlight: resolvedHighlight
               }),
               react({ development: false, refresh: false }),
               ...(target === 'node' ? [ssrCss()] : []),

@@ -1,5 +1,7 @@
 //! Native highlighting shared with content transforms; no JavaScript execution.
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::sync::LazyLock;
 use two_face::{
   re_exports::syntect::{
@@ -12,6 +14,9 @@ use two_face::{
 };
 
 mod editor_theme;
+mod farm_theme;
+mod theme_config;
+pub use theme_config::{CodeThemeConfig, HexColor, TokenColors, TokenOverrides};
 mod static_html;
 pub use static_html::render_static_lines;
 
@@ -43,13 +48,15 @@ pub fn parse_line_ranges(
   Ok(lines)
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum ThemeName {
   InspiredGithub,
   Base16OceanDark,
   VscodeLight,
   VscodeDark,
+  FarmLight,
+  FarmDark,
 }
 
 impl ThemeName {
@@ -62,6 +69,8 @@ impl ThemeName {
       Self::Base16OceanDark => Ok(&themes[EmbeddedThemeName::Base16OceanDark]),
       Self::VscodeLight => EDITOR_LIGHT.as_ref().map_err(Clone::clone),
       Self::VscodeDark => EDITOR_DARK.as_ref().map_err(Clone::clone),
+      Self::FarmLight => FARM_LIGHT.as_ref().map_err(Clone::clone),
+      Self::FarmDark => FARM_DARK.as_ref().map_err(Clone::clone),
     }
   }
 }
@@ -72,6 +81,7 @@ pub struct HighlightOptions {
   pub light: ThemeName,
   pub dark: ThemeName,
   pub representation: HighlightRepresentation,
+  pub tokens: TokenOverrides,
 }
 
 /// Generated code-block representation. JSX remains the compatibility default.
@@ -90,6 +100,7 @@ impl Default for HighlightOptions {
       light: ThemeName::VscodeLight,
       dark: ThemeName::VscodeDark,
       representation: HighlightRepresentation::Jsx,
+      tokens: TokenOverrides::default(),
     }
   }
 }
@@ -108,6 +119,23 @@ static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_new
 // Each linked native library owns its immutable theme set. Per-block parser and
 // highlighter state remains local; only lazy deserialization results are reused.
 static THEMES: LazyLock<EmbeddedLazyThemeSet> = LazyLock::new(two_face::theme::extra);
+static FARM_LIGHT: LazyLock<Result<two_face::re_exports::syntect::highlighting::Theme, String>> =
+  LazyLock::new(|| farm_theme::theme(false));
+static FARM_DARK: LazyLock<Result<two_face::re_exports::syntect::highlighting::Theme, String>> =
+  LazyLock::new(|| farm_theme::theme(true));
+fn selected_theme<'a>(
+  name: ThemeName,
+  colors: &TokenColors,
+  themes: &'a EmbeddedLazyThemeSet,
+) -> Result<Cow<'a, two_face::re_exports::syntect::highlighting::Theme>, String> {
+  let base = name.theme(themes)?;
+  if colors.is_empty() {
+    return Ok(Cow::Borrowed(base));
+  }
+  let mut customized = base.clone();
+  colors.apply(&mut customized)?;
+  Ok(Cow::Owned(customized))
+}
 static EDITOR_LIGHT: LazyLock<Result<two_face::re_exports::syntect::highlighting::Theme, String>> =
   LazyLock::new(|| editor_theme::theme(false));
 static EDITOR_DARK: LazyLock<Result<two_face::re_exports::syntect::highlighting::Theme, String>> =
@@ -159,8 +187,10 @@ fn highlight_with_themes(
   let syntax = SYNTAXES.find_syntax_by_token(language);
   let known_language = syntax.is_some() || language == "txt";
   let syntax = syntax.unwrap_or_else(|| SYNTAXES.find_syntax_plain_text());
-  let mut light = HighlightLines::new(syntax, options.light.theme(themes)?);
-  let mut dark = HighlightLines::new(syntax, options.dark.theme(themes)?);
+  let light_theme = selected_theme(options.light, &options.tokens.light, themes)?;
+  let dark_theme = selected_theme(options.dark, &options.tokens.dark, themes)?;
+  let mut light = HighlightLines::new(syntax, light_theme.as_ref());
+  let mut dark = HighlightLines::new(syntax, dark_theme.as_ref());
   let mut lines = vec![];
   for line in LinesWithEndings::from(code) {
     let light = light
@@ -224,8 +254,10 @@ fn highlight_single_parse_with_themes(
   let known_language = syntax.is_some() || language == "txt";
   let syntax = syntax.unwrap_or_else(|| SYNTAXES.find_syntax_plain_text());
   let mut parser = ParseState::new(syntax);
-  let light_highlighter = Highlighter::new(options.light.theme(themes)?);
-  let dark_highlighter = Highlighter::new(options.dark.theme(themes)?);
+  let light_theme = selected_theme(options.light, &options.tokens.light, themes)?;
+  let dark_theme = selected_theme(options.dark, &options.tokens.dark, themes)?;
+  let light_highlighter = Highlighter::new(light_theme.as_ref());
+  let dark_highlighter = Highlighter::new(dark_theme.as_ref());
   let mut light_state = HighlightState::new(&light_highlighter, ScopeStack::new());
   let mut dark_state = HighlightState::new(&dark_highlighter, ScopeStack::new());
   let mut lines = vec![];
@@ -360,6 +392,7 @@ mod tests {
           light,
           dark,
           representation,
+          tokens: TokenOverrides::default(),
         };
         for (language, code) in strategy_examples() {
           // This independent old implementation still owns two HighlightLines.

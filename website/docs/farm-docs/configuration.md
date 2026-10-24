@@ -168,7 +168,7 @@ These are different limits; neither changes the number of documentation routes n
 
 The second `farm` argument accepts Farm compilation settings and native Rust `plugins` descriptors (`string` or `[string, options]`), plus `snippets`. `defineDocsConfig` owns the workflow and `docs:site` input. Do not supply another workflow, `vitePlugins`, `jsPlugins`, or JavaScript compiler plugin objects. Use `compilation.output.path` for a dedicated site-root output directory (default `build`); an unrelated nonempty directory is not accepted as a previous Docs output.
 
-`snippets` supports `rendererModule` and `highlight.light`/`highlight.dark` (`vscode-light`, `vscode-dark`, `inspired-github` or `base16-ocean-dark`). The site build setting determines snippets' representation. Theme choices here apply to explicit snippet markers; the content parser's fenced-block pair is currently the built-in VS Code-inspired Light / Dark pair. There is no arbitrary theme-file or JavaScript highlighter callback setting. See [theme customization](./theme-customization.md).
+`snippets` supports `rendererModule` and the legacy `highlight` palette. Prefer the unified `site.code` configuration below so fences, explicit markers and inline signatures use the same theme. The site build setting determines snippets' representation. There is no arbitrary theme-file or JavaScript highlighter callback setting. See [theme customization](./theme-customization.md).
 
 ## Validation checklist
 
@@ -176,3 +176,22 @@ The second `farm` argument accepts Farm compilation settings and native Rust `pl
 - Build the actual content, inspect local preview, translated/version alternates, 404, resources and public AI/SEO output.
 - Exercise navigation/search and keyboard interactions after a custom slot change.
 - Verify matching published dependencies and native packages separately; workspace success, local tarball installation and deployment are different checks.
+
+## Unified code palette (prerelease candidate)
+
+`site.code` is the single palette input for Markdown fences, explicit `CodeBlock`/`CommandTabs`, and literal inline signatures marked with `data-language`. It does not run a browser highlighter. Optional `light` and `dark` presets accept `farm-light`, `farm-dark`, `vscode-light`, `vscode-dark`, `inspired-github`, and `base16-ocean-dark`. Omitted presets retain the VS Code defaults for compatibility.
+
+```ts
+code: {
+  light: 'farm-light',
+  dark: 'farm-dark',
+  tokens: {
+    light: { function: '#176a83', type: '#325caa' },
+    dark: { function: '#7dc6d5', type: '#9ebcf2' }
+  }
+}
+```
+
+`tokens.light` and `tokens.dark` optionally override `foreground`, `keyword`, `control`, `function`, `type`, `class`, `variable`, `parameter`, `property`, `string`, `number`, `comment`, `tag`, `attribute`, `constant`, and `punctuation`. Values must be `#RRGGBB`; unknown names and unsafe color expressions fail native validation. `type` covers the type family, including built-in classes and namespaces; an explicit `class` override refines class scopes. More specific categories, such as `parameter` versus `variable`, take precedence where the grammar distinguishes them. The mappings use grammar scopes; they do not add language-server semantic analysis or infer arbitrary symbol identities.
+
+Explicit `site.code` fields override corresponding legacy `snippets.highlight` values. Missing fields fall back to legacy values, then native defaults; token maps merge by display mode and category. The same resolved palette reaches preparation and both build targets. Palette/token changes participate in content-cache identity. `build.highlightRepresentation` remains the single JSX/static-HTML choice. Container background, font, borders and spacing remain `theme.customCss` concerns.

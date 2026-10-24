@@ -7,3 +7,6 @@ license.workspace = true
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 two-face = { version = "=0.5.2", default-features = false, features = ["syntect-default-fancy"] }
+
+schemars = "=0.8.22"
+serde_json = "1"

@@ -50,6 +50,12 @@ export type CanonicalOverride = {
   path: string;
 };
 
+export type CodeThemeConfig = {
+  dark?: ThemeName;
+  light?: ThemeName;
+  tokens?: TokenOverrides;
+};
+
 export type CollectionConfig = {
   admonitionLabels?: AdmonitionLabels;
   blogLabels?: BlogLabels | null;
@@ -480,6 +486,7 @@ export type SiteConfig = {
   blog?: CollectionGroup | null;
   build?: BuildConfig;
   canonicalOverrides?: Array<CanonicalOverride>;
+  code?: CodeThemeConfig;
   docs?: DocsConfig;
   linkExceptions?: Array<LinkException>;
   locales?: Locales;
@@ -518,6 +525,38 @@ export type ThemeConfig = {
   footer?: FooterConfig;
   logo?: LogoConfig | null;
   navbar?: Array<NavLink>;
+};
+
+export type ThemeName =
+  | 'inspired-github'
+  | 'base16-ocean-dark'
+  | 'vscode-light'
+  | 'vscode-dark'
+  | 'farm-light'
+  | 'farm-dark';
+
+export type TokenColors = {
+  attribute?: string | null;
+  class?: string | null;
+  comment?: string | null;
+  constant?: string | null;
+  control?: string | null;
+  foreground?: string | null;
+  function?: string | null;
+  keyword?: string | null;
+  number?: string | null;
+  parameter?: string | null;
+  property?: string | null;
+  punctuation?: string | null;
+  string?: string | null;
+  tag?: string | null;
+  type?: string | null;
+  variable?: string | null;
+};
+
+export type TokenOverrides = {
+  dark?: TokenColors;
+  light?: TokenColors;
 };
 
 export type TrailingSlash = 'always' | 'never';
