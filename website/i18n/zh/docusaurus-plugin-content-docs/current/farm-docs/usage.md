@@ -99,3 +99,7 @@ export default defineDocsConfig(site, {
 将 `@theme/Tabs`、`@theme/TabItem` 改为从 `@farmfe/docs/mdx` 命名导入 `Tabs`、`TabItem`，每个项显式提供 `value` 与 `label`。将 `@theme/CodeBlock` 改为从 `@farmfe/docs/snippets` 命名导入 `CodeBlock` 标记；代码必须是静态内容，由已有 Rust snippets 编译器编译和高亮。
 
 导航、站点和页面数据使用 `@farmfe/docs/client` 中有文档契约的 `Link`、`useSite`、`usePage`、`useLocale`。不支持的 Docusaurus context、翻译和主题内部 API 按实际需要改为站点代码。Alias 只负责解析路径，不能复现其他框架的运行时语义或 JavaScript 插件生命周期。替换后验收路由、SSR、主题控件、标签与代码输出；不需要 Docusaurus 运行时或构建依赖。
+
+## 配置与定制参考
+
+完整字段、默认值与校验规则见[配置参考](./configuration.md)；CSS tokens、React 槽位、alias 与 Rust 代码渲染见[主题定制](./theme-customization.md)。

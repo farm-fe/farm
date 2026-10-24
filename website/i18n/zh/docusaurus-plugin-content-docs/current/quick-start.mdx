@@ -7,14 +7,16 @@ import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # 快速开始
 
-:::note Farm v2 · All in Rust
-构建与编译架构由 Rust 驱动，网站界面和应用运行时仍可使用 JavaScript。正式 v2 包发布就绪前，请使用匹配的已验证候选；下列通用创建命令不代表 v2 已正式发布。
+:::note Farm v2 — Rust native 编译
+编译器与官方原生编译插件运行在 Rust 中。Node.js 仍负责配置、CLI 和开发服务器编排；React SSR 与网站 UI 使用 JavaScript。Vite 适配能力保留用于迁移。
+
+这是 v2 候选文档：所需官方包发布前，应使用匹配且经过验证的候选。下方通用创建命令安装 registry 当前版本，并不固定或证明 v2 已正式发布。功能范围见[官方 Rust 插件总览](/zh/docs/plugins/official-plugins/overview)。
 :::
 
 
 
 :::note
-Farm 需要 **Node 16.18.0 及更高版本**。
+Farm 需要 **Node 20.0.0 及更高版本**。
 :::
 
 ## 在线体验
@@ -93,3 +95,5 @@ npm run build
 - [配置参考](/docs/config/configuring-farm)
 - [插件](/docs/plugins/official-plugins/overview)
 ---
+
+构建可供其他项目使用的包，请参阅 [Library 打包](/zh/docs/features/library)。

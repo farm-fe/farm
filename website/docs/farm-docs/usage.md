@@ -99,3 +99,7 @@ export default defineDocsConfig(site, {
 Replace `@theme/Tabs` and `@theme/TabItem` with named `Tabs` and `TabItem` imports from `@farmfe/docs/mdx`; each item needs an explicit `value` and `label`. Replace `@theme/CodeBlock` with the named `CodeBlock` marker from `@farmfe/docs/snippets`. Its code must be static so the existing Rust snippets compiler can compile and highlight it.
 
 Use `Link`, `useSite`, `usePage` and `useLocale` from `@farmfe/docs/client` for their documented contracts. Rewrite unsupported Docusaurus context, translation and internal theme APIs as site code when needed. An alias only resolves a path: it cannot reproduce another framework's runtime behavior or JavaScript plugin lifecycle. Validate routes, SSR, theme controls, tabs and code output after replacing imports. No Docusaurus runtime or build dependency is required.
+
+## Configuration and customization reference
+
+See the complete [configuration reference](./configuration.md) for fields, defaults and validation rules, and [theme customization](./theme-customization.md) for CSS tokens, React slots, aliases and Rust code rendering.

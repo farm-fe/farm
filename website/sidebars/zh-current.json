@@ -238,185 +238,209 @@
       "items": [
         {
           "type": "category",
-          "label": "Farm Docs",
+          "label": "编写插件与开发",
           "items": [
             {
               "type": "doc",
-              "id": "farm-docs/overview"
+              "id": "plugins/writing-plugins/overview"
             },
             {
               "type": "doc",
-              "id": "farm-docs/usage"
+              "id": "plugins/writing-plugins/rust-plugin"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/writing-plugins/js-plugin"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/writing-plugins/runtime-plugin"
             }
           ]
         },
         {
-          "type": "doc",
-          "id": "plugins/community-plugins"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/auto-import"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/compress"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/dsv"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/dts"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/icons"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/image"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-babel"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-copy"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-dts"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-electron"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-less"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-postcss"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-qiankun"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-react-compiler"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-sass"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-svgr"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-tailwindcss"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-visualizer"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/js-vuetify"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/mdx"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/modular-import"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/native-docs"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/overview"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/react"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/react-components"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/replace-dirname"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/sass"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/strip"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/svgr"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/tailwindcss"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/url"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/virtual"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/vue"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/vue-jsx"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/wasm"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/worker"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/official-plugins/yaml"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/writing-plugins/js-plugin"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/writing-plugins/overview"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/writing-plugins/runtime-plugin"
-        },
-        {
-          "type": "doc",
-          "id": "plugins/writing-plugins/rust-plugin"
+          "type": "category",
+          "label": "插件文档与使用",
+          "items": [
+            {
+              "type": "category",
+              "label": "Farm Docs",
+              "items": [
+                {
+                  "type": "doc",
+                  "id": "farm-docs/overview"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/usage"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/configuration"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/theme-customization"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/ai-exports"
+                }
+              ]
+            },
+            {
+              "type": "doc",
+              "id": "plugins/community-plugins"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/auto-import"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/compress"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/dsv"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/dts"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/icons"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/image"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-babel"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-copy"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-dts"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-electron"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-less"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-postcss"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-qiankun"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-react-compiler"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-sass"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-svgr"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-tailwindcss"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-visualizer"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-vuetify"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/mdx"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/modular-import"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/native-docs"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/overview"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/react"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/react-components"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/replace-dirname"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/sass"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/strip"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/svgr"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/tailwindcss"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/url"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/virtual"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/vue"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/vue-jsx"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/wasm"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/worker"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/yaml"
+            }
+          ]
         }
       ]
     },

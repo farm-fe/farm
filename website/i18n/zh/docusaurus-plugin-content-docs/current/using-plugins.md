@@ -1,4 +1,9 @@
 # 使用插件
+
+Farm 优先通过 Rust 插件 API 扩展编译链，同时保留 JavaScript 和 Vite 适配器用于生态接入与渐进迁移。兼容性取决于插件实际使用的 hooks 和行为，请结合项目验证。
+
+[官方插件总览](/zh/docs/plugins/official-plugins/overview)列出原生能力家族及 v2 候选状态。下方安装命令是 API 示例，不代表所有候选版本均已发布。
+
 Farm支持4种插件：
 * **`Farm 编译插件`**：支持 Rust 插件和 Js 插件，采用 rollup 风格的 hooks。
 * **`Vite/Rollup/Unplugin 插件`**：Farm 开箱即用支持 Vite/Rollup/Unplugin 插件
@@ -32,7 +37,7 @@ export default defineConfig({
 ```
 
 Farm编译插件有2种：
-* **`Rust Plugins`**：用 Rust 编写，具有最佳性能。
+* **`Rust Plugins`**：在 Rust 中实现编译 hooks。
 * **`Js Plugins`**：用JS/TS编写，用于兼容当前的JS生态系统
 
 ### 使用 Rust 插件
@@ -62,9 +67,7 @@ export default defineConfig({
   ],
 });
 ```
-目前 Farm 官方支持 2 个 Rust 插件：
-* **`@farmfe/plugin-react`**：Farm rust 插件，用于 React jsx 编译和 React-refresh 注入。
-* **`@farmfe/plugin-sass`**：用于 scss 文件编译的 Farm rust 插件，底层使用 `grass`。
+官方 Rust 插件已经覆盖 React、Sass 以外的多个功能家族。范围与候选状态见[能力矩阵](/zh/docs/plugins/official-plugins/overview)，请同时核对每个插件的限制。
 
 :::tip
 要了解有关 rust 插件的更多信息，请参阅 [Rust 插件](./plugins/official-plugins/overview.md#rust-plugins)

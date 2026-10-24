@@ -28,23 +28,28 @@ export interface FarmRuntimePlugin {
 ## 编写运行时插件
 请参阅[编写运行时插件](/docs/plugins/writing-plugins/runtime-plugin)
 
+## 资源映射与事务恢复
+
+`moduleSystem.gd()` 返回独立的资源映射快照；`sd(resources, moduleResources)` 恢复映射。它们不会撤销已执行的 JavaScript 或插件任意副作用。
+
+`await moduleSystem.beginResourceTransaction()` 先等待此前的导入，再打开资源批次。批次提供异步 `validate()` 与同步 `finalize()`，也可使用便利方法 `commit()`。新增跟踪任务或映射变更会使此前的就绪状态失效。失败时，`rollback()` 等待未完成请求并恢复该批次的资源状态；模块工厂、缓存与插件恢复需要另外协调。同一时间只允许一个资源事务。
+
+HMR 的 `import.meta.hot.registerUpdateParticipant(prepare)` 可注册包含 `validate`、可选 `ready`、同步 `commit`、`rollback`、`recover` 的参与者。可能失败的异步检查应放在验证阶段，不放在最终提交中。回滚不等于深复制模块导出，也不能撤销任意副作用。
+
 ## 钩子
+
+:::caution
+公开类型允许返回 Promise，但同步 `require` 路径不会等待运行时钩子。尤其 `readModuleCache` 与 `moduleNotFound` 使用 first/bail 分发，应返回同步结果；Promise 本身为 truthy，不代表异步模块解析协议。异步资源加载应使用 dynamic import 与 `loadResource`。
+:::
 那么调用Farm运行时插件钩子时有两种执行顺序：
 * `serial`: 该钩子按照插件的顺序依次调用ono。 所有插件都会被串行调用。
 * `first`: 一旦返回`truthy`值就跳过所有剩下的插件。
 
 钩子执行顺序：
-```text
-          for each module                     true                         true                     return false
-bootstrap  ----------->   module registered? ------> module initialized?  ----> readModuleCache -------------------------> done
-           |                   |              false            |false              | return true                            | 
-           |                   |                               |--------------> moduleCreated   ------> moduleInitialized --|
-           |                   |-------------------> moduleNotFound
-           |
-           | dynamic import
-           | ---------------> loadResource                         
-``` 
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/runtime-hook-order-light.svg"><img src="/diagrams/runtime-hook-order-light.svg" alt="运行时钩子顺序与缓存分支" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/runtime-hook-order-dark.svg"><img src="/diagrams/runtime-hook-order-dark.svg" alt="运行时钩子顺序与缓存分支" /></a>
 
+[Mermaid 源文件](/diagrams/runtime-hook-order.mmd)
 ### name
 - **`type`**: `string`
 
@@ -52,7 +57,7 @@ bootstrap  ----------->   module registered? ------> module initialized?  ----> 
 
 ### bootstrap
 - **`hook type`**: `serial`
-- **`type`**: `(moduleSystem: ModuleSystem) => void | Promise<void>`
+- **`type`**: <code data-language="ts">(moduleSystem: ModuleSystem) =&gt; void | Promise&lt;void&gt;</code>
 
 当模块系统引导时调用一次。 在此挂钩中设置您的插件。 例子：
 
@@ -69,7 +74,7 @@ export default <Plugin>{
 
 ### moduleCreated
 - **`hook type`**: `serial`
-- **`type`**: `(module: Module) => void | Promise<void>`
+- **`type`**: <code data-language="ts">(module: Module) =&gt; void | Promise&lt;void&gt;</code>
 
 创建新模块实例后调用。 您可以读取或更新新创建的模块的属性。
 
@@ -89,7 +94,7 @@ export default <Plugin>{
 
 ### moduleInitialized
 - **`hook type`**: `serial`
-- **`type`**: `(module: Module) => void | Promise<void>`
+- **`type`**: <code data-language="ts">(module: Module) =&gt; void | Promise&lt;void&gt;</code>
 
 在调用模块初始化函数后调用。
 
@@ -98,21 +103,21 @@ export default <Plugin>{
 :::
 
 ### readModuleCache
-- **`hook type`**: `serial`
-- **`type`**: `(module: Module) => boolean | Promise<boolean>`
+- **`hook type`**: `first`
+- **`type`**: <code data-language="ts">(module: Module) =&gt; boolean | Promise&lt;boolean&gt;</code>
 
 读取模块缓存后调用，返回 true 以跳过缓存读取并重新执行模块。
 
 ### moduleNotFound
-- **`hook type`**: `serial`
-- **`type`**: `(module: Module) => void | Promise<void>`
+- **`hook type`**: `first`
+- **`type`**: <code data-language="ts">(moduleId: string) =&gt; void | Promise&lt;void&gt;</code>
 
 当模块未注册时调用。
 
 
 ### loadResource
 - **`hook type`**: `first`
-- **`type`**: `(resource: Resource, targetEnv: 'browser' | 'node') => Promise<ResourceLoadResult>`
+- **`type`**: <code data-language="ts">(resource: Resource, targetEnv: 'browser' | 'node') =&gt; Promise&lt;ResourceLoadResult&gt;</code>
 
 加载资源时调用，在此钩子中自定义您的资源加载。
 * 返回 `{ success: true }` 表示该资源已成功加载。

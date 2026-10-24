@@ -12,21 +12,21 @@ Farm v2 includes:
 - **New Output Formats**: Added `umd`, `iife`, `system`, `amd` formats (and array of formats)
 - **Enhanced Plugin System**: New Rust and JavaScript plugin hooks
 - **Server Middleware Rewrite**: Replaced Koa with connect-style middleware
-- **Better HMR Handling**: Stricter origin validation, new sub-options (`clientPort`, `path`, `timeout`, `overlay`, `protocol`)
+- **HMR configuration**: Origin validation depends on server mode; new sub-options (`clientPort`, `path`, `timeout`, `overlay`, `protocol`)
 - **New Features**: CSS `transformToScript`, CSS modules `localsConversion`, `minify.include`/`exclude`, `persistentCache.envs`, `persistentCache.globalBuiltinCacheKeyStrategy`
-- **Performance Improvements**: Faster builds and better module bundling
+- **Build pipeline changes**: Updated bundling and plugin integration; measure your actual application and cache settings.
 
 ## Breaking Changes
 
 ### Configuration Changes
 
-#### `server` replaces `devServer`
+#### Use the `server` configuration key
 
-In v2, the dev server configuration key has been renamed from `devServer` to `server`:
+Use `server` in v2. Do not apply a blanket rename to every v1 project: keep `server` if it is already present, and only replace `devServer` in older examples that use it.
 
-**v1:**
+**Older configuration example:**
 ```ts
-// farm.config.ts (v1)
+// Check the API of your installed v1 release
 export default {
   devServer: {
     port: 9000,
@@ -64,7 +64,7 @@ export default {
 
 - `origin` — Set the origin of the dev server URLs
 - `allowedHosts` — Restrict which hosts can access the server
-- `middlewareMode` — Run the server in middleware mode (no HTTP server created)
+- `middlewareMode` — Declared in the schema, but the current public path does not provide a verified middleware/HMR embedding workflow. It creates no HTTP server, while HMR initialization requires one.
 - `preview` — Dedicated preview server configuration
 
 ### Server Middleware API Change
@@ -162,11 +162,11 @@ New hooks in v2:
 
 ### 1. Update Farm Version
 
+Check the published channels before selecting matching v2 core, CLI and plugin versions. `latest` is not proof of a v2 release, and package major versions need not match. The candidate documented here is not an instruction to publish or install an unavailable version. Preserve the resolved lockfile.
+
 ```bash
-# Update to Farm v2
-npm install @farmfe/core@latest @farmfe/cli@latest
-# or
-pnpm install @farmfe/core@latest @farmfe/cli@latest
+npm view @farmfe/core dist-tags --json
+npm view @farmfe/cli dist-tags --json
 ```
 
 ### 2. Update Configuration File

@@ -23,3 +23,7 @@ Read the [usage guide](./usage.md) for project structure, configuration, themes,
 ## Release notes
 
 The framework is under development in the v2 workspace. A successful local workspace build does not establish that matching official packages and every platform binary have been published. Before external installation, verify the release's package versions, optional native dependencies and isolated consumer results. Do not substitute an older package or silently compile the website's dependencies from source during deployment.
+
+## Configuration and customization reference
+
+See the complete [configuration reference](./configuration.md) for fields, defaults and validation rules, and [theme customization](./theme-customization.md) for CSS tokens, React slots, aliases and Rust code rendering.

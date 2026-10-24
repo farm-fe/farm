@@ -1,4 +1,9 @@
 # Using Plugins
+
+Farm’s primary compilation extension is the Rust plugin API. JavaScript and Vite-compatible adapters remain available for ecosystem integration and gradual migration. Compatibility depends on the hooks and behavior used by each plugin; verify them with your project.
+
+The [official plugin overview](/docs/plugins/official-plugins/overview) describes native capability families and v2 candidate status. Installation examples below are API examples, not evidence that every candidate version is published.
+
 There are 4 kinds of plugins supported in Farm:
 * **`Farm Compilation Plugins`**: Support both Rust Plugins and Js Plugins, which adopt a rollup-style hooks.
 * **`Vite/Rollup/Unplugin Plugin`**: Vite/Rollup/Unplugin plugins are supported in Farm out of Box.
@@ -34,8 +39,8 @@ export default defineConfig({
 ```
 
 There are 2 kinds of Farm compilation plugins:
-* **`Rust Plugins`**: which is written in Rust and has best performance.
-* **`Js Plugins`**: which is written in JS/TS, and it's used for compatibility with current JS ecosystem
+* **`Rust Plugins`**: which implements compilation hooks in Rust.
+* **`Js Plugins`**: which implements hooks in JS/TS for ecosystem integration
 
 ### Using Rust Plugins
 Rust plugins are imported and called the same way as JS plugins. Each rust plugin package exports a default factory function:
@@ -62,9 +67,7 @@ export default defineConfig({
   ],
 });
 ```
-Currently Farm supports 2 rust plugins officially:
-* **`@farmfe/plugin-react`**: Farm rust plugin for react jsx compilation and react-refresh injection.
-* **`@farmfe/plugin-sass`**: Farm rust plugin for scss files compilation, powered by `grass`.
+Official Rust plugins now cover multiple capability families beyond React and Sass. See the [source-based capability map](/docs/plugins/official-plugins/overview#rust-native-capability-map) and each plugin’s documented limitations.
 
 :::tip
 To learn more about rust plugins, see [Rust Plugins](/docs/plugins/official-plugins/overview#rust-plugins)

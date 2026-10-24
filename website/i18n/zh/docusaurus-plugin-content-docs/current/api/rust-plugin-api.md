@@ -27,7 +27,11 @@ export default defineConfig({
 
 ## 插件 Hook 概述 {#plugin-hooks-overview}
 Farm 提供了很多 rollup 风格的 hook，这些 hook 分为 build 阶段和 generate 阶段：
-![Farm 插件 钩子](/img/farm-plugin-hooks.png)
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-lifecycle-light.svg"><img src="/diagrams/rust-plugin-lifecycle-light.svg" alt="Rust 插件生命周期：初次编译与更新分别调用" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-lifecycle-dark.svg"><img src="/diagrams/rust-plugin-lifecycle-dark.svg" alt="Rust 插件生命周期：初次编译与更新分别调用" /></a>
+
+[Mermaid 源文件](/diagrams/rust-plugin-lifecycle.mmd)
+
 
 所有插件挂钩都接受一个名为 [`CompilationContext`](https://docs.rs/farmfe_core/latest/farmfe_core/context/struct.CompilationContext.html) 的参数。 所有共享的编译信息都存储在 `context` 中。
 
@@ -36,6 +40,35 @@ Hook 共有三种（与 Rollup 相同）：
 * `first`：钩子串行执行，当钩子返回非空值时立即返回。 （null 在 JS 中表示 null 和 undefined，在 Rust 中表示 None）。
 * `serial`: 钩子串行执行，每个钩子的结果将传递到下一个钩子，使用最后一个钩子的结果作为最终结果。
 * `parallel`：钩子在线程池中并行执行，并且应该被隔离。
+
+
+### 分阶段调用与缓存
+
+时间戳命中发生在 load/transform 前，内容 hash 命中发生在它们之后。资源 pot 缓存不会跳过全局生成钩子。更新由 watcher/API 单独触发，并非 finish 后必然发生。
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-build-light.svg"><img src="/diagrams/rust-plugin-build-light.svg" alt="模块图构建与缓存分支" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-build-dark.svg"><img src="/diagrams/rust-plugin-build-dark.svg" alt="模块图构建与缓存分支" /></a>
+
+[Mermaid 源文件](/diagrams/rust-plugin-build.mmd)
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-generate-light.svg"><img src="/diagrams/rust-plugin-generate-light.svg" alt="资源生成与资源 pot 缓存" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-generate-dark.svg"><img src="/diagrams/rust-plugin-generate-dark.svg" alt="资源生成与资源 pot 缓存" /></a>
+
+[Mermaid 源文件](/diagrams/rust-plugin-generate.mmd)
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-update-light.svg"><img src="/diagrams/rust-plugin-update-light.svg" alt="独立的增量更新生命周期" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-update-dark.svg"><img src="/diagrams/rust-plugin-update-dark.svg" alt="独立的增量更新生命周期" /></a>
+
+[Mermaid 源文件](/diagrams/rust-plugin-update.mmd)
+
+
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/plugin-dispatch-light.svg"><img src="/diagrams/plugin-dispatch-light.svg" alt="插件回调分发：first、serial、parallel" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/plugin-dispatch-dark.svg"><img src="/diagrams/plugin-dispatch-dark.svg" alt="插件回调分发：first、serial、parallel" /></a>
+
+[Mermaid 源文件](/diagrams/plugin-dispatch.mmd)
 
 :::note
 有关完整的 `Plugin Hooks`  定义，请参阅[Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)
