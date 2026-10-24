@@ -1,6 +1,6 @@
 use mdxjs::{
-  hast::{self, Node, PropertyValue},
   Options,
+  hast::{self, Node, PropertyValue},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

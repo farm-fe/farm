@@ -23,3 +23,9 @@ or native dependencies. Actual installed versions and the final distributed
 dependency closure require a separate audit. In particular, Core's `sirv`
 semver range may resolve to another version after a normal dependency install;
 recheck this notice against the final lockfile and installed package.
+
+## Editor palette reference
+
+The native scope-to-color implementation is maintained by Farm. Its familiar editor palette references the MIT-licensed VS Code default themes; no VS Code language server or semantic-token service is bundled.
+
+Sources consulted on 2026-10-24: https://github.com/microsoft/vscode/tree/main/extensions/theme-defaults/themes . Retained upstream license: `licenses/vscode-theme-reference.txt` (https://github.com/microsoft/vscode/blob/main/LICENSE.txt).

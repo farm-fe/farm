@@ -54,6 +54,8 @@ pub struct ValidatedConfig {
   pub canonical_overrides: Vec<CanonicalOverride>,
   pub static_dirs: Vec<ResolvedStaticDir>,
   pub ssg: SsgConfig,
+  pub build: BuildConfig,
+  pub code: farmfe_syntax_highlight::CodeThemeConfig,
 }
 
 impl SsgConfig {
@@ -335,6 +337,11 @@ pub(crate) fn validate(config: SiteConfig, root: &Path) -> Result<ValidatedConfi
     ));
   }
   let not_found = crate::not_found::resolve(&config.not_found, &config.locales.items)?;
+  if let Some(ai) = &config.ai {
+    if let Some(guide) = &ai.agent_guide_url {
+      public_link(guide, "ai.agentGuideUrl")?;
+    }
+  }
   let mut ids = HashSet::new();
   let mut collections = Vec::new();
   let mut has_default_version = config.docs.collections.is_empty();
@@ -600,6 +607,7 @@ pub(crate) fn validate(config: SiteConfig, root: &Path) -> Result<ValidatedConfi
     .map(|path| input_path(&root, path, "theme.components", false))
     .transpose()?;
   let public = PublicSiteConfig {
+    ai: config.ai,
     schema_version: SCHEMA_VERSION,
     title: config.title,
     url,
@@ -644,5 +652,7 @@ pub(crate) fn validate(config: SiteConfig, root: &Path) -> Result<ValidatedConfi
     canonical_overrides: config.canonical_overrides,
     static_dirs,
     ssg: config.ssg,
+    build: config.build,
+    code: config.code,
   })
 }

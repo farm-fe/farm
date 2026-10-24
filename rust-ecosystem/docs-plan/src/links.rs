@@ -4,6 +4,7 @@ use farmfe_docs_content::{ContentReference, ParsedContent, ReferenceKind};
 use std::{
   collections::{HashMap, HashSet},
   path::{Path, PathBuf},
+  sync::Arc,
 };
 
 pub struct Index<'a> {
@@ -83,7 +84,7 @@ impl<'a> Index<'a> {
   pub fn new(
     config: &'a ValidatedConfig,
     plan: &'a DocPlan,
-    documents: &HashMap<(String, String), ParsedContent>,
+    documents: &HashMap<(String, String), Arc<ParsedContent>>,
   ) -> Result<Self, String> {
     let mut files: HashMap<String, Vec<usize>> = HashMap::new();
     let mut anchors = HashMap::new();

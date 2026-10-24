@@ -116,7 +116,21 @@ pub(crate) fn heads(plan: &DocPlan) -> Result<BTreeMap<String, PublicSeoHead>, S
         html_attribute(&alternate.href)
       ));
     }
-    let discovery_links = crate::syndication::discovery_links(plan, &page.locale)?;
+    let mut discovery_links = crate::syndication::discovery_links(plan, &page.locale)?;
+    if let Some(markdown_url) = &page.markdown_url {
+      discovery_links.push(crate::PublicDiscoveryLink {
+        rel: "alternate".into(),
+        resource_type: "text/markdown".into(),
+        title: format!("{} (Markdown)", page.title),
+        href: seo_url(&plan.site, markdown_url)?,
+      });
+      discovery_links.push(crate::PublicDiscoveryLink {
+        rel: "describedby".into(),
+        resource_type: "text/plain".into(),
+        title: "Agent documentation index".into(),
+        href: seo_url(&plan.site, &format!("{}llms.txt", plan.site.base_path))?,
+      });
+    }
     html.push_str(&crate::syndication::discovery_html(&discovery_links));
     if result
       .insert(

@@ -2,7 +2,7 @@ use farmfe_core::{
   plugin::PluginProcessModuleHookParam,
   swc_css_ast::{ImportHref, Str, Url, UrlValue},
 };
-use farmfe_docs_plan::{static_resource_url, DocPlan};
+use farmfe_docs_plan::{DocPlan, static_resource_url};
 use farmfe_toolkit::sourcemap::SourceMap;
 use farmfe_toolkit::swc_css_visit::{VisitMut, VisitMutWith};
 

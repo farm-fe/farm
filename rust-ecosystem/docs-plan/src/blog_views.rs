@@ -1,7 +1,8 @@
 use crate::*;
 use farmfe_docs_config::{CollectionKind, ResolvedCollection, ValidatedConfig};
-use farmfe_docs_content::{parse_content, ContentFormat, ParsedContent};
+use farmfe_docs_content::{ContentFormat, ParsedContent, parse_content};
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 fn escape(value: &str) -> String {
   let mut output = String::new();
@@ -55,7 +56,7 @@ struct View {
 pub fn generate(
   config: &ValidatedConfig,
   plan: &mut DocPlan,
-  documents: &mut HashMap<(String, String), ParsedContent>,
+  documents: &mut HashMap<(String, String), Arc<ParsedContent>>,
 ) -> Result<(), String> {
   let pages: HashMap<_, _> = plan
     .routes
@@ -159,7 +160,7 @@ fn append(
   config: &ValidatedConfig,
   collection: &ResolvedCollection,
   plan: &mut DocPlan,
-  documents: &mut HashMap<(String, String), ParsedContent>,
+  documents: &mut HashMap<(String, String), Arc<ParsedContent>>,
   urls: &mut HashSet<String>,
   root: &str,
   view: View,
@@ -180,7 +181,7 @@ fn append(
       jsx: true,
       ..Default::default()
     },
-    None,
+    Some(&crate::prepare::highlight_options(config)),
     ContentFormat::Markdown,
   )?;
   let headings = parsed
@@ -201,6 +202,8 @@ fn append(
   routes::validate_output(&output_path, &source_path)?;
   plan.routes.push(RenderRoute {
     page: PublicPage {
+      markdown_url: None,
+      markdown_sha256: None,
       key: key.clone(),
       id: view.id,
       collection: collection.public.id.clone(),
@@ -232,15 +235,19 @@ fn append(
     output_path,
   });
   plan.modules.push(PreparedModule {
+    machine_markdown: None,
     key,
     source_path: source_path.clone(),
     source_hash: hash(source.as_bytes()),
-    code: String::new(),
+    code: "".into(),
     source_map: None,
-    generated_source: Some(source),
+    generated_source: Some(source.into()),
     language: ContentLanguage::Markdown,
     static_anchors: vec![],
   });
-  documents.insert((source_path, collection.public.id.clone()), parsed);
+  documents.insert(
+    (source_path, collection.public.id.clone()),
+    Arc::new(parsed),
+  );
   Ok(())
 }

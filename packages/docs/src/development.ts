@@ -13,6 +13,7 @@ import react from '@farmfe/plugin-react';
 import type { SiteConfig } from './config.generated.js';
 import { registerDevelopmentLifetime } from './development-lifetime.js';
 import { developmentRouteMiddleware } from './development-routing.js';
+import { resolveDocsCodeTheme } from './highlight-config.js';
 import type { DocsFarmConfig } from './index.js';
 import { assertNativePlugins } from './index.js';
 
@@ -27,6 +28,8 @@ async function resolveDevelopment(
   source?: ResolvedUserConfig
 ) {
   assertNativePlugins(farm);
+  const palette = resolveDocsCodeTheme(site, farm.snippets);
+  site = palette.site;
   const { snippets, ...coreFarm } = farm;
   const { default: snippetsPlugin } = await import(
     '@farmfe/plugin-docs-snippets'
@@ -88,7 +91,7 @@ async function resolveDevelopment(
     },
     plugins: [
       docs({ site, development: true }),
-      snippetsPlugin(snippets),
+      snippetsPlugin({ ...snippets, highlight: palette.highlight }),
       seo({ development: true }),
       react({ development: true, refresh: true }),
       ...(farm.plugins ?? [])

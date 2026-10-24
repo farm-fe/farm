@@ -1,5 +1,5 @@
 use farmfe_docs_snapshot::{
-  hash, observe, verify_resource, verify_source, Receipt, ResourceRecord, Target,
+  Receipt, ResourceRecord, Target, hash, observe, verify_resource, verify_source,
 };
 use std::fs;
 
@@ -46,9 +46,11 @@ fn source_changes_and_removal_are_rejected_without_timestamp_assumptions() {
   let record = observe(&path, &[]).unwrap();
   verify_source(&record).unwrap();
   fs::write(&path, "other").unwrap();
-  assert!(verify_source(&record)
-    .unwrap_err()
-    .contains("DOCS_INPUT_SEAL"));
+  assert!(
+    verify_source(&record)
+      .unwrap_err()
+      .contains("DOCS_INPUT_SEAL")
+  );
   fs::remove_file(path).unwrap();
   assert!(verify_source(&record).is_err());
 }
@@ -105,11 +107,12 @@ fn receipt_identity_duplicates_paths_and_resource_bytes_are_checked() {
   let source = root.path().join("source.tsx");
   fs::write(&source, "first").unwrap();
   let mut receipt = Receipt {
-    schema_version: 1,
+    schema_version: 2,
     plan_snapshot_id: "plan".into(),
     target: Target::Browser,
     root: "root".into(),
     sources: vec![observe(&source, &[]).unwrap()],
+    input_observations: vec![],
     resources: vec![ResourceRecord {
       name: "entry.js".into(),
       resource_type: "js".into(),
@@ -120,9 +123,11 @@ fn receipt_identity_duplicates_paths_and_resource_bytes_are_checked() {
   receipt.validate("plan", Target::Browser, "root").unwrap();
   assert!(receipt.validate("other", Target::Browser, "root").is_err());
   assert!(receipt.validate("plan", Target::Server, "root").is_err());
+  for unsupported in [0, 1, 3] {
+    receipt.schema_version = unsupported;
+    assert!(receipt.validate("plan", Target::Browser, "root").is_err());
+  }
   receipt.schema_version = 2;
-  assert!(receipt.validate("plan", Target::Browser, "root").is_err());
-  receipt.schema_version = 1;
   receipt.sources.push(receipt.sources[0].clone());
   assert!(receipt.validate("plan", Target::Browser, "root").is_err());
   receipt.sources.pop();

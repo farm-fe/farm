@@ -2,6 +2,7 @@ import type { UserConfig } from '@farmfe/core';
 import docs from '@farmfe/plugin-docs';
 import type { DocsSnippetsOptions } from '@farmfe/plugin-docs-snippets';
 import type { SiteConfig } from './config.generated.js';
+import { resolveDocsCodeTheme } from './highlight-config.js';
 
 export type { DocsSnippetsOptions } from '@farmfe/plugin-docs-snippets';
 
@@ -24,12 +25,16 @@ export function defineDocsConfig(
   farm: DocsFarmConfig = {}
 ): UserConfig {
   assertNativePlugins(farm);
+  const { site: resolvedSite } = resolveDocsCodeTheme(site, farm.snippets);
   const { snippets: _snippets, ...coreFarm } = farm;
   return {
     ...coreFarm,
     compilation: { ...farm.compilation, input: { docs: 'docs:site' } },
-    plugins: [docs({ site }), ...(farm.plugins ?? [])],
-    workflow: { module: '@farmfe/docs/workflow', options: { site, farm } }
+    plugins: [docs({ site: resolvedSite }), ...(farm.plugins ?? [])],
+    workflow: {
+      module: '@farmfe/docs/workflow',
+      options: { site: resolvedSite, farm }
+    }
   };
 }
 

@@ -27,6 +27,7 @@ itertools = "0.14.0"
 relative-path = "2.0.1"
 dashmap = "6.1.0"
 blake2 = "0.10"
+sha2 = "0.10"
 hex = "0.4"
 rkyv = { workspace = true }
 thiserror = "2.0.12"

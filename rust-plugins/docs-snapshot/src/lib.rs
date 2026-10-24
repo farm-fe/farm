@@ -1,8 +1,9 @@
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
+  context::source_observation::{InputObservation, ObservedValue},
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, Module, ModuleId},
+  module::{Module, ModuleId, module_graph::ModuleGraph},
   plugin::{
     Plugin, PluginFreezeModuleHookParam, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult,
@@ -11,8 +12,8 @@ use farmfe_core::{
 };
 use farmfe_docs_plan::DocPlan;
 use farmfe_docs_snapshot::{
-  error, hash, observe, read_json, verify_build, verify_source, Receipt, ResourceRecord,
-  SourceRecord, Target, Verification,
+  Receipt, ResourceRecord, SourceRecord, Target, Verification, error, hash, observe, read_json,
+  verify_build, verify_source,
 };
 use farmfe_macro_plugin::farm_plugin;
 use serde::{Deserialize, Serialize};
@@ -55,6 +56,7 @@ struct Cache {
   target: Target,
   root: String,
   modules: BTreeMap<String, Vec<SourceRecord>>,
+  input_observations: Vec<InputObservation>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -148,6 +150,87 @@ impl FarmPluginDocsSnapshot {
     verify_source(source).map_err(native)
   }
 
+  fn source_key(path: &Path) -> Result<String> {
+    let value = path
+      .to_str()
+      .ok_or_else(|| diagnostic("non UTF-8 source path"))?
+      .replace('\\', "/");
+    if let Some(unc) = value.strip_prefix("//?/UNC/") {
+      return Ok(format!("//{unc}"));
+    }
+    Ok(value.strip_prefix("//?/").unwrap_or(&value).to_owned())
+  }
+
+  /// Preserve the first fact even if a later caller uses another path spelling.
+  fn remember_input(record: SourceRecord, state: &mut State) -> Result<SourceRecord> {
+    if let Some(previous) = state.known.get(&record.path) {
+      Self::verify_input(previous, state)?;
+      if previous != &record {
+        return Err(diagnostic(
+          "conflicting source observations within one generation",
+        ));
+      }
+      return Ok(previous.clone());
+    }
+    for previous in state
+      .known
+      .values()
+      .filter(|previous| previous.canonical_path == record.canonical_path)
+    {
+      Self::verify_input(previous, state)?;
+      if previous.hash != record.hash || previous.directory != record.directory {
+        return Err(diagnostic(
+          "conflicting canonical source observations within one generation",
+        ));
+      }
+    }
+    state.known.insert(record.path.clone(), record.clone());
+    Ok(record)
+  }
+
+  fn verify_observation_scope(records: &[InputObservation], state: &State) -> Result<()> {
+    farmfe_docs_snapshot::validate_observation_scope(records).map_err(native)?;
+    for record in records {
+      if !matches!(record.value, ObservedValue::Environment { .. }) {
+        Self::assert_source_scope(Path::new(&record.query), state)?;
+      }
+      let canonical = match &record.value {
+        ObservedValue::File { canonical, .. } | ObservedValue::Directory { canonical, .. } => {
+          Some(canonical)
+        }
+        ObservedValue::Metadata { canonical, .. } => canonical.as_ref(),
+        ObservedValue::Environment { .. } => None,
+      };
+      if let Some(canonical) = canonical {
+        Self::assert_source_scope(Path::new(canonical), state)?;
+      }
+    }
+    Ok(())
+  }
+
+  fn consumed(
+    record: &SourceRecord,
+    reader: &str,
+    state: &State,
+    context: &CompilationContext,
+  ) -> bool {
+    if record.directory {
+      return false;
+    }
+    let ledger = &context.source_observations;
+    if ledger
+      .file_read_hash(reader, &record.canonical_path)
+      .as_deref()
+      == Some(record.hash.as_str())
+    {
+      return true;
+    }
+    ledger
+      .producers(reader)
+      .iter()
+      .any(|producer| state.own_sources.get(producer) == Some(&record.canonical_path))
+  }
+
   fn observe_watches(
     &self,
     module_id: &ModuleId,
@@ -173,22 +256,20 @@ impl FarmPluginDocsSnapshot {
       if !path.is_absolute() {
         continue;
       }
-      let key = path
-        .to_str()
-        .ok_or_else(|| diagnostic("non UTF-8 watch path"))?;
-      let record = if let Some(record) = state.known.get(key) {
+      let key = Self::source_key(&path)?;
+      let record = if let Some(record) = state.known.get(&key) {
         Self::verify_input(record, &state)?;
         record.clone()
       } else {
         let record = Self::observe_input(&path, &state)?;
-        state.known.insert(record.path.clone(), record.clone());
-        record
+        Self::remember_input(record, &mut state)?
       };
       // Only observations made before compilation (or this reader's own raw
       // load) establish that the source preceded the reader's transformation.
       // Another module may have loaded the same source after this reader ran.
       if !state.initial_sources.contains(&record.canonical_path)
         && state.own_sources.get(&id) != Some(&record.canonical_path)
+        && !Self::consumed(&record, &id, &state, context)
       {
         state.discovery = true;
         state.discovered_modules.insert(id.clone());
@@ -256,7 +337,11 @@ impl Plugin for FarmPluginDocsSnapshot {
     let plan_path = match self.options()? {
       Options::Capture { plan_path, .. } | Options::Verify { plan_path, .. } => plan_path,
     };
-    let plan: DocPlan = read_json(Path::new(plan_path)).map_err(native)?;
+    let plan = farmfe_docs_plan::shared::read_plan(
+      Path::new(plan_path),
+      context.shared_resources.as_deref(),
+    )
+    .map_err(native)?;
     farmfe_docs_plan::verify(&plan).map_err(native)?;
     if let Options::Verify { verification, .. } = self.options()? {
       verify_build(&plan, &context.config.root, verification).map_err(native)?;
@@ -292,17 +377,29 @@ impl Plugin for FarmPluginDocsSnapshot {
       state.hard_roots.push(path);
     }
     let cached = state.cached.clone().filter(|cache| {
-      cache.schema_version == 1
+      cache.schema_version == 2
         && cache.plan_snapshot_id == plan.snapshot_id
         && cache.target == *target
         && cache.root == context.config.root
+    });
+    let cached = cached.filter(|cache| {
+      Self::verify_observation_scope(&cache.input_observations, &state).is_ok()
+        && cache
+          .modules
+          .values()
+          .flatten()
+          .all(|source| Self::verify_input(source, &state).is_ok())
+        && context
+          .source_observations
+          .restore_verified(&cache.input_observations)
+          .is_ok()
     });
     state.cached = cached.clone();
     if let Some(cache) = cached {
       for source in cache.modules.values().flatten() {
         // Removed inputs may belong to modules no longer used; invalidate on use.
         if let Ok(record) = Self::observe_input(Path::new(&source.path), &state) {
-          state.known.insert(record.path.clone(), record);
+          Self::remember_input(record, &mut state)?;
         }
       }
     }
@@ -317,9 +414,29 @@ impl Plugin for FarmPluginDocsSnapshot {
       }
       for source in seed.sources {
         Self::verify_input(&source, &state)?;
-        state.known.insert(source.path.clone(), source);
+        Self::remember_input(source, &mut state)?;
       }
       state.retry_invalidations = seed.modules;
+    }
+    // Static roots are explicitly declared by the verified prepared plan.
+    // Observe them before any module loads/transforms, using the same scoped
+    // fingerprint as ordinary directory watches. This is a fresh pre-build
+    // observation, not a claim that a later read preceded a transformation.
+    // Undeclared watch directories still require the ordinary discovery retry.
+    for directory in &plan.static_inputs {
+      let record = Self::observe_input(Path::new(&directory.path), &state)?;
+      Self::remember_input(record, &mut state)?;
+    }
+    // The application watches individual published files as well as their
+    // directory. Directory membership is not a raw-file observation proof.
+    for file in &plan.static_files {
+      let record = Self::observe_input(Path::new(&file.source_path), &state)?;
+      if record.directory || record.hash != file.source_hash {
+        return Err(diagnostic(
+          "declared static file differs from prepared bytes",
+        ));
+      }
+      Self::remember_input(record, &mut state)?;
     }
     state.initial_sources = state
       .known
@@ -352,16 +469,13 @@ impl Plugin for FarmPluginDocsSnapshot {
     let mut state = self.state.lock().map_err(diagnostic)?;
     let mut records = vec![];
     if path.is_absolute() && path.is_file() {
-      let key = path
-        .to_str()
-        .ok_or_else(|| diagnostic("non UTF-8 module path"))?;
-      let record = if let Some(record) = state.known.get(key) {
+      let key = Self::source_key(path)?;
+      let record = if let Some(record) = state.known.get(&key) {
         Self::verify_input(record, &state)?;
         record.clone()
       } else {
         let record = Self::observe_input(path, &state)?;
-        state.known.insert(record.path.clone(), record.clone());
-        record
+        Self::remember_input(record, &mut state)?
       };
       state
         .own_sources
@@ -498,12 +612,13 @@ impl Plugin for FarmPluginDocsSnapshot {
       .collect::<Vec<_>>();
     rows.sort_by(|a, b| a.name.cmp(&b.name));
     let receipt = Receipt {
-      schema_version: 1,
+      schema_version: 2,
       plan_snapshot_id: plan.snapshot_id.clone(),
       target: *target,
       root: context.config.root.clone(),
       sources: sources.into_values().collect(),
       resources: rows,
+      input_observations: context.source_observations.records().map_err(diagnostic)?,
     };
     receipt
       .validate(&plan.snapshot_id, *target, &context.config.root)
@@ -526,11 +641,12 @@ impl Plugin for FarmPluginDocsSnapshot {
       .as_ref()
       .ok_or_else(|| diagnostic("missing capture plan"))?;
     let cache = Cache {
-      schema_version: 1,
+      schema_version: 2,
       plan_snapshot_id: plan.snapshot_id.clone(),
       target: *target,
       root: context.config.root.clone(),
       modules: state.modules.clone(),
+      input_observations: context.source_observations.records().map_err(diagnostic)?,
     };
     Ok(Some(serde_json::to_vec(&cache).map_err(diagnostic)?))
   }

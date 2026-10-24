@@ -2,7 +2,7 @@
 //! Markdown nodes and their source positions. No Markdown is rendered twice.
 use markdown::mdast;
 use mdxjs::hast::{self, Node};
-use swc_common::{FileName, SourceMap, Span, DUMMY_SP};
+use swc_common::{DUMMY_SP, FileName, SourceMap, Span};
 use swc_html_ast::{Child, DocumentMode, Element, Namespace};
 
 const RAW: &str = "farm-docs-private-raw";

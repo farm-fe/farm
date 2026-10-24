@@ -19,6 +19,9 @@ farmfe_core = { version = "=2.2.0", path = "../core" }
 farmfe_toolkit = { version = "=2.2.0", path = "../toolkit" }
 farmfe_toolkit_plugin_types = { version = "=2.2.0", path = "../toolkit_plugin_types" }
 farmfe_plugin_resolve = { version = "=2.2.0", path = "../plugin_resolve" }
+farmfe_docs_config = { path = "../../rust-ecosystem/docs-config" }
+farmfe_docs_plan = { path = "../../rust-ecosystem/docs-plan" }
+farmfe_docs_snapshot = { path = "../../rust-ecosystem/docs-snapshot" }
 regex = "1"
 libloading = "0.8.6"
 eframe = { version = "0.24.1", default-features = false, features = [

@@ -1,15 +1,16 @@
-use farmfe_docs_snapshot::{hash, observe, read_json, Receipt, ResourceRecord, Target};
+use farmfe_docs_snapshot::{Receipt, ResourceRecord, Target, hash, observe, read_json};
 use std::{fs, path::Path};
 
 fn receipt(root: &Path) -> Receipt {
   let source = root.join("source.js");
   fs::write(&source, b"hello").unwrap();
   Receipt {
-    schema_version: 1,
+    schema_version: 2,
     plan_snapshot_id: "plan".into(),
     target: Target::Browser,
     root: root.to_str().unwrap().into(),
     sources: vec![observe(&source, &[]).unwrap()],
+    input_observations: vec![],
     resources: vec![ResourceRecord {
       name: "entry.js".into(),
       resource_type: "js".into(),
@@ -26,7 +27,13 @@ fn private_receipt_json_rejects_malformed_missing_and_unknown_fields() {
   let path = root.path().join("receipt.json");
   fs::write(&path, b"{").unwrap();
   assert!(read_json::<Receipt>(&path).is_err());
-  for field in ["schemaVersion", "sources", "resources", "target"] {
+  for field in [
+    "schemaVersion",
+    "sources",
+    "resources",
+    "target",
+    "inputObservations",
+  ] {
     let mut value = valid.clone();
     value.as_object_mut().unwrap().remove(field);
     fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
@@ -60,19 +67,25 @@ fn private_receipt_rejects_empty_sets_and_duplicate_resources() {
     .unwrap();
   let mut value = valid.clone();
   value.sources.clear();
-  assert!(value
-    .validate("plan", Target::Browser, &valid.root)
-    .is_err());
+  assert!(
+    value
+      .validate("plan", Target::Browser, &valid.root)
+      .is_err()
+  );
   let mut value = valid.clone();
   value.resources.clear();
-  assert!(value
-    .validate("plan", Target::Browser, &valid.root)
-    .is_err());
+  assert!(
+    value
+      .validate("plan", Target::Browser, &valid.root)
+      .is_err()
+  );
   let mut value = valid.clone();
   value.resources.push(value.resources[0].clone());
-  assert!(value
-    .validate("plan", Target::Browser, &valid.root)
-    .is_err());
+  assert!(
+    value
+      .validate("plan", Target::Browser, &valid.root)
+      .is_err()
+  );
 }
 
 #[cfg(any(windows, unix))]

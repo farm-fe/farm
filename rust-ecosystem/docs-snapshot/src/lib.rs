@@ -1,6 +1,8 @@
 //! Private source and output receipts for native Farm Docs builds.
+pub mod observations;
 mod source;
 mod verify;
+pub use observations::{validate_observation_scope, verify_observations};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub use source::{SourceRecord, observe, verify_source};
@@ -45,11 +47,12 @@ pub struct Receipt {
   pub root: String,
   pub sources: Vec<SourceRecord>,
   pub resources: Vec<ResourceRecord>,
+  pub input_observations: Vec<farmfe_core::context::source_observation::InputObservation>,
 }
 
 impl Receipt {
   pub fn validate(&self, snapshot: &str, target: Target, root: &str) -> Result<(), String> {
-    if self.schema_version != 1
+    if self.schema_version != 2
       || self.plan_snapshot_id != snapshot
       || self.target != target
       || self.root != root
@@ -59,6 +62,7 @@ impl Receipt {
     if self.sources.is_empty() || self.resources.is_empty() {
       return Err(error("receipt is missing sources or resources"));
     }
+    verify_observations(&self.input_observations)?;
     let mut paths = BTreeSet::new();
     for source in &self.sources {
       if !paths.insert(&source.path) {

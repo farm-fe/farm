@@ -7,6 +7,7 @@ mod brand_home;
 mod content_cache;
 mod link_exceptions;
 mod links;
+pub mod machine_readable;
 mod metadata;
 mod not_found;
 mod prepare;
@@ -14,6 +15,7 @@ pub mod resource_owner;
 mod routes;
 mod script_pages;
 mod seo;
+pub mod shared;
 mod sidebars;
 mod static_files;
 pub mod syndication;
@@ -28,6 +30,46 @@ pub use types::*;
 
 /// Private Rust context record, never a browser resource or public configuration.
 pub const DEVELOPMENT_PLAN_CONTEXT_KEY: &str = "farm-docs:development-plan:v2";
+
+/// Opt-in phase evidence. No paths or content are included in these diagnostics.
+pub mod verify_profile {
+  use std::{
+    sync::atomic::{AtomicU64, Ordering},
+    time::Instant,
+  };
+  static NEXT: AtomicU64 = AtomicU64::new(1);
+  pub struct Timer {
+    previous: Option<Instant>,
+    component: &'static str,
+    id: u64,
+  }
+  impl Timer {
+    pub fn new(component: &'static str) -> Self {
+      let enabled = std::env::var("FARM_DOCS_VERIFY_PROFILE").is_ok_and(|value| value == "1");
+      Self {
+        previous: enabled.then(Instant::now),
+        component,
+        id: if enabled {
+          NEXT.fetch_add(1, Ordering::Relaxed)
+        } else {
+          0
+        },
+      }
+    }
+    pub fn checkpoint(&mut self, stage: &'static str, count: usize) {
+      let Some(previous) = self.previous.as_mut() else {
+        return;
+      };
+      let now = Instant::now();
+      let milliseconds = now.duration_since(*previous).as_secs_f64() * 1000.0;
+      *previous = now;
+      eprintln!(
+        "[FarmDocsVerifyProfile] {{\"component\":\"{}\",\"id\":{},\"stage\":\"{}\",\"count\":{},\"milliseconds\":{:.3}}}",
+        self.component, self.id, stage, count, milliseconds
+      );
+    }
+  }
+}
 
 /// Resolve a root URL against the immutable, Rust-scanned static namespace.
 pub fn static_resource_url(
@@ -59,33 +101,81 @@ pub(crate) fn hash(bytes: &[u8]) -> String {
   format!("{:x}", Sha256::digest(bytes))
 }
 pub(crate) fn identity(plan: &DocPlan) -> Result<String, String> {
-  let mut data = plan.clone();
-  data.snapshot_id.clear();
-  serde_json::to_vec(&data)
-    .map(|bytes| hash(&bytes))
-    .map_err(|error| error.to_string())
+  use serde::ser::{Serialize, SerializeStruct, Serializer};
+  struct Identity<'a>(&'a DocPlan);
+  impl Serialize for Identity<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+      let p = self.0;
+      let mut state = serializer.serialize_struct("DocPlan", 19)?;
+      state.serialize_field("schemaVersion", &p.schema_version)?;
+      state.serialize_field("snapshotId", "")?;
+      state.serialize_field("ssg", &p.ssg)?;
+      state.serialize_field("site", &p.site)?;
+      state.serialize_field("seo", &p.seo)?;
+      state.serialize_field("notFound", &p.not_found)?;
+      state.serialize_field("routes", &p.routes)?;
+      state.serialize_field("modules", &p.modules)?;
+      state.serialize_field("styles", &p.styles)?;
+      state.serialize_field("themeComponents", &p.theme_components)?;
+      state.serialize_field("diagnostics", &p.diagnostics)?;
+      state.serialize_field("publicDiagnostics", &p.public_diagnostics)?;
+      state.serialize_field("sidebars", &p.sidebars)?;
+      state.serialize_field("inputs", &p.inputs)?;
+      state.serialize_field("contentInputs", &p.content_inputs)?;
+      state.serialize_field("assets", &p.assets)?;
+      state.serialize_field("staticFiles", &p.static_files)?;
+      state.serialize_field("staticInputs", &p.static_inputs)?;
+      state.serialize_field("blogIndexes", &p.blog_indexes)?;
+      state.end()
+    }
+  }
+  struct DigestWriter(Sha256);
+  impl std::io::Write for DigestWriter {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+      self.0.update(bytes);
+      Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+      Ok(())
+    }
+  }
+  let mut digest = DigestWriter(Sha256::new());
+  {
+    use std::io::Write;
+    let mut writer = std::io::BufWriter::with_capacity(65536, &mut digest);
+    serde_json::to_writer(&mut writer, &Identity(plan)).map_err(|error| error.to_string())?;
+    writer.flush().map_err(|error| error.to_string())?;
+  }
+  Ok(format!("{:x}", digest.0.finalize()))
 }
 pub fn verify(plan: &DocPlan) -> Result<(), String> {
+  let mut profile = verify_profile::Timer::new("plan.verify");
   syndication::validate(plan)?;
   plan
     .ssg
     .validate()
     .map_err(|error| format!("[DOCS_PLAN_SSG] {error}"))?;
+  profile.checkpoint("syndication_ssg", plan.routes.len());
   if plan.schema_version != 2 || plan.snapshot_id != identity(plan)? {
     return Err("[DOCS_PLAN_HASH] invalid schema or prepared plan digest".into());
   }
+  profile.checkpoint("identity", plan.modules.len());
   if plan.seo != seo::heads(plan)? {
     return Err("[DOCS_PLAN_SEO] SEO registry differs from verified page metadata".into());
   }
+  profile.checkpoint("seo_heads", plan.seo.len());
   if plan.not_found != not_found::plan(plan)? {
     return Err("[DOCS_PLAN_NOT_FOUND] NotFound metadata differs from the Rust output plan".into());
   }
+  profile.checkpoint("not_found", plan.not_found.len());
   let mut outputs: Vec<String> = plan
     .routes
     .iter()
     .map(|route| route.output_path.clone())
     .collect();
   outputs.extend(static_files::reserved(&plan.site));
+  outputs.extend(machine_readable::markdown_paths(plan)?);
+  machine_readable::verify(plan)?;
   outputs.extend(
     plan
       .static_files
@@ -103,6 +193,7 @@ pub fn verify(plan: &DocPlan) -> Result<(), String> {
   if plan.routes.is_empty() || plan.routes.len() != plan.modules.len() {
     return Err("[DOCS_PLAN_SHAPE] routes and compiled modules must correspond".into());
   }
+  profile.checkpoint("ai_output_namespace_shape", outputs.len());
   for directory in &plan.content_inputs {
     let (entries_hash, _) =
       prepare::content_listing(std::path::Path::new(&directory.path), directory.scripts)
@@ -114,6 +205,7 @@ pub fn verify(plan: &DocPlan) -> Result<(), String> {
       ));
     }
   }
+  profile.checkpoint("content_listings", plan.content_inputs.len());
   for (route, module) in plan.routes.iter().zip(&plan.modules) {
     if route.page.key != module.key {
       return Err("[DOCS_PLAN_SHAPE] module identity differs from page".into());
@@ -142,6 +234,7 @@ pub fn verify(plan: &DocPlan) -> Result<(), String> {
       return Err(format!("[DOCS_SNAPSHOT_CHANGED] {}", module.source_path));
     }
   }
+  profile.checkpoint("module_source_hashes", plan.modules.len());
   for directory in &plan.static_inputs {
     let (entries_hash, _) = static_files::listing(&directory.path)?;
     if entries_hash != directory.entries_hash {
@@ -151,6 +244,7 @@ pub fn verify(plan: &DocPlan) -> Result<(), String> {
       ));
     }
   }
+  profile.checkpoint("static_listings", plan.static_inputs.len());
   for input in &plan.inputs {
     let bytes = std::fs::read(&input.path)
       .map_err(|error| format!("[DOCS_PLAN_SOURCE] {}: {error}", input.path))?;
@@ -158,6 +252,7 @@ pub fn verify(plan: &DocPlan) -> Result<(), String> {
       return Err(format!("[DOCS_SNAPSHOT_CHANGED] {}", input.path));
     }
   }
+  profile.checkpoint("input_hashes", plan.inputs.len());
   for asset in &plan.assets {
     routes::validate_output(&asset.output_path, &asset.source_path)?;
     if !asset.is_static
@@ -198,6 +293,10 @@ pub fn verify(plan: &DocPlan) -> Result<(), String> {
       return Err("[DOCS_STATIC_PLAN] invalid static source snapshot".into());
     }
   }
+  profile.checkpoint(
+    "asset_static_shape",
+    plan.assets.len() + plan.static_files.len(),
+  );
   Ok(())
 }
 pub fn asset_url(site: &farmfe_docs_config::PublicSiteConfig, asset: &PreparedAsset) -> String {

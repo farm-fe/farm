@@ -2,6 +2,7 @@
 /* eslint-disable */
 export declare class Compiler {
   constructor(config: object)
+  inputObservations(): string
   traceDependencies(): object
   traceModuleGraph(): object
   /** async compile, return promise */
@@ -35,6 +36,21 @@ export declare class Compiler {
 }
 export type JsCompiler = Compiler
 
+/** A process/Env-local native snapshot. No pointer or large content is returned to JS. */
+export declare class DocsSnapshot {
+  constructor(root: string, site: string)
+  /** Run the original Rust prepare on an owned worker, keeping Node's loop free. */
+  prepare(planPath: string): Promise<void>
+  /** Return only the fields needed by workflow/SSR, not modules or private inputs. */
+  metadata(): string
+  /** Compile one target with deterministic native ownership, independent of GC. */
+  compileTarget(config: object): Promise<DocsTargetResult>
+  /** Delegate to the same verifier as the snapshot plugin; no seal checks are omitted. */
+  verify(verification: string): Promise<void>
+  /** Release this handle. Existing compiler providers retain their own safe leases. */
+  close(): void
+}
+
 export declare class OutputDirectoryLock {
   constructor(path: string)
   release(): void
@@ -45,6 +61,11 @@ export declare class Resolver {
   resolve(source: string, baseDir: string, dynamicExtensions?: Array<string> | undefined | null): string
 }
 export type JsResolver = Resolver
+
+export interface DocsTargetResult {
+  resources: Record<string, Buffer>
+  inputObservations: string
+}
 
 export interface JsApiMetadata {
   /** Scope of the cache, used different name, same scope will hit the same cache */

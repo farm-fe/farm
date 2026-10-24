@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
 farmfe_docs_config = { path = "../docs-config" }
 farmfe_docs_plan = { path = "../docs-plan" }
 serde = { version = "1", features = ["derive"] }

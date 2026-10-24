@@ -37,7 +37,18 @@ pub struct Compiler {
 
 impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
-  pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+  pub fn new(config: Config, plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    Self::new_with_resources(config, plugin_adapters, None)
+  }
+
+  /// Construct an ordinary compiler using immutable resources owned by its host.
+  pub fn new_with_resources(
+    config: Config,
+    mut plugin_adapters: Vec<Arc<dyn Plugin>>,
+    shared_resources: Option<
+      Arc<dyn farmfe_core::context::shared_resources::SharedResourceProvider>,
+    >,
+  ) -> Result<Self> {
     let render_plugin: Arc<dyn Plugin> = if config.output.target_env.is_library() {
       Arc::new(farmfe_plugin_library::FarmPluginLibrary::new(&config)) as _
     } else {
@@ -119,17 +130,27 @@ impl Compiler {
 
     plugins.append(&mut plugin_adapters);
 
-    Self::new_without_internal_plugins(config, plugins)
+    Self::new_without_internal_plugins_with_resources(config, plugins, shared_resources)
   }
 
   pub fn new_without_internal_plugins(
     config: Config,
+    plugins: Vec<Arc<dyn Plugin>>,
+  ) -> Result<Self> {
+    Self::new_without_internal_plugins_with_resources(config, plugins, None)
+  }
+
+  fn new_without_internal_plugins_with_resources(
+    config: Config,
     mut plugins: Vec<Arc<dyn Plugin>>,
+    shared_resources: Option<
+      Arc<dyn farmfe_core::context::shared_resources::SharedResourceProvider>,
+    >,
   ) -> Result<Self> {
     // sort plugins by priority to make larger priority plugin run first
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
-    let mut context = CompilationContext::new(config, plugins)?;
+    let mut context = CompilationContext::new_with_resources(config, plugins, shared_resources)?;
     context.plugin_driver.config(&mut context.config)?;
 
     Ok(Self {
@@ -162,6 +183,7 @@ impl Compiler {
 
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
+    self.context.source_observations.begin_generation();
     self.context.stats.set_start_time();
     if self.context.config.persistent_cache.enabled() {
       self
@@ -198,6 +220,12 @@ impl Compiler {
         .plugin_driver
         .finish(&self.context.stats, &self.context)?;
     }
+
+    self
+      .context
+      .source_observations
+      .seal()
+      .map_err(|error| farmfe_core::error::CompilationError::GenericError(error.to_string()))?;
 
     if self.context.config.persistent_cache.enabled() {
       self

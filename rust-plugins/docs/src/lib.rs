@@ -247,9 +247,8 @@ impl Plugin for FarmPluginDocs {
     }
     if let Some(path) = &options.plan_path {
       let file = PathBuf::from(&context.config.root).join(path);
-      let bytes = fs::read(&file).map_err(|error| diagnostic("DOCS_PLAN_READ", error))?;
-      let plan: DocPlan =
-        serde_json::from_slice(&bytes).map_err(|error| diagnostic("DOCS_PLAN_PARSE", error))?;
+      let plan = farmfe_docs_plan::shared::read_plan(&file, context.shared_resources.as_deref())
+        .map_err(|error| diagnostic("DOCS_PLAN_READ", error))?;
       verify(&plan).map_err(CompilationError::GenericError)?;
       *self
         .plan
@@ -671,7 +670,7 @@ impl Plugin for FarmPluginDocs {
         })
         .ok_or_else(|| diagnostic("DOCS_PLAN_MODULE", key))?;
       return Ok(Some(PluginLoadHookResult {
-        content: module.code.clone(),
+        content: module.code.to_string(),
         module_type: match module.language {
           farmfe_docs_plan::ContentLanguage::Markdown | farmfe_docs_plan::ContentLanguage::Jsx => {
             ModuleType::Jsx
@@ -679,7 +678,7 @@ impl Plugin for FarmPluginDocs {
           farmfe_docs_plan::ContentLanguage::Ts => ModuleType::Ts,
           farmfe_docs_plan::ContentLanguage::Tsx => ModuleType::Tsx,
         },
-        source_map: module.source_map.clone(),
+        source_map: module.source_map.as_deref().map(str::to_owned),
       }));
     }
     if param.resolved_path == SITE_VIRTUAL_ID {
@@ -855,7 +854,14 @@ impl Plugin for FarmPluginDocs {
             .read()
             .map_err(|error| diagnostic("DOCS_STATE", error))?;
           if let Some(plan) = guard.as_ref() {
+            let machine_resources = if !context.config.output.target_env.is_node() {
+              farmfe_docs_plan::machine_readable::resources(plan)
+                .map_err(CompilationError::GenericError)?
+            } else {
+              Default::default()
+            };
             let mut names: Vec<_> = param.resources_map.keys().cloned().collect();
+            names.extend(machine_resources.keys().cloned());
             names.extend(
               [
                 "docs-plan.json",
@@ -932,6 +938,32 @@ impl Plugin for FarmPluginDocs {
                     asset.output_path.rsplit('.').next().unwrap_or("bin").into(),
                   ),
                   origin: ResourceOrigin::Module(origin),
+                  should_transform_output_filename: false,
+                  ..Default::default()
+                },
+              );
+            }
+            for (name, bytes) in machine_resources {
+              param.resources_map.insert(
+                name.clone(),
+                Resource {
+                  name: name.clone(),
+                  bytes,
+                  resource_type: ResourceType::Custom(
+                    if name.ends_with(".json") {
+                      "json"
+                    } else if name.ends_with(".md") {
+                      "md"
+                    } else {
+                      "txt"
+                    }
+                    .into(),
+                  ),
+                  origin: ResourceOrigin::Module(ModuleId::new(
+                    APP_VIRTUAL_ID,
+                    "",
+                    &context.config.root,
+                  )),
                   should_transform_output_filename: false,
                   ..Default::default()
                 },
@@ -1018,7 +1050,7 @@ impl Plugin for FarmPluginDocs {
             None => (self.snapshot()?.snapshot_id, Vec::new(), Vec::new()),
           }
         };
-        let bytes = serde_json::to_vec(&json!({
+        let mut manifest = json!({
           "schemaVersion": 1,
           "snapshotId": snapshot_id,
           "resources": resources,
@@ -1026,8 +1058,22 @@ impl Plugin for FarmPluginDocs {
           "pageResources": page_resources,
           "notFound": not_found,
           "routePaths": route_paths,
-        }))
-        .map_err(|error| diagnostic("DOCS_SERIALIZE", error))?;
+        });
+        if !context.config.output.target_env.is_node() {
+          let guard = self
+            .plan
+            .read()
+            .map_err(|error| diagnostic("DOCS_STATE", error))?;
+          if let Some(plan) = guard.as_ref() {
+            if let Some(summary) = farmfe_docs_plan::machine_readable::summary(plan)
+              .map_err(CompilationError::GenericError)?
+            {
+              manifest["machineReadable"] = summary;
+            }
+          }
+        }
+        let bytes =
+          serde_json::to_vec(&manifest).map_err(|error| diagnostic("DOCS_SERIALIZE", error))?;
         param.resources_map.insert(
           "docs-manifest.json".to_string(),
           Resource {
@@ -1066,6 +1112,8 @@ impl Plugin for FarmPluginDocs {
   }
 }
 
+#[cfg(test)]
+mod preflight_fixture;
 #[cfg(test)]
 mod preflight_tests;
 
