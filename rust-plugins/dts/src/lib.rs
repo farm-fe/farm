@@ -1,6 +1,6 @@
 #![deny(clippy::all)]
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config, ResolveConfig},
+  config::{Config, ResolveConfig, config_regex::ConfigRegex},
   context::{CompilationContext, EmitFileParams},
   error::CompilationError,
   plugin::{Plugin, PluginProcessModuleHookParam, ResolveKind},
@@ -81,6 +81,8 @@ impl Plugin for FarmPluginDts {
 
     let mut module: EcmaAstModule = meta.ast.clone();
 
+    emit_type_dependencies(&module, &param.module_id, &self.options, context)?;
+
     module.visit_mut_with(&mut ImportPathRewriter {
       config: (*context.config).clone(),
       resolver: Resolver::new(),
@@ -133,6 +135,119 @@ impl Plugin for FarmPluginDts {
 }
 
 struct ImportVariableRemover;
+
+fn emit_type_dependencies(
+  entry: &EcmaAstModule,
+  owner: &farmfe_core::module::ModuleId,
+  options: &FarmPluginDtsOptions,
+  context: &Arc<CompilationContext>,
+) -> farmfe_core::error::Result<()> {
+  use farmfe_core::{
+    module::ModuleId,
+    swc_common::{GLOBALS, Globals},
+    swc_ecma_parser::{Syntax, TsSyntax},
+  };
+  use farmfe_toolkit::script::{parse_module, swc_try_with::resolve_module_mark};
+  let entry_path = PathBuf::from(owner.resolved_path(&context.config.root));
+  let mut visited =
+    std::collections::HashSet::from([entry_path.canonicalize().unwrap_or(entry_path)]);
+  let mut queue = vec![(owner.clone(), entry.clone())];
+  let resolver = Resolver::new();
+  while let Some((importer, module)) = queue.pop() {
+    for item in &module.body {
+      let source = match item {
+        ModuleItem::ModuleDecl(ModuleDecl::Import(import)) => Some(&import.src),
+        ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(export)) => export.src.as_ref(),
+        ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export)) => Some(&export.src),
+        _ => None,
+      };
+      let Some(source) = source.and_then(|source| source.value.as_str()) else {
+        continue;
+      };
+      let base = PathBuf::from(importer.resolved_path(&context.config.root));
+      let Some(base) = base.parent() else { continue };
+      let resolved = resolver.resolve(
+        source,
+        base.to_path_buf(),
+        &ResolveKind::Import,
+        &ResolveOptions::default(),
+        context,
+      );
+      let path = resolved
+        .map(|resolved| PathBuf::from(resolved.resolved_path))
+        .or_else(|| {
+          // NodeNext source imports use the eventual .js suffix for TypeScript.
+          if !source.starts_with('.') {
+            return None;
+          }
+          let candidate = base.join(source);
+          [
+            candidate.with_extension("ts"),
+            candidate.with_extension("tsx"),
+          ]
+          .into_iter()
+          .find(|path| path.is_file())
+        });
+      let Some(path) = path else { continue };
+      if !matches!(
+        path.extension().and_then(|ext| ext.to_str()),
+        Some("ts" | "tsx")
+      ) {
+        continue;
+      }
+      let path = path.to_string_lossy().to_string();
+      let id = ModuleId::new(&path, "", &context.config.root);
+      if !PathFilter::new(&options.include, &options.exclude).execute(id.relative_path())
+        || id.relative_path().starts_with("../")
+      {
+        continue;
+      }
+      let identity = std::fs::canonicalize(&path).map_err(|error| {
+        CompilationError::GenericError(format!("DTS dependency identity {path}: {error}"))
+      })?;
+      if !visited.insert(identity) {
+        continue;
+      }
+      let content = std::fs::read_to_string(&path).map_err(|error| {
+        CompilationError::GenericError(format!("DTS dependency {path}: {error}"))
+      })?;
+      let mut ast = parse_module(
+        &id,
+        Arc::new(content),
+        Syntax::Typescript(TsSyntax {
+          tsx: path.ends_with(".tsx"),
+          ..Default::default()
+        }),
+        context.config.script.target,
+      )?
+      .ast;
+      queue.push((id.clone(), ast.clone()));
+      context.add_watch_files(owner.clone(), vec![id.clone()])?;
+      let globals = Globals::new();
+      let (unresolved_mark, _) = resolve_module_mark(&mut ast, true, &globals);
+      let filename = Arc::new(FileName::Real(path.into()));
+      let mut program = Program::Module(ast);
+      GLOBALS.set(&globals, || {
+        program.visit_mut_with(&mut ImportVariableRemover);
+        FastDts::new(filename, unresolved_mark, Default::default()).transform(&mut program);
+      });
+      let name = PathBuf::from(id.relative_path())
+        .with_extension("d.ts")
+        .to_string_lossy()
+        .replace('\\', "/");
+      context.emit_file(EmitFileParams {
+        resolved_path: owner.to_string(),
+        name,
+        content: to_code(&program.expect_module()).into_bytes(),
+        resource_type: ResourceType::Custom("d.ts".into()),
+      });
+    }
+  }
+  Ok(())
+}
+
+#[cfg(test)]
+mod tests;
 
 impl VisitMut for ImportVariableRemover {
   fn visit_mut_module_items(&mut self, items: &mut Vec<ModuleItem>) {
