@@ -64,7 +64,7 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
       - name: Check local source prerequisites and registry-only consumer rejection paths
-        run: node --test scripts/farm-docs-registry-consumer.test.mjs scripts/farm-docs-example-prerequisites.test.mjs scripts/farm-docs-main-deploy-gate.test.mjs scripts/farm-docs-vercel-build.test.mjs
+        run: node --test scripts/farm-docs-registry-consumer.test.mjs scripts/farm-docs-example-prerequisites.test.mjs scripts/farm-docs-main-deploy-gate.test.mjs scripts/farm-docs-vercel-build.test.mjs scripts/farm-docs-native-guard.test.mjs
       - name: Check platform manifest preparation without native compilation
         run: node --experimental-strip-types --test scripts/farm-docs-platform-preparation.test.mjs
       - name: Check distribution contracts and fixture chain without native compilation
@@ -100,6 +100,7 @@ jobs:
           cargo test -p farmfe_docs_plan --test blog_views -j 1
           cargo test -p farmfe_plugin_docs --lib -j 1
       - name: Record actual native loader paths and guard subsequent checks
+        id: native_guard
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
@@ -121,22 +122,36 @@ jobs:
           fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,binaries},null,2),{flag:'wx'});
           fs.appendFileSync(process.env.GITHUB_ENV,`CODEX_DOCS_NATIVE_BASELINE=${baseline}
           CODEX_DOCS_NATIVE_GUARD_DIR=${path.join(directory,'guards')}
-          NODE_OPTIONS=${process.env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(path.resolve('scripts/farm-docs-native-guard.mjs')).href}
           `);
+          const nodeOptions=`${process.env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(path.resolve('scripts/farm-docs-native-guard.mjs')).href}`;
+          if(/[\r\n]/.test(nodeOptions))throw Error('Native guard options must be a single line');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`node_options=${nodeOptions}\n`);
           NODE
       - name: Build minimal and multilingual consumers
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
         run: |
           pnpm --dir examples/docs-minimal run build
           pnpm --dir examples/docs-features run build
       - name: Verify third-party notice sources before the website build
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
         run: node scripts/farm-docs-notices.test.mjs --source-only
       - name: Build the real website with its independent Farm configuration
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
         run: pnpm --dir website run build:farm
       - name: Verify published third-party notices
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
         run: node scripts/farm-docs-notices.test.mjs
       - name: Install Chromium
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
         run: pnpm exec playwright install --with-deps chromium
       - name: Exercise public theme, runtime, and full blog build/dev behavior
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
         run: >-
           node scripts/farm-docs-run-guarded.mjs
           scripts/farm-docs-full-list-theme.test.mjs
