@@ -45,7 +45,11 @@ export function resolveDocsCodeTheme(
   const code: Fields = {};
   for (const key of ['light', 'dark'])
     if (legacy[key] !== undefined) code[key] = legacy[key];
-  Object.assign(code, defined(current));
+  // Preserve every own JSON field for the native validator, including __proto__.
+  Object.defineProperties(
+    code,
+    Object.getOwnPropertyDescriptors(defined(current))
+  );
   const overrides = tokens(legacy.tokens, current.tokens);
   if (overrides !== undefined) code.tokens = overrides;
   // Preserve unknown palette fields for the authoritative Rust parser to reject.

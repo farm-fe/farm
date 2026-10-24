@@ -58,3 +58,12 @@ test('invalid palette objects are rejected, and unknown native fields are not si
   assert.throws(() => resolve({ ...base, code: { tokens: { dark: [] } } }), /must be an object/);
   assert.equal(resolve({ ...base, code: { typo: true } }).site.code.typo, true);
 });
+
+test('JSON prototype-named fields remain own fields for native rejection', () => {
+  const input = JSON.parse('{"__proto__":{"light":"farm-light"}}');
+  const output = resolve({ ...base, code: input });
+  assert.equal(Object.getPrototypeOf(output.site.code), Object.prototype);
+  assert.equal(Object.hasOwn(output.site.code, '__proto__'), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(output.site.code)), input);
+  assert.equal(output.site.code.light, undefined);
+});
