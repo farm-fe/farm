@@ -2879,6 +2879,7 @@ dependencies = [
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
  "fervid",
+ "fervid_parser",
  "fxhash",
  "regex",
  "serde",
