@@ -844,6 +844,7 @@
     "ychannelselector",
     "zoomandpan"
   ],
+  "ignoreRegExpList": ["/\\\\u\\{[0-9a-fA-F]+\\}/g"],
   "ignorePaths": [
     // Preserve upstream vendor sources and original legal text.
     "rust-ecosystem/grass/src/**",
