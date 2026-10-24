@@ -1,5 +1,5 @@
 use super::CompilerParams;
-use fervid::{compile, CompileOptions, CompileResult};
+use fervid::{CompileOptions, CompileResult, compile};
 
 pub fn vue_compiler(param: CompilerParams) -> String {
   let CompilerParams { svg, svg_name, .. } = param;

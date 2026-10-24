@@ -1,7 +1,7 @@
-use bincode::{config, Decode, Encode};
+use bincode::{Decode, Encode, config};
 use farmfe_utils::hash::sha256;
 use loading::Loading;
-use reqwest::{header::CACHE_CONTROL, Error, Response};
+use reqwest::{Error, Response, header::CACHE_CONTROL};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
