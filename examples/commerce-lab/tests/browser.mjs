@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright-chromium';
 import { monitorBrowserHealth } from './browser-health.mjs';
+import fs from 'node:fs/promises';
 
 const baseURL = process.env.COMMERCE_URL ?? 'http://localhost:4310';
 const browser = await chromium.launch({ headless: true });
@@ -44,7 +45,11 @@ try {
   await page.getByLabel('Campaign name').fill('Weekend launch');
   await page.getByLabel('Discount percent').fill('15');
   await page.getByRole('button', { name: 'Publish campaign' }).click();
-  await page.getByText('Weekend launch', { exact: true }).waitFor();
+  await page.getByRole('alert').getByText(/Invalid campaign product/).waitFor();
+  await page.getByLabel('Search campaign products', { exact: true }).fill('NEW-100');
+  await page.getByLabel('Campaign product NEW-100', { exact: true }).check();
+  await page.getByRole('button', { name: 'Publish campaign' }).click();
+  await page.locator('article.campaign').getByRole('heading', { name: 'Weekend launch', exact: true }).waitFor();
   await page.getByRole('link', { name: 'Orders', exact: true }).click();
   await page.getByRole('button', { name: 'Ship', exact: true }).first().click();
   await page.getByRole('link', { name: 'Help center', exact: true }).click();
@@ -69,6 +74,7 @@ try {
         'publish-product',
         'tenant-isolation',
         'campaign',
+        'campaign-selection-validation',
         'order-transition',
         'mdx',
         'svg',
@@ -76,6 +82,14 @@ try {
       ],
     }),
   );
+} catch (error) {
+  const prefix = `reports/browser-smoke-failure-${Date.now()}-${process.pid}`;
+  const failure = { error: error.stack, url: page.url(), browserHealth: health.evidence, body: await page.locator('body').innerText({ timeout: 3000 }).catch(() => '[body unavailable]') };
+  await fs.mkdir('reports', { recursive: true });
+  await fs.writeFile(`${prefix}.json`, JSON.stringify(failure, null, 2));
+  await page.screenshot({ path: `${prefix}.png`, fullPage: true }).catch(() => {});
+  console.error(JSON.stringify({ failure: `${prefix}.json`, screenshot: `${prefix}.png`, error: error.message }));
+  throw error;
 } finally {
   health.stop();
   await browser.close();

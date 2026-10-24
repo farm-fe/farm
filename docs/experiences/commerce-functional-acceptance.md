@@ -42,6 +42,13 @@ Vue SFC/JSX changes require freshly built matching plugins. Unchanged compiler
 inputs can reuse verified compatible v2 artifacts only when their provenance is
 known. Package version equality alone does not establish compatibility.
 
+An explicit `COMMERCE_BROWSER_GROUPS=js` run with the default JS config records
+Core plus replace-dirname, React and Worker, the native plugins actually used
+by that isolated pipeline. Its receipt names this scope. Default full runs,
+Rust/mixed groups, config overrides and independent npm projects retain the
+complete 23-artifact requirement. A scoped JS pass does not validate the other
+pipelines, Vue or SDK consumers; required artifacts must never be substituted.
+
 ## Sequential functional matrix
 
 Only start builds in the coordinated native window. Maintain the local disk

@@ -12,6 +12,7 @@ import { monitorBrowserHealth } from './browser-health.mjs';
 
 const scale = process.env.COMMERCE_SCALE ?? 'baseline';
 const options = browserOptions(process.env);
+const nativeScope = { groups: options.groups, configOverride: process.env.COMMERCE_CONFIG_OVERRIDE, npmProject: process.env.COMMERCE_NPM_PROJECT };
 const categoryCount = scaleProfile(scale).categories;
 assert.ok(categoryCount, 'Invalid extension scale');
 const report = { kind: 'orders-virtual-list', scale, cacheId: process.env.COMMERCE_CACHE_ID ?? 'default', buildEntrypoint: process.env.COMMERCE_NPM_CLI ? 'npm run build' : 'node scripts/run.mjs build', success: false, groups: [] };
@@ -21,7 +22,7 @@ report.npmProject = process.env.COMMERCE_NPM_PROJECT ?? null;
 const browser = await chromium.launch({ headless: true });
 try {
   report.runnerSha256 = createHash('sha256').update(await fs.readFile(new URL(import.meta.url))).digest('hex');
-  report.nativeBefore = await captureNativeProvenance();
+  report.nativeBefore = await captureNativeProvenance(nativeScope);
   report.sourceBefore = await captureSourceProvenance();
   for (const group of options.groups) {
     const env = { ...process.env, COMMERCE_GROUP: group, COMMERCE_PORT: '4352' };
@@ -755,7 +756,7 @@ try {
       }
     }
   }
-  report.nativeAfter = await captureNativeProvenance();
+  report.nativeAfter = await captureNativeProvenance(nativeScope);
   report.sourceAfter = await captureSourceProvenance();
   assert.deepEqual(report.nativeAfter, report.nativeBefore);
   assert.deepEqual(report.sourceAfter, report.sourceBefore);
