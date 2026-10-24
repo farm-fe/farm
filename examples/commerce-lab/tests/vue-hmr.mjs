@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { chromium } from 'playwright-chromium';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const file = 'apps/vue-lab/Inventory.vue';
 const original = await fs.readFile(file, 'utf8');
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
+const health = monitorBrowserHealth(page);
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 const report = { kind: 'vue-hmr-correctness', group: process.env.COMMERCE_GROUP ?? 'js', success: false, cases: [] };
@@ -36,12 +38,15 @@ try {
     }
   }
   assert.deepEqual(errors, []);
+  health.assertHealthy();
   report.success = true;
 } catch (error) {
   report.error = error.message;
   throw error;
 } finally {
   await fs.writeFile(file, original);
+  report.browserHealth = health.evidence;
+  health.stop();
   await fs.mkdir('reports', { recursive: true });
   await fs.writeFile(`reports/vue-hmr-${report.group}-${Date.now()}.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report));

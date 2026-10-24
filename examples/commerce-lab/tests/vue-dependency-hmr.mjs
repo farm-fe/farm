@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { chromium } from 'playwright-chromium';
+import { monitorBrowserHealth } from './browser-health.mjs';
 
 const file = 'packages/domain/index.mjs';
 const original = await fs.readFile(file, 'utf8');
@@ -8,6 +9,7 @@ const anchor = 'stock: changes.stock ?? product.stock,';
 assert.equal(original.split(anchor).length, 2, 'unique external business edit');
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
+const health = monitorBrowserHealth(page);
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 const variant = process.env.COMMERCE_VUE_VARIANT ?? 'sfc';
@@ -33,12 +35,15 @@ try {
   await page.getByRole('button', { name: 'Receive 25 units' }).click();
   await page.getByTestId('stock').filter({ hasText: /^42$/ }).waitFor();
   assert.deepEqual(errors, []);
+  health.assertHealthy();
   report.success = true;
 } catch (error) {
   report.error = error.message;
   throw error;
 } finally {
   await fs.writeFile(file, original);
+  report.browserHealth = health.evidence;
+  health.stop();
   await fs.mkdir('reports', { recursive: true });
   await fs.writeFile(`reports/vue-dependency-hmr-${variant}-${report.group}-${Date.now()}.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report));
