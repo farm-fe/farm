@@ -3,12 +3,10 @@
  * If you want to modify the binding, please modify the Rust code or manually wrap the generated code in index.js or index.d.ts.
  */
 import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
-// Load explicit native artifacts directly: NAPI CLI 3.0.4 drops this branch return.
-const binding = process.env.NAPI_RS_NATIVE_LIBRARY_PATH
-  ? require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH)
-  : require("./binding.cjs");
 import bindingPath from "./resolve-binding.cjs";
+// Use one resolved identity for loading, native plugins and cache fingerprints.
+const loadNative = createRequire(import.meta.url);
+const binding = loadNative(bindingPath);
 process.env.FARM_LIB_CORE_PATH = bindingPath;
 
 // Copied from https://github.com/vercel/next.js/pull/53889/files by @BrightWu
