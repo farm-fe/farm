@@ -22,6 +22,8 @@ pub use farmfe_ecosystem_tailwindcss::compiler::{
 
 /// Options passed to [`compile`] and [`compile_ast`].
 pub struct CompileOptions {
+  /// Optional controlled reader for bytes actually consumed by CSS imports.
+  pub read_file: Option<Box<FileReader>>,
   /// Base directory for resolving relative paths.
   pub base: String,
   /// Optional source file path (enables source-maps when present).
@@ -46,6 +48,7 @@ pub struct CompileOptions {
 impl Default for CompileOptions {
   fn default() -> Self {
     Self {
+      read_file: None,
       base: ".".to_string(),
       from: None,
       should_rewrite_urls: false,
@@ -153,11 +156,45 @@ pub fn load_stylesheet(
   on_dependency: &dyn Fn(&str),
   custom_css_resolver: Option<&CustomResolver>,
 ) -> io::Result<LoadedStylesheet> {
+  load_stylesheet_with_reader(id, base, on_dependency, custom_css_resolver, None)
+}
+
+pub type FileReader = dyn Fn(&Path) -> io::Result<Vec<u8>> + Send + Sync;
+
+#[derive(Debug)]
+struct ControlledReadError(io::Error);
+impl std::fmt::Display for ControlledReadError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.0)
+  }
+}
+impl std::error::Error for ControlledReadError {}
+
+fn load_stylesheet_with_reader(
+  id: &str,
+  base: &str,
+  on_dependency: &dyn Fn(&str),
+  custom_css_resolver: Option<&CustomResolver>,
+  read_file: Option<&FileReader>,
+) -> io::Result<LoadedStylesheet> {
   let resolved = resolve::resolve_css_id(id, base, custom_css_resolver)?;
 
   on_dependency(resolved.to_str().unwrap_or_default());
 
-  let content = std::fs::read_to_string(&resolved)?;
+  let bytes = match read_file {
+    Some(read) => {
+      read(&resolved).map_err(|error| io::Error::new(error.kind(), ControlledReadError(error)))?
+    }
+    None => std::fs::read(&resolved)?,
+  };
+  let content = String::from_utf8(bytes).map_err(|error| {
+    let error = io::Error::new(io::ErrorKind::InvalidData, error);
+    if read_file.is_some() {
+      io::Error::new(error.kind(), ControlledReadError(error))
+    } else {
+      error
+    }
+  })?;
   let sheet_base = resolved
     .parent()
     .unwrap_or(Path::new("."))
@@ -246,6 +283,7 @@ fn resolve_imports(
   should_rewrite_urls: bool,
   on_dependency: &dyn Fn(&str),
   custom_css_resolver: Option<&CustomResolver>,
+  read_file: Option<&FileReader>,
   seen: &mut HashMap<String, bool>,
 ) -> io::Result<(MappedCss, Features)> {
   let css = &input.text;
@@ -281,7 +319,13 @@ fn resolve_imports(
     }
 
     // Try to resolve and inline the import
-    match load_stylesheet(import_path, base, on_dependency, custom_css_resolver) {
+    match load_stylesheet_with_reader(
+      import_path,
+      base,
+      on_dependency,
+      custom_css_resolver,
+      read_file,
+    ) {
       Ok(sheet) => {
         let sheet_key = sheet.path.to_string_lossy().to_string();
         if seen.contains_key(&sheet_key) {
@@ -308,10 +352,18 @@ fn resolve_imports(
           should_rewrite_urls,
           on_dependency,
           custom_css_resolver,
+          read_file,
           seen,
         )?;
         features |= inner_features;
         result.append(&resolved_content);
+      }
+      Err(error)
+        if error
+          .get_ref()
+          .is_some_and(|inner| inner.is::<ControlledReadError>()) =>
+      {
+        return Err(error);
       }
       Err(_) => {
         // If we can't resolve, keep the original import
@@ -384,6 +436,7 @@ pub fn prepare_stylesheet(css: &str, options: &CompileOptions) -> io::Result<Pre
     options.should_rewrite_urls,
     &*options.on_dependency,
     options.custom_css_resolver.as_ref(),
+    options.read_file.as_deref(),
     &mut seen,
   )?;
 
@@ -410,6 +463,39 @@ pub fn compile_ast(ast: &[AstNode], options: CompileOptions) -> io::Result<Compi
     css.push_str(&node.to_css());
   }
   compile(&css, options)
+}
+
+#[cfg(test)]
+mod controlled_read_tests {
+  use super::*;
+
+  #[test]
+  fn controlled_import_failure_is_not_an_external_import_fallback() {
+    for kind in [io::ErrorKind::NotFound, io::ErrorKind::PermissionDenied] {
+      let options = CompileOptions {
+        custom_css_resolver: Some(Box::new(|_, _| Some("controlled.css".into()))),
+        read_file: Some(Box::new(move |_| {
+          Err(io::Error::new(kind, "controlled failure"))
+        })),
+        ..Default::default()
+      };
+      let error = prepare_stylesheet("@import './controlled.css';", &options)
+        .err()
+        .unwrap();
+      assert_eq!(error.kind(), kind);
+    }
+  }
+
+  #[test]
+  fn controlled_bytes_are_used_instead_of_a_second_filesystem_read() {
+    let options = CompileOptions {
+      custom_css_resolver: Some(Box::new(|_, _| Some("controlled.css".into()))),
+      read_file: Some(Box::new(|_| Ok(b".observed { color: red; }".to_vec()))),
+      ..Default::default()
+    };
+    let prepared = prepare_stylesheet("@import './controlled.css';", &options).unwrap();
+    assert!(prepared.content.contains(".observed"));
+  }
 }
 
 /// Load the design system from a CSS string.

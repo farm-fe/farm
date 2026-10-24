@@ -98,6 +98,8 @@ pub struct FarmPluginTailwindCSS {
   candidates: Arc<Mutex<HashSet<String>>>,
   /// Set of module IDs that contributed candidates.
   candidate_sources: Arc<Mutex<HashSet<String>>>,
+  /// Transform output provenance, never a claimed raw-file digest.
+  candidate_producers: Mutex<HashMap<String, (u64, String)>>,
   /// Original (untransformed) CSS content for CSS root files that need
   /// deferred TailwindCSS compilation. The actual compile-and-inline pass
   /// runs in `freeze_module`, by which time the candidate set is complete.
@@ -108,6 +110,22 @@ pub struct FarmPluginTailwindCSS {
 }
 
 impl FarmPluginTailwindCSS {
+  fn controlled_reader(
+    context: &Arc<CompilationContext>,
+    reader: String,
+  ) -> Box<compile::FileReader> {
+    let context = context.clone();
+    let generation = context.source_observations.generation();
+    Box::new(move |path| {
+      if context.source_observations.generation() != generation {
+        return Err(std::io::Error::other(
+          "stale Tailwind input reader generation",
+        ));
+      }
+      context.source_observations.read_file(&reader, path)
+    })
+  }
+
   pub fn new(_config: &Config, options: String) -> Self {
     let parsed = serde_json::from_str::<TailwindCSSOptions>(&options)
       .map_err(|error| error.to_string())
@@ -132,6 +150,7 @@ impl FarmPluginTailwindCSS {
       options_error,
       candidates: Arc::new(Mutex::new(HashSet::new())),
       candidate_sources: Arc::new(Mutex::new(HashSet::new())),
+      candidate_producers: Mutex::new(HashMap::new()),
       pending_css: Arc::new(Mutex::new(HashMap::new())),
       css_roots: Arc::new(Mutex::new(HashSet::new())),
       state_ready: AtomicBool::new(false),
@@ -280,6 +299,17 @@ impl Plugin for FarmPluginTailwindCSS {
           .lock()
           .unwrap()
           .insert(resolved_path.to_string());
+        self
+          .candidate_producers
+          .lock()
+          .map_err(plugin_cache_error)?
+          .insert(
+            resolved_path.to_string(),
+            (
+              context.source_observations.generation(),
+              param.module_id.clone(),
+            ),
+          );
       }
 
       // Pass through — we don't modify the source.
@@ -310,6 +340,7 @@ impl Plugin for FarmPluginTailwindCSS {
     let prepared = compile::prepare_stylesheet(
       &param.content,
       &CompileOptions {
+        read_file: Some(Self::controlled_reader(context, param.module_id.clone())),
         base,
         from: context
           .sourcemap_enabled(&param.module_id)
@@ -445,6 +476,10 @@ impl Plugin for FarmPluginTailwindCSS {
     let compiler_result = compile::compile(
       &original,
       CompileOptions {
+        read_file: Some(Self::controlled_reader(
+          context,
+          param.module.id.to_string(),
+        )),
         base,
         from: if sourcemap_enabled {
           Some(resolved_path.clone())
@@ -478,6 +513,22 @@ impl Plugin for FarmPluginTailwindCSS {
 
     let candidates: Vec<String> = self.candidates.lock().unwrap().iter().cloned().collect();
 
+    // Only current-generation transform results carry controlled provenance.
+    // Restored candidates without it retain the legacy discovery path.
+    for (generation, producer) in self
+      .candidate_producers
+      .lock()
+      .map_err(plugin_cache_error)?
+      .values()
+    {
+      if *generation == context.source_observations.generation() {
+        context
+          .source_observations
+          .consume_derived(*generation, &param.module.id.to_string(), producer)
+          .map_err(|error| compilation_error(&resolved_path, error))?;
+      }
+    }
+
     compiler.set_color_variables(self._options.color_variables);
     let css = compiler.build(&candidates);
 
@@ -510,10 +561,10 @@ impl Plugin for FarmPluginTailwindCSS {
       .cloned()
       .collect();
     for source in &sources {
-      let _ = context.add_watch_files(
+      context.add_watch_files(
         param.module.id.clone(),
         vec![ModuleId::new(source, "", &context.config.root)],
-      );
+      )?;
     }
 
     if let Some(map) = compiler.build_source_map() {
@@ -598,6 +649,10 @@ mod tests {
       )
       .unwrap();
     assert!(module.content.contains(".grid"));
+    assert_eq!(
+      context.source_observations.producers(&root_id.to_string()),
+      vec![ModuleId::new("before.tsx", "", &context.config.root).to_string()]
+    );
     let cache = before
       .write_plugin_cache(&context)
       .unwrap()
@@ -791,6 +846,7 @@ mod tests {
       options_error: None,
       candidates: Arc::new(Mutex::new(HashSet::new())),
       candidate_sources: Arc::new(Mutex::new(HashSet::new())),
+      candidate_producers: Mutex::new(HashMap::new()),
       pending_css: Arc::new(Mutex::new(HashMap::new())),
       css_roots: Arc::new(Mutex::new(HashSet::new())),
       state_ready: AtomicBool::new(false),
