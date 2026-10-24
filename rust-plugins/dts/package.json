@@ -39,7 +39,8 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-dts-darwin-arm64": "1.0.0",

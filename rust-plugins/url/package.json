@@ -51,7 +51,8 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
+    "options.d.ts",
+    "LICENSE"
   ],
   "optionalDependencies": {
     "@farmfe/plugin-url-darwin-arm64": "2.0.0",

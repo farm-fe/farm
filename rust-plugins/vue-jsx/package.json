@@ -37,6 +37,7 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
+    "options.d.ts",
+    "LICENSE"
   ]
 }

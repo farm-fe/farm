@@ -51,7 +51,8 @@
     "scripts",
     "options.d.ts",
     "THIRD_PARTY_NOTICES.md",
-    "licenses"
+    "licenses",
+    "LICENSE"
   ],
   "devDependencies": {
     "@farmfe/plugin-tools": "workspace:*"
