@@ -125,3 +125,7 @@ build
 # Native artifacts (built locally, do not commit)
 rust-plugins/**/*.node
 rust-plugins/**/npm/*/index.farm
+
+# Rebuildable Commerce extension fixtures and local acceptance outputs.
+/examples/commerce-lab/packages/extensions/
+/examples/commerce-lab/reports/

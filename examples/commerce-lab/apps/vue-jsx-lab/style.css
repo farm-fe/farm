@@ -1,0 +1,8 @@
+body { background: #faf8f1; color: #263a31; font-family: system-ui, sans-serif; }
+main { max-width: 1100px; margin: 32px auto; padding: 32px; }
+h1 { color: #194e3e; }
+.controls { display: flex; gap: 20px; padding: 20px 0; }
+label { display: flex; flex-direction: column; gap: 8px; }
+button, input, select { padding: 9px; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 14px 10px; border-bottom: 1px solid #d8ded5; text-align: left; }

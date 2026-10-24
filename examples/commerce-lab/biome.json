@@ -1,0 +1,11 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+  "root": false,
+  "files": {
+    "includes": ["**", "!**/node_modules/**", "!**/dist/**", "!**/.cache/**"]
+  },
+  "vcs": { "enabled": false },
+  "formatter": { "indentStyle": "space", "indentWidth": 2 },
+  "javascript": { "formatter": { "quoteStyle": "single" } },
+  "linter": { "enabled": false }
+}
