@@ -13,6 +13,12 @@ export type AdmonitionLabels = {
   warning?: string;
 };
 
+export type AiConfig = {
+  agentGuideUrl?: string | null;
+  enabled?: boolean;
+  publicationStatus?: PublicationStatus;
+};
+
 export type AlgoliaOptions = {
   apiKey: string;
   appId: string;
@@ -33,6 +39,11 @@ export type BlogLabels = {
 };
 
 export type BlogListContent = 'links' | 'full';
+
+export type BuildConfig = {
+  highlightRepresentation?: HighlightRepresentation;
+  targetConcurrency?: number;
+};
 
 export type CanonicalOverride = {
   canonicalPath: string;
@@ -108,6 +119,8 @@ export type FooterConfig = {
   copyright?: string | null;
   links?: Array<NavLink>;
 };
+
+export type HighlightRepresentation = 'jsx' | 'static-html';
 
 export type LinkException = {
   code: LinkExceptionCode;
@@ -227,6 +240,7 @@ export type PreparedModule = {
   generatedSource?: string | null;
   key: string;
   language?: ContentLanguage;
+  machineMarkdown?: string | null;
   sourceHash: string;
   sourceMap?: string | null;
   sourcePath: string;
@@ -333,6 +347,8 @@ export type PublicPage = {
   kind: string;
   layout?: PageLayout | null;
   locale: string;
+  markdownSha256?: string | null;
+  markdownUrl?: string | null;
   next?: PageNavigation | null;
   previous?: PageNavigation | null;
   routePath: string;
@@ -374,6 +390,7 @@ export type PublicSidebarItem =
     };
 
 export type PublicSiteConfig = {
+  ai?: AiConfig | null;
   basePath: string;
   collections: Array<PublicCollection>;
   docs: PublicDocsConfig;
@@ -394,6 +411,8 @@ export type PublicThemeConfig = {
   logo?: PublicLogoConfig | null;
   navbar: Array<NavLink>;
 };
+
+export type PublicationStatus = 'prerelease' | 'stable';
 
 export type RenderRoute = {
   outputPath: string;
@@ -456,8 +475,10 @@ export type SidebarConfigItem =
     };
 
 export type SiteConfig = {
+  ai?: AiConfig | null;
   basePath?: string;
   blog?: CollectionGroup | null;
+  build?: BuildConfig;
   canonicalOverrides?: Array<CanonicalOverride>;
   docs?: DocsConfig;
   linkExceptions?: Array<LinkException>;

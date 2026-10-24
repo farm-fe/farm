@@ -2,6 +2,7 @@ import { existsSync, realpathSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
+import type { NativeDocsSnapshot } from '../docs-native.js';
 
 import type {
   ResolvedCompilation,
@@ -45,6 +46,11 @@ export interface TracedModuleGraph {
   reverseEdges: Record<string, string[]>;
 }
 
+/** Runtime ownership is intentionally separate from serializable configuration. */
+export interface CompilerRuntimeOptions {
+  docsSnapshot?: NativeDocsSnapshot;
+}
+
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
   private _updateQueue: PendingUpdate[] = [];
@@ -54,12 +60,20 @@ export class Compiler {
   private _compileFinishPromise: Promise<void> | null = null;
   private _resolveCompileFinish: (() => void) | null = null;
 
-  constructor(public config: ResolvedUserConfig) {
+  constructor(
+    public config: ResolvedUserConfig,
+    runtime: CompilerRuntimeOptions = {}
+  ) {
     this._bindingCompiler = new BindingCompiler({
       config: config.compilation,
       jsPlugins: config.jsPlugins,
-      rustPlugins: config.rustPlugins
+      rustPlugins: config.rustPlugins,
+      ...(runtime.docsSnapshot ? { docsSnapshot: runtime.docsSnapshot } : {})
     });
+  }
+
+  inputObservations(): unknown[] {
+    return JSON.parse(this._bindingCompiler.inputObservations()) as unknown[];
   }
 
   async traceDependencies() {
@@ -358,8 +372,11 @@ export class Compiler {
   }
 }
 
-export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
-  return new Compiler(resolvedUserConfig);
+export function createCompiler(
+  resolvedUserConfig: ResolvedUserConfig,
+  runtime: CompilerRuntimeOptions = {}
+) {
+  return new Compiler(resolvedUserConfig, runtime);
 }
 
 export function createInlineCompiler(

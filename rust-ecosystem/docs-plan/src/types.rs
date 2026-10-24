@@ -1,6 +1,7 @@
 use farmfe_docs_config::PublicSiteConfig;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -13,6 +14,10 @@ pub struct PublicHeading {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PublicPage {
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub markdown_url: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub markdown_sha256: Option<String>,
   pub key: String,
   pub id: String,
   pub collection: String,
@@ -222,13 +227,19 @@ pub struct RenderRoute {
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PreparedModule {
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[schemars(with = "Option<String>")]
+  pub machine_markdown: Option<Arc<str>>,
   pub key: String,
   pub source_path: String,
   pub source_hash: String,
-  pub code: String,
-  pub source_map: Option<String>,
+  #[schemars(with = "String")]
+  pub code: Arc<str>,
+  #[schemars(with = "Option<String>")]
+  pub source_map: Option<Arc<str>>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
-  pub generated_source: Option<String>,
+  #[schemars(with = "Option<String>")]
+  pub generated_source: Option<Arc<str>>,
   #[serde(default)]
   pub language: ContentLanguage,
   #[serde(default, skip_serializing_if = "Vec::is_empty")]

@@ -4,4 +4,5 @@ import { Compiler } from './binding.js';
 
 export { Resolver } from './binding.js';
 export { OutputDirectoryLock } from './binding.js';
+export { DocsSnapshot } from './binding.js';
 export { Compiler };

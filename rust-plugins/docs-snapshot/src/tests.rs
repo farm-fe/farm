@@ -1,6 +1,6 @@
 use super::*;
 use farmfe_core::{
-  config::{persistent_cache::PersistentCacheConfig, TargetEnv},
+  config::{TargetEnv, persistent_cache::PersistentCacheConfig},
   module::ModuleId,
   resource::Resource,
 };
@@ -123,6 +123,357 @@ fn graph(module: &Module) -> ModuleGraph {
   graph
 }
 
+fn static_fixture() -> (Fixture, PathBuf) {
+  let fixture = Fixture::new();
+  let root = fixture._directory.path();
+  let directory = root.join("static");
+  fs::create_dir_all(directory.join("empty")).unwrap();
+  fs::write(directory.join("asset.txt"), "original").unwrap();
+  fs::write(directory.join("second.txt"), "second original").unwrap();
+  let site = parse_config(&json!({"title":"Hooks","url":"https://example.com","staticDirs":[{"dir":"static"}],"docs":{"collections":[{"id":"main","dir":"docs","routeBase":"/docs/"}]}}).to_string(), root).unwrap();
+  let plan = farmfe_docs_plan::prepare(&site).unwrap();
+  let Options::Capture { plan_path, .. } = serde_json::from_str(&fixture.options).unwrap() else {
+    unreachable!()
+  };
+  fs::write(plan_path, serde_json::to_vec(&plan).unwrap()).unwrap();
+  (fixture, directory)
+}
+
+fn static_reader(
+  context: &Arc<CompilationContext>,
+  snapshot: &FarmPluginDocsSnapshot,
+  directory: &Path,
+) -> Module {
+  let module = Module::new("virtual:farm-docs:application".into());
+  snapshot
+    .load(
+      &PluginLoadHookParam {
+        module_id: module.id.to_string(),
+        resolved_path: "virtual:farm-docs:application",
+        query: vec![],
+        meta: Default::default(),
+      },
+      context,
+      &PluginHookContext::default(),
+    )
+    .unwrap();
+  context
+    .add_watch_files(
+      module.id.clone(),
+      [
+        directory.to_path_buf(),
+        directory.join("asset.txt"),
+        directory.join("second.txt"),
+      ]
+      .iter()
+      .map(|path| ModuleId::new(&text(path), "", &context.config.root))
+      .collect(),
+    )
+    .unwrap();
+  module
+}
+
+#[test]
+fn declared_static_root_is_observed_before_virtual_application_without_retry() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = static_reader(&context, &snapshot, &directory);
+  freeze(&snapshot, &context, &mut module).unwrap();
+  snapshot
+    .module_graph_build_end(&mut graph(&module), &context)
+    .unwrap();
+  assert!(!fixture.seed.exists());
+  let state = snapshot.state.lock().unwrap();
+  let records = state.modules.get(&module.id.to_string()).unwrap();
+  assert_eq!(
+    records.len(),
+    3,
+    "real application watches each file and the directory"
+  );
+  assert_eq!(records.iter().filter(|record| record.directory).count(), 1);
+  assert!(
+    records
+      .iter()
+      .all(|record| state.initial_sources.contains(&record.canonical_path))
+  );
+}
+
+#[test]
+fn declared_static_changes_after_prior_observation_are_rejected() {
+  for change in [
+    "content",
+    "add-file",
+    "remove-file",
+    "add-empty-directory",
+    "remove-empty-directory",
+    "file-to-directory",
+  ] {
+    let (fixture, directory) = static_fixture();
+    let context = fixture.context(vec![]);
+    let snapshot = fixture.snapshot();
+    snapshot.build_start(&context).unwrap();
+    let mut module = static_reader(&context, &snapshot, &directory);
+    match change {
+      "content" => fs::write(directory.join("asset.txt"), "modified").unwrap(),
+      "add-file" => fs::write(directory.join("added.txt"), "new").unwrap(),
+      "remove-file" => fs::remove_file(directory.join("asset.txt")).unwrap(),
+      "add-empty-directory" => fs::create_dir(directory.join("new-empty")).unwrap(),
+      "remove-empty-directory" => fs::remove_dir(directory.join("empty")).unwrap(),
+      "file-to-directory" => {
+        fs::remove_file(directory.join("asset.txt")).unwrap();
+        fs::create_dir(directory.join("asset.txt")).unwrap();
+      }
+      _ => unreachable!(),
+    }
+    assert!(
+      freeze(&snapshot, &context, &mut module).is_err(),
+      "accepted {change}"
+    );
+  }
+}
+
+#[test]
+fn later_observation_cannot_replace_first_static_fact() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  // Config validation canonicalizes static roots; Windows TempDir may use a
+  // short-name spelling while the prepared root uses its expanded identity.
+  let key = FarmPluginDocsSnapshot::source_key(&directory.canonicalize().unwrap()).unwrap();
+  let first = snapshot
+    .state
+    .lock()
+    .unwrap()
+    .known
+    .get(&key)
+    .unwrap()
+    .clone();
+  fs::write(directory.join("asset.txt"), "modified").unwrap();
+  let mut state = snapshot.state.lock().unwrap();
+  let later = FarmPluginDocsSnapshot::observe_input(&directory, &state).unwrap();
+  assert_eq!(first.canonical_path, later.canonical_path);
+  assert_ne!(first.hash, later.hash);
+  assert!(FarmPluginDocsSnapshot::remember_input(later, &mut state).is_err());
+  assert_eq!(state.known.get(&key), Some(&first));
+}
+
+#[test]
+fn source_lookup_key_matches_receipt_windows_path_spelling() {
+  assert_eq!(
+    FarmPluginDocsSnapshot::source_key(Path::new(r"C:\site\static")).unwrap(),
+    "C:/site/static"
+  );
+  assert_eq!(
+    FarmPluginDocsSnapshot::source_key(Path::new(r"\\?\C:\site\static")).unwrap(),
+    "C:/site/static"
+  );
+  assert_eq!(
+    FarmPluginDocsSnapshot::source_key(Path::new(r"\\?\UNC\server\share\static")).unwrap(),
+    "//server/share/static"
+  );
+}
+
+#[test]
+fn changed_prepared_static_input_is_not_verified_again_at_build_start() {
+  let (fixture, directory) = static_fixture();
+  fs::write(directory.join("asset.txt"), "modified after prepare").unwrap();
+  let context = fixture.context(vec![]);
+  assert!(fixture.snapshot().build_start(&context).is_err());
+}
+
+#[test]
+fn undeclared_directory_still_requires_discovery_with_declared_static_root() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = static_reader(&context, &snapshot, &directory);
+  fixture.watch(&context, &module);
+  freeze(&snapshot, &context, &mut module).unwrap();
+  let error = snapshot
+    .module_graph_build_end(&mut graph(&module), &context)
+    .unwrap_err();
+  assert!(error.to_string().contains("DOCS_INPUT_DISCOVERY"));
+  assert!(fixture.seed.exists());
+}
+
+#[test]
+fn undeclared_file_still_requires_discovery_with_declared_static_files() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = static_reader(&context, &snapshot, &directory);
+  let file = Path::new(&fixture.dependency).join("data.txt");
+  context
+    .add_watch_files(
+      module.id.clone(),
+      vec![ModuleId::new(&text(&file), "", &context.config.root)],
+    )
+    .unwrap();
+  freeze(&snapshot, &context, &mut module).unwrap();
+  let error = snapshot
+    .module_graph_build_end(&mut graph(&module), &context)
+    .unwrap_err();
+  assert!(error.to_string().contains("DOCS_INPUT_DISCOVERY"));
+  assert!(fixture.seed.exists());
+}
+
+#[test]
+fn declared_static_watch_is_rechecked_at_finish() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = static_reader(&context, &snapshot, &directory);
+  freeze(&snapshot, &context, &mut module).unwrap();
+  snapshot
+    .module_graph_build_end(&mut graph(&module), &context)
+    .unwrap();
+  context.module_graph.write().add_module(module);
+  fs::write(directory.join("asset.txt"), "modified after graph").unwrap();
+  let error = snapshot.finish(&Stats::default(), &context).unwrap_err();
+  assert!(
+    error.to_string().contains("source snapshot changed"),
+    "{error}"
+  );
+}
+
+#[cfg(unix)]
+#[test]
+fn declared_static_root_canonical_redirection_is_rejected() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = static_reader(&context, &snapshot, &directory);
+  let moved = fixture._directory.path().join("moved-static");
+  fs::rename(&directory, &moved).unwrap();
+  std::os::unix::fs::symlink(&moved, &directory).unwrap();
+  assert!(freeze(&snapshot, &context, &mut module).is_err());
+}
+
+#[cfg(unix)]
+#[test]
+fn declared_static_symlink_after_prior_observation_is_rejected() {
+  let (fixture, directory) = static_fixture();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = static_reader(&context, &snapshot, &directory);
+  std::os::unix::fs::symlink(directory.join("asset.txt"), directory.join("linked.txt")).unwrap();
+  assert!(freeze(&snapshot, &context, &mut module).is_err());
+}
+
+#[test]
+fn controlled_file_read_accepts_new_watch_without_discovery_but_rechecks_bytes() {
+  let fixture = Fixture::new();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut module = fixture.module();
+  fixture.load(&snapshot, &context, &module);
+  let file = Path::new(&fixture.dependency).join("data.txt");
+  let id = module.id.to_string();
+  context.source_observations.read_file(&id, &file).unwrap();
+  context
+    .add_watch_files(
+      module.id.clone(),
+      vec![ModuleId::new(&text(&file), "", &fixture.config.root)],
+    )
+    .unwrap();
+  freeze(&snapshot, &context, &mut module).unwrap();
+  snapshot
+    .module_graph_build_end(&mut graph(&module), &context)
+    .unwrap();
+  assert!(
+    !fixture.seed.exists(),
+    "controlled read must not request a full retry"
+  );
+  fs::write(&file, "changed after actual read").unwrap();
+  assert!(context.source_observations.seal().is_err());
+}
+
+#[test]
+fn derived_watch_requires_declared_producer_own_source_identity() {
+  let fixture = Fixture::new();
+  let context = fixture.context(vec![]);
+  let snapshot = fixture.snapshot();
+  snapshot.build_start(&context).unwrap();
+  let mut reader = fixture.module();
+  fixture.load(&snapshot, &context, &reader);
+  let producer_file = Path::new(&fixture.dependency).join("data.txt");
+  let producer = ModuleId::new(&text(&producer_file), "", &fixture.config.root);
+  snapshot
+    .load(
+      &PluginLoadHookParam {
+        module_id: producer.to_string(),
+        resolved_path: &text(&producer_file),
+        query: vec![],
+        meta: Default::default(),
+      },
+      &context,
+      &PluginHookContext::default(),
+    )
+    .unwrap();
+  context
+    .source_observations
+    .consume_derived(
+      context.source_observations.generation(),
+      &reader.id.to_string(),
+      &producer.to_string(),
+    )
+    .unwrap();
+  context
+    .add_watch_files(reader.id.clone(), vec![producer.clone()])
+    .unwrap();
+  freeze(&snapshot, &context, &mut reader).unwrap();
+  snapshot
+    .module_graph_build_end(&mut graph(&reader), &context)
+    .unwrap();
+  assert!(!fixture.seed.exists());
+}
+
+#[test]
+fn cached_negative_observation_change_invalidates_without_poisoning_new_generation() {
+  let fixture = Fixture::new();
+  let context = fixture.context(vec![]);
+  let first = fixture.snapshot();
+  first.build_start(&context).unwrap();
+  let mut module = fixture.module();
+  fixture.load(&first, &context, &module);
+  let missing = Path::new(&fixture.config.root).join("optional.config");
+  context
+    .source_observations
+    .metadata(&module.id.to_string(), &missing)
+    .unwrap();
+  freeze(&first, &context, &mut module).unwrap();
+  let cache = first.write_plugin_cache(&context).unwrap().unwrap();
+  fs::write(&missing, "now present").unwrap();
+  let next_context = fixture.context(vec![]);
+  let restored = fixture.snapshot();
+  restored.plugin_cache_loaded(&cache, &next_context).unwrap();
+  restored.build_start(&next_context).unwrap();
+  assert_eq!(
+    restored
+      .handle_persistent_cached_module(&module, &next_context)
+      .unwrap(),
+    Some(true)
+  );
+  assert!(
+    next_context
+      .source_observations
+      .records()
+      .unwrap()
+      .is_empty()
+  );
+  fixture.load(&restored, &next_context, &module);
+  freeze(&restored, &next_context, &mut module).unwrap();
+}
+
 fn disk_cache_fixture() -> (Fixture, Arc<CompilationContext>, PathBuf, PathBuf) {
   let mut fixture = Fixture::new();
   let base = PathBuf::from(&fixture.config.root).join("cache-origin");
@@ -184,9 +535,11 @@ fn assert_actual_cache_watch_rejected(directory: bool) {
     )
     .unwrap();
   let error = freeze(&snapshot, &context, &mut module).unwrap_err();
-  assert!(error
-    .to_string()
-    .contains("generated output or compiler cache"));
+  assert!(
+    error
+      .to_string()
+      .contains("generated output or compiler cache")
+  );
 }
 
 #[test]
@@ -213,11 +566,13 @@ fn ancestor_watch_excludes_actual_disk_cache_writes() {
     )
     .unwrap();
   freeze(&snapshot, &context, &mut module).unwrap();
-  assert!(snapshot
-    .module_graph_build_end(&mut graph(&module), &context)
-    .unwrap_err()
-    .to_string()
-    .contains("DOCS_INPUT_DISCOVERY"));
+  assert!(
+    snapshot
+      .module_graph_build_end(&mut graph(&module), &context)
+      .unwrap_err()
+      .to_string()
+      .contains("DOCS_INPUT_DISCOVERY")
+  );
   let seed: Seed = read_json(&fixture.seed).unwrap();
   let source = seed
     .sources
@@ -267,7 +622,7 @@ fn corrupt_snapshot_plugin_cache_requires_recompilation() {
       .unwrap();
     let repaired: Cache =
       serde_json::from_slice(&snapshot.write_plugin_cache(&context).unwrap().unwrap()).unwrap();
-    assert_eq!(repaired.schema_version, 1);
+    assert_eq!(repaired.schema_version, 2);
     assert!(repaired.modules.contains_key(&module.id.to_string()));
   }
 }
@@ -407,13 +762,15 @@ fn later_rust_freeze_watch_is_discovered_and_included_after_observed_retry() {
     "changed after compilation",
   )
   .unwrap();
-  assert!(receipt
-    .validate(
-      &receipt.plan_snapshot_id,
-      Target::Server,
-      &context.config.root
-    )
-    .is_err());
+  assert!(
+    receipt
+      .validate(
+        &receipt.plan_snapshot_id,
+        Target::Server,
+        &context.config.root
+      )
+      .is_err()
+  );
 }
 
 #[test]
@@ -497,11 +854,13 @@ fn shared_new_watch_source_invalidates_every_cached_reader_on_retry() {
   freeze(&discovery, &context, &mut second).unwrap();
   let mut modules = graph(&first);
   modules.add_module(second.clone());
-  assert!(discovery
-    .module_graph_build_end(&mut modules, &context)
-    .unwrap_err()
-    .to_string()
-    .contains("DOCS_INPUT_DISCOVERY"));
+  assert!(
+    discovery
+      .module_graph_build_end(&mut modules, &context)
+      .unwrap_err()
+      .to_string()
+      .contains("DOCS_INPUT_DISCOVERY")
+  );
   let retry = fixture.snapshot();
   retry.plugin_cache_loaded(&cached, &context).unwrap();
   retry.build_start(&context).unwrap();
@@ -532,8 +891,10 @@ fn watching_generated_output_is_rejected_instead_of_observing_an_empty_tree() {
   let mut module = fixture.module();
   fixture.load(&snapshot, &context, &module);
   fixture.watch(&context, &module);
-  assert!(freeze(&snapshot, &context, &mut module)
-    .unwrap_err()
-    .to_string()
-    .contains("generated output or compiler cache"));
+  assert!(
+    freeze(&snapshot, &context, &mut module)
+      .unwrap_err()
+      .to_string()
+      .contains("generated output or compiler cache")
+  );
 }

@@ -16,13 +16,17 @@ pub struct SourceRecord {
 }
 
 fn path_text(path: &Path) -> Result<String, String> {
-  path
+  let value = path
     .to_str()
-    .map(String::from)
-    .ok_or_else(|| error("source path must be UTF-8"))
+    .ok_or_else(|| error("source path must be UTF-8"))?
+    .replace('\\', "/");
+  if let Some(unc) = value.strip_prefix("//?/UNC/") {
+    return Ok(format!("//{unc}"));
+  }
+  Ok(value.strip_prefix("//?/").unwrap_or(&value).to_owned())
 }
 
-fn public_path(path: &Path) -> Result<(), String> {
+pub(crate) fn public_path(path: &Path) -> Result<(), String> {
   if !path.is_absolute()
     || path.components().any(|part| {
       farmfe_docs_config::is_private_tooling_component(&part.as_os_str().to_string_lossy())

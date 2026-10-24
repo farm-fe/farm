@@ -5,12 +5,18 @@ import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import type { FarmCliOptions, UserConfig, WorkflowContext } from '@farmfe/core';
-import { createCompiler, resolveConfig } from '@farmfe/core';
+import {
+  compileDocsTarget,
+  compilerNativeIdentity,
+  prepareDocsSnapshot,
+  resolveConfig
+} from '@farmfe/core';
 import docs from '@farmfe/plugin-docs';
 import seo from '@farmfe/plugin-docs-seo';
 import snapshot from '@farmfe/plugin-docs-snapshot';
 import react from '@farmfe/plugin-react';
 import ssrCss from '@farmfe/plugin-ssr-css';
+import { isolateDocsTargetCache } from './build-cache.js';
 import type {
   DocPlan,
   NotFoundPlan,
@@ -20,6 +26,7 @@ import type {
 import { startDocsDevelopment } from './development.js';
 import type { DocsFarmConfig } from './index.js';
 import { assertNativePlugins } from './index.js';
+import { validateMachineReadableResources } from './machine-readable.js';
 import { withOutputTransaction } from './output-transaction.js';
 import { startDocsPreview } from './preview.js';
 import { withFrameworkAliases } from './resolve-alias.js';
@@ -34,7 +41,18 @@ interface Manifest {
     string,
     { styles: string[]; scripts: string[] }
   > | null;
+  machineReadable?: unknown;
 }
+type WorkflowPlan = Pick<
+  DocPlan,
+  | 'snapshotId'
+  | 'site'
+  | 'seo'
+  | 'routes'
+  | 'notFound'
+  | 'ssg'
+  | 'publicDiagnostics'
+>;
 const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
@@ -147,7 +165,7 @@ async function validateOutput(root: string, output: string): Promise<boolean> {
 }
 function htmlPage(
   template: string,
-  plan: DocPlan,
+  plan: WorkflowPlan,
   page: PublicPage | null,
   body: string,
   styles: string[],
@@ -330,338 +348,407 @@ export async function run({
           '@farmfe/plugin-syntax-highlight/style.css'
         )
       };
-      const compile = async (
-        pluginOptions: Parameters<typeof docs>[0],
-        input: string,
-        target: 'node' | 'browser',
-        directory: string,
-        entryName: string,
-        capture?: Parameters<typeof snapshot>[0]
-      ) => {
-        checkCancellation(signal);
-        const childConfig: UserConfig & FarmCliOptions = {
-          ...coreFarm,
-          root,
-          configFile: false,
-          compilation: {
-            ...farm.compilation,
-            input: { [entryName]: input },
-            output: {
-              ...farm.compilation?.output,
-              path: directory,
-              targetEnv: target,
-              format: target === 'node' ? 'cjs' : 'esm',
-              entryFilename:
-                target === 'node' ? '[entryName].cjs' : '[entryName].[ext]',
-              publicPath: site.basePath ?? '/'
-            },
-            resolve: {
-              ...farm.compilation?.resolve,
-              alias: withFrameworkAliases(
-                farm.compilation?.resolve?.alias,
-                aliases
-              )
-            },
-            lazyCompilation: false,
-            sourcemap: farm.compilation?.sourcemap ?? false
-          },
-          plugins: [
-            ...(capture ? [snapshot(capture)] : []),
-            ...(target === 'browser' && 'planPath' in pluginOptions
-              ? [seo({ planPath: pluginOptions.planPath })]
-              : []),
-            docs(pluginOptions),
-            snippetsPlugin(snippets),
-            react({ development: false, refresh: false }),
-            ...(target === 'node' ? [ssrCss()] : []),
-            ...(farm.plugins ?? [])
-          ]
-        };
-        const resolved = await resolveConfig(
-          childConfig,
-          'build',
-          'production'
-        );
-        checkCancellation(signal);
-        if (
-          resolved.jsPlugins?.some(
-            (plugin) =>
-              plugin.name !== 'farm:external-adapter' ||
-              Object.keys(plugin).some(
-                (key) => !['name', 'priority', 'config'].includes(key)
-              )
-          )
-        )
-          throw new Error('[DOCS_RUST_ONLY] compilation hooks must be Rust');
-        for (let attempt = 0; ; attempt++) {
-          checkCancellation(signal);
-          const compiler = createCompiler(resolved);
-          try {
-            // Native compilation has no cancellation API: await release before cleanup.
-            await compiler.compile();
-            checkCancellation(signal);
-            return compiler.resources();
-          } catch (error) {
-            checkCancellation(signal);
-            if (
-              !capture ||
-              capture.mode !== 'capture' ||
-              attempt >= 2 ||
-              !(error instanceof Error) ||
-              error.message !==
-                '[DOCS_INPUT_DISCOVERY] newly discovered watch inputs require an observed retry'
-            )
-              throw error;
-            console.warn(
-              `[DOCS_INPUT_DISCOVERY] observing newly registered inputs; retry ${attempt + 1}/2`
-            );
-          }
-        }
-      };
-      checkCancellation(signal);
-      const preflight = await compile(
-        { site, prepare: true },
-        'docs:site',
-        'node',
-        path.join(staging, 'prepare'),
-        'prepare'
-      );
-      const planBytes = preflight['docs-plan.json'];
-      if (!planBytes)
-        throw new Error('[DOCS_PLAN] native preflight did not emit its plan');
-      const plan: DocPlan = JSON.parse(planBytes.toString());
       const planPath = path.join(staging, 'plan.json');
-      await fs.writeFile(planPath, planBytes);
-      const browserReceipt = path.join(staging, 'browser-receipt.json');
-      const serverReceipt = path.join(staging, 'server-receipt.json');
-      const browser = await compile(
-        { planPath },
-        fileURLToPath(new URL('../client.html', import.meta.url)),
-        'browser',
-        destination,
-        'app',
-        {
-          mode: 'capture',
-          planPath,
-          receiptPath: browserReceipt,
-          seedPath: path.join(staging, 'browser-seed.json'),
-          target: 'browser',
-          outputPath: output
-        }
-      );
-      const browserHash = fileDigest(await fs.readFile(browserReceipt));
-      const serverDirectory = path.join(staging, 'server');
-      const server = await compile(
-        { planPath },
-        fileURLToPath(new URL('./server-entry.js', import.meta.url)),
-        'node',
-        serverDirectory,
-        'server',
-        {
-          mode: 'capture',
-          planPath,
-          receiptPath: serverReceipt,
-          seedPath: path.join(staging, 'server-seed.json'),
-          target: 'server',
-          outputPath: output
-        }
-      );
-      const serverHash = fileDigest(await fs.readFile(serverReceipt));
-      const manifests = [browser, server].map((resources) => {
-        if (!resources['docs-manifest.json'])
-          throw new Error('[DOCS_MANIFEST] native manifest missing');
-        const manifest: Manifest = JSON.parse(
-          resources['docs-manifest.json'].toString()
-        );
-        if (
-          manifest.schemaVersion !== 1 ||
-          manifest.snapshotId !== plan.snapshotId
-        )
-          throw new Error('[DOCS_MANIFEST] snapshot mismatch');
-        for (const resource of manifest.resources) {
-          outputFile(destination, resource.name);
-          if (!resources[resource.name])
-            throw new Error(
-              `[DOCS_MANIFEST] resource missing: ${resource.name}`
-            );
-        }
-        return manifest;
-      });
-      const templateName = manifests[0].template;
-      if (!templateName || !browser[templateName])
-        throw new Error('[DOCS_MANIFEST] native HTML template missing');
-      const template = browser[templateName].toString();
-      const templatePath = path.join(staging, 'browser-template.html');
-      await fs.writeFile(templatePath, browser[templateName]);
-      const pageResources = manifests[0].pageResources;
-      if (!pageResources)
-        throw new Error('[DOCS_MANIFEST] native page resources missing');
-      for (const route of plan.routes) {
-        const resources = pageResources[route.page.key];
-        if (
-          !resources ||
-          !Array.isArray(resources.styles) ||
-          !Array.isArray(resources.scripts)
-        )
-          throw new Error('[DOCS_MANIFEST] page resource lists missing');
-        for (const name of [...resources.styles, ...resources.scripts]) {
-          outputFile(destination, name);
-          if (!browser[name])
-            throw new Error(`[DOCS_MANIFEST] page resource missing: ${name}`);
-        }
-      }
-      for (const [directory, resources] of [
-        [destination, browser],
-        [serverDirectory, server]
-      ] as const) {
-        for (const [name, bytes] of Object.entries(resources)) {
+      const nativeSnapshot = await prepareDocsSnapshot(site, root, planPath);
+      try {
+        const plan: WorkflowPlan = JSON.parse(nativeSnapshot.metadata());
+        const nativeHashes = new Map<string, Promise<string>>();
+        let coreIdentity: ReturnType<typeof compilerNativeIdentity> | undefined;
+        const compile = async (
+          pluginOptions: Parameters<typeof docs>[0],
+          input: string,
+          target: 'node' | 'browser',
+          directory: string,
+          entryName: string,
+          capture?: Parameters<typeof snapshot>[0]
+        ) => {
           checkCancellation(signal);
-          if (directory === destination && name === templateName) continue;
-          if (name === 'docs-plan.json')
-            throw new Error(
-              '[DOCS_PRIVATE_PLAN] child output contains private plan'
-            );
-          const file = outputFile(directory, name);
-          await fs.mkdir(path.dirname(file), { recursive: true });
-          await fs.writeFile(file, bytes);
-        }
-      }
-      // Farm CJS chunks use .js filenames. Scope their Node interpretation to this private build.
-      await fs.writeFile(
-        path.join(serverDirectory, 'package.json'),
-        '{"type":"commonjs"}\n'
-      );
-      const writtenPages: { key: string; outputPath: string; hash: string }[] =
-        [];
-      const writtenNotFound = new Map<
-        string,
-        { locale: string; outputPath: string; hash: string }
-      >();
-      await renderPages({
-        signal,
-        serverEntry: path.join(serverDirectory, 'server.cjs'),
-        snapshotId: plan.snapshotId,
-        routes: plan.routes,
-        notFound: plan.notFound,
-        limits: plan.ssg,
-        onNotFound: async (notFound, html) => {
-          const file = outputFile(destination, notFound.outputPath);
-          if (browser[notFound.outputPath])
-            throw new Error(`[DOCS_OUTPUT_COLLISION] ${notFound.outputPath}`);
-          const page = htmlPage(template, plan, null, html, [], notFound);
-          await fs.mkdir(path.dirname(file), { recursive: true });
-          await fs.writeFile(file, page);
-          if (writtenNotFound.has(notFound.locale))
-            throw new Error('[DOCS_RENDER_PROTOCOL] duplicate NotFound output');
-          writtenNotFound.set(notFound.locale, {
-            locale: notFound.locale,
-            outputPath: notFound.outputPath,
-            hash: fileDigest(page)
-          });
-        },
-        onPage: async (route, html) => {
-          const file = outputFile(destination, route.outputPath);
-          if (browser[route.outputPath])
-            throw new Error(`[DOCS_OUTPUT_COLLISION] ${route.outputPath}`);
-          await fs.mkdir(path.dirname(file), { recursive: true });
-          const page = htmlPage(
-            template,
-            plan,
-            route.page,
-            html,
-            pageResources[route.page.key].styles
-          );
-          await fs.writeFile(file, page);
-          writtenPages.push({
-            key: route.page.key,
-            outputPath: route.outputPath,
-            hash: fileDigest(page)
-          });
-        }
-      });
-      if (writtenNotFound.size !== plan.notFound.length)
-        throw new Error('[DOCS_RENDER_PROTOCOL] missing NotFound output');
-      checkCancellation(signal);
-      const report = JSON.stringify(
-        {
-          schemaVersion: 2,
-          snapshotId: plan.snapshotId,
-          pages: plan.routes.map((route) => ({
-            key: route.page.key,
-            routePath: route.page.routePath,
-            outputPath: route.outputPath
-          })),
-          notFound: plan.notFound.map(({ locale, routeBase, outputPath }) => ({
-            locale,
-            routeBase,
-            outputPath
-          })),
-          preview: { basePath: plan.site.basePath },
-          diagnostics: plan.publicDiagnostics
-        },
-        null,
-        2
-      );
-      await fs.writeFile(
-        path.join(destination, 'docs-build-report.json'),
-        report
-      );
-      const writesPath = path.join(staging, 'written-files.json');
-      const writes = JSON.stringify({
-        schemaVersion: 3,
-        snapshotId: plan.snapshotId,
-        pages: writtenPages,
-        notFound: plan.notFound.map((page) => writtenNotFound.get(page.locale)),
-        reportHash: fileDigest(report)
-      });
-      await fs.writeFile(writesPath, writes);
-      checkCancellation(signal);
-      const verifier = createCompiler(
-        await resolveConfig(
-          {
+          const childConfig: UserConfig & FarmCliOptions = {
+            ...coreFarm,
             root,
             configFile: false,
             compilation: {
-              input: { verify: 'farm-docs:verify-seal' },
+              ...farm.compilation,
+              // Normalization mutates cache options; targets must not share them.
+              persistentCache:
+                farm.compilation?.persistentCache &&
+                typeof farm.compilation.persistentCache === 'object'
+                  ? structuredClone(farm.compilation.persistentCache)
+                  : farm.compilation?.persistentCache,
+              input: { [entryName]: input },
               output: {
-                path: path.join(staging, 'verification'),
-                targetEnv: 'node',
-                format: 'cjs'
+                ...farm.compilation?.output,
+                path: directory,
+                targetEnv: target,
+                format: target === 'node' ? 'cjs' : 'esm',
+                entryFilename:
+                  target === 'node' ? '[entryName].cjs' : '[entryName].[ext]',
+                publicPath: site.basePath ?? '/'
               },
-              persistentCache: false,
+              resolve: {
+                ...farm.compilation?.resolve,
+                alias: withFrameworkAliases(
+                  farm.compilation?.resolve?.alias,
+                  aliases
+                )
+              },
               lazyCompilation: false,
-              minify: false,
-              sourcemap: false
+              sourcemap: farm.compilation?.sourcemap ?? false
             },
             plugins: [
-              snapshot({
-                mode: 'verify',
-                planPath,
-                verification: {
-                  browserReceipt,
-                  browserHash,
-                  serverReceipt,
-                  serverHash,
-                  writesPath,
-                  writesHash: fileDigest(writes),
-                  publicDirectory: destination,
-                  serverDirectory,
-                  templatePath
+              ...(capture ? [snapshot(capture)] : []),
+              ...(target === 'browser' && 'planPath' in pluginOptions
+                ? [seo({ planPath: pluginOptions.planPath })]
+                : []),
+              docs(pluginOptions),
+              snippetsPlugin({
+                ...snippets,
+                highlight: {
+                  ...snippets?.highlight,
+                  representation: site.build?.highlightRepresentation ?? 'jsx'
                 }
-              })
+              }),
+              react({ development: false, refresh: false }),
+              ...(target === 'node' ? [ssrCss()] : []),
+              ...(farm.plugins ?? [])
             ]
+          };
+          const resolved = await resolveConfig(
+            childConfig,
+            'build',
+            'production'
+          );
+          checkCancellation(signal);
+          if (
+            resolved.jsPlugins?.some(
+              (plugin) =>
+                plugin.name !== 'farm:external-adapter' ||
+                Object.keys(plugin).some(
+                  (key) => !['name', 'priority', 'config'].includes(key)
+                )
+            )
+          )
+            throw new Error('[DOCS_RUST_ONLY] compilation hooks must be Rust');
+          if (
+            resolved.compilation?.persistentCache &&
+            typeof resolved.compilation.persistentCache === 'object'
+          ) {
+            coreIdentity ??= compilerNativeIdentity();
+            const roles = new Map([
+              [planPath, 'farm-docs-transaction://plan'],
+              [directory, `farm-docs-transaction://${target}-output`],
+              ...(capture?.mode === 'capture'
+                ? ([
+                    [
+                      capture.receiptPath,
+                      `farm-docs-transaction://${target}-receipt`
+                    ],
+                    [capture.seedPath, `farm-docs-transaction://${target}-seed`]
+                  ] as [string, string][])
+                : [])
+            ]);
+            await isolateDocsTargetCache(resolved, {
+              target,
+              entryName,
+              snapshotId: plan.snapshotId,
+              site,
+              nativeIdentity: await coreIdentity,
+              roles,
+              nativeHashes
+            });
+          }
+          for (let attempt = 0; ; attempt++) {
+            checkCancellation(signal);
+            try {
+              // Native compilation has no cancellation API: await release before cleanup.
+              const result = await compileDocsTarget(resolved, nativeSnapshot);
+              checkCancellation(signal);
+              if (capture?.mode === 'capture') {
+                const receipt = JSON.parse(
+                  await fs.readFile(capture.receiptPath, 'utf8')
+                );
+                receipt.schemaVersion = 2;
+                receipt.inputObservations = result.inputObservations;
+                await fs.writeFile(
+                  capture.receiptPath,
+                  JSON.stringify(receipt)
+                );
+              }
+              return result.resources;
+            } catch (error) {
+              checkCancellation(signal);
+              if (
+                !capture ||
+                capture.mode !== 'capture' ||
+                attempt >= 2 ||
+                !(error instanceof Error) ||
+                error.message !==
+                  '[DOCS_INPUT_DISCOVERY] newly discovered watch inputs require an observed retry'
+              )
+                throw error;
+              console.warn(
+                `[DOCS_INPUT_DISCOVERY] observing newly registered inputs; retry ${attempt + 1}/2`
+              );
+            }
+          }
+        };
+        checkCancellation(signal);
+        const browserReceipt = path.join(staging, 'browser-receipt.json');
+        const serverReceipt = path.join(staging, 'server-receipt.json');
+        const serverDirectory = path.join(staging, 'server');
+        const compileBrowser = () =>
+          compile(
+            { planPath },
+            fileURLToPath(new URL('../client.html', import.meta.url)),
+            'browser',
+            destination,
+            'app',
+            {
+              mode: 'capture',
+              planPath,
+              receiptPath: browserReceipt,
+              seedPath: path.join(staging, 'browser-seed.json'),
+              target: 'browser',
+              outputPath: output
+            }
+          );
+        const compileServer = () =>
+          compile(
+            { planPath },
+            fileURLToPath(new URL('./server-entry.js', import.meta.url)),
+            'node',
+            serverDirectory,
+            'server',
+            {
+              mode: 'capture',
+              planPath,
+              receiptPath: serverReceipt,
+              seedPath: path.join(staging, 'server-seed.json'),
+              target: 'server',
+              outputPath: output
+            }
+          );
+        let browser: Record<string, Buffer>;
+        let server: Record<string, Buffer>;
+        if (site.build?.targetConcurrency === 2) {
+          // Explicit opt-in: two independent target graphs can increase peak memory.
+          // Drain both native calls before failure permits transaction cleanup.
+          const results = await Promise.allSettled([
+            compileBrowser(),
+            compileServer()
+          ]);
+          const failed = results.find((result) => result.status === 'rejected');
+          if (failed?.status === 'rejected') throw failed.reason;
+          const [browserResult, serverResult] = results;
+          if (
+            browserResult.status !== 'fulfilled' ||
+            serverResult.status !== 'fulfilled'
+          )
+            throw new Error('[DOCS_TARGETS] incomplete target results');
+          browser = browserResult.value;
+          server = serverResult.value;
+        } else {
+          browser = await compileBrowser();
+          server = await compileServer();
+        }
+        const browserHash = fileDigest(await fs.readFile(browserReceipt));
+        const serverHash = fileDigest(await fs.readFile(serverReceipt));
+        const manifests = [browser, server].map((resources) => {
+          if (!resources['docs-manifest.json'])
+            throw new Error('[DOCS_MANIFEST] native manifest missing');
+          const manifest: Manifest = JSON.parse(
+            resources['docs-manifest.json'].toString()
+          );
+          if (
+            manifest.schemaVersion !== 1 ||
+            manifest.snapshotId !== plan.snapshotId
+          )
+            throw new Error('[DOCS_MANIFEST] snapshot mismatch');
+          for (const resource of manifest.resources) {
+            outputFile(destination, resource.name);
+            if (!resources[resource.name])
+              throw new Error(
+                `[DOCS_MANIFEST] resource missing: ${resource.name}`
+              );
+          }
+          return manifest;
+        });
+        const templateName = manifests[0].template;
+        validateMachineReadableResources(
+          manifests[0].machineReadable,
+          {
+            snapshotId: plan.snapshotId,
+            basePath: plan.site.basePath,
+            enabled: plan.site.ai != null && plan.site.ai.enabled !== false,
+            publicationStatus: plan.site.ai?.publicationStatus ?? 'prerelease',
+            pages: plan.routes.map(({ page }) => ({
+              ...page,
+              canonicalUrl: plan.seo[page.key]?.canonicalUrl
+            }))
           },
-          'build',
-          'production'
-        )
-      );
-      checkCancellation(signal);
-      await verifier.compile();
-      checkCancellation(signal);
-      await transaction.commit();
-      console.log(
-        `Farm Docs: generated ${plan.routes.length} pages in ${path.relative(root, output)} (${plan.snapshotId.slice(0, 12)})`
-      );
+          browser,
+          manifests[0].resources.map(({ name }) => name)
+        );
+        if (!templateName || !browser[templateName])
+          throw new Error('[DOCS_MANIFEST] native HTML template missing');
+        const template = browser[templateName].toString();
+        const templatePath = path.join(staging, 'browser-template.html');
+        await fs.writeFile(templatePath, browser[templateName]);
+        const pageResources = manifests[0].pageResources;
+        if (!pageResources)
+          throw new Error('[DOCS_MANIFEST] native page resources missing');
+        for (const route of plan.routes) {
+          const resources = pageResources[route.page.key];
+          if (
+            !resources ||
+            !Array.isArray(resources.styles) ||
+            !Array.isArray(resources.scripts)
+          )
+            throw new Error('[DOCS_MANIFEST] page resource lists missing');
+          for (const name of [...resources.styles, ...resources.scripts]) {
+            outputFile(destination, name);
+            if (!browser[name])
+              throw new Error(`[DOCS_MANIFEST] page resource missing: ${name}`);
+          }
+        }
+        for (const [directory, resources] of [
+          [destination, browser],
+          [serverDirectory, server]
+        ] as const) {
+          for (const [name, bytes] of Object.entries(resources)) {
+            checkCancellation(signal);
+            if (directory === destination && name === templateName) continue;
+            if (name === 'docs-plan.json')
+              throw new Error(
+                '[DOCS_PRIVATE_PLAN] child output contains private plan'
+              );
+            const file = outputFile(directory, name);
+            await fs.mkdir(path.dirname(file), { recursive: true });
+            await fs.writeFile(file, bytes);
+          }
+        }
+        // Farm CJS chunks use .js filenames. Scope their Node interpretation to this private build.
+        await fs.writeFile(
+          path.join(serverDirectory, 'package.json'),
+          '{"type":"commonjs"}\n'
+        );
+        const writtenPages: {
+          key: string;
+          outputPath: string;
+          hash: string;
+        }[] = [];
+        const writtenNotFound = new Map<
+          string,
+          { locale: string; outputPath: string; hash: string }
+        >();
+        await renderPages({
+          signal,
+          serverEntry: path.join(serverDirectory, 'server.cjs'),
+          snapshotId: plan.snapshotId,
+          routes: plan.routes,
+          notFound: plan.notFound,
+          limits: plan.ssg,
+          onNotFound: async (notFound, html) => {
+            const file = outputFile(destination, notFound.outputPath);
+            if (browser[notFound.outputPath])
+              throw new Error(`[DOCS_OUTPUT_COLLISION] ${notFound.outputPath}`);
+            const page = htmlPage(template, plan, null, html, [], notFound);
+            await fs.mkdir(path.dirname(file), { recursive: true });
+            await fs.writeFile(file, page);
+            if (writtenNotFound.has(notFound.locale))
+              throw new Error(
+                '[DOCS_RENDER_PROTOCOL] duplicate NotFound output'
+              );
+            writtenNotFound.set(notFound.locale, {
+              locale: notFound.locale,
+              outputPath: notFound.outputPath,
+              hash: fileDigest(page)
+            });
+          },
+          onPage: async (route, html) => {
+            const file = outputFile(destination, route.outputPath);
+            if (browser[route.outputPath])
+              throw new Error(`[DOCS_OUTPUT_COLLISION] ${route.outputPath}`);
+            await fs.mkdir(path.dirname(file), { recursive: true });
+            const page = htmlPage(
+              template,
+              plan,
+              route.page,
+              html,
+              pageResources[route.page.key].styles
+            );
+            await fs.writeFile(file, page);
+            writtenPages.push({
+              key: route.page.key,
+              outputPath: route.outputPath,
+              hash: fileDigest(page)
+            });
+          }
+        });
+        if (writtenNotFound.size !== plan.notFound.length)
+          throw new Error('[DOCS_RENDER_PROTOCOL] missing NotFound output');
+        checkCancellation(signal);
+        const report = JSON.stringify(
+          {
+            schemaVersion: 2,
+            snapshotId: plan.snapshotId,
+            pages: plan.routes.map((route) => ({
+              key: route.page.key,
+              routePath: route.page.routePath,
+              outputPath: route.outputPath
+            })),
+            notFound: plan.notFound.map(
+              ({ locale, routeBase, outputPath }) => ({
+                locale,
+                routeBase,
+                outputPath
+              })
+            ),
+            preview: { basePath: plan.site.basePath },
+            diagnostics: plan.publicDiagnostics
+          },
+          null,
+          2
+        );
+        await fs.writeFile(
+          path.join(destination, 'docs-build-report.json'),
+          report
+        );
+        const writesPath = path.join(staging, 'written-files.json');
+        const writes = JSON.stringify({
+          schemaVersion: 3,
+          snapshotId: plan.snapshotId,
+          pages: writtenPages,
+          notFound: plan.notFound.map((page) =>
+            writtenNotFound.get(page.locale)
+          ),
+          reportHash: fileDigest(report)
+        });
+        await fs.writeFile(writesPath, writes);
+        checkCancellation(signal);
+        await nativeSnapshot.verify(
+          JSON.stringify({
+            browserReceipt,
+            browserHash,
+            serverReceipt,
+            serverHash,
+            writesPath,
+            writesHash: fileDigest(writes),
+            publicDirectory: destination,
+            serverDirectory,
+            templatePath
+          })
+        );
+        checkCancellation(signal);
+        await transaction.commit();
+        console.log(
+          `Farm Docs: generated ${plan.routes.length} pages in ${path.relative(root, output)} (${plan.snapshotId.slice(0, 12)})`
+        );
+      } finally {
+        // All native compile/verify work is awaited before releasing ownership
+        // or permitting transaction cleanup.
+        nativeSnapshot.close();
+      }
     }
   );
 }

@@ -1,6 +1,13 @@
 const { existsSync, readFileSync } = require('fs');
 const { join } = require('path');
 
+// Match the generated NAPI loader so cache/plugin identity names the binary
+// actually loaded, including an isolated development artifact.
+if (process.env.NAPI_RS_NATIVE_LIBRARY_PATH) {
+  module.exports = require.resolve(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
+  return;
+}
+
 const { platform, arch } = process;
 
 let nativeBindingPath = null;

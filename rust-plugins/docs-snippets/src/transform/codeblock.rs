@@ -70,48 +70,73 @@ pub fn lower(
   if !highlighted.known_language {
     attributes.push(ast::text_attribute("data-unknown-language", "true", span));
   }
-  let lines = highlighted
-    .lines
-    .into_iter()
-    .enumerate()
-    .map(|(index, tokens)| {
-      let tokens = tokens
-        .into_iter()
-        .map(|token| {
-          JSXElementChild::JSXElement(Box::new(ast::element(
-            ast::name("span", span),
-            vec![
-              ast::text_attribute("className", "farm-code-token", span),
-              ast::attribute("style", ast::style(&token.light, &token.dark, span), span),
-            ],
-            vec![ast::child(&token.text, span)],
-            span,
-          )))
-        })
-        .collect();
-      let mut attributes = vec![
-        ast::text_attribute("className", "farm-code-line", span),
-        ast::text_attribute("data-line", &(index + 1).to_string(), span),
-      ];
-      if lines.contains(&(index + 1)) {
-        attributes.push(ast::text_attribute("data-highlighted", "true", span));
-      }
-      JSXElementChild::JSXElement(Box::new(ast::element(
-        ast::name("span", span),
-        attributes,
-        tokens,
+  let static_html = if options.highlight.representation
+    == farmfe_syntax_highlight::HighlightRepresentation::StaticHtml
+  {
+    farmfe_syntax_highlight::render_static_lines(&highlighted, &lines)?
+  } else {
+    None
+  };
+  let (content_attributes, content_children) = if let Some(html) = static_html {
+    (
+      vec![
+        ast::text_attribute("className", &format!("language-{language}"), span),
+        ast::attribute(
+          "dangerouslySetInnerHTML",
+          ast::static_html(&html, span),
+          span,
+        ),
+      ],
+      vec![],
+    )
+  } else {
+    let lines = highlighted
+      .lines
+      .into_iter()
+      .enumerate()
+      .map(|(index, tokens)| {
+        let tokens = tokens
+          .into_iter()
+          .map(|token| {
+            JSXElementChild::JSXElement(Box::new(ast::element(
+              ast::name("span", span),
+              vec![
+                ast::text_attribute("className", "farm-code-token", span),
+                ast::attribute("style", ast::style(&token.light, &token.dark, span), span),
+              ],
+              vec![ast::child(&token.text, span)],
+              span,
+            )))
+          })
+          .collect();
+        let mut attributes = vec![
+          ast::text_attribute("className", "farm-code-line", span),
+          ast::text_attribute("data-line", &(index + 1).to_string(), span),
+        ];
+        if lines.contains(&(index + 1)) {
+          attributes.push(ast::text_attribute("data-highlighted", "true", span));
+        }
+        JSXElementChild::JSXElement(Box::new(ast::element(
+          ast::name("span", span),
+          attributes,
+          tokens,
+          span,
+        )))
+      })
+      .collect();
+    (
+      vec![ast::text_attribute(
+        "className",
+        &format!("language-{language}"),
         span,
-      )))
-    })
-    .collect();
+      )],
+      lines,
+    )
+  };
   let content = ast::element(
     ast::name("code", span),
-    vec![ast::text_attribute(
-      "className",
-      &format!("language-{language}"),
-      span,
-    )],
-    lines,
+    content_attributes,
+    content_children,
     span,
   );
   Ok(ast::element(

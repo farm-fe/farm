@@ -1,4 +1,6 @@
-use farmfe_syntax_highlight::{highlight, HighlightOptions};
+use farmfe_syntax_highlight::{
+  HighlightOptions, HighlightRepresentation, highlight, render_static_lines,
+};
 use markdown::mdast::{
   self, AttributeContent, AttributeValue, AttributeValueExpression, MdxJsxAttribute,
 };
@@ -10,6 +12,12 @@ struct Metadata {
   numbers: bool,
   lines: BTreeSet<usize>,
   unknown: Vec<String>,
+}
+
+#[derive(Default)]
+pub(crate) struct Applied {
+  pub diagnostics: Vec<String>,
+  pub static_blocks: crate::static_highlight::Blocks,
 }
 
 fn raw_metadata<'a>(code: &mdast::Code, source: &'a str) -> Option<&'a str> {
@@ -142,12 +150,119 @@ fn property(name: &str, value: impl Into<String>) -> (String, PropertyValue) {
   (name.into(), PropertyValue::String(value.into()))
 }
 
+// Explicit HTML metadata only: ordinary inline code is never language-guessed.
+fn inline_code(node: &mut Node, options: &HighlightOptions) -> Result<bool, String> {
+  let (language, raw, position) = match node {
+    Node::Element(element) if element.tag_name == "code" => {
+      let language = element
+        .properties
+        .iter()
+        .find_map(|(name, value)| match value {
+          PropertyValue::String(value) if name == "data-language" => Some(value.clone()),
+          _ => None,
+        });
+      let Some(language) = language else {
+        return Ok(false);
+      };
+      if element.properties.len() != 1 {
+        return Err("[DOCS_INLINE_CODE] marked code accepts only data-language".into());
+      }
+      let raw = element
+        .children
+        .iter()
+        .map(|node| match node {
+          Node::Text(text) => Ok(text.value.as_str()),
+          _ => Err("[DOCS_INLINE_CODE] marked code requires literal text".to_string()),
+        })
+        .collect::<Result<String, _>>()?;
+      (language, raw, element.position.clone())
+    }
+    Node::MdxJsxElement(element) if element.name.as_deref() == Some("code") => {
+      let mut language = None;
+      for attribute in &element.attributes {
+        let AttributeContent::Property(attribute) = attribute else {
+          return Ok(false);
+        };
+        if attribute.name == "data-language" {
+          let Some(AttributeValue::Literal(value)) = &attribute.value else {
+            return Err("[DOCS_INLINE_CODE] language must be a static string".into());
+          };
+          language = Some(value.clone());
+        }
+      }
+      let Some(language) = language else {
+        return Ok(false);
+      };
+      if element.attributes.len() != 1 {
+        return Err("[DOCS_INLINE_CODE] marked code accepts only data-language".into());
+      }
+      let raw = element
+        .children
+        .iter()
+        .map(|node| match node {
+          Node::Text(text) => Ok(text.value.as_str()),
+          _ => Err("[DOCS_INLINE_CODE] marked code requires literal text".to_string()),
+        })
+        .collect::<Result<String, _>>()?;
+      (language, raw, element.position.clone())
+    }
+    _ => return Ok(false),
+  };
+  if raw.len() > 16_384 || raw.contains(['\r', '\n', '\0']) {
+    return Err("[DOCS_INLINE_CODE] use a fence for multiline or large code".into());
+  }
+  let value = highlight(&raw, &language, options)?;
+  if !value.known_language {
+    return Err(format!(
+      "[DOCS_INLINE_CODE] unsupported language {language}"
+    ));
+  }
+  let children = value
+    .lines
+    .into_iter()
+    .flatten()
+    .map(|token| {
+      Node::MdxJsxElement(hast::MdxJsxElement {
+        name: Some("span".into()),
+        attributes: vec![
+          AttributeContent::Property(MdxJsxAttribute {
+            name: "className".into(),
+            value: Some(AttributeValue::Literal("farm-code-token".into())),
+          }),
+          AttributeContent::Property(MdxJsxAttribute {
+            name: "style".into(),
+            value: Some(AttributeValue::Expression(AttributeValueExpression {
+              value: serde_json::json!({"--code-light": token.light, "--code-dark": token.dark})
+                .to_string(),
+              stops: vec![],
+            })),
+          }),
+        ],
+        children: vec![text(token.text)],
+        position: None,
+      })
+    })
+    .collect();
+  *node = crate::element(
+    "code",
+    vec![
+      property("className", "farm-inline-code"),
+      property("data-language", language),
+    ],
+    children,
+  );
+  if let Node::Element(element) = node {
+    element.position = position;
+  }
+  Ok(true)
+}
+
 pub fn apply(
   mdast: &mdast::Node,
   tree: &mut Node,
   options: &HighlightOptions,
   source: &str,
-) -> Result<Vec<String>, String> {
+) -> Result<Applied, String> {
   fn collect<'a>(node: &'a mdast::Node, blocks: &mut HashMap<usize, &'a mdast::Code>) {
     if let mdast::Node::Code(code) = node {
       if let Some(position) = &code.position {
@@ -166,7 +281,11 @@ pub fn apply(
     options: &HighlightOptions,
     source: &str,
     diagnostics: &mut Vec<String>,
+    static_blocks: &mut crate::static_highlight::Blocks,
   ) -> Result<(), String> {
+    if inline_code(node, options)? {
+      return Ok(());
+    }
     if matches!(node, Node::Element(element) if element.tag_name == "pre") {
       if let Some(code) = node.position().and_then(|p| blocks.get(&p.start.offset)) {
         let language = code.lang.as_deref().unwrap_or("text");
@@ -195,42 +314,51 @@ pub fn apply(
             "[DOCS_CODE_META] {location}: unknown field {field}"
           ));
         }
+        let static_html = if options.representation == HighlightRepresentation::StaticHtml {
+          render_static_lines(&highlighted, &metadata.lines)?
+        } else {
+          None
+        };
         let mut lines = vec![];
-        for (index, tokens) in highlighted.lines.into_iter().enumerate() {
-          let children = tokens
-            .into_iter()
-            .map(|token| {
-              let style =
-                serde_json::json!({"--code-light": token.light, "--code-dark": token.dark})
-                  .to_string();
-              Node::MdxJsxElement(hast::MdxJsxElement {
-                name: Some("span".into()),
-                attributes: vec![
-                  AttributeContent::Property(MdxJsxAttribute {
-                    name: "className".into(),
-                    value: Some(AttributeValue::Literal("farm-code-token".into())),
-                  }),
-                  AttributeContent::Property(MdxJsxAttribute {
-                    name: "style".into(),
-                    value: Some(AttributeValue::Expression(AttributeValueExpression {
-                      value: style,
-                      stops: vec![],
-                    })),
-                  }),
-                ],
-                children: vec![text(token.text)],
-                position: None,
+        if let Some(html) = static_html {
+          static_blocks.insert((position.start.offset + 1, position.end.offset + 1), html);
+        } else {
+          for (index, tokens) in highlighted.lines.into_iter().enumerate() {
+            let children = tokens
+              .into_iter()
+              .map(|token| {
+                let style =
+                  serde_json::json!({"--code-light": token.light, "--code-dark": token.dark})
+                    .to_string();
+                Node::MdxJsxElement(hast::MdxJsxElement {
+                  name: Some("span".into()),
+                  attributes: vec![
+                    AttributeContent::Property(MdxJsxAttribute {
+                      name: "className".into(),
+                      value: Some(AttributeValue::Literal("farm-code-token".into())),
+                    }),
+                    AttributeContent::Property(MdxJsxAttribute {
+                      name: "style".into(),
+                      value: Some(AttributeValue::Expression(AttributeValueExpression {
+                        value: style,
+                        stops: vec![],
+                      })),
+                    }),
+                  ],
+                  children: vec![text(token.text)],
+                  position: None,
+                })
               })
-            })
-            .collect();
-          let mut properties = vec![
-            property("className", "farm-code-line"),
-            property("data-line", (index + 1).to_string()),
-          ];
-          if metadata.lines.contains(&(index + 1)) {
-            properties.push(property("data-highlighted", "true"));
+              .collect();
+            let mut properties = vec![
+              property("className", "farm-code-line"),
+              property("data-line", (index + 1).to_string()),
+            ];
+            if metadata.lines.contains(&(index + 1)) {
+              properties.push(property("data-highlighted", "true"));
+            }
+            lines.push(crate::element("span", properties, children));
           }
-          lines.push(crate::element("span", properties, children));
         }
         let content = crate::element(
           "code",
@@ -261,16 +389,23 @@ pub fn apply(
     }
     if let Some(children) = node.children_mut() {
       for child in children {
-        rewrite(child, blocks, options, source, diagnostics)?;
+        rewrite(child, blocks, options, source, diagnostics, static_blocks)?;
       }
     }
     Ok(())
   }
   let mut blocks = HashMap::new();
   collect(mdast, &mut blocks);
-  let mut diagnostics = vec![];
-  rewrite(tree, &blocks, options, source, &mut diagnostics)?;
-  Ok(diagnostics)
+  let mut applied = Applied::default();
+  rewrite(
+    tree,
+    &blocks,
+    options,
+    source,
+    &mut applied.diagnostics,
+    &mut applied.static_blocks,
+  )?;
+  Ok(applied)
 }
 
 #[cfg(test)]

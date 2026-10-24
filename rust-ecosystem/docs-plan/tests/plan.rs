@@ -43,6 +43,6 @@ fn prepares_real_content_once_into_a_deterministic_private_plan() {
   assert_eq!(prepare(&site).unwrap().snapshot_id, plan.snapshot_id);
   verify(&plan).unwrap();
   let mut edited = plan;
-  edited.modules[0].code.push_str("\n// changed");
+  edited.modules[0].code = format!("{}\n// changed", edited.modules[0].code).into();
   assert!(verify(&edited).unwrap_err().contains("DOCS_PLAN_HASH"));
 }

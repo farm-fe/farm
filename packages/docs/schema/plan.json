@@ -132,6 +132,31 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "AiConfig": {
+      "description": "Opt-in machine-readable documentation. Unknown dynamic MDX fails export.",
+      "type": "object",
+      "properties": {
+        "agentGuideUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "publicationStatus": {
+          "default": "prerelease",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PublicationStatus"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "AlgoliaOptions": {
       "type": "object",
       "required": [
@@ -511,6 +536,12 @@
             {
               "$ref": "#/definitions/ContentLanguage"
             }
+          ]
+        },
+        "machineMarkdown": {
+          "type": [
+            "string",
+            "null"
           ]
         },
         "sourceHash": {
@@ -962,6 +993,18 @@
         "locale": {
           "type": "string"
         },
+        "markdownSha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "markdownUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "next": {
           "anyOf": [
             {
@@ -1155,6 +1198,16 @@
         "url"
       ],
       "properties": {
+        "ai": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AiConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "basePath": {
           "type": "string"
         },
@@ -1239,6 +1292,13 @@
         }
       },
       "additionalProperties": false
+    },
+    "PublicationStatus": {
+      "type": "string",
+      "enum": [
+        "prerelease",
+        "stable"
+      ]
     },
     "RenderRoute": {
       "type": "object",

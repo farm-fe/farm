@@ -5,12 +5,11 @@ use farmfe_core::{
   plugin::{Plugin, PluginFinalizeResourcesHookParam},
   resource::{Resource, ResourceOrigin, ResourceType},
 };
-use farmfe_docs_plan::resource_owner;
 use farmfe_docs_plan::DocPlan;
+use farmfe_docs_plan::resource_owner;
 use farmfe_macro_plugin::farm_plugin;
 use serde::Deserialize;
 use std::{
-  fs,
   path::Path,
   sync::{Arc, RwLock},
 };
@@ -74,8 +73,8 @@ impl Plugin for FarmPluginDocsSeo {
     } else {
       Path::new(&context.config.root).join(path)
     };
-    let bytes = fs::read(&path).map_err(error)?;
-    let plan: DocPlan = serde_json::from_slice(&bytes).map_err(error)?;
+    let plan = farmfe_docs_plan::shared::read_plan(&path, context.shared_resources.as_deref())
+      .map_err(error)?;
     farmfe_docs_plan::verify(&plan).map_err(error)?;
     *self.plan.write().map_err(error)? = Some(plan);
     Ok(Some(()))

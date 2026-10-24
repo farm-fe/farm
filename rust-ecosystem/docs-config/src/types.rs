@@ -45,8 +45,12 @@ pub struct SiteConfig {
   pub theme: ThemeConfig,
   #[serde(default)]
   pub search: Option<SearchConfig>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub ai: Option<AiConfig>,
   #[serde(default)]
   pub ssg: SsgConfig,
+  #[serde(default)]
+  pub build: BuildConfig,
   #[serde(default)]
   pub not_found: NotFoundConfig,
   #[serde(default)]
@@ -115,6 +119,62 @@ impl<'de> Deserialize<'de> for SeoConfig {
       }
     }
     deserializer.deserialize_map(SeoVisitor)
+  }
+}
+
+/// Private build execution settings; never serialized into PublicSiteConfig.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub enum HighlightRepresentation {
+  #[default]
+  Jsx,
+  StaticHtml,
+}
+
+fn default_target_concurrency() -> u32 {
+  1
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct BuildConfig {
+  #[serde(default)]
+  pub highlight_representation: HighlightRepresentation,
+  #[serde(default = "default_target_concurrency")]
+  #[schemars(range(min = 1, max = 2))]
+  pub target_concurrency: u32,
+}
+impl Default for BuildConfig {
+  fn default() -> Self {
+    Self {
+      highlight_representation: HighlightRepresentation::Jsx,
+      target_concurrency: default_target_concurrency(),
+    }
+  }
+}
+impl<'de> Deserialize<'de> for BuildConfig {
+  fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+    // Require a JSON object: a derived struct visitor also accepts arrays.
+    let fields = serde_json::Map::<String, serde_json::Value>::deserialize(deserializer)?;
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct Fields {
+      #[serde(default)]
+      highlight_representation: HighlightRepresentation,
+      #[serde(default = "default_target_concurrency")]
+      target_concurrency: u32,
+    }
+    let fields: Fields = serde_json::from_value(serde_json::Value::Object(fields))
+      .map_err(serde::de::Error::custom)?;
+    if !(1..=2).contains(&fields.target_concurrency) {
+      return Err(serde::de::Error::custom(
+        "build.targetConcurrency must be 1 or 2",
+      ));
+    }
+    Ok(Self {
+      highlight_representation: fields.highlight_representation,
+      target_concurrency: fields.target_concurrency,
+    })
   }
 }
 
@@ -606,4 +666,30 @@ pub struct PublicSiteConfig {
   pub theme: PublicThemeConfig,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub search: Option<SearchConfig>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub ai: Option<AiConfig>,
+}
+
+fn ai_enabled() -> bool {
+  true
+}
+
+/// Opt-in machine-readable documentation. Unknown dynamic MDX fails export.
+#[derive(Clone, Debug, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AiConfig {
+  #[serde(default = "ai_enabled")]
+  pub enabled: bool,
+  #[serde(default)]
+  pub publication_status: PublicationStatus,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub agent_guide_url: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum PublicationStatus {
+  #[default]
+  Prerelease,
+  Stable,
 }

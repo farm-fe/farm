@@ -1,11 +1,11 @@
 use super::*;
 use farmfe_core::{
-  config::{persistent_cache::PersistentCacheConfig, TargetEnv},
+  HashMap,
+  config::{TargetEnv, persistent_cache::PersistentCacheConfig},
   context::CompilationContext,
   module::{Module, ModuleId},
   plugin::PluginFinalizeResourcesHookParam,
   resource::Resource,
-  HashMap,
 };
 use farmfe_docs_config::parse_config;
 use serde_json::json;
@@ -73,12 +73,16 @@ fn browser_hooks_emit_real_resources_before_the_docs_manifest() {
     )
     .unwrap();
   assert_eq!(resources.len(), 2);
-  assert!(String::from_utf8(resources["robots.txt"].bytes.clone())
-    .unwrap()
-    .contains("https://example.com/guide/sitemap.xml"));
-  assert!(resources
-    .values()
-    .all(|resource| !resource.emitted && !resource.should_transform_output_filename));
+  assert!(
+    String::from_utf8(resources["robots.txt"].bytes.clone())
+      .unwrap()
+      .contains("https://example.com/guide/sitemap.xml")
+  );
+  assert!(
+    resources
+      .values()
+      .all(|resource| !resource.emitted && !resource.should_transform_output_filename)
+  );
 }
 
 #[test]
@@ -150,15 +154,17 @@ fn malformed_options_bad_plan_and_changed_sources_fail_in_actual_hooks() {
   plugin.build_start(&context).unwrap();
   fs::write(fixture.root.path().join("docs/index.md"), "# Changed\n").unwrap();
   let mut resources = HashMap::default();
-  assert!(plugin
-    .finalize_resources(
-      &mut PluginFinalizeResourcesHookParam {
-        resources_map: &mut resources,
-        config: &context.config
-      },
-      &context
-    )
-    .is_err());
+  assert!(
+    plugin
+      .finalize_resources(
+        &mut PluginFinalizeResourcesHookParam {
+          resources_map: &mut resources,
+          config: &context.config
+        },
+        &context
+      )
+      .is_err()
+  );
   assert!(resources.is_empty());
 }
 
@@ -377,9 +383,11 @@ fn development_reads_current_rust_context_plan_each_generation() {
   );
   finalize(&plugin, &context, &mut resources).unwrap();
   assert_ne!(resources["sitemap.xml"].bytes, before);
-  assert!(String::from_utf8(resources["sitemap.xml"].bytes.clone())
-    .unwrap()
-    .contains("/guide/docs/moved/"));
+  assert!(
+    String::from_utf8(resources["sitemap.xml"].bytes.clone())
+      .unwrap()
+      .contains("/guide/docs/moved/")
+  );
   let stable = resource_state(&resources);
   context.custom.lock().insert(
     farmfe_docs_plan::DEVELOPMENT_PLAN_CONTEXT_KEY.into(),
@@ -444,8 +452,10 @@ fn development_syndication_resources_are_owned_atomic_and_removed_when_disabled(
   raw.as_object_mut().unwrap().remove("seo");
   publish(&raw);
   finalize(&plugin, &context, &mut resources).unwrap();
-  assert!(!resources
-    .keys()
-    .any(|name| name.ends_with("atom.xml") || name.ends_with("opensearch.xml")));
+  assert!(
+    !resources
+      .keys()
+      .any(|name| name.ends_with("atom.xml") || name.ends_with("opensearch.xml"))
+  );
   assert!(resources.contains_key("blog/rss.xml") && resources.contains_key("zh/blog/rss.xml"));
 }

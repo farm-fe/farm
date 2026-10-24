@@ -93,18 +93,26 @@ export function Tabs({ children, label = 'Tabs', defaultValue, groupId, storageM
     const target = available[next];
     choose(target.value);
     const targetIndex = items.indexOf(target);
-    document.getElementById(`${id}-tab-${targetIndex}`)?.focus();
+    const element = document.getElementById(`${id}-tab-${targetIndex}`);
+    element?.focus({ preventScroll: true });
+    const list = element?.parentElement;
+    if (element && list) {
+      const itemBounds = element.getBoundingClientRect();
+      const listBounds = list.getBoundingClientRect();
+      if (itemBounds.left < listBounds.left) list.scrollLeft += itemBounds.left - listBounds.left;
+      else if (itemBounds.right > listBounds.right) list.scrollLeft += itemBounds.right - listBounds.right;
+    }
   };
   return <section className="farm-docs-tabs" aria-label={label}>
-    <div className="farm-docs-tab-list" role={enhanced ? 'tablist' : undefined} aria-label={enhanced ? label : undefined}>
+    <div className="farm-docs-tab-list" role={enhanced ? 'tablist' : undefined} aria-label={enhanced ? label : undefined} aria-orientation={enhanced ? 'horizontal' : undefined}>
       {items.map((item, index) => <a key={item.value} id={`${id}-tab-${index}`} href={`#${id}-panel-${index}`}
         role={enhanced ? 'tab' : undefined} aria-controls={enhanced ? `${id}-panel-${index}` : undefined}
-        aria-selected={enhanced ? active === item.value : undefined} aria-disabled={item.disabled || undefined}
+        aria-selected={enhanced ? active === item.value : undefined} aria-disabled={item.disabled || undefined} data-active={active === item.value}
         tabIndex={enhanced ? (active === item.value && !item.disabled ? 0 : -1) : undefined}
         onClick={event => { if (!enhanced) return; event.preventDefault(); if (!item.disabled) choose(item.value); }}
         onKeyDown={event => { if (enhanced && !item.disabled) keyboard(event, item.value); }}>{item.label}</a>)}
     </div>
     {items.map((item, index) => <div key={item.value} id={`${id}-panel-${index}`} role={enhanced ? 'tabpanel' : 'region'}
-      aria-labelledby={`${id}-tab-${index}`} hidden={enhanced && active !== item.value} tabIndex={enhanced ? 0 : undefined}>{item.children}</div>)}
+      aria-labelledby={`${id}-tab-${index}`} data-active={active === item.value} hidden={enhanced && active !== item.value} tabIndex={enhanced ? 0 : undefined}>{item.children}</div>)}
   </section>;
 }

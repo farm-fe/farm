@@ -3,6 +3,8 @@ use farmfe_docs_config::typescript;
 #[test]
 fn emits_input_and_public_types_from_the_same_rust_schemas() {
   let output = typescript().unwrap();
+  assert!(output.ends_with('\n'));
+  assert!(!output.ends_with("\n\n"));
   for expected in [
     "export const DOCS_SCHEMA_VERSION = 1 as const;",
     "export type SiteConfig =",

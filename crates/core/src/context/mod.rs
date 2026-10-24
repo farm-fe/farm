@@ -29,6 +29,8 @@ use crate::{
 use self::log_store::LogStore;
 
 pub mod log_store;
+pub mod shared_resources;
+pub mod source_observation;
 pub(crate) const EMPTY_STR: &str = "";
 
 #[farmfe_macro_cache_item::cache_item]
@@ -73,13 +75,26 @@ pub struct CompilationContext {
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>>,
+  /// Immutable host resources; only compilers deliberately sharing a host use this.
+  pub shared_resources: Option<Arc<dyn shared_resources::SharedResourceProvider>>,
+  /// Each compiler has an independent input-observation generation.
+  pub source_observations: Arc<source_observation::SourceObservationLedger>,
   // Keep plugin_driver last so plugin DLLs are unloaded only after all
   // context-owned data structures have been dropped.
   pub plugin_driver: Box<PluginDriver>,
 }
 
 impl CompilationContext {
-  pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+  pub fn new(config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    Self::new_with_resources(config, plugins, None)
+  }
+
+  /// Construct a context with an explicitly supplied read-only host provider.
+  pub fn new_with_resources(
+    mut config: Config,
+    plugins: Vec<Arc<dyn Plugin>>,
+    shared_resources: Option<Arc<dyn shared_resources::SharedResourceProvider>>,
+  ) -> Result<Self> {
     let cache_type = Self::create_persistent_cache_type(&mut config);
     let record = config.record;
     let thread_pool = Arc::new(
@@ -107,6 +122,8 @@ impl CompilationContext {
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::default())),
       custom: Box::new(Mutex::default()),
+      shared_resources,
+      source_observations: Arc::new(source_observation::SourceObservationLedger::default()),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, record)),
     })
   }

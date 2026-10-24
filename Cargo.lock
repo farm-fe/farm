@@ -2199,6 +2199,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_regex",
+ "sha2",
  "swc_atoms 9.0.1",
  "swc_common 21.0.2",
  "swc_css_ast 21.0.1",
@@ -2246,6 +2247,7 @@ name = "farmfe_docs_plan"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "farmfe_core",
  "farmfe_docs_config",
  "farmfe_docs_content",
  "mdxjs",
@@ -2279,6 +2281,7 @@ dependencies = [
 name = "farmfe_docs_snapshot"
 version = "0.1.0"
 dependencies = [
+ "farmfe_core",
  "farmfe_docs_config",
  "farmfe_docs_plan",
  "serde",
@@ -2350,6 +2353,9 @@ dependencies = [
  "eframe",
  "farmfe_compiler",
  "farmfe_core",
+ "farmfe_docs_config",
+ "farmfe_docs_plan",
+ "farmfe_docs_snapshot",
  "farmfe_plugin_resolve",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",

@@ -1,7 +1,7 @@
 use farmfe_docs_config::parse_config;
-use farmfe_docs_plan::{prepare, DocPlan};
+use farmfe_docs_plan::{DocPlan, prepare};
 use farmfe_docs_snapshot::{
-  hash, observe, verify_build, Receipt, ResourceRecord, Target, Verification,
+  Receipt, ResourceRecord, Target, Verification, hash, observe, verify_build,
 };
 use serde_json::json;
 use std::{fs, path::Path};
@@ -20,6 +20,17 @@ fn resource(name: &str, bytes: &[u8]) -> ResourceRecord {
 }
 
 fn fixture() -> (tempfile::TempDir, DocPlan, Verification) {
+  fixture_pages(1)
+}
+
+fn fixture_pages(count: usize) -> (tempfile::TempDir, DocPlan, Verification) {
+  fixture_pages_with_initial_validation(count, true)
+}
+
+fn fixture_pages_with_initial_validation(
+  count: usize,
+  initial_validation: bool,
+) -> (tempfile::TempDir, DocPlan, Verification) {
   let root = tempfile::tempdir().unwrap();
   let path = root.path();
   for name in ["docs", "public", "server"] {
@@ -27,6 +38,12 @@ fn fixture() -> (tempfile::TempDir, DocPlan, Verification) {
   }
   let source = path.join("docs/index.md");
   write(&source, b"# Hello\n");
+  for index in 1..count {
+    write(
+      &path.join(format!("docs/page-{index}.md")),
+      format!("# Page {index}\n").as_bytes(),
+    );
+  }
   let config = parse_config(&json!({"title":"Verify","url":"https://example.com","locales":{"default":"en","items":["en","zh"]},"docs":{"collections":[{"id":"main","dir":"docs","routeBase":"/docs/"}]}}).to_string(),path).unwrap();
   let plan = prepare(&config).unwrap();
   let template = b"<html></html>";
@@ -47,11 +64,12 @@ fn fixture() -> (tempfile::TempDir, DocPlan, Verification) {
   );
   let root_text = path.to_str().unwrap().to_string();
   let browser = Receipt {
-    schema_version: 1,
+    schema_version: 2,
     plan_snapshot_id: plan.snapshot_id.clone(),
     target: Target::Browser,
     root: root_text.clone(),
     sources: vec![observe(&source, &[]).unwrap()],
+    input_observations: vec![],
     resources: vec![
       resource("template.html", template),
       resource("docs-manifest.json", manifest),
@@ -106,7 +124,9 @@ fn fixture() -> (tempfile::TempDir, DocPlan, Verification) {
     server_directory: text("server"),
     template_path: text("template.html"),
   };
-  verify_build(&plan, &root_text, &verification).unwrap();
+  if initial_validation {
+    verify_build(&plan, &root_text, &verification).unwrap();
+  }
   (root, plan, verification)
 }
 
@@ -338,4 +358,124 @@ fn preview_metadata_is_required_and_matches_the_rust_site_even_with_new_receipt_
       "{mutation}"
     );
   }
+}
+
+// Environment policy is exercised in isolated test processes: no unsafe global
+// environment mutation can race other verifier tests.
+#[test]
+fn bounded_verification_parent_process() {
+  let executable = std::env::current_exe().unwrap();
+  for concurrency in ["1", "4"] {
+    for case in [
+      "valid",
+      "corrupt",
+      "missing",
+      "duplicate",
+      "traversal",
+      "parent-symlink",
+      "leaf-symlink",
+    ] {
+      let status = std::process::Command::new(&executable)
+        .args([
+          "--exact",
+          "bounded_verification_child",
+          "--nocapture",
+          "--test-threads=1",
+        ])
+        .env("FARM_DOCS_VERIFY_CONCURRENCY", concurrency)
+        .env("FARM_DOCS_VERIFY_TEST_CASE", case)
+        .status()
+        .unwrap();
+      assert!(status.success(), "concurrency={concurrency} case={case}");
+    }
+  }
+  for invalid in ["0", "5", "01", " 4", "invalid"] {
+    let status = std::process::Command::new(&executable)
+      .args([
+        "--exact",
+        "bounded_verification_child",
+        "--nocapture",
+        "--test-threads=1",
+      ])
+      .env("FARM_DOCS_VERIFY_CONCURRENCY", invalid)
+      .env("FARM_DOCS_VERIFY_TEST_CASE", "invalid-policy")
+      .status()
+      .unwrap();
+    assert!(status.success(), "invalid policy {invalid}");
+  }
+}
+
+#[test]
+fn bounded_verification_child() {
+  let Ok(case) = std::env::var("FARM_DOCS_VERIFY_TEST_CASE") else {
+    return;
+  };
+  let (root, plan, mut verification) =
+    fixture_pages_with_initial_validation(8, case != "invalid-policy");
+  let marker = root.path().join("old-output-marker");
+  write(&marker, b"unchanged");
+  let html = root.path().join("public").join(&plan.routes[0].output_path);
+  match case.as_str() {
+    "valid" | "invalid-policy" => {}
+    "corrupt" => write(&html, b"changed"),
+    "missing" => fs::remove_file(&html).unwrap(),
+    "duplicate" | "traversal" => {
+      let mut writes: serde_json::Value =
+        serde_json::from_slice(&fs::read(&verification.writes_path).unwrap()).unwrap();
+      if case == "duplicate" {
+        writes["pages"][1] = writes["pages"][0].clone();
+      } else {
+        writes["pages"][0]["outputPath"] = "../outside.html".into();
+      }
+      let bytes = serde_json::to_vec(&writes).unwrap();
+      write(Path::new(&verification.writes_path), &bytes);
+      verification.writes_hash = hash(&bytes);
+    }
+    "leaf-symlink" => {
+      let target = root.path().join("leaf-target.html");
+      fs::copy(&html, &target).unwrap();
+      fs::remove_file(&html).unwrap();
+      #[cfg(unix)]
+      let result = std::os::unix::fs::symlink(&target, &html);
+      #[cfg(windows)]
+      let result = std::os::windows::fs::symlink_file(&target, &html);
+      if let Err(failure) = result {
+        if failure.kind() == std::io::ErrorKind::PermissionDenied
+          || (cfg!(windows) && failure.raw_os_error() == Some(1314))
+        {
+          eprintln!("symlink test unavailable on this host");
+          return;
+        }
+        panic!("create test symlink: {failure}");
+      }
+    }
+    "parent-symlink" => {
+      let parent = html.parent().unwrap();
+      let target = root.path().join("parent-target");
+      fs::rename(parent, &target).unwrap();
+      #[cfg(unix)]
+      let result = std::os::unix::fs::symlink(&target, parent);
+      #[cfg(windows)]
+      let result = std::os::windows::fs::symlink_dir(&target, parent);
+      if let Err(failure) = result {
+        if failure.kind() == std::io::ErrorKind::PermissionDenied
+          || (cfg!(windows) && failure.raw_os_error() == Some(1314))
+        {
+          eprintln!("symlink test unavailable on this host");
+          return;
+        }
+        panic!("create test symlink: {failure}");
+      }
+    }
+    _ => panic!("unknown test case"),
+  }
+  let result = verify_build(&plan, root.path().to_str().unwrap(), &verification);
+  if case == "valid" {
+    result.unwrap();
+  } else if case == "invalid-policy" {
+    assert!(result.unwrap_err().contains("FARM_DOCS_VERIFY_CONCURRENCY"));
+  } else {
+    assert!(result.is_err(), "{case}");
+  }
+  assert_eq!(fs::read(marker).unwrap(), b"unchanged");
 }

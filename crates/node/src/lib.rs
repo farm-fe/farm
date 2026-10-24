@@ -39,6 +39,7 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 #[macro_use]
 extern crate napi_derive;
 
+pub mod docs_host;
 #[cfg(feature = "file_watcher")]
 pub mod file_watcher;
 pub mod output_lock;
@@ -107,6 +108,15 @@ pub struct JsCompiler {
 impl JsCompiler {
   #[napi(constructor)]
   pub fn new(env: Env, config: Object) -> napi::Result<Self> {
+    let shared_resources = if config.has_named_property("docsSnapshot")? {
+      let snapshot = config
+        .get_named_property::<napi::bindgen_prelude::ClassInstance<docs_host::DocsSnapshot>>(
+          "docsSnapshot",
+        )?;
+      Some(snapshot.provider()?)
+    } else {
+      None
+    };
     let js_plugins = unsafe {
       Vec::<Object>::from_napi_value(
         env.raw(),
@@ -164,10 +174,20 @@ impl JsCompiler {
 
     Ok(Self {
       compiler: Arc::new(
-        Compiler::new(config, plugins_adapters)
+        Compiler::new_with_resources(config, plugins_adapters, shared_resources)
           .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))?,
       ),
     })
+  }
+
+  #[napi]
+  pub fn input_observations(&self) -> napi::Result<String> {
+    let ledger = &self.compiler.context().source_observations;
+    let records = ledger
+      .sealed_records()
+      .map_err(|error| napi::Error::new(Status::GenericFailure, error.to_string()))?;
+    farmfe_core::serde_json::to_string(&records)
+      .map_err(|error| napi::Error::new(Status::GenericFailure, error.to_string()))
   }
 
   #[napi]

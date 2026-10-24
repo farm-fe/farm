@@ -49,7 +49,8 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "type-check": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test:ai": "node --test tests/machine-readable.test.mjs"
   },
   "dependencies": {
     "@farmfe/core": "workspace:*",

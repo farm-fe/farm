@@ -1,13 +1,13 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use farmfe_core::{
+  HashMap,
   context::CompilationContext,
   module::{
-    module_group::{ModuleGroupId, ModuleGroupType},
     ModuleId,
+    module_group::{ModuleGroupId, ModuleGroupType},
   },
   resource::{Resource, ResourceType},
-  HashMap,
 };
 use farmfe_docs_plan::DocPlan;
 use serde::Serialize;
@@ -82,7 +82,13 @@ pub(crate) fn collect(
   }
   if let Some(start) = timing {
     use std::io::Write;
-    let _ = writeln!(std::io::stderr(), "[FARM_UPDATE_TIMING] scope=page_resources stage=collected elapsed_us={} thread={:?} pages={}", start.elapsed().as_micros(), std::thread::current().id(), result.len());
+    let _ = writeln!(
+      std::io::stderr(),
+      "[FARM_UPDATE_TIMING] scope=page_resources stage=collected elapsed_us={} thread={:?} pages={}",
+      start.elapsed().as_micros(),
+      std::thread::current().id(),
+      result.len()
+    );
   }
   Ok(Some(result))
 }

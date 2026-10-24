@@ -1,4 +1,4 @@
-use crate::{hash, prepare::farm_path, routes, PreparedAsset, StaticDirectoryInput};
+use crate::{PreparedAsset, StaticDirectoryInput, hash, prepare::farm_path, routes};
 use farmfe_docs_config::{PublicSiteConfig, ValidatedConfig};
 use std::{
   collections::BTreeMap,
@@ -144,6 +144,9 @@ pub fn reserved(site: &PublicSiteConfig) -> Vec<String> {
       .map(|(_, output, _)| output),
   );
   names.extend(crate::syndication::output_paths(site));
+  if site.ai.as_ref().is_some_and(|ai| ai.enabled) {
+    names.extend(["docs-ai-manifest.json".to_string(), "llms.txt".to_string()]);
+  }
   names
 }
 pub fn validate_names(names: &[String]) -> Result<(), String> {

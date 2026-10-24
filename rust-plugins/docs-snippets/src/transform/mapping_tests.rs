@@ -19,6 +19,10 @@ fn position(text: &str, needle: &str) -> (u32, u32) {
 }
 
 fn assert_mapped(import: &str, snippet: &str) {
+  assert_mapped_options(import, snippet, &Options::default());
+}
+
+fn assert_mapped_options(import: &str, snippet: &str, options: &Options) {
   let source = format!(
     "---\ntitle: Unicode map\n---\n\nimport {{{import}}} from '@farmfe/docs/snippets';\n\n# 世界\n\n{snippet}\n\n<span>{{'AFTER_SNIPPET_SENTINEL'}}</span>\n"
   );
@@ -48,9 +52,7 @@ fn assert_mapped(import: &str, snippet: &str) {
   let mut ast = parsed.ast;
   let globals = Globals::new();
   resolve_module_mark(&mut ast, false, &globals);
-  let report = GLOBALS
-    .set(&globals, || lower(&mut ast, &Options::default()))
-    .unwrap();
+  let report = GLOBALS.set(&globals, || lower(&mut ast, options)).unwrap();
   assert_eq!(report.transformed, 1);
   let mut mappings = Vec::new();
   let code = String::from_utf8(
@@ -81,6 +83,89 @@ fn assert_mapped(import: &str, snippet: &str) {
     upstream.get_source_contents(0).map(|value| value.as_str()),
     Some(source.as_str())
   );
+}
+
+#[test]
+fn static_html_traces_through_real_mdx_map_to_author_line() {
+  let mut options = Options::default();
+  options.highlight.representation = farmfe_syntax_highlight::HighlightRepresentation::StaticHtml;
+  assert_mapped_options(
+    "CodeBlock",
+    "<CodeBlock language=\"ts\">{'const answer = 42;'}</CodeBlock>",
+    &options,
+  );
+}
+
+/// Run with FARM_DOCS_HIGHLIGHT_FIXTURE_DIR to export real compiler output for
+/// the Node SSR/browser harness. Without it this still verifies both pipelines.
+#[test]
+fn react_runtime_fixture_uses_real_mdx_and_snippets_outputs() {
+  let source = r#"import {CodeBlock, CommandTabs} from '@farmfe/docs/snippets';
+
+# Static highlight fixture
+
+```text title="unsafe.txt" {1} showLineNumbers
+</code><script>alert("x")</script>& λ
+```
+
+<CodeBlock language="text" title="marker.txt" showLineNumbers highlightLines="1">{'</code><script>alert("x")</script>& λ\n'}</CodeBlock>
+
+<CommandTabs commands={{npm:'npm run dev',pnpm:'pnpm dev',yarn:'yarn dev',bun:'bun run dev'}}/>
+"#;
+  for (name, representation) in [
+    ("jsx", farmfe_syntax_highlight::HighlightRepresentation::Jsx),
+    (
+      "static-html",
+      farmfe_syntax_highlight::HighlightRepresentation::StaticHtml,
+    ),
+  ] {
+    let mut options = Options::default();
+    options.highlight.representation = representation;
+    let compiled = farmfe_docs_content::compile_content_with_features(
+      source,
+      &mdxjs::Options {
+        filepath: Some("runtime-fixture.mdx".into()),
+        jsx: true,
+        ..Default::default()
+      },
+      true,
+      Some(&options.highlight),
+    )
+    .unwrap();
+    let parsed = parse_module(
+      &ModuleId::from("runtime-fixture.jsx"),
+      Arc::new(compiled.code),
+      Syntax::Es(EsSyntax {
+        jsx: true,
+        ..Default::default()
+      }),
+      EsVersion::latest(),
+    )
+    .unwrap();
+    let mut ast = parsed.ast;
+    let globals = Globals::new();
+    resolve_module_mark(&mut ast, false, &globals);
+    let report = GLOBALS.set(&globals, || lower(&mut ast, &options)).unwrap();
+    assert_eq!(report.transformed, 2);
+    let code = String::from_utf8(
+      codegen_module(&ast, parsed.source_map, None, Default::default(), None).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+      code.contains("dangerouslySetInnerHTML"),
+      name == "static-html"
+    );
+    if let Some(directory) = std::env::var_os("FARM_DOCS_HIGHLIGHT_FIXTURE_DIR") {
+      let directory = std::path::PathBuf::from(directory);
+      std::fs::create_dir_all(&directory).unwrap();
+      std::fs::write(directory.join(format!("{name}.jsx")), code).unwrap();
+      std::fs::write(
+        directory.join(format!("{name}.map.json")),
+        compiled.source_map.unwrap(),
+      )
+      .unwrap();
+    }
+  }
 }
 
 #[test]

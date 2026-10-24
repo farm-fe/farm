@@ -7,6 +7,16 @@
     "url"
   ],
   "properties": {
+    "ai": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AiConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "basePath": {
       "default": "/",
       "type": "string"
@@ -22,6 +32,17 @@
         }
       ]
     },
+    "build": {
+      "default": {
+        "highlightRepresentation": "jsx",
+        "targetConcurrency": 1
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/BuildConfig"
+        }
+      ]
+    },
     "canonicalOverrides": {
       "type": "array",
       "items": {
@@ -30,8 +51,8 @@
     },
     "docs": {
       "default": {
-        "collections": [],
-        "defaultVersion": "current"
+        "defaultVersion": "current",
+        "collections": []
       },
       "allOf": [
         {
@@ -127,15 +148,15 @@
     },
     "theme": {
       "default": {
-        "colorMode": "system",
-        "components": null,
-        "customCss": [],
-        "footer": {
-          "copyright": null,
-          "links": []
-        },
         "logo": null,
-        "navbar": []
+        "navbar": [],
+        "footer": {
+          "links": [],
+          "copyright": null
+        },
+        "colorMode": "system",
+        "customCss": [],
+        "components": null
       },
       "allOf": [
         {
@@ -195,6 +216,31 @@
         "warning": {
           "default": "warning",
           "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AiConfig": {
+      "description": "Opt-in machine-readable documentation. Unknown dynamic MDX fails export.",
+      "type": "object",
+      "properties": {
+        "agentGuideUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "publicationStatus": {
+          "default": "prerelease",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PublicationStatus"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -269,6 +315,27 @@
         "full"
       ]
     },
+    "BuildConfig": {
+      "type": "object",
+      "properties": {
+        "highlightRepresentation": {
+          "default": "jsx",
+          "allOf": [
+            {
+              "$ref": "#/definitions/HighlightRepresentation"
+            }
+          ]
+        },
+        "targetConcurrency": {
+          "default": 1,
+          "type": "integer",
+          "format": "uint32",
+          "maximum": 2.0,
+          "minimum": 1.0
+        }
+      },
+      "additionalProperties": false
+    },
     "CanonicalOverride": {
       "type": "object",
       "required": [
@@ -295,14 +362,14 @@
       "properties": {
         "admonitionLabels": {
           "default": {
-            "caution": "caution",
-            "danger": "danger",
-            "important": "important",
-            "info": "info",
             "note": "note",
-            "success": "success",
             "tip": "tip",
-            "warning": "warning"
+            "info": "info",
+            "warning": "warning",
+            "danger": "danger",
+            "caution": "caution",
+            "important": "important",
+            "success": "success"
           },
           "allOf": [
             {
@@ -466,6 +533,14 @@
       },
       "additionalProperties": false
     },
+    "HighlightRepresentation": {
+      "description": "Private build execution settings; never serialized into PublicSiteConfig.",
+      "type": "string",
+      "enum": [
+        "jsx",
+        "static-html"
+      ]
+    },
     "LinkException": {
       "type": "object",
       "required": [
@@ -627,6 +702,13 @@
       },
       "additionalProperties": false
     },
+    "PublicationStatus": {
+      "type": "string",
+      "enum": [
+        "prerelease",
+        "stable"
+      ]
+    },
     "SearchConfig": {
       "type": "object",
       "required": [
@@ -740,8 +822,8 @@
         },
         "footer": {
           "default": {
-            "copyright": null,
-            "links": []
+            "links": [],
+            "copyright": null
           },
           "allOf": [
             {

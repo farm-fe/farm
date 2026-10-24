@@ -63,6 +63,9 @@ pub fn typescript_with_schemas(
       render(schema, name, &definitions)?
     ));
   }
+  let end = output.trim_end_matches('\n').len();
+  output.truncate(end);
+  output.push('\n');
   Ok(output)
 }
 

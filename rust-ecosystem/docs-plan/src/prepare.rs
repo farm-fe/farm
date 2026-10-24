@@ -2,13 +2,29 @@ use crate::metadata::{DiagnosticSource, MetadataSource};
 use crate::*;
 use farmfe_docs_config::{CollectionKind, ContentFormat, ValidatedConfig};
 use farmfe_docs_content::{
-  emit_content, parse_content, ContentReference, HighlightOptions, ReferenceKind,
+  ContentReference, HighlightOptions, ParsedContent, ReferenceKind, emit_content, parse_content,
 };
 use std::{
   collections::HashMap,
   fs,
   path::{Path, PathBuf},
+  sync::Arc,
+  time::{Duration, Instant},
 };
+
+pub(crate) fn highlight_options(config: &ValidatedConfig) -> HighlightOptions {
+  HighlightOptions {
+    representation: match config.build.highlight_representation {
+      farmfe_docs_config::HighlightRepresentation::Jsx => {
+        farmfe_docs_content::HighlightRepresentation::Jsx
+      }
+      farmfe_docs_config::HighlightRepresentation::StaticHtml => {
+        farmfe_docs_content::HighlightRepresentation::StaticHtml
+      }
+    },
+    ..HighlightOptions::default()
+  }
+}
 
 pub fn farm_path(path: &Path) -> Result<String, String> {
   let path = path
@@ -135,7 +151,7 @@ pub(crate) fn safe_slug(value: &str) -> Result<String, String> {
   Ok(value.trim_matches('/').into())
 }
 pub fn prepare(config: &ValidatedConfig) -> Result<DocPlan, String> {
-  prepare_with_cache(config, &mut ContentCache::default())
+  prepare_with_cache(config, &mut ContentCache::transient())
 }
 
 /// Reuse only unchanged original content; every derived plan is validated again.
@@ -144,13 +160,104 @@ pub fn prepare_with_cache(
   cache: &mut ContentCache,
 ) -> Result<DocPlan, String> {
   cache.begin();
-  let plan = prepare_inner(config, cache)?;
-  cache.commit();
-  Ok(plan)
+  let result = prepare_inner(config, cache);
+  if result.is_ok() {
+    cache.commit();
+  }
+  cache.report_profile(result.is_ok());
+  result
+}
+
+/// Earlier route consumers need private mutable trees. The final consumer can
+/// move the original if no persistent cache or other collection still owns it.
+fn take_document(
+  documents: &mut HashMap<(String, String), Arc<ParsedContent>>,
+  consumers: &mut HashMap<(String, String), usize>,
+  key: &(String, String),
+) -> Result<ParsedContent, String> {
+  let remaining = consumers
+    .get_mut(key)
+    .ok_or("[DOCS_INDEX] missing content consumers")?;
+  if *remaining == 0 {
+    return Err("[DOCS_INDEX] exhausted content consumers".into());
+  }
+  *remaining -= 1;
+  if *remaining == 0 {
+    documents
+      .remove(key)
+      .map(Arc::unwrap_or_clone)
+      .ok_or_else(|| "[DOCS_INDEX] missing parsed content".into())
+  } else {
+    documents
+      .get(key)
+      .map(|document| document.as_ref().clone())
+      .ok_or_else(|| "[DOCS_INDEX] missing parsed content".into())
+  }
+}
+
+/// Local aggregate only: no document paths, payloads, global state or per-page output.
+struct PrepareProfile {
+  started: Option<Instant>,
+  stages: std::collections::BTreeMap<&'static str, (Duration, usize, usize)>,
+  active: Option<&'static str>,
+  complete: bool,
+}
+impl PrepareProfile {
+  fn new() -> Self {
+    Self {
+      started: std::env::var("FARM_DOCS_VERIFY_PROFILE")
+        .is_ok_and(|value| value == "1")
+        .then(Instant::now),
+      stages: Default::default(),
+      active: None,
+      complete: false,
+    }
+  }
+  fn start(&mut self, stage: &'static str) -> Option<Instant> {
+    self.started.map(|_| {
+      self.active = Some(stage);
+      Instant::now()
+    })
+  }
+  fn end(&mut self, stage: &'static str, started: Option<Instant>, count: usize, bytes: usize) {
+    if let Some(started) = started {
+      let metric = self.stages.entry(stage).or_default();
+      metric.0 += started.elapsed();
+      metric.1 = metric.1.saturating_add(count);
+      metric.2 = metric.2.saturating_add(bytes);
+      self.active = None;
+    }
+  }
+}
+impl Drop for PrepareProfile {
+  fn drop(&mut self) {
+    if let Some(started) = self.started {
+      let stages = self
+        .stages
+        .iter()
+        .map(|(stage, (elapsed, count, bytes))| {
+          serde_json::json!({"stage": stage, "milliseconds": elapsed.as_secs_f64() * 1000.0,
+          "count": count, "bytes": bytes})
+        })
+        .collect::<Vec<_>>();
+      eprintln!(
+        "[FarmDocsPrepareProfile] {}",
+        serde_json::json!({
+          "component": "prepare", "complete": self.complete, "interruptedStage": self.active,
+          "totalMilliseconds": started.elapsed().as_secs_f64() * 1000.0,
+          "stages": stages, "finalSealInsidePrepare": false,
+          "scope": "one serial prepare; cache lookup/parse reported separately; zero bytes means uncounted"
+        })
+      );
+    }
+  }
 }
 
 fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<DocPlan, String> {
+  let mut profile = PrepareProfile::new();
+  let started = profile.start("static_scan_inclusive");
   let (static_files, static_inputs) = crate::static_files::scan(config)?;
+  profile.end("static_scan_inclusive", started, static_files.len(), 0);
   let mut assets = crate::assets::Registry::with_static(&static_files);
   let mut plan = DocPlan {
     schema_version: 2,
@@ -203,7 +310,9 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
   for collection in &config.collections {
     let mut ids = HashMap::new();
     let scripts = collection.public.kind == CollectionKind::Page;
+    let started = profile.start("content_listing_scan");
     let (entries_hash, files) = content_listing(&collection.directory, scripts)?;
+    profile.end("content_listing_scan", started, files.len(), 0);
     plan.content_inputs.push(ContentDirectoryInput {
       path: farm_path(&collection.directory)?,
       scripts,
@@ -233,9 +342,13 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
         id.clone()
       };
       let source_path = farm_path(&file)?;
+      let started = profile.start("source_read");
       let bytes =
         fs::read(&file).map_err(|error| format!("[DOCS_CONTENT_READ] {source_path}: {error}"))?;
+      profile.end("source_read", started, 1, bytes.len());
+      let started = profile.start("source_hash");
       let source_hash = hash(&bytes);
+      profile.end("source_hash", started, 1, bytes.len());
       let source = String::from_utf8(bytes)
         .map_err(|error| format!("[DOCS_ENCODING] {source_path}: {error}"))?;
       let extension = file
@@ -244,6 +357,7 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
         .unwrap_or("");
       let is_script = collection.public.kind == CollectionKind::Page
         && matches!(extension, "js" | "jsx" | "ts" | "tsx");
+      let started = profile.start("script_page_metadata_inclusive");
       let script = if is_script {
         crate::script_pages::parse(
           &source,
@@ -254,6 +368,12 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
       } else {
         None
       };
+      profile.end(
+        "script_page_metadata_inclusive",
+        started,
+        usize::from(is_script),
+        0,
+      );
       if is_script && script.is_none() {
         continue;
       }
@@ -267,21 +387,28 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
       } else {
         Some(
           cache
-            .parse(&source_path, format, &source_hash, || {
-              parse_content(
-                &source,
-                &mdxjs::Options {
-                  filepath: Some(source_path.clone()),
-                  jsx: true,
-                  ..Default::default()
-                },
-                Some(&HighlightOptions::default()),
-                format,
-              )
-            })
+            .shared_parse_with_options(
+              &source_path,
+              format,
+              &source_hash,
+              &format!("{:?}", config.build.highlight_representation),
+              || {
+                parse_content(
+                  &source,
+                  &mdxjs::Options {
+                    filepath: Some(source_path.clone()),
+                    jsx: true,
+                    ..Default::default()
+                  },
+                  Some(&highlight_options(config)),
+                  format,
+                )
+              },
+            )
             .map_err(|error| format!("[DOCS_CONTENT_COMPILE] {source_path}: {error}"))?,
         )
       };
+      let started = profile.start("route_metadata");
       let frontmatter = script
         .as_ref()
         .map(|script| script.metadata.clone())
@@ -289,7 +416,7 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
         .ok_or("[DOCS_INDEX] missing metadata")?;
       let metadata_source = MetadataSource {
         file: &source_path,
-        content: compiled.as_ref(),
+        content: compiled.as_deref(),
       };
       let toc = compiled
         .as_ref()
@@ -428,6 +555,8 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
       };
       plan.routes.push(RenderRoute {
         page: PublicPage {
+          markdown_url: None,
+          markdown_sha256: None,
           key: key.clone(),
           id,
           collection: collection.public.id.clone(),
@@ -457,6 +586,7 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
         output_path,
       });
       plan.modules.push(PreparedModule {
+        machine_markdown: None,
         key,
         source_path: source_path.clone(),
         source_hash,
@@ -464,7 +594,8 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
           source.clone()
         } else {
           String::new()
-        },
+        }
+        .into(),
         source_map: None,
         generated_source: None,
         language: script
@@ -479,8 +610,10 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
       if let Some(compiled) = compiled {
         documents.insert((source_path, collection.public.id.clone()), compiled);
       }
+      profile.end("route_metadata", started, 1, 0);
     }
   }
+  let started = profile.start("route_index_translation_blog");
   crate::translations::expand(config, &mut plan)?;
   crate::blog::index(config, &mut plan)?;
   crate::blog_views::generate(config, &mut plan, &mut documents)?;
@@ -489,18 +622,27 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
     return Err("[DOCS_CONTENT_EMPTY] no documents found".into());
   }
   crate::translations::connect(config, &mut plan)?;
+  profile.end(
+    "route_index_translation_blog",
+    started,
+    plan.routes.len(),
+    0,
+  );
+  let started = profile.start("sidebar");
   crate::sidebars::apply(config, &mut plan)?;
+  profile.end("sidebar", started, plan.sidebars.len(), 0);
+  let started = profile.start("link_index");
   let link_index = crate::links::Index::new(config, &plan, &documents)?;
   let brand_href = crate::brand_home::resolve_logo(&plan, &link_index)?;
   let mut exceptions = crate::link_exceptions::Registry::new(config, &plan)?;
+  profile.end("link_index", started, plan.routes.len(), 0);
+  let started = profile.start("consumer_index_and_cache_release");
   let mut emitted = vec![];
+  let mut machine_documents = vec![];
+  let mut consumers = HashMap::new();
   for (route, module) in plan.routes.iter().zip(&plan.modules) {
-    if module.language != ContentLanguage::Markdown {
-      emitted.push(None);
-      continue;
-    }
-    let mut document = documents
-      .get(&(
+    if module.language == ContentLanguage::Markdown {
+      let key = (
         module.source_path.clone(),
         route
           .page
@@ -508,9 +650,38 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
           .as_ref()
           .map(|source| source.collection.clone())
           .unwrap_or_else(|| route.page.collection.clone()),
-      ))
-      .cloned()
-      .ok_or("[DOCS_INDEX] missing parsed content")?;
+      );
+      *consumers.entry(key).or_insert(0usize) += 1;
+    }
+  }
+  // The link index has already captured anchors. A one-shot cache no longer
+  // needs to retain an extra owner; persistent development caches still do.
+  cache.release_transient_originals();
+  profile.end(
+    "consumer_index_and_cache_release",
+    started,
+    consumers.len(),
+    0,
+  );
+  for (route, module) in plan.routes.iter().zip(&plan.modules) {
+    if module.language != ContentLanguage::Markdown {
+      emitted.push(None);
+      machine_documents.push(None);
+      continue;
+    }
+    let document_key = (
+      module.source_path.clone(),
+      route
+        .page
+        .fallback_source
+        .as_ref()
+        .map(|source| source.collection.clone())
+        .unwrap_or_else(|| route.page.collection.clone()),
+    );
+    let started = profile.start("ast_ownership");
+    let mut document = take_document(&mut documents, &mut consumers, &document_key)?;
+    profile.end("ast_ownership", started, 1, 0);
+    let started = profile.start("link_binding_and_labels");
     let collection = config
       .collections
       .iter()
@@ -534,9 +705,40 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
     for (url, source, suffix) in bindings {
       document.bind_resource(url, source, suffix);
     }
-    emitted.push(Some(emit_content(document, true)?));
+    profile.end("link_binding_and_labels", started, 1, 0);
+    if route.page.kind == "doc" && config.public.ai.as_ref().is_some_and(|ai| ai.enabled) {
+      let started = profile.start("ai_semantic_export");
+      let body = document
+        .machine_markdown()
+        .map_err(|error| format!("{error} (document {})", route.page.id))?;
+      let markdown = crate::machine_readable::document(&config.public, &route.page, &body)?;
+      let url = crate::machine_readable::markdown_url(&config.public, &route.output_path)?;
+      let bytes = markdown.len();
+      machine_documents.push(Some((url, hash(markdown.as_bytes()), markdown)));
+      profile.end("ai_semantic_export", started, 1, bytes);
+    } else {
+      machine_documents.push(None);
+    }
+    let started = profile.start("ast_emit_inclusive");
+    let content = emit_content(document, true)?;
+    let bytes = content.code.len() + content.source_map.as_ref().map_or(0, |map| map.len());
+    emitted.push(Some(content));
+    profile.end("ast_emit_inclusive", started, 1, bytes);
   }
+  let started = profile.start("output_assembly_validation");
   let exception_diagnostics = exceptions.finish()?;
+  for ((route, module), machine) in plan
+    .routes
+    .iter_mut()
+    .zip(&mut plan.modules)
+    .zip(machine_documents)
+  {
+    if let Some((url, digest, markdown)) = machine {
+      route.page.markdown_url = Some(url);
+      route.page.markdown_sha256 = Some(digest);
+      module.machine_markdown = Some(markdown.into());
+    }
+  }
   for asset in assets.files.into_values() {
     let output = routes::collision_key(&asset.output_path);
     if plan.routes.iter().any(|route| {
@@ -582,6 +784,7 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
       .iter()
       .map(|file| file.output_path.clone()),
   );
+  output_names.extend(crate::machine_readable::markdown_paths(&plan)?);
   output_names.extend(
     plan
       .assets
@@ -592,8 +795,8 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
   crate::static_files::validate_names(&output_names)?;
   for (module, content) in plan.modules.iter_mut().zip(emitted) {
     if let Some(content) = content {
-      module.code = content.code;
-      module.source_map = content.source_map;
+      module.code = content.code.into();
+      module.source_map = content.source_map.map(Into::into);
     }
   }
   plan.public_diagnostics.extend(exception_diagnostics.public);
@@ -601,9 +804,166 @@ fn prepare_inner(config: &ValidatedConfig, cache: &mut ContentCache) -> Result<D
   if let (Some(logo), Some(href)) = (&mut plan.site.theme.logo, brand_href) {
     logo.href = href;
   }
+  profile.end("output_assembly_validation", started, plan.modules.len(), 0);
+  let started = profile.start("syndication_seo_not_found");
   crate::syndication::validate(&plan)?;
   plan.seo = crate::seo::heads(&plan)?;
   plan.not_found = crate::not_found::plan(&plan)?;
+  profile.end("syndication_seo_not_found", started, plan.routes.len(), 0);
+  let started = profile.start("plan_identity");
   plan.snapshot_id = identity(&plan)?;
+  profile.end("plan_identity", started, plan.modules.len(), 0);
+  profile.complete = true;
   Ok(plan)
+}
+
+#[cfg(test)]
+mod ownership_tests {
+  use super::*;
+
+  fn document() -> Arc<ParsedContent> {
+    Arc::new(
+      parse_content(
+        "# Original\n\n:::note\nBody\n:::\n",
+        &mdxjs::Options::default(),
+        None,
+        farmfe_docs_content::ContentFormat::Mdx,
+      )
+      .unwrap(),
+    )
+  }
+
+  #[test]
+  fn last_single_consumer_moves_original_heading_allocation() {
+    let key = ("/source.md".into(), "en".into());
+    let original = document();
+    let allocation = original.toc.as_ptr();
+    let mut documents = [(key.clone(), original)].into();
+    let mut consumers = [(key.clone(), 1)].into();
+    let owned = take_document(&mut documents, &mut consumers, &key).unwrap();
+    assert_eq!(
+      allocation,
+      owned.toc.as_ptr(),
+      "single cold consumer must not deep-clone"
+    );
+    assert!(documents.is_empty());
+    assert!(take_document(&mut documents, &mut consumers, &key).is_err());
+  }
+
+  #[test]
+  fn fallback_consumers_are_private_and_the_last_moves_the_original() {
+    let key = ("/source.md".into(), "en".into());
+    let original = document();
+    let allocation = original.toc.as_ptr();
+    let mut documents = [(key.clone(), original)].into();
+    let mut consumers = [(key.clone(), 2)].into();
+    let mut first = take_document(&mut documents, &mut consumers, &key).unwrap();
+    assert_ne!(allocation, first.toc.as_ptr());
+    first.apply_admonition_labels(&[("note".into(), "First locale".into())].into());
+    let mut last = take_document(&mut documents, &mut consumers, &key).unwrap();
+    assert_eq!(allocation, last.toc.as_ptr());
+    last.apply_admonition_labels(&[("note".into(), "Last locale".into())].into());
+    let first_code = emit_content(first, false).unwrap().code;
+    let last_code = emit_content(last, false).unwrap().code;
+    assert!(first_code.contains("First locale") && !first_code.contains("Last locale"));
+    assert!(last_code.contains("Last locale") && !last_code.contains("First locale"));
+  }
+
+  #[test]
+  fn cold_single_source_parses_once_and_matches_persistent_preparation() {
+    let root = tempfile::tempdir().unwrap();
+    fs::create_dir(root.path().join("docs")).unwrap();
+    fs::write(
+      root.path().join("docs/index.md"),
+      "# One\n\n:::note\nBody\n:::\n",
+    )
+    .unwrap();
+    let config = farmfe_docs_config::parse_config(
+      &serde_json::json!({
+        "title":"Ownership", "url":"https://example.com", "docs":{"collections":[
+          {"id":"main", "dir":"docs", "routeBase":"/docs/"}
+        ]}
+      })
+      .to_string(),
+      root.path(),
+    )
+    .unwrap();
+    let mut cold_cache = ContentCache::transient();
+    let cold = prepare_with_cache(&config, &mut cold_cache).unwrap();
+    assert_eq!(cold_cache.parse_calls(), 1);
+    let mut warm_cache = ContentCache::default();
+    for _ in 0..2 {
+      let warm = prepare_with_cache(&config, &mut warm_cache).unwrap();
+      assert_eq!(
+        serde_json::to_value(&cold).unwrap(),
+        serde_json::to_value(&warm).unwrap()
+      );
+    }
+    assert_eq!(warm_cache.parse_calls(), 1);
+  }
+
+  #[test]
+  fn shared_source_and_fallback_collections_parse_once_and_keep_rewrites_private() {
+    for fallback in [false, true] {
+      let root = tempfile::tempdir().unwrap();
+      fs::create_dir(root.path().join("docs")).unwrap();
+      fs::write(
+        root.path().join("docs/index.md"),
+        "# Index\n\n:::note\nBody\n:::\n\n[Target](./target.md)\n",
+      )
+      .unwrap();
+      fs::write(root.path().join("docs/target.md"), "# Target\n").unwrap();
+      let mut raw = serde_json::json!({
+        "title":"Ownership", "url":"https://example.com", "locales":{"default":"en","items":["en","zh"]},
+        "docs":{"collections":[
+          {"id":"en","group":"docs","locale":"en","dir":"docs","routeBase":"/docs/","admonitionLabels":{"note":"English label"}},
+          {"id":"zh","group":"docs","locale":"zh","dir":"docs","routeBase":"/zh/docs/","admonitionLabels":{"note":"Chinese label"}}
+        ]}
+      });
+      if fallback {
+        fs::create_dir(root.path().join("zh")).unwrap();
+        raw["docs"]["collections"][1]["dir"] = serde_json::json!("zh");
+        raw["docs"]["collections"][1]["fallbackLocale"] = serde_json::json!("en");
+      }
+      let config = farmfe_docs_config::parse_config(&raw.to_string(), root.path()).unwrap();
+      let mut cold_cache = ContentCache::transient();
+      let cold = prepare_with_cache(&config, &mut cold_cache).unwrap();
+      assert_eq!(cold.routes.len(), 4);
+      assert_eq!(
+        cold_cache.parse_calls(),
+        2,
+        "same paths/options shared across two collections"
+      );
+      let mut warm_cache = ContentCache::default();
+      for _ in 0..2 {
+        let warm = prepare_with_cache(&config, &mut warm_cache).unwrap();
+        assert_eq!(
+          serde_json::to_value(&cold).unwrap(),
+          serde_json::to_value(&warm).unwrap()
+        );
+        for route in warm.routes.iter().filter(|route| route.page.id == "index") {
+          let module = warm
+            .modules
+            .iter()
+            .find(|module| module.key == route.page.key)
+            .unwrap();
+          let (label, forbidden, target) = if route.page.locale == "en" {
+            ("English label", "Chinese label", "/docs/target")
+          } else {
+            ("Chinese label", "English label", "/zh/docs/target")
+          };
+          assert!(module.code.contains(label) && !module.code.contains(forbidden));
+          assert!(
+            module.code.contains(target),
+            "reference rewritten for final collection"
+          );
+        }
+      }
+      assert_eq!(
+        warm_cache.parse_calls(),
+        2,
+        "unchanged warm generations retain originals"
+      );
+    }
+  }
 }

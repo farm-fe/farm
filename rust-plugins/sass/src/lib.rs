@@ -17,10 +17,7 @@ use farmfe_core::{
   serde_json::{self, Value},
 };
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::{
-  fs::{self, read_file_utf8},
-  regex::Regex,
-};
+use farmfe_toolkit::regex::Regex;
 use farmfe_utils::relative;
 use grass::{Fs, InputSyntax, Options as GrassOptions, OutputStyle};
 use rebase_urls::rebase_urls;
@@ -51,6 +48,7 @@ struct FarmFs {
   context: Arc<CompilationContext>,
   watched_files: Mutex<HashSet<PathBuf>>,
   source_records: Mutex<HashMap<String, source_map::SourceRecord>>,
+  observation_error: Mutex<Option<String>>,
 }
 
 impl Debug for FarmFs {
@@ -78,6 +76,7 @@ impl FarmFs {
       context,
       watched_files: Mutex::new(HashSet::new()),
       source_records: Mutex::new(HashMap::new()),
+      observation_error: Mutex::new(None),
     }
   }
 
@@ -120,17 +119,47 @@ impl FarmFs {
     Ok(())
   }
 
+  fn query(&self, path: &Path, directory: bool) -> bool {
+    match self
+      .context
+      .source_observations
+      .metadata(&self.root_importer.to_string(), path)
+    {
+      Ok(metadata) => metadata.is_some_and(|item| {
+        if directory {
+          item.is_dir()
+        } else {
+          item.is_file()
+        }
+      }),
+      Err(error) => {
+        if let Ok(mut slot) = self.observation_error.lock() {
+          *slot = Some(error.to_string());
+        }
+        false
+      }
+    }
+  }
+
   fn resolve_path(&self, path: &Path) -> Option<PathBuf> {
     if same_path(path, &self.root_file) {
       return Some(self.root_file.clone());
     }
 
-    if path.is_file() {
+    if self.query(path, false) {
       return Some(path.to_path_buf());
     }
 
     let source = path_to_resolve_source(path, &self.context.config.root);
-    resolve_importer(source, &self.root_importer, &self.context).ok()?
+    match resolve_importer(source, &self.root_importer, &self.context) {
+      Ok(resolved) => resolved,
+      Err(error) => {
+        if let Ok(mut slot) = self.observation_error.lock() {
+          *slot = Some(error.to_string());
+        }
+        None
+      }
+    }
   }
 
   fn watched_module_ids(&self) -> Vec<ModuleId> {
@@ -158,7 +187,7 @@ impl FarmFs {
 
 impl Fs for FarmFs {
   fn is_dir(&self, path: &Path) -> bool {
-    path.is_dir()
+    self.query(path, true)
   }
 
   fn is_file(&self, path: &Path) -> bool {
@@ -185,8 +214,13 @@ impl Fs for FarmFs {
 
     let resolved_path_string = resolved_path.to_string_lossy().to_string();
     let root_file_string = self.root_file.to_string_lossy().to_string();
-    let content =
-      read_file_utf8(&resolved_path_string).map_err(|error| io::Error::other(error.to_string()))?;
+    let content = String::from_utf8(
+      self
+        .context
+        .source_observations
+        .read_file(&self.root_importer.to_string(), &resolved_path)?,
+    )
+    .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
 
     let compiled = rebase_urls(
       &resolved_path_string,
@@ -316,19 +350,23 @@ impl Plugin for FarmPluginSass {
   fn load(
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     if param.query.is_empty() && self.regex.is_match(param.resolved_path) {
-      let content = fs::read_file_utf8(param.resolved_path);
-
-      if let Ok(content) = content {
-        return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
-          content,
-          module_type: ModuleType::Custom(String::from("sass")),
-          source_map: None,
-        }));
-      }
+      let content = context
+        .source_observations
+        .read_file(&param.module_id, Path::new(param.resolved_path))
+        .and_then(|bytes| {
+          String::from_utf8(bytes)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+        })
+        .map_err(|error| farmfe_core::error::CompilationError::GenericError(error.to_string()))?;
+      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        content,
+        module_type: ModuleType::Custom(String::from("sass")),
+        source_map: None,
+      }));
     }
 
     Ok(None)
@@ -360,8 +398,16 @@ impl Plugin for FarmPluginSass {
           css,
           source_map: None,
         })
+      };
+      if let Some(error) = fs
+        .observation_error
+        .lock()
+        .map_err(|error| farmfe_core::error::CompilationError::GenericError(error.to_string()))?
+        .take()
+      {
+        return Err(farmfe_core::error::CompilationError::GenericError(error));
       }
-      .map_err(|e| farmfe_core::error::CompilationError::TransformError {
+      let output = output.map_err(|e| farmfe_core::error::CompilationError::TransformError {
         resolved_path: param.resolved_path.to_string(),
         msg: e.to_string(),
       })?;
@@ -442,4 +488,33 @@ fn get_options<'a>(options: Value, resolved_path: &str, fs: &'a FarmFs) -> Grass
   }
 
   grass_options
+}
+
+#[cfg(test)]
+mod observation_tests {
+  use super::*;
+
+  #[test]
+  fn missing_sass_probe_is_recorded_without_reading_transform_content() {
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+    let root = std::env::temp_dir().join(format!("farm-sass-observed-{}", std::process::id()));
+    let importer = ModuleId::new(&root.to_string_lossy(), "", &context.config.root);
+    let fs = FarmFs::new(
+      &root.to_string_lossy(),
+      importer.clone(),
+      "derived content".into(),
+      None,
+      context.clone(),
+    );
+    let missing = root.join("missing.scss");
+    assert!(!fs.query(&missing, false));
+    assert_eq!(fs.read_root().unwrap(), b"derived content");
+    let records = context.source_observations.records().unwrap();
+    assert!(records.iter().any(|record| record.reader == importer.to_string()
+      && matches!(&record.value, farmfe_core::context::source_observation::ObservedValue::Metadata { file_type, .. } if file_type == "absent")));
+    assert!(!records.iter().any(|record| matches!(
+      record.value,
+      farmfe_core::context::source_observation::ObservedValue::File { .. }
+    )));
+  }
 }

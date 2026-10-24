@@ -1,13 +1,13 @@
 use swc_core::{
   common::{
+    FileName, FilePathMapping, SourceMap,
     comments::{Comment, Comments, SingleThreadedComments},
     source_map::SourceMapGenConfig,
     sync::Lrc,
-    FileName, FilePathMapping, SourceMap,
   },
   ecma::{
     ast::Module,
-    codegen::{text_writer::JsWriter, Emitter},
+    codegen::{Emitter, text_writer::JsWriter},
   },
 };
 

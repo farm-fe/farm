@@ -334,6 +334,7 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
+    self.context.source_observations.begin_generation();
     self.context.stats.add_hmr_compilation_stats();
     self.context.stats.set_start_time();
 
