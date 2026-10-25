@@ -320,8 +320,12 @@ where
   F: FnMut(PathBuf, PathBuf),
 {
   // find closest Cargo.toml
-  let mut file_path =
-    RelativePath::new(test_file_path).to_logical_path(std::env::current_dir().unwrap());
+  let test_path = std::path::Path::new(test_file_path);
+  let mut file_path = if test_path.is_absolute() {
+    test_path.to_path_buf()
+  } else {
+    RelativePath::new(test_file_path).to_logical_path(std::env::current_dir().unwrap())
+  };
   while let Some(parent) = file_path.parent() {
     if parent.join("Cargo.toml").exists() {
       break;
@@ -391,6 +395,7 @@ mod glob_migration_tests {
       "tests/**/input.js",
       root.path().join("src/lib.rs").to_str().unwrap(),
       |file, base| {
+        assert_eq!(base, root.path());
         files.push(
           file
             .strip_prefix(base)
