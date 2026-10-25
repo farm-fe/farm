@@ -1,9 +1,8 @@
-import { Link } from "@farmfe/docs/client";
+import { Link, useLocale } from "@farmfe/docs/client";
 import clsx from "clsx";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { SiteText } from "../../site-text";
-import farmCard from "../card";
 import ShinyTextEx from "../MagicUi/shiny-text";
 import styles from "./index.module.css";
 import { ProgressBar } from "./ProgressBar";
@@ -11,113 +10,148 @@ import { ProgressBar } from "./ProgressBar";
 const BENCHMARK_DATA = {
   ColdStart: [
     {
-      name: "farm",
+      name: "Farm",
       time: 0.396,
     },
     {
-      name: "rsbuild",
+      name: "RsBuild",
       time: 0.468,
     },
     {
-      name: "vite",
+      name: "Vite",
       time: 1.700,
     },
     {
-      name: "webpack",
+      name: "Webpack",
       time: 2.078,
     },
   ],
   HotStart: [
     {
-      name: "farm",
+      name: "Farm",
       time: 0.273,
     },
     {
-      name: "rsbuild",
+      name: "RsBuild",
       time: 0.468,
     },
     {
-      name: "vite",
+      name: "Vite",
       time: 1.426,
     },
     {
-      name: "webpack",
+      name: "Webpack",
       time: 0.945,
     },
   ],
   HmrRoot: [
     {
-      name: "farm",
+      name: "Farm",
       time: 0.018,
     },
     {
-      name: "rsbuild",
+      name: "RsBuild",
       time: 0.087,
     },
     {
-      name: "vite",
+      name: "Vite",
       time: 0.022,
     },
     {
-      name: "webpack",
+      name: "Webpack",
       time: 0.532,
     },
   ],
   HmrLeaf: [
     {
-      name: "farm",
+      name: "Farm",
       time: 0.013,
     },
     {
-      name: "rsbuild",
+      name: "RsBuild",
       time: 0.074,
     },
     {
-      name: "vite",
+      name: "Vite",
       time: 0.011,
     },
     {
-      name: "webpack",
+      name: "Webpack",
       time: 0.165,
     },
   ],
   ColdBuild: [
     {
-      name: "farm",
+      name: "Farm",
       time: 0.313,
     },
     {
-      name: "rsbuild",
+      name: "RsBuild",
       time: 0.363,
     },
     {
-      name: "vite",
+      name: "Vite",
       time: 1.543,
     },
     {
-      name: "webpack",
+      name: "Webpack",
       time: 4.128,
     },
   ],
   HotBuild: [
     {
-      name: "farm",
+      name: "Farm",
       time: 0.16,
     },
     {
-      name: "rsbuild",
+      name: "RsBuild",
       time: 0.363,
     },
     {
-      name: "vite",
+      name: "Vite",
       time: 1.540,
     },
     {
-      name: "webpack",
+      name: "Webpack",
       time: 0.527,
     },
   ],
 };
+// Stable component identities retain scroll position and keyboard focus on selection.
+function Pill({ section, visibleSection, onSelect }) {
+    return (
+      <div>
+        <button
+          type="button"
+          aria-pressed={visibleSection === section.title}
+          className={clsx(
+            "flex-1 cursor-pointer rounded-md border-0 py-2 px-2 sm:px-4 text-center font-jakarta text-sm font-semibold",
+            visibleSection === section.title
+              ? "bg-fuchsia-600 text-white"
+              : "color-re bg-transparent"
+          )}
+          onClick={() => onSelect(section.title)}
+        >
+          {section.name}
+        </button>
+      </div>
+    );
+  }
+
+function PillTabs({ SCENE, children, visibleSection, onSelect }) {
+    return (
+      <div>
+        <div className="max-w-full overflow-x-auto">
+          <div role="group" aria-label="Benchmark scenarios" className={clsx(styles.pills, "inline-flex mb-4 items-center rounded-lg text-sm lg:text-base")}>
+            {SCENE.map((item, index) => {
+              return <Pill section={item} key={index} visibleSection={visibleSection} onSelect={onSelect}></Pill>;
+            })}
+          </div>
+        </div>
+        <div>{children}</div>
+      </div>
+    );
+  }
 export default function Benchmark() {
   const SCENE = [
     { name: <SiteText id="benchmark.coldStart" />, title: "ColdStart" },
@@ -127,64 +161,29 @@ export default function Benchmark() {
     { name: <SiteText id="benchmark.coldBuild" />, title: "ColdBuild" },
     { name: <SiteText id="benchmark.hotBuild" />, title: "HotBuild" },
   ];
+  const zh = useLocale() === "zh";
   const [activeScene, setActiveScene] = useState("ColdStart");
-  const { ref, inView } = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-  const performanceInfoList = useMemo(() => BENCHMARK_DATA[activeScene], [activeScene]);
+  const { ref, inView } = useInView();
+  const performanceInfoList = BENCHMARK_DATA[activeScene];
 
   const [visibleSection, setVisibleSection] = useState("ColdStart");
 
-  function Pill({ section }) {
-    return (
-      <div>
-        <div
-          className={clsx(
-            "flex-1 cursor-pointer rounded-md py-2 px-2 sm:px-4 text-center font-jakarta text-sm font-semibold",
-            visibleSection === section.title
-              ? "bg-fuchsia-600 text-white"
-              : "color-re"
-          )}
-          onClick={() => {
-            setVisibleSection(section.title);
-            setActiveScene(section.title);
-          }}
-        >
-          {section.name}
-        </div>
-      </div>
-    );
-  }
-
-  function PillTabs({ SCENE, children }) {
-    return (
-      <div className="overflow-x-auto">
-        <div className="inline-flex mb-4 items-center rounded-lg text-sm lg:text-base">
-          {SCENE.map((item, index) => {
-            return <Pill section={item} key={index}></Pill>;
-          })}
-        </div>
-        <div>{children}</div>
-      </div>
-    );
-  }
   return (
     <>
-      <div ref={ref} className="flex relative z-10">
+      <div ref={ref} className="flex min-w-0 w-full">
         <>
           <div
-            className={`${styles.tabs} flex flex-col items-center my-4 z-1`}
+            className={`${styles.tabs} flex min-w-0 w-full flex-col items-center my-4 z-1`}
           >
-            <div className="flex h-20 w-full flex-1 items-center self-start lg:justify-end">
-              <div className="w-full">
-                <PillTabs SCENE={SCENE}>
+            <div className="flex h-20 min-w-0 w-full flex-1 items-center self-start lg:justify-end">
+              <div className="min-w-0 w-full">
+                <PillTabs SCENE={SCENE} visibleSection={visibleSection} onSelect={section => { setVisibleSection(section); setActiveScene(section); }}>
                   {performanceInfoList.map((info) => (
                     <div
                       key={info.name}
                       className="flex flex-center justify-start my-8 flex-col sm:flex-row"
                     >
-                      {(
+                      {inView && (
                         <>
                           <div
                             className="flex items-center text-light-500  text-center font-bold"
@@ -192,9 +191,8 @@ export default function Benchmark() {
                           >
                             {info.name}
                           </div>
-                          <ProgressBar
+                          <ProgressBar animate={inView}
                             value={info.time}
-                            animate={inView}
                             max={Math.max(
                               ...performanceInfoList.map((info) => info.time)
                             )}
@@ -209,9 +207,10 @@ export default function Benchmark() {
                     rel="stylesheet"
                     href="https://github.com/farm-fe/performance-compare"
                   >
-                    {/* <SiteText id="benchmark.details" /> */}
+
                     <ShinyTextEx />
                   </Link>
+                  <p className="text-xs font-normal opacity-70">{zh ? "数据沿用原官网 Benchmark；不是 v2 正式版的新测量。" : "Benchmark data from the original website; not a new v2 release measurement."}</p>
                 </div>
               </div>
             </div>

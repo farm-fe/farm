@@ -4,20 +4,19 @@ sidebar_position: 1
 
 import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
-:::warning
-如果您正在使用的是 2.0.0-nightly 版本。请注意以下几点：
-- Farm 正在为 2.0 版本努力, 我们重构了整个 node 端和 新增了很多实用的功能, 后续请查看 RoadMap
-- 此版本是一个夜间构建版本，可能包含未经过全面测试的新功能和修复。因此，可能会出现不稳定的行为或意外的错误。
-- 由于此版本处于开发阶段，功能和API可能会在未来的版本中发生变化。请定期查看更新日志以获取最新信息。
-- 建议不要在生产环境中使用此版本，除非您已做好应对潜在问题的准备。
-
-如果遇到了问题， 可以提供 Issues 来向我们反馈, 您的反馈对我们改进 Farm 的功能以及稳定性至关重要。
-:::
 
 # 快速开始
 
+:::note Farm v2 — Rust native 编译
+编译器与官方原生编译插件运行在 Rust 中。Node.js 仍负责配置、CLI 和开发服务器编排；React SSR 与网站 UI 使用 JavaScript。Vite 适配能力保留用于迁移。
+
+这是 v2 候选文档：所需官方包发布前，应使用匹配且经过验证的候选。下方通用创建命令安装 registry 当前版本，并不固定或证明 v2 已正式发布。功能范围见[官方 Rust 插件总览](/zh/docs/plugins/official-plugins/overview)。
+:::
+
+
+
 :::note
-Farm 需要 **Node 16.18.0 及更高版本**。
+Farm 需要 **Node 20.0.0 及更高版本**。
 :::
 
 ## 在线体验
@@ -28,11 +27,6 @@ Farm 需要 **Node 16.18.0 及更高版本**。
 ## 1. 创建一个 Farm 项目
 
 <PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
-
-:::warning
-如果使用的是nightly 版本则需要把 Farm 的依赖都安装成 nightly 版本, 所有核心包以及插件我们都已经提供nightly 版本
-<PackageManagerTabs commands={{"npm":"npm add @farmfe/{cli,core}@nightly","pnpm":"pnpm add @farmfe/{cli,core}@nightly","yarn":"yarn add @farmfe/{cli,core}@nightly","bun":"bun add @farmfe/{cli,core}@nightly"}} />
-:::
 
 
 :::note{title="然后按照提示操作！"}
@@ -101,3 +95,5 @@ npm run build
 - [配置参考](/docs/config/configuring-farm)
 - [插件](/docs/plugins/official-plugins/overview)
 ---
+
+构建可供其他项目使用的包，请参阅 [Library 打包](/zh/docs/features/library)。

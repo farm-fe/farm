@@ -14,13 +14,13 @@ Farm v2 包括：
 - **服务器中间件重写**：用 connect 风格的中间件替代了 Koa
 - **更好的 HMR 处理**：更严格的 origin 校验，新增子选项（`clientPort`、`path`、`timeout`、`overlay`、`protocol`）
 - **新功能**：CSS `transformToScript`、CSS modules `localsConversion`、`minify.include`/`exclude`、`persistentCache.envs`、`persistentCache.globalBuiltinCacheKeyStrategy`
-- **性能提升**：更快的构建和更好的模块打包
+- **构建流程调整**：更新打包与插件集成；具体构建/HMR表现需要结合实际项目及缓存配置验证。
 
 ## 破坏性变更
 
 ### 配置变更
 
-#### `server` 替代 `devServer`
+#### 使用 `server` 配置键
 
 在 v2 中，开发服务器配置键从 `devServer` 重命名为 `server`：
 
@@ -162,11 +162,11 @@ v2 新增 hooks：
 
 ### 1. 更新 Farm 版本
 
+先核对已发布渠道，再选择互相兼容的 v2 core、CLI 和插件版本。`latest` 不代表一定是 v2，各包的大版本也不必相同。本候选文档不要求发布或安装尚不可用的版本；安装后保留锁文件。
+
 ```bash
-# 更新到 Farm v2
-npm install @farmfe/core@latest @farmfe/cli@latest
-# 或
-pnpm install @farmfe/core@latest @farmfe/cli@latest
+npm view @farmfe/core dist-tags --json
+npm view @farmfe/cli dist-tags --json
 ```
 
 ### 2. 更新配置文件

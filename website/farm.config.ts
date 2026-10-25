@@ -5,7 +5,7 @@ import tailwindcss from '@farmfe/plugin-tailwindcss';
 import tailwindOptions from './farm.tailwind.json';
 import site from './farm-docs.site.json';
 
-// Rust validates this independent configuration; legacy site config is not loaded.
+// Site migration paths are configuration, not a framework compatibility layer.
 export default defineDocsConfig(site as SiteConfig, {
   snippets: {
     rendererModule: fileURLToPath(
@@ -14,6 +14,9 @@ export default defineDocsConfig(site as SiteConfig, {
   },
   plugins: [sass(), tailwindcss(tailwindOptions)],
   compilation: {
+    resolve: {
+      alias: { '@site': fileURLToPath(new URL('.', import.meta.url)) }
+    },
     output: { path: 'build-farm' },
     persistentCache: false,
     sourcemap: false

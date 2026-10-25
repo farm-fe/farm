@@ -4,6 +4,7 @@ use crate::ast::{AstNode, Declaration};
 use crate::candidate::ParsedCandidate;
 use crate::theme::{Theme, ThemeOptions};
 mod effects;
+mod visual;
 
 /// A list of CSS property-value pairs that form a utility class.
 type DeclList = Vec<(&'static str, &'static str)>;
@@ -18,6 +19,8 @@ pub type FunctionalHandler = fn(&ParsedCandidate, &Theme) -> Option<Vec<(String,
 pub struct UtilityRegistry {
   static_utilities: HashMap<&'static str, DeclList>,
   functional: HashMap<&'static str, FunctionalHandler>,
+  // Only an explicit legacy corePlugins.preflight=false enables width-only borders.
+  preserve_border_width_style: bool,
   /// User-defined static utilities registered from `@utility` blocks in the
   /// source CSS. Looked up before the built-ins so users may override.
   user_static_utilities: HashMap<String, Vec<(String, String)>>,
@@ -29,6 +32,39 @@ impl UtilityRegistry {
     let mut m: HashMap<&'static str, DeclList> = HashMap::new();
     m.insert("filter", vec![("filter", effects::FILTER)]);
     m.insert("filter-none", vec![("filter", "none")]);
+
+    // Background clipping is independent of background color/image utilities.
+    m.insert("bg-clip-border", vec![("background-clip", "border-box")]);
+    m.insert("bg-clip-padding", vec![("background-clip", "padding-box")]);
+    m.insert("bg-clip-content", vec![("background-clip", "content-box")]);
+    m.insert(
+      "bg-clip-text",
+      vec![
+        ("-webkit-background-clip", "text"),
+        ("background-clip", "text"),
+      ],
+    );
+
+    m.insert("bg-no-repeat", vec![("background-repeat", "no-repeat")]);
+    m.insert("self-start", vec![("align-self", "flex-start")]);
+    m.insert(
+      "transform-gpu",
+      vec![
+        ("--tw-transform-gpu", "translateZ(0)"),
+        ("transform", visual::TRANSFORM),
+      ],
+    );
+
+    for (name, style) in [
+      ("border-solid", "solid"),
+      ("border-dashed", "dashed"),
+      ("border-dotted", "dotted"),
+      ("border-double", "double"),
+      ("border-hidden", "hidden"),
+      ("border-none", "none"),
+    ] {
+      m.insert(name, vec![("border-style", style)]);
+    }
 
     // Display
     m.insert("block", vec![("display", "block")]);
@@ -344,6 +380,21 @@ impl UtilityRegistry {
     // Colors
     f.insert("text", handle_text);
     f.insert("bg", handle_bg);
+    f.insert("backdrop-blur", visual::backdrop_blur);
+    f.insert("shadow", visual::shadow);
+    f.insert("transition", visual::transition);
+    f.insert("duration", visual::duration);
+    f.insert("ease", visual::ease);
+    f.insert("translate-x", visual::translate);
+    f.insert("translate-y", visual::translate);
+    f.insert("tracking", visual::tracking);
+    f.insert("space-x", visual::space);
+    f.insert("space-y", visual::space);
+    f.insert("bg-gradient-to", handle_gradient);
+    f.insert("bg-linear-to", handle_gradient);
+    f.insert("from", handle_gradient_stop);
+    f.insert("via", handle_gradient_stop);
+    f.insert("to", handle_gradient_stop);
     f.insert("border", handle_border);
     f.insert("fill", handle_fill);
     f.insert("stroke", handle_stroke);
@@ -413,8 +464,15 @@ impl UtilityRegistry {
     Self {
       static_utilities: m,
       functional: f,
+      preserve_border_width_style: false,
       user_static_utilities: HashMap::new(),
     }
+  }
+
+  /// Preserve the author's border style when consuming a legacy configuration
+  /// that explicitly disables preflight. This does not affect user utilities.
+  pub(crate) fn set_preserve_border_width_style(&mut self, preserve: bool) {
+    self.preserve_border_width_style = preserve;
   }
 
   /// Register a user-defined static utility (typically discovered from an
@@ -517,6 +575,42 @@ impl UtilityRegistry {
       );
     }
 
+    if compound_key == "container" && !candidate.negative && candidate.modifier.is_none() {
+      let class_name = build_class_name(candidate);
+      let decl = |value: String, property: &str| {
+        AstNode::Declaration(Declaration {
+          property: property.into(),
+          value: Some(value),
+          important: candidate.important,
+        })
+      };
+      let mut nodes = wrap_with_variants(
+        &class_name,
+        &candidate.variants,
+        vec![decl("100%".into(), "width")],
+        variant_registry,
+      );
+      for (name, fallback) in [
+        ("sm", "40rem"),
+        ("md", "48rem"),
+        ("lg", "64rem"),
+        ("xl", "80rem"),
+        ("2xl", "96rem"),
+      ] {
+        let key = format!("--breakpoint-{name}");
+        let width = theme.get(&[&key]).unwrap_or(fallback);
+        let mut variants = candidate.variants.clone();
+        variants.push(format!("min-[{width}]"));
+        nodes.extend(wrap_with_variants(
+          &class_name,
+          &variants,
+          vec![decl(width.into(), "max-width")],
+          variant_registry,
+        ));
+      }
+      return nodes;
+    }
+
     // Functional utilities — match the compound key first, then the root.
     // This lets `rounded-t-lg` find `rounded-t` even though `split_root`
     // tags it as root="rounded" + value="t-lg".
@@ -527,7 +621,19 @@ impl UtilityRegistry {
       let mut reshaped = candidate.clone();
       reshaped.utility_root = key.to_string();
       reshaped.utility_value = leftover_value;
-      if let Some(decls) = handler(&reshaped, theme) {
+      if let Some(mut decls) = handler(&reshaped, theme) {
+        if self.preserve_border_width_style
+          && (*key == "border" || key.starts_with("border-"))
+          && decls
+            .iter()
+            .any(|(property, _)| property.starts_with("border-") && property.ends_with("-width"))
+        {
+          // The v3 width utility relies on authored/preflight styles. Never
+          // filter user-defined utilities, which returned before this branch.
+          decls.retain(|(property, _)| {
+            !(property.starts_with("border-") && property.ends_with("-style"))
+          });
+        }
         if decls.is_empty() {
           return Vec::new();
         }
@@ -542,12 +648,11 @@ impl UtilityRegistry {
             })
           })
           .collect();
-        return wrap_with_variants(
-          &class_name,
-          &candidate.variants,
-          decl_nodes,
-          variant_registry,
-        );
+        let mut variants = candidate.variants.clone();
+        if *key == "space-x" || *key == "space-y" {
+          variants.insert(0, "[&>:not([hidden])~:not([hidden])]".into());
+        }
+        return wrap_with_variants(&class_name, &variants, decl_nodes, variant_registry);
       }
     }
 
@@ -759,6 +864,38 @@ fn maybe_neg(value: String, negative: bool) -> String {
   }
 }
 
+/// Normalize arbitrary alpha to a percentage-valued color-mix weight.
+/// Opaque variables and math without a unit use the conventional 0..1 alpha ratio.
+/// Percentage-valued variables can be expressed as `calc(var(--alpha) + 0%)`;
+/// a variable's runtime dimension cannot otherwise be inferred at build time.
+fn normalize_arbitrary_alpha(raw: &str) -> Option<String> {
+  let decoded = crate::utils::decode_arbitrary_value::decode_arbitrary_value(raw);
+  let value = decoded.trim();
+  if let Ok(number) = value.parse::<f64>() {
+    return (number.is_finite() && (0.0..=1.0).contains(&number))
+      .then(|| format!("{}%", trim_float(number * 100.0)));
+  }
+  if let Some(number) = value
+    .strip_suffix('%')
+    .and_then(|percent| percent.parse::<f64>().ok())
+  {
+    return (number.is_finite() && (0.0..=100.0).contains(&number))
+      .then(|| format!("{}%", trim_float(number)));
+  }
+  let (function, _) = value.split_once('(')?;
+  if !value.ends_with(')')
+    || !(value.starts_with("var(--")
+      || crate::utils::math_operators::MATH_FUNCTIONS.contains(&function))
+  {
+    return None;
+  }
+  if value.contains('%') {
+    Some(value.into())
+  } else {
+    Some(format!("calc({value} * 100%)"))
+  }
+}
+
 /// Resolve a colour value via the theme `--color-*` namespace, honouring an
 /// optional `/<opacity>` modifier.
 fn resolve_color(c: &ParsedCandidate, theme: &Theme) -> Option<String> {
@@ -773,10 +910,12 @@ fn resolve_color(c: &ParsedCandidate, theme: &Theme) -> Option<String> {
     None => Some(color_value),
     Some(m) => {
       let alpha = if c.modifier_is_arbitrary {
-        // Strip the surrounding `[...]`
-        m.trim_start_matches('[').trim_end_matches(']').to_string()
+        normalize_arbitrary_alpha(m.strip_prefix('[')?.strip_suffix(']')?)?
       } else if is_numeric(m) {
         let n: f64 = m.parse().ok()?;
+        if !n.is_finite() || !(0.0..=100.0).contains(&n) {
+          return None;
+        }
         format!("{}%", trim_float(n))
       } else {
         m.to_string()
@@ -942,6 +1081,16 @@ fn handle_min_h(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>>
   sizing_decl(c, t, &["min-height"])
 }
 fn handle_max_w(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  let container = t
+    .resolve(
+      c.utility_value.as_deref(),
+      &["--container"],
+      ThemeOptions::NONE,
+    )
+    .filter(|_| c.arbitrary_value.is_none() && !c.negative && c.modifier.is_none());
+  if let Some(value) = container {
+    return Some(vec![("max-width".into(), value)]);
+  }
   sizing_decl(c, t, &["max-width"])
 }
 fn handle_max_h(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
@@ -970,8 +1119,107 @@ fn handle_text(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> 
   Some(vec![("color".into(), v)])
 }
 fn handle_bg(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  use crate::utils::infer_data_type::{infer_data_type, DataType};
+  if let Some(value) = &c.arbitrary_value {
+    let property = match c.type_hint.as_deref() {
+      Some("image" | "url") => "background-image",
+      Some("length" | "size") => "background-size",
+      Some("position") => "background-position",
+      Some("color") => "background-color",
+      Some(_) => return None,
+      None => match infer_data_type(
+        value,
+        &[
+          DataType::Image,
+          DataType::Url,
+          DataType::BgSize,
+          DataType::Position,
+        ],
+      ) {
+        Some(DataType::Image | DataType::Url) => "background-image",
+        Some(DataType::BgSize) => "background-size",
+        Some(DataType::Position) => "background-position",
+        _ => "background-color",
+      },
+    };
+    if property != "background-color" {
+      return c
+        .modifier
+        .is_none()
+        .then(|| vec![(property.into(), value.clone())]);
+    }
+  }
   let v = resolve_color(c, t)?;
   Some(vec![("background-color".into(), v)])
+}
+
+const GRADIENT_STOPS: &str = "var(--tw-gradient-from, transparent) var(--tw-gradient-from-position, 0%), var(--tw-gradient-via-stops, var(--tw-gradient-to, transparent) var(--tw-gradient-to-position, 100%))";
+
+// The legacy v3 spelling uses sRGB; the v4 directional spelling defaults
+// to oklab. Numeric angles/interpolation modifiers are intentionally not
+// accepted here until their full contracts are implemented.
+fn handle_gradient(c: &ParsedCandidate, _: &Theme) -> Option<Vec<(String, String)>> {
+  if c.negative || c.modifier.is_some() || c.arbitrary_value.is_some() {
+    return None;
+  }
+  let direction = match c.utility_value.as_deref()? {
+    "t" => "top",
+    "tr" => "top right",
+    "r" => "right",
+    "br" => "bottom right",
+    "b" => "bottom",
+    "bl" => "bottom left",
+    "l" => "left",
+    "tl" => "top left",
+    _ => return None,
+  };
+  let interpolation = if c.utility_root == "bg-linear-to" {
+    " in oklab"
+  } else {
+    ""
+  };
+  Some(vec![
+    ("--tw-gradient-stops".into(), GRADIENT_STOPS.into()),
+    (
+      "background-image".into(),
+      format!("linear-gradient(to {direction}{interpolation}, var(--tw-gradient-stops))"),
+    ),
+  ])
+}
+
+fn handle_gradient_stop(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
+  if c.negative {
+    return None;
+  }
+  let root = c.utility_root.as_str();
+  let raw = c
+    .arbitrary_value
+    .as_deref()
+    .or(c.utility_value.as_deref())?;
+  if c.type_hint.as_deref() == Some("length")
+    || c.type_hint.as_deref() == Some("percentage")
+    || raw.ends_with('%')
+  {
+    if c.modifier.is_some() {
+      return None;
+    }
+    return Some(vec![
+      (format!("--tw-gradient-{root}-position"), raw.into()),
+      ("--tw-gradient-stops".into(), GRADIENT_STOPS.into()),
+    ]);
+  }
+  if c.type_hint.as_deref().is_some_and(|hint| hint != "color") {
+    return None;
+  }
+  let color = resolve_color(c, t)?;
+  let mut declarations = vec![
+    (format!("--tw-gradient-{root}"), color),
+    ("--tw-gradient-stops".into(), GRADIENT_STOPS.into()),
+  ];
+  if root == "via" {
+    declarations.push(("--tw-gradient-via-stops".into(), "var(--tw-gradient-via) var(--tw-gradient-via-position, 50%), var(--tw-gradient-to, transparent) var(--tw-gradient-to-position, 100%)".into()));
+  }
+  Some(declarations)
 }
 fn handle_border(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
   // `border` (no value) → border-width: 1px

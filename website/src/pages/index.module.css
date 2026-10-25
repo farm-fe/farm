@@ -4,7 +4,8 @@
  */
 
 .heroBanner {
-  padding: 3rem 0;
+  /* Original py-* utilities own responsive spacing. The page CSS chunk loads
+     after global utilities here, unlike the original single stylesheet. */
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -27,8 +28,8 @@
 .buttons {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 20px;
+  align-items: center;
   /* justify-content: center; */
 }
 
@@ -182,4 +183,9 @@
   background: linear-gradient(to bottom right, black, gray 40%, white);
   -webkit-background-clip: text;
   color: transparent;
+}
+
+@media (max-width: 600px) {
+  .buttons > a { flex: 1 1 144px; min-width: 0; }
+  .buttons > a > div { width: 100%; box-sizing: border-box; }
 }

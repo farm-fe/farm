@@ -1,0 +1,18 @@
+flowchart LR
+  accTitle: Plugin hook dispatch strategies
+  accDescr: Serial passes results in priority order. First stops on a handled result. Parallel waits for all plugin callbacks. This does not make all compilation single-threaded.
+  subgraph Serial["serial: ordered callbacks"]
+    direction LR
+    S1["Plugin 1"] --> S2["Plugin 2"] --> S3["Plugin 3"]
+  end
+  subgraph First["first: stop on handled result"]
+    direction LR
+    F1["Plugin 1"] --> Q{"Handled?"}
+    Q -->|no| F2["Plugin 2"]
+    Q -->|yes| R["Return result"]
+  end
+  subgraph Parallel["parallel: callbacks run together"]
+    direction LR
+    P["Dispatch"] --> P1["Plugin 1"] & P2["Plugin 2"] & P3["Plugin 3"]
+    P1 & P2 & P3 --> J["Wait for all"]
+  end

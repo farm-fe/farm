@@ -1,3 +1,4 @@
+import './farm-docs-theme-presentation.test.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';

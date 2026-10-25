@@ -42,8 +42,8 @@ export default defineConfig({
 
 Farm 编译器有三种库打包策略，见 [`output.libraryBundleType`](/zh/docs/config/compilation-options#output-librarybundletype)：
 
-:::caution
-当前 `@farmfe/core` 的 TypeScript `UserConfig` 和校验 schema 尚未向 `farm.config.ts` 暴露 `output.libraryBundleType`。下面的模式描述编译器行为，不是当前可用的 JavaScript 配置字段。
+:::note
+V2 候选版的 JavaScript API 已支持在 `targetEnv` 为 `library` 时设置 `compilation.output.libraryBundleType`。可选 `single-bundle`、`multiple-bundle` 或 `bundle-less`；省略时保留编译器默认的 `single-bundle`。正式 V2 发布前，请使用匹配的候选包。
 :::
 
 ### `single-bundle`（默认）
@@ -62,7 +62,7 @@ Farm 编译器有三种库打包策略，见 [`output.libraryBundleType`](/zh/do
 
 每个源文件独立编译并产出为自己的输出文件，**保留原始目录结构**。这是组件库的推荐方式，消费者可以按需导入单个模块，从而享受 tree-shaking 优化。
 
-使用 `bundle-less` 时，输出结构与源码结构一一对应：
+使用 `bundle-less` 时，输出保留源代码结构。下方文件名仅为示意：默认输出可能包含内容哈希，可通过 `output.filename` 和 `output.entryFilename` 调整命名。
 
 ```
 src/

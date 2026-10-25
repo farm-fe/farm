@@ -1,0 +1,15 @@
+flowchart TB
+  accTitle: A · Initial compiler lifecycle
+  accDescr: Successful initial compile flow. Plugin cache loading and writing are conditional. B is module graph construction and C is resource generation. Observation seal is a Core operation, not a plugin hook. Update is independent.
+  Begin([Compiler::new]) --> config[config]:::serial
+  config --> Compile([Compiler::compile]) --> Cache{Persistent cache enabled<br/>and this plugin has a record?}:::gate
+  Cache -->|yes| plugin_cache_loaded[plugin_cache_loaded]:::serial
+  Cache -->|no| build_start[build_start]:::parallel
+  plugin_cache_loaded --> build_start
+  build_start --> B["B · Build module graph<br/>expanded below"]:::core
+  B --> C["C · Generate resources<br/>expanded below"]:::core --> finish[finish]:::parallel
+  finish --> Seal["Core: seal source observations<br/>reject changed / inconsistent inputs"]:::core
+  Seal -->|accepted| Write{Persistent cache enabled?}:::gate
+  Seal -. rejected .-> Error([Compilation error]):::core
+  Write -->|yes| write_plugin_cache[write_plugin_cache]:::serial --> Done([Compile complete])
+  Write -->|no| Done

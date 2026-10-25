@@ -1,8 +1,8 @@
 .progress-bar-container {
   width: 50vw;
-  height: 35px;
+  height: 25px;
   border-radius: 4px;
-  padding: 2px 6px;
+  padding: 4px;
   box-sizing: content-box;
   border: 1px solid var(--farm--border);
 }
@@ -24,8 +24,10 @@
     Bitstream Vera Sans Mono, Courier New, monospace;
 }
 
-:global(.dark) .progress-bar-inner-container {
-  background: #fba;
+:global(.dark) {
+  .progress-bar-inner-container {
+    background: #fba;
+  }
 }
 
 @media (max-width: 768px) {
@@ -80,3 +82,7 @@
   align-items: center;
   width: 100%;
 }
+
+/* Keep labels readable and scroll only the scenario strip, never the chart. */
+.pills { min-width: max-content; white-space: nowrap; }
+.pills > div { flex-shrink: 0; }

@@ -48,7 +48,10 @@
     "remark-gfm": "^4.0.0",
     "sass": "^1.63.6",
     "tailwindcss-animate": "^1.0.7",
-    "three": "0.168.0"
+    "three": "0.168.0",
+    "@docsearch/react": "3.5.2",
+    "@docsearch/css": "3.5.2",
+    "search-insights": "2.13.0"
   },
   "devDependencies": {
     "@farmfe/core": "workspace:*",

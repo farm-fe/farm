@@ -21,3 +21,43 @@ A custom `Layout` should render slots from `props.components` and forward comple
 Read generated locale/version alternates and navigation targets from public page data. Do not derive them by concatenating locale or version URL segments. Keep server rendering and initial browser output consistent; initialize browser-only effects after mounting.
 
 Use the `@farmfe/docs` peer version matching this theme. Package distribution, platform binaries and isolated consumer verification are tracked by the Farm Docs release checks; this README does not assert those checks have passed.
+
+
+## Reading presentation
+
+The default layout wraps its slots in `.farm-docs-theme`. A site replacing the
+layout should retain that class to use the shared reading styles. The theme owns
+the document columns, typography, controls, code frames, tabs, admonitions,
+responsive navigation and collapsible mobile table of contents. Site CSS should
+set brand tokens and style its own pages rather than duplicate those components.
+
+Public tokens include `--farm-docs-font-family`, `--farm-docs-font-monospace`,
+`--farm-docs-link`, `--farm-docs-accent-soft` and `--farm-docs-accent-border`.
+
+`Sidebar` preserves the order and targets in `data.sidebars`. Its optional
+`expandedCategories` prop names sections that start expanded; ancestors of the
+active document also open. Configure document order through collection sidebar
+JSON, not by discovering or rewriting routes in a React component.
+
+`DocPage` accepts optional `homeLabel`, `versionLabel` and `tocLabel` presentation
+props. Site wrappers can translate these labels while retaining fallback notices,
+article content and previous/next navigation. The shared theme contains no Farm
+website category names or version policy.
+
+## Navigation controls
+
+NavigationMenu renders a native disclosure menu and restores its summary focus on Escape without closing an outer dialog. NavigationIconLink provides a labeled external icon link with safe new-tab attributes. LanguageIcon is decorative; its surrounding menu supplies the localized label. Site-specific destinations and brand icons remain in the site wrapper.
+
+## Document formats (prerelease candidate)
+
+`DocumentActions` accepts the native public page's `markdownUrl` and
+`markdownSha256`, an optional site-relative `agentGuideUrl`, and configurable
+labels. Both Markdown identity fields must be present before Copy or View appears.
+Copy fetches only a site-relative Markdown resource, rejects redirects and verifies
+its SHA256 before writing text. Errors are announced through an accessible status
+message. It does not install a skill, create an AI service or start a chat session.
+
+`DocPage` uses this component for eligible native document pages, with optional
+`documentActionsLabels` and `agentGuideUrl` presentation props. A host can translate
+the labels or export the standalone component in its own theme slot. Absent native
+metadata means absent Markdown controls; do not construct guessed URLs in a theme.

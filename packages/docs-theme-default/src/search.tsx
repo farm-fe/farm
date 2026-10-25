@@ -1,9 +1,11 @@
 import { Link } from '@farmfe/docs/client';
 import type { ThemeProps } from '@farmfe/docs/theme';
-import { useEffect, useId, useRef, useState } from 'react';
+import type { ComponentType } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 import { useSearchQuery } from './search-query.js';
 
 export type SearchProps = Pick<ThemeProps, 'site'>;
+export const SearchProvider = createContext<ComponentType<SearchProps> | null>(null);
 function AlgoliaSearch({ site }: SearchProps) {
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -39,14 +41,14 @@ function AlgoliaSearch({ site }: SearchProps) {
   if (!mounted) return null;
   const results = state.kind === 'ready' ? state.results : [];
   return <>
-    <button type="button" aria-haspopup="dialog" aria-controls={id} aria-expanded={open} onClick={() => {
+    <button className="farm-docs-search-trigger" type="button" aria-label="Search documentation" aria-haspopup="dialog" aria-controls={id} aria-expanded={open} onClick={() => {
       if (!dialog.current || dialog.current.open) return;
       dialog.current.showModal();
       overflow.current = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       setOpen(true);
       input.current?.focus();
-    }}>Search documentation</button>
+    }}><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="9" r="6.5" /><path d="m14 14 6 6" /></svg><span>Search</span></button>
     <dialog id={id} ref={dialog} className="farm-docs-search" aria-label="Search documentation" onClose={dismiss} onCancel={event => { event.preventDefault(); dismiss(); }} onKeyDown={event => {
       const links = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('a[href]'));
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -76,5 +78,7 @@ function AlgoliaSearch({ site }: SearchProps) {
 }
 
 export function Search({ site }: SearchProps) {
+  const Provider = useContext(SearchProvider);
+  if (Provider) return <Provider site={site} />;
   return site.search?.provider === 'algolia' && site.search.options ? <AlgoliaSearch site={site} /> : null;
 }
