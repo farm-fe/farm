@@ -27,10 +27,12 @@ export default defineConfig({
 
 ## 插件 Hook 概述 {#plugin-hooks-overview}
 Farm 提供了构建、资源生成与独立增量更新钩子。总览包含 35 个钩子；缓存条件与更新入口不是一条必然执行的串行链。
-<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-light" href="/diagrams/rust-plugin-overview-light.svg"><img src="/diagrams/rust-plugin-overview-light.svg" alt="完整 35 个 Hook 总览；点击放大、缩放和平移" /></a>
-<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-dark" href="/diagrams/rust-plugin-overview-dark.svg"><img src="/diagrams/rust-plugin-overview-dark.svg" alt="完整 35 个 Hook 总览；点击放大、缩放和平移" /></a>
+<a data-diagram-legend="F · first：返回首个处理结果；S · serial：按顺序调用；P · parallel：并行调用并等待。虚线中性节点为 Core 操作，菱形为条件。" class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-light" href="/diagrams/rust-plugin-overview-light.svg"><img src="/diagrams/rust-plugin-overview-light.svg" alt="完整 35 个 Hook 总览；点击放大、缩放和平移" /></a>
+<a data-diagram-legend="F · first：返回首个处理结果；S · serial：按顺序调用；P · parallel：并行调用并等待。虚线中性节点为 Core 操作，菱形为条件。" class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-dark" href="/diagrams/rust-plugin-overview-dark.svg"><img src="/diagrams/rust-plugin-overview-dark.svg" alt="完整 35 个 Hook 总览；点击放大、缩放和平移" /></a>
 
 点击图表可全屏查看；键盘 + / − 缩放，方向键平移，0 重置，Esc 关闭。
+
+F · first：返回首个处理结果；S · serial：按顺序调用；P · parallel：并行调用并等待。虚线中性节点为 Core 操作，菱形为条件。
 
 [Mermaid 源文件](/diagrams/rust-plugin-overview.mmd)
 

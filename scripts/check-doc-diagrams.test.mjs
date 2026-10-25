@@ -24,3 +24,17 @@ test('compact overview contains every lifecycle hook and independent update',asy
  assert.match(text,/Independent watcher \/ API entry/);
  assert(!/finish\s*-->\s*update_modules/.test(text));
 });
+
+test('overview hook types agree with the current driver, not legacy PNG colors',async()=>{
+ const text=await fs.readFile(path.join(source,'rust-plugin-overview.mmd'),'utf8');
+ const driver=await fs.readFile(new URL('../crates/core/src/plugin/plugin_driver.rs',import.meta.url),'utf8');
+ const types=new Map([...driver.matchAll(/hook_(first|serial|parallel)!\s*\(\s*(\w+)/g)].map(m=>[m[2],m[1]]));
+ for(const hook of ['config','plugin_cache_loaded','write_plugin_cache','transform','augment_resource_pot_hash']){
+  const start=driver.indexOf('pub fn '+hook);assert(start>=0);
+  assert.match(driver.slice(start,start+1600),/for plugin in &self.plugins/);types.set(hook,'serial');
+ }
+ const rendered=[...text.matchAll(/(\w+)\["([FSP]) · \1"\]:::(first|serial|parallel)/g)];
+ assert.equal(rendered.length,35);
+ for(const [,hook,key,type]of rendered){assert.equal(type,types.get(hook),hook);assert.equal(key,{first:'F',serial:'S',parallel:'P'}[type]);}
+ const svg=await fs.readFile(path.join(source,'rust-plugin-overview-light.svg'),'utf8');assert.match(svg,/Hook dispatch legend/);
+});

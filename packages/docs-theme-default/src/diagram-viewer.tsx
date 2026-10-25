@@ -7,7 +7,7 @@ export function DiagramViewer() {
   const trigger = useRef<HTMLElement | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const previous = useRef<{ x: number; y: number; distance: number } | null>(null);
-  const [image, setImage] = useState({ src: '', label: '', chinese: false });
+  const [image, setImage] = useState({ src: '', label: '', chinese: false, legend: '' });
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
   const reset = () => setView({ scale: 1, x: 0, y: 0 });
   const zoom = (factor: number) => setView(v => ({ ...v, scale: Math.max(1, Math.min(6, v.scale * factor)) }));
@@ -20,7 +20,7 @@ export function DiagramViewer() {
       if (url.origin !== location.origin || !url.pathname.endsWith('.svg')) return;
       event.preventDefault();
       trigger.current = link;
-      setImage({ src: url.href, label: link.querySelector('img')?.alt || 'Diagram', chinese: document.documentElement.lang.startsWith('zh') });
+      setImage({ src: url.href, label: link.querySelector('img')?.alt || 'Diagram', legend: link.dataset.diagramLegend || '', chinese: document.documentElement.lang.startsWith('zh') });
       reset();
       dialog.current?.showModal();
       document.documentElement.classList.add('farm-diagram-open');
@@ -43,7 +43,7 @@ export function DiagramViewer() {
       <button type="button" onClick={reset}>{c ? '重置' : 'Reset'}</button>
       <button type="button" onClick={close} aria-label={c ? '关闭图表' : 'Close diagram'}>×</button>
     </div></header>
-    <p>{c ? '拖动或双指缩放查看；键盘 + / − 缩放，方向键移动，0 重置，Esc 关闭。' : 'Drag or pinch to explore. Keyboard: + / − zoom, arrows pan, 0 resets, Esc closes.'}</p>
+    <p>{c ? '拖动或双指缩放查看；键盘 + / − 缩放，方向键移动，0 重置，Esc 关闭。' : 'Drag or pinch to explore. Keyboard: + / − zoom, arrows pan, 0 resets, Esc closes.'} {image.legend}</p>
     <div ref={viewport} className="farm-diagram-viewport" tabIndex={0} aria-label={c ? '可缩放图表' : 'Zoomable diagram'}
       onKeyDown={e => {
         if (e.key === '+' || e.key === '=') zoom(1.3);

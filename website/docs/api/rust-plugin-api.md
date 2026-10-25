@@ -27,10 +27,12 @@ See [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin) for detail
 
 ## Plugin Hooks Overview
 Farm provides many Rollup-style hooks. In v2, the lifecycle is best understood in three phases: `build`, `generate`, and `update` (HMR/incremental updates):
-<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-light" href="/diagrams/rust-plugin-overview-light.svg"><img src="/diagrams/rust-plugin-overview-light.svg" alt="All 35 hooks — click to enlarge, zoom and pan" /></a>
-<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-dark" href="/diagrams/rust-plugin-overview-dark.svg"><img src="/diagrams/rust-plugin-overview-dark.svg" alt="All 35 hooks — click to enlarge, zoom and pan" /></a>
+<a data-diagram-legend="F · first: stop on a handled result; S · serial: ordered callbacks; P · parallel: concurrent callbacks, then join. Neutral dashed nodes are Core operations; diamonds are conditions." class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-light" href="/diagrams/rust-plugin-overview-light.svg"><img src="/diagrams/rust-plugin-overview-light.svg" alt="All 35 hooks — click to enlarge, zoom and pan" /></a>
+<a data-diagram-legend="F · first: stop on a handled result; S · serial: ordered callbacks; P · parallel: concurrent callbacks, then join. Neutral dashed nodes are Core operations; diamonds are conditions." class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-dark" href="/diagrams/rust-plugin-overview-dark.svg"><img src="/diagrams/rust-plugin-overview-dark.svg" alt="All 35 hooks — click to enlarge, zoom and pan" /></a>
 
 Click the overview for a full-window viewer. Use + / − to zoom, arrows to pan, 0 to reset and Esc to close.
+
+F · first: stop on a handled result; S · serial: ordered callbacks; P · parallel: concurrent callbacks, then join. Neutral dashed nodes are Core operations; diamonds are conditions.
 
 [Mermaid source](/diagrams/rust-plugin-overview.mmd)
 

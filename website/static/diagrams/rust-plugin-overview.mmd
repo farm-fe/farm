@@ -3,53 +3,53 @@ flowchart LR
   accDescr: Columns group initial compilation, per-module work, resource graph and resource-pot rendering, finalization, and independent updates. Cache gates conditionally skip module or pot work. Update is an independent API or watcher entry, never an unconditional successor of finish. Expand phase details for full cache branches and loops.
   subgraph A["01 · INITIAL / CACHE"]
     direction TB
-    config[config]:::serial --> PC{"Plugin cache record?"}:::gate
-    PC -->|yes| plugin_cache_loaded[plugin_cache_loaded]:::serial
-    PC -->|no| build_start[build_start]:::parallel
+    config["S · config"]:::serial --> PC{"Plugin cache record?"}:::gate
+    PC -->|yes| plugin_cache_loaded["S · plugin_cache_loaded"]:::serial
+    PC -->|no| build_start["P · build_start"]:::parallel
     plugin_cache_loaded --> build_start
     build_start --> MC{"Module cache valid?"}:::gate
-    MC -->|yes| handle_persistent_cached_module[handle_persistent_cached_module]:::first
+    MC -->|yes| handle_persistent_cached_module["F · handle_persistent_cached_module"]:::first
     handle_persistent_cached_module --> Check["Reuse only if not invalidated;<br/>watch inputs must match"]:::reuse
   end
   subgraph B["02 · EACH MODULE"]
     direction TB
-    resolve[resolve]:::first --> load[load]:::first --> transform[transform]:::serial --> parse[parse]:::first
-    parse --> process_module[process_module]:::serial --> analyze_deps[analyze_deps]:::serial --> finalize_module[finalize_module]:::serial
+    resolve["F · resolve"]:::first --> load["F · load"]:::first --> transform["S · transform"]:::serial --> parse["F · parse"]:::first
+    parse --> process_module["S · process_module"]:::serial --> analyze_deps["S · analyze_deps"]:::serial --> finalize_module["S · finalize_module"]:::serial
     finalize_module -. dependency loop .-> resolve
   end
   subgraph C["03 · GRAPH / GROUPS"]
     direction TB
-    freeze_module[freeze_module]:::serial --> module_graph_build_end[module_graph_build_end]:::serial --> build_end[build_end]:::parallel
-    build_end --> generate_start[generate_start]:::parallel --> optimize_module_graph[optimize_module_graph]:::serial
-    optimize_module_graph --> freeze_module_graph_meta[freeze_module_graph_meta]:::serial --> analyze_module_graph[analyze_module_graph]:::first
-    analyze_module_graph --> partial_bundling[partial_bundling]:::first --> process_resource_pots[process_resource_pots]:::serial
+    freeze_module["S · freeze_module"]:::serial --> module_graph_build_end["S · module_graph_build_end"]:::serial --> build_end["P · build_end"]:::parallel
+    build_end --> generate_start["P · generate_start"]:::parallel --> optimize_module_graph["S · optimize_module_graph"]:::serial
+    optimize_module_graph --> freeze_module_graph_meta["S · freeze_module_graph_meta"]:::serial --> analyze_module_graph["F · analyze_module_graph"]:::first
+    analyze_module_graph --> partial_bundling["F · partial_bundling"]:::first --> process_resource_pots["S · process_resource_pots"]:::serial
   end
   subgraph D["04 · RESOURCE POTS"]
     direction TB
-    Classify["Classify / restore pot cache"]:::core --> render_start[render_start]:::serial --> RC{"Any cache misses?"}:::gate
-    RC -->|misses only| render_resource_pot[render_resource_pot]:::first
-    render_resource_pot --> process_rendered_resource_pot[process_rendered_resource_pot]:::serial
-    process_rendered_resource_pot --> augment_resource_pot_hash[augment_resource_pot_hash]:::serial
-    augment_resource_pot_hash --> optimize_resource_pot[optimize_resource_pot]:::serial
-    optimize_resource_pot --> generate_resources[generate_resources]:::first --> process_generated_resources[process_generated_resources]:::serial
+    Classify["Classify / restore pot cache"]:::core --> render_start["S · render_start"]:::serial --> RC{"Any cache misses?"}:::gate
+    RC -->|misses only| render_resource_pot["F · render_resource_pot"]:::first
+    render_resource_pot --> process_rendered_resource_pot["S · process_rendered_resource_pot"]:::serial
+    process_rendered_resource_pot --> augment_resource_pot_hash["S · augment_resource_pot_hash"]:::serial
+    augment_resource_pot_hash --> optimize_resource_pot["S · optimize_resource_pot"]:::serial
+    optimize_resource_pot --> generate_resources["F · generate_resources"]:::first --> process_generated_resources["S · process_generated_resources"]:::serial
     RC -->|none| Reuse["Restore resources;<br/>skip pot render/generate"]:::reuse
   end
   subgraph E["05 · FINALIZE / SEAL"]
     direction TB
-    handle_entry_resource[handle_entry_resource]:::serial --> finalize_resources[finalize_resources]:::serial
-    finalize_resources --> generate_end[generate_end]:::parallel --> finish[finish]:::parallel
+    handle_entry_resource["S · handle_entry_resource"]:::serial --> finalize_resources["S · finalize_resources"]:::serial
+    finalize_resources --> generate_end["P · generate_end"]:::parallel --> finish["P · finish"]:::parallel
     finish --> Seal{"Core: observations valid?"}:::gate
-    Seal -->|yes, cache enabled| write_plugin_cache[write_plugin_cache]:::serial
+    Seal -->|yes, cache enabled| write_plugin_cache["S · write_plugin_cache"]:::serial
     Seal -->|changed input| Fail["Reject / no commit"]:::core
   end
   subgraph F["06 · WATCH / UPDATE"]
     direction TB
-    Event["Independent watcher / API entry"]:::core --> update_modules[update_modules]:::serial
+    Event["Independent watcher / API entry"]:::core --> update_modules["S · update_modules"]:::serial
     update_modules --> Rebuild["Rebuild affected modules (02)<br/>patch graph and groups"]:::core
-    Rebuild --> module_graph_updated[module_graph_updated]:::serial
+    Rebuild --> module_graph_updated["S · module_graph_updated"]:::serial
     module_graph_updated --> Affected["Rebundle if required;<br/>render affected pots (04)"]:::core
     Affected --> Updated["Write cache if enabled;<br/>entry + resources finalization"]:::core
-    Updated --> update_finished[update_finished]:::parallel
+    Updated --> update_finished["P · update_finished"]:::parallel
   end
   A -->|cache miss / invalidated| B --> C --> D -->|all pots ready| E
 

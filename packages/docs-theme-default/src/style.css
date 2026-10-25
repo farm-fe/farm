@@ -554,3 +554,6 @@ html:root[data-theme="dark"] {
 .farm-diagram-viewport:active{cursor:grabbing}
 .farm-diagram-viewport img{width:100%;height:100%;object-fit:contain;user-select:none;max-width:none;transform-origin:center}
 @media(max-width:600px){.farm-diagram-viewer{width:100vw;height:100dvh;border-radius:0;padding:10px}.farm-diagram-viewer header{flex-wrap:wrap;gap:4px}.farm-diagram-viewport{height:calc(100% - 145px)}.farm-docs-diagram-overview{min-height:140px}}
+.farm-diagram-viewer[open]{display:flex;flex-direction:column}
+.farm-diagram-viewer header,.farm-diagram-viewer p{flex-shrink:0}
+.farm-diagram-viewer .farm-diagram-viewport{height:auto;flex:1;min-height:0}
