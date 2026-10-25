@@ -779,7 +779,7 @@ impl Compiler {
     DiffResult,
     HashMap<ModuleId, Module>,
   ) {
-    let start_points: Vec<ModuleId> = paths
+    let mut start_points: Vec<ModuleId> = paths
       .into_iter()
       .filter(|(_, ty)| matches!(ty, UpdateType::Updated))
       // Note: HMR does not support the module with query
@@ -797,6 +797,10 @@ impl Compiler {
       &mut module_graph,
       &mut update_module_graph,
     );
+
+    // Deleted glob members can share a batch with their updated importer.
+    // Later grouping, freeze hooks and HMR boundaries require live modules.
+    start_points.retain(|id| !diff_result.removed_modules.contains(id));
 
     let mut module_group_graph = self.context.module_group_graph.write();
 

@@ -1,7 +1,7 @@
 use farmfe_core::{
   HashMap, HashSet,
   module::{
-    Module,
+    Module, ModuleId,
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
   },
@@ -15,6 +15,44 @@ use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_
 use crate::update::diff_and_patch_module_graph::{diff_module_graph, patch_module_graph};
 
 use super::patch_module_group_graph;
+
+#[test]
+fn deleted_glob_start_point_is_removed_from_its_module_group() {
+  let importer: ModuleId = "glob-importer.js".into();
+  let deleted: ModuleId = "files/deleted.js".into();
+  let mut graph = ModuleGraph::new();
+  graph.add_module(Module::new(importer.clone()));
+  graph.add_module(Module::new(deleted.clone()));
+  graph.entries.insert(importer.clone(), "index".into());
+  graph
+    .add_edge(&importer, &deleted, Default::default())
+    .unwrap();
+  let mut groups = module_group_graph_from_entries(std::slice::from_ref(&importer), &mut graph);
+  let entry_group = ModuleGroupId::new(&importer, &ModuleGroupType::Entry);
+  assert!(
+    groups
+      .module_group(&entry_group)
+      .unwrap()
+      .modules()
+      .contains(&deleted)
+  );
+
+  let mut update = ModuleGraph::new();
+  update.add_module(Module::new(importer.clone()));
+  update.add_module(Module::new(deleted.clone()));
+  let start_points = vec![deleted.clone(), importer.clone()];
+  let diff = diff_module_graph(start_points.clone(), &graph, &update);
+  let removed = patch_module_graph(start_points.clone(), &diff, &mut graph, &mut update);
+  let affected = patch_module_group_graph(start_points, &diff, &removed, &mut graph, &mut groups);
+
+  assert!(removed.contains_key(&deleted));
+  assert!(!graph.has_module(&deleted));
+  assert!(affected.contains(&entry_group));
+  let group = groups.module_group(&entry_group).unwrap();
+  assert!(group.modules().contains(&importer));
+  assert!(!group.modules().contains(&deleted));
+  assert_eq!(group.modules().len(), 1);
+}
 
 #[test]
 fn shared_module_group_closure_keeps_transitive_workers_and_excludes_disconnected_groups() {

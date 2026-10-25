@@ -23,6 +23,9 @@ pub fn patch_module_group_graph(
   let mut affected_module_groups = HashSet::default();
 
   for updated_module_id in &updated_module_ids {
+    if diff_result.removed_modules.contains(updated_module_id) {
+      continue;
+    }
     // create new module group for the new entry
     if diff_result.added_modules.contains(updated_module_id)
       && module_graph.entries.contains_key(updated_module_id)
