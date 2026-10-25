@@ -8,6 +8,9 @@
   "words": [
     "alnum",
     "anymatch",
+    "miette",
+    "println",
+    "tardar",
     "cntrl",
     "extglob",
     "extglobs",

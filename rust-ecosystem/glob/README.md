@@ -23,8 +23,11 @@ adapter. Unsupported/invalid regex compilation returns an error without fallback
 
 The direct HMR profile must set `posix:false`; it must not inherit walker defaults.
 The Farm adapter still owns aliases, root/base paths, output keys, import queries,
-AST validation and change invalidation. Wax is retained independently elsewhere
-in Farm and its unresolved D001 notice audit is not solved by this crate.
+AST validation and change invalidation. Core now re-exports this crate through
+`farmfe_core::glob`, and fixture traversal uses it too. The former Wax export and
+optional diagnostic API are removed before stable V2. Dependency exclusion and
+freshly rebuilt package payloads must both be verified before qualifying the new
+distribution; this does not supply missing original upstream license materials.
 
 Original source: https://github.com/Maidang1/picomatch-rs/tree/ceb39c90fc719fbbab79216a139f31c174272ed3/crates/picomatch-rs
 Original project license: https://github.com/Maidang1/picomatch-rs/blob/ceb39c90fc719fbbab79216a139f31c174272ed3/LICENSE

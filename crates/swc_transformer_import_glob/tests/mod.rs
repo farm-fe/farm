@@ -9,11 +9,11 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_swc_transformer_import_glob::{
-  ImportGlobVisitor, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
-  transform_import_meta_glob,
+  transform_import_meta_glob, ImportGlobVisitor, ImportMetaGlobResolver,
+  ImportMetaGlobResolverParams,
 };
 use farmfe_testing_helpers::fixture;
-use farmfe_toolkit::script::{ParseScriptModuleResult, codegen_module, parse_module};
+use farmfe_toolkit::script::{codegen_module, parse_module, ParseScriptModuleResult};
 
 use farmfe_core::plugin::{PluginResolveHookParam, ResolveKind};
 
@@ -112,7 +112,7 @@ fn find_rel_source_relative_path() {
 
 #[test]
 fn root_relative_glob_matches_entries_without_current_directory_prefix() {
-  use farmfe_core::wax::{Glob, Pattern};
+  use farmfe_core::glob::Glob;
 
   let context = create_context();
   let importer = ModuleId::new("src/index.js", "", &context.config.root);
@@ -121,7 +121,7 @@ fn root_relative_glob_matches_entries_without_current_directory_prefix() {
 
   assert_eq!(root, context.config.root);
   assert_eq!(pattern, "src/*.js");
-  assert!(Glob::new(&pattern).unwrap().is_match("src/foo.js"));
+  assert!(Glob::new(&pattern).unwrap().is_match("src/foo.js").unwrap());
 }
 
 #[test]
@@ -246,20 +246,20 @@ fn negative_order_query_base_and_watch_profiles() {
   )
   .unwrap();
   assert_eq!(first, last);
-  assert!(watches[0].iter().all(|watch| !watch.requires_snapshot_refresh));
+  assert!(watches[0]
+    .iter()
+    .all(|watch| !watch.requires_snapshot_refresh));
   assert!(first.contains("\"./dir/a.js\":"), "{first}");
   assert!(first.contains("import(\"./dir/a.js?raw\")"));
   assert!(!first.contains("a.test.js"));
   assert!(!first.contains(".hidden.js"));
   let new_path = root.path().join("dir/new.js").to_string_lossy().to_string();
-  assert!(
-    watches[0]
-      .iter()
-      .find(|watch| !watch.negative)
-      .unwrap()
-      .matches(&new_path)
-      .unwrap()
-  );
+  assert!(watches[0]
+    .iter()
+    .find(|watch| !watch.negative)
+    .unwrap()
+    .matches(&new_path)
+    .unwrap());
   let (base, base_watches) = transform_case(
     "const x = import.meta.glob('./*.js', {base:'./dir', eager:true, import:'default'});",
     root.path(),
@@ -267,14 +267,18 @@ fn negative_order_query_base_and_watch_profiles() {
   .unwrap();
   assert!(base.contains("\"./a.js\":"));
   assert!(base.contains("from \"./dir/a.js\""));
-  assert!(base_watches[0].iter().all(|watch| watch.requires_snapshot_refresh));
+  assert!(base_watches[0]
+    .iter()
+    .all(|watch| watch.requires_snapshot_refresh));
   let (all, exhaustive_watches) = transform_case(
     "const x = import.meta.glob('./dir/*.js', {exhaustive:true});",
     root.path(),
   )
   .unwrap();
   assert!(all.contains(".hidden.js"));
-  assert!(exhaustive_watches[0].iter().all(|watch| watch.requires_snapshot_refresh));
+  assert!(exhaustive_watches[0]
+    .iter()
+    .all(|watch| watch.requires_snapshot_refresh));
   let (query, _) = transform_case(
     "const x = import.meta.glob('./dir/a.js', {query:{foo:'a&b', n:2}});",
     root.path(),

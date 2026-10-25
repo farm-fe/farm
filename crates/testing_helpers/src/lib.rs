@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use farmfe_core::{
+  glob::{Glob, WalkOptions},
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupId, ModuleGroupType},
@@ -8,7 +9,6 @@ use farmfe_core::{
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
-  wax::Glob,
   HashMap,
 };
 
@@ -280,9 +280,24 @@ where
   F: FnMut(PathBuf, PathBuf),
 {
   let base_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-  let glob = Glob::new(pattern).unwrap();
+  // Fixture discovery includes hidden paths and dependency-named fixture folders.
+  // Production import.meta.glob keeps its separate, non-exhaustive default.
+  let glob = Glob::with_options(
+    pattern,
+    WalkOptions {
+      exhaustive: true,
+      ..WalkOptions::default()
+    },
+  )
+  .unwrap_or_else(|error| panic!("invalid fixture glob {pattern}: {error}"));
 
-  for path in glob.walk(base_dir.clone()).flatten() {
+  for entry in glob.walk(&base_dir) {
+    let path = entry.unwrap_or_else(|error| {
+      panic!(
+        "failed to walk fixtures under {}: {error}",
+        base_dir.display()
+      )
+    });
     op(path.path().to_path_buf(), base_dir.clone());
   }
 }
@@ -320,16 +335,104 @@ where
   }
 
   let base_dir = file_path.parent().unwrap().to_path_buf();
-  let glob = Glob::new(pattern).unwrap();
+  let glob = Glob::with_options(
+    pattern,
+    WalkOptions {
+      exhaustive: true,
+      ..WalkOptions::default()
+    },
+  )
+  .unwrap_or_else(|error| panic!("invalid fixture glob {pattern}: {error}"));
 
   let mut exists = false;
 
-  for path in glob.walk(base_dir.clone()).flatten() {
+  for entry in glob.walk(&base_dir) {
+    let path = entry.unwrap_or_else(|error| {
+      panic!(
+        "failed to walk fixtures under {}: {error}",
+        base_dir.display()
+      )
+    });
     exists = true;
     op(path.path().to_path_buf(), base_dir.clone());
   }
 
   if !exists {
     panic!("no fixtures found under {pattern}");
+  }
+}
+
+#[cfg(test)]
+mod glob_migration_tests {
+  use super::fixture_debug;
+
+  fn fixture_root() -> tempfile::TempDir {
+    let root = tempfile::tempdir().unwrap();
+    std::fs::write(root.path().join("Cargo.toml"), "# fixture marker").unwrap();
+    std::fs::create_dir_all(root.path().join("src")).unwrap();
+    std::fs::write(root.path().join("src/lib.rs"), "// fixture marker").unwrap();
+    root
+  }
+
+  #[test]
+  fn fixture_glob_keeps_hidden_and_dependency_named_fixture_folders() {
+    let root = fixture_root();
+    for directory in [
+      "tests/normal",
+      "tests/.hidden",
+      "tests/node_modules/example",
+    ] {
+      let directory = root.path().join(directory);
+      std::fs::create_dir_all(&directory).unwrap();
+      std::fs::write(directory.join("input.js"), "export default 1").unwrap();
+    }
+    let mut files = Vec::new();
+    fixture_debug(
+      "tests/**/input.js",
+      root.path().join("src/lib.rs").to_str().unwrap(),
+      |file, base| {
+        files.push(
+          file
+            .strip_prefix(base)
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/"),
+        );
+      },
+    );
+    files.sort();
+    assert_eq!(
+      files,
+      vec![
+        "tests/.hidden/input.js",
+        "tests/node_modules/example/input.js",
+        "tests/normal/input.js"
+      ]
+    );
+  }
+
+  #[test]
+  #[should_panic(expected = "invalid fixture glob")]
+  fn fixture_glob_reports_invalid_patterns() {
+    let root = fixture_root();
+    fixture_debug(
+      "",
+      root.path().join("src/lib.rs").to_str().unwrap(),
+      |_, _| {},
+    );
+  }
+
+  #[cfg(unix)]
+  #[test]
+  #[should_panic(expected = "failed to walk fixtures")]
+  fn fixture_glob_does_not_hide_walk_errors() {
+    let root = fixture_root();
+    std::fs::create_dir_all(root.path().join("tests")).unwrap();
+    std::os::unix::fs::symlink(root.path().join("tests"), root.path().join("tests/loop")).unwrap();
+    fixture_debug(
+      "tests/**/*.js",
+      root.path().join("src/lib.rs").to_str().unwrap(),
+      |_, _| {},
+    );
   }
 }

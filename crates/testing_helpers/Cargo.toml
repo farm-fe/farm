@@ -12,3 +12,6 @@ documentation = "https://docs.rs/farmfe_plugin_define"
 [dependencies]
 insta = "1.39.0"
 farmfe_core = { path = "../core", version = "=2.2.0" }
+
+[dev-dependencies]
+tempfile = "3"

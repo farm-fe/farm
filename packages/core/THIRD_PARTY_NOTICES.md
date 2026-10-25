@@ -41,9 +41,10 @@ Source: https://github.com/Maidang1/picomatch-rs/tree/ceb39c90fc719fbbab79216a13
 
 The matcher uses fancy-regex 0.14.0. Its original MIT license is retained in
 [licenses/fancy-regex-0.14.0-MIT.txt](licenses/fancy-regex-0.14.0-MIT.txt),
-from that exact crates.io package. This addition does not make the partial
-inventory above a complete native license audit or resolve the separate
-Tardar notice-material gap.
+from that exact crates.io package. The scope of these notices remains partial.
+Current source uses Farm's glob implementation in Core and fixture traversal.
+Release qualification must verify resolved dependency graphs and freshly rebuilt
+native/package payloads; earlier binary artifacts do not establish the new closure.
 
 ## Chokidar public type declarations
 

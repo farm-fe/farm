@@ -58,6 +58,13 @@ jobs:
 
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
+      - name: Verify new glob dependency closure
+        if: matrix.settings.abi == 'linux-x64-gnu'
+        shell: bash
+        run: |
+          cargo metadata --locked --all-features --format-version 1 > "$RUNNER_TEMP/farm-glob-metadata.json"
+          node scripts/assert-glob-dependency-closure.mjs "$RUNNER_TEMP/farm-glob-metadata.json"
+          node --test scripts/assert-glob-dependency-closure.test.mjs
       - name: Verify native artifact build and release flow
         if: matrix.settings.abi == 'linux-x64-gnu'
         run: node scripts/test-native-artifact-flow.cjs

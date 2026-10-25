@@ -16,6 +16,7 @@ no-default-features = true
 [dependencies]
 farmfe_macro_cache_item = { version = "=2.1.0", path = "../macro_cache_item" }
 farmfe_utils = { version = "=2.1.1", path = "../utils" }
+farmfe_ecosystem_glob = { version = "=0.1.0", path = "../../rust-ecosystem/glob" }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_regex = "1.1.0"
@@ -34,10 +35,6 @@ thiserror = "2.0.12"
 rayon = "1.5"
 petgraph = "0.8.2"
 downcast-rs = "2.0.1"
-wax = { version = "0.6", default-features = false, features = [
-  "miette",
-  "walk",
-] }
 globset = { version = "0.4.14" }
 swc_ecma_ast = { workspace = true, features = ["rkyv-impl", "serde-impl"] }
 swc_ecma_parser = { workspace = true }
