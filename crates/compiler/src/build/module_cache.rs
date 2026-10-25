@@ -53,6 +53,113 @@ pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
     .as_nanos()
 }
 
+#[cfg(test)]
+mod watched_cache_tests {
+  use super::*;
+  use farmfe_core::{
+    config::{
+      Config,
+      persistent_cache::{PersistentCacheConfig, PersistentCacheConfigObj},
+    },
+    module::Module,
+  };
+
+  fn context_with_changed_watch_dependency() -> (Arc<CompilationContext>, Module, PathBuf) {
+    let root = std::env::temp_dir().join(format!(
+      "farm-watched-cache-{}-{}",
+      std::process::id(),
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    std::fs::write(root.join("App.vue"), "new-class").unwrap();
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          root: root.to_string_lossy().replace('\\', "/"),
+          persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+            memory: true,
+            ..Default::default()
+          })),
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap(),
+    );
+    let mut module = Module::new("style.css".into());
+    module.content_hash = "unchanged-style-input".into();
+    module.last_update_timestamp = 7;
+    context.cache_manager.module_cache.set_cache(
+      module.id.clone(),
+      CachedModule {
+        module: module.clone(),
+        dependencies: vec![],
+        watch_dependencies: vec![CachedWatchDependency {
+          dependency: "App.vue".into(),
+          timestamp: 0,
+          hash: get_content_hash_of_module("old-class"),
+        }],
+        is_expired: false,
+      },
+    );
+    (context, module, root)
+  }
+
+  #[test]
+  fn timestamp_watch_miss_expires_unchanged_css_source_cache() {
+    let (context, module, root) = context_with_changed_watch_dependency();
+    assert!(
+      try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, &context)
+        .unwrap()
+        .is_none()
+    );
+    assert!(!context.cache_manager.module_cache.has_cache(&module.id));
+    drop(context);
+    std::fs::remove_dir_all(root).unwrap();
+  }
+
+  #[test]
+  fn hash_watch_miss_expires_unchanged_css_source_cache() {
+    let (context, module, root) = context_with_changed_watch_dependency();
+    assert!(
+      try_get_module_cache_by_hash(&module.id, &module.content_hash, &context)
+        .unwrap()
+        .is_none()
+    );
+    assert!(!context.cache_manager.module_cache.has_cache(&module.id));
+    drop(context);
+    std::fs::remove_dir_all(root).unwrap();
+  }
+
+  #[test]
+  fn unchanged_watch_content_can_still_use_hash_fallback_after_timestamp_change() {
+    let (context, module, root) = context_with_changed_watch_dependency();
+    {
+      let mut cached = context
+        .cache_manager
+        .module_cache
+        .get_cache_mut_option_ref(&module.id)
+        .unwrap();
+      cached.watch_dependencies[0].hash = get_content_hash_of_module("new-class");
+    }
+    assert!(
+      try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, &context)
+        .unwrap()
+        .is_none()
+    );
+    assert!(
+      try_get_module_cache_by_hash(&module.id, &module.content_hash, &context)
+        .unwrap()
+        .is_some()
+    );
+    drop(context);
+    std::fs::remove_dir_all(root).unwrap();
+  }
+}
+
 pub fn get_content_hash_of_module(content: &str) -> String {
   farm_profile_function!("get_content_hash_of_module".to_string());
 
@@ -161,7 +268,9 @@ pub fn try_get_module_cache_by_timestamp(
           should_invalidate_cache = true;
         }
       } else {
-        should_invalidate_cache = true;
+        // A timestamp-only change may still use the content-hash cache path.
+        should_invalidate_cache = !context.config.persistent_cache.hash_enabled()
+          || is_watch_dependencies_content_hash_changed(&cached_module, context);
       }
     } else if !context.config.persistent_cache.hash_enabled() {
       should_invalidate_cache = true;

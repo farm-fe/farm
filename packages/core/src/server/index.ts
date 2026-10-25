@@ -371,8 +371,11 @@ export class Server extends httpServer {
         type: 'added'
       };
 
-      const result = await this.compiler.update([currentAddedItem]);
-      this.hmrEngine?.sendUpdate(result);
+      if (this.hmrEngine) {
+        await this.hmrEngine.hmrUpdate(currentAddedItem);
+      } else {
+        await this.compiler.update([currentAddedItem]);
+      }
     });
 
     this.watcher.on('unlink', async (file: string) => {
@@ -381,19 +384,23 @@ export class Server extends httpServer {
         path: normalizePath(file),
         type: 'removed'
       };
-      const result = await this.compiler.update([currentRemovedItem]);
-      this.hmrEngine?.sendUpdate(result);
-
-      // Fix #2035, skip if the file is irrelevant
-      if (this.compiler.hasModule(file)) {
-        const parentFiles = this.compiler.getParentFiles(file);
-        const normalizedParentFiles: CompilerUpdateItem[] = parentFiles.map(
-          (file) => ({
-            path: normalizePath(file),
-            type: 'updated'
-          })
-        );
-        this.hmrEngine?.hmrUpdate(normalizedParentFiles, true);
+      await this.compiler.waitForCompileFinish();
+      // Capture importers before updating: the removed module can disappear
+      // from the graph while glob importers are being rebuilt.
+      const parentFiles = this.compiler.hasModule(file)
+        ? this.compiler.getParentFiles(file)
+        : [];
+      const paths: CompilerUpdateItem[] = [
+        currentRemovedItem,
+        ...parentFiles.map((parent) => ({
+          path: normalizePath(parent),
+          type: 'updated' as const
+        }))
+      ];
+      if (this.hmrEngine) {
+        await this.hmrEngine.hmrUpdate(paths, true);
+      } else {
+        await this.compiler.update(paths);
       }
     });
 

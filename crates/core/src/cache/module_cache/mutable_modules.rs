@@ -24,6 +24,34 @@ pub struct MutableModulesMemoryStore {
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
 }
+
+#[cfg(test)]
+mod invalidated_module_tests {
+  use super::*;
+  use crate::module::Module;
+
+  #[test]
+  fn invalidated_module_requires_freeze_even_when_content_hash_is_unchanged() {
+    let store = MutableModulesMemoryStore::new(Arc::new(CacheContext::default()));
+    let mut module = Module::new("style.css".into());
+    module.content_hash = "unchanged-css-input".into();
+    store.set_cache(
+      module.id.clone(),
+      CachedModule {
+        module: module.clone(),
+        dependencies: vec![],
+        watch_dependencies: vec![],
+        is_expired: false,
+      },
+    );
+    store.write_cache();
+    assert!(!store.is_cache_changed(&module));
+
+    store.invalidate_cache(&module.id);
+
+    assert!(store.is_cache_changed(&module));
+  }
+}
 // TODO: cache unit test
 impl MutableModulesMemoryStore {
   pub fn new(context: Arc<CacheContext>) -> Self {

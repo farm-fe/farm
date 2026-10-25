@@ -4,11 +4,12 @@ use std::{path::Path, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
+  HashSet,
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{
-    ModuleId, ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
+    Module, ModuleId, ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
     meta_data::script::{
       CommentsMetaData, FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID,
       ScriptModuleMetaData,
@@ -18,7 +19,8 @@ use farmfe_core::{
   plugin::{
     GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult,
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam,
-    PluginProcessModuleHookParam, PluginResolveHookParam, ResolveKind,
+    PluginProcessModuleHookParam, PluginResolveHookParam,
+    ResolveKind,
   },
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   resource::{
@@ -30,7 +32,9 @@ use farmfe_core::{
   swc_ecma_ast::{EsVersion, Module as SwcModule},
 };
 use farmfe_swc_transformer_import_glob::{
-  GlobWatch, ImportMetaGlobResolver, ImportMetaGlobResolverParams, transform_import_meta_glob,
+  GlobWatch, ImportGlobVisitor, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
+  ImportMetaGlobSnapshot,
+  transform_import_meta_glob_with_snapshot,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -64,6 +68,8 @@ mod transform_import_meta_url;
 
 use transform_import_meta_url::transform_url_with_import_meta_url;
 
+const IMPORT_META_GLOB_CACHE: &str = "farm:import-meta-glob";
+
 #[cfg(feature = "swc_plugin")]
 use crate::swc_plugins::compile_wasm_plugins;
 
@@ -81,26 +87,6 @@ impl Plugin for FarmPluginScript {
 
   fn priority(&self) -> i32 {
     99
-  }
-
-  fn handle_persistent_cached_module(
-    &self,
-    module: &farmfe_core::module::Module,
-    _context: &Arc<CompilationContext>,
-  ) -> Result<Option<bool>> {
-    if !module.module_type.is_script() {
-      return Ok(None);
-    }
-    let mut custom = module.meta.as_script().custom.clone();
-    let Some(json) = custom.get_cache::<String>("farm:glob:v1") else {
-      // Migrate cached transforms produced before this matcher revision.
-      return Ok(Some(true));
-    };
-    let groups: Vec<Vec<GlobWatch>> = farmfe_core::serde_json::from_str(&json)
-      .map_err(|error| CompilationError::GenericError(error.to_string()))?;
-    // Membership can change without the importer timestamp changing. Rebuild
-    // just glob importers on a warm start; ordinary script caches remain valid.
-    Ok(Some(!groups.is_empty()))
   }
 
   fn update_modules(
@@ -332,22 +318,13 @@ impl Plugin for FarmPluginScript {
 
       transform_url_with_import_meta_url(ast, &comments);
 
-      let resolved_path = param.module_id.resolved_path(&context.config.root);
-      let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
-        context.config.root.clone()
-      } else {
-        Path::new(&resolved_path)
-          .parent()
-          .unwrap()
-          .to_string_lossy()
-          .to_string()
-      };
+      let cur_dir = import_meta_glob_cur_dir(param.module_id, &context.config.root);
 
-      let glob_watches = transform_import_meta_glob(
+      let (glob_watches, snapshot) = transform_import_meta_glob_with_snapshot(
         ast,
         context.config.root.clone(),
         param.module_id,
-        cur_dir,
+        cur_dir.clone(),
         &context.config.resolve.alias,
         ImportMetaGlobResolverImpl {
           context: context.clone(),
@@ -360,10 +337,105 @@ impl Plugin for FarmPluginScript {
             .map_err(|error| CompilationError::GenericError(error.to_string()))?,
         ),
       );
-      script.set_comments(comments.into())
+      script.set_comments(comments.into());
+      let bytes = farmfe_core::serde_json::to_vec(&snapshot)
+        .map_err(|error| CompilationError::GenericError(error.to_string()))?;
+      script
+        .custom
+        .insert(IMPORT_META_GLOB_CACHE.to_string(), Box::new(bytes));
+
+      // Raw globs inline file contents, so they need explicit content watch
+      // dependencies in addition to membership validation.
+      let watched = snapshot
+        .iter()
+        .filter(|(_, _, inline)| *inline)
+        .flat_map(|(_, files, _)| files)
+        .map(|file| {
+          let path = Path::new(&cur_dir).join(file);
+          ModuleId::new(&path.to_string_lossy(), "", &context.config.root)
+        })
+        .filter(|id| id != param.module_id)
+        .collect();
+      context.add_watch_files(param.module_id.clone(), watched)?;
     }
 
     Ok(Some(()))
+  }
+
+  fn handle_persistent_cached_module(
+    &self,
+    module: &Module,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<bool>> {
+    if !module.module_type.is_script() {
+      return Ok(None);
+    }
+    let mut watch_custom = module.meta.as_script().custom.clone();
+    let glob_watches = watch_custom
+      .get_cache::<String>("farm:glob:v1")
+      .and_then(|json| farmfe_core::serde_json::from_str::<Vec<Vec<GlobWatch>>>(&json).ok());
+    // The legacy snapshot does not encode base/exhaustive matcher options.
+    // Keep warm-start invalidation for glob importers until it does.
+    let requires_matcher_refresh = glob_watches.as_ref().is_none_or(|groups| !groups.is_empty());
+    let cur_dir = import_meta_glob_cur_dir(&module.id, &context.config.root);
+    let mut custom = module.meta.as_script().custom.clone();
+    let Some(bytes) = custom.get_cache::<Vec<u8>>(IMPORT_META_GLOB_CACHE) else {
+      // Old caches predate membership snapshots. Rebuild their glob importers
+      // once so a user need not clear the cache after upgrading.
+      if !module.content.contains("glob") {
+        return Ok(None);
+      }
+      let Some(syntax) =
+        syntax_from_module_type(&module.module_type, context.config.script.parser.clone())
+      else {
+        return Ok(None);
+      };
+      let Ok(mut parsed) = parse_module(
+        &module.id,
+        module.content.clone(),
+        syntax,
+        EsVersion::EsNext,
+      ) else {
+        return Ok(Some(true));
+      };
+      let (_, snapshot) = transform_import_meta_glob_with_snapshot(
+        &mut parsed.ast,
+        context.config.root.clone(),
+        &module.id,
+        cur_dir,
+        &context.config.resolve.alias,
+        ImportMetaGlobResolverImpl {
+          context: context.clone(),
+        },
+      )?;
+      return Ok((!snapshot.is_empty()).then_some(true));
+    };
+    let Ok(snapshot) = farmfe_core::serde_json::from_slice::<ImportMetaGlobSnapshot>(&bytes) else {
+      return Ok(Some(true));
+    };
+    if snapshot.is_empty() {
+      return Ok(requires_matcher_refresh.then_some(true));
+    }
+    let mut visitor = ImportGlobVisitor::new(
+      &module.id,
+      context.config.root.clone(),
+      cur_dir,
+      &context.config.resolve.alias,
+      ImportMetaGlobResolverImpl {
+        context: context.clone(),
+      },
+    );
+    for (patterns, expected, _) in snapshot {
+      let mut actual = visitor
+        .glob_and_filter_sources(&patterns)
+        .into_values()
+        .collect::<Vec<_>>();
+      actual.sort();
+      if !visitor.errors.is_empty() || actual != expected {
+        return Ok(Some(true));
+      }
+    }
+    Ok(requires_matcher_refresh.then_some(true))
   }
 
   fn analyze_deps(
@@ -589,6 +661,19 @@ impl Plugin for FarmPluginScript {
     } else {
       Ok(None)
     }
+  }
+}
+
+fn import_meta_glob_cur_dir(module_id: &ModuleId, root: &str) -> String {
+  let resolved_path = module_id.resolved_path(root);
+  if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
+    root.to_string()
+  } else {
+    Path::new(&resolved_path)
+      .parent()
+      .unwrap_or(Path::new(root))
+      .to_string_lossy()
+      .to_string()
   }
 }
 

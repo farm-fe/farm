@@ -2,19 +2,19 @@ use std::path::PathBuf;
 
 use farmfe_core::config::Config;
 use farmfe_core::module::module_group::ModuleGroupGraph;
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::ResourcePot,
 };
-use farmfe_core::{HashMap, HashSet};
 
 use crate::{
   generate_module_buckets::ModuleGroupBuckets,
   generate_module_pots::generate_module_pots,
-  merge_module_pots::{merge_module_pots, ModuleGroupModulePots},
+  merge_module_pots::{ModuleGroupModulePots, merge_module_pots},
   module_bucket::ModuleBucket,
   module_pot::ModulePot,
-  utils::try_get_filename,
+  utils::{normalize_resource_path, try_get_filename},
 };
 
 /// Generate resource pots from module group buckets.
@@ -101,7 +101,8 @@ fn generate_resource_pot_name(
     return name.clone();
   }
 
-  let mut path = PathBuf::from(module_group_id.to_string());
+  let module_group_name = module_group_id.to_string();
+  let mut path = PathBuf::from(normalize_resource_path(&module_group_name));
   let mut name = try_get_filename(path.clone());
 
   if !used_resource_pot_names.contains(&name) {
@@ -122,16 +123,52 @@ fn generate_resource_pot_name(
     }
   }
 
+  // Virtual IDs and query variants may normalize to the same filename, and a
+  // flat virtual ID has no parent directory to use for disambiguation.
+  let hash = farmfe_toolkit::hash::sha256(module_group_name.as_bytes(), 8);
+  let hashed_name = format!("{name}_{hash}");
+  name = hashed_name.clone();
+  let mut suffix = 1;
+  while used_resource_pot_names.contains(&name) {
+    name = format!("{hashed_name}_{suffix}");
+    suffix += 1;
+  }
   name
 }
 
 #[cfg(test)]
 mod tests {
-  use farmfe_core::module::module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupType};
-  use farmfe_core::module::{module_graph::ModuleGraph, Module};
   use farmfe_core::HashSet;
+  use farmfe_core::module::module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupType};
+  use farmfe_core::module::{Module, module_graph::ModuleGraph};
 
   use crate::generate_resource_pots::generate_resource_pot_name;
+
+  #[test]
+  fn virtual_resource_names_are_safe_and_collision_checked() {
+    let graph = ModuleGraph::new();
+    let mut groups = ModuleGroupGraph::new();
+    let mut used = HashSet::default();
+    for id in [
+      "\0virtual:foo.js",
+      "\\0virtual:foo.js",
+      "virtual:foo.js",
+      "virtual_foo.js",
+      "\\0virtual:dir/foo?.js",
+    ] {
+      let group = ModuleGroup::new(id.into(), ModuleGroupType::DynamicImport);
+      let group_id = group.id.clone();
+      groups.add_module_group(group);
+      let name = generate_resource_pot_name(group_id, &used, &graph, &groups);
+      assert!(
+        !name
+          .chars()
+          .any(|c| c.is_control() || "<>:\"/\\|?*'".contains(c)),
+        "unsafe name {name:?}"
+      );
+      assert!(used.insert(name.clone()), "duplicate name {name:?}");
+    }
+  }
 
   #[test]
   fn test_generate_resource_pot_name() {
@@ -184,14 +221,13 @@ mod tests {
 
     used_resource_pot_names.insert("src_api".to_string());
     used_resource_pot_names.insert("test_src_api".to_string());
-    assert_eq!(
-      generate_resource_pot_name(
-        group_id,
-        &used_resource_pot_names,
-        &module_graph,
-        &module_group_graph
-      ),
-      "test_src_api"
+    let name = generate_resource_pot_name(
+      group_id,
+      &used_resource_pot_names,
+      &module_graph,
+      &module_group_graph,
     );
+    assert!(name.starts_with("test_src_api_"));
+    assert!(!used_resource_pot_names.contains(&name));
   }
 }

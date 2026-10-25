@@ -108,22 +108,6 @@ fn handle_entry_resource(
       resources_map,
     );
 
-    let entry_resource = resources_map
-      .get_mut(&entry_resource_name)
-      .unwrap_or_else(|| {
-        panic!(
-          "entry resource {entry_resource_name:?} not found in resources_map. Entry module id: {entry_module_id:?}"
-        )
-      });
-    params.resource = std::mem::take(entry_resource);
-
-    if let Some(entry_resource_sourcemap_name) = entry_resource_sourcemap_name {
-      let entry_resource_sourcemap = resources_map
-        .get_mut(&entry_resource_sourcemap_name)
-        .unwrap();
-      params.resource_sourcemap = Some(std::mem::take(entry_resource_sourcemap));
-    }
-
     params.initial_resources = initial_resources;
 
     let module_group_id = ModuleGroupId::new(entry_module_id, &ModuleGroupType::Entry);
@@ -143,6 +127,24 @@ fn handle_entry_resource(
 
     params.dynamic_resources = dynamic_resources;
     params.dynamic_module_resources_map = dynamic_module_resources_map;
+
+    // Self/cyclic dynamic imports can reference this entry's resource. Build
+    // their maps before replacing its metadata with the temporary placeholder.
+    let entry_resource = resources_map
+      .get_mut(&entry_resource_name)
+      .unwrap_or_else(|| {
+        panic!(
+          "entry resource {entry_resource_name:?} not found in resources_map. Entry module id: {entry_module_id:?}"
+        )
+      });
+    params.resource = std::mem::take(entry_resource);
+
+    if let Some(entry_resource_sourcemap_name) = entry_resource_sourcemap_name {
+      let entry_resource_sourcemap = resources_map
+        .get_mut(&entry_resource_sourcemap_name)
+        .unwrap();
+      params.resource_sourcemap = Some(std::mem::take(entry_resource_sourcemap));
+    }
 
     context
       .plugin_driver

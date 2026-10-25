@@ -8,7 +8,8 @@ use std::sync::{Arc, Mutex};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  module::{ModuleId, ModuleType},
+  error::CompilationError,
+  module::{Module, ModuleId, ModuleType},
   plugin::{
     Plugin, PluginTransformHookParam, PluginTransformHookResult, PluginUpdateModulesHookParam,
     UpdateType, hooks::freeze_module::PluginFreezeModuleHookParam,
@@ -183,6 +184,22 @@ impl FarmPluginTailwindCSS {
     let filename = id.split('?').next().unwrap_or(id);
     filename.rsplit('.').next().unwrap_or("")
   }
+
+  fn register_candidate_source(&self, id: &str, content: &str) -> farmfe_core::error::Result<()> {
+    let new_candidates = self.scan_candidates(content, Self::get_extension(id));
+    self
+      .candidates
+      .lock()
+      .map_err(|error| CompilationError::GenericError(error.to_string()))?
+      .extend(new_candidates);
+    // An initially empty source may acquire its first class during an update.
+    self
+      .candidate_sources
+      .lock()
+      .map_err(|error| CompilationError::GenericError(error.to_string()))?
+      .insert(id.to_string());
+    Ok(())
+  }
 }
 
 impl Plugin for FarmPluginTailwindCSS {
@@ -228,22 +245,6 @@ impl Plugin for FarmPluginTailwindCSS {
     Ok(Some(()))
   }
 
-  fn handle_persistent_cached_module(
-    &self,
-    module: &farmfe_core::module::Module,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<bool>> {
-    let path = module.id.resolved_path(&context.config.root);
-    // Older or incomplete caches may contain compiled modules without the
-    // scanner state needed to regenerate their shared Tailwind root.
-    if !self.state_ready.load(Ordering::Acquire)
-      && (Self::is_candidate_source_file(&path) || Self::is_css_root_file(&path))
-    {
-      return Ok(Some(true));
-    }
-    Ok(None)
-  }
-
   fn write_plugin_cache(
     &self,
     _context: &Arc<CompilationContext>,
@@ -275,6 +276,32 @@ impl Plugin for FarmPluginTailwindCSS {
     Ok(Some(()))
   }
 
+  fn handle_persistent_cached_module(
+    &self,
+    module: &Module,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<bool>> {
+    let resolved_path = module.id.resolved_path(&context.config.root);
+    if Self::is_candidate_source_file(&resolved_path) {
+      // Cached Vue/Svelte modules can contain compiled script rather than their
+      // original templates, so prefer the physical source when available.
+      let content =
+        context.source_observations
+          .read_file(&module.id.to_string(), path::Path::new(&resolved_path))
+          .ok().and_then(|bytes| String::from_utf8(bytes).ok())
+          .unwrap_or_else(|| module.content.to_string());
+      self.register_candidate_source(&resolved_path, &content)?;
+    }
+    // A compiled module cannot restore missing scanner/shared-root state.
+    if !self.state_ready.load(Ordering::Acquire)
+      && (Self::is_candidate_source_file(&resolved_path) || Self::is_css_root_file(&resolved_path))
+    {
+      return Ok(Some(true));
+    }
+    // Let other plugins decide whether this otherwise valid module cache expires.
+    Ok(None)
+  }
+
   fn transform(
     &self,
     param: &PluginTransformHookParam,
@@ -284,33 +311,15 @@ impl Plugin for FarmPluginTailwindCSS {
 
     // ── Step 1: Scan non-CSS source files for candidates ────────────
     if Self::is_candidate_source_file(resolved_path) {
-      let extension = Self::get_extension(resolved_path);
-      let new_candidates = self.scan_candidates(&param.content, extension);
-
-      if !new_candidates.is_empty() {
-        let mut candidates = self.candidates.lock().unwrap();
-        for c in new_candidates {
-          candidates.insert(c);
-        }
-        drop(candidates);
-
-        self
-          .candidate_sources
-          .lock()
-          .unwrap()
-          .insert(resolved_path.to_string());
-        self
-          .candidate_producers
-          .lock()
-          .map_err(plugin_cache_error)?
-          .insert(
-            resolved_path.to_string(),
-            (
-              context.source_observations.generation(),
-              param.module_id.clone(),
-            ),
-          );
-      }
+      self.register_candidate_source(resolved_path, &param.content)?;
+      self
+        .candidate_producers
+        .lock()
+        .map_err(plugin_cache_error)?
+        .insert(
+          resolved_path.to_string(),
+          (context.source_observations.generation(), param.module_id.clone()),
+        );
 
       // Pass through — we don't modify the source.
       return Ok(None);
@@ -935,5 +944,94 @@ mod tests {
     assert!(!has_tailwind_directive("@import \"./theme.css\";"));
     // Guard against false positives on identifiers that share a prefix.
     assert!(!has_tailwind_directive(".btn { @applyXyz: 1; }"));
+  }
+}
+
+#[cfg(test)]
+mod persistent_cache_tests {
+  use super::*;
+  use farmfe_core::module::Module;
+
+  #[test]
+  fn cached_candidate_source_restores_utility_scanning() {
+    let context = Arc::new(CompilationContext::default());
+    let plugin = FarmPluginTailwindCSS::new(&context.config, "{}".to_string());
+    let mut module = Module::new("src/App.tsx".into());
+    module.module_type = ModuleType::Tsx;
+    module.content =
+      Arc::new("export const app = <div className=\"bg-red-500 p-4\" />;".to_string());
+    plugin
+      .handle_persistent_cached_module(&module, &context)
+      .unwrap();
+    assert!(plugin.candidates.lock().unwrap().contains("bg-red-500"));
+    assert!(
+      plugin
+        .candidate_sources
+        .lock()
+        .unwrap()
+        .contains(&module.id.resolved_path(&context.config.root))
+    );
+
+    let mut css = Module::new("index.css".into());
+    css.module_type = ModuleType::Css;
+    css.content = Arc::new("@theme { --spacing: 0.25rem; } @tailwind utilities;".to_string());
+    let resolved_path = css.id.resolved_path(&context.config.root);
+    plugin
+      .transform(
+        &PluginTransformHookParam {
+          module_id: css.id.to_string(),
+          content: css.content.to_string(),
+          module_type: ModuleType::Css,
+          resolved_path: &resolved_path,
+          query: vec![],
+          meta: Default::default(),
+          source_map_chain: vec![],
+        },
+        &context,
+      )
+      .unwrap();
+    let parsed = parse_css_stylesheet(&css.id.to_string(), css.content.clone()).unwrap();
+    *css.meta = farmfe_core::module::ModuleMetaData::Css(Box::new(
+      farmfe_core::module::meta_data::css::CssModuleMetaData {
+        ast: parsed.ast,
+        comments: Default::default(),
+        custom: Default::default(),
+      },
+    ));
+    plugin
+      .freeze_module(
+        &mut PluginFreezeModuleHookParam {
+          module: &mut css,
+          resolved_deps: vec![],
+        },
+        &context,
+      )
+      .unwrap();
+    assert!(
+      css.content.contains(".p-4"),
+      "cached source utilities must be generated in the stylesheet"
+    );
+  }
+
+  #[test]
+  fn source_without_candidates_still_invalidates_styles_when_classes_are_added() {
+    let context = Arc::new(CompilationContext::default());
+    let plugin = FarmPluginTailwindCSS::new(&context.config, "{}".to_string());
+    let path = format!("{}/src/empty.tsx", context.config.root);
+    plugin
+      .transform(
+        &PluginTransformHookParam {
+          module_id: "src/empty.tsx".to_string(),
+          content: String::new(),
+          module_type: ModuleType::Tsx,
+          resolved_path: &path,
+          query: vec![],
+          meta: Default::default(),
+          source_map_chain: vec![],
+        },
+        &context,
+      )
+      .unwrap();
+    assert!(plugin.candidate_sources.lock().unwrap().contains(&path));
   }
 }

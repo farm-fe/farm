@@ -78,6 +78,9 @@ impl GlobWatch {
   }
 }
 
+/// Patterns, matched relative paths, and whether file contents are inlined.
+pub type ImportMetaGlobSnapshot = Vec<(Vec<String>, Vec<String>, bool)>;
+
 pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   ast: &mut SwcModule,
   root: String,
@@ -86,6 +89,19 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   alias: &Vec<AliasItem>,
   resolver: R,
 ) -> farmfe_core::error::Result<Vec<Vec<GlobWatch>>> {
+  transform_import_meta_glob_with_snapshot(ast, root, importer, cur_dir, alias, resolver)
+    .map(|(watches, _)| watches)
+}
+
+/// Transform glob expressions and retain both membership watches and cache inputs.
+pub fn transform_import_meta_glob_with_snapshot<R: ImportMetaGlobResolver>(
+  ast: &mut SwcModule,
+  root: String,
+  importer: &ModuleId,
+  cur_dir: String,
+  alias: &Vec<AliasItem>,
+  resolver: R,
+) -> farmfe_core::error::Result<(Vec<Vec<GlobWatch>>, ImportMetaGlobSnapshot)> {
   let mut visitor: ImportGlobVisitor<'_, _> =
     ImportGlobVisitor::new(importer, root, cur_dir, alias, resolver);
   ast.visit_mut_with(&mut visitor);
@@ -114,6 +130,19 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
     }
     watches.push(group);
   }
+
+  let snapshot = visitor
+    .import_globs
+    .iter()
+    .map(|info| {
+      (
+        info.sources.clone(),
+        info.globed_sources.clone(),
+        info.glob_import_as.as_deref() == Some("raw"),
+      )
+    })
+    .collect();
+
   // insert import statements
   for (index, meta_info) in visitor.import_globs.into_iter().enumerate() {
     for (glob_index, globed_source) in meta_info.globed_sources.into_iter().enumerate() {
@@ -194,7 +223,7 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
     }
   }
 
-  Ok(watches)
+  Ok((watches, snapshot))
 }
 
 /// import { <import> as __glob__0_0 } from './dir/foo.js'
@@ -549,7 +578,11 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
   }
 
   /// Glob the sources and filter negative sources, return globs relative paths
-  fn glob_and_filter_sources(
+  pub fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
+    self.glob_and_filter_sources_with_options(sources, WalkOptions::default(), None)
+  }
+
+  fn glob_and_filter_sources_with_options(
     &mut self,
     sources: &Vec<String>,
     options: WalkOptions,
@@ -854,7 +887,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
 
         // search source using glob
         let sources = &import_glob_info.sources;
-        let filtered_paths = self.glob_and_filter_sources(
+        let filtered_paths = self.glob_and_filter_sources_with_options(
           sources,
           WalkOptions {
             exhaustive: import_glob_info.exhaustive,

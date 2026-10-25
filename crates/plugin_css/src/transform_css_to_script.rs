@@ -57,15 +57,25 @@ pub fn transform_css_to_script_modules(
           let (css, _) = codegen_css_stylesheet(&m.meta.as_css().ast, false, None, false);
           (m.content_hash.clone(), css)
         };
+        let watch_hash = if context.cache_manager.module_cache.has_cache(&module_id) {
+          context
+            .cache_manager
+            .module_cache
+            .get_cache_ref(&module_id)
+            .watch_dependencies_hash()
+        } else {
+          String::new()
+        };
         // try read custom css transform cache
         let store_key = CacheStoreKey {
           name: module_id.to_string() + "-transform_css_to_script_modules",
           key: sha256(
             format!(
-              "transform_css_to_script_modules_{}_{}_{}",
+              "transform_css_to_script_modules_{}_{}_{}_{}",
               content_hash,
               module_id.to_string(),
-              generated_css
+              generated_css,
+              watch_hash
             )
             .as_bytes(),
             32,

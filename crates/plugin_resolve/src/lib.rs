@@ -1,20 +1,21 @@
 use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
-  config::{external::ExternalConfig, Config},
+  HashMap, HashSet,
+  config::{Config, external::ExternalConfig},
   context::CompilationContext,
   error::Result,
   farm_profile_function, farm_profile_scope,
   plugin::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
-  serde_json, HashMap, HashSet,
+  serde_json,
 };
 
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_utils::parse_query;
 use once_cell::sync::OnceCell;
-use resolver::{parse_package_source, ResolveOptions, Resolver};
+use resolver::{ResolveOptions, Resolver, parse_package_source};
 
 pub mod resolver;
 
@@ -23,6 +24,68 @@ pub struct FarmPluginResolve {
   resolver: Resolver,
   external_config: OnceCell<ExternalConfig>,
   dedupe: HashSet<String>,
+}
+
+#[cfg(test)]
+mod hmr_external_tests {
+  use super::*;
+  use farmfe_core::config::config_regex::ConfigRegex;
+  use std::{sync::Arc, time::SystemTime};
+
+  #[test]
+  fn hmr_files_are_internal_even_when_their_project_path_matches_external() {
+    let root = std::env::temp_dir().join(format!(
+      "farm-vue-external-{}-{}",
+      std::process::id(),
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let file = root.join("index.css");
+    std::fs::write(&file, "body { color: red }").unwrap();
+    let config = Config {
+      root: root.to_string_lossy().replace('\\', "/"),
+      external: vec![ConfigRegex::new("vue")],
+      ..Default::default()
+    };
+    let plugin = FarmPluginResolve::new(&config);
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let result = plugin
+      .resolve(
+        &PluginResolveHookParam {
+          source: file.to_string_lossy().to_string(),
+          importer: None,
+          kind: ResolveKind::HmrUpdate,
+        },
+        &context,
+        &PluginHookContext::default(),
+      )
+      .unwrap()
+      .unwrap();
+    assert!(
+      !result.external,
+      "existing HMR roots must keep their graph identity"
+    );
+    let external = plugin
+      .resolve(
+        &PluginResolveHookParam {
+          source: "vue".into(),
+          importer: None,
+          kind: ResolveKind::Import,
+        },
+        &context,
+        &PluginHookContext::default(),
+      )
+      .unwrap()
+      .unwrap();
+    assert!(
+      external.external,
+      "normal imports must still honor external patterns"
+    );
+    std::fs::remove_dir_all(root).unwrap();
+  }
 }
 
 impl FarmPluginResolve {
@@ -73,8 +136,10 @@ impl Plugin for FarmPluginResolve {
         Path::new(&self.root).to_path_buf()
       };
 
-    // Entry module and internal modules should not be external
-    if !matches!(param.kind, ResolveKind::Entry(_)) {
+    // Entry and HMR roots are already internal compilation targets. Matching
+    // an absolute project path against an external package pattern can change
+    // their identity and leave the update graph without its expected root.
+    if !matches!(param.kind, ResolveKind::Entry(_) | ResolveKind::HmrUpdate) {
       farm_profile_scope!("plugin_resolve::resolve::check_external".to_string());
       // check external first, if the source is set as external, return it immediately
       if external_config.is_external(source) {
@@ -92,11 +157,7 @@ impl Plugin for FarmPluginResolve {
       if let Some(dynamic_extensions) = hook_context.meta.get(DYNAMIC_EXTENSION_PRIORITY) {
         let exts = serde_json::from_str::<Vec<String>>(dynamic_extensions).unwrap_or_default();
 
-        if !exts.is_empty() {
-          Some(exts)
-        } else {
-          None
-        }
+        if !exts.is_empty() { Some(exts) } else { None }
       } else {
         None
       };

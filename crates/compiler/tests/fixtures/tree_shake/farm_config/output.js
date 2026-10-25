@@ -1,10 +1,10 @@
 //index.js:
- (function(){const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
-}());window['__farm_default_namespace__'].m.se({
+}}());window['__farm_default_namespace__'].m.se({
     "module": window['module'] || {}
 });
 (function(moduleSystem, modules) {
@@ -42,4 +42,4 @@ initModuleSystem(__farm_internal_module_system__);
         }
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");var __farm_entry_default__=__farm_entry__.default;export {__farm_entry_default__ as default};
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");var __farm_entry_default__=__farm_entry__.default;export {__farm_entry_default__ as default};

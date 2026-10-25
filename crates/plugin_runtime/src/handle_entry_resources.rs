@@ -6,7 +6,7 @@ use enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::config::TargetEnv;
 use farmfe_core::plugin::PluginHandleEntryResourceHookParam;
 use farmfe_core::{
-  config::{ModuleFormat, FARM_MODULE_SYSTEM},
+  config::{FARM_MODULE_SYSTEM, ModuleFormat},
   context::CompilationContext,
   module::Module,
   resource::Resource,
@@ -101,7 +101,7 @@ pub fn handle_entry_resources(
       }
     }
   } else {
-    format!("(function(){{{}}}());", params.runtime_code)
+    params.runtime_code.to_string()
   };
 
   // 2. import 'dep' or require('dep'), return empty string if dep_resources is empty
@@ -316,8 +316,16 @@ fn create_call_entry_module_code(
       ""
     };
 
+  // The plugin runtime (which defines bootstrap) is omitted when no runtime
+  // plugins are configured.
+  let bootstrap = if context.config.runtime.plugins.is_empty() {
+    ""
+  } else {
+    "__farm_ms__.b();"
+  };
+
   format!(
-    r#"{module_system}{set_initial_loaded_resources_code}{set_dynamic_resources_map_code}__farm_ms__.b();var __farm_entry__={}__farm_ms__.r("{}");"#,
+    r#"{module_system}{set_initial_loaded_resources_code}{set_dynamic_resources_map_code}{bootstrap}var __farm_entry__={}__farm_ms__.r("{}");"#,
     top_level_await_entry,
     entry_module.id.id(context.config.mode),
   )

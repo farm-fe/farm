@@ -74,7 +74,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
   // List of all candidates that were being returned by the root scanner during
   // the lifetime of the root.
   // const candidatesMap: Map<string, Set<string>> = new Map();
-  const candidatesModuleList: Set<string> = new Set();
+  const candidatesModuleList = new Map<string, boolean>();
 
   return [
     {
@@ -85,6 +85,25 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
       async configResolved(_config) {
         config = _config;
         minify = config.compilation?.minify !== false;
+      },
+
+      pluginCacheLoaded: {
+        executor(cache) {
+          const sources: [string, boolean][] = JSON.parse(
+            Buffer.from(cache).toString('utf8')
+          );
+          for (const [source, physical] of sources) {
+            candidatesModuleList.set(source, physical);
+          }
+        }
+      },
+
+      writePluginCache: {
+        executor() {
+          // Source transforms are skipped on cache hits, so keep their watch edges
+          // available when an unchanged source and a changed stylesheet are rebuilt.
+          return [...Buffer.from(JSON.stringify([...candidatesModuleList]))];
+        }
       },
 
       transform: {
@@ -114,7 +133,11 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
             }
           );
 
-          candidatesModuleList.add(param.resolvedPath);
+          const physical = await fs.stat(param.resolvedPath.split('?')[0]).then(
+            (stat) => stat.isFile(),
+            () => false
+          );
+          candidatesModuleList.set(param.resolvedPath, physical);
 
           return {
             content: param.content
@@ -159,20 +182,33 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
           let root = roots.get(param.moduleId);
 
           // add watch file for scanned files
-          for (const resolvedPath of candidatesModuleList) {
-            context?.addWatchFile(param.moduleId, resolvedPath);
+          const candidateList: string[] = [];
+          for (const [resolvedPath, physical] of candidatesModuleList) {
+            if (physical) {
+              try {
+                await fs.stat(resolvedPath.split('?')[0]);
+              } catch {
+                candidatesModuleList.delete(resolvedPath);
+                continue;
+              }
+            }
+            context?.addWatchFile(
+              param.moduleId,
+              physical ? resolvedPath.split('?')[0] : resolvedPath
+            );
+            candidateList.push(
+              ...(context?.readMetadata<string[]>(resolvedPath, {
+                refer: [resolvedPath],
+                scope: [CANDIDATE_SCOPE]
+              }) ?? [])
+            );
           }
-          const candidateList = (
-            context?.readMetadataByScope<string[]>(CANDIDATE_SCOPE) ?? []
-          ).flatMap((v) => v);
-
           let result = await root.generate(
             param.content,
             (file) => context?.addWatchFile?.(param.moduleId, file),
             I,
             new Set(candidateList)
           );
-
           if (!result) {
             roots.delete(param.moduleId);
             return {

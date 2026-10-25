@@ -183,6 +183,15 @@ pub fn get_resource_cache_key(
       }
     }
 
+    // freeze_module can derive output from watched sources without changing
+    // the module's load/transform hash (for example Tailwind CSS candidates).
+    // Use the fingerprints already captured by the module cache, rather than
+    // reading files again or changing the source hash used for module reuse.
+    if context.cache_manager.module_cache.has_cache(module_id) {
+      let cached = context.cache_manager.module_cache.get_cache_ref(module_id);
+      code.push_str(&cached.watch_dependencies_hash());
+    }
+
     if context.cache_manager.module_cache.cache_outdated(module_id) {
       code.push_str(&format!("[cache_outdated+{}]", module.id.to_string()));
     }
@@ -264,4 +273,78 @@ pub fn set_resource_cache(
       hash: cache_key,
     },
   );
+}
+
+#[cfg(test)]
+mod watched_resource_cache_tests {
+  use super::*;
+  use farmfe_core::{
+    cache::module_cache::{CachedModule, CachedWatchDependency},
+    config::{
+      Config,
+      persistent_cache::{PersistentCacheConfig, PersistentCacheConfigObj},
+    },
+    module::Module,
+    resource::resource_pot::ResourcePotType,
+  };
+
+  #[test]
+  fn watched_content_and_membership_change_resource_cache_key() {
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+            memory: true,
+            ..Default::default()
+          })),
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap(),
+    );
+    let mut module = Module::new("style.css".into());
+    module.content_hash = "unchanged-css-source".into();
+    context.module_graph.write().add_module(module.clone());
+    let mut pot = ResourcePot::new("style", "modules", ResourcePotType::Css);
+    pot.add_module(module.id.clone());
+    let set_watches = |watches: &[(&str, &str, u128)]| {
+      context.cache_manager.module_cache.set_cache(
+        module.id.clone(),
+        CachedModule {
+          module: module.clone(),
+          dependencies: vec![],
+          watch_dependencies: watches
+            .iter()
+            .map(|(id, hash, timestamp)| CachedWatchDependency {
+              dependency: (*id).into(),
+              hash: (*hash).into(),
+              timestamp: *timestamp,
+            })
+            .collect(),
+          is_expired: false,
+        },
+      );
+    };
+    set_watches(&[("App.js", "p4", 1), ("Other.js", "same", 1)]);
+    let original = get_resource_cache_key(&pot, &context);
+    set_watches(&[("App.js", "p8", 1), ("Other.js", "same", 1)]);
+    let changed = get_resource_cache_key(&pot, &context);
+    assert_ne!(
+      original, changed,
+      "freeze-derived CSS must not reuse an old resource"
+    );
+    set_watches(&[("Other.js", "same", 2), ("App.js", "p8", 2)]);
+    assert_eq!(
+      changed,
+      get_resource_cache_key(&pot, &context),
+      "watch order and timestamp-only edits must preserve the key"
+    );
+    set_watches(&[("Other.js", "same", 2)]);
+    assert_ne!(
+      changed,
+      get_resource_cache_key(&pot, &context),
+      "removed candidate sources must invalidate generated CSS"
+    );
+  }
 }

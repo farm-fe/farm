@@ -6,7 +6,9 @@ vi.mock('./overlay.js', () => ({ ErrorOverlay: class {}, overlayId: 'overlay' })
 
 beforeEach(() => {
   vi.resetModules();
-  vi.stubGlobal('window', { location: { port: '4397', hostname: 'localhost' } });
+  vi.stubGlobal('window', Object.assign(new EventTarget(), {
+    location: { port: '4397', hostname: 'localhost' }
+  }));
   vi.stubGlobal('location', { protocol: 'http:', reload: vi.fn() });
   vi.stubGlobal('document', { querySelectorAll: (): Element[] => [] });
   for (const [name, value] of Object.entries({ FARM_HMR_HOST: false, FARM_HMR_PROTOCOL: '', FARM_HMR_PATH: '/__hmr',
