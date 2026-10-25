@@ -17,12 +17,13 @@
 use std::path::Component;
 use std::path::PathBuf;
 
+use farmfe_core::HashMap;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::ModuleId;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
-use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_ecma_ast::IdentName;
 use farmfe_core::swc_ecma_ast::Tpl;
 use farmfe_core::swc_ecma_ast::{
@@ -30,8 +31,7 @@ use farmfe_core::swc_ecma_ast::{
   Ident, Import, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
   Module as SwcModule, ModuleItem, ObjectLit, Pat, Prop, PropOrSpread,
 };
-use farmfe_core::wax::Glob;
-use farmfe_core::HashMap;
+use farmfe_ecosystem_glob::{Glob, WalkOptions};
 
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
@@ -47,6 +47,37 @@ pub trait ImportMetaGlobResolver {
   fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String>;
 }
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+pub struct GlobWatch {
+  pub root: String,
+  pub pattern: String,
+  pub negative: bool,
+  pub exhaustive: bool,
+  pub case_insensitive: bool,
+}
+
+impl GlobWatch {
+  pub fn matches(&self, file: &str) -> Result<bool, String> {
+    let Ok(path) = std::path::Path::new(file).strip_prefix(&self.root) else {
+      return Ok(false);
+    };
+    let path = path.to_string_lossy().replace('\\', "/");
+    if !self.exhaustive && path.split('/').any(|part| part == "node_modules") {
+      return Ok(false);
+    }
+    let options = farmfe_ecosystem_glob::CompileOptions {
+      noextglob: true,
+      posix: false,
+      windows: false,
+      dot: self.exhaustive,
+      nocase: self.case_insensitive,
+      ..Default::default()
+    };
+    farmfe_ecosystem_glob::is_match(&path, &self.pattern, &options)
+      .map_err(|error| format!("{error:?}"))
+  }
+}
+
 pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   ast: &mut SwcModule,
   root: String,
@@ -54,7 +85,7 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   cur_dir: String,
   alias: &Vec<AliasItem>,
   resolver: R,
-) -> farmfe_core::error::Result<()> {
+) -> farmfe_core::error::Result<Vec<Vec<GlobWatch>>> {
   let mut visitor: ImportGlobVisitor<'_, _> =
     ImportGlobVisitor::new(importer, root, cur_dir, alias, resolver);
   ast.visit_mut_with(&mut visitor);
@@ -65,6 +96,24 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
     ));
   }
 
+  let mut watches = Vec::new();
+  for info in &visitor.import_globs {
+    let mut group = Vec::new();
+    for source in &info.sources {
+      let negative = source.starts_with('!');
+      let source = source.strip_prefix('!').unwrap_or(source);
+      let (root, pattern) =
+        visitor.find_rel_source_in(source, info.base_dir.as_deref().unwrap_or(&visitor.cur_dir));
+      group.push(GlobWatch {
+        root,
+        pattern,
+        negative,
+        exhaustive: info.exhaustive,
+        case_insensitive: info.case_insensitive,
+      });
+    }
+    watches.push(group);
+  }
   // insert import statements
   for (index, meta_info) in visitor.import_globs.into_iter().enumerate() {
     for (glob_index, globed_source) in meta_info.globed_sources.into_iter().enumerate() {
@@ -98,7 +147,15 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
                   )],
                   src: Box::new(farmfe_core::swc_ecma_ast::Str {
                     span: DUMMY_SP,
-                    value: format!("{globed_source}?url").into(),
+                    value: format!(
+                      "{globed_source}{}url",
+                      if globed_source.contains('?') {
+                        "&"
+                      } else {
+                        "?"
+                      }
+                    )
+                    .into(),
                     raw: None,
                   }),
                   type_only: false,
@@ -137,7 +194,7 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
     }
   }
 
-  Ok(())
+  Ok(watches)
 }
 
 /// import { <import> as __glob__0_0 } from './dir/foo.js'
@@ -245,6 +302,9 @@ pub struct ImportMetaGlobInfo {
   pub import: Option<String>,
   /// e.g. 'foo' of `import.meta.glob('./dir/*.js', { query: { foo: 'bar', bar: true } })`
   pub query: Option<String>,
+  pub exhaustive: bool,
+  pub case_insensitive: bool,
+  pub base_dir: Option<String>,
 }
 
 pub struct ImportGlobVisitor<'a, R> {
@@ -286,6 +346,9 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       globed_sources: vec![],
       import: None,
       query: None,
+      exhaustive: false,
+      case_insensitive: false,
+      base_dir: None,
     };
 
     // get arguments from args[1]
@@ -304,8 +367,12 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
         }
 
         if let Some(query) = options.remove("query") {
-          import_glob_info.query = Some(query);
+          import_glob_info.query = Some(query.trim_start_matches('?').to_string());
         }
+        import_glob_info.exhaustive = options.remove("exhaustive").as_deref() == Some("true");
+        import_glob_info.case_insensitive =
+          options.remove("caseSensitive").as_deref() == Some("false");
+        import_glob_info.base_dir = options.remove("base");
       }
     }
 
@@ -321,8 +388,13 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     // the package conversion priority should be higher than alias
     if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/')) {
       if let Some(result) = self.resolve(&source) {
-        self.resolved_cache.insert(source.clone(), result);
-        return source.to_string();
+        self.resolved_cache.insert(source.clone(), result.clone());
+        let resolved = format!("/{}", relative(&self.root, &result));
+        return if negative {
+          format!("!{resolved}")
+        } else {
+          resolved
+        };
       }
     }
 
@@ -369,7 +441,12 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       if alias.ends_with('$') && source == alias.trim_end_matches('$') {
         result = replaced.to_string();
         break;
-      } else if !alias.ends_with('$') && source.starts_with(alias) {
+      } else if !alias.ends_with('$')
+        && (source == *alias
+          || source
+            .strip_prefix(alias)
+            .is_some_and(|suffix| suffix.starts_with('/')))
+      {
         let source_left = RelativePath::new(source.trim_start_matches(alias));
         let new_source = source_left.to_logical_path(replaced);
 
@@ -397,6 +474,10 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
   }
 
   pub fn find_rel_source(&self, source: &str) -> (String, String) {
+    self.find_rel_source_in(source, &self.cur_dir)
+  }
+
+  fn find_rel_source_in(&self, source: &str, cur_dir: &str) -> (String, String) {
     let mut root = self.root.clone();
 
     #[allow(clippy::manual_strip)]
@@ -416,7 +497,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       }
     } else if source.starts_with("../") {
       let source = RelativePath::new(source)
-        .to_logical_path(&self.cur_dir)
+        .to_logical_path(cur_dir)
         .to_string_lossy()
         .to_string();
       let mut source = relative(&self.root, &source);
@@ -439,7 +520,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
 
       source
     } else if let Some(suffix) = source.strip_prefix("./") {
-      let abs_path = RelativePath::new(&suffix).to_logical_path(&self.cur_dir);
+      let abs_path = RelativePath::new(&suffix).to_logical_path(cur_dir);
       relative(&self.root, &abs_path.to_string_lossy())
     } else if source.starts_with("**") {
       source.to_string()
@@ -468,16 +549,30 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
   }
 
   /// Glob the sources and filter negative sources, return globs relative paths
-  fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
+  fn glob_and_filter_sources(
+    &mut self,
+    sources: &Vec<String>,
+    options: WalkOptions,
+    base_dir: Option<&str>,
+  ) -> HashMap<String, String> {
     let mut paths = vec![];
 
     for source in sources {
       let negative = source.starts_with('!');
 
       let source = if negative { &source[1..] } else { &source[..] };
-      let (root, rel_source) = self.find_rel_source(source);
+      if !(source.starts_with('.') || source.starts_with('/') || source.starts_with("**"))
+        && !self.resolved_cache.contains_key(source)
+        && self.resolve(source).is_none()
+      {
+        self.errors.push(format!(
+          "Cannot resolve import.meta.glob pattern {source:?}"
+        ));
+        continue;
+      }
+      let (root, rel_source) = self.find_rel_source_in(source, base_dir.unwrap_or(&self.cur_dir));
 
-      let glob = Glob::new(&rel_source);
+      let glob = Glob::with_options(&rel_source, options);
 
       match glob {
         Ok(glob) => {
@@ -504,40 +599,35 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     }
 
     let mut filtered_paths = HashMap::default();
+    let mut excluded_paths = farmfe_core::HashSet::default();
 
     for (negative, path) in paths {
       for (source, entry) in path {
         match entry {
           Ok(file) => {
-            // if source starts with '/', we need make source relative to root, otherwise, relative to cur_dir
-            let source: String = if source.starts_with('/') {
-              let rel_source = relative(&self.root, &file);
-
-              if !rel_source.starts_with('/') {
-                format!("/{rel_source}")
-              } else {
-                rel_source
-              }
+            let root_relative_key = source.starts_with('/');
+            let mut relative_file = if let Some(base) = base_dir {
+              relative(base, &file)
+            } else if root_relative_key {
+              format!("/{}", relative(&self.root, &file))
             } else {
-              let rel_source = relative(&self.cur_dir, &file);
-
-              if !rel_source.starts_with('.') {
-                format!("./{rel_source}")
-              } else {
-                rel_source
-              }
+              relative(&self.cur_dir, &file)
             };
 
-            let mut relative_file = relative(&self.cur_dir, &file);
-
-            if !relative_file.starts_with('.') {
+            if !relative_file.starts_with('.') && !relative_file.starts_with('/') {
               relative_file = format!("./{relative_file}");
             }
 
-            if negative && filtered_paths.contains_key(&relative_file) {
-              filtered_paths.remove(&relative_file);
-            } else if !negative {
-              filtered_paths.insert(relative_file, source);
+            if negative {
+              excluded_paths.insert(relative_file);
+            } else {
+              let import_source = relative(&self.cur_dir, &file);
+              let import_source = if import_source.starts_with('.') {
+                import_source
+              } else {
+                format!("./{import_source}")
+              };
+              filtered_paths.insert(relative_file, import_source);
             }
           }
           Err(err) => {
@@ -549,6 +639,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       }
     }
 
+    filtered_paths.retain(|file, _| !excluded_paths.contains(file));
     filtered_paths
   }
 
@@ -562,10 +653,18 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     sources: &Vec<String>,
   ) -> Option<(String, Box<Expr>)> {
     if glob_import_as == "raw" {
-      let file = RelativePath::new(&relative_file).to_logical_path(&self.cur_dir);
-      let content = std::fs::read_to_string(file).unwrap();
+      let file = RelativePath::new(source).to_logical_path(&self.cur_dir);
+      let content = match std::fs::read_to_string(file) {
+        Ok(content) => content,
+        Err(error) => {
+          self.errors.push(format!(
+            "Cannot read import.meta.glob raw source {source:?}: {error}"
+          ));
+          return None;
+        }
+      };
       Some((
-        source.to_string(),
+        relative_file.to_string(),
         Box::new(Expr::Lit(Lit::Str(swc_ecma_ast::Str {
           span: DUMMY_SP,
           value: content.into(),
@@ -575,7 +674,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     } else if glob_import_as == "url" {
       // add "./dir/foo.js": __glob__0_0
       Some((
-        source.to_string(),
+        relative_file.to_string(),
         Box::new(Expr::Ident(Ident::new(
           format!("__glob__{cur_index}_{entry_index}").into(),
           DUMMY_SP,
@@ -607,7 +706,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
         spread: None,
         expr: Box::new(Expr::Lit(Lit::Str(swc_ecma_ast::Str {
           span: DUMMY_SP,
-          value: relative_file.into(),
+          value: source.into(),
           raw: None,
         }))),
       }],
@@ -618,7 +717,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     if let Some(import) = import.as_ref() {
       // () => import('./dir/foo.js').then((m) => m.setup)
       (
-        source.to_string(),
+        relative_file.to_string(),
         Box::new(Expr::Arrow(ArrowExpr {
           span: DUMMY_SP,
           params: vec![],
@@ -665,7 +764,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       )
     } else {
       (
-        source.to_string(),
+        relative_file.to_string(),
         Box::new(Expr::Arrow(ArrowExpr {
           span: DUMMY_SP,
           params: vec![],
@@ -698,13 +797,39 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
         args,
         ..
       }) => {
-        if *sym != *"glob" || args.is_empty() {
+        if *sym != *"glob" {
+          return;
+        }
+
+        if args.is_empty() || args.len() > 2 {
+          self.errors.push(
+            "import.meta.glob requires a literal pattern and optional literal options".into(),
+          );
           return;
         }
 
         let Some(sources) = get_string_literal(&args[0]) else {
+          self.errors.push(
+            "import.meta.glob patterns must be literal strings or an array of literal strings"
+              .into(),
+          );
           return;
         };
+        if args
+          .get(1)
+          .is_some_and(|arg| !matches!(&*arg.expr, Expr::Object(_)))
+        {
+          self
+            .errors
+            .push("import.meta.glob options must be an object literal".into());
+          return;
+        }
+        if let Some(arg) = args.get(1) {
+          if let Err(error) = validate_glob_options(arg) {
+            self.errors.push(error);
+            return;
+          }
+        }
 
         let sources = sources
           .into_iter()
@@ -713,10 +838,30 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
 
         let cur_index = self.import_globs.len();
         let mut import_glob_info = Self::create_import_glob_info(sources, args);
+        if let Some(base) = &import_glob_info.base_dir {
+          let (anchor, suffix) = if let Some(suffix) = base.strip_prefix('/') {
+            (&self.root, suffix)
+          } else {
+            (&self.cur_dir, base.as_str())
+          };
+          import_glob_info.base_dir = Some(
+            RelativePath::new(suffix)
+              .to_logical_path(anchor)
+              .to_string_lossy()
+              .to_string(),
+          );
+        }
 
         // search source using glob
         let sources = &import_glob_info.sources;
-        let filtered_paths = self.glob_and_filter_sources(sources);
+        let filtered_paths = self.glob_and_filter_sources(
+          sources,
+          WalkOptions {
+            exhaustive: import_glob_info.exhaustive,
+            case_insensitive: import_glob_info.case_insensitive,
+          },
+          import_glob_info.base_dir.as_deref(),
+        );
         let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
         filtered_paths.sort();
 
@@ -738,7 +883,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
           } else if import_glob_info.eager {
             // add "./dir/foo.js": __glob__0_0
             props.push((
-              source.clone(),
+              relative_file.clone(),
               Box::new(Expr::Ident(Ident::new(
                 format!("__glob__{cur_index}_{entry_index}").into(),
                 DUMMY_SP,
@@ -748,10 +893,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
           } else {
             // add "./dir/foo.js": () => import('./dir/foo.js')
             let (rel_file, source) = if let Some(query) = &import_glob_info.query {
-              (
-                format!("{relative_file}?{query}"),
-                format!("{source}?{query}"),
-              )
+              (relative_file.clone(), format!("{source}?{query}"))
             } else {
               (relative_file.clone(), source.clone())
             };
@@ -759,7 +901,7 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
             props.push(self.deal_with_non_eager(&rel_file, &source, &import_glob_info.import));
           }
 
-          import_glob_info.globed_sources.push(relative_file);
+          import_glob_info.globed_sources.push(source);
         }
 
         // props to object literal
@@ -795,13 +937,18 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
     box Expr::Array(ArrayLit { elems, .. }) => {
       let mut result = vec![];
 
-      for elem in elems.iter().flatten() {
+      for elem in elems {
+        let Some(elem) = elem else {
+          return None;
+        };
         if let ExprOrSpread {
           spread: None,
           expr: box Expr::Lit(Lit::Str(str)),
         } = elem
         {
           result.push(str.value.to_string_lossy().into_owned());
+        } else {
+          return None;
         }
       }
 
@@ -816,14 +963,53 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
         return None;
       }
 
-      Some(vec![quasis
-        .iter()
-        .map(|item| item.raw.to_string())
-        .collect::<Vec<_>>()
-        .join("")])
+      Some(vec![
+        quasis
+          .iter()
+          .map(|item| item.raw.to_string())
+          .collect::<Vec<_>>()
+          .join(""),
+      ])
     }
     _ => None,
   }
+}
+
+fn validate_glob_options(expr: &ExprOrSpread) -> Result<(), String> {
+  let Expr::Object(object) = &*expr.expr else {
+    return Err("import.meta.glob options must be literal".into());
+  };
+  for prop in &object.props {
+    let PropOrSpread::Prop(prop) = prop else {
+      return Err("import.meta.glob does not support option spreads".into());
+    };
+    let Prop::KeyValue(pair) = &**prop else {
+      return Err("import.meta.glob options must be literal properties".into());
+    };
+    let key = match &pair.key {
+      swc_ecma_ast::PropName::Ident(key) => key.sym.to_string(),
+      swc_ecma_ast::PropName::Str(key) => key.value.to_string_lossy().into_owned(),
+      _ => return Err("import.meta.glob option keys must be static".into()),
+    };
+    let valid = match key.as_str() {
+      "eager" | "exhaustive" | "caseSensitive" => matches!(&*pair.value, Expr::Lit(Lit::Bool(_))),
+      "base" | "import" | "as" => matches!(&*pair.value, Expr::Lit(Lit::Str(_))),
+      "query" => match &*pair.value {
+        Expr::Lit(Lit::Str(_)) => true,
+        Expr::Object(query) => query.props.iter().all(|prop| matches!(prop,
+          PropOrSpread::Prop(prop) if matches!(&**prop, Prop::KeyValue(pair)
+            if matches!(&pair.key, swc_ecma_ast::PropName::Ident(_) | swc_ecma_ast::PropName::Str(_))
+              && matches!(&*pair.value, Expr::Lit(Lit::Str(_) | Lit::Bool(_) | Lit::Num(_))))
+        )),
+        _ => false,
+      },
+      _ => return Err(format!("Unsupported import.meta.glob option {key:?}")),
+    };
+    if !valid {
+      return Err(format!("Invalid import.meta.glob option {key:?}"));
+    }
+  }
+  Ok(())
 }
 
 fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
@@ -878,11 +1064,15 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
                         } else {
                           "false".to_string()
                         }),
+                        box Expr::Lit(Lit::Num(n)) => Some(n.value.to_string()),
                         _ => None,
                       };
 
                       if let (Some(k), Some(v)) = (k, v) {
-                        query_str.push_str(&format!("{k}={v}&"));
+                        let pair: String = url::form_urlencoded::Serializer::new(String::new())
+                          .append_pair(&k, &v)
+                          .finish();
+                        query_str.push_str(&format!("{pair}&"));
                       }
                     }
                     _ => {}

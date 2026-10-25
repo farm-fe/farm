@@ -371,7 +371,8 @@ export class Server extends httpServer {
         type: 'added'
       };
 
-      await this.compiler.update([currentAddedItem]);
+      const result = await this.compiler.update([currentAddedItem]);
+      this.hmrEngine?.sendUpdate(result);
     });
 
     this.watcher.on('unlink', async (file: string) => {
@@ -380,7 +381,8 @@ export class Server extends httpServer {
         path: normalizePath(file),
         type: 'removed'
       };
-      await this.compiler.update([currentRemovedItem]);
+      const result = await this.compiler.update([currentRemovedItem]);
+      this.hmrEngine?.sendUpdate(result);
 
       // Fix #2035, skip if the file is irrelevant
       if (this.compiler.hasModule(file)) {

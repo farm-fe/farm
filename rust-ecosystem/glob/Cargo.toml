@@ -1,0 +1,16 @@
+[package]
+name = "farmfe_ecosystem_glob"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+description = "Farm's scoped picomatch-derived matcher and import glob walker"
+
+[dependencies]
+fancy-regex = "=0.14.0"
+serde = { version = "1", features = ["derive"] }
+walkdir = "2.5"
+
+[dev-dependencies]
+serde_json = "1"
+tempfile = "3"

@@ -156,7 +156,22 @@ export default {
 
 ## Vite 风格的 `import.meta.glob`
 
-Farm 完整支持 Vite 风格的 `import.meta.glob`, 参考 [glob import](https://vitejs.dev/guide/features.html#glob-import).
+Farm 支持字面量形式的 Vite 风格 `import.meta.glob`，参考 [glob import](https://vite.dev/guide/features#glob-import)。Rust 匹配器以 Vite 8.3.5 的 JavaScript glob 路径为对齐目标，不代表完整兼容所有 picomatch 或原生 Rolldown 行为。
+
+支持 `eager`、`import`、`query`、`exhaustive`、`caseSensitive`、`base`，并保留旧的 `as: 'raw' | 'url'`。模式和选项必须为静态字面量；不支持的选项和非法值会产生编译错误，不会静默切换匹配方言。
+
+负模式的排除不受数组中位置影响。默认不包含隐藏文件和 `node_modules`，`exhaustive: true` 可在发现文件时包含它们；extglob 关闭。对象键排序后输出，query 仅附加到导入路径，不污染对象键。相对 `base` 以 importer 目录为基准，绝对 `base` 以项目根目录为基准，返回键相对于该目录。
+
+```ts
+const modules = import.meta.glob('./*.js', {
+  base: './dir',
+  import: 'default',
+  query: '?raw',
+});
+// 键为 './foo.js'，导入路径为 './dir/foo.js?raw'
+```
+
+开发模式下，匹配文件的新增和删除会让 importer 重新编译，并通过 HMR 更新 glob 对象；文件事件仍遵循 watcher 的排除配置。源码、许可来源和兼容边界见 [`farmfe_ecosystem_glob`](https://github.com/farm-fe/farm/tree/main/rust-ecosystem/glob)。
 
 例如:
 

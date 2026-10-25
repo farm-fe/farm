@@ -29,3 +29,18 @@ recheck this notice against the final lockfile and installed package.
 The native scope-to-color implementation is maintained by Farm. Its familiar editor palette references the MIT-licensed VS Code default themes; no VS Code language server or semantic-token service is bundled.
 
 Sources consulted on 2026-10-24: https://github.com/microsoft/vscode/tree/main/extensions/theme-defaults/themes . Retained upstream license: `licenses/vscode-theme-reference.txt` (https://github.com/microsoft/vscode/blob/main/LICENSE.txt).
+
+## Native glob compatibility
+
+Farm's `farmfe_ecosystem_glob` derives its matcher from picomatch-rs 0.1.0,
+commit `ceb39c90fc719fbbab79216a139f31c174272ed3`, with the scoped Farm fixes
+recorded in that crate's `UPSTREAM.patch`. It does not embed the NAPI wrapper.
+The original project MIT text and copyright are retained in
+[licenses/picomatch-rs-0.1.0-MIT.txt](licenses/picomatch-rs-0.1.0-MIT.txt).
+Source: https://github.com/Maidang1/picomatch-rs/tree/ceb39c90fc719fbbab79216a139f31c174272ed3 .
+
+The matcher uses fancy-regex 0.14.0. Its original MIT license is retained in
+[licenses/fancy-regex-0.14.0-MIT.txt](licenses/fancy-regex-0.14.0-MIT.txt),
+from that exact crates.io package. This addition does not make the partial
+inventory above a complete native license audit or resolve the separate
+Tardar notice-material gap.

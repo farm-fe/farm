@@ -30,7 +30,7 @@ use farmfe_core::{
   swc_ecma_ast::{EsVersion, Module as SwcModule},
 };
 use farmfe_swc_transformer_import_glob::{
-  ImportMetaGlobResolver, ImportMetaGlobResolverParams, transform_import_meta_glob,
+  GlobWatch, ImportMetaGlobResolver, ImportMetaGlobResolverParams, transform_import_meta_glob,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -81,6 +81,90 @@ impl Plugin for FarmPluginScript {
 
   fn priority(&self) -> i32 {
     99
+  }
+
+  fn handle_persistent_cached_module(
+    &self,
+    module: &farmfe_core::module::Module,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<bool>> {
+    if !module.module_type.is_script() {
+      return Ok(None);
+    }
+    let mut custom = module.meta.as_script().custom.clone();
+    let Some(json) = custom.get_cache::<String>("farm:glob:v1") else {
+      // Migrate cached transforms produced before this matcher revision.
+      return Ok(Some(true));
+    };
+    let groups: Vec<Vec<GlobWatch>> = farmfe_core::serde_json::from_str(&json)
+      .map_err(|error| CompilationError::GenericError(error.to_string()))?;
+    // Membership can change without the importer timestamp changing. Rebuild
+    // just glob importers on a warm start; ordinary script caches remain valid.
+    Ok(Some(!groups.is_empty()))
+  }
+
+  fn update_modules(
+    &self,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    use farmfe_core::plugin::UpdateType;
+    let changes = params
+      .paths
+      .iter()
+      .filter(|(_, kind)| matches!(kind, UpdateType::Added | UpdateType::Removed))
+      .map(|(file, _)| file.clone())
+      .collect::<Vec<_>>();
+    if changes.is_empty() {
+      return Ok(None);
+    }
+    let mut affected = Vec::new();
+    let mut graph = context.module_graph.write();
+    for module in graph.modules_mut() {
+      if !module.module_type.is_script() {
+        continue;
+      }
+      let Some(json) = module
+        .meta
+        .as_script_mut()
+        .custom
+        .get_cache::<String>("farm:glob:v1")
+      else {
+        continue;
+      };
+      let groups: Vec<Vec<GlobWatch>> = farmfe_core::serde_json::from_str(&json)
+        .map_err(|error| CompilationError::GenericError(error.to_string()))?;
+      let mut hit = false;
+      for file in &changes {
+        for group in &groups {
+          let mut positive = false;
+          let mut excluded = false;
+          for pattern in group {
+            if pattern
+              .matches(file)
+              .map_err(CompilationError::GenericError)?
+            {
+              if pattern.negative {
+                excluded = true;
+              } else {
+                positive = true;
+              }
+            }
+          }
+          hit |= positive && !excluded;
+        }
+      }
+      if hit {
+        affected.push(module.id.resolved_path_with_query(&context.config.root));
+      }
+    }
+    drop(graph);
+    for file in affected {
+      if !params.paths.iter().any(|(existing, _)| existing == &file) {
+        params.paths.push((file, UpdateType::Updated));
+      }
+    }
+    Ok(None)
   }
 
   fn load(
@@ -259,7 +343,7 @@ impl Plugin for FarmPluginScript {
           .to_string()
       };
 
-      transform_import_meta_glob(
+      let glob_watches = transform_import_meta_glob(
         ast,
         context.config.root.clone(),
         param.module_id,
@@ -269,6 +353,13 @@ impl Plugin for FarmPluginScript {
           context: context.clone(),
         },
       )?;
+      script.custom.insert(
+        "farm:glob:v1".into(),
+        Box::new(
+          farmfe_core::serde_json::to_string(&glob_watches)
+            .map_err(|error| CompilationError::GenericError(error.to_string()))?,
+        ),
+      );
       script.set_comments(comments.into())
     }
 
