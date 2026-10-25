@@ -2,6 +2,20 @@
   "items": [
     {
       "type": "category",
+      "label": "Ecosystem",
+      "items": [
+        {
+          "type": "doc",
+          "id": "ecosystem/overview"
+        },
+        {
+          "type": "doc",
+          "id": "ecosystem/rust-crates"
+        }
+      ]
+    },
+    {
+      "type": "category",
       "label": "Getting Started",
       "items": [
         {

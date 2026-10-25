@@ -2,6 +2,20 @@
   "items": [
     {
       "type": "category",
+      "label": "生态",
+      "items": [
+        {
+          "type": "doc",
+          "id": "ecosystem/overview"
+        },
+        {
+          "type": "doc",
+          "id": "ecosystem/rust-crates"
+        }
+      ]
+    },
+    {
+      "type": "category",
       "label": "开始使用",
       "items": [
         {

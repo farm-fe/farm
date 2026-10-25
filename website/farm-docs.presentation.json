@@ -116,6 +116,7 @@
       {
         "id": "Ecosystem",
         "prefixes": [
+          "ecosystem",
           "farm-docs"
         ]
       }
