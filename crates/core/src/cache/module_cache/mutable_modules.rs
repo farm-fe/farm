@@ -262,12 +262,10 @@ mod tests {
       if let (Ok(directory), Ok(temporary)) = (
         self.directory.canonicalize(),
         std::env::temp_dir().canonicalize(),
-      ) {
-        if directory.parent() == Some(temporary.as_path())
-          && directory.file_name() == self.directory.file_name()
-        {
-          let _ = std::fs::remove_dir_all(directory);
-        }
+      ) && directory.parent() == Some(temporary.as_path())
+        && directory.file_name() == self.directory.file_name()
+      {
+        let _ = std::fs::remove_dir_all(directory);
       }
     }
   }

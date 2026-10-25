@@ -82,13 +82,12 @@ pub(crate) mod controlled_write_backend_probe {
     }
   }
   struct Backend(Arc<State>);
-  fn factory(
-    pause_publish: bool,
-  ) -> (
+  type BackendFixture = (
     Box<dyn CacheStoreTrait>,
     Arc<State>,
     mpsc::Receiver<(String, String)>,
-  ) {
+  );
+  fn factory(pause_publish: bool) -> BackendFixture {
     let (paused, receiver) = mpsc::channel();
     let state = Arc::new(State {
       names: Mutex::new(vec![]),
@@ -100,18 +99,10 @@ pub(crate) mod controlled_write_backend_probe {
     });
     (Box::new(Backend(state.clone())), state, receiver)
   }
-  pub(crate) fn create() -> (
-    Box<dyn CacheStoreTrait>,
-    Arc<State>,
-    mpsc::Receiver<(String, String)>,
-  ) {
+  pub(crate) fn create() -> BackendFixture {
     factory(false)
   }
-  pub(crate) fn create_publish() -> (
-    Box<dyn CacheStoreTrait>,
-    Arc<State>,
-    mpsc::Receiver<(String, String)>,
-  ) {
+  pub(crate) fn create_publish() -> BackendFixture {
     factory(true)
   }
   impl CacheStoreTrait for Backend {
