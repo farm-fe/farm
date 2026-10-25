@@ -46,7 +46,8 @@
   ],
   "dependencies": {
     "@vuetify/loader-shared": "^2.1.0",
-    "upath": "^2.0.1"
+    "upath": "^2.0.1",
+    "@babel/parser": "7.29.2"
   },
   "repository": {
     "type": "git",

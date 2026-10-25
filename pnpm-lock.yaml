@@ -3401,6 +3401,9 @@ importers:
       '@babel/plugin-syntax-jsx':
         specifier: ^7.25.9
         version: 7.27.1(@babel/core@7.29.0)
+      '@babel/plugin-transform-typescript':
+        specifier: 7.28.0
+        version: 7.28.0(@babel/core@7.29.0)
       '@farmfe/js-plugin-babel':
         specifier: workspace:^
         version: link:../babel
@@ -3576,6 +3579,9 @@ importers:
 
   js-plugins/vuetify:
     dependencies:
+      '@babel/parser':
+        specifier: 7.29.2
+        version: 7.29.2
       '@vuetify/loader-shared':
         specifier: ^2.1.0
         version: 2.1.2(vue@3.4.35(typescript@5.6.3))

@@ -8,6 +8,7 @@ import {
   type Options as VuetifyOptions
 } from '@vuetify/loader-shared';
 import path from 'upath';
+import { normalizeResolverDeclarations } from './normalize-resolvers.js';
 
 interface Options extends VuetifyOptions {}
 
@@ -51,8 +52,9 @@ function filterToRegExp(filter: unknown, fallback: RegExp | null) {
   return fallback;
 }
 
-function isFarmPluginVuePath(pluginPath: string) {
-  const normalizedPath = normalizePath(pluginPath);
+function isFarmPluginVuePath(pluginPath: unknown) {
+  if (typeof pluginPath !== 'string') return false;
+  const normalizedPath = pluginPath.replaceAll('\\', '/');
   return (
     normalizedPath === FARM_PLUGIN_VUE_PACKAGE ||
     normalizedPath.includes('/@farmfe/plugin-vue') ||
@@ -157,7 +159,10 @@ export default function farmPlugin(_options?: Options): JsPlugin[] {
             return matchType || matchSetup;
           });
         if (isVueFile || isVueTemplate) {
-          const { code: imports, source } = generateImports(content, options);
+          const { code: imports, source } = generateImports(
+            normalizeResolverDeclarations(content),
+            options
+          );
           return {
             content: source + imports,
             sourceMap: null

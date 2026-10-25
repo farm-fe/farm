@@ -22,9 +22,23 @@ export function reactCompiler(options: ReactCompilerOptions = {}): JsPlugin {
         options.filters?.resolvedPaths ?? defaultReactCompilerResolvedPaths
     },
     transformOptions: {
-      plugins: ['babel-plugin-react-compiler', '@babel/plugin-syntax-jsx'].map(
-        (pkg) => require.resolve(pkg)
-      )
+      ...options.transformOptions,
+      parserOpts: {
+        plugins: ['typescript', 'jsx'],
+        ...options.transformOptions?.parserOpts
+      },
+      plugins: [
+        [
+          require.resolve('babel-plugin-react-compiler'),
+          options.compilerOptions ?? {}
+        ],
+        require.resolve('@babel/plugin-syntax-jsx'),
+        [
+          require.resolve('@babel/plugin-transform-typescript'),
+          { isTSX: true, allowDeclareFields: true }
+        ],
+        ...(options.transformOptions?.plugins ?? [])
+      ]
     }
   });
 }
