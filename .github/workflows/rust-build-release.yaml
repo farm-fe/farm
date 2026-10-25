@@ -95,7 +95,9 @@ jobs:
             -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry
             -v ${{ github.workspace }}:/build
             -w /build
-          run: ./scripts/ci-build-rust-artifacts.sh
+          run: |
+            . ./scripts/setup-native-container-node.sh
+            ./scripts/ci-build-rust-artifacts.sh
       - name: Build
         if: ${{ !matrix.settings.docker }}
         run: ./scripts/ci-build-rust-artifacts.sh

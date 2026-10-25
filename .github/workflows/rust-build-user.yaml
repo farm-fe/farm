@@ -67,7 +67,9 @@ jobs:
           node --test scripts/assert-glob-dependency-closure.test.mjs
       - name: Verify native artifact build and release flow
         if: matrix.settings.abi == 'linux-x64-gnu'
-        run: node scripts/test-native-artifact-flow.cjs
+        run: |
+          node scripts/test-native-container-node.cjs
+          node scripts/test-native-artifact-flow.cjs
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
       - uses: mlugg/setup-zig@v2
@@ -99,7 +101,9 @@ jobs:
             -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry
             -v ${{ github.workspace }}:/build
             -w /build
-          run: ./scripts/ci-build-rust-artifacts.sh
+          run: |
+            . ./scripts/setup-native-container-node.sh
+            ./scripts/ci-build-rust-artifacts.sh
       - name: Build
         if: ${{ !matrix.settings.docker }}
         run: ./scripts/ci-build-rust-artifacts.sh
