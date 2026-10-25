@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use parking_lot::Mutex;
 use store::{
@@ -92,6 +92,21 @@ impl Default for CacheContext {
 }
 
 impl CacheManager {
+  /// Physical storage of this manager, including disk format, namespace and
+  /// mode. Its captured options remain authoritative after plugin config hooks.
+  pub fn disk_cache_directory(&self) -> Option<PathBuf> {
+    match &self.context.option {
+      CacheType::Memory => None,
+      CacheType::Disk {
+        cache_dir,
+        namespace,
+        mode,
+      } => Some(store::CacheStore::directory_for(
+        cache_dir, namespace, *mode,
+      )),
+    }
+  }
+
   pub fn new(option: CacheOption) -> Self {
     let store_factory: Box<dyn CacheStoreFactory> = option.option.create_store_factory();
     let context = Arc::new(CacheContext {
@@ -131,15 +146,19 @@ impl CacheManager {
   }
 
   pub fn write_cache(&self) {
+    self.write_cache_with(|| {});
+  }
+
+  fn write_cache_with(&self, on_acquired: impl FnOnce()) {
     if !self.enable() {
       return;
     }
     // discard write if cannot get lock
-    if self.lock.try_lock().is_none() {
+    let Some(mut lock) = self.lock.try_lock() else {
       return;
-    }
+    };
 
-    let mut lock = self.lock.lock();
+    on_acquired();
     *lock = true;
     // write cache in parallel
 
@@ -157,5 +176,87 @@ impl CacheManager {
       self.showdown();
     });
     *lock = false;
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::{
+    sync::{
+      atomic::{AtomicBool, Ordering},
+      mpsc, Arc,
+    },
+    thread,
+    time::Duration,
+  };
+
+  use super::{CacheManager, CacheOption, CacheType};
+
+  #[test]
+  fn concurrent_writer_is_discarded_until_active_write_finishes() {
+    let manager = Arc::new(CacheManager::new(CacheOption {
+      cache_enable: true,
+      option: CacheType::Memory,
+      thread_pool: Arc::new(
+        rayon::ThreadPoolBuilder::new()
+          .num_threads(1)
+          .build()
+          .expect("test thread pool"),
+      ),
+    }));
+    let timeout = Duration::from_secs(20);
+    let (entered_tx, entered_rx) = mpsc::channel();
+    let (resume_tx, resume_rx) = mpsc::channel();
+    let first_manager = Arc::clone(&manager);
+    let first = thread::spawn(move || {
+      first_manager.write_cache_with(|| {
+        entered_tx
+          .send(())
+          .expect("notify first writer eligibility");
+        resume_rx
+          .recv_timeout(timeout)
+          .expect("release first writer");
+      });
+    });
+    let first_entered = entered_rx.recv_timeout(timeout);
+    let second_entered = Arc::new(AtomicBool::new(false));
+    let second_probe = Arc::clone(&second_entered);
+    let second_manager = Arc::clone(&manager);
+    let (completed_tx, completed_rx) = mpsc::channel();
+    let second = thread::spawn(move || {
+      second_manager.write_cache_with(|| {
+        second_probe.store(true, Ordering::SeqCst);
+      });
+      completed_tx.send(()).expect("notify second writer return");
+    });
+    let second_completed = completed_rx.recv_timeout(timeout);
+    let second_entered_before_release = second_entered.load(Ordering::SeqCst);
+    let released = resume_tx.send(());
+    // Join both writers before assertions, including the old implementation's
+    // failure path, so the test never leaves a paused writer behind.
+    let first_result = first.join();
+    let second_result = second.join();
+    assert!(first_entered.is_ok(), "first writer must reach acquisition");
+    assert!(
+      released.is_ok(),
+      "first writer must remain paused until release"
+    );
+    assert!(first_result.is_ok());
+    assert!(second_result.is_ok());
+    assert!(
+      second_completed.is_ok(),
+      "contending writer must return without waiting"
+    );
+    assert!(
+      !second_entered_before_release,
+      "contending writer must not enter the cache write after eligibility"
+    );
+    let mut third_entered = false;
+    manager.write_cache_with(|| third_entered = true);
+    assert!(
+      third_entered,
+      "a later writer must acquire the released lock"
+    );
+    assert!(!*manager.lock.lock());
   }
 }

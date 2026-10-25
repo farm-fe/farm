@@ -1,0 +1,15 @@
+# Source-map composition and preserved comments
+
+The CI compiler suite exposed a genuine license-comment regression alongside older output snapshots. AST spans were already relocated by each original source-file interval, but comments still used the earlier direct-offset calculation. Their attachment positions no longer matched the emitted statements.
+
+The runtime renderer and concatenate pipeline now merge source maps and comments together, using the same relocation intervals for AST spans, comment attachments and comment spans. This also handles a second composition of an already hoisted multi-file source map. Existing public merge function signatures remain available.
+
+The original script fixture requiring its `@license` comment was retained: it failed before the fix and passes afterward without updating its expected output. Added nested-merge coverage verifies both attachment and original file identity. At the Windows checkpoint, compiler tests passed 125 with one ignored, toolkit library tests passed 35, and runtime/HMR tests passed 24; snapshot update mode was disabled for regression verification.
+
+Remaining fixture changes were separately reviewed. Twelve of 21 changed JavaScript fixtures have identical normalized ASTs and only string quote formatting differs. The others reflect already implemented external namespace getters, raw Node CommonJS require behavior, local createRequire binding semantics, hybrid ESM/CJS output and the existing resource transaction runtime. Execution probes checked the source-level export contracts. Getter descriptors and key order changes are explicit, not described as universal semantic equivalence. No fixture was accepted by deleting its license-preservation expectation.
+
+Native product and real website acceptance follows a normal Core build and fresh preview checks; these tests alone are not a clean Linux deployment result.
+
+Read-only follow-up review found that CSS still uses the legacy `merge_comments` helper together with direct-offset CSS AST relocation. The legacy helper therefore retains its original `start_pos + byte_pos` convention; only the two JS callers use the new interval-aware combined helper. This follow-up restoration was made after the r07 native build and preview acceptance. Those product results do not verify the final source tree; the next consolidated Windows build must include it. A subsequent single-job toolkit library run passed all 36 tests, including a two-module CSS regression that preserves parser comment positions relative to AST rules and the existing nested JS/license cases. The first test attempt incorrectly assumed CSS comments attach at rule starts; that test assumption failed before merging and was corrected using actual parser metadata. The initial failure log is retained.
+
+The follow-up compiler CSS integration target also passed all three tests (modules, prefixer and URL replacement) with snapshot update variables removed. No external Rust plugin or website product build was repeated for this finite regression batch.

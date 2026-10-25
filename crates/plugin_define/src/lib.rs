@@ -6,6 +6,12 @@ use farmfe_core::{
   serde_json::{self, Value},
 };
 use farmfe_toolkit::lazy_static::lazy_static;
+use farmfe_toolkit::swc_ecma_visit::VisitMutWith;
+
+mod environment;
+
+#[cfg(test)]
+mod tests;
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -22,12 +28,14 @@ const DEFAULT_DEFINE_PROCESS_ENV: &str = "FARM_PROCESS_ENV";
 pub struct FarmPluginDefine {
   /// Sort define by key len desc
   sorted_define: RwLock<Vec<(String, Value)>>,
+  environment: RwLock<environment::EnvironmentDefines>,
 }
 
 impl FarmPluginDefine {
   pub fn new(_: &Config) -> Self {
     Self {
       sorted_define: RwLock::new(vec![]),
+      environment: RwLock::new(Default::default()),
     }
   }
 }
@@ -42,11 +50,17 @@ impl Plugin for FarmPluginDefine {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    let (environment, automatic_keys) = environment::prepare(config)?;
+    *self.environment.write() = environment;
     let define = config.define.clone();
-    let mut sorted_define = define.into_iter().collect::<Vec<_>>();
+    let mut sorted_define = define
+      .into_iter()
+      .filter(|(key, _)| !automatic_keys.contains(key))
+      .collect::<Vec<_>>();
     sorted_define.sort_by_key(|b| std::cmp::Reverse(b.0.len()));
 
     let mut self_sorted_define = self.sorted_define.write();
+    self_sorted_define.clear();
     // make sure internal defines are processed at last
     let mut delayed_define = vec![];
 
@@ -62,6 +76,27 @@ impl Plugin for FarmPluginDefine {
       self_sorted_define.push(d);
     }
 
+    Ok(Some(()))
+  }
+
+  fn process_module(
+    &self,
+    param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let environment = self.environment.read();
+    if !param.module_type.is_script() || environment.is_empty() {
+      return Ok(None);
+    }
+    let globals = context.meta.get_globals(param.module_id);
+    farmfe_core::swc_common::GLOBALS.set(globals.value(), || {
+      let script = param.meta.as_script_mut();
+      let mut visitor = environment::EnvironmentVisitor::new(
+        &environment,
+        farmfe_core::swc_common::Mark::from_u32(script.unresolved_mark),
+      );
+      script.ast.visit_mut_with(&mut visitor);
+    });
     Ok(Some(()))
   }
 

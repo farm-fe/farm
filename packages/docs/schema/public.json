@@ -1,0 +1,438 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PublicSiteConfig",
+  "type": "object",
+  "required": [
+    "basePath",
+    "collections",
+    "docs",
+    "locales",
+    "notFound",
+    "schemaVersion",
+    "seo",
+    "theme",
+    "title",
+    "trailingSlash",
+    "url"
+  ],
+  "properties": {
+    "ai": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AiConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "basePath": {
+      "type": "string"
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PublicCollection"
+      }
+    },
+    "docs": {
+      "$ref": "#/definitions/PublicDocsConfig"
+    },
+    "locales": {
+      "$ref": "#/definitions/PublicLocales"
+    },
+    "notFound": {
+      "$ref": "#/definitions/NotFoundConfig"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "format": "uint32",
+      "maximum": 1.0,
+      "minimum": 1.0
+    },
+    "search": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SearchConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "seo": {
+      "$ref": "#/definitions/SeoConfig"
+    },
+    "theme": {
+      "$ref": "#/definitions/PublicThemeConfig"
+    },
+    "title": {
+      "type": "string"
+    },
+    "trailingSlash": {
+      "$ref": "#/definitions/TrailingSlash"
+    },
+    "url": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "AiConfig": {
+      "description": "Opt-in machine-readable documentation. Unknown dynamic MDX fails export.",
+      "type": "object",
+      "properties": {
+        "agentGuideUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "publicationStatus": {
+          "default": "prerelease",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PublicationStatus"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "AlgoliaOptions": {
+      "type": "object",
+      "required": [
+        "apiKey",
+        "appId",
+        "indexName"
+      ],
+      "properties": {
+        "apiKey": {
+          "description": "Browser search key, part of the explicitly public configuration.",
+          "type": "string"
+        },
+        "appId": {
+          "type": "string"
+        },
+        "indexName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "AtomConfig": {
+      "type": "object",
+      "required": [
+        "author",
+        "updated"
+      ],
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CollectionKind": {
+      "type": "string",
+      "enum": [
+        "doc",
+        "blog",
+        "page"
+      ]
+    },
+    "ColorMode": {
+      "type": "string",
+      "enum": [
+        "system",
+        "light",
+        "dark"
+      ]
+    },
+    "FallbackIndexing": {
+      "type": "string",
+      "enum": [
+        "noindex",
+        "index"
+      ]
+    },
+    "NavLink": {
+      "type": "object",
+      "required": [
+        "label",
+        "to"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotFoundConfig": {
+      "type": "object",
+      "properties": {
+        "labels": {
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NotFoundLabels"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotFoundLabels": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "default": "The requested page could not be found.",
+          "type": "string"
+        },
+        "homeLabel": {
+          "default": "Return home",
+          "type": "string"
+        },
+        "title": {
+          "default": "Page not found",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OpenSearchConfig": {
+      "type": "object",
+      "required": [
+        "description",
+        "pageId",
+        "shortName"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string"
+        },
+        "shortName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicCollection": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "locale",
+        "routeBase"
+      ],
+      "properties": {
+        "group": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/CollectionKind"
+        },
+        "locale": {
+          "type": "string"
+        },
+        "routeBase": {
+          "type": "string"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicDocsConfig": {
+      "type": "object",
+      "required": [
+        "defaultVersion"
+      ],
+      "properties": {
+        "defaultVersion": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicFooterConfig": {
+      "type": "object",
+      "required": [
+        "links"
+      ],
+      "properties": {
+        "copyright": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NavLink"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicLocales": {
+      "type": "object",
+      "required": [
+        "default",
+        "items"
+      ],
+      "properties": {
+        "default": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicLogoConfig": {
+      "type": "object",
+      "required": [
+        "alt",
+        "href",
+        "src"
+      ],
+      "properties": {
+        "alt": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicThemeConfig": {
+      "type": "object",
+      "required": [
+        "colorMode",
+        "footer",
+        "navbar"
+      ],
+      "properties": {
+        "colorMode": {
+          "$ref": "#/definitions/ColorMode"
+        },
+        "footer": {
+          "$ref": "#/definitions/PublicFooterConfig"
+        },
+        "logo": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PublicLogoConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "navbar": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NavLink"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PublicationStatus": {
+      "type": "string",
+      "enum": [
+        "prerelease",
+        "stable"
+      ]
+    },
+    "SearchConfig": {
+      "type": "object",
+      "required": [
+        "provider"
+      ],
+      "properties": {
+        "openSearch": {
+          "$ref": "#/definitions/OpenSearchConfig"
+        },
+        "options": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AlgoliaOptions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider": {
+          "$ref": "#/definitions/SearchProvider"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SearchProvider": {
+      "type": "string",
+      "enum": [
+        "none",
+        "algolia"
+      ]
+    },
+    "SeoConfig": {
+      "type": "object",
+      "properties": {
+        "atom": {
+          "$ref": "#/definitions/AtomConfig"
+        },
+        "fallbackIndexing": {
+          "default": "noindex",
+          "allOf": [
+            {
+              "$ref": "#/definitions/FallbackIndexing"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "TrailingSlash": {
+      "type": "string",
+      "enum": [
+        "always",
+        "never"
+      ]
+    }
+  }
+}

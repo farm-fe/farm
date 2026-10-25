@@ -23,7 +23,7 @@ export function Comp() {
 }
 ```
 
-您可以通过[`css.modules`](/docs/config/farm-config#cssmodules)配置CSS模块。 例如，您可以将 `css.modules.paths` 设置为 `['.css|sass|less|scss']` 那么所有 css 文件将被视为 css 模块。
+您可以通过[`css.modules`](../config/compilation-options.md#cssmodules)配置CSS模块。 例如，您可以将 `css.modules.paths` 设置为 `['.css|sass|less|scss']` 那么所有 css 文件将被视为 css 模块。
 
 ## CSS 预处理器
 Farm 官方提供了 sass、less、postcss 插件。

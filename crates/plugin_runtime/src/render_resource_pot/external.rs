@@ -1,18 +1,39 @@
 use std::sync::Arc;
 
+use farmfe_core::HashSet;
 use farmfe_core::config::external::ExternalConfig;
-use farmfe_core::config::ModuleFormat;
+use farmfe_core::config::{FARM_REQUIRE, ModuleFormat};
 use farmfe_core::context::CompilationContext;
 use farmfe_core::resource::resource_pot::ResourcePotId;
 use farmfe_core::swc_ecma_ast::EsVersion;
 use farmfe_core::swc_ecma_ast::Module as SwcModule;
+use farmfe_core::swc_ecma_ast::{CallExpr, Callee, Expr, MemberProp};
 use farmfe_core::swc_ecma_parser::Syntax;
-use farmfe_core::HashSet;
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::script::parse_module;
 use farmfe_toolkit::script::swc_try_with::ResetSpanVisitMut;
 use farmfe_toolkit::swc_ecma_utils::StmtLikeInjector;
-use farmfe_toolkit::swc_ecma_visit::VisitMutWith;
+use farmfe_toolkit::swc_ecma_visit::{Visit, VisitMutWith, VisitWith};
+
+#[derive(Default)]
+struct NativeRequireDetector {
+  used: bool,
+}
+
+impl Visit for NativeRequireDetector {
+  fn visit_call_expr(&mut self, call: &CallExpr) {
+    if let Callee::Expr(expr) = &call.callee {
+      if let Expr::Member(member) = expr.as_ref() {
+        if matches!(&member.prop, MemberProp::Ident(prop) if prop.sym == "nr")
+          && matches!(member.obj.as_ref(), Expr::Ident(obj) if obj.sym.as_str() == FARM_REQUIRE)
+        {
+          self.used = true;
+        }
+      }
+    }
+    call.visit_children_with(self);
+  }
+}
 
 pub fn handle_external_modules(
   resource_pot_id: &ResourcePotId,
@@ -20,7 +41,11 @@ pub fn handle_external_modules(
   external_modules: &HashSet<String>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<SwcModule> {
-  if external_modules.is_empty() {
+  let mut native_require = NativeRequireDetector::default();
+  if context.config.output.target_env.is_node() {
+    resource_pot_ast.visit_with(&mut native_require);
+  }
+  if external_modules.is_empty() && !native_require.used {
     return Ok(resource_pot_ast);
   }
 
@@ -29,7 +54,13 @@ pub fn handle_external_modules(
 
   // library won't be handled here, they will be handled in plugin_library
   if context.config.output.target_env.is_node() {
-    handle_node_external_modules(resource_pot_id, resource_pot_ast, external_modules, context)
+    handle_node_external_modules(
+      resource_pot_id,
+      resource_pot_ast,
+      external_modules,
+      native_require.used,
+      context,
+    )
   } else {
     handle_browser_external_modules(resource_pot_id, resource_pot_ast, external_modules, context)
   }
@@ -45,6 +76,7 @@ fn handle_node_external_modules(
   resource_pot_id: &ResourcePotId,
   mut resource_pot_ast: SwcModule,
   external_modules: Vec<&String>,
+  native_require: bool,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<SwcModule> {
   let farm_global_this = get_farm_global_this(
@@ -73,14 +105,24 @@ fn handle_node_external_modules(
   }
 
   let mut prepend_str = import_strings.join("\n");
-  prepend_str.push_str(&format!(
-    "{farm_global_this}.m.se({{{}}});",
-    source_to_names
-      .into_iter()
-      .map(|(name, source)| format!("{source:?}: {name}"))
-      .collect::<Vec<_>>()
-      .join(",")
-  ));
+  // Keep literal CommonJS external requires separate from ESM namespaces.
+  if native_require && context.config.output.format.as_single() == ModuleFormat::EsModule {
+    prepend_str.push_str(&format!(
+      "\nimport {{ createRequire as __farm_create_require__ }} from 'node:module';\n{farm_global_this}.m.r.nr = __farm_create_require__(import.meta.url);"
+    ));
+  } else if native_require {
+    prepend_str.push_str(&format!("\n{farm_global_this}.m.r.nr = require;"));
+  }
+  if !source_to_names.is_empty() {
+    prepend_str.push_str(&format!(
+      "{farm_global_this}.m.se({{{}}});",
+      source_to_names
+        .into_iter()
+        .map(|(name, source)| format!("{source:?}: {name}"))
+        .collect::<Vec<_>>()
+        .join(",")
+    ));
+  }
 
   let mut prepend_ast = parse_module(
     &resource_pot_id.as_str().into(),

@@ -1,25 +1,25 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   context::CompilationContext,
   module::{
-    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+    ModuleId, ModuleSystem, meta_data::script::CommentsMetaData, module_graph::ModuleGraph,
   },
   resource::meta_data::js::RenderModuleResult,
-  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap},
+  swc_common::{Globals, Mark, SourceMap, comments::SingleThreadedComments},
   swc_ecma_ast::{EsVersion, Expr, ExprStmt},
-  HashMap,
 };
 
 use farmfe_toolkit::{
   script::{
-    module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
+    module2cjs::{OriginalRuntimeCallee, TransformModuleDeclsOptions, transform_module_decls},
     swc_try_with::try_with,
     wrap_farm_runtime,
   },
   swc_ecma_transforms::{
     fixer,
-    hygiene::{hygiene_with_config, Config as HygieneConfig},
+    hygiene::{Config as HygieneConfig, hygiene_with_config},
   },
   swc_ecma_transforms_base::fixer::paren_remover,
   swc_ecma_visit::VisitMutWith,
@@ -65,7 +65,10 @@ pub fn render_module(
   } = options;
 
   if unresolved_mark.as_u32() == 0 || top_level_mark.as_u32() == 0 {
-    panic!("unresolved_mark of {:?} is 0. This is may be a bug of farm. Please report it to https://github.com/farm-fe/farm/issues", module_id);
+    panic!(
+      "unresolved_mark of {:?} is 0. This is may be a bug of farm. Please report it to https://github.com/farm-fe/farm/issues",
+      module_id
+    );
   }
 
   let comments = SingleThreadedComments::from(comments);
@@ -79,14 +82,17 @@ pub fn render_module(
     // replace commonjs require('./xxx') to require('./xxx', true)
     if matches!(
       module_script_meta.module_system,
-      ModuleSystem::CommonJs | ModuleSystem::Hybrid
+      ModuleSystem::CommonJs | ModuleSystem::Hybrid | ModuleSystem::EsModule
     ) {
-      cloned_module.visit_mut_with(&mut ExistingCommonJsRequireVisitor::new(
+      let mut require_visitor = ExistingCommonJsRequireVisitor::new(
         unresolved_mark,
         top_level_mark,
         module_graph,
         module_id.clone(),
-      ));
+        context.config.output.target_env.is_node(),
+        &hoisted_external_modules,
+      );
+      cloned_module.visit_mut_with(&mut require_visitor);
     }
 
     cloned_module.visit_mut_with(&mut paren_remover(Some(&comments)));
@@ -122,7 +128,11 @@ pub fn render_module(
       ..Default::default()
     }));
 
-    if matches!(module_script_meta.module_system, ModuleSystem::EsModule) && is_async_module {
+    if matches!(
+      module_script_meta.module_system,
+      ModuleSystem::EsModule | ModuleSystem::Hybrid
+    ) && is_async_module
+    {
       // transform async module to meet the requirements of farm runtime
       transform_async_module::transform_async_module(&mut cloned_module);
     }
@@ -139,7 +149,7 @@ pub fn render_module(
     expr.visit_mut_with(&mut fixer(Some(&comments)));
     func_expr = expr;
 
-    external_modules = source_replacer.external_modules;
+    external_modules.extend(source_replacer.external_modules);
   })?;
 
   Ok(RenderModuleResult {

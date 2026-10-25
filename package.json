@@ -23,6 +23,7 @@
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 INSTA_UPDATE=always cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
     "test-examples": "node scripts/test-examples.mjs",
+    "test:create-farm:candidates": "node --test scripts/create-farm-ci-diagnostics.test.mjs && node scripts/test-create-farm-candidates.mjs",
     "check:e2e-specs": "node scripts/check-e2e-specs.mjs",
     "test-e2e": "node scripts/check-e2e-specs.mjs && node scripts/test-e2e.mjs",
     "prepare": "husky",
@@ -46,6 +47,13 @@
     "get-port": "^7.1.0",
     "husky": "^9.0.11",
     "lint-staged": "^13.0.3",
+    "mdast-util-from-markdown": "2.0.1",
+    "mdast-util-frontmatter": "2.0.1",
+    "mdast-util-gfm": "3.0.0",
+    "mdast-util-mdx": "3.0.0",
+    "micromark-extension-frontmatter": "2.0.0",
+    "micromark-extension-gfm": "3.0.0",
+    "micromark-extension-mdxjs": "3.0.0",
     "nanospinner": "^1.1.0",
     "node-emoji": "^2.1.3",
     "playwright-chromium": "^1.55.0",
@@ -66,6 +74,11 @@
   "pnpm": {
     "overrides": {
       "@farmfe/core": "workspace:*"
+    },
+    "patchedDependencies": {
+      "@arco-design/web-react@2.66.12": "patches/@arco-design__web-react@2.66.12.patch",
+      "b-validate@1.5.3": "patches/b-validate@1.5.3.patch",
+      "resize-observer-polyfill@1.5.1": "patches/resize-observer-polyfill@1.5.1.patch"
     }
   },
   "packageManager": "pnpm@9.4.0"

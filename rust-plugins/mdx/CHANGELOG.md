@@ -1,5 +1,19 @@
 # @farmfe/plugin-mdx
 
+## 2.0.0
+
+### Patch Changes
+
+- Pin the Rust SDK dependency family for rebuilding against core 3.0.0 and ABI 0.5.2 with nightly-2026-04-10. Native platform artifacts must be rebuilt and validated together with the matching core before publication.
+- 5cf6af9: Fix Rust plugin build scripts and tooling compatibility with napi-rs CLI option parsing.
+
+  - Add backward compatibility in plugin-tools by stripping legacy `--cargo-name` before invoking `@napi-rs/cli`.
+  - Update Rust plugin build scripts to use `-p <cargo-package>` without the unsupported `--cargo-name` flag.
+  - Fix `@farmfe/plugin-react` `build:publish` script to target the correct Cargo package.
+  - Update create-farm-plugin Rust template and docs examples to generate the corrected build command.
+
+- Resolve plugin options declarations with explicit JavaScript extensions so strict NodeNext consumers can load their types. Include the virtual and YAML options declarations in published packages, and apply the same import convention to the Rust plugin scaffold.
+
 ## 2.0.0-beta.1
 
 ### Patch Changes

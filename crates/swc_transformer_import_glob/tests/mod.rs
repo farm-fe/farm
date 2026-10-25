@@ -111,6 +111,20 @@ fn find_rel_source_relative_path() {
 }
 
 #[test]
+fn root_relative_glob_matches_entries_without_current_directory_prefix() {
+  use farmfe_core::wax::{Glob, Pattern};
+
+  let context = create_context();
+  let importer = ModuleId::new("src/index.js", "", &context.config.root);
+  let visitor = create_visitor(&importer, &context);
+  let (root, pattern) = visitor.find_rel_source("/src/*.js");
+
+  assert_eq!(root, context.config.root);
+  assert_eq!(pattern, "src/*.js");
+  assert!(Glob::new(&pattern).unwrap().is_match("src/foo.js"));
+}
+
+#[test]
 fn test_import_meta_glob() {
   fixture!("tests/fixtures/**/input.js", |file, _crate_path| {
     println!("Testing {file:?}...");

@@ -8,12 +8,12 @@
 //! ```
 
 use farmfe_core::{
-  config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
-  module::{meta_data::script::FARM_RUNTIME_MODULE_HELPER_ID, module_graph::ModuleGraph, ModuleId},
-  plugin::ResolveKind,
-  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str},
   HashMap,
+  config::{FARM_DYNAMIC_REQUIRE, FARM_REQUIRE, Mode},
+  module::{ModuleId, meta_data::script::FARM_RUNTIME_MODULE_HELPER_ID, module_graph::ModuleGraph},
+  plugin::ResolveKind,
+  swc_common::{DUMMY_SP, Mark, SyntaxContext, util::take::Take},
+  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str},
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
@@ -34,7 +34,6 @@ pub struct SourceReplacer<'a> {
   module_id: ModuleId,
   mode: Mode,
   hoisted_external_modules: HashMap<(String, farmfe_core::plugin::ResolveKind), ModuleId>,
-
   pub external_modules: Vec<ModuleId>,
 }
 
@@ -127,6 +126,18 @@ impl SourceReplacer<'_> {
       return SourceReplaceResult::NotReplaced;
     }
 
+    // A concatenated ESM module can retain a local createRequire binding from
+    // another module. Its calls belong to that binding, not Farm's loader.
+    // Generated import/export requires use the unresolved mark instead.
+    if matches!(
+      &call_expr.callee,
+      Callee::Expr(box Expr::Ident(ident))
+        if ident.sym == "require" && ident.ctxt.outer() == self.top_level_mark
+    ) {
+      call_expr.visit_mut_children_with(self);
+      return SourceReplaceResult::NotReplaced;
+    }
+
     if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
       if let ExprOrSpread {
         spread: None,
@@ -167,6 +178,8 @@ impl SourceReplacer<'_> {
         let dep_module = self.module_graph.module(&id).unwrap();
 
         if dep_module.external {
+          str.value = id.to_string().into();
+          str.raw = None;
           self.external_modules.push(id.clone());
 
           return SourceReplaceResult::NotReplaced;
@@ -238,6 +251,8 @@ pub struct ExistingCommonJsRequireVisitor<'a> {
   top_level_mark: Mark,
   module_graph: &'a ModuleGraph,
   module_id: ModuleId,
+  native_node_require: bool,
+  hoisted_modules: &'a HashMap<(String, ResolveKind), ModuleId>,
 }
 
 impl<'a> ExistingCommonJsRequireVisitor<'a> {
@@ -246,12 +261,16 @@ impl<'a> ExistingCommonJsRequireVisitor<'a> {
     top_level_mark: Mark,
     module_graph: &'a ModuleGraph,
     module_id: ModuleId,
+    native_node_require: bool,
+    hoisted_modules: &'a HashMap<(String, ResolveKind), ModuleId>,
   ) -> Self {
     Self {
       unresolved_mark,
       top_level_mark,
       module_graph,
       module_id,
+      native_node_require,
+      hoisted_modules,
     }
   }
 }
@@ -259,6 +278,16 @@ impl<'a> ExistingCommonJsRequireVisitor<'a> {
 impl<'a> VisitMut for ExistingCommonJsRequireVisitor<'a> {
   fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
     if call_expr.args.len() != 1 {
+      call_expr.visit_mut_children_with(self);
+      return;
+    }
+
+    // Local bindings (including createRequire) retain their own semantics.
+    if matches!(
+      &call_expr.callee,
+      Callee::Expr(box Expr::Ident(ident))
+        if ident.sym == "require" && ident.ctxt.outer() == self.top_level_mark
+    ) {
       call_expr.visit_mut_children_with(self);
       return;
     }
@@ -272,12 +301,34 @@ impl<'a> VisitMut for ExistingCommonJsRequireVisitor<'a> {
       {
         let source = str.value.to_string_lossy().into_owned();
 
-        if let Some(id) =
-          self
-            .module_graph
-            .get_dep_by_source_optional(&self.module_id, &source, None)
+        if let Some(id) = self
+          .module_graph
+          .get_dep_by_source_optional(&self.module_id, &source, None)
+          .or_else(|| {
+            self
+              .hoisted_modules
+              .get(&(source.clone(), ResolveKind::Require))
+              .cloned()
+          })
         {
           let source_module = self.module_graph.module(&id).unwrap();
+
+          // Original CommonJS requires must receive Node's raw module.exports,
+          // not the namespace registered for transformed ESM imports.
+          if source_module.external && self.native_node_require {
+            str.value = id.to_string().into();
+            call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
+              span: DUMMY_SP,
+              obj: Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                sym: FARM_REQUIRE.into(),
+                optional: false,
+                ctxt: SyntaxContext::empty(),
+              })),
+              prop: MemberProp::Ident("nr".into()),
+            })));
+            return;
+          }
 
           if source_module.module_type.is_script() && source_module.external {
             let expr_take = call_expr.take();

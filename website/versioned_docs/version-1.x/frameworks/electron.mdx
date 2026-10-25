@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Electron
 
@@ -10,7 +10,7 @@ Create a `Electron` project based on `Farm`.
 
 ### Creating a Electron Project
 
-<PackageManagerTabs command="npm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 
 Select `Electron` template in `Select Framework`

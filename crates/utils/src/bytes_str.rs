@@ -25,8 +25,11 @@ impl Eq for ArchivedFarmBytesStr {}
 
 impl Hash for ArchivedFarmBytesStr {
   fn hash<H: Hasher>(&self, state: &mut H) {
-    self.precomputed_hash.hash(state);
-    self.bytes.as_slice().hash(state);
+    if let Some(hash) = self.precomputed_hash.as_ref() {
+      hash.to_native().hash(state);
+    } else {
+      self.bytes.as_slice().hash(state);
+    }
   }
 }
 

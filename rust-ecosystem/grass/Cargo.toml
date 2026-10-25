@@ -1,0 +1,31 @@
+[package]
+name = "farmfe_grass"
+version = "0.13.4-farm.1"
+edition = "2021"
+license = "MIT"
+description = "Grass 0.13.4 with Farm source-map and Sass import fixes"
+repository = "https://github.com/connorskees/grass"
+authors = ["Connor Skees <39542938+ConnorSkees@users.noreply.github.com>"]
+
+[lib]
+name = "grass_compiler"
+path = "src/lib.rs"
+
+[dependencies]
+codemap = "0.1.3"
+indexmap = "2"
+lasso = "0.7"
+once_cell = "1.15.0"
+phf = { version = "0.11", features = ["macros"] }
+rand = { version = "0.8", optional = true }
+wasm-bindgen = { version = "0.2.68", optional = true }
+sourcemap = "9"
+
+[features]
+default = ["random", "custom-builtin-fns"]
+custom-builtin-fns = []
+random = ["rand"]
+wasm-exports = ["wasm-bindgen"]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(doc_cfg)"] }

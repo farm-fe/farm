@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Benchmarks
 
@@ -10,16 +10,16 @@ Using Turbopack's bench cases (1000 React components), see https://turbo.build/p
 
 > Test Repoï¼šhttps://github.com/farm-fe/performance-compare
 >
-> Test Machineï¼ˆLinux Mint 21.1 Cinnamonï¼?11th Gen IntelÂ© Coreâ„?i5-11400 @ 2.60GHz Ã— 6ï¼?15.5 GiBï¼?
+> Test Machineï¼ˆLinux Mint 21.1 Cinnamonï¿½?11th Gen IntelÂ© Coreï¿½?i5-11400 @ 2.60GHz Ã— 6ï¿½?15.5 GiBï¿½?
 
 
 #### Install dependencies
 
-<PackageManagerTabs command="pnpm install" />
+<PackageManagerTabs commands={{"npm":"npm install","pnpm":"pnpm install","yarn":"yarn install","bun":"bun install"}} />
 
 #### run benchmark
 
-<PackageManagerTabs command="pnpm benchmark" />
+<PackageManagerTabs commands={{"npm":"npm benchmark","pnpm":"pnpm benchmark","yarn":"yarn benchmark","bun":"bun benchmark"}} />
 
 
 ### Data

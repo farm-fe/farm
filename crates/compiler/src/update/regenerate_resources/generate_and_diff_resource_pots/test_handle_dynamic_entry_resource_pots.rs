@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::Config,
   context::CompilationContext,
   module::{
+    Module, ModuleType,
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleType,
   },
   plugin::{Plugin, PluginHookContext},
-  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::construct_test_module_graph;

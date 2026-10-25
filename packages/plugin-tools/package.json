@@ -1,12 +1,15 @@
 {
   "name": "@farmfe/plugin-tools",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0",
   "description": "farmfe plugin tools to help build farmfe plugin",
   "exports": {
     ".": "./bin/farm-plugin-tools.mjs"
   },
   "main": "bin/farm-plugin-tools.mjs",
   "type": "module",
+  "engines": {
+    "node": "^22.20.0 || >=24.12.0"
+  },
   "bin": {
     "farm-plugin-tools": "bin/farm-plugin-tools.mjs"
   },

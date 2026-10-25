@@ -3,7 +3,7 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo},
-      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
+      ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
     },
     Module, ModuleId, ModuleSystem,
   },
@@ -287,6 +287,24 @@ pub fn update_exports_meta_and_module_decl(
         // remove original exports and insert mangled exports
 
         meta.export_ident_map = get_mangled_ident_map!(meta.export_ident_map, mangled_ident_map);
+        // Star exports are rewritten into named exports in the AST. Preserve
+        // the source name explicitly because each barrel is mangled separately.
+        for (export, reexport) in meta.reexport_ident_map.iter_mut() {
+          if let ModuleReExportIdentType::FromExportAll(from_module_id) = reexport {
+            *reexport = ModuleReExportIdentType::FromExportNamed {
+              from_module_id: from_module_id.clone(),
+              local: export.as_str().into(),
+            };
+          }
+          if let ModuleReExportIdentType::FromExportNamed { from_module_id, local } = reexport {
+            if let Some(mangled) = full_mangled_ident_map
+              .get(from_module_id)
+              .and_then(|exports| exports.get(local.as_str()))
+            {
+              *local = mangled.as_str().into();
+            }
+          }
+        }
         meta.reexport_ident_map =
           get_mangled_ident_map!(meta.reexport_ident_map, mangled_ident_map);
         meta.ambiguous_export_ident_map =

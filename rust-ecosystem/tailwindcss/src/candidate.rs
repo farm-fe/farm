@@ -194,7 +194,7 @@ pub fn parse_candidate(input: &str) -> Option<ParsedCandidate> {
   // Named utility: "flex", "bg-red-500", etc.
   if base_no_modifier
     .chars()
-    .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.')
+    .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.' || c == '%')
   {
     let (root, value) = split_root(&base_no_modifier);
     let is_static = value.is_none();

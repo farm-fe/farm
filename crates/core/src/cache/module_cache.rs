@@ -122,6 +122,15 @@ impl ModuleCacheManager {
     }
   }
 
+  /// Replace metadata for an explicitly rebuilt root, including immutable packages.
+  pub fn set_updated_cache(&self, key: ModuleId, module: CachedModule) {
+    if module.module.immutable {
+      self.immutable_modules_store.set_updated_cache(key, module);
+    } else {
+      self.mutable_modules_store.set_cache(key, module);
+    }
+  }
+
   pub fn get_cache(&self, key: &ModuleId) -> CachedModule {
     if let Some(module) = self.mutable_modules_store.get_cache(key) {
       return module;

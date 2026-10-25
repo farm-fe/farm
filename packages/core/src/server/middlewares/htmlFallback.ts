@@ -25,21 +25,29 @@ export function htmlFallbackMiddleware(
     const url = cleanUrl(req.url ?? '');
     const pathname = removeSlash(decodeURIComponent(url));
     const headers = app.config.server?.headers;
+    if (app.runtimeMode) {
+      try {
+        await app.waitForRuntimeReady();
+      } catch (error) {
+        return next(error);
+      }
+    }
+    const resources = app.runtimeMode ? app.runtime : app.compiler;
 
     if (pathname.endsWith('.html')) {
-      const html = app.compiler?.resource(pathname);
+      const html = resources?.resource(pathname);
       if (html) {
         send(req, res, html, pathname, { headers });
         return next();
       }
     } else if (pathname === '') {
-      const html = app.compiler?.resource('index.html');
+      const html = resources?.resource('index.html');
       if (html) {
         send(req, res, html, pathname, { headers });
         return next();
       }
     } else {
-      const html = app.compiler?.resource(pathname + '.html');
+      const html = resources?.resource(pathname + '.html');
 
       if (html) {
         send(req, res, html, pathname, { headers });
@@ -47,7 +55,7 @@ export function htmlFallbackMiddleware(
       }
     }
     if (app.serverOptions.appType === 'spa') {
-      const html = app.compiler?.resource('index.html');
+      const html = resources?.resource('index.html');
       html && send(req, res, html, pathname, { headers });
     }
 

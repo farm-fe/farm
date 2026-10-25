@@ -1,15 +1,32 @@
 # 插件概览
 
-Farm官方提供了很多有用的插件，包括Rust插件和JS插件。 Rust 插件比 Js 插件快得多，我们建议尽可能使用 Rust 插件。
+Farm 以官方 Rust 编译插件扩展原生编译器，同时保留 JavaScript 插件接入现有生态。应按实际功能和工作负载选择，而不是假设统一的性能倍数。
 
 :::tip
 关于如何在 Farm 中使用插件，请参阅[使用插件](/docs/using-plugins)。
 :::
 
+## Rust native 能力矩阵
+
+这是 v2 候选的源码清单，不表示所有包均已发布、功能完整或通过正式版验收。下方各插件页面说明选项和限制；包版本及平台原生包必须与编译器候选匹配。
+
+| 功能家族 | 仓库实现路径 | 范围与状态 |
+| --- | --- | --- |
+| 编译器基础 | `crates/compiler`、`crates/plugin_*` | 原生模块图、脚本、CSS/HTML/JSON、解析、打包与优化，属于候选编译器。 |
+| 框架 | `rust-plugins/react`、`vue`、`vue-jsx` | React JSX/refresh 与 Vue 编译；Vue SFC 使用 `fervid`。需检查各页面限制，不假设覆盖所有 Vue/Vite 行为；Vue JSX 为源码可用的实验集成。 |
+| 样式 | `rust-plugins/sass`、`tailwindcss` | Sass/SCSS 与 Rust Tailwind 生成；以支持的语法和配置为准，不承诺兼容全部 JavaScript 生态扩展。 |
+| 导入与组件自动化 | `rust-plugins/auto-import`、`react-components`、`modular-import` | API/组件发现和导入转换；源码可用，按各插件候选范围验收。 |
+| 资源与数据 | `rust-plugins/svgr`、`icons`、`image`、`url`、`yaml`、`dsv`、`virtual` | SVG/组件、图标、图片/URL、YAML/CSV/TSV 与虚拟模块；以各插件的导入契约为准。 |
+| 产物与运行时集成 | `rust-plugins/worker`、`wasm`、`compress`、`dts`、`strip`、`replace-dirname` | Worker/Wasm、压缩、类型声明和脚本转换；候选覆盖程度各不相同。 |
+| 文档 | `rust-plugins/docs`、`docs-snippets`、`docs-seo`、`docs-snapshot`、`syntax-highlight`、`ssr-css` | 原生内容/编译插件，配合 `packages/docs` 的 Node/React 编排与 UI；源码存在不代表 Farm Docs 已正式发布。 |
+
+部分插件适配或移植了已有开源项目。上游许可证、署名与声明仍然适用，改用 Rust 实现不会消除这些义务。再分发前请检查各包许可/声明文件与上游来源；本清单不是已完成的许可审计。
+
 ## Rust 插件 {#rust-plugins}
 
 * **[`@farmfe/plugin-react`](./react)**：支持 React `jsx` 和 `react-refresh`。
 * **[`@farmfe/plugin-vue`](./vue)**：使用 `fervid` Rust 编译器编译 Vue 3 单文件组件。
+* **[`@farmfe/plugin-vue-jsx`](./vue-jsx)**：实验性的 Rust Vue JSX 集成；请先核对该页面列出的语法与 HMR 边界。
 * **[`@farmfe/plugin-sass`](./sass)**：支持编译`sass/scss`文件。
 * **[`@farmfe/plugin-auto-import`](./auto-import)**：从预设和本地导出中扫描并自动注入导入。
 * **[`@farmfe/plugin-tailwindcss`](./tailwindcss)**：基于 Rust 的 TailwindCSS 集成。

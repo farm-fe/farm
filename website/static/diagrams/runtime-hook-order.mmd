@@ -1,0 +1,13 @@
+flowchart TD
+  accTitle: Runtime plugin hook order
+  accDescr: Require checks cache before initializer lookup. Bail hooks are synchronous in require. Dynamic imports load resources before requiring the module.
+  Boot["Bootstrap module system"] --> bootstrap
+  Require["require(moduleId)"] --> Cache{"Module cached?"}
+  Cache -->|yes| readModuleCache --> Skip{"Truthy result: skip cache?"}
+  Skip -->|no| Return["Return cached exports"]
+  Skip -->|yes| Exists{"Initializer registered?"}
+  Cache -->|no| Exists
+  Exists -->|yes| moduleCreated --> Init["Execute module factory"] --> moduleInitialized --> Ready["Return exports"]
+  Exists -->|no| External["Configured external lookup"] --> moduleNotFound --> Fallback["Handled result / Node require / empty object"]
+  Dynamic["dynamic import(moduleId)"] --> loadResource --> Require
+  bootstrap -. "later calls" .-> Require

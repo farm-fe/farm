@@ -1,7 +1,7 @@
 use std::{hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use crate::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use swc_atoms::Atom;
 
 use crate::module::{meta_data::script::statement::SwcId, ModuleId};

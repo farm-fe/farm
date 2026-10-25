@@ -10,7 +10,8 @@ description = "Rust core compiler surface for tailwindcss in Farm."
 [dependencies]
 regex = "1"
 serde_json = "1"
+sourcemap = "9"
 thiserror = "1"
 
 [dev-dependencies]
-farmfe_testing_helpers = { path = "../../crates/testing_helpers" }
+farmfe_testing_helpers = { version = "=2.2.0", path = "../../crates/testing_helpers" }

@@ -276,6 +276,7 @@ impl Compiler {
     resolve_result: PluginResolveHookResult,
     module: &mut Module,
     context: &Arc<CompilationContext>,
+    use_module_cache: bool,
   ) -> Result<Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)>> {
     // skip timestamp and content hash for modules
     module.last_update_timestamp = if module.immutable {
@@ -284,7 +285,8 @@ impl Compiler {
       get_timestamp_of_module(&module.id, &context.config.root)
     };
 
-    if let Some(cached_module) =
+    if use_module_cache
+      && let Some(cached_module) =
       try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
     {
       *module = cached_module.module;
@@ -334,7 +336,8 @@ impl Compiler {
     };
 
     // skip building if the module is already built and the cache is enabled
-    if let Some(cached_module) =
+    if use_module_cache
+      && let Some(cached_module) =
       try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
     {
       // should not overwrite the timestamp of current resolved module
@@ -507,6 +510,7 @@ impl Compiler {
             resolve_module_id_result.resolve_result,
             &mut module,
             &context,
+            true,
           ) {
             Err(e) => {
               err_sender.send(e).unwrap();
@@ -581,6 +585,25 @@ impl Compiler {
   ) {
     let mut module_graph = context.module_graph.write();
 
+    // Cached and already-built modules skip the fresh-build entry registration.
+    // Register from the incoming edge too, otherwise workers disappear on a
+    // persistent-cache hit even though their modules and dependencies exist.
+    match &resolve_param.kind {
+      ResolveKind::Entry(name) => {
+        module_graph.entries.insert(module_id.clone(), name.clone());
+        if let Some(module) = module_graph.module_mut(&module_id) {
+          module.is_entry = true;
+        }
+      }
+      ResolveKind::DynamicEntry { name, .. } => {
+        module_graph.dynamic_entries.insert(module_id.clone(), name.clone());
+        if let Some(module) = module_graph.module_mut(&module_id) {
+          module.is_dynamic_entry = true;
+        }
+      }
+      _ => {}
+    }
+
     if let Some(importer_id) = &resolve_param.importer {
       module_graph.add_edge_item(
         importer_id,
@@ -649,6 +672,26 @@ impl Compiler {
   pub(crate) fn insert_dummy_module(module_id: &ModuleId, module_graph: &mut ModuleGraph) {
     // insert a dummy module to the graph to prevent the module from being handled twice
     module_graph.add_module(Compiler::create_module(module_id.clone(), false, false));
+  }
+}
+
+#[cfg(test)]
+mod entry_registration_tests {
+  use super::*;
+
+  #[test]
+  fn restored_worker_dependency_registers_its_dynamic_entry() {
+    let context = CompilationContext::new(Default::default(), vec![]).unwrap();
+    let id: ModuleId = "cached-worker.js".into();
+    Compiler::add_module(Module::new(id.clone()), &context);
+    Compiler::add_edge(&PluginResolveHookParam {
+      source: "cached-worker.js".to_string(),
+      importer: None,
+      kind: ResolveKind::DynamicEntry { name: "worker".to_string(), output_filename: None },
+    }, id.clone(), 0, &context);
+    let graph = context.module_graph.read();
+    assert_eq!(graph.dynamic_entries.get(&id), Some(&"worker".to_string()));
+    assert!(graph.module(&id).unwrap().is_dynamic_entry);
   }
 }
 

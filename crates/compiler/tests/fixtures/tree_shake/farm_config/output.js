@@ -22,7 +22,7 @@ initModuleSystem(__farm_internal_module_system__);
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_module = farmRequire('module');
+        var _f_module = farmRequire("module");
         var _f_config = farmRequire("edceee38");
         var _f_util = farmRequire.i(farmRequire("052dab48"));
         exports.default = _f_config.defineFarmConfig({

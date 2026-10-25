@@ -28,23 +28,28 @@ export interface FarmRuntimePlugin {
 ## Writing Runtime Plugin
 See [Writing Runtime Plugin](/docs/plugins/writing-plugins/runtime-plugin)
 
+## Resource mapping and transaction recovery
+
+`moduleSystem.gd()` returns a detached mapping snapshot; `sd(resources, moduleResources)` restores that mapping. These operations do not undo executed JavaScript or arbitrary plugin side effects.
+
+`await moduleSystem.beginResourceTransaction()` drains prior imports before opening a resource batch. The batch supports asynchronous `validate()` followed by synchronous `finalize()`, or the convenience `commit()`. New tracked work or mapping changes invalidate readiness. On failure, `rollback()` drains outstanding requests and restores the batch's resource state; coordinate module factories, caches and plugin recovery separately. Only one resource transaction may be open at a time.
+
+The HMR API `import.meta.hot.registerUpdateParticipant(prepare)` can coordinate a participant with `validate`, optional `ready`, synchronous `commit`, `rollback` and `recover` callbacks. All fallible asynchronous checks belong in validation, not finalization. Rollback is not a deep copy of module exports or a reversal of arbitrary side effects.
+
 ## Hooks
+
+:::caution
+The public types permit Promise returns, but the synchronous `require` path does not await runtime hooks. In particular, `readModuleCache` and `moduleNotFound` are first/bail hooks: use synchronous results there. A Promise is itself truthy and is not an asynchronous module-resolution protocol. Use dynamic import and `loadResource` for asynchronous resource loading.
+:::
 Then are 2 kind of execution orders when calling Farm runtime plugin hooks:
-* `serial`: The hook is called ono by one by the order of plugins. All plugins would be called serially.
+* `serial`: The hook is called one by one by the order of plugins. All plugins would be called serially.
 * `first`:  Skip all left plugins once `truthy` value is returned.
 
 Hook execution order:
-```text
-          for each module                     true                         true                     return false
-bootstrap  ----------->   module registered? ------> module initialized?  ----> readModuleCache -------------------------> done
-           |                   |              false            |false              | return true                            | 
-           |                   |                               |--------------> moduleCreated   ------> moduleInitialized --|
-           |                   |-------------------> moduleNotFound
-           |
-           | dynamic import
-           | ---------------> loadResource                         
-``` 
+<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/runtime-hook-order-light.svg"><img src="/diagrams/runtime-hook-order-light.svg" alt="Runtime hook order and cache branches" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/runtime-hook-order-dark.svg"><img src="/diagrams/runtime-hook-order-dark.svg" alt="Runtime hook order and cache branches" /></a>
 
+[Mermaid source](/diagrams/runtime-hook-order.mmd)
 ### name
 - **`type`**: `string`
 
@@ -52,7 +57,7 @@ The name of your runtime plugin.
 
 ### bootstrap
 - **`hook type`**: `serial`
-- **`type`**: `(moduleSystem: ModuleSystem) => void | Promise<void>`
+- **`type`**: <code data-language="ts">(moduleSystem: ModuleSystem) =&gt; void | Promise&lt;void&gt;</code>
 
 Invoked once when the module system is bootstrapped. Setup your plugin in this hook. Example:
 
@@ -69,7 +74,7 @@ export default <Plugin>{
 
 ### moduleCreated
 - **`hook type`**: `serial`
-- **`type`**: `(module: Module) => void | Promise<void>`
+- **`type`**: <code data-language="ts">(module: Module) =&gt; void | Promise&lt;void&gt;</code>
 
 Invoked after new module instances are created. You can read or update property of the new created module.
 
@@ -89,7 +94,7 @@ export default <Plugin>{
 
 ### moduleInitialized
 - **`hook type`**: `serial`
-- **`type`**: `(module: Module) => void | Promise<void>`
+- **`type`**: <code data-language="ts">(module: Module) =&gt; void | Promise&lt;void&gt;</code>
 
 Invoked after module initialization functions are called.
 
@@ -98,21 +103,21 @@ Invoked after module initialization functions are called.
 :::
 
 ### readModuleCache
-- **`hook type`**: `serial`
-- **`type`**: `(module: Module) => boolean | Promise<boolean>`
+- **`hook type`**: `first`
+- **`type`**: <code data-language="ts">(module: Module) =&gt; boolean | Promise&lt;boolean&gt;</code>
 
 Invoked after module caches are read, return true to skip cache reading and re-executed the module.
 
 ### moduleNotFound
-- **`hook type`**: `serial`
-- **`type`**: `(module: Module) => void | Promise<void>`
+- **`hook type`**: `first`
+- **`type`**: <code data-language="ts">(moduleId: string) =&gt; void | Promise&lt;void&gt;</code>
 
 Called when module is not registered.
 
 
 ### loadResource
 - **`hook type`**: `first`
-- **`type`**: `(resource: Resource, targetEnv: 'browser' | 'node') => Promise<ResourceLoadResult>`
+- **`type`**: <code data-language="ts">(resource: Resource, targetEnv: 'browser' | 'node') =&gt; Promise&lt;ResourceLoadResult&gt;</code>
 
 called when loading resources, custom your resource loading in this hook.
 * return `{ success: true }` to indicate that this resources have been loaded successfully.

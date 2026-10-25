@@ -102,7 +102,10 @@ export async function handleAsyncOperationErrors<T>(
   try {
     await asyncOperation;
   } catch (error: any) {
-    logger.error(`${errorMessage}:\n${error.stack}`, { exit: true });
+    logger.error(
+      `${errorMessage}:\n${error?.stack || error?.message || String(error)}`,
+      { exit: true }
+    );
   }
 }
 

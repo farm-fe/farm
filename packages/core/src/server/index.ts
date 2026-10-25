@@ -1,7 +1,11 @@
+export type { OwnedRuntimeServer } from './owner.js';
+export { RuntimeServerOwner } from './owner.js';
 export * from './preview.js';
+export type { RuntimeCompiler } from './runtime.js';
+export { ServerRuntime } from './runtime.js';
 
 import fs, { PathLike } from 'node:fs';
-import type { Server as HttpBaseServer } from 'node:http';
+import type { Server as HttpBaseServer, IncomingMessage } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type * as net from 'node:net';
@@ -55,7 +59,9 @@ import {
   resourceMiddleware,
   staticMiddleware
 } from './middlewares/index.js';
+import type { ManagedProxyMiddleware } from './middlewares/proxy.js';
 import { openBrowser } from './open.js';
+import { ServerRuntime } from './runtime.js';
 import { WsServer } from './ws.js';
 
 export type HttpServer = HttpBaseServer | Http2SecureServer;
@@ -63,6 +69,29 @@ export type HttpServer = HttpBaseServer | Http2SecureServer;
 type CompilerType = Compiler | undefined;
 
 export type ServerConfig = CommonServerOptions & NormalizedServerConfig;
+
+function transportSignature(server: ResolvedUserConfig['server']): string {
+  const transport = { ...server };
+  // Resource middleware reads headers from the committed configuration per request.
+  delete transport.headers;
+  // HTTP proxy routes can swap behind the same request/upgrade dispatchers.
+  // HTTPS chooses its HTTP1/HTTP2 server kind based on proxy configuration.
+  if (!transport.https) delete transport.proxy;
+  return JSON.stringify(transport);
+}
+
+export interface ServerCreateOptions {
+  /** Use one compiler, synchronous updates and successful resource snapshots. */
+  runtime?: boolean;
+  /** Allocate independent HMR transport now and bind it during listen(). */
+  deferWebSocketListen?: boolean;
+  /** Reload trusted configuration outside compilation hooks. */
+  reloadConfig?: () => Promise<ResolvedUserConfig>;
+  /** Delegate configuration lifecycle to an owner outside this server's update queue. */
+  onConfigChange?: (server: Server) => Promise<void>;
+  /** An external owner may handle process signals for the complete lifetime. */
+  handleSignals?: boolean;
+}
 
 export const debugServer = createDebugger('farm:server');
 
@@ -118,14 +147,39 @@ export class Server extends httpServer {
   terminateServerFn!: (_: unknown, exitCode?: number) => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
+  readonly runtimeMode: boolean;
+  runtime?: ServerRuntime;
+  private runtimeReady: Promise<void>;
+  private resolveRuntimeReady!: () => void;
+  private startupFailure?: unknown;
+  private runtimeClosing = false;
+  private runtimeUpdates: Promise<void> = Promise.resolve();
+  private closing?: Promise<void>;
+  private runtimePreparation?: Promise<void>;
+  private runtimeListenerSuspended = false;
+  private runtimeTransportConfig?: string;
+  private runtimeProxy?: ManagedProxyMiddleware;
+  private readonly retiredRuntimeProxies = new Set<ManagedProxyMiddleware>();
+  private runtimeProxyUpgrade?: (
+    request: IncomingMessage,
+    socket: net.Socket,
+    head: Buffer
+  ) => void;
 
   /**
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
    */
-  constructor(readonly inlineConfig: FarmCliOptions & UserConfig = {}) {
+  constructor(
+    readonly inlineConfig: FarmCliOptions & UserConfig = {},
+    readonly createOptions: ServerCreateOptions = {}
+  ) {
     super();
     this.logger = new Logger();
+    this.runtimeMode = createOptions.runtime === true;
+    this.runtimeReady = new Promise((resolve) => {
+      this.resolveRuntimeReady = resolve;
+    });
   }
 
   /**
@@ -181,79 +235,93 @@ export class Server extends httpServer {
    * @throws {Error} If an error occurs during the server creation process
    */
   static async createServer(
-    inlineConfig: FarmCliOptions & UserConfig = {}
+    inlineConfig: FarmCliOptions & UserConfig = {},
+    resolvedConfig?: ResolvedUserConfig,
+    options: ServerCreateOptions = {}
   ): Promise<Server> {
-    const server = new Server(inlineConfig);
-    server.config = await resolveConfig(
-      server.inlineConfig,
-      'dev',
-      'development'
-    );
-
-    server.logger = server.config.logger ?? server.logger;
-
-    server.#resolveOptions();
-
-    const [httpsOptions, publicFiles] = await Promise.all([
-      server.resolveHttpsConfig(server.serverOptions.https),
-      server.#handlePublicFiles()
-    ]);
-    server.httpsOptions = httpsOptions;
-    server.publicFiles = publicFiles;
-    server.middlewares = connect() as connect.Server;
-    server.httpServer = server.serverOptions.middlewareMode
-      ? null
-      : await server.resolveHttpServer(
-          server.serverOptions as CommonServerOptions,
-          server.middlewares,
-          server.httpsOptions
+    const server = new Server(inlineConfig, options);
+    try {
+      server.config =
+        resolvedConfig ??
+        (await resolveConfig(server.inlineConfig, 'dev', 'development'));
+      if (server.runtimeMode && server.config.compilation?.lazyCompilation) {
+        throw new Error(
+          '[FARM_SERVER_RUNTIME] runtime mode requires lazyCompilation:false'
         );
-
-    // close server function prepare promise
-    server.closeHttpServerFn = server.closeServer();
-
-    // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
-    // so we can instantiate hmrEngine by default at the beginning.
-    server.createHmrEngine();
-
-    // init websocket server
-    await server.createWebSocketServer();
-
-    // invalidate vite handler
-    server.#invalidateVite();
-
-    // init watcher
-    await server.#createWatcher();
-
-    await server.handleConfigureServer();
-
-    // init middlewares
-    server.#initializeMiddlewares();
-
-    server.terminateServerFn = async (_: unknown, exitCode?: number) => {
-      try {
-        await server.close();
-      } finally {
-        process.exitCode ??= exitCode ? 128 + exitCode : undefined;
-        process.exit();
       }
-    };
 
-    if (!server.serverOptions.middlewareMode) {
-      setupSIGTERMListener(server.terminateServerFn);
+      server.logger = server.config.logger ?? server.logger;
+      server.runtimeTransportConfig = transportSignature(server.config.server);
+
+      server.#resolveOptions();
+
+      const [httpsOptions, publicFiles] = await Promise.all([
+        server.resolveHttpsConfig(server.serverOptions.https),
+        server.#handlePublicFiles()
+      ]);
+      server.httpsOptions = httpsOptions;
+      server.publicFiles = publicFiles;
+      server.middlewares = connect() as connect.Server;
+      server.httpServer = server.serverOptions.middlewareMode
+        ? null
+        : await server.resolveHttpServer(
+            server.serverOptions as CommonServerOptions,
+            server.middlewares,
+            server.httpsOptions
+          );
+
+      // close server function prepare promise
+      server.closeHttpServerFn = server.closeServer();
+
+      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
+      // so we can instantiate hmrEngine by default at the beginning.
+      server.createHmrEngine();
+
+      // init websocket server
+      await server.createWebSocketServer();
+
+      // invalidate vite handler
+      server.#invalidateVite();
+
+      // init watcher
+      await server.#createWatcher();
+
+      await server.handleConfigureServer();
+
+      // init middlewares
+      server.#initializeMiddlewares();
+
+      server.terminateServerFn = async (_: unknown, exitCode?: number) => {
+        try {
+          await server.close();
+        } finally {
+          process.exitCode ??= exitCode ? 128 + exitCode : undefined;
+          process.exit();
+        }
+      };
+
+      if (
+        !server.serverOptions.middlewareMode &&
+        options.handleSignals !== false
+      ) {
+        setupSIGTERMListener(server.terminateServerFn);
+      }
+
+      if (!server.serverOptions.middlewareMode && server.httpServer) {
+        const httpServer = server.httpServer;
+        httpServer.once('listening', () => {
+          // update actual port since this may be different from initial value
+          server.serverOptions.port = (
+            httpServer.address() as net.AddressInfo
+          ).port;
+        });
+      }
+
+      return server;
+    } catch (error) {
+      if (server.runtimeMode) await server.close();
+      throw error;
     }
-
-    if (!server.serverOptions.middlewareMode && server.httpServer) {
-      const httpServer = server.httpServer;
-      httpServer.once('listening', () => {
-        // update actual port since this may be different from initial value
-        server.serverOptions.port = (
-          httpServer.address() as net.AddressInfo
-        ).port;
-      });
-    }
-
-    return server;
   }
 
   /**
@@ -262,7 +330,39 @@ export class Server extends httpServer {
   async #createWatcher() {
     this.watcher = new Watcher(this.config);
 
-    await this.watcher.createWatcher();
+    await this.watcher.createWatcher(this.runtimeMode ? null : undefined);
+
+    if (this.runtimeMode) {
+      const events = {
+        add: 'added',
+        addDir: 'added',
+        change: 'updated',
+        unlink: 'removed',
+        unlinkDir: 'removed'
+      } as const;
+      for (const [event, type] of Object.entries(events)) {
+        this.watcher.on(event as keyof typeof events, (file) => {
+          if (this.runtimeClosing) return;
+          if (
+            (this.createOptions.reloadConfig ||
+              this.createOptions.onConfigChange) &&
+            this.watcher.isConfigFilesChanged(file)
+          ) {
+            void (
+              this.createOptions.onConfigChange
+                ? this.createOptions.onConfigChange(this)
+                : this.reloadRuntimeConfig()
+            ).catch((error) => this.reportRuntimeError(error));
+            return;
+          }
+          void this.updateRuntime([{ path: normalizePath(file), type }]).catch(
+            (error) => this.reportRuntimeError(error)
+          );
+        });
+      }
+      this.watchRuntimeConfig();
+      return;
+    }
 
     this.watcher.on('add', async (file: string) => {
       if (!this.compiler) return;
@@ -411,7 +511,11 @@ export class Server extends httpServer {
     let newServer: Server | undefined;
     try {
       await this.close();
-      newServer = await Server.createServer(this.inlineConfig);
+      newServer = await Server.createServer(
+        this.inlineConfig,
+        undefined,
+        this.createOptions
+      );
     } catch (error: any) {
       this.logger.error(`Failed to restart server :\n ${error}`);
       return;
@@ -433,7 +537,9 @@ export class Server extends httpServer {
     }
 
     this.ws = new WsServer(this);
-    await this.ws.createWebSocketServer();
+    await this.ws.createWebSocketServer(
+      this.runtimeMode && this.createOptions.deferWebSocketListen
+    );
   }
 
   /**
@@ -456,6 +562,7 @@ export class Server extends httpServer {
    * @throws {Error} If there's an error starting the server.
    */
   async listen(): Promise<void> {
+    this.assertRuntimeOpen();
     if (!this.httpServer) {
       this.logger.warn('HTTP server is not created yet');
       return;
@@ -463,27 +570,107 @@ export class Server extends httpServer {
     const { port, hostname, open, strictPort } = this.serverOptions;
 
     try {
+      if (this.runtimeMode) await this.ws.listen();
+      this.assertRuntimeOpen();
       const serverPort = await this.httpServerStart({
         port,
         strictPort: strictPort,
         host: hostname.host
       });
+      this.assertRuntimeOpen();
       this.#updateServerPort(serverPort, 'START');
 
       this.resolvedUrls = await resolveServerUrls(this.httpServer, this.config);
+      this.assertRuntimeOpen();
 
       // compile the project and start the dev server
-      await this.#startCompile();
+      if (this.runtimeMode) await this.prepareRuntime();
+      else await this.#startCompile();
+      this.assertRuntimeOpen();
 
       // watch extra files after compile
+      if (this.runtimeMode) this.watcher.getExtraWatchedFiles(this.compiler);
       this.watcher?.watchExtraFiles?.();
 
       if (open) {
         this.#openServerBrowser();
       }
     } catch (error: any) {
+      if (this.runtimeMode) {
+        await this.close();
+        // A pending startup may bind after the memoized close has completed.
+        if (this.httpServer?.listening) await this.closeHttpServerFn?.();
+        throw error;
+      }
       this.logger.error(`Start DevServer Error: ${error} \n ${error.stack}`);
       // throw error;
+    }
+  }
+
+  private assertRuntimeOpen(): void {
+    if (this.runtimeMode && this.runtimeClosing) {
+      throw new Error('Server runtime is closed');
+    }
+  }
+
+  /** Compile a fixed-endpoint candidate without binding its HTTP listener. */
+  prepareRuntime(): Promise<void> {
+    this.assertRuntimeOpen();
+    if (!this.runtimeMode)
+      return Promise.reject(
+        new Error('[FARM_SERVER_RUNTIME] runtime mode required')
+      );
+    if (!this.serverOptions.port)
+      return Promise.reject(
+        new Error(
+          '[FARM_SERVER_RUNTIME] preparation requires a resolved HTTP port'
+        )
+      );
+    this.runtimePreparation ??= this.#startCompile();
+    return this.runtimePreparation;
+  }
+
+  /** Stop accepting new HTTP connections while retaining native resources and WS peers. */
+  async suspendRuntimeListener(): Promise<void> {
+    this.assertRuntimeOpen();
+    if (!this.runtimeMode)
+      throw new Error('[FARM_SERVER_RUNTIME] runtime mode required');
+    await this.waitForRuntimeReady();
+    await this.runtimeUpdates;
+    this.assertRuntimeOpen();
+    if (this.runtimeListenerSuspended) return;
+    if (!this.httpServer?.listening)
+      throw new Error('[FARM_SERVER_RUNTIME] HTTP listener is not active');
+    this.httpServer.close((error) => {
+      if (error) this.logger.error(error);
+    });
+    this.runtimeListenerSuspended = true;
+  }
+
+  /** Restore the original endpoint and successful generation after a failed handoff. */
+  async resumeRuntimeListener(): Promise<void> {
+    this.assertRuntimeOpen();
+    if (!this.runtimeMode)
+      throw new Error('[FARM_SERVER_RUNTIME] runtime mode required');
+    if (!this.runtimeListenerSuspended) return;
+    try {
+      const port = await this.httpServerStart({
+        port: this.serverOptions.port,
+        strictPort: true,
+        host: this.serverOptions.hostname.host
+      });
+      this.assertRuntimeOpen();
+      this.#updateServerPort(port, 'START');
+      this.resolvedUrls = await resolveServerUrls(
+        requireDefined(this.httpServer),
+        this.config
+      );
+      this.assertRuntimeOpen();
+      this.runtimeListenerSuspended = false;
+    } catch (error) {
+      if (this.runtimeClosing && this.httpServer?.listening)
+        await this.closeHttpServerFn?.();
+      throw error;
     }
   }
 
@@ -501,6 +688,155 @@ export class Server extends httpServer {
    */
   setCompiler(compiler: Compiler) {
     this.compiler = compiler;
+  }
+
+  async waitForRuntimeReady(): Promise<void> {
+    await this.runtimeReady;
+    if (this.startupFailure) throw this.startupFailure;
+    if (this.runtimeClosing || !this.runtime)
+      throw new Error(
+        '[FARM_SERVER_RUNTIME] runtime is closed or not initialized'
+      );
+  }
+
+  /** All runtime filesystem events, including unknown files and directories. */
+  updateRuntime(paths: CompilerUpdateItem[]): Promise<JsUpdateResult> {
+    const batch = paths.map((item) => ({ ...item }));
+    return this.queueRuntimeUpdate(() => batch);
+  }
+
+  private watchRuntimeConfig(): void {
+    this.watcher.add([
+      ...(this.config.configFilePath ? [this.config.configFilePath] : []),
+      ...(this.config.configFileDependencies ?? []),
+      ...(this.config.envFiles ?? [])
+    ]);
+  }
+
+  /** Serialize configuration preparation with ordinary native updates and close. */
+  canReloadRuntimeConfig(candidate: ResolvedUserConfig): boolean {
+    return (
+      candidate.root === this.config.root &&
+      transportSignature(candidate.server) === this.runtimeTransportConfig
+    );
+  }
+
+  reloadRuntimeConfig(prepared?: ResolvedUserConfig): Promise<void> {
+    const operation = this.runtimeUpdates.then(async () => {
+      await this.waitForRuntimeReady();
+      if (!prepared && !this.createOptions.reloadConfig)
+        throw new Error('[FARM_SERVER_RUNTIME] no configuration loader');
+      const candidate =
+        prepared ??
+        (await requireDefined(this.createOptions.reloadConfig).call(
+          this.createOptions
+        ));
+      this.assertRuntimeOpen();
+      if (!this.canReloadRuntimeConfig(candidate))
+        throw new Error(
+          '[FARM_SERVER_RUNTIME_TRANSPORT] transport or root changes require a server restart'
+        );
+      const candidateServer: ServerConfig = {
+        ...this.serverOptions,
+        headers: candidate.server?.headers ?? {},
+        proxy: candidate.server?.proxy ?? {}
+      };
+      candidate.server = candidateServer;
+      requireDefined(candidate.compilation).define = {
+        ...requireDefined(candidate.compilation).define,
+        ...Object.fromEntries(
+          Object.entries(this.config.compilation?.define ?? {}).filter(
+            ([key]) => key.startsWith('FARM_HMR_')
+          )
+        )
+      };
+      const candidateProxy = proxyMiddleware(
+        { config: candidate },
+        requireDefined(this.httpServer),
+        candidateServer.proxy ?? {},
+        false
+      );
+      let published = false;
+      try {
+        const compiler = createCompiler(candidate);
+        await requireDefined(this.runtime).replaceCompiler(compiler);
+        this.assertRuntimeOpen();
+        const previousProxy = this.runtimeProxy;
+        this.runtimeProxy = candidateProxy;
+        this.setCompiler(compiler);
+        this.config = candidate;
+        this.serverOptions = candidateServer;
+        published = true;
+        const retirementErrors: unknown[] = [];
+        try {
+          if (previousProxy) {
+            this.retiredRuntimeProxies.add(previousProxy);
+            previousProxy.retire(() =>
+              this.retiredRuntimeProxies.delete(previousProxy)
+            );
+          }
+        } catch (error) {
+          retirementErrors.push(error);
+        }
+        this.watcher.config = candidate;
+        this.watchRuntimeConfig();
+        this.watcher.getExtraWatchedFiles(compiler);
+        this.watcher.watchExtraFiles();
+        this.ws.send({ type: 'full-reload' });
+        if (retirementErrors.length)
+          throw new AggregateError(
+            retirementErrors,
+            '[FARM_SERVER_RUNTIME] configuration committed; retired proxy cleanup failed'
+          );
+      } catch (error) {
+        if (!published) {
+          try {
+            candidateProxy.close();
+          } catch (cleanupError) {
+            throw new AggregateError(
+              [error, cleanupError],
+              '[FARM_SERVER_RUNTIME] candidate failed and proxy cleanup failed'
+            );
+          }
+        }
+        throw error;
+      }
+    });
+    this.runtimeUpdates = operation.then(
+      () => undefined,
+      () => undefined
+    );
+    return operation;
+  }
+
+  private queueRuntimeUpdate(
+    paths: () => CompilerUpdateItem[]
+  ): Promise<JsUpdateResult> {
+    const operation = this.runtimeUpdates.then(async () => {
+      await this.waitForRuntimeReady();
+      const result = await requireDefined(this.runtime).update(paths());
+      if (this.runtimeClosing)
+        throw new Error('[FARM_SERVER_RUNTIME] runtime is closed');
+      this.watcher.getExtraWatchedFiles(this.compiler);
+      this.watcher.watchExtraFiles();
+      this.hmrEngine?.sendUpdate(result);
+      return result;
+    });
+    this.runtimeUpdates = operation.then(
+      () => undefined,
+      () => undefined
+    );
+    return operation;
+  }
+
+  private reportRuntimeError(error: unknown): void {
+    if (this.runtimeClosing) return;
+    const value = error instanceof Error ? error : new Error(String(error));
+    this.ws.send({
+      type: 'error',
+      err: { message: convertErrorMessage(value), stack: value.stack ?? '' }
+    });
+    this.logger.error(`Update Error: ${convertErrorMessage(value)}`);
   }
 
   /**
@@ -576,7 +912,21 @@ export class Server extends httpServer {
       );
     }
 
-    if (proxy) {
+    if (this.runtimeMode) {
+      this.runtimeProxy = proxyMiddleware(
+        this,
+        requireDefined(this.httpServer),
+        proxy ?? {},
+        false
+      );
+      this.runtimeProxyUpgrade = (request, socket, head) =>
+        this.runtimeProxy?.upgrade(request, socket, head);
+      this.httpServer?.on('upgrade', this.runtimeProxyUpgrade);
+      this.middlewares.use((request, response, next) => {
+        if (this.runtimeProxy) this.runtimeProxy(request, response, next);
+        else next();
+      });
+    } else if (proxy) {
       const middlewareServer =
         (isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
@@ -593,7 +943,7 @@ export class Server extends httpServer {
       );
     }
 
-    if (fs.existsSync(this.publicDir as PathLike)) {
+    if (!this.runtimeMode && fs.existsSync(this.publicDir as PathLike)) {
       this.middlewares.use(publicMiddleware(this));
     }
 
@@ -601,12 +951,12 @@ export class Server extends httpServer {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
-    this.middlewares.use(staticMiddleware(this));
+    if (!this.runtimeMode) this.middlewares.use(staticMiddleware(this));
 
     // Check dev resource tree in `_output_files` url
     this.middlewares.use(outputFilesMiddleware(this));
 
-    if (this.config.server?.writeToDisk) {
+    if (!this.runtimeMode && this.config.server?.writeToDisk) {
       this.middlewares.use(resourceDiskMiddleware(this));
     } else {
       this.middlewares.use(resourceMiddleware(this));
@@ -636,12 +986,14 @@ export class Server extends httpServer {
   async #compile(): Promise<void> {
     if (!this.compiler) return;
     try {
-      await this.compiler.compile();
+      if (this.runtimeMode) await requireDefined(this.runtime).compile();
+      else await this.compiler.compile();
 
       await (this.config.server?.writeToDisk
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
     } catch (err: any) {
+      if (this.runtimeMode) throw err;
       this.logger.error(`Compilation failed: ${convertErrorMessage(err)}`, {
         exit: true
       });
@@ -663,25 +1015,36 @@ export class Server extends httpServer {
    * @private
    */
   async #startCompile() {
-    this.setCompiler(createCompiler(this.config));
-    if (!this.compiler) return;
+    try {
+      this.assertRuntimeOpen();
+      this.setCompiler(createCompiler(this.config));
+      if (!this.compiler) return;
+      if (this.runtimeMode) this.runtime = new ServerRuntime(this.compiler);
 
-    for (const hook of getSortedPluginHooksBindThis(
-      this.config.jsPlugins ?? [],
-      'configureCompiler'
-    )) {
-      await hook?.(this.compiler);
+      for (const hook of getSortedPluginHooksBindThis(
+        this.config.jsPlugins ?? [],
+        'configureCompiler'
+      )) {
+        await hook?.(this.compiler);
+        this.assertRuntimeOpen();
+      }
+
+      // check if cache dir exists
+      const { persistentCache } = this.compiler.config.compilation ?? {};
+      const cacheDir = (persistentCache as PersistentCacheConfig)?.cacheDir;
+      const hasCacheDir = await isCacheDirExists(cacheDir ?? '');
+      this.assertRuntimeOpen();
+      const start = performance.now();
+      await this.#compile();
+
+      const duration = performance.now() - start;
+      bootstrap(duration, this.compiler.config, hasCacheDir);
+    } catch (error) {
+      this.startupFailure = error;
+      throw error;
+    } finally {
+      this.resolveRuntimeReady();
     }
-
-    // check if cache dir exists
-    const { persistentCache } = this.compiler.config.compilation ?? {};
-    const cacheDir = (persistentCache as PersistentCacheConfig)?.cacheDir;
-    const hasCacheDir = await isCacheDirExists(cacheDir ?? '');
-    const start = performance.now();
-    await this.#compile();
-
-    const duration = performance.now() - start;
-    bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
   /**
@@ -706,6 +1069,17 @@ export class Server extends httpServer {
       // find hmr boundary starting from the parent of the file
       this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
       if (!this.compiler || !this.hmrEngine) return;
+      if (this.runtimeMode) {
+        void this.queueRuntimeUpdate(() =>
+          requireDefined(this.compiler)
+            .getParentFiles(path)
+            .map((file) => ({
+              path: normalizePath(file),
+              type: 'updated' as const
+            }))
+        ).catch((error) => this.reportRuntimeError(error));
+        return;
+      }
       const parentFiles = this.compiler.getParentFiles(path);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -754,7 +1128,12 @@ export class Server extends httpServer {
 
         if (hasListened) {
           httpServer.close((err) => {
-            if (err) {
+            // A suspended listener has already completed close. Final cleanup
+            // still destroys owned sockets, but closing it again is successful.
+            if (
+              err &&
+              (err as NodeJS.ErrnoException).code !== 'ERR_SERVER_NOT_RUNNING'
+            ) {
               reject(err);
             } else {
               resolve();
@@ -767,16 +1146,56 @@ export class Server extends httpServer {
   }
 
   async close() {
-    if (!this.serverOptions.middlewareMode) {
+    if (this.closing) return this.closing;
+    this.runtimeClosing = true;
+    this.resolveRuntimeReady();
+    this.closing = this.closeRuntimeAndServer();
+    return this.closing;
+  }
+
+  private async closeRuntimeAndServer() {
+    if (this.terminateServerFn && !this.serverOptions?.middlewareMode) {
       teardownSIGTERMListener(this.terminateServerFn);
     }
 
-    await Promise.allSettled([
-      this.watcher.close(),
-      this.ws.close(),
-      this.closeHttpServerFn()
+    const runtimeErrors: unknown[] = [];
+    try {
+      await this.runtime?.close();
+    } catch (error) {
+      runtimeErrors.push(error);
+    }
+    if (this.runtimePreparation)
+      await Promise.allSettled([this.runtimePreparation]);
+    await this.runtimeUpdates;
+    const cleanupResults = await Promise.allSettled([
+      Promise.resolve().then(() => {
+        if (this.runtimeProxyUpgrade)
+          this.httpServer?.off('upgrade', this.runtimeProxyUpgrade);
+        const errors: unknown[] = [];
+        for (const proxy of [
+          this.runtimeProxy,
+          ...this.retiredRuntimeProxies
+        ]) {
+          try {
+            proxy?.close();
+          } catch (error) {
+            errors.push(error);
+          }
+        }
+        this.retiredRuntimeProxies.clear();
+        if (errors.length)
+          throw new AggregateError(errors, 'runtime proxy cleanup failed');
+      }),
+      Promise.resolve().then(() => this.watcher?.close()),
+      Promise.resolve().then(() => this.ws?.close()),
+      Promise.resolve().then(() => this.closeHttpServerFn?.())
     ]);
     this.resolvedUrls = null;
+    for (const result of cleanupResults) {
+      if (result.status === 'rejected') runtimeErrors.push(result.reason);
+    }
+    if (runtimeErrors.length)
+      throw new AggregateError(runtimeErrors, 'Server cleanup failed');
   }
 
   printUrls() {
@@ -793,4 +1212,11 @@ export class Server extends httpServer {
       );
     }
   }
+}
+
+function requireDefined<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) {
+    throw new Error('Expected initialized server state');
+  }
+  return value;
 }

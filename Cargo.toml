@@ -77,3 +77,7 @@ inherits = "release"
 # can be removed.
 [patch.crates-io]
 serde = { path = "patches/serde" }
+
+# Preserve Vue component tag case before the HTML parser applies native-tag rules.
+[patch."https://github.com/phoenix-ru/fervid.git"]
+fervid_parser = { path = "patches/fervid_parser" }

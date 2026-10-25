@@ -2,6 +2,7 @@
 // And it's inspired by both Vite and esm-hmr, see https://github.com/FredKSchott/esm-hmr
 import type { HmrClient } from './hmr-client.js';
 import { logger } from './logger.js';
+import type { PrepareUpdateTransaction } from './update-transaction.js';
 
 export class HotModuleState {
   acceptCallbacks: Array<{ deps: string[]; fn: (mods: any[]) => void }> = [];
@@ -12,6 +13,10 @@ export class HotModuleState {
   constructor(id: string, hmrClient: HmrClient) {
     this.id = id;
     this.hmrClient = hmrClient;
+  }
+
+  registerUpdateParticipant(prepare: PrepareUpdateTransaction) {
+    return this.hmrClient.registerUpdateParticipant(this.id, prepare);
   }
 
   // the same as vite's hot.accept

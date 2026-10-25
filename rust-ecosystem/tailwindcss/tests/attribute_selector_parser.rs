@@ -1,7 +1,7 @@
 //! Ported from upstream `packages/tailwindcss/src/attribute-selector-parser.test.ts`.
 
 use farmfe_ecosystem_tailwindcss::attribute_selector_parser::{
-  parse, AttributeOperator, AttributeQuote, AttributeSelector, AttributeSensitivity,
+  AttributeOperator, AttributeQuote, AttributeSelector, AttributeSensitivity, parse,
 };
 
 #[test]

@@ -1,13 +1,19 @@
 name: Publish packages and crates
+# Source merges are not publication approval.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      confirm_release:
+        description: Publish the approved npm release set (requires a separate release decision)
+        required: true
+        type: boolean
+        default: false
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   check-changeset-status:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_release == true
     name: Check changeset status and set env
     runs-on: ubuntu-latest
     outputs:

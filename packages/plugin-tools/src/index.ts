@@ -1,6 +1,7 @@
 import { createSpawnCmd } from '@farmfe/utils';
 import { cac } from 'cac';
 import { copyArtifacts } from './copy-artifacts.js';
+import { preparePlatformPackages } from './prepare.js';
 import { prepublish } from './prepublish.js';
 import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
 
@@ -95,6 +96,22 @@ cli
   .allowUnknownOptions()
   .action(async () => {
     await prepublish();
+  });
+
+cli
+  .command('prepare', 'Preview platform manifests without publishing')
+  .option(
+    '--write',
+    'Apply synchronized platform versions and optional dependencies'
+  )
+  .action(async (options) => {
+    console.log(
+      JSON.stringify(
+        await preparePlatformPackages(process.cwd(), Boolean(options.write)),
+        null,
+        2
+      )
+    );
   });
 
 cli.parse();

@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
 use enhanced_magic_string::collapse_sourcemap::{
-  collapse_sourcemap_chain, CollapseSourcemapOptions,
+  CollapseSourcemapOptions, collapse_sourcemap_chain,
 };
 use enhanced_magic_string::magic_string::MagicString;
 use enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::config::FARM_MODULE_SYSTEM;
 use farmfe_core::plugin::PluginHookContext;
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
-  module::{module_group::ModuleGroupId, Module, ModuleId},
+  module::{Module, ModuleId, module_group::ModuleGroupId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
 };
-use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_utils::hash::base64_encode;
 use sourcemap::SourceMap;
@@ -173,6 +173,22 @@ pub fn regenerate_resources_for_affected_module_groups(
       context,
     )?
   };
+
+  // Partial bundling may assign a different pot ID. Invalidate the current
+  // associations too, without holding graph or resource-pot locks during IO.
+  if context.config.persistent_cache.enabled() {
+    let updated_pots = {
+      let graph = context.module_graph.read();
+      updated_module_ids
+        .iter()
+        .filter_map(|id| graph.module(id))
+        .flat_map(|module| module.resource_pots.iter().cloned())
+        .collect::<HashSet<_>>()
+    };
+    for pot in updated_pots {
+      context.cache_manager.resource_cache.invalidate_cache(&pot);
+    }
+  }
 
   let mut resource_pot_map = context.resource_pot_map.write();
   // always rerender the updated module's resource pot

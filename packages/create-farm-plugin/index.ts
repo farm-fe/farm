@@ -229,6 +229,9 @@ function copy(src: string, dest: string, options: IResultType) {
 function copyDir(srcDir: string, destDir: string, options: IResultType) {
   fs.mkdirSync(destDir, { recursive: true });
   for (const file of fs.readdirSync(srcDir)) {
+    // The archived Rust template lock targets pre-v2 crates. Resolve the exact
+    // template constraints when generating a new plugin instead of copying it.
+    if (options.type === 'rust' && file === 'Cargo.lock') continue;
     const srcFile = path.resolve(srcDir, file);
     const destFile = path.resolve(destDir, file);
     if (file === 'gitignore') {

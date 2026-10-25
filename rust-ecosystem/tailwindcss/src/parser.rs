@@ -1,8 +1,17 @@
-use crate::ast::{AstNode, AtRule, Declaration, StyleRule};
+use crate::ast::{AstNode, AtRule, Context, Declaration, StyleRule};
 
 /// Parse a CSS string into an AST.
 pub fn parse(input: &str) -> Vec<AstNode> {
   Parser::new(input).parse()
+}
+
+/// Parse while retaining original byte offsets in transparent context nodes.
+/// Offsets belong to this input; the host must compose imported/rewritten
+/// stylesheet origins before exposing a map to an original file.
+pub fn parse_with_origins(input: &str) -> Vec<AstNode> {
+  let mut parser = Parser::new(input);
+  parser.origins_enabled = true;
+  parser.parse()
 }
 
 // ── byte constants ────────────────────────────────────────────────────────────
@@ -54,6 +63,7 @@ struct Parser<'a> {
   input: &'a str,
   len: usize,
   i: usize,
+  origins_enabled: bool,
 }
 
 impl<'a> Parser<'a> {
@@ -63,6 +73,7 @@ impl<'a> Parser<'a> {
       input,
       len: input.len(),
       i: 0,
+      origins_enabled: false,
     }
   }
 
@@ -70,13 +81,19 @@ impl<'a> Parser<'a> {
     self.bytes[self.i]
   }
 
+  fn locate(&self, node: AstNode, offset: usize) -> AstNode {
+    if !self.origins_enabled {
+      return node;
+    }
+    AstNode::Context(Context {
+      context: [("farm:source-offset".into(), offset.to_string())].into(),
+      nodes: vec![node],
+    })
+  }
+
   fn peek(&self, offset: usize) -> u8 {
     let pos = self.i + offset;
-    if pos < self.len {
-      self.bytes[pos]
-    } else {
-      0
-    }
+    if pos < self.len { self.bytes[pos] } else { 0 }
   }
 
   /// Skip over a CSS string literal, leaving `self.i` at the closing quote.
@@ -116,8 +133,10 @@ impl<'a> Parser<'a> {
   pub fn parse(mut self) -> Vec<AstNode> {
     let mut ast: Vec<AstNode> = Vec::new();
     let mut license_comments: Vec<AstNode> = Vec::new();
-    let mut stack: Vec<(Option<AstNode>, Parent)> = Vec::new();
+    let mut stack: Vec<(usize, Parent)> = Vec::new();
     let mut current_parent: Option<Parent> = None;
+    let mut parent_offset = 0;
+    let mut token_offset = 0;
     let mut buffer = String::new();
     let mut paren_depth: usize = 0;
 
@@ -141,6 +160,9 @@ impl<'a> Parser<'a> {
 
       // Backslash escape
       if ch == BACKSLASH && self.i + 1 < self.len {
+        if buffer.is_empty() {
+          token_offset = self.i;
+        }
         buffer.push(self.byte() as char);
         self.i += 1;
         buffer.push(self.byte() as char);
@@ -150,15 +172,20 @@ impl<'a> Parser<'a> {
 
       // Block comment
       if ch == SLASH && self.peek(1) == ASTERISK {
+        let comment_offset = self.i;
         if let Some(text) = self.skip_comment() {
           // license comment (/*! ... */)
           if text.len() > 3 && text.as_bytes()[2] == EXCLAMATION {
             let inner = &text[3..text.len() - 2];
-            license_comments.push(AstNode::Comment(inner.to_string()));
+            license_comments.push(self.locate(AstNode::Comment(inner.to_string()), comment_offset));
           }
           // regular comments are discarded (not added to AST)
         }
         continue;
+      }
+
+      if buffer.is_empty() && !ch.is_ascii_whitespace() {
+        token_offset = self.i;
       }
 
       // String literal
@@ -224,7 +251,7 @@ impl<'a> Parser<'a> {
       // Body-less at-rule ending with `;`
       if !in_paren && ch == SEMICOLON && !buffer.is_empty() && buffer.as_bytes()[0] == AT_SIGN {
         let node = self.parse_at_rule(&buffer);
-        push_node!(node);
+        push_node!(self.locate(node, token_offset));
         buffer.clear();
         self.i += 1;
         continue;
@@ -234,7 +261,7 @@ impl<'a> Parser<'a> {
       if !in_paren && ch == SEMICOLON {
         if !buffer.is_empty() {
           if let Some(d) = self.parse_declaration(&buffer) {
-            push_node!(AstNode::Declaration(d));
+            push_node!(self.locate(AstNode::Declaration(d), token_offset));
           }
           buffer.clear();
         }
@@ -257,13 +284,13 @@ impl<'a> Parser<'a> {
         };
 
         // Save current context
-        let saved_ast_node: Option<AstNode> = None;
         let old_parent = current_parent.take();
         if let Some(p) = old_parent {
-          stack.push((saved_ast_node, p));
+          stack.push((parent_offset, p));
         }
 
         current_parent = Some(new_parent);
+        parent_offset = token_offset;
         self.i += 1;
         continue;
       }
@@ -278,11 +305,11 @@ impl<'a> Parser<'a> {
             if trimmed.as_bytes()[0] == AT_SIGN {
               let node = self.parse_at_rule(&trimmed);
               if let Some(ref mut p) = current_parent {
-                p.push_node(node);
+                p.push_node(self.locate(node, token_offset));
               }
             } else if let Some(d) = self.parse_declaration(&trimmed) {
               if let Some(ref mut p) = current_parent {
-                p.push_node(AstNode::Declaration(d));
+                p.push_node(self.locate(AstNode::Declaration(d), token_offset));
               }
             }
           }
@@ -291,10 +318,11 @@ impl<'a> Parser<'a> {
         // Pop the finished node
         let finished = current_parent.take();
         if let Some(f) = finished {
-          let finished_node = f.into_ast_node();
-          if let Some((_saved, mut outer)) = stack.pop() {
+          let finished_node = self.locate(f.into_ast_node(), parent_offset);
+          if let Some((outer_offset, mut outer)) = stack.pop() {
             outer.push_node(finished_node);
             current_parent = Some(outer);
+            parent_offset = outer_offset;
           } else {
             ast.push(finished_node);
           }
@@ -323,8 +351,8 @@ impl<'a> Parser<'a> {
     if !buffer.is_empty() && buffer.as_bytes()[0] == AT_SIGN {
       let node = self.parse_at_rule(&buffer);
       match current_parent.as_mut() {
-        Some(p) => p.push_node(node),
-        None => ast.push(node),
+        Some(p) => p.push_node(self.locate(node, token_offset)),
+        None => ast.push(self.locate(node, token_offset)),
       }
     }
 

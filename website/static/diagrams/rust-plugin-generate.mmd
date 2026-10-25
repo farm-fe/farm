@@ -1,0 +1,28 @@
+flowchart LR
+  accTitle: C · Resource generation and resource-pot cache
+  accDescr: Global hooks execute around resource-pot work. A valid pot cache skips only its rendering and generation chain. Different pots may run concurrently; serial and first describe callbacks within one hook.
+  subgraph Global[GRAPH → RESOURCE POTS]
+    direction TB
+    generate_start[generate_start]:::parallel --> optimize_module_graph[optimize_module_graph]:::serial
+    optimize_module_graph --> freeze_module_graph_meta[freeze_module_graph_meta]:::serial --> analyze_module_graph[analyze_module_graph]:::first
+    analyze_module_graph --> partial_bundling[partial_bundling]:::first --> process_resource_pots[process_resource_pots]:::serial
+  end
+  subgraph Pots[FOR EACH RESOURCE POT · CORE MAY RUN POTS IN PARALLEL]
+    direction TB
+    Hit{Valid resource-pot cache?}:::gate
+    Hit -->|yes| Restored[Restore cached pot resources]:::reuse --> Classified[All pots classified]:::core
+    Hit -->|no| Misses[Queue cache misses]:::core --> Classified
+    Classified --> render_start[render_start]:::serial --> Work{Any cache misses?}:::gate
+    Work -->|no: all cached| All[All pot resources ready]:::core
+    Work -->|yes: each missed pot| render_resource_pot[render_resource_pot]:::first
+    render_resource_pot --> process_rendered_resource_pot[process_rendered_resource_pot]:::serial
+    process_rendered_resource_pot --> augment_resource_pot_hash[augment_resource_pot_hash]:::serial
+    augment_resource_pot_hash --> optimize_resource_pot[optimize_resource_pot]:::serial --> generate_resources[generate_resources]:::first
+    generate_resources --> process_generated_resources[process_generated_resources]:::serial --> All
+  end
+  subgraph Final[GLOBAL FINALIZATION]
+    direction TB
+    handle_entry_resource[handle_entry_resource]:::serial --> finalize_resources[finalize_resources]:::serial --> generate_end[generate_end]:::parallel
+    generate_end --> Return[Return to A: finish / seal]:::core
+  end
+  Global -->|classify cache first| Pots -->|after all pots| Final

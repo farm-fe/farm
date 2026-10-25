@@ -1,0 +1,8 @@
+.farm-code-block { overflow-x: auto; white-space: pre; }
+.farm-code-block[data-title]::before { content: attr(data-title); display: block; font-weight: 600; margin-bottom: .5em; }
+.farm-code-line { display: block; min-height: 1em; }
+.farm-code-token { color: var(--code-light); }
+.dark .farm-code-token, [data-theme="dark"] .farm-code-token { color: var(--code-dark); }
+.farm-code-line[data-highlighted="true"] { border: 0; background: rgb(128 128 128 / 12%); box-shadow: inset 2px 0 0 rgb(128 128 128 / 40%); }
+.farm-code-block[data-line-numbers="true"] { counter-reset: farm-code-line; }
+.farm-code-block[data-line-numbers="true"] .farm-code-line::before { counter-increment: farm-code-line; content: counter(farm-code-line); display: inline-block; min-width: 2.5em; margin-inline-end: 1em; opacity: .65; user-select: none; }

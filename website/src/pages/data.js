@@ -116,4 +116,9 @@ export const members = [
   }
 ];
 
-export default function Empty() {}
+// Preserve the historical blank /data page without the documentation layout.
+export const metadata = { title: "Farm", layout: "none" };
+
+export default function Empty() {
+  return null;
+}
