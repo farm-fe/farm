@@ -65,7 +65,7 @@ impl CachedModule {
   /// Fingerprint inputs used by freeze hooks independently of the module source.
   pub fn watch_dependencies_hash(&self) -> String {
     let mut watches = self.watch_dependencies.iter().collect::<Vec<_>>();
-    watches.sort_by(|a, b| a.dependency.to_string().cmp(&b.dependency.to_string()));
+    watches.sort_by_key(|watch| watch.dependency.to_string());
     let mut input = String::new();
     for watch in watches {
       let id = watch.dependency.to_string();
