@@ -71,7 +71,7 @@ fn create_visitor<'a>(
   context: &'a Arc<CompilationContext>,
 ) -> ImportGlobVisitor<'a, ImportMetaGlobResolverImpl> {
   let cur_dir = cur_dir_by_importer(importer, context);
-  let visitor = ImportGlobVisitor::new(
+  ImportGlobVisitor::new(
     importer,
     context.config.root.clone(),
     cur_dir,
@@ -79,9 +79,7 @@ fn create_visitor<'a>(
     ImportMetaGlobResolverImpl {
       context: Arc::clone(context),
     },
-  );
-
-  visitor
+  )
 }
 
 #[test]
