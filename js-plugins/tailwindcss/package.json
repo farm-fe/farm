@@ -8,13 +8,19 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/esm/index.mjs",
-      "require": "./dist/cjs/index.cjs",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
+      },
       "types": "./dist/index.d.ts"
     }
   },
   "scripts": {
-    "build": "farm build",
+    "build": "farm build && node scripts/prepare-cjs-types.mjs",
     "type-check": "tsc -p ./tsconfig.json --noEmit",
     "dev": "farm watch"
   },
