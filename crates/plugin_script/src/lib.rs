@@ -375,8 +375,11 @@ impl Plugin for FarmPluginScript {
       .get_cache::<String>("farm:glob:v1")
       .and_then(|json| farmfe_core::serde_json::from_str::<Vec<Vec<GlobWatch>>>(&json).ok());
     // The legacy snapshot does not encode base/exhaustive matcher options.
-    // Keep warm-start invalidation for glob importers until it does.
-    let requires_matcher_refresh = glob_watches.as_ref().is_none_or(|groups| !groups.is_empty());
+    // Ordinary expansions can reuse the membership snapshot. Advanced options
+    // remain conservative until the snapshot records their complete profile.
+    let requires_matcher_refresh = glob_watches.as_ref().is_none_or(|groups| {
+      groups.iter().flatten().any(|watch| watch.requires_snapshot_refresh)
+    });
     let cur_dir = import_meta_glob_cur_dir(&module.id, &context.config.root);
     let mut custom = module.meta.as_script().custom.clone();
     let Some(bytes) = custom.get_cache::<Vec<u8>>(IMPORT_META_GLOB_CACHE) else {
@@ -425,12 +428,13 @@ impl Plugin for FarmPluginScript {
         context: context.clone(),
       },
     );
-    for (patterns, expected, _) in snapshot {
+    for (patterns, mut expected, _) in snapshot {
       let mut actual = visitor
         .glob_and_filter_sources(&patterns)
         .into_values()
         .collect::<Vec<_>>();
       actual.sort();
+      expected.sort();
       if !visitor.errors.is_empty() || actual != expected {
         return Ok(Some(true));
       }

@@ -54,6 +54,9 @@ pub struct GlobWatch {
   pub negative: bool,
   pub exhaustive: bool,
   pub case_insensitive: bool,
+  /// Legacy membership snapshots cannot reproduce these expansion options.
+  #[serde(default)]
+  pub requires_snapshot_refresh: bool,
 }
 
 impl GlobWatch {
@@ -126,6 +129,9 @@ pub fn transform_import_meta_glob_with_snapshot<R: ImportMetaGlobResolver>(
         negative,
         exhaustive: info.exhaustive,
         case_insensitive: info.case_insensitive,
+        requires_snapshot_refresh: info.base_dir.is_some()
+          || info.exhaustive
+          || info.case_insensitive,
       });
     }
     watches.push(group);

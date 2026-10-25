@@ -246,6 +246,7 @@ fn negative_order_query_base_and_watch_profiles() {
   )
   .unwrap();
   assert_eq!(first, last);
+  assert!(watches[0].iter().all(|watch| !watch.requires_snapshot_refresh));
   assert!(first.contains("\"./dir/a.js\":"), "{first}");
   assert!(first.contains("import(\"./dir/a.js?raw\")"));
   assert!(!first.contains("a.test.js"));
@@ -259,19 +260,21 @@ fn negative_order_query_base_and_watch_profiles() {
       .matches(&new_path)
       .unwrap()
   );
-  let (base, _) = transform_case(
+  let (base, base_watches) = transform_case(
     "const x = import.meta.glob('./*.js', {base:'./dir', eager:true, import:'default'});",
     root.path(),
   )
   .unwrap();
   assert!(base.contains("\"./a.js\":"));
   assert!(base.contains("from \"./dir/a.js\""));
-  let (all, _) = transform_case(
+  assert!(base_watches[0].iter().all(|watch| watch.requires_snapshot_refresh));
+  let (all, exhaustive_watches) = transform_case(
     "const x = import.meta.glob('./dir/*.js', {exhaustive:true});",
     root.path(),
   )
   .unwrap();
   assert!(all.contains(".hidden.js"));
+  assert!(exhaustive_watches[0].iter().all(|watch| watch.requires_snapshot_refresh));
   let (query, _) = transform_case(
     "const x = import.meta.glob('./dir/a.js', {query:{foo:'a&b', n:2}});",
     root.path(),
