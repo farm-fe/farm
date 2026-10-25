@@ -387,28 +387,26 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     };
 
     // get arguments from args[1]
-    if args.len() > 1 {
-      if let Some(mut options) = get_object_literal(&args[1]) {
-        if let Some(_as) = options.remove("as") {
-          import_glob_info.glob_import_as = Some(_as);
-        }
-
-        if let Some(eager) = options.remove("eager") {
-          import_glob_info.eager = eager == "true";
-        }
-
-        if let Some(import) = options.remove("import") {
-          import_glob_info.import = Some(import);
-        }
-
-        if let Some(query) = options.remove("query") {
-          import_glob_info.query = Some(query.trim_start_matches('?').to_string());
-        }
-        import_glob_info.exhaustive = options.remove("exhaustive").as_deref() == Some("true");
-        import_glob_info.case_insensitive =
-          options.remove("caseSensitive").as_deref() == Some("false");
-        import_glob_info.base_dir = options.remove("base");
+    if let Some(mut options) = args.get(1).and_then(get_object_literal) {
+      if let Some(_as) = options.remove("as") {
+        import_glob_info.glob_import_as = Some(_as);
       }
+
+      if let Some(eager) = options.remove("eager") {
+        import_glob_info.eager = eager == "true";
+      }
+
+      if let Some(import) = options.remove("import") {
+        import_glob_info.import = Some(import);
+      }
+
+      if let Some(query) = options.remove("query") {
+        import_glob_info.query = Some(query.trim_start_matches('?').to_string());
+      }
+      import_glob_info.exhaustive = options.remove("exhaustive").as_deref() == Some("true");
+      import_glob_info.case_insensitive =
+        options.remove("caseSensitive").as_deref() == Some("false");
+      import_glob_info.base_dir = options.remove("base");
     }
 
     import_glob_info
@@ -421,16 +419,16 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       .unwrap_or_else(|| (source.to_string(), false));
 
     // the package conversion priority should be higher than alias
-    if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/')) {
-      if let Some(result) = self.resolve(&source) {
-        self.resolved_cache.insert(source.clone(), result.clone());
-        let resolved = format!("/{}", relative(&self.root, &result));
-        return if negative {
-          format!("!{resolved}")
-        } else {
-          resolved
-        };
-      }
+    if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/'))
+      && let Some(result) = self.resolve(&source)
+    {
+      self.resolved_cache.insert(source.clone(), result.clone());
+      let resolved = format!("/{}", relative(&self.root, &result));
+      return if negative {
+        format!("!{resolved}")
+      } else {
+        resolved
+      };
     }
 
     let mut result = source.to_string();
@@ -600,8 +598,10 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       let negative = source.starts_with('!');
 
       let source = if negative { &source[1..] } else { &source[..] };
-      if !(source.starts_with('.') || source.starts_with('/') || source.starts_with("**"))
-        && !self.resolved_cache.contains_key(source)
+      if !(source.starts_with('.')
+        || source.starts_with('/')
+        || source.starts_with("**")
+        || self.resolved_cache.contains_key(source))
         && self.resolve(source).is_none()
       {
         self.errors.push(format!(
@@ -863,11 +863,11 @@ impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
             .push("import.meta.glob options must be an object literal".into());
           return;
         }
-        if let Some(arg) = args.get(1) {
-          if let Err(error) = validate_glob_options(arg) {
-            self.errors.push(error);
-            return;
-          }
+        if let Some(arg) = args.get(1)
+          && let Err(error) = validate_glob_options(arg)
+        {
+          self.errors.push(error);
+          return;
         }
 
         let sources = sources
