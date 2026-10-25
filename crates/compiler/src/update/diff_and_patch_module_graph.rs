@@ -188,9 +188,12 @@ pub fn patch_module_graph(
 
   // we must remove updated module at last, cause petgraph will remove edge when remove node
   for updated in start_points {
-    // the start point module may be a full new module that is handled by added_modules already
-    // we should skip it if it is in added_modules
-    if diff_result.added_modules.contains(&updated) {
+    // Added and removed start points were already handled above. A deleted glob
+    // member can also be a start point alongside its recompiled importer; do not
+    // replace it after removing it from the graph.
+    if diff_result.added_modules.contains(&updated)
+      || diff_result.removed_modules.contains(&updated)
+    {
       continue;
     }
 
