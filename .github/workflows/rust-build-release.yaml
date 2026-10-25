@@ -225,3 +225,45 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
           path: rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin ssr-css
+        if: ${{ contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-ssr-css
+          path: rust-plugins/ssr-css/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin syntax-highlight
+        if: ${{ contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-syntax-highlight
+          path: rust-plugins/syntax-highlight/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs
+        if: ${{ contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs
+          path: rust-plugins/docs/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs-snapshot
+        if: ${{ contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snapshot
+          path: rust-plugins/docs-snapshot/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs-seo
+        if: ${{ contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-seo
+          path: rust-plugins/docs-seo/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs-snippets
+        if: ${{ contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snippets
+          path: rust-plugins/docs-snippets/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error

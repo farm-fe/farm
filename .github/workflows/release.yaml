@@ -131,6 +131,17 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-wasm/* ./rust-plugins/wasm/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-worker/* ./rust-plugins/worker/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-yaml/* ./rust-plugins/yaml/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-tailwindcss/* ./rust-plugins/tailwindcss/npm/${abi}
+
+            case "$abi" in
+              win32-x64-msvc|linux-x64-gnu|linux-arm64-gnu|darwin-x64|darwin-arm64)
+                for plugin in ssr-css syntax-highlight docs docs-snapshot docs-seo docs-snippets
+                do
+                  mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-${plugin}/* ./rust-plugins/${plugin}/npm/${abi}
+                  test -f ./rust-plugins/${plugin}/npm/${abi}/index.farm
+                done
+                ;;
+            esac
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
@@ -156,6 +167,7 @@ jobs:
             test -f ./rust-plugins/wasm/npm/${abi}/index.farm
             test -f ./rust-plugins/worker/npm/${abi}/index.farm
             test -f ./rust-plugins/yaml/npm/${abi}/index.farm
+            test -f ./rust-plugins/tailwindcss/npm/${abi}/index.farm
           done
 
       - name: Install Dependencies

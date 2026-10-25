@@ -9,6 +9,13 @@ ABI="${FARM_BUILD_ABI:?FARM_BUILD_ABI is required}"
 TARGET="${FARM_BUILD_TARGET:-}"
 ZIG="${FARM_BUILD_ZIG:-false}"
 
+# Docs plugins declare five native targets; do not fabricate unsupported payloads.
+case "$ABI" in
+  win32-x64-msvc|linux-x64-gnu|linux-arm64-gnu|darwin-x64|darwin-arm64)
+    PLUGINS="$PLUGINS ssr-css syntax-highlight docs docs-snapshot docs-seo docs-snippets"
+    ;;
+esac
+
 if [ -z "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR="$(pwd)/target"
 fi
