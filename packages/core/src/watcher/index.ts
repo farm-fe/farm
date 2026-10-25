@@ -171,13 +171,12 @@ export default class Watcher extends EventEmitter implements IWatcher {
       ignored,
       ignoreInitial: true,
       ignorePermissionErrors: true,
-      awaitWriteFinish:
-        process.platform === 'linux'
-          ? undefined
-          : {
-              stabilityThreshold: 10,
-              pollInterval: 10
-            },
+      // Chokidar's immediate change path suppresses another change for 50ms.
+      // A fast HMR edit/repair must reach the compiler on Linux as well.
+      awaitWriteFinish: {
+        stabilityThreshold: 10,
+        pollInterval: 10
+      },
       ...otherOptions
     };
   }
