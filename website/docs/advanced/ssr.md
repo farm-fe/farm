@@ -155,6 +155,8 @@ By default, Farm compiles server entry script to `esm`, if you want to compile i
 :::
 
 ## Develop SSR Project
+
+Server rebuilds and browser HMR are separate steps. Re-importing the same Node ESM URL keeps its cached module graph, including lazy chunks. The current React/Vue repository examples use the Node-only `examples/ssr-utils/render-dev.mjs` and `render-worker.mjs` helpers to render each development request in a fresh worker. Copy both helpers when extracting an example; keep their configured worker path valid. This avoids stale server HTML while the HTTP/HMR server stays running. Each request pays worker startup cost, so this helper is for development and is not used by the production `server.js`.
 You have start compilation for both `client` and `server`, for example, you may have following `scripts` in `package.json`:
 
 ```json title="package.json"

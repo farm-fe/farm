@@ -151,23 +151,61 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
       name: '@farmfe/js-plugin-tailwindcss:generate',
       priority: 101,
 
-      // A lazy import may introduce candidates that none of the existing CSS
-      // roots watched during the initial graph. Rebuild the aggregate roots in
-      // the same update, after all source transforms have populated metadata.
+      pluginCacheLoaded: {
+        executor(bytes) {
+          const state = JSON.parse(Buffer.from(bytes).toString('utf8'));
+          if (
+            state?.version !== 1 ||
+            !Array.isArray(state.roots) ||
+            !state.roots.every((id: unknown) => typeof id === 'string')
+          ) {
+            throw new Error('Invalid Tailwind plugin cache');
+          }
+          // Scan metadata and physical-source flags have their own cache.
+          roots.clear();
+          for (const id of state.roots) roots.get(id);
+        }
+      },
+      writePluginCache: {
+        executor() {
+          return Array.from(
+            Buffer.from(
+              JSON.stringify({
+                version: 1,
+                roots: [...roots.keys()].sort()
+              })
+            )
+          );
+        }
+      },
       updateModules: {
         executor(param) {
-          const paths: typeof param.paths = [...param.paths];
-          const seen = new Set(paths.map(([id]) => id));
+          const rootPath = config?.root ?? process.cwd();
+          const normalize = (id: string) =>
+            path.resolve(rootPath, id).replaceAll('\\', '/');
+          const existing = new Map(
+            param.paths.map(([id, type]) => [normalize(id), type])
+          );
           for (const id of roots.keys()) {
-            const rootId = path.isAbsolute(id)
-              ? id
-              : path.resolve(config?.root ?? process.cwd(), id);
-            if (!seen.has(rootId)) {
-              paths.push([rootId, 'updated']);
-              seen.add(rootId);
-            }
+            if (existing.get(normalize(id)) === 'removed') roots.delete(id);
           }
-          if (paths.length !== param.paths.length) return paths;
+          const hasCandidateUpdate = param.paths.some(([id]) => {
+            const source = id.replaceAll('\\', '/');
+            return (
+              !source.includes('/node_modules/') &&
+              (source.includes('.farm_dynamic_import_virtual_module') ||
+                /\.(?:js|jsx|ts|tsx|vue|svelte|html|mdx|md|astro|php|twig|erb|hbs|liquid|pug|slim|haml)(?:\?|$)/.test(
+                  source
+                ))
+            );
+          });
+          if (!hasCandidateUpdate) return;
+          const next = [...param.paths];
+          for (const id of roots.keys()) {
+            if (!existing.has(normalize(id)))
+              next.push([path.resolve(rootPath, id), 'updated']);
+          }
+          return next;
         }
       },
 
@@ -192,10 +230,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
                 continue;
               }
             }
-            context?.addWatchFile(
-              param.moduleId,
-              physical ? resolvedPath.split('?')[0] : resolvedPath
-            );
+
             candidateList.push(
               ...(context?.readMetadata<string[]>(resolvedPath, {
                 refer: [resolvedPath],
@@ -214,6 +249,13 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
             return {
               content: param.content
             };
+          }
+          // Ordinary CSS must not inherit every candidate's watch edge.
+          for (const [resolvedPath, physical] of candidatesModuleList) {
+            context?.addWatchFile(
+              param.moduleId,
+              physical ? resolvedPath.split('?')[0] : resolvedPath
+            );
           }
           DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Generate CSS');
 
