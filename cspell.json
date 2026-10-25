@@ -7,6 +7,7 @@
   // words - list of words to be always considered correct
   "words": [
     "alnum",
+    "anymatch",
     "cntrl",
     "extglob",
     "extglobs",
@@ -26,12 +27,20 @@
     "Rolldown",
     "Schlinkert",
     "Schlinkert's",
+    "Shanker",
     "slashy",
     "tinyglobby",
     "tinyglobby's",
     "xdigit",
     "Connor",
     "Skees",
+    // Bug-fix fixture identifiers and browser lifecycle events.
+    "beforeunload",
+    "mypkg",
+    "pagehide",
+    "pageshow",
+    "rescans",
+    "worktree",
     // Farm Docs dependencies, APIs and regression-fixture tokens.
     "accDescr",
     "addfile",
@@ -65,6 +74,7 @@
     "jsxs",
     "llms",
     "mdast",
+    "mtimes",
     "neighbours",
     "noindex",
     "nonportable",
