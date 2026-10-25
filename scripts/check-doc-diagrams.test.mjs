@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';import path from 'node:path';import os from 'node:os';import {fileURLToPath}from'node:url';import{test}from'node:test';import{checkDiagrams,validateSvg}from'./check-doc-diagrams.mjs';
 const source=fileURLToPath(new URL('../website/static/diagrams/',import.meta.url));
-test('committed SVGs match all maintained Mermaid sources',async()=>assert.deepEqual(await checkDiagrams(),{sources:6,outputs:12}));
+test('committed SVGs match all maintained Mermaid sources',async()=>assert.deepEqual(await checkDiagrams(),{sources:7,outputs:14}));
 
 test('complete Rust lifecycle retains all hooks and a separate update entry',async()=>{
  const names=['rust-plugin-lifecycle','rust-plugin-build','rust-plugin-generate','rust-plugin-update'];
@@ -15,3 +15,12 @@ test('complete Rust lifecycle retains all hooks and a separate update entry',asy
 });
 test('source and rendered SVG tampering fail rather than using stale diagrams',async()=>{const temp=await fs.mkdtemp(path.join(os.tmpdir(),'farm-diagram-test-'));try{await fs.cp(source,temp,{recursive:true});await fs.appendFile(path.join(temp,'plugin-dispatch.mmd'),'\nchanged');await assert.rejects(checkDiagrams(temp),/Stale Mermaid source/);await fs.copyFile(path.join(source,'plugin-dispatch.mmd'),path.join(temp,'plugin-dispatch.mmd'));await fs.appendFile(path.join(temp,'plugin-dispatch-light.svg'),'changed');await assert.rejects(checkDiagrams(temp),/Stale SVG/);}finally{await fs.rm(temp,{recursive:true,force:true});}});
 test('SVGs cannot carry scripts, HTML, events, external references or stylesheets',()=>{for(const svg of ['<svg><script/></svg>','<svg><foreignObject/></svg>','<svg onload="run()"/>','<svg><use href="https://example.com/x"/></svg>','<svg><style>rect{fill:url(https://example.com/x)}</style></svg>'])assert.throws(()=>validateSvg(svg));validateSvg('<svg><path marker-end="url(#arrow)"/></svg>');});
+
+test('compact overview contains every lifecycle hook and independent update',async()=>{
+ const text=await fs.readFile(path.join(source,'rust-plugin-overview.mmd'),'utf8');
+ const detail=(await Promise.all(['rust-plugin-lifecycle','rust-plugin-build','rust-plugin-generate','rust-plugin-update'].map(n=>fs.readFile(path.join(source,n+'.mmd'),'utf8')))).join('\n');
+ const hooks=new Set([...detail.matchAll(/\[([a-z][a-z_]+)\]:::/g)].map(m=>m[1]));
+ for(const hook of hooks)assert.match(text,new RegExp('\\b'+hook+'\\b'));
+ assert.match(text,/Independent watcher \/ API entry/);
+ assert(!/finish\s*-->\s*update_modules/.test(text));
+});

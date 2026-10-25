@@ -82,15 +82,33 @@
       "outputs": {
         "light": {
           "file": "rust-plugin-lifecycle-light.svg",
-          "sha256": "ed3faa134f021cf53fc08eafa24b8fa713f41f0956bb17025ee737853d756ba8",
+          "sha256": "c41a6761e06824c5263f3117cd79860c92ae0129fce421e7dd5bbc9e59122360",
           "width": 489,
           "height": 1718
         },
         "dark": {
           "file": "rust-plugin-lifecycle-dark.svg",
-          "sha256": "d3cffaa7621ca2a06f6b2a77120ca121eee487045c96362ab7cbf96f546b172c",
+          "sha256": "32fa8bd794feaf827d08c96eceb092d40d71d2c56c16da7475758e43792e14d7",
           "width": 489,
           "height": 1718
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-overview.mmd",
+      "sourceSha256": "5e7b21108581d7bcc6b78096e8aaac80272cee2db7dadc72d3fabf2b8d6e336c",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-overview-light.svg",
+          "sha256": "adf4866ef587e9f40255378a4ad96f8124c75b130cf24477c0d9999b4140633d",
+          "width": 2841,
+          "height": 1025
+        },
+        "dark": {
+          "file": "rust-plugin-overview-dark.svg",
+          "sha256": "9e043347281474946f7d249559c9da228fea680f84212dd8c3d5641a4064e57d",
+          "width": 2841,
+          "height": 1025
         }
       }
     },
@@ -100,13 +118,13 @@
       "outputs": {
         "light": {
           "file": "rust-plugin-update-light.svg",
-          "sha256": "9fa9d6adf60d2aad63027a90e019a35ad183b1d4b40f5b15aa494561cecd4a64",
+          "sha256": "5829943530377677b658337b97b4e071cc7c3a3a033315302885764aed894edf",
           "width": 1188,
           "height": 1349
         },
         "dark": {
           "file": "rust-plugin-update-dark.svg",
-          "sha256": "861f8ae6592d8bb65327b5734b4ccd177fe4f4e26bcaedae1effe7bc8f593bfc",
+          "sha256": "7cc57b2c5d777a5fcdd0a703628fb783ed7b2d048053c3eb096022de18053882",
           "width": 1188,
           "height": 1349
         }

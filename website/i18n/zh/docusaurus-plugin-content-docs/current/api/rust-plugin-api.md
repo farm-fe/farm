@@ -26,11 +26,13 @@ export default defineConfig({
 
 
 ## 插件 Hook 概述 {#plugin-hooks-overview}
-Farm 提供了很多 rollup 风格的 hook，这些 hook 分为 build 阶段和 generate 阶段：
-<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-lifecycle-light.svg"><img src="/diagrams/rust-plugin-lifecycle-light.svg" alt="Rust 插件生命周期：初次编译与更新分别调用" /></a>
-<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-lifecycle-dark.svg"><img src="/diagrams/rust-plugin-lifecycle-dark.svg" alt="Rust 插件生命周期：初次编译与更新分别调用" /></a>
+Farm 提供了构建、资源生成与独立增量更新钩子。总览包含 35 个钩子；缓存条件与更新入口不是一条必然执行的串行链。
+<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-light" href="/diagrams/rust-plugin-overview-light.svg"><img src="/diagrams/rust-plugin-overview-light.svg" alt="完整 35 个 Hook 总览；点击放大、缩放和平移" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-dark" href="/diagrams/rust-plugin-overview-dark.svg"><img src="/diagrams/rust-plugin-overview-dark.svg" alt="完整 35 个 Hook 总览；点击放大、缩放和平移" /></a>
 
-[Mermaid 源文件](/diagrams/rust-plugin-lifecycle.mmd)
+点击图表可全屏查看；键盘 + / − 缩放，方向键平移，0 重置，Esc 关闭。
+
+[Mermaid 源文件](/diagrams/rust-plugin-overview.mmd)
 
 
 所有插件挂钩都接受一个名为 [`CompilationContext`](https://docs.rs/farmfe_core/latest/farmfe_core/context/struct.CompilationContext.html) 的参数。 所有共享的编译信息都存储在 `context` 中。
@@ -46,6 +48,9 @@ Hook 共有三种（与 Rollup 相同）：
 
 时间戳命中发生在 load/transform 前，内容 hash 命中发生在它们之后。资源 pot 缓存不会跳过全局生成钩子。更新由 watcher/API 单独触发，并非 finish 后必然发生。
 
+
+<details>
+<summary>展开各阶段缓存与调用细节</summary>
 
 <a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-build-light.svg"><img src="/diagrams/rust-plugin-build-light.svg" alt="模块图构建与缓存分支" /></a>
 <a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-build-dark.svg"><img src="/diagrams/rust-plugin-build-dark.svg" alt="模块图构建与缓存分支" /></a>
@@ -73,6 +78,8 @@ Hook 共有三种（与 Rollup 相同）：
 :::note
 有关完整的 `Plugin Hooks`  定义，请参阅[Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)
 :::
+
+</details>
 
 ## name
 - **required: `true`**

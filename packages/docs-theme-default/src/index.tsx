@@ -3,6 +3,7 @@ import type { NotFoundProps, PublicSidebarItem, ThemeProps } from '@farmfe/docs/
 import type { ReactNode } from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CodeBlock } from './code-block.js';
+import { DiagramViewer } from './diagram-viewer.js';
 import type { DocumentActionsLabels } from './document-actions.js';
 import { Search } from './search.js';
 
@@ -161,6 +162,7 @@ function PageContent({ page, children, beforeArticle }: { page: ThemeProps['page
     {page.fallbackSource && <aside className="farm-docs-fallback" aria-label="Translation fallback">This page uses {page.fallbackSource.locale} content. <Link to={page.fallbackSource.routePath}>View source language</Link></aside>}
     {beforeArticle}
     <article>{children}</article>
+    <DiagramViewer />
     {(page.previous || page.next) && <nav aria-label="Previous and next pages" className="farm-docs-pagination">{page.previous && <Link to={page.previous.href} aria-label={`Previous: ${page.previous.label}`}>Previous: {page.previous.label}</Link>}{page.next && <Link to={page.next.href} aria-label={`Next: ${page.next.label}`}>Next: {page.next.label}</Link>}</nav>}
   </main>;
 }

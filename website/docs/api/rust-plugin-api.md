@@ -27,10 +27,12 @@ See [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin) for detail
 
 ## Plugin Hooks Overview
 Farm provides many Rollup-style hooks. In v2, the lifecycle is best understood in three phases: `build`, `generate`, and `update` (HMR/incremental updates):
-<a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-lifecycle-light.svg"><img src="/diagrams/rust-plugin-lifecycle-light.svg" alt="Rust plugin lifecycle: initial compilation and separate update calls" /></a>
-<a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-lifecycle-dark.svg"><img src="/diagrams/rust-plugin-lifecycle-dark.svg" alt="Rust plugin lifecycle: initial compilation and separate update calls" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-light" href="/diagrams/rust-plugin-overview-light.svg"><img src="/diagrams/rust-plugin-overview-light.svg" alt="All 35 hooks — click to enlarge, zoom and pan" /></a>
+<a class="farm-docs-diagram farm-docs-diagram-overview farm-docs-diagram-dark" href="/diagrams/rust-plugin-overview-dark.svg"><img src="/diagrams/rust-plugin-overview-dark.svg" alt="All 35 hooks — click to enlarge, zoom and pan" /></a>
 
-[Mermaid source](/diagrams/rust-plugin-lifecycle.mmd)
+Click the overview for a full-window viewer. Use + / − to zoom, arrows to pan, 0 to reset and Esc to close.
+
+[Mermaid source](/diagrams/rust-plugin-overview.mmd)
 
 
 
@@ -49,6 +51,9 @@ There are three kinds of hooks (the same as Rollup):
 
 A timestamp hit precedes load/transform; a transformed-content hash hit follows them. Resource-pot cache hits do not skip global generation hooks. Watch/API events trigger updates separately; they do not automatically follow finish.
 
+
+<details>
+<summary>Expand phase-by-phase cache and call details</summary>
 
 <a class="farm-docs-diagram farm-docs-diagram-light" href="/diagrams/rust-plugin-build-light.svg"><img src="/diagrams/rust-plugin-build-light.svg" alt="Module graph and cache decisions" /></a>
 <a class="farm-docs-diagram farm-docs-diagram-dark" href="/diagrams/rust-plugin-build-dark.svg"><img src="/diagrams/rust-plugin-build-dark.svg" alt="Module graph and cache decisions" /></a>
@@ -76,6 +81,8 @@ A timestamp hit precedes load/transform; a transformed-content hash hit follows 
 :::note
 For full `Plugin Hooks` signature, see [Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)
 :::
+
+</details>
 
 ## name
 - **required: `true`**
