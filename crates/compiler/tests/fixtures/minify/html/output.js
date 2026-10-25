@@ -4,6 +4,10 @@ window['__farm_default_namespace__'] = {
     __FARM_TARGET_ENV__: 'browser'
 };
 (function() {
-    console.log("module-helper.ts");
+    (function() {
+        if (typeof window === 'undefined' || !window['__farm_default_namespace__'] || !window['__farm_default_namespace__'].m) {
+            console.log("module-helper.ts");
+        }
+    })();
 })();
 </script><body><script>window['__farm_default_namespace__'].m.b();</script>

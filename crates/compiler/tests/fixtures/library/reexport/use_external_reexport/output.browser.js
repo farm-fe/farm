@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: 9cd7578f
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){; // module_id: 9cd7578f
 function setGlobalRequire(globalObj) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalObj !== 'undefined' ? globalObj : {};
@@ -177,7 +177,7 @@ function importDefault(v) {
 }
 ; // module_id: 20764041
 initModuleSystem(__farm_internal_module_system__);
-}());window['__farm_default_namespace__'].m.se({
+}}());window['__farm_default_namespace__'].m.se({
     "/external/foo": window['/external/foo'] || {},
     "/external/react-dom": window['/external/react-dom'] || {},
     "node:fs": window['node:fs'] || {}
@@ -214,4 +214,4 @@ initModuleSystem(__farm_internal_module_system__);
         });
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

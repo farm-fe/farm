@@ -36,3 +36,7 @@ transform/walker profile 禁用 extglob、启用 POSIX 字符类；直接 HMR �
 Core/compiler/toolkit 保持 Rust V2。Core 数据布局及动态插件接口未变，ABI 保持 `0.5.4`；正式分发的 Core 与插件仍必须由同一轮新源码重建。独立 glob crate 保持 `0.1.0`。
 
 配套 Vuetify 修复的准确版本是 `@farmfe/js-plugin-vuetify@0.0.2`，不会覆盖已发布的 `0.0.1`。这些包及官网仍需经过正式发布批准和纯注册表消费验证。
+
+第二参数必须是字面量配置对象。旧调用中的 `import.meta.url` 第二参数应删除，改为 `import.meta.glob("bar", { exhaustive: true })`，或使用受支持的字面量配置对象。把 `import.meta.url` 作为配置传入现在会明确报告编译错误。
+
+依赖目录需要显式设置 `exhaustive: true`。解析为项目绝对路径的包模式，其对象键以 `/node_modules/` 开头，而非旧实现的 `./node_modules/`；模块集合和延迟导入语义保留。

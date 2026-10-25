@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 function setGlobalRequire(globalObj) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalObj !== 'undefined' ? globalObj : {};
@@ -542,7 +542,7 @@ function importDefault(v) {
 initModuleSystem(__farm_internal_module_system__);
 initModuleSystem$1(__farm_internal_module_system__);
 initModuleSystem$2(__farm_internal_module_system__);
-}());window['__farm_default_namespace__'].m.se({
+}}());window['__farm_default_namespace__'].m.se({
     "/external/bar": window['/external/bar'] || {},
     "/external/zoo": window['/external/zoo'] || {}
 });
@@ -566,4 +566,4 @@ initModuleSystem$2(__farm_internal_module_system__);
         console.log(zoo_test, foo);
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

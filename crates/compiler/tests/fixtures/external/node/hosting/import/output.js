@@ -1,10 +1,10 @@
 //index.js:
- import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){const __farm_internal_module_system__ = {};
+ import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){if(typeof global==='undefined'||!global['__farm_default_namespace__']||!global['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
-}());import * as __farm_external_module_jquery from "jquery";
+}}());import * as __farm_external_module_jquery from "jquery";
 global['__farm_default_namespace__'].m.se({
     "jquery": __farm_external_module_jquery
 });
@@ -23,4 +23,4 @@ global['__farm_default_namespace__'].m.se({
         });
     }
 });
-var __farm_ms__ = global['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = global['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

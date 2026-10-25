@@ -36,3 +36,7 @@ The old Wax dependency is removed instead of merely disabling its diagnostics fe
 Core/compiler/toolkit remain Rust V2. The plugin ABI stays `0.5.4` because Core data layouts and plugin interfaces do not change, but the release's Core and plugins must be rebuilt from the same new source cohort. The independently versioned glob crate remains `0.1.0`.
 
 The accompanying Vuetify resolver fix is packaged as `@farmfe/js-plugin-vuetify@0.0.2`, not an overwrite of the published `0.0.1`. Packages and the official website are still subject to release approval and registry-only verification.
+
+The second argument must be a literal options object. Remove legacy `import.meta.url` second arguments: use `import.meta.glob("bar", { exhaustive: true })`, or provide a supported literal options object. Passing `import.meta.url` as options now reports an explicit compilation error.
+
+Dependency directories require explicit `exhaustive: true`. Package patterns resolved to project-absolute paths use `/node_modules/` object keys instead of the legacy `./node_modules/` form; module membership and lazy imports are retained.
