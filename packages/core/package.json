@@ -63,7 +63,7 @@
   "scripts": {
     "start": "tsc -w -p tsconfig.build.json",
     "start:debug": "tsc -w -p tsconfig.build.json",
-    "build:cjs": "node scripts/build-cjs.mjs && node scripts/prepare-cjs-types.mjs",
+    "build:cjs": "node scripts/prepare-sdk-types.mjs && node scripts/build-cjs.mjs && node scripts/prepare-cjs-types.mjs",
     "build": "tsc -p tsconfig.build.json && npm run build:cjs",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:publish": "npm run build:rs:debug -- --profile release-publish",
@@ -74,7 +74,9 @@
     "napi:version": "napi version",
     "artifacts": "napi artifacts",
     "type-check": "tsc -p tsconfig.build.json --noEmit",
-    "build:rs:ci": "npm run build:rs:debug -- --profile ci"
+    "build:rs:ci": "npm run build:rs:debug -- --profile ci",
+    "prepack": "node scripts/prepare-sdk-types.mjs && node scripts/prepare-cjs-types.mjs",
+    "test:sdk-types": "node --test scripts/prepare-sdk-types.test.mjs"
   },
   "devDependencies": {
     "@napi-rs/cli": "3.0.4",
@@ -116,7 +118,8 @@
     "vite": "^5.2.6",
     "ws": "^8.14.2",
     "zod": "^3.23.8",
-    "zod-validation-error": "^1.3.0"
+    "zod-validation-error": "^1.3.0",
+    "anymatch": "3.1.3"
   },
   "engines": {
     "node": "^18.0.0 || >=20.0.0"

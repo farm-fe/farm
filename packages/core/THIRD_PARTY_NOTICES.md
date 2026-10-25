@@ -44,3 +44,16 @@ The matcher uses fancy-regex 0.14.0. Its original MIT license is retained in
 from that exact crates.io package. This addition does not make the partial
 inventory above a complete native license audit or resolve the separate
 Tardar notice-material gap.
+
+## Chokidar public type declarations
+
+Farm Core distributes a type-only adaptation of chokidar 3.5.3 under dist/vendor.
+The original complete MIT notice (Copyright 2012-2019 Paul Miller and Elan Shanker)
+is included at [licenses/chokidar-3.5.3-MIT.txt](licenses/chokidar-3.5.3-MIT.txt).
+The normal declaration producer verifies the exact upstream declaration and license
+SHA256 values, preserves the upstream declaration as text, and records provenance
+in dist/vendor/chokidar.provenance.json. The only adaptation removes an invalid
+claim that this class implements Node's native fs.FSWatcher; no methods are added
+and the installed watcher runtime is unchanged. The declaration's anymatch type
+dependency is explicitly pinned to the already-used version 3.1.3; it remains a
+separately installed dependency with its upstream license, rather than copied code.
