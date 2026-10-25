@@ -10,6 +10,11 @@ const prePath = path.join(CHANGESET_DIR, "pre.json");
 
 if (existsSync(prePath)) {
   const preRelease = JSON.parse(readFileSync(path.join(CHANGESET_DIR, "pre.json"), "utf-8"));
+  // Adapted from 48de68386: consumed beta changesets still need stable versions on exit.
+  if (preRelease.mode === 'exit') {
+    console.log("Exiting prerelease mode, generate stable versions before publish");
+    process.exit(0);
+  }
   changesetFilesExist = changesetFilesExist.filter(file => !preRelease.changesets.includes(file));
 }
 

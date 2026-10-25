@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
+node ./scripts/check-native-build-node.mjs
+
 PLUGINS="react replace-dirname sass vue vue-jsx auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss"
 PROFILE="${FARM_BUILD_PROFILE:-ci}"
 ABI="${FARM_BUILD_ABI:?FARM_BUILD_ABI is required}"

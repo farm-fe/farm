@@ -1,68 +1,52 @@
-import fs from 'node:fs';
+// Adapted from 913dea8cf: use each owning manifest's actual version, including 0.x.
+import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const templatesDir = path.resolve('crates/create-farm-rs/templates'); 
-
-const packageCorePath = path.resolve('packages/core/package.json');
-const packageReactPluginPath = path.resolve('rust-plugins/react/package.json');
-const packageCliPath = path.resolve('packages/cli/package.json');
-const packageCoreJson = JSON.parse(fs.readFileSync(packageCorePath, 'utf8'));
-const packageCliJson = JSON.parse(fs.readFileSync(packageCliPath, 'utf8'));
-const packageReactPluginJson = JSON.parse(fs.readFileSync(packageReactPluginPath, 'utf8'));
-const dependenciesToUpdate = {
-  "@farmfe/core": `^${packageCoreJson.version}`,
-  "@farmfe/cli": `^${packageCliJson.version}`,
-  "@farmfe/plugin-react": `^${packageReactPluginJson.version}`,
-};
-
-function updatePackageJsonDependencies(dir) {
-  fs.readdir(dir, (err, files) => {
-    if (err) {
-      return console.error(`cannot read directory ${dir}: ${err.message}`);
+export async function synchronizeTemplateDependencies(root = process.cwd()) {
+  const versions = new Map();
+  for (const parent of ['packages', 'rust-plugins', 'js-plugins']) {
+    let entries;
+    try { entries = await fs.readdir(path.join(root, parent), { withFileTypes: true }); }
+    catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      let manifest;
+      try { manifest = JSON.parse(await fs.readFile(path.join(root, parent, entry.name, 'package.json'), 'utf8')); }
+      catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+      if (!manifest.private && manifest.name?.startsWith('@farmfe/')) versions.set(manifest.name, manifest.version);
     }
-
-    files.forEach(file => {
-      const fullPath = path.join(dir, file);
-      fs.stat(fullPath, (err, stats) => {
-        if (err) {
-          return console.error(`cannot get stats of file ${fullPath}: ${err.message}`);
+  }
+  const updates = [];
+  async function inspect(directory) {
+    let entries;
+    try { entries = await fs.readdir(directory, { withFileTypes: true }); }
+    catch (error) { if (error.code === 'ENOENT') return; throw error; }
+    for (const entry of entries) {
+      const filename = path.join(directory, entry.name);
+      if (entry.isDirectory()) { await inspect(filename); continue; }
+      if (!entry.isFile() || entry.name !== 'package.json') continue;
+      const manifest = JSON.parse(await fs.readFile(filename, 'utf8'));
+      let changed = false;
+      for (const section of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+        for (const name of Object.keys(manifest[section] ?? {})) {
+          if (!name.startsWith('@farmfe/')) continue;
+          const version = versions.get(name);
+          if (!version) throw new Error(`Unknown template dependency ${name}: ${filename}`);
+          const target = `^${version}`;
+          if (manifest[section][name] !== target) { manifest[section][name] = target; changed = true; }
         }
-
-        if (stats.isDirectory()) {
-          updatePackageJsonDependencies(fullPath);
-        } else if (file === 'package.json') {
-          fs.readFile(fullPath, 'utf8', (err, data) => {
-            if (err) {
-              return console.error(`cannot read file ${fullPath}: ${err.message}`);
-            }
-
-            let packageJson;
-            try {
-              packageJson = JSON.parse(data);
-            } catch (err) {
-              return console.error(`resolve JSON file ${fullPath} error: ${err.message}`);
-            }
-
-            Object.keys(dependenciesToUpdate).forEach(dep => {
-              if (packageJson.dependencies && packageJson.dependencies[dep]) {
-                packageJson.dependencies[dep] = dependenciesToUpdate[dep];
-              }
-              if (packageJson.devDependencies && packageJson.devDependencies[dep]) {
-                packageJson.devDependencies[dep] = dependenciesToUpdate[dep];
-              }
-            });
-
-            fs.writeFile(fullPath, JSON.stringify(packageJson, null, 2), 'utf8', err => {
-              if (err) {
-                return console.error(`cannot write ${fullPath}: ${err.message}`);
-              }
-              console.log(`successfully updated file ${fullPath}`);
-            });
-          });
-        }
-      });
-    });
-  });
+      }
+      if (changed) updates.push({ filename, manifest });
+    }
+  }
+  await inspect(path.join(root, 'crates/create-farm-rs/templates'));
+  await inspect(path.join(root, 'packages/create-farm-plugin/templates'));
+  // Validate all templates before writing the first update.
+  for (const { filename, manifest } of updates) await fs.writeFile(filename, JSON.stringify(manifest, null, 2) + '\n');
+  return updates.map(({ filename }) => path.relative(root, filename));
 }
 
-updatePackageJsonDependencies(templatesDir);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  synchronizeTemplateDependencies().then(files => { for (const file of files) console.log(`Updated ${file}`); }).catch(error => { console.error(error.message); process.exitCode = 1; });
+}

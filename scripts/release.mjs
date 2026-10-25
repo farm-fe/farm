@@ -1,5 +1,8 @@
 import { execSync } from 'child_process';
 import { buildCli, buildCoreCjs, buildJsPlugins, buildRuntime } from './build.mjs';
+import { checkBeforeStableNpmRelease } from './check-published-rust-core.mjs';
+
+await checkBeforeStableNpmRelease();
 
 // build node packages
 await buildCli();
