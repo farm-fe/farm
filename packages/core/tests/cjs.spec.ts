@@ -75,7 +75,7 @@ describe('resolveUserConfig', () => {
             'package-lock.json',
             'pnpm-lock.yaml',
             'yarn.lock'
-          ],
+          ].sort(),
           envs: {
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'true',
