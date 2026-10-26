@@ -320,6 +320,10 @@ jobs:
         run: cd packages/core && pnpm run build:cjs
       - name: Build Plugin Tools test prerequisite
         run: pnpm --filter @farmfe/plugin-tools run build
+      - name: Build Babel plugin test prerequisites
+        run: |
+          pnpm --filter @farmfe/js-plugin-dts run build
+          pnpm --filter @farmfe/js-plugin-babel run build
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
       # - name: Setup tmate session

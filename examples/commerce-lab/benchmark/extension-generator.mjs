@@ -48,7 +48,7 @@ export default function Form() {
   return files;
 }
 
-export async function generateScale(scale) {
+export async function generateScale(scale, { preserveExisting = false } = {}) {
   if (!Object.hasOwn(extensionScales, scale)) throw new Error('Invalid extension scale');
   const root = fileURLToPath(new URL(`../packages/extensions/${scale}/`, import.meta.url));
   const sources = extensionSources(extensionScales[scale], scaleProfile(scale));
@@ -57,10 +57,17 @@ export async function generateScale(scale) {
     if (!target.startsWith(root)) throw new Error('Generated path escapes extension root');
     try {
       const existing = await fs.readFile(target, 'utf8');
-      if (existing !== content) throw new Error(`Refusing to overwrite modified extension: ${target}`);
+      if (!preserveExisting && existing !== content) throw new Error(`Refusing to overwrite modified extension: ${target}`);
+      continue;
     } catch (error) { if (error.code !== 'ENOENT') throw error; }
     await fs.mkdir(path.dirname(target), { recursive: true });
-    await fs.writeFile(target, content);
+    try {
+      await fs.writeFile(target, content, { flag: 'wx' });
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error;
+      if (!preserveExisting && await fs.readFile(target, 'utf8') !== content)
+        throw new Error(`Refusing to overwrite modified extension: ${target}`);
+    }
   }
   return { scale, categories: extensionScales[scale], files: Object.keys(sources).length };
 }
