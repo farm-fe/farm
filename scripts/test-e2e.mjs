@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { cpus } from 'node:os';
 import { printSummary } from '../e2e/runner.mjs';
 import { cleanupStaleE2EProcesses } from '../e2e/process-cleanup.mjs';
+import { completeWorkerResults } from '../e2e/worker-outcome.mjs';
 import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
 // ---------------------------------------------------------------------------
@@ -148,8 +149,8 @@ function discoverExamples(args) {
  * @param {Set<import('child_process').ChildProcess>} activeWorkers
  * @returns {Promise<Map<string, import('../e2e/runner.mjs').TestResult[]>>}
  */
-function runWorker(examples, index, workerPath, logFile, activeWorkers) {
-  return new Promise((resolve, reject) => {
+export function runWorker(examples, index, workerPath, logFile, activeWorkers) {
+  return new Promise((resolve) => {
     const worker = fork(workerPath, [], {
       stdio: 'inherit',
       env: {
@@ -163,6 +164,8 @@ function runWorker(examples, index, workerPath, logFile, activeWorkers) {
     const workerResults = new Map();
     let settled = false;
     let shutdownTimer;
+    let workerDone = false;
+    let workerError;
 
     const settle = (fn) => {
       if (!settled) {
@@ -192,7 +195,7 @@ function runWorker(examples, index, workerPath, logFile, activeWorkers) {
           : msg.results;
         workerResults.set(msg.example, results);
       } else if (msg?.type === 'skip') {
-        // no-op — example was intentionally skipped
+        workerResults.set(msg.example, [{fullName:msg.example,passed:true,skipped:true,duration:0}]);
       } else if (msg?.type === 'error') {
         workerResults.set(msg.example, [{
           fullName: msg.example,
@@ -202,27 +205,30 @@ function runWorker(examples, index, workerPath, logFile, activeWorkers) {
           error: new Error(msg.error)
         }]);
       } else if (msg?.type === 'done') {
+        workerDone = true;
         if (worker.connected) worker.disconnect();
         shutdownTimer = setTimeout(() => {
           if (!worker.killed) worker.kill('SIGTERM');
         }, 5_000);
       } else if (msg?.type === 'fatal') {
+        workerError = new Error(msg.error);
         if (!worker.killed) worker.kill('SIGTERM');
-        settle(() => reject(new Error(msg.error)));
       }
     });
 
     worker.on('error', (err) => {
-      // Worker spawn errors are fatal for this worker, but we still
-      // resolve with whatever results we already have.
-      settle(() => resolve(workerResults));
+      workerError = err;
+      activeWorkers.delete(worker);
+      settle(() => resolve(completeWorkerResults(workerResults, examples,
+        {index, code:null, signal:null, done:workerDone, error:workerError})));
     });
 
-    worker.on('exit', (code) => {
+    worker.on('exit', (code, signal) => {
       if (shutdownTimer) clearTimeout(shutdownTimer);
       activeWorkers.delete(worker);
       if (!settled) {
-        settle(() => resolve(workerResults));
+        settle(() => resolve(completeWorkerResults(workerResults, examples,
+          {index, code, signal, done:workerDone, error:workerError})));
       }
     });
 
@@ -307,10 +313,14 @@ async function main() {
   });
 
   try {
-    await Promise.all(workerPromises);
-  } catch (err) {
-    logger(`Worker failure: ${err}`, { color: 'red' });
-    // Fall through — still print results from workers that completed
+    const outcomes = await Promise.allSettled(workerPromises);
+    for (const [index, outcome] of outcomes.entries()) {
+      if (outcome.status === 'rejected') {
+        const failed = completeWorkerResults(new Map(), [],
+          {index, code:null, signal:null, done:false, error:outcome.reason});
+        for (const [name, results] of failed) allResults.set(name, results);
+      }
+    }
   } finally {
     process.removeListener('SIGINT', cleanup);
     process.removeListener('SIGTERM', cleanup);
@@ -333,7 +343,7 @@ async function main() {
   process.exit(totalFailed > 0 ? 1 : 0);
 }
 
-main().catch((err) => {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch((err) => {
   logger(`Fatal error: ${err}`, { color: 'red' });
   process.exit(1);
 });
