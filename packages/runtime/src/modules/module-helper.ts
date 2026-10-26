@@ -1,54 +1,23 @@
 import type { ModuleSystem } from "../module-system.js";
 
-declare const __FARM_ENABLE_EXPORT_HELPER__: boolean;
-declare const __FARM_ENABLE_EXPORT_ALL_HELPER__: boolean;
-declare const __FARM_ENABLE_IMPORT_ALL_HELPER__: boolean;
-declare const __FARM_IMPORT_EXPORT_FROM_HELPER__: boolean;
-declare const __FARM_ENABLE_IMPORT_DEFAULT_HELPER__: boolean;
-
+// Opaque prebuilt Farm bundles share the host module system. Their helper needs
+// cannot be inferred from the host's imports, so this is a stable runtime ABI.
 export function initModuleSystem(ms: ModuleSystem) {
   const farmRequire: any = ms.r;
+  farmRequire.o = exportByDefineProperty;
+  farmRequire.d = defineExport;
+  farmRequire._m = defineExportEsModule;
+  farmRequire._e = defineExportStar;
+  farmRequire.i = interopRequireDefault;
+  farmRequire._g = getRequireWildcardCache;
+  farmRequire.w = interopRequireWildcard;
+  farmRequire._ = defineExportFrom;
+  farmRequire.f = importDefault;
 
-  // These guards will be removed when the condition if false during compile time
-  if (__FARM_ENABLE_EXPORT_HELPER__) {
-    farmRequire.o = exportByDefineProperty;
-    // exports.xx = xx
-    farmRequire.d = defineExport;
-    // exports.__esModule
-    farmRequire._m = defineExportEsModule;
-  }
-
-  if (__FARM_ENABLE_EXPORT_ALL_HELPER__) {
-    // `export * from` helper
-    farmRequire._e = defineExportStar;
-    // inject defineExportStar to module system
-    const id = '@farm-runtime/module-helper';
-    ms.c()[id] = {
-      id,
-      exports: {
-        defineExportStar
-      }
-    }
-  }
-
-  if (__FARM_ENABLE_IMPORT_DEFAULT_HELPER__) {
-    // `import xxx from` helper
-    farmRequire.i = interopRequireDefault;
-  }
-
-  if (__FARM_ENABLE_IMPORT_ALL_HELPER__) {
-    // `import * as xx` helper, copied from @swc/helper
-    farmRequire._g = getRequireWildcardCache;
-    // `import * as xx` helper, copied from @swc/helper
-    farmRequire.w = interopRequireWildcard;
-  }
-
-  if (__FARM_IMPORT_EXPORT_FROM_HELPER__) {
-    farmRequire._ = defineExportFrom;
-  }
-
-  if (__FARM_ENABLE_IMPORT_DEFAULT_HELPER__) {
-    farmRequire.f = importDefault;
+  const id = '@farm-runtime/module-helper';
+  // Preserve existing cached exports when initializing helpers on a shared host.
+  if (!ms.c()[id]) {
+    ms.c()[id] = { id, exports: { defineExportStar } };
   }
 }
 
