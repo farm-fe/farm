@@ -26,68 +26,6 @@ pub struct FarmPluginResolve {
   dedupe: HashSet<String>,
 }
 
-#[cfg(test)]
-mod hmr_external_tests {
-  use super::*;
-  use farmfe_core::config::config_regex::ConfigRegex;
-  use std::{sync::Arc, time::SystemTime};
-
-  #[test]
-  fn hmr_files_are_internal_even_when_their_project_path_matches_external() {
-    let root = std::env::temp_dir().join(format!(
-      "farm-vue-external-{}-{}",
-      std::process::id(),
-      SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos()
-    ));
-    std::fs::create_dir_all(&root).unwrap();
-    let file = root.join("index.css");
-    std::fs::write(&file, "body { color: red }").unwrap();
-    let config = Config {
-      root: root.to_string_lossy().replace('\\', "/"),
-      external: vec![ConfigRegex::new("vue")],
-      ..Default::default()
-    };
-    let plugin = FarmPluginResolve::new(&config);
-    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
-    let result = plugin
-      .resolve(
-        &PluginResolveHookParam {
-          source: file.to_string_lossy().to_string(),
-          importer: None,
-          kind: ResolveKind::HmrUpdate,
-        },
-        &context,
-        &PluginHookContext::default(),
-      )
-      .unwrap()
-      .unwrap();
-    assert!(
-      !result.external,
-      "existing HMR roots must keep their graph identity"
-    );
-    let external = plugin
-      .resolve(
-        &PluginResolveHookParam {
-          source: "vue".into(),
-          importer: None,
-          kind: ResolveKind::Import,
-        },
-        &context,
-        &PluginHookContext::default(),
-      )
-      .unwrap()
-      .unwrap();
-    assert!(
-      external.external,
-      "normal imports must still honor external patterns"
-    );
-    std::fs::remove_dir_all(root).unwrap();
-  }
-}
-
 impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
@@ -195,5 +133,67 @@ impl Plugin for FarmPluginResolve {
     }
 
     Ok(resolve_result)
+  }
+}
+
+#[cfg(test)]
+mod hmr_external_tests {
+  use super::*;
+  use farmfe_core::config::config_regex::ConfigRegex;
+  use std::{sync::Arc, time::SystemTime};
+
+  #[test]
+  fn hmr_files_are_internal_even_when_their_project_path_matches_external() {
+    let root = std::env::temp_dir().join(format!(
+      "farm-vue-external-{}-{}",
+      std::process::id(),
+      SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let file = root.join("index.css");
+    std::fs::write(&file, "body { color: red }").unwrap();
+    let config = Config {
+      root: root.to_string_lossy().replace('\\', "/"),
+      external: vec![ConfigRegex::new("vue")],
+      ..Default::default()
+    };
+    let plugin = FarmPluginResolve::new(&config);
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    let result = plugin
+      .resolve(
+        &PluginResolveHookParam {
+          source: file.to_string_lossy().to_string(),
+          importer: None,
+          kind: ResolveKind::HmrUpdate,
+        },
+        &context,
+        &PluginHookContext::default(),
+      )
+      .unwrap()
+      .unwrap();
+    assert!(
+      !result.external,
+      "existing HMR roots must keep their graph identity"
+    );
+    let external = plugin
+      .resolve(
+        &PluginResolveHookParam {
+          source: "vue".into(),
+          importer: None,
+          kind: ResolveKind::Import,
+        },
+        &context,
+        &PluginHookContext::default(),
+      )
+      .unwrap()
+      .unwrap();
+    assert!(
+      external.external,
+      "normal imports must still honor external patterns"
+    );
+    std::fs::remove_dir_all(root).unwrap();
   }
 }

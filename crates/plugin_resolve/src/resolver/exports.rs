@@ -311,27 +311,27 @@ fn walk(
     let mut longest: Option<&str> = None;
 
     for key in mapping.keys() {
-      if let Some(cur_longest) = &longest {
-        if key.len() < cur_longest.len() {
-          // do not allow "./" to match if already matched "./foo*" key
-          continue;
-        }
+      if let Some(cur_longest) = &longest
+        && key.len() < cur_longest.len()
+      {
+        // do not allow "./" to match if already matched "./foo*" key
+        continue;
       }
 
       if key.ends_with('/') && entry.starts_with(key) {
         replace = Some(entry[key.len()..].to_string());
         longest = Some(key.as_str());
-      } else if key.len() > 1 {
-        if let Some(tmp) = key.find('*') {
-          // Package map keys are literal strings around a wildcard, not regex.
-          // Require the entire suffix so `.js` cannot match the middle of `.json`.
-          if let Some(matched) = entry
-            .strip_prefix(&key[..tmp])
-            .and_then(|rest| rest.strip_suffix(&key[tmp + 1..]))
-          {
-            replace = Some(matched.to_string());
-            longest = Some(key.as_str());
-          }
+      } else if key.len() > 1
+        && let Some(tmp) = key.find('*')
+      {
+        // Package map keys are literal strings around a wildcard, not regex.
+        // Require the entire suffix so `.js` cannot match the middle of `.json`.
+        if let Some(matched) = entry
+          .strip_prefix(&key[..tmp])
+          .and_then(|rest| rest.strip_suffix(&key[tmp + 1..]))
+        {
+          replace = Some(matched.to_string());
+          longest = Some(key.as_str());
         }
       }
     }
