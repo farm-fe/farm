@@ -605,21 +605,49 @@ mod watch_cache_tests {
     module::Module,
   };
 
+  static NEXT_FIXTURE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
   struct Fixture(PathBuf);
   impl Fixture {
     fn new() -> Self {
-      let root = std::env::temp_dir().join(format!(
-        "farm-watch-cache-{}-{}",
-        std::process::id(),
-        SystemTime::now()
-          .duration_since(SystemTime::UNIX_EPOCH)
-          .unwrap()
-          .as_nanos()
-      ));
-      std::fs::create_dir(&root).unwrap();
-      Self(root)
+      for _ in 0..1024 {
+        let id = NEXT_FIXTURE_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let root =
+          std::env::temp_dir().join(format!("farm-watch-cache-{}-{id}", std::process::id()));
+        match std::fs::create_dir(&root) {
+          Ok(()) => return Self(root),
+          Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+          Err(error) => panic!("Failed to allocate watch-cache fixture: {error}"),
+        }
+      }
+      panic!("Could not allocate a unique watch-cache fixture directory");
     }
   }
+
+  #[test]
+  fn concurrent_fixture_allocations_remain_distinct() {
+    let barrier = Arc::new(std::sync::Barrier::new(8));
+    let workers = (0..8)
+      .map(|_| {
+        let barrier = Arc::clone(&barrier);
+        std::thread::spawn(move || {
+          barrier.wait();
+          Fixture::new()
+        })
+      })
+      .collect::<Vec<_>>();
+    let fixtures = workers
+      .into_iter()
+      .map(|worker| worker.join().unwrap())
+      .collect::<Vec<_>>();
+    let roots = fixtures
+      .iter()
+      .map(|fixture| &fixture.0)
+      .collect::<HashSet<_>>();
+    assert_eq!(roots.len(), 8);
+    assert!(fixtures.iter().all(|fixture| fixture.0.is_dir()));
+  }
+
   impl Drop for Fixture {
     fn drop(&mut self) {
       let _ = std::fs::remove_dir_all(&self.0);

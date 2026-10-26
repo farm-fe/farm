@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{Config, OutputConfig, TargetEnv},
@@ -60,13 +60,8 @@ fn resolve_imports_deep() {
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
-        resolved.resolved_path,
-        cwd
-          .join("vendor")
-          .join("ansi-styles")
-          .join("index.js")
-          .to_string_lossy()
-          .to_string()
+        PathBuf::from(resolved.resolved_path),
+        cwd.join("vendor").join("ansi-styles").join("index.js")
       );
     }
   );
@@ -125,15 +120,13 @@ fn resolve_imports_replace_deps() {
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
       assert_eq!(
-        resolved.resolved_path,
+        PathBuf::from(resolved.resolved_path),
         cwd
           .parent()
           .unwrap()
           .to_path_buf()
           .join("execa")
           .join("index.js")
-          .to_string_lossy()
-          .to_string()
       );
     }
   );
