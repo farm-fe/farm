@@ -163,10 +163,10 @@ impl<'a> VisitMut for RenameVisitor<'a> {
   }
 
   fn visit_mut_named_export(&mut self, node: &mut farmfe_core::swc_ecma_ast::NamedExport) {
-    if node.src.is_none() {
-      if let Some(source_module_id) = self.source_module_id {
-        node.src = Some(Box::new(source_module_id.to_string().into()));
-      }
+    if node.src.is_none()
+      && let Some(source_module_id) = self.source_module_id
+    {
+      node.src = Some(Box::new(source_module_id.to_string().into()));
     }
 
     node.visit_mut_children_with(self);
@@ -212,17 +212,17 @@ impl<'a> VisitMut for RenameVisitor<'a> {
   }
 
   fn visit_mut_prop(&mut self, n: &mut farmfe_core::swc_ecma_ast::Prop) {
-    if let Prop::Shorthand(m) = n {
-      if let Some(new_name) = self.get_renamed_ident(m) {
-        *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
-          key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
-            span: DUMMY_SP,
-            sym: m.sym.as_str().into(),
-          }),
-          value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(new_name.sym.into())),
-        });
-        return;
-      }
+    if let Prop::Shorthand(m) = n
+      && let Some(new_name) = self.get_renamed_ident(m)
+    {
+      *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
+        key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
+          span: DUMMY_SP,
+          sym: m.sym.as_str().into(),
+        }),
+        value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(new_name.sym.into())),
+      });
+      return;
     }
 
     n.visit_mut_children_with(self);

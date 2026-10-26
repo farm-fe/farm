@@ -105,78 +105,77 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
   let is_namespace_import = is_namespace_import_stmt(statement);
 
   // if the external module has been imported, we should reuse the import statement to avoid duplicate imports
-  if !is_namespace_import {
-    if let Some(preserved_item) = find_preserved_import_named_stmt(strip_context, source_module_id)
-    {
-      for sp in &statement.import_info.as_ref().unwrap().specifiers {
-        if let Some((existing_ident, sp_ident)) =
-          get_imported_external_ident(&preserved_item.import_item, sp)
-        {
-          // rename the imported ident to the unique name
-          let renamed_ident = rename_handler
-            .get_renamed_ident(source_module_id, &existing_ident)
-            .unwrap_or(existing_ident.clone());
+  if !is_namespace_import
+    && let Some(preserved_item) = find_preserved_import_named_stmt(strip_context, source_module_id)
+  {
+    for sp in &statement.import_info.as_ref().unwrap().specifiers {
+      if let Some((existing_ident, sp_ident)) =
+        get_imported_external_ident(&preserved_item.import_item, sp)
+      {
+        // rename the imported ident to the unique name
+        let renamed_ident = rename_handler
+          .get_renamed_ident(source_module_id, &existing_ident)
+          .unwrap_or(existing_ident.clone());
 
-          rename_handler.rename_ident(module_id.clone(), sp_ident, renamed_ident.clone());
-        } else {
-          // push the ident to existing import decl and rename it
-          let import_decl = preserved_item
-            .import_item
-            .as_mut_module_decl()
-            .unwrap()
-            .as_mut_import()
-            .unwrap();
-          let new_sp = match sp {
-            ImportSpecifierInfo::Namespace(_) => {
-              unreachable!("Namespace should be in a separate import")
-            }
-            ImportSpecifierInfo::Named { local, imported } => {
-              rename_handler.rename_ident_if_conflict(module_id, local);
-              let renamed_ident = rename_handler.get_renamed_ident(module_id, local);
+        rename_handler.rename_ident(module_id.clone(), sp_ident, renamed_ident.clone());
+      } else {
+        // push the ident to existing import decl and rename it
+        let import_decl = preserved_item
+          .import_item
+          .as_mut_module_decl()
+          .unwrap()
+          .as_mut_import()
+          .unwrap();
+        let new_sp = match sp {
+          ImportSpecifierInfo::Namespace(_) => {
+            unreachable!("Namespace should be in a separate import")
+          }
+          ImportSpecifierInfo::Named { local, imported } => {
+            rename_handler.rename_ident_if_conflict(module_id, local);
+            let renamed_ident = rename_handler.get_renamed_ident(module_id, local);
 
-              if let Some(renamed_ident) = renamed_ident {
-                ImportSpecifier::Named(ImportNamedSpecifier {
-                  span: DUMMY_SP,
-                  local: Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
-                  imported: imported
-                    .as_ref()
-                    .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt())))
-                    .or(Some(ModuleExportName::Ident(Ident::new(
-                      local.sym.clone(),
-                      DUMMY_SP,
-                      local.ctxt(),
-                    )))),
-                  is_type_only: false,
-                })
-              } else {
-                ImportSpecifier::Named(ImportNamedSpecifier {
-                  span: DUMMY_SP,
-                  local: Ident::new(local.sym.clone(), DUMMY_SP, local.ctxt()),
-                  imported: imported.as_ref().map(|i| {
-                    ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt()))
-                  }),
-                  is_type_only: false,
-                })
-              }
-            }
-            ImportSpecifierInfo::Default(swc_id) => {
-              rename_handler.rename_ident_if_conflict(module_id, swc_id);
-              let renamed_ident = rename_handler
-                .get_renamed_ident(module_id, swc_id)
-                .unwrap_or(swc_id.clone());
-              let local = Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt());
-              ImportSpecifier::Default(ImportDefaultSpecifier {
+            if let Some(renamed_ident) = renamed_ident {
+              ImportSpecifier::Named(ImportNamedSpecifier {
                 span: DUMMY_SP,
-                local,
+                local: Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
+                imported: imported
+                  .as_ref()
+                  .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt())))
+                  .or(Some(ModuleExportName::Ident(Ident::new(
+                    local.sym.clone(),
+                    DUMMY_SP,
+                    local.ctxt(),
+                  )))),
+                is_type_only: false,
+              })
+            } else {
+              ImportSpecifier::Named(ImportNamedSpecifier {
+                span: DUMMY_SP,
+                local: Ident::new(local.sym.clone(), DUMMY_SP, local.ctxt()),
+                imported: imported
+                  .as_ref()
+                  .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt()))),
+                is_type_only: false,
               })
             }
-          };
-          import_decl.specifiers.push(new_sp);
-        }
+          }
+          ImportSpecifierInfo::Default(swc_id) => {
+            rename_handler.rename_ident_if_conflict(module_id, swc_id);
+            let renamed_ident = rename_handler
+              .get_renamed_ident(module_id, swc_id)
+              .unwrap_or(swc_id.clone());
+            let local = Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt());
+            ImportSpecifier::Default(ImportDefaultSpecifier {
+              span: DUMMY_SP,
+              local,
+            })
+          }
+        };
+        import_decl.specifiers.push(new_sp);
       }
-
-      return;
     }
+
+    return;
   }
 
   if let Some(preserved_item) = strip_context

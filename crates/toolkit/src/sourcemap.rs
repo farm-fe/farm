@@ -398,10 +398,10 @@ pub fn lookup_token<'a>(map: &'a SourceMap, line: u32, col: u32) -> Option<Token
     if line > 0 && token.get_dst_line() == line - 1 && token.get_dst_col() > 0 {
       let next_token = map.lookup_token(line + 1, 0);
 
-      if let Some(next_token) = next_token {
-        if next_token.get_dst_line() == line {
-          return Some(next_token);
-        }
+      if let Some(next_token) = next_token
+        && next_token.get_dst_line() == line
+      {
+        return Some(next_token);
       }
     }
   }

@@ -1,7 +1,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use crate::script::{
-  analyze_statement::statement_info::AnalyzedStatementInfo, parse_module, ParseScriptModuleResult,
+  ParseScriptModuleResult, analyze_statement::statement_info::AnalyzedStatementInfo, parse_module,
 };
 use farmfe_core::{
   module::meta_data::script::statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
@@ -543,10 +543,10 @@ fn export_var_decl_pat() {
   assert!(export_info.is_some());
   let mut export_info = export_info.unwrap();
   export_info.specifiers.sort_by(|a, b| {
-    if let ExportSpecifierInfo::Named { local: a, .. } = a {
-      if let ExportSpecifierInfo::Named { local: b, .. } = b {
-        return print_id(a).cmp(&print_id(b));
-      }
+    if let ExportSpecifierInfo::Named { local: a, .. } = a
+      && let ExportSpecifierInfo::Named { local: b, .. } = b
+    {
+      return print_id(a).cmp(&print_id(b));
     }
     unreachable!();
   });

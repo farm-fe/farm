@@ -16,6 +16,36 @@ pub struct RequireVisitor<'a> {
   pub external_modules: HashMap<(String, ResolveKind), ModuleId>,
 }
 
+impl VisitMut for RequireVisitor<'_> {
+  fn visit_mut_call_expr(&mut self, call: &mut CallExpr) {
+    call.visit_mut_children_with(self);
+    if !matches!(&call.callee, Callee::Expr(box Expr::Ident(ident))
+      if ident.sym == "require" && ident.ctxt.outer() == self.unresolved_mark)
+      || call.args.len() != 1
+      || call.args[0].spread.is_some()
+    {
+      return;
+    }
+    let Expr::Lit(Lit::Str(source)) = &mut *call.args[0].expr else {
+      return;
+    };
+    let Some(target) = self.module_graph.get_dep_by_source_optional(
+      self.module_id,
+      &source.value.to_string_lossy(),
+      Some(ResolveKind::Require),
+    ) else {
+      return;
+    };
+    // This internal key is consumed by SourceReplacer, never emitted as a URL.
+    let key = format!("\0farm:concatenated-require:{}", target.to_string());
+    source.value = key.clone().into();
+    source.raw = None;
+    self
+      .external_modules
+      .insert((key, ResolveKind::Require), target);
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -97,35 +127,5 @@ mod tests {
       let (_, mappings) = rewrite("entry.js", "dep.cjs", source);
       assert!(mappings.is_empty(), "{source}");
     }
-  }
-}
-
-impl VisitMut for RequireVisitor<'_> {
-  fn visit_mut_call_expr(&mut self, call: &mut CallExpr) {
-    call.visit_mut_children_with(self);
-    if !matches!(&call.callee, Callee::Expr(box Expr::Ident(ident))
-      if ident.sym == "require" && ident.ctxt.outer() == self.unresolved_mark)
-      || call.args.len() != 1
-      || call.args[0].spread.is_some()
-    {
-      return;
-    }
-    let Expr::Lit(Lit::Str(source)) = &mut *call.args[0].expr else {
-      return;
-    };
-    let Some(target) = self.module_graph.get_dep_by_source_optional(
-      self.module_id,
-      &source.value.to_string_lossy(),
-      Some(ResolveKind::Require),
-    ) else {
-      return;
-    };
-    // This internal key is consumed by SourceReplacer, never emitted as a URL.
-    let key = format!("\0farm:concatenated-require:{}", target.to_string());
-    source.value = key.clone().into();
-    source.raw = None;
-    self
-      .external_modules
-      .insert((key, ResolveKind::Require), target);
   }
 }

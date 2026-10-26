@@ -155,52 +155,6 @@ pub(crate) fn create_var_namespace_item(
   }))))
 }
 
-#[cfg(test)]
-mod namespace_tests {
-  use super::*;
-  use farmfe_core::swc_common::{GLOBALS, Globals};
-
-  #[test]
-  fn hybrid_esm_namespace_retains_live_external_default_reexport() {
-    GLOBALS.set(&Globals::new(), || {
-      let external_id: ModuleId = "external-package".into();
-      let bridge_id: ModuleId = "bridge.js".into();
-      let original = SwcId::new("external_default".into(), 0);
-      let mut renames = TopLevelIdentsRenameHandler::default();
-      renames.rename_ident(
-        external_id.clone(),
-        original.clone(),
-        SwcId::new("bound_default".into(), 0),
-      );
-      let exports = HashMap::from_iter([(
-        "default".into(),
-        ModuleExportIdent::new(external_id, original, ModuleExportIdentType::External),
-      )]);
-      let item = create_var_namespace_item(&bridge_id, &exports, &HashSet::default(), &renames);
-      let ModuleItem::Stmt(Stmt::Decl(Decl::Var(declaration))) = item else {
-        panic!("Expected namespace variable");
-      };
-      let Some(box Expr::Object(namespace)) = &declaration.decls[0].init else {
-        panic!("Expected namespace object");
-      };
-      let getter = namespace.props.iter().find_map(|property| match property {
-        PropOrSpread::Prop(box Prop::Getter(getter))
-          if matches!(&getter.key, PropName::Ident(name) if name.sym == "default") =>
-        {
-          Some(getter)
-        }
-        _ => None,
-      });
-      let getter = getter.expect("External default must be exposed as a live namespace getter");
-      assert!(matches!(
-        &getter.body.as_ref().unwrap().stmts[0],
-        Stmt::Return(ReturnStmt { arg: Some(box Expr::Ident(ident)), .. })
-          if ident.sym == "bound_default"
-      ));
-    });
-  }
-}
-
 /// Get the filename from the module id. Replace all non-alphanumeric characters with `_`.
 /// For example, `/root/a/b/c.js` will be `c_js` and `a.js` will be `a_js`.
 pub fn get_filename(module_id: &ModuleId) -> String {
@@ -414,17 +368,15 @@ pub fn should_add_namespace_ident(
   // }
   // ```
   // if module is used by export * as or import * as or import('...')
-  let should_add_export_namespace_item =
-    if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
-      let module_export_ident = module_export_ident.as_internal();
-      // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
-      module_export_ident.ident == create_export_namespace_ident(module_id).to_id().into()
-        && module_export_ident.module_id == *module_id
-    } else {
-      false
-    };
 
-  should_add_export_namespace_item
+  if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
+    let module_export_ident = module_export_ident.as_internal();
+    // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
+    module_export_ident.ident == create_export_namespace_ident(module_id).to_id().into()
+      && module_export_ident.module_id == *module_id
+  } else {
+    false
+  }
 }
 
 pub fn create_bin_expr(mut exprs: Vec<Expr>, op: BinaryOp) -> Expr {
@@ -452,4 +404,50 @@ pub fn create_member_expr(ident: &SwcId, prop: &str) -> Expr {
     ))),
     prop: MemberProp::Ident(IdentName::new(prop.into(), DUMMY_SP)),
   })
+}
+
+#[cfg(test)]
+mod namespace_tests {
+  use super::*;
+  use farmfe_core::swc_common::{GLOBALS, Globals};
+
+  #[test]
+  fn hybrid_esm_namespace_retains_live_external_default_reexport() {
+    GLOBALS.set(&Globals::new(), || {
+      let external_id: ModuleId = "external-package".into();
+      let bridge_id: ModuleId = "bridge.js".into();
+      let original = SwcId::new("external_default".into(), 0);
+      let mut renames = TopLevelIdentsRenameHandler::default();
+      renames.rename_ident(
+        external_id.clone(),
+        original.clone(),
+        SwcId::new("bound_default".into(), 0),
+      );
+      let exports = HashMap::from_iter([(
+        "default".into(),
+        ModuleExportIdent::new(external_id, original, ModuleExportIdentType::External),
+      )]);
+      let item = create_var_namespace_item(&bridge_id, &exports, &HashSet::default(), &renames);
+      let ModuleItem::Stmt(Stmt::Decl(Decl::Var(declaration))) = item else {
+        panic!("Expected namespace variable");
+      };
+      let Some(box Expr::Object(namespace)) = &declaration.decls[0].init else {
+        panic!("Expected namespace object");
+      };
+      let getter = namespace.props.iter().find_map(|property| match property {
+        PropOrSpread::Prop(box Prop::Getter(getter))
+          if matches!(&getter.key, PropName::Ident(name) if name.sym == "default") =>
+        {
+          Some(getter)
+        }
+        _ => None,
+      });
+      let getter = getter.expect("External default must be exposed as a live namespace getter");
+      assert!(matches!(
+        &getter.body.as_ref().unwrap().stmts[0],
+        Stmt::Return(ReturnStmt { arg: Some(box Expr::Ident(ident)), .. })
+          if ident.sym == "bound_default"
+      ));
+    });
+  }
 }

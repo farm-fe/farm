@@ -154,10 +154,10 @@ impl SpanUpdater<'_> {
     let index = self
       .ranges
       .partition_point(|(start, _, _)| *start <= position);
-    if let Some((start, end, destination)) = index.checked_sub(1).map(|index| self.ranges[index]) {
-      if position <= end {
-        return BytePos(destination.0 + position.0 - start.0);
-      }
+    if let Some((start, end, destination)) = index.checked_sub(1).map(|index| self.ranges[index])
+      && position <= end
+    {
+      return BytePos(destination.0 + position.0 - start.0);
     }
     position
   }
