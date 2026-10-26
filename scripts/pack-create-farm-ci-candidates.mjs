@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {execFileSync, spawnSync} from 'node:child_process';
+import {assertReviewedCandidatePackHooks} from './candidate-pack-hooks.mjs';
 const [rootArg, outArg, pnpmArg, abi, ...templates] = process.argv.slice(2);
 const root=path.resolve(rootArg), out=path.resolve(outArg), pnpm=path.resolve(pnpmArg);
 if (!/^(linux-x64-gnu|darwin-arm64|win32-x64-msvc)$/.test(abi) || !templates.length) throw Error('Explicit supported CI ABI and templates required');
@@ -33,8 +34,8 @@ function command(args,cwd,log){const fd=fs.openSync(log,'wx');let result;try{res
 function pack(dir,name){const destination=path.join(out,'packs',name.replace(/[@/]/g,'_'));fs.mkdirSync(destination,{recursive:true});command([pnpm,'pack','--pack-destination',destination],dir,path.join(destination,'pack.log'));const files=fs.readdirSync(destination).filter(f=>f.endsWith('.tgz'));if(files.length!==1)throw Error('Expected one normal pack');const archive=path.join(destination,files[0]),manifest=JSON.parse(execFileSync('tar',['-xOf',archive,'package/package.json'],{encoding:'utf8'}));if(manifest.name!==name)throw Error('Wrong packed package');for(const section of ['dependencies','devDependencies','optionalDependencies','peerDependencies'])for(const [dep,spec] of Object.entries(manifest[section]??{}))if(spec.startsWith('workspace:'))throw Error('Unconverted workspace reference '+dep);return{name,version:manifest.version,archive,sha256:hash(archive),manifest};}
 try{
   for(const name of selected){const row=workspace.get(name),manifestFile=path.join(row.dir,'package.json');
-    // npm/pnpm pack never calls prepublishOnly. Reject any additional pack hook pending review.
-    for(const hook of ['prepack','postpack','prepare'])if(row.manifest.scripts?.[hook])throw Error('Review candidate pack hook: '+name+'/'+hook);
+    // npm/pnpm pack never calls prepublishOnly. Other hooks require exact source review.
+    assertReviewedCandidatePackHooks(row.dir, row.manifest);
     const packed=pack(row.dir,name);if(packed.version!==row.manifest.version)throw Error('Version drift');packed.sourceManifestSha256=hash(manifestFile);state.roots.push(packed);save();
     const platformDir=path.join(row.dir,'npm',abi);
     if(!fs.existsSync(platformDir))continue;
