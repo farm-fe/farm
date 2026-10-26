@@ -103,14 +103,17 @@ async function withFileEdits(edits, run) {
   }
 }
 
-async function waitForStyle(page, selector, property, expected) {
+export async function waitForStyle(page, selector, property, expected) {
   const deadline = Date.now() + hmrTimeout;
   let actual = '';
 
   while (Date.now() < deadline) {
     actual = await page
       .$eval(selector, (element, property) => getComputedStyle(element)[property], property)
-      .catch(() => '');
+      .catch((error) => {
+        if (page.isClosed()) throw error;
+        return '';
+      });
     if (actual === expected) return;
     await delay(hmrPollInterval);
   }
@@ -118,12 +121,15 @@ async function waitForStyle(page, selector, property, expected) {
   throw new Error(`Expected ${selector} ${property} to be ${expected}, got ${actual}`);
 }
 
-async function waitForText(page, selector, expected) {
+export async function waitForText(page, selector, expected) {
   const deadline = Date.now() + hmrTimeout;
   let actual = '';
 
   while (Date.now() < deadline) {
-    actual = await page.textContent(selector).catch(() => '');
+    actual = await page.textContent(selector).catch((error) => {
+      if (page.isClosed()) throw error;
+      return '';
+    });
     if (actual?.includes(expected)) return;
     await delay(hmrPollInterval);
   }
