@@ -84,28 +84,24 @@ function farmRegister(id, module) {
 ; // module_id: ae1b52c0
 function initModuleSystem(ms) {
     const farmRequire = ms.r;
-    {
-        farmRequire.o = exportByDefineProperty;
-        // exports.xx = xx
-        farmRequire.d = defineExport;
-        // exports.__esModule
-        farmRequire._m = defineExportEsModule;
-    }
-    {
-        // `import xxx from` helper
-        farmRequire.i = interopRequireDefault;
-    }
-    {
-        // `import * as xx` helper, copied from @swc/helper
-        farmRequire._g = getRequireWildcardCache;
-        // `import * as xx` helper, copied from @swc/helper
-        farmRequire.w = interopRequireWildcard;
-    }
-    {
-        farmRequire._ = defineExportFrom;
-    }
-    {
-        farmRequire.f = importDefault;
+    farmRequire.o = exportByDefineProperty;
+    farmRequire.d = defineExport;
+    farmRequire._m = defineExportEsModule;
+    farmRequire._e = defineExportStar;
+    farmRequire.i = interopRequireDefault;
+    farmRequire._g = getRequireWildcardCache;
+    farmRequire.w = interopRequireWildcard;
+    farmRequire._ = defineExportFrom;
+    farmRequire.f = importDefault;
+    const id = '@farm-runtime/module-helper';
+    // Preserve existing cached exports when initializing helpers on a shared host.
+    if (!ms.c()[id]) {
+        ms.c()[id] = {
+            id,
+            exports: {
+                defineExportStar
+            }
+        };
     }
 }
 function exportByDefineProperty(to, to_k, get) {
@@ -128,6 +124,18 @@ function defineExportEsModule(to) {
     Object.defineProperty(to, key, {
         value: true
     });
+}
+function defineExportStar(to, from) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                value: from[k],
+                enumerable: true,
+                configurable: true
+            });
+        }
+    });
+    return from;
 }
 function interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {

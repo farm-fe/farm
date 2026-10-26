@@ -423,40 +423,24 @@ function clearCache(moduleId) {
 ; // module_id: @farmfe/runtime/src/modules/module-helper.ts.farm-runtime
 function initModuleSystem$2(ms) {
     const farmRequire = ms.r;
-    {
-        farmRequire.o = exportByDefineProperty;
-        // exports.xx = xx
-        farmRequire.d = defineExport;
-        // exports.__esModule
-        farmRequire._m = defineExportEsModule;
-    }
-    {
-        // `export * from` helper
-        farmRequire._e = defineExportStar;
-        // inject defineExportStar to module system
-        const id = '@farm-runtime/module-helper';
+    farmRequire.o = exportByDefineProperty;
+    farmRequire.d = defineExport;
+    farmRequire._m = defineExportEsModule;
+    farmRequire._e = defineExportStar;
+    farmRequire.i = interopRequireDefault;
+    farmRequire._g = getRequireWildcardCache;
+    farmRequire.w = interopRequireWildcard;
+    farmRequire._ = defineExportFrom;
+    farmRequire.f = importDefault;
+    const id = '@farm-runtime/module-helper';
+    // Preserve existing cached exports when initializing helpers on a shared host.
+    if (!ms.c()[id]) {
         ms.c()[id] = {
             id,
             exports: {
                 defineExportStar
             }
         };
-    }
-    {
-        // `import xxx from` helper
-        farmRequire.i = interopRequireDefault;
-    }
-    {
-        // `import * as xx` helper, copied from @swc/helper
-        farmRequire._g = getRequireWildcardCache;
-        // `import * as xx` helper, copied from @swc/helper
-        farmRequire.w = interopRequireWildcard;
-    }
-    {
-        farmRequire._ = defineExportFrom;
-    }
-    {
-        farmRequire.f = importDefault;
     }
 }
 function exportByDefineProperty(to, to_k, get) {
