@@ -888,3 +888,92 @@ fn config_hook_preserves_user_defines() {
     Some(&farmfe_core::serde_json::Value::Bool(false))
   );
 }
+
+#[test]
+fn narrowed_root_relative_virtual_updates_resolve_against_compilation_root() {
+  for (name, first, second) in [
+    (
+      "relative-css",
+      r#"<template><p>same</p></template><style>p{color:red}</style>"#,
+      r#"<template><p>same</p></template><style>p{color:blue}</style>"#,
+    ),
+    (
+      "relative-scoped",
+      r#"<template><p>same</p></template><style scoped>p{color:red}</style>"#,
+      r#"<template><p>same</p></template><style scoped>p{color:blue}</style>"#,
+    ),
+    (
+      "relative-custom",
+      r#"<template><p>same</p></template><i18n>{"hello":"before"}</i18n>"#,
+      r#"<template><p>same</p></template><i18n>{"hello":"after"}</i18n>"#,
+    ),
+  ] {
+    let path = write_temp_vue(name, first);
+    let mut config = Config::default();
+    config.root = std::path::Path::new(&path)
+      .parent()
+      .expect("fixture parent")
+      .to_string_lossy()
+      .into_owned();
+    let plugin = FarmPluginVue::new(&config, String::new());
+    let context = Arc::new(CompilationContext::new(config, vec![]).expect("context"));
+    let module_id = "Component.vue";
+    plugin
+      .transform(
+        &PluginTransformHookParam {
+          module_id: module_id.to_string(),
+          content: first.to_string(),
+          module_type: ModuleType::Custom("vue".to_string()),
+          resolved_path: &path,
+          query: vec![],
+          meta: Default::default(),
+          source_map_chain: vec![],
+        },
+        &context,
+      )
+      .expect("transform")
+      .expect("SFC transformed");
+    let before = plugin
+      .cached_descriptor_for_test(module_id)
+      .expect("descriptor");
+    let virtual_id = before
+      .styles
+      .first()
+      .map(|s| s.virtual_id.clone())
+      .or_else(|| before.custom_blocks.first().map(|b| b.virtual_id.clone()))
+      .expect("virtual block");
+    assert!(virtual_id.starts_with("Component.vue?"));
+    std::fs::write(&path, second).expect("update fixture");
+    let mut params = PluginUpdateModulesHookParam {
+      paths: vec![(path.clone(), UpdateType::Updated)],
+    };
+    plugin
+      .update_modules(&mut params, &context)
+      .expect("update");
+    assert_eq!(params.paths.len(), 1);
+    let (resolved, query) = params.paths[0]
+      .0
+      .split_once('?')
+      .expect("virtual query preserved");
+    assert!(
+      std::path::Path::new(resolved).is_absolute(),
+      "standalone HMR update must resolve without an importer: {}",
+      params.paths[0].0
+    );
+    assert_eq!(resolved.replace('\\', "/"), path.replace('\\', "/"));
+    assert_eq!(query, virtual_id.split_once('?').expect("old query").1);
+    let after = plugin
+      .cached_descriptor_for_test(module_id)
+      .expect("updated descriptor");
+    let after_id = after
+      .styles
+      .first()
+      .map(|s| s.virtual_id.as_str())
+      .or_else(|| after.custom_blocks.first().map(|b| b.virtual_id.as_str()))
+      .expect("same block");
+    assert_eq!(
+      after_id, virtual_id,
+      "registry ID and scope hash must remain stable"
+    );
+  }
+}

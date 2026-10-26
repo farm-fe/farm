@@ -22,7 +22,7 @@ use farmfe_core::{
   config::{Config, Mode},
   context::CompilationContext,
   error::CompilationError,
-  module::ModuleType,
+  module::{ModuleId, ModuleType},
   plugin::{
     Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginTransformHookParam,
     PluginTransformHookResult, PluginUpdateModulesHookParam, UpdateType,
@@ -600,7 +600,7 @@ impl Plugin for FarmPluginVue {
   fn update_modules(
     &self,
     params: &mut PluginUpdateModulesHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut next_paths = Vec::with_capacity(params.paths.len());
 
@@ -671,11 +671,13 @@ impl Plugin for FarmPluginVue {
       self.register_compiled_sfc(&module_id, &path, &compiled);
 
       if let Some(updates) = narrowed_updates {
-        next_paths.extend(
-          updates
-            .into_iter()
-            .map(|virtual_id| (virtual_id, UpdateType::Updated)),
-        );
+        next_paths.extend(updates.into_iter().map(|virtual_id| {
+          // Standalone updates have no importer; keep registry IDs relative,
+          // but resolve update paths against the same compilation root.
+          let resolved =
+            ModuleId::from(virtual_id.as_str()).resolved_path_with_query(&context.config.root);
+          (resolved, UpdateType::Updated)
+        }));
       } else {
         next_paths.push((fallback_update_path, update_type));
       }
