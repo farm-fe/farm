@@ -6,6 +6,11 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 export const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+export function cachedArchiveName(file) {
+  const match = /^([a-zA-Z0-9_-]+)-(\d+\.\d+\.\d+[-+a-zA-Z0-9.]*)\.crate$/.exec(file);
+  if (!match) throw new Error('Unexpected cached archive name');
+  return { name: match[1], version: match[2] };
+}
 export function indexPath(name) {
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Invalid crate name');
   name = name.toLowerCase();
@@ -35,9 +40,7 @@ export function materializeRegistry(cohortDirectory, output, cargoHome = process
   for (const directory of fs.readdirSync(cache).filter(name => name.startsWith('index.crates.io-'))) {
     for (const entry of fs.readdirSync(path.join(cache, directory), { withFileTypes: true })) {
       if (!entry.isFile() || !entry.name.endsWith('.crate')) continue;
-      const match = /^(.*)-(\d+\.\d+\.\d+[-+a-zA-Z0-9.]*)\.crate$/.exec(entry.name);
-      if (!match) throw new Error('Unexpected cached archive name');
-      const [, name, version] = match;
+      const { name, version } = cachedArchiveName(entry.name);
       const file = path.join(indices, directory, '.cache', indexPath(name));
       if (!fs.existsSync(file)) continue;
       const metadata = cachedVersions(fs.readFileSync(file), name).find(row => row.vers === version);
