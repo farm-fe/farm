@@ -28,6 +28,13 @@ assert.equal(hashText(path.join(root, macro.log)), macro.logSha256, 'Macro test 
 assert.match(fs.readFileSync(path.join(root, macro.log), 'utf8'), /test result: ok\. 2 passed; 0 failed/);
 const macroLock = fs.readFileSync(path.join(root, 'scripts/release-fixtures/macro-consumer/Cargo.lock'), 'utf8');
 assert.match(macroLock, /name = "farmfe_macro_cache_item"\s+version = "2\.1\.0"\s+source = "registry\+https:\/\/github\.com\/rust-lang\/crates\.io-index"\s+checksum = "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502"/);
+const pluginMacro = JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence/published-plugin-macro-compat.json')));
+assert.equal(pluginMacro.registryPackage.name, 'farmfe_macro_plugin');
+assert.equal(pluginMacro.registryPackage.version, '2.0.0');
+assert.equal(pluginMacro.registryPackage.sha256, '59ac048afc3bfcba0cefe8bbb25e1cdb2e266945094975a95fd9998fd80ae9a2');
+for (const file of pluginMacro.fixtureFiles) assert.equal(hashText(path.join(root, file.file)), file.sha256, 'Plugin macro fixture drift');
+assert.equal(hashText(path.join(root, pluginMacro.log)), pluginMacro.logSha256);
+assert.match(fs.readFileSync(path.join(root, pluginMacro.log), 'utf8'), /test result: ok\. 1 passed; 0 failed/);
 const report = { sourceInventory: 'consistent', counts: plan.counts, publishedMacroContractVerified: true, candidateArchivesVerified: false, externalSdkVerified: false, publishedRustCoreVerified: false, readyToPublish: false, pending: [] };
 const preFile = path.join(root, '.changeset/pre.json');
 const pendingChangesets = fs.readdirSync(path.join(root, '.changeset')).filter(name => name.endsWith('.md') && name !== 'README.md').length;
