@@ -9,6 +9,21 @@ import { createHash } from 'node:crypto';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packages = ['packages/core', 'rust-plugins/sass', 'rust-plugins/svgr', 'rust-plugins/tailwindcss'];
 
+test('Docs and MDX platform archives retain every existing owner notice verbatim', async () => {
+  for (const name of ['docs', 'docs-seo', 'docs-snapshot', 'docs-snippets', 'mdx', 'syntax-highlight']) {
+    const owner = path.join(root, 'rust-plugins', name);
+    const legal = ['LICENSE', 'THIRD_PARTY_NOTICES.md', ...(await fs.readdir(path.join(owner, 'licenses'))).map(file => `licenses/${file}`)];
+    for (const platform of await fs.readdir(path.join(owner, 'npm'))) {
+      const directory = path.join(owner, 'npm', platform);
+      const manifest = JSON.parse(await fs.readFile(path.join(directory, 'package.json'), 'utf8'));
+      for (const file of legal) {
+        assert.deepEqual(await fs.readFile(path.join(directory, file)), await fs.readFile(path.join(owner, file)), `${name}/${platform}/${file}`);
+        assert.ok(manifest.files.includes(file.split('/')[0]));
+      }
+    }
+  }
+});
+
 test('all Commerce native plugins retain their own MIT text in standalone platform packages', async () => {
   const names = ['replace-dirname', 'react', 'worker', 'vue', 'vue-jsx', 'wasm', 'virtual', 'url', 'image', 'icons', 'strip', 'modular-import', 'react-components', 'auto-import', 'svgr', 'yaml', 'dsv', 'compress', 'sass', 'mdx', 'tailwindcss', 'dts'];
   for (const name of names) {
