@@ -37,6 +37,25 @@ test('failed child command is visible and timeout terminates the owned child tre
     await assert.rejects(command(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { log: path.join(directory, 'timeout.log'), timeoutMs: 100 }), /timedOut/);
   } finally { await fs.rm(directory, { recursive: true }); }
 });
+
+test('workload fingerprint changes for HTML, adapters and scale inputs, not generated output', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-inputs-'));
+  const lab = path.join(root, 'examples/commerce-lab');
+  try {
+    const inputs = ['index.html', 'adapters/vite.mjs', 'benchmark/scale-profiles.mjs', 'packages/business/index.ts'];
+    for (const file of inputs) { await fs.mkdir(path.dirname(path.join(lab, file)), { recursive: true }); await fs.writeFile(path.join(lab, file), 'original'); }
+    const original = await workloadFingerprint(root, {});
+    for (const file of inputs) {
+      await fs.writeFile(path.join(lab, file), 'mutated');
+      assert.notEqual(await workloadFingerprint(root, {}), original, file);
+      await fs.writeFile(path.join(lab, file), 'original');
+    }
+    for (const file of ['dist/output.js', '.cache/result', 'packages/extensions/baseline/index.ts']) {
+      await fs.mkdir(path.dirname(path.join(lab, file)), { recursive: true }); await fs.writeFile(path.join(lab, file), 'generated');
+    }
+    assert.equal(await workloadFingerprint(root, {}), original);
+  } finally { await fs.rm(root, { recursive: true }); }
+});
 test('performance job is non-blocking, follows Examples and pins artifact names to SHA', async () => {
   const source = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const job = source.split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
@@ -46,6 +65,10 @@ test('performance job is non-blocking, follows Examples and pins artifact names 
   assert.equal((job.match(/os: .*latest/g) ?? []).length, 3);
   assert.doesNotMatch(job, /cargo |pattern:/);
   for (const line of job.split('\n').filter(line => line.trim().startsWith('name:') && line.includes('plugin-'))) assert.ok(line.includes('github.sha'));
+  assert.match(job, /playwright-chromium\/cli.js install --with-deps chromium/);
+  assert.match(source.split('\n  performance-contract-tests:')[1].split('\n  call-rust-build-user:')[0], /node --test scripts\/performance\*\.test\.mjs/);
+  const sampler = await fs.readFile(new URL('./performance-report.mjs', import.meta.url), 'utf8');
+  assert.ok(sampler.indexOf('performance-correctness-worker.mjs') > sampler.indexOf('report.vite.status ='));
 });
 test('setup failure still produces invalid structured evidence', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-evidence-'));

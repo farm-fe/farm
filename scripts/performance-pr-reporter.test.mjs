@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateSummary, verifyIdentity, renderComment, marker, readSummaryZip, report } from './performance-pr-reporter.mjs';
+import { validateSummary, verifyIdentity, renderComment, marker, readSummaryZip, report, findSummaryArtifacts } from './performance-pr-reporter.mjs';
 
 const head = 'a'.repeat(40), base = 'b'.repeat(40);
 const cell = { cacheMode: 'cold', samples: 5, validSamples: 5, medianMs: 100, iqrMs: 10 };
-const fixture = () => ({ schemaVersion: 1, repositoryId: 1, runId: 2, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-baseline-rust-build-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', cells: [cell], comparison: { mode: 'paired', baseCells: [cell], viteCells: [cell], farmSubsetCells: [cell], subsetProtocol: 'commerce-catalog-quote-subset-v1' }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
+const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-baseline-rust-build-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell], comparison: { mode: 'paired', baseCells: [cell], viteCells: [cell], farmSubsetCells: [cell], subsetProtocol: 'commerce-catalog-quote-subset-v1' }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
 const run = { id: 2, repository: { id: 1 }, event: 'pull_request', name: 'E2E Tests', status: 'completed', head_sha: head, head_repository: { id: 9 }, pull_requests: [{ number: 3, head: { sha: head } }] };
 const pr = { number: 3, state: 'open', head: { sha: head, repo: { id: 9 } }, base: { sha: base, repo: { id: 1 } } };
 function zip(text, name = 'summary.json') {
@@ -42,7 +42,7 @@ test('reporter updates the single bot comment and rechecks freshness immediately
   const fetcher = async (url, options = {}) => {
     if (options.method) { writes.push({ url, ...options }); return Response.json({ id: 4 }); }
     if (url.endsWith('/zip')) return new Response(zip(JSON.stringify(fixture())));
-    if (url.includes('/artifacts?')) return Response.json({ artifacts: [{ name: 'performance-pr-summary', id: 5, size_in_bytes: 5000 }] });
+    if (url.includes('/artifacts?')) return Response.json({ artifacts: [{ name: 'performance-pr-summary-1', id: 5, size_in_bytes: 5000 }] });
     if (url.includes('/comments?')) return Response.json([{ id: 4, user: { login: 'github-actions[bot]', type: 'Bot' }, body: marker }]);
     if (url.includes('/pulls/')) { reads++; return Response.json(pr); }
     return Response.json(run);
@@ -56,4 +56,31 @@ test('reporter updates the single bot comment and rechecks freshness immediately
   const newerFetcher = async (url, options) => url.includes('/comments?') ? Response.json([{ id: 4, user: { login: 'github-actions[bot]', type: 'Bot' }, body: `${marker}\n<!-- farm-performance-run:99 -->` }]) : fetcher(url, options);
   const result = await report({ token: 'test', repository: 'farm-fe/farm', event: { workflow_run: { id: 2 }, repository: { id: 1 } }, fetcher: newerFetcher });
   assert.match(result.skipped, /newer/); assert.equal(writes.length, 0);
+});
+
+
+test('summary artifact after 246 native artifacts is found on page three', async () => {
+  const pages = [];
+  const found = await findSummaryArtifacts(async route => {
+    const page = Number(new URL(`https://api.invalid${route}`).searchParams.get('page'));
+    pages.push(page);
+    return { artifacts: page < 3 ? Array.from({ length: 100 }, () => ({ name: 'native' })) : [{ name: 'performance-pr-summary-2', id: 8 }] };
+  }, 2, 2);
+  assert.deepEqual(pages, [1, 2, 3]); assert.equal(found[0].id, 8);
+});
+test('same run new attempt replaces old partial; old attempts cannot overwrite it', async () => {
+  const value = fixture(); value.runAttempt = 2;
+  const writes = [];
+  const fetcher = async (url, options = {}) => {
+    if (options.method) { writes.push(options); return Response.json({ id: 4 }); }
+    if (url.endsWith('/zip')) return new Response(zip(JSON.stringify(value)));
+    if (url.includes('/artifacts?')) return Response.json({ artifacts: [{ name: 'performance-pr-summary-2', id: 5, size_in_bytes: 5000 }] });
+    if (url.includes('/comments?')) return Response.json([{ id: 4, user: { login: 'github-actions[bot]', type: 'Bot' }, body: `${marker}\n<!-- farm-performance-run:2:1 -->` }]);
+    if (url.includes('/pulls/')) return Response.json(pr);
+    return Response.json({ ...run, run_attempt: 2 });
+  };
+  await report({ token: 'test', repository: 'farm-fe/farm', event: { workflow_run: { id: 2 }, repository: { id: 1 } }, fetcher });
+  assert.equal(writes.length, 1);
+  assert.match(JSON.parse(writes[0].body).body, /farm-performance-run:2:2/);
+  assert.throws(() => verifyIdentity(value, { ...run, run_attempt: 3 }, pr, 1), /attempt/);
 });

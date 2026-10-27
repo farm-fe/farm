@@ -45,10 +45,16 @@ export async function workloadFingerprint(sourceRoot, fixture) {
     const stat = await fs.lstat(target);
     if (stat.isSymbolicLink()) throw new Error('Workload source may not contain symlinks');
     if (stat.isDirectory()) {
-      for (const name of (await fs.readdir(target)).sort()) if (!['node_modules', 'extensions', 'dist', '.cache', 'reports'].includes(name)) await visit(path.join(relative, name));
+      for (const name of (await fs.readdir(target)).sort()) {
+        const child = path.join(relative, name).replaceAll('\\', '/');
+        // Hash every copied workload input, including HTML, adapters and scale
+        // profiles. Only outputs/dependencies and regenerated extensions differ.
+        if (['node_modules', 'dist', '.cache', 'reports', '.git'].includes(name) || child === 'packages/extensions') continue;
+        await visit(child);
+      }
     } else { hash.update(relative.replaceAll('\\', '/')).update('\0').update(await fs.readFile(target)).update('\0'); }
   }
-  for (const relative of ['apps', 'packages', 'configs', 'farm.rust.config.ts']) await visit(relative);
+  await visit('');
   return hash.digest('hex');
 }
 async function terminate(child) {
@@ -186,6 +192,14 @@ async function main() {
     report.vite.farmCells = aggregate(report.vite.records.filter(row => row.tool === 'farm')).filter(row => row.cacheMode === 'cold');
     report.vite.viteCells = aggregate(report.vite.records.filter(row => row.tool === 'vite')).filter(row => row.cacheMode === 'cold');
     report.vite.status = report.vite.records.every(row => row.success) ? 'complete' : 'invalid';
+    // Functional equivalence is checked after all timed samples, never charged
+    // to either builder. The existing owned-process timeout also covers Chromium.
+    if (report.vite.status === 'complete') {
+      const correctnessFile = path.join(comparisonRoot, 'correctness.json');
+      await command(process.execPath, [path.join(root, 'scripts/performance-correctness-worker.mjs'), comparisonRoot, correctnessFile], { cwd: root, env: process.env, log, timeoutMs: Math.min(90000, deadline - Date.now()) });
+      report.vite.correctness = JSON.parse(await fs.readFile(correctnessFile, 'utf8'));
+      if (report.vite.correctness.protocol !== COMPARISON_PROTOCOL || report.vite.correctness.status !== 'complete' || !['farm', 'vite'].every(tool => report.vite.correctness.results?.[tool]?.functional === true)) throw new Error('Comparison browser correctness failed');
+    }
     report.history = await loadComparableHistory({ repository: process.env.GITHUB_REPOSITORY, abi: process.env.FARM_PERFORMANCE_ABI, metadata: report.metadata });
     report.status = report.records.every(row => row.success) && (report.comparison.records ?? []).every(row => row.success) && report.vite.status === 'complete' ? 'complete' : 'invalid';
     const nativeAfter = await captureNativeProvenance({ groups: ['rust'] });

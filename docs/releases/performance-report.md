@@ -45,12 +45,24 @@ ES2017 output and minification, with persistent caching disabled for both. One
 warmup plus three alternating scored API builds report median/IQR and emitted
 raw/gzip bytes. This is a common subset, not full Rust Commerce parity. It is
 shown in a separate table and never compared with the full Rust workload timings.
+After the timed samples, each OS opens both built outputs in Chromium and checks
+catalog, category, search, lazy detail, quote, quantity and stock rejection.
+Page/console errors and failed requests invalidate the report. Browser startup
+and correctness checks are outside the timing samples; local mock tests alone
+do not establish that these three-OS browser checks have passed.
 See [the Vite comparison boundary](./vite-comparison.md).
 
 Three platform reports are compacted into a strict bounded JSON envelope. A
 separate default-branch `workflow_run` reporter validates API-confirmed run,
 repository, current PR/head/base and artifact identities before updating one bot
-comment. Old SHAs and older run IDs cannot overwrite a newer result. It checks
+comment. Old SHAs and older run IDs/attempts cannot overwrite a newer result.
+The same run's newer attempt can replace an earlier partial result. Artifact
+lookup is bounded and paginated beyond the native artifact collection. All three
+OS entries remain visible even when a platform report is missing or invalid;
+base/history exclusion reasons are retained rather than silently discarded.
+Workload fingerprints include HTML, adapters, scale profiles and business source.
+An independent three-OS Node test job exercises these reporting contracts.
+It checks
 out only trusted reporter source, never PR code, and does not use
 `pull_request_target`. The reporter must first exist on the default branch;
 local mock tests do not establish that a live PR comment was posted.

@@ -132,7 +132,7 @@ export async function loadComparableHistory({ repository, abi, metadata, workflo
     const prefix = repositoryRoute(repository);
     const runs = (await api(`${prefix}/actions/workflows/${encodeURIComponent(workflow)}/runs?status=success&per_page=20`)).workflow_runs ?? [];
     for (const run of runs.filter(run => trusted(run, repository, workflow) && String(run.id) !== String(currentRunId)).slice(0, Math.min(limit, 10))) {
-      const artifact = (await runArtifacts(api, prefix, run.id)).find(item => new RegExp(`^performance-[a-f0-9]{40}-${abi}$`).test(item.name));
+      const artifact = (await runArtifacts(api, prefix, run.id)).find(item => new RegExp(`^performance-[a-f0-9]{40}-${abi}${(run.run_attempt ?? 1) === 1 ? '(?:-attempt-1)?' : `-attempt-${run.run_attempt}`}$`).test(item.name));
       if (!artifact || artifact.expired) { result.excluded.push({ runId: run.id, reason: artifact ? 'expired' : 'missing' }); continue; }
       try {
         const files = readSafeZip(await api(`${prefix}/actions/artifacts/${artifact.id}/zip`, true));

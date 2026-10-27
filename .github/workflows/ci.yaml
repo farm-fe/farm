@@ -12,6 +12,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  performance-contract-tests:
+    name: Performance report contract (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Validate report, trust, cleanup and comparison contracts
+        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs
+
   call-rust-build-user:
     uses: ./.github/workflows/rust-build-user.yaml
     secrets: inherit
@@ -290,6 +306,8 @@ jobs:
         run: node scripts/performance-evidence.mjs init
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install comparison correctness browser (outside measured samples)
+        run: node node_modules/playwright-chromium/cli.js install --with-deps chromium
       - uses: actions/download-artifact@v4.1.3
         id: download
         with:
@@ -456,7 +474,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: performance-${{ github.sha }}-${{ matrix.settings.abi }}
+          name: performance-${{ github.sha }}-${{ matrix.settings.abi }}-attempt-${{ github.run_attempt }}
           path: performance-results/
           if-no-files-found: warn
           retention-days: 14
@@ -478,14 +496,14 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
-          pattern: performance-${{ github.sha }}-*
+          pattern: performance-${{ github.sha }}-*-attempt-${{ github.run_attempt }}
           path: .performance-reports
       - name: Validate and compact measurements (no artifact code execution)
         run: node scripts/aggregate-performance-reports.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: performance-pr-summary
+          name: performance-pr-summary-${{ github.run_attempt }}
           path: performance-pr-summary/summary.json
           if-no-files-found: warn
           retention-days: 14

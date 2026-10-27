@@ -108,9 +108,11 @@ export async function verifyComparisonBrowser(page, url) {
   const onError = error => errors.push(String(error));
   const onResponse = response => { if (response.status() >= 400) errors.push(`HTTP ${response.status()}: ${response.url()}`); };
   const onRequestFailed = request => errors.push(`Request failed: ${request.url()}`);
+  const onConsole = message => { if (message.type() === 'error') errors.push(`Console error: ${message.text()}`); };
   page.on('pageerror', onError);
   page.on('response', onResponse);
   page.on('requestfailed', onRequestFailed);
+  page.on('console', onConsole);
   try {
     await page.goto(url);
     await page.locator('#count').filter({ hasText: '240 products' }).waitFor();
@@ -134,5 +136,6 @@ export async function verifyComparisonBrowser(page, url) {
     page.off('pageerror', onError);
     page.off('response', onResponse);
     page.off('requestfailed', onRequestFailed);
+    page.off('console', onConsole);
   }
 }
