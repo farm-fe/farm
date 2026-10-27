@@ -41,19 +41,23 @@ const sha='0123456789012345678901234567890123456789';
 const env={...process.env,TRACE:unix(trace),ARTIFACT_POOL:unix(pool),PROBE_SHA:sha,FARM_BUILD_PROFILE:'ci'};
 const receipts=[];
 for(const abi of abis){cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:{...env,FARM_BUILD_ABI:abi},windowsHide:true,encoding:'utf8',timeout:30000});const names=fs.readdirSync(pool).filter(n=>n.startsWith(sha+'-'+abi+'-plugin-')).map(n=>n.slice((sha+'-'+abi+'-plugin-').length)).sort();const expected=[...base,...(supported.has(abi)?docs:[])].sort();assert.deepEqual(names,expected);receipts.push({abi,plugins:names.length,expected:names.length});}
-const workflow=fs.readFileSync(path.join(root,'.github/workflows/release.yaml'),'utf8');
-const block=workflow.match(/      - name: Move Artifacts\r?\n        run: \|\r?\n([\s\S]*?)\r?\n      - name: Install Dependencies/);
-assert.ok(block,'move-artifacts block');
-const assembly='set -eu\n'+block[1].split(/\r?\n/).map(l=>l.startsWith('          ')?l.slice(10):l).join('\n').replaceAll('${{ github.sha }}',sha).replaceAll('/tmp/artifacts/',unix(pool)+'/');
-assert.ok(!assembly.includes('${{'));
-fs.writeFileSync(path.join(fixture,'assemble.sh'),assembly);
-cp.execFileSync(bash,['-n','assemble.sh'],{cwd:fixture,windowsHide:true});
-cp.execFileSync(bash,['assemble.sh'],{cwd:fixture,windowsHide:true,encoding:'utf8',timeout:30000});
+const plan=JSON.parse(fs.readFileSync(path.join(root,'docs/releases/v2-candidate.json'),'utf8'));
+fs.mkdirSync(path.join(fixture,'docs/releases'),{recursive:true});
+fs.writeFileSync(path.join(fixture,'docs/releases/v2-candidate.json'),JSON.stringify(plan));
+for(const pkg of plan.npm.payloads){const dest=path.join(fixture,pkg.manifestPath);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,pkg.manifestPath),dest);}
+const assembler=path.join(root,'scripts/assemble-v2-native-artifacts.mjs');
+const ciWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ci.yaml'),'utf8');
+assert.match(ciWorkflow,/run: node scripts\/assemble-v2-native-artifacts\.mjs \.native-artifacts native-assembly\.json/,'CI must call the tested assembler');
+const args=[assembler,pool,path.join(fixture,'assembly.json'),fixture,sha];
+cp.execFileSync(process.execPath,args,{cwd:fixture,windowsHide:true,encoding:'utf8',timeout:30000});
+const assembly=JSON.parse(fs.readFileSync(path.join(fixture,'assembly.json'),'utf8'));
+assert.equal(assembly.count,plan.npm.payloads.length);
+assert.equal(assembly.sourceCommit,sha);
 const moved=[];
 for(const abi of abis){for(const plugin of [...base,...(supported.has(abi)?docs:[])]){const file=path.join(fixture,'rust-plugins',plugin,'npm',abi,'index.farm');assert.equal(fs.readFileSync(file,'utf8'),abi+'|-plugin-'+plugin+'\n');moved.push(file);}for(const [owner,binary]of [['core','farm'],['create-farm','create-farm']]){const file=path.join(fixture,'packages',owner,'npm',abi,binary+'.'+abi+'.node');assert.ok(fs.existsSync(file));moved.push(file);}}
 for(const file of moved){const rel=path.relative(fixture,file).replaceAll('\\','/');const parts=rel.split('/');const abi=parts.at(-2),owner=parts[1],suffix=parts[0]==='rust-plugins'?'-plugin-'+owner:owner==='core'?'':'-create-farm';const dest=path.join(pool,sha+'-'+abi+suffix,path.basename(file));fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(file,dest);}
 fs.unlinkSync(path.join(pool,sha+'-linux-x64-gnu-plugin-docs-snippets','index.farm'));
-const negative=cp.spawnSync(bash,['assemble.sh'],{cwd:fixture,windowsHide:true,encoding:'utf8',timeout:30000});
+const negative=cp.spawnSync(process.execPath,args,{cwd:fixture,windowsHide:true,encoding:'utf8',timeout:30000});
 assert.notEqual(negative.status,0,'missing required Docs artifact must fail assembly');
 assert.match(negative.stderr,/docs-snippets/);
 const uploads=[];

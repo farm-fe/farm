@@ -13,6 +13,12 @@ test('previously prepared stable notes are retained without duplicate release he
   assert.equal(result.match(/^## 2.0.0$/gm).length, 1);
   for (const text of ['New notes', 'Author notes', '## 2.0.0-beta.0', 'Beta notes']) assert.ok(result.includes(text));
 });
+test('selected packages with no pending changesets still have an explicit stable release entry', () => {
+  const result = consolidateStableChangelog('# package\n\n## 2.0.0-beta.0\nOriginal notes\n', '2.0.0');
+  assert.ok(result.includes('## 2.0.0\n'));
+  assert.ok(result.includes('## 2.0.0-beta.0\nOriginal notes'));
+  assert.equal(consolidateStableChangelog(result, '2.0.0'), result);
+});
 test('first stable consumes changesets without double bump or unrelated private changes', () => {
   const result = freezeFirstStablePlan(plan, candidate, packages);
   assert.equal(result.releases.length, 1);

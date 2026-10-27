@@ -20,6 +20,34 @@ jobs:
     uses: ./.github/workflows/rust-build-release.yaml
     secrets: inherit
 
+  check-native-candidate-assembly:
+    name: Check complete native candidate assembly
+    needs: [call-rust-build-user, call-rust-build-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ github.sha }}-*
+          path: .native-artifacts
+      - name: Assemble the exact candidate manifest without rebuilding Rust
+        run: node scripts/assemble-v2-native-artifacts.mjs .native-artifacts native-assembly.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-assembly-${{ github.sha }}
+          path: native-assembly.json
+          if-no-files-found: error
+
   examples-test:
     name: Examples Test
     runs-on: ${{ matrix.settings.os }}
@@ -495,7 +523,7 @@ jobs:
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
-        run: npx changeset status --since=origin/main
+        run: node scripts/check-pr-changesets.mjs
 
   ts-test:
     # Vitest runs in node/forks; browser E2E jobs keep their downloads.

@@ -26,6 +26,11 @@ export function freezeFirstStablePlan(plan, candidate, packages) {
   return { ...plan, releases };
 }
 export function consolidateStableChangelog(source, version) {
+  if (!source.split(/\r?\n/).includes(`## ${version}`)) {
+    const index = source.indexOf('\n');
+    const note = `\n\n## ${version}\n\n### Stable release preparation\n\nRelease the already prepared package at the version in the reviewed V2 candidate manifest. This migration applies no additional version bump.\n`;
+    source = index < 0 ? source + note : source.slice(0, index) + note + source.slice(index);
+  }
   let seen = false;
   return source.split(/\r?\n/).map(line => {
     if (line !== `## ${version}`) return line;

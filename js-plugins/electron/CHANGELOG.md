@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-electron
 
+## 2.0.0
+
+### Stable release preparation
+
+Release the already prepared package at the version in the reviewed V2 candidate manifest. This migration applies no additional version bump.
+
+
 ## 2.0.0-beta.0
 
 ### Major Changes
