@@ -218,7 +218,7 @@
         "name": "@farmfe/plugin-vue-jsx",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/vue-jsx/package.json",
-        "manifestSha256": "e5b203a7c51fffa9cd3fc05634c194eca7c1754b91143bdb206a4ce7ce76636c"
+        "manifestSha256": "babd8bb4a4e17683480f66da91db51757ac2de2f0b5d8826b4877cc712b902d2"
       },
       {
         "name": "@farmfe/plugin-wasm",

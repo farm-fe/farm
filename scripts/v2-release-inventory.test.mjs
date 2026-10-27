@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { npmInventory } from './v2-release-inventory.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { root } from './v2-release-inventory.mjs';
 
 test('candidate scope includes SDK generator and approved Vuetify patch', () => {
   const inventory = npmInventory();
@@ -12,6 +15,11 @@ test('candidate scope includes SDK generator and approved Vuetify patch', () => 
   assert.ok(!inventory.primary.some(pkg => pkg.name === '@farmfe/js-plugin-copy'));
   for (const payload of inventory.payloads) {
     assert.equal(payload.version, inventory.primary.find(pkg => pkg.name === payload.owner).version);
+    const platform = JSON.parse(fs.readFileSync(path.join(root, payload.manifestPath)));
+    const owner = inventory.primary.find(pkg => pkg.name === payload.owner);
+    const parent = JSON.parse(fs.readFileSync(path.join(root, owner.manifestPath)));
+    assert.equal(platform.version, owner.version, `Platform version drift: ${payload.name}`);
+    assert.equal(parent.optionalDependencies[payload.name], owner.version, `Optional dependency drift: ${payload.name}`);
   }
 });
 test('source consistency cannot be mistaken for publication approval', () => {
