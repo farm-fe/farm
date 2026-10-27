@@ -23,23 +23,38 @@ with owned process-tree termination; the sampler has an eighteen-minute budget
 and the job a twenty-minute limit. Setup failures are visible as failed steps;
 they do not count as successful or zero-cost samples.
 
-## Comparison boundaries and next stages
+## Same-runner comparison and history
 
-This implementation is **current-only** until an exact-base native cohort plus
-compatible workload/toolchain receipt is available. Merely having a historical
-summary is insufficient for a same-runner paired result. Compatibility dimensions
-are protocol, fixture hash, Node, pnpm, OS, architecture and dependency lock hash.
-No regression percentage or cross-OS absolute ranking is emitted.
+The job checks out the exact base separately, discovers its successful trusted
+native cohort and verifies any synthetic producer commit by full source-tree
+equality. It prepares only JavaScript consumers, never compiling base Rust or
+using head binaries for base. It alternates base/head samples on the same runner
+when protocol, actual workload fingerprint, Node, pnpm, OS, architecture and lock
+hash agree. Missing or incompatible base evidence produces **current-only** with
+an explicit reason, not a regression conclusion.
 
-The next stage should materialize base/head consumers on the same runner, verify
-both cohorts against their producer SHAs, and alternate paired samples. Historical
-trends are separate from those paired results. A sticky PR summary can consume
-the uploaded JSON in a separate trusted workflow; do not execute PR code via
-`pull_request_target` or introduce broad write permissions into this sampler.
+Comparable history is read from up to ten successful prior GitHub artifact runs.
+OS, architecture, runner image/version, protocol, fixture, lock and toolchain
+must agree. Missing, expired (14-day retention), incompatible and invalid entries
+are distinguished. History is separate from same-runner paired measurements.
+No Pages, external service, cross-OS absolute ranking or release threshold is used.
 
-There is no verified Vite Commerce build yet: using Vite-compatible plugins inside
-Farm is not a Vite oracle. A fair comparison needs equivalent routes/assets/plugin
-semantics and pinned Vite dependencies before a second bundler can be reported.
+The separate `commerce-catalog-quote-subset-v1` fixture actually builds with Farm
+and pinned Vite 5.2.8: identical catalog/search/category/lazy-detail/quote source,
+ES2017 output and minification, with persistent caching disabled for both. One
+warmup plus three alternating scored API builds report median/IQR and emitted
+raw/gzip bytes. This is a common subset, not full Rust Commerce parity. It is
+shown in a separate table and never compared with the full Rust workload timings.
+See [the Vite comparison boundary](./vite-comparison.md).
+
+Three platform reports are compacted into a strict bounded JSON envelope. A
+separate default-branch `workflow_run` reporter validates API-confirmed run,
+repository, current PR/head/base and artifact identities before updating one bot
+comment. Old SHAs and older run IDs cannot overwrite a newer result. It checks
+out only trusted reporter source, never PR code, and does not use
+`pull_request_target`. The reporter must first exist on the default branch;
+local mock tests do not establish that a live PR comment was posted.
+
 HMR needs source-edit isolation and restoration proof. RSS/CPU needs equivalent
 process-tree accounting on all three systems; the existing Windows-only sampler
 must not be presented as a cross-platform measurement.

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, compatible, command } from './performance-report.mjs';
+import { aggregate, compatible, command, workloadFingerprint } from './performance-report.mjs';
 
 test('failed and missing samples do not become zero-duration measurements', () => {
   const cells = aggregate([
@@ -24,6 +24,12 @@ test('baseline requires matching explicit protocol, fixture and toolchain dimens
   assert.equal(compatible(metadata, { ...metadata, arch: 'arm64' }), false);
   assert.equal(compatible({}, {}), false);
 });
+test('fingerprint includes the actual Commerce apps, config and business packages', async () => {
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const first = await workloadFingerprint(root, { generated: 'fixture' });
+  assert.match(first, /^[a-f0-9]{64}$/);
+  assert.notEqual(first, await workloadFingerprint(root, { generated: 'different fixture' }));
+});
 test('failed child command is visible and timeout terminates the owned child tree', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-test-'));
   try {
@@ -33,7 +39,7 @@ test('failed child command is visible and timeout terminates the owned child tre
 });
 test('performance job is non-blocking, follows Examples and pins artifact names to SHA', async () => {
   const source = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
-  const job = source.split('\n  performance-report:')[1].split('\n  type-check:')[0];
+  const job = source.split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
   assert.match(job, /needs: \[examples-test\]/);
   assert.match(job, /continue-on-error: true/);
   assert.match(job, /timeout-minutes: 20/);

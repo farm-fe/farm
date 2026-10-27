@@ -1,0 +1,1 @@
+body { font: 16px system-ui; max-width: 960px; margin: 32px auto; } label { margin-right: 16px; } #catalog { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; } button { padding: 8px; } #detail { margin-top: 24px; }

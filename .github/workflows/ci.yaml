@@ -234,6 +234,9 @@ jobs:
     continue-on-error: true
     timeout-minutes: 20
     runs-on: ${{ matrix.settings.os }}
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -400,9 +403,23 @@ jobs:
 
       - name: Prepare JavaScript consumers (no Rust rebuild)
         run: node --input-type=module -e "const b = await import('./scripts/build.mjs'); await b.buildCli(); await b.buildRuntime(); await b.buildCoreCjs();"
+      - name: Check out exact base separately
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .performance-base
+          persist-credentials: false
+      - name: Prepare compatible exact-base native consumer
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
+        run: node scripts/prepare-performance-base.mjs
       - name: Sample isolated Commerce baseline
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           FARM_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/performance-report.mjs
       - name: Finalize incomplete performance evidence
         if: always()
@@ -413,6 +430,35 @@ jobs:
         with:
           name: performance-${{ github.sha }}-${{ matrix.settings.abi }}
           path: performance-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+  performance-summary:
+    name: Aggregate informational performance report
+    needs: [performance-report]
+    if: always() && github.event_name == 'pull_request'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: performance-${{ github.sha }}-*
+          path: .performance-reports
+      - name: Validate and compact measurements (no artifact code execution)
+        run: node scripts/aggregate-performance-reports.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-pr-summary
+          path: performance-pr-summary/summary.json
           if-no-files-found: warn
           retention-days: 14
 
