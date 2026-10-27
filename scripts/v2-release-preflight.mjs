@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { npmInventory, root } from './v2-release-inventory.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { checkPublishedRustCore } from './check-published-rust-core.mjs';
+import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
 
 const plan = JSON.parse(fs.readFileSync(new URL('../docs/releases/v2-candidate.json', import.meta.url), 'utf8'));
 assert.deepEqual(npmInventory(), plan.npm, 'Candidate manifests drifted; regenerate and review the release scope');
@@ -18,7 +19,6 @@ for (const pkg of plan.cargo) {
   const hash = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, pkg.manifestPath), 'utf8').replaceAll('\r\n', '\n')).digest('hex');
   assert.equal(hash, pkg.manifestSha256, `Cargo candidate manifest drifted: ${pkg.name}`);
 }
-const hashFile = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const hashText = file => crypto.createHash('sha256').update(fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n')).digest('hex');
 const planDigest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
 const macro = JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence/published-macro-compat.json')));
@@ -55,18 +55,9 @@ if (sealPath) {
 }
 if (!report.candidateArchivesVerified) report.pending.push('Complete verified archives for all 297 selected npm packages, including original legal bytes and native ABI/platform provenance');
 const sdkPath = option('--sdk-proof');
-if (sdkPath && seal?.candidateArchivesVerified) {
-  const sdk = JSON.parse(fs.readFileSync(sdkPath));
-  assert.equal(sdk.planSha256, planDigest);
-  assert.equal(sdk.workspacePatches, false);
-  assert.ok(['sealed-directory-registry', 'public-registry'].includes(sdk.sourceMode));
-  const log = path.resolve(path.dirname(sdkPath), sdk.log);
-  assert.equal(hashFile(log), sdk.logSha256);
-  assert.match(fs.readFileSync(log, 'utf8'), /test result: ok\./);
-  for (const name of ['farmfe_core', 'farmfe_compiler', 'farmfe_toolkit']) {
-    const selected = plan.cargo.find(pkg => pkg.name === name);
-    assert.equal(sdk.packages?.find(pkg => pkg.name === name)?.version, selected.version);
-  }
+if (sdkPath) {
+  report.sdkEvidence = verifySdkConsumer(plan, sdkPath, path.join(root, 'scripts/release-fixtures/sdk-consumer/Cargo.toml'));
+  execFileSync('git', ['diff', '--quiet', report.sdkEvidence.sourceCommit, 'HEAD', '--', 'Cargo.toml', 'Cargo.lock', 'crates', 'rust-ecosystem', 'patches'], { cwd: root });
   report.externalSdkVerified = true;
 }
 if (!report.externalSdkVerified) report.pending.push('Independent sealed/public-registry Core, Compiler and Toolkit consumer proof, without workspace patches');

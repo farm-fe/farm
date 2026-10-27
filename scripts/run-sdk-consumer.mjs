@@ -15,14 +15,26 @@ export function inspectSdkMetadata(metadata, materialization, lock) {
   assert.ok(!metadata.packages.some(row => ['wax', 'tardar'].includes(row.name)), 'Removed dependency reentered standalone SDK');
   const packages = [];
   for (const record of expected) {
-    const rows = metadata.packages.filter(row => row.name === record.name);
+    const rows = metadata.packages.filter(row => row.name === record.name && row.version === record.version);
     assert.equal(rows.length, 1, `Missing or duplicate SDK package: ${record.name}`);
     assert.equal(rows[0].version, record.version);
     assert.match(rows[0].source ?? '', /^registry\+/, 'SDK package came from a workspace/path');
     assert.ok(!metadata.workspace_members.includes(rows[0].id));
     const entry = lock.split('[[package]]').find(block => block.includes(`name = "${record.name}"\n`) && block.includes(`version = "${record.version}"\n`));
     assert.ok(entry?.includes(`checksum = "${record.sha256}"`), `Locked SDK bytes differ: ${record.name}`);
-    packages.push({ name: record.name, version: record.version, sha256: record.sha256, source: rows[0].source });
+    const otherVersions = metadata.packages.filter(row => row.name === record.name && row.version !== record.version);
+    const compatibility = [];
+    for (const extra of otherVersions) {
+      // enhanced-magic-string's private historical utility dependency is not a
+      // replacement for the exact V2 utility used by Farm's own SDK packages.
+      assert.equal(extra.name, 'farmfe_utils', 'Unreviewed additional SDK crate version');
+      assert.equal(extra.version, '0.1.6', 'Unreviewed historical utility version');
+      assert.match(extra.source ?? '', /^registry\+/);
+      const parents = metadata.resolve.nodes.filter(node => node.deps.some(dep => dep.pkg === extra.id)).map(node => metadata.packages.find(pkg => pkg.id === node.id));
+      assert.ok(parents.length && parents.every(pkg => pkg.name === 'enhanced-magic-string' && pkg.version === '0.1.0'), 'Farm SDK must not directly bind the historical utility');
+      compatibility.push({ name: extra.name, version: extra.version, source: extra.source, requiredBy: parents.map(pkg => `${pkg.name}@${pkg.version}`) });
+    }
+    packages.push({ name: record.name, version: record.version, sha256: record.sha256, source: rows[0].source, ...(compatibility.length ? { compatibilityTransitives: compatibility } : {}) });
   }
   return packages;
 }
@@ -48,8 +60,11 @@ async function main() {
   const save = () => fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
   const cargo = process.env.FARM_CARGO_EXECUTABLE ?? (process.platform === 'win32' ? path.join(os.homedir(), '.cargo/bin/cargo.exe') : 'cargo');
   const target = process.env.FARM_SDK_TARGET_DIR ?? path.join(output, 'target');
-  const environment = { ...process.env, CARGO_HOME: path.join(output, 'cargo-home'), CARGO_TARGET_DIR: target, CARGO_NET_OFFLINE: 'true' };
-  const deadline = Date.now() + 120 * 60 * 1000;
+  const environment = { ...process.env, CARGO_HOME: process.env.FARM_SDK_CARGO_HOME ?? path.join(output, 'cargo-home'), CARGO_TARGET_DIR: target, CARGO_NET_OFFLINE: 'true' };
+  const windowEnd = process.env.FARM_SDK_WINDOW_END ? Date.parse(process.env.FARM_SDK_WINDOW_END) : Date.now() + 120 * 60 * 1000;
+  assert.ok(Number.isFinite(windowEnd) && windowEnd > Date.now(), 'SDK allocated window has expired');
+  const deadline = Math.min(windowEnd, Date.now() + 120 * 60 * 1000);
+  report.windowEndsAt = new Date(deadline).toISOString();
   async function command(phase, args, metadataOutput) {
     const disk = fs.statfsSync(output);
     report.resources = { freeRamGiB: os.freemem() / 1024 ** 3, freeDiskGiB: disk.bavail * disk.bsize / 1024 ** 3 };
