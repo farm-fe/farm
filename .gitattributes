@@ -6,5 +6,6 @@ rust-plugins/tailwindcss/**/licenses/tailwindcss-MIT.txt -text
 rust-plugins/vue/**/licenses/fervid-Apache-2.0.txt -text
 rust-plugins/icons/**/licenses/fervid-Apache-2.0.txt -text
 rust-plugins/icons/**/licenses/svgr-rs-MIT.txt -text
+docs/release-evidence/licenses/published-macros.LICENSE -text
 # Diagram manifests hash exact source bytes on every platform.
 website/static/diagrams/*.mmd text eol=lf
