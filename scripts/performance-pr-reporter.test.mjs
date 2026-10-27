@@ -83,4 +83,10 @@ test('same run new attempt replaces old partial; old attempts cannot overwrite i
   assert.equal(writes.length, 1);
   assert.match(JSON.parse(writes[0].body).body, /farm-performance-run:2:2/);
   assert.throws(() => verifyIdentity(value, { ...run, run_attempt: 3 }, pr, 1), /attempt/);
+  writes.length = 0;
+  let runReads = 0;
+  const newerAttempt = async (url, options) => url.endsWith('/actions/runs/2') && runReads++ > 0
+    ? Response.json({ ...run, run_attempt: 3 }) : fetcher(url, options);
+  await assert.rejects(report({ token: 'test', repository: 'farm-fe/farm', event: { workflow_run: { id: 2 }, repository: { id: 1 } }, fetcher: newerAttempt }), /attempt/);
+  assert.equal(writes.length, 0);
 });

@@ -81,7 +81,7 @@ export function verifyIdentity(summary, run, pr, repositoryId) {
 export function renderComment(summary, repository) {
   if (summary.reports) return `${marker}\n<!-- farm-performance-run:${summary.runId}:${summary.runAttempt} -->\n## Performance report\n\n[Run ${summary.runId}, attempt ${summary.runAttempt}](https://github.com/${repository}/actions/runs/${summary.runId}) · Head: \`${summary.headSHA}\`\n\nPlatforms are reported separately.\n\n${summary.reports.map(report => `### ${report.metadata.os} / ${report.metadata.arch}\n\n${renderComment({ ...summary, ...report, reports: null }, repository).split('## Performance report\n')[1]}`).join('\n\n')}`;
   const timing = cell => cell && cell.medianMs !== null ? `${cell.medianMs.toFixed(1)} ms (IQR ${cell.iqrMs.toFixed(1)}; ${cell.validSamples}/${cell.samples})` : 'Unavailable';
-  const diagnostics = (summary.diagnostics ?? []).map(reason => `- ${reason.replace(/[&<>`*_\[\]\\]/g, character => `&#${character.charCodeAt(0)};`)}`).join('\n');
+  const diagnostics = (summary.diagnostics ?? []).map(reason => `- ${reason.replace(/[&<>`*_\[\]\\@]/g, character => `&#${character.charCodeAt(0)};`)}`).join('\n');
   const rows = ['cold', 'warm'].map(mode => `| ${mode} | ${timing(summary.cells.find(c => c.cacheMode === mode))} | ${timing(summary.comparison.baseCells.find(c => c.cacheMode === mode))} |`);
   const subset = `${diagnostics}\n\n### Common catalog/quote subset (separate protocol)\n\nFull Rust Commerce timings above are not compared with this subset. Persistent caching is disabled for both tools.\n\n| Farm subset | Vite 5.2.8 subset |\n|---|---|\n| ${timing(summary.comparison.farmSubsetCells[0])} | ${timing(summary.comparison.viteCells[0])} |`;
   return `${marker}\n## Performance report\n\nStatus: **${summary.status}**; comparison: **${summary.comparison.mode}**\n\n| Cache | Farm head | Farm base |\n|---|---|---|\n${rows.join('\n')}\n\n${subset}\n\n[Run ${summary.runId}](https://github.com/${repository}/actions/runs/${summary.runId}); head: \`${summary.headSHA}\`\n\nMeasurements are untrusted CI data, informational only; three samples are not formal certification.\n\n### Recent comparable cold builds\n${summary.history.length ? summary.history.map(row => `- \`${row.headSHA.slice(0, 12)}\`: ${row.medianMs.toFixed(1)} ms ([run](https://github.com/${repository}/actions/runs/${row.runId}))`).join('\n') : 'No compatible history available.'}`;
@@ -116,7 +116,7 @@ export async function report({ token, repository, event, api = 'https://api.gith
   const previousRun = existing.length && /<!-- farm-performance-run:(\d+)(?::(\d+))? -->/.exec(existing[0].body);
   if (previousRun && (Number(previousRun[1]) > summary.runId || (Number(previousRun[1]) === summary.runId && Number(previousRun[2] ?? 1) >= summary.runAttempt))) return { skipped: 'An equal or newer run already reported' };
   // Recheck immediately before writing; workflow concurrency serializes reporter runs.
-  verifyIdentity(summary, run, await request(`/pulls/${pr.number}`), event.repository.id);
+  verifyIdentity(summary, await request(`/actions/runs/${runId}`), await request(`/pulls/${pr.number}`), event.repository.id);
   const body = JSON.stringify({ body: renderComment(summary, repository) });
   return request(existing.length ? `/issues/comments/${existing[0].id}` : `/issues/${pr.number}/comments`, { method: existing.length ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body });
 }
