@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "scope": "Published macro contract probe, not full external Core/Compiler SDK verification",
+  "status": "passed",
+  "registryPackage": {
+    "name": "farmfe_macro_cache_item",
+    "version": "2.1.0",
+    "sha256": "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502"
+  },
+  "toolchain": "nightly-2026-04-10",
+  "target": "x86_64-pc-windows-msvc",
+  "rkyv": "0.8.16",
+  "downcastRs": "2.0.2",
+  "workspacePatch": false,
+  "sourceCommit": "19ad1241c3f9c77f51f9d92a05f32adc40673a65",
+  "traitSource": "crates/core/src/cache/cacheable.rs",
+  "traitSourceSha256": "4b2580bb6fd98721148f4466040567201f009cc6d74c60e26579741380bb9373",
+  "fixtureFiles": [
+    {
+      "file": "scripts/release-fixtures/macro-consumer/Cargo.toml",
+      "sha256": "24c7bf238e0de16e39b634e2140935511d27c9038de28a028440e0ba6a7d3223"
+    },
+    {
+      "file": "scripts/release-fixtures/macro-consumer/Cargo.lock",
+      "sha256": "e2de6290159a4fa85936f0986ac6df92e7996d83ac5318bded528fa706be49b4"
+    },
+    {
+      "file": "scripts/release-fixtures/macro-consumer/src/lib.rs",
+      "sha256": "51096b0458120c836b59839aa5a711afec087f7f64673d872da8f60abb6125da"
+    }
+  ],
+  "log": "docs/release-evidence/published-macro-compat.txt",
+  "logSha256": "7ec518bba0691ec7fd22a93e0d3adf478c212c486a4ca6c9c3c6eb254d91b04e",
+  "tests": {
+    "passed": 2,
+    "failed": 0,
+    "structRoundTrip": true,
+    "enumRoundTrip": true
+  },
+  "finishedUtc": "2026-10-27T00:43:58.777Z",
+  "hashEncoding": "UTF-8 text with LF line endings",
+  "logRedaction": "Local consumer and target paths replaced; compiler/test output otherwise retained"
+}

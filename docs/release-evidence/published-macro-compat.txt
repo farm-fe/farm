@@ -1,0 +1,34 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling syn v2.0.119
+   Compiling ptr_meta_derive v0.3.1
+   Compiling ptr_meta v0.3.1
+   Compiling rancor v0.1.1
+   Compiling bytecheck_derive v0.8.2
+   Compiling simdutf8 v0.1.5
+   Compiling bytecheck v0.8.2
+   Compiling munge_macro v0.4.7
+   Compiling munge v0.4.7
+   Compiling rend v0.5.3
+   Compiling rkyv_derive v0.8.16
+   Compiling hashbrown v0.17.1
+   Compiling rkyv v0.8.16
+   Compiling farmfe_macro_cache_item v2.1.0
+   Compiling downcast-rs v2.0.2
+   Compiling farm-release-macro-compat v0.0.0 (<ISOLATED_CONSUMER>)
+    Finished `release` profile [optimized] target(s) in 20.46s
+     Running unittests src\lib.rs (<ISOLATED_TARGET>\x86_64-pc-windows-msvc\release\deps\farm_release_macro_compat-3159c489a0f84297.exe)
+
+running 2 tests
+test tests::struct_round_trip ... ok
+test tests::enum_round_trip ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests farm_release_macro_compat
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

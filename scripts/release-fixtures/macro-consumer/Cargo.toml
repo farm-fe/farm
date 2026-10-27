@@ -1,0 +1,12 @@
+[package]
+name = "farm-release-macro-compat"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+farmfe_macro_cache_item = "=2.1.0"
+rkyv = "=0.8.16"
+downcast-rs = "=2.0.2"

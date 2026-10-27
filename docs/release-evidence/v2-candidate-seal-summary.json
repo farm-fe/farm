@@ -1,0 +1,1561 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "a705d9bddb1220a8b36ac191f8bcdfb72c1f0b42",
+  "status": "partial-candidate-evidence",
+  "counts": {
+    "planned": 297,
+    "inspected": 80,
+    "missing": 217,
+    "invalid": 3
+  },
+  "invalid": [
+    {
+      "name": "create-farm",
+      "issues": [
+        "Source package license text is missing"
+      ]
+    },
+    {
+      "name": "@farmfe/js-plugin-dts",
+      "issues": [
+        "Source package license text is missing"
+      ]
+    },
+    {
+      "name": "@farmfe/js-plugin-qiankun",
+      "issues": [
+        "Source package license text is missing"
+      ]
+    }
+  ],
+  "archiveRecords": [
+    {
+      "name": "@farmfe/cli",
+      "version": "2.0.0",
+      "sha256": "2a1919a2a89275ae81b5153f68c530da3e167863a45f23d296c443cf39f08a14",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/core",
+      "version": "2.0.0",
+      "sha256": "09aa2b2b9b9f78941b0f6959803ae3e33add7922cf36f634b8109867d4c450b3",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "3cb83c400205af808cc5614656c83e7352771f3b76849247b439ffbff896f7ed",
+          "bytes": 4246
+        },
+        {
+          "path": "licenses/chokidar-3.5.3-MIT.txt",
+          "sha256": "db9ba183d4cbfbaf6c27db2effddbb84b46340c33ed32a066bc0b144a3ea1298",
+          "bytes": 1129
+        },
+        {
+          "path": "licenses/fancy-regex-0.14.0-MIT.txt",
+          "sha256": "702966e0674d4971e548f448c7031e07e3115b3a616da618af0b1c61cef920d8",
+          "bytes": 1102
+        },
+        {
+          "path": "licenses/picomatch-rs-0.1.0-MIT.txt",
+          "sha256": "060522635e5e0d1bdcbea583064dd47afbf52af9607b6e0e463087b9a06876b8",
+          "bytes": 1112
+        },
+        {
+          "path": "licenses/polka-compression-MIT.txt",
+          "sha256": "0d1451b5ac2d6742c64f2778b722212b876b1a902f16a6c4a3e2bb589f773f88",
+          "bytes": 1143
+        },
+        {
+          "path": "licenses/sirv-MIT.txt",
+          "sha256": "0d1451b5ac2d6742c64f2778b722212b876b1a902f16a6c4a3e2bb589f773f88",
+          "bytes": 1143
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "create-farm",
+      "version": "2.0.0",
+      "sha256": "0e0dd74ac980563f5918ad4d661021580d5591962ebae46e4a55e7db0355ac6a",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": [
+        "Source package license text is missing"
+      ]
+    },
+    {
+      "name": "create-farm-plugin",
+      "version": "2.0.0",
+      "sha256": "485475317a3724341267a3e2b7143a0bbe413d11a63354a45cc5509b2302d040",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/docs",
+      "version": "0.0.1",
+      "sha256": "e36eafc1a13e3826fde5e5e7297ad92c06d10252e6d0e7592f886ca214cd2c7e",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "version": "0.0.1",
+      "sha256": "5e47c897cd42a6f637498fa86398210738deb39f2e5c033226004b4e61626e59",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-tools",
+      "version": "2.0.0",
+      "sha256": "7a637e89e083a7afda794b6a3e27b93c42754bb334c1b5ca4b52c2ad47dae8fb",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/runtime",
+      "version": "2.0.0",
+      "sha256": "0534c40d9fa425fb71f9e39ab7c90c11fbf39ac2a8ecad437758e57d81ffb4cd",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/runtime-plugin-hmr",
+      "version": "4.0.0",
+      "sha256": "a9e7ae5063a35b2fecbd112951d7ff17c8a1f5f342a57c417332044f9915fe0f",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "106d2eec97253dd01cc3cc68f884fa13eb07e4b4a3e9ef1871202b2ed4b05f95",
+          "bytes": 3481
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/runtime-plugin-import-meta",
+      "version": "2.0.0",
+      "sha256": "b90a2c7b77a8c3e7be318d99c34f93ff68911ff6df299e41fb6ecd69bd0d5450",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/utils",
+      "version": "2.0.0",
+      "sha256": "a85cd1f305d4a45992f6817c94465b6c4e5a5045ba5c0ff0a025a3da190f557b",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "6ea154c07685946e1ea7216095d01472b855815a9b2e567c924da5e34350a2af",
+          "bytes": 648
+        },
+        {
+          "path": "licenses/color-ISC.txt",
+          "sha256": "793d692c470b20640876558d592de2bbb5122600bd86f64e392dc5ed9ccdc763",
+          "bytes": 796
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-auto-import",
+      "version": "2.0.0",
+      "sha256": "0672a27abeb779c522590531c0efdce49f1ffa2ad370ef5c6c73258a1245ffeb",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-compress",
+      "version": "2.0.0",
+      "sha256": "94279366ca643e3e9f344777d30512b4610ff9e677989a07fa1d3f4f4897060a",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs",
+      "version": "0.0.1",
+      "sha256": "63bb6b6e3bc3605ed7d1fa80e5e5564853c3cef51fe8b289b7c95fc30d9308c3",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo",
+      "version": "0.0.1",
+      "sha256": "9d889105babc0684e41b81ce34e118cd2ccca662b7faa49412d5ed57243ea2ed",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot",
+      "version": "0.0.1",
+      "sha256": "d5468e082df4938026be488dc7002c7673a66b0e7ad53e88886ded355a9b8b41",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets",
+      "version": "0.0.1",
+      "sha256": "aed199e131d76b8ca5a8e841487d3acee91e085dfbf8959b67c68ce80cf0d89a",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-dsv",
+      "version": "2.0.0",
+      "sha256": "de85f42f05999ce4d0133503338c14a8c06b4f7e7eaf4004cf980db85f94a522",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-dts",
+      "version": "1.0.0",
+      "sha256": "9a4d19e90909adccd9a61772de520bd0921a136440dc2d30fd357885b0b4cb6c",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-icons",
+      "version": "2.0.0",
+      "sha256": "6989a18be4907aa628bd66e0e3a21158bc0f85c33abb94b235621a697232e5c9",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "384f32f5a93b8122901b986fc78a256178d26e9897233c6fe057aaa8df2dbf90",
+          "bytes": 1029
+        },
+        {
+          "path": "licenses/fervid-Apache-2.0.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "licenses/svgr-rs-MIT.txt",
+          "sha256": "fbe58ecad43fcb729a3993311ba3bd5ada3426c51901b0d42dc6106d671d7a04",
+          "bytes": 1102
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-image",
+      "version": "2.0.0",
+      "sha256": "e7b99ebdc94e7cd7c305ee37993875be8fdf5fcf4fdaef4c88e1d663bb1e66ee",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-mdx",
+      "version": "2.0.0",
+      "sha256": "e1c82f0136fadf198c72205a54c80914ccdefbc0f39f24a4277ea0eca03862c8",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "ba9c9ce8bc7647767fe627f13e02de718f36ddd524adcf2ae1535eef0fa41a20",
+          "bytes": 204583
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-modular-import",
+      "version": "2.0.0",
+      "sha256": "c0f420393fae262772472469abd2383800da8dc99be0803f4665cc91c54ef7fc",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-react",
+      "version": "2.0.0",
+      "sha256": "24f6464f8d6166a1c86bfa180da582a0ac8292b744814f6695ddb641d913a697",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-react-components",
+      "version": "2.0.0",
+      "sha256": "3afc53f2044db796628b6d8151ac49cc0db8c36b7362e80400d1b585241f71f7",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname",
+      "version": "2.0.0",
+      "sha256": "16f6cb4eae5ac4841c40600fb3815cbe0658c8da2afa536cdd00003c7c3b23ba",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-sass",
+      "version": "2.0.0",
+      "sha256": "05d27106363ccc624da5de14d0ad34e43d2841e2f135ee8039d0f9bb813c93b6",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "fb3b498896046526b2dd8b1deec9de03653372fc88ae7e85036791c0bc7bc0b9",
+          "bytes": 380
+        },
+        {
+          "path": "licenses/grass-MIT.txt",
+          "sha256": "7d0010e1e803b6920660f1a04f333888722943d6647571111ab1f3cd46d9cc47",
+          "bytes": 1069
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css",
+      "version": "0.0.1",
+      "sha256": "3b6aefd0b9cde7f76bea35253cecabd11dc338899640216feb778f5543c98904",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-strip",
+      "version": "2.0.0",
+      "sha256": "df5d196b5dced28b2180a58d410a349e8b57855d37be0cdb4a45d7aaee6c6ded",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-svgr",
+      "version": "2.0.0",
+      "sha256": "3be36c2a82606e6a0ee98e050a3ebe171e2de3955f710bd523dbd7ba7f92c3fa",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "a0c0d82c987c5f0d2a2bb9aeeeb175f2b4838d4daaa3267a252e0dad22da11b2",
+          "bytes": 358
+        },
+        {
+          "path": "licenses/svgr-rs-MIT.txt",
+          "sha256": "fbe58ecad43fcb729a3993311ba3bd5ada3426c51901b0d42dc6106d671d7a04",
+          "bytes": 1102
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight",
+      "version": "0.0.1",
+      "sha256": "ccd8dfc357676a58dc4791f0b551986529d1a3fe05658be79ed5c77199b0c67f",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss",
+      "version": "2.0.0",
+      "sha256": "9f64be972451a4e50b0fc3ac4b23273f54e2498d37ca5c2d51330eca75b3e50f",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439",
+          "bytes": 1337
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "134f887d978774b16f9b211ba8083403da8c5fe11a0a2d4190deaa6d4fa5f91b",
+          "bytes": 746
+        },
+        {
+          "path": "licenses/tailwindcss-MIT.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "bytes": 1071
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-url",
+      "version": "2.0.0",
+      "sha256": "4e0878a986a88dd1315cd1350fb4efd272e223827d47d2b68387f92293da5911",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-virtual",
+      "version": "2.0.0",
+      "sha256": "1ae739521c0c755dd4fc30d93a3048fc9975ae977b8c98edf33bd80f90544299",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "9e0708cf8950c55d0637a47a30edc6b612416bd3783344545a4662e5115cc87b",
+          "bytes": 1083
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-vue",
+      "version": "2.0.0",
+      "sha256": "37d1589c1a0ce16c23dc44753694ae639e6e71345f6ca4337a873dc8cf687407",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "8e0fc772badb72c307fffb57ee768b53c8d137790bf6c3f9a7600ff0c5884344",
+          "bytes": 1332
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "5f5492f7f06a5c32637410e78b6ca0bcb6a5e90250462b4c125ddb722fa33142",
+          "bytes": 741
+        },
+        {
+          "path": "licenses/fervid-Apache-2.0.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-vue-jsx",
+      "version": "0.0.1",
+      "sha256": "a4167ad1b1533a50759b4f5e6bf60a055013cbffa18922e43cf678d0545103ac",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "9421d5ac479cf658f1c8325f2cbad956a854b537a84c24dc184c398c3c7f4636",
+          "bytes": 1251
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-wasm",
+      "version": "2.0.0",
+      "sha256": "f873788b624a17536f02d09e2a8e12439405481303cf028f7942182501319a1f",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-worker",
+      "version": "2.0.0",
+      "sha256": "dec64f630d4f2de606feefdd41ffc8dff55d13ea84d0b1a6da8b3fa10e183376",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-yaml",
+      "version": "2.0.0",
+      "sha256": "21606aba60ba173b8efdbb69cfdc2cd73f0bdd41da63955484de0f682cd6ab7e",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-babel",
+      "version": "0.0.4",
+      "sha256": "8607c35ebf59822578cfa2b73c8de58bcb97e80884e5a97d3d07e36b94f6ec86",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-dts",
+      "version": "2.0.0",
+      "sha256": "fbd5dd8aafae870ec2735aed005f93068b6e97ec8648ce76eee05264c6c50578",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": [
+        "Source package license text is missing"
+      ]
+    },
+    {
+      "name": "@farmfe/js-plugin-electron",
+      "version": "2.0.0",
+      "sha256": "851ba14608cd5c1bb41f4bc67d0d6117ce8f2709a948269189eaa9d9cb3e5fdc",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-less",
+      "version": "2.0.0",
+      "sha256": "1a7774f3b1fc74455b5eda6f7fb9059926c281c3ad90e99cdbda8dece0f6f410",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-postcss",
+      "version": "2.0.0",
+      "sha256": "76c60be440cd1b42e8a78cb792b26a21d78975cafa7f2ee272c4c2d220ac6ed3",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-qiankun",
+      "version": "1.0.0",
+      "sha256": "6479a906737833a6b9e92e609e8647da1785c5a9d3f519e5e868efbd3a2be5c4",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": [
+        "Source package license text is missing"
+      ]
+    },
+    {
+      "name": "@farmfe/js-plugin-react-compiler",
+      "version": "0.0.4",
+      "sha256": "65f80fbe7ebf0abc9673fab9251b5f0aea8d81566488b527504e71b989592225",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-sass",
+      "version": "3.0.0",
+      "sha256": "d9b85e9f68143b254a58bed1afd211380164e9bc04ec8a78c6f50fd0e8da5e4d",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-svgr",
+      "version": "2.0.0",
+      "sha256": "32704c773b791d62cc981301445183d12d186135918605295bce84705a2c6e54",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-tailwindcss",
+      "version": "2.0.0",
+      "sha256": "437d0ecd70bdae95f9f8587df32aeda30ed8dbf12cecafbb7c09f4add860e668",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-visualizer",
+      "version": "2.0.0",
+      "sha256": "e476b4173fa1a96844f2eda52c4953666fc368d766aed6df63d73b51a724f990",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/js-plugin-vuetify",
+      "version": "0.0.2",
+      "sha256": "ff5f16e27483cfe7493a42fe47f734ae7e4f144f52463371c269b1451a8241d0",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/core-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "f54d42c293d26571c59a561962f40a69596b7bc9f95342c75a8d8d1ed832725e",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "3cb83c400205af808cc5614656c83e7352771f3b76849247b439ffbff896f7ed",
+          "bytes": 4246
+        },
+        {
+          "path": "licenses/chokidar-3.5.3-MIT.txt",
+          "sha256": "db9ba183d4cbfbaf6c27db2effddbb84b46340c33ed32a066bc0b144a3ea1298",
+          "bytes": 1129
+        },
+        {
+          "path": "licenses/fancy-regex-0.14.0-MIT.txt",
+          "sha256": "702966e0674d4971e548f448c7031e07e3115b3a616da618af0b1c61cef920d8",
+          "bytes": 1102
+        },
+        {
+          "path": "licenses/picomatch-rs-0.1.0-MIT.txt",
+          "sha256": "060522635e5e0d1bdcbea583064dd47afbf52af9607b6e0e463087b9a06876b8",
+          "bytes": 1112
+        },
+        {
+          "path": "licenses/polka-compression-MIT.txt",
+          "sha256": "0d1451b5ac2d6742c64f2778b722212b876b1a902f16a6c4a3e2bb589f773f88",
+          "bytes": 1143
+        },
+        {
+          "path": "licenses/sirv-MIT.txt",
+          "sha256": "0d1451b5ac2d6742c64f2778b722212b876b1a902f16a6c4a3e2bb589f773f88",
+          "bytes": 1143
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-auto-import-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "c177f0e9da0ad2db408153134e46661f9b9533ea8034d8d34a989fa309409cb9",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-compress-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "906b8d71892eca5ad62c51c34782910ba61866652fa2056d03f3b8816f3e2b1c",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "bff2e3f298b9640e77a0d3bb95624d34b5d1e891979c4481dd82fa4c266e1520",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "ec2598a3bf139b7fe35b3f07a6313267e98837ac63e425a6a2e1b45f127057d3",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "b869c4f27f9f6c0ab772a090581290c67d839ab86b92fa98c60b7ba422f9e6ba",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "e4e709dc7fddadc3ff94bc4ef61e878ae74db9995867d497351b789be3b5608b",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-dsv-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "2ecd0b05cd385503ba66d70b42129ea16b9ca64d7a43224b5bd39299b191d2f8",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-dts-win32-x64-msvc",
+      "version": "1.0.0",
+      "sha256": "f0090b614d596931875011570e493d51df753d38e661add297cd746a2321e990",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-icons-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "dd511571ba843af1a042a261970843d1b1eecddcbd282e520202628b10e13897",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "384f32f5a93b8122901b986fc78a256178d26e9897233c6fe057aaa8df2dbf90",
+          "bytes": 1029
+        },
+        {
+          "path": "licenses/fervid-Apache-2.0.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "licenses/svgr-rs-MIT.txt",
+          "sha256": "fbe58ecad43fcb729a3993311ba3bd5ada3426c51901b0d42dc6106d671d7a04",
+          "bytes": 1102
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-image-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "dc8c3a3f499bd9048b1bb75c8001d83a295de727bcf9b28d9b83dabf8408ae1f",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-mdx-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "879963b22be1f7012f86810496ceabb27ae6bf4030442118ab2784f82a0a7b19",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "ba9c9ce8bc7647767fe627f13e02de718f36ddd524adcf2ae1535eef0fa41a20",
+          "bytes": 204583
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-modular-import-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "1fe22df26edf3dec850998feafa203994a3fd648bb41943ab558bd1ac5d0b7d7",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-react-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "e07a31ae2a0316c790eee4b39b7fb503ad97c67100b9f6d1936de6e4d34f2635",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-react-components-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "8056fc8f0bdadae12187bee3b6fac04bc9df3da76ef13c6d3b88aa30e817bfd7",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "28d4efe5269e46d3d040e8fdb177dc5d3376a2641948909e6b049876a236b451",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-sass-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "ca8d7303bfe43a1c347db9079e8848f282c13bc656c0c5fa88b376cdf2238e85",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "fb3b498896046526b2dd8b1deec9de03653372fc88ae7e85036791c0bc7bc0b9",
+          "bytes": 380
+        },
+        {
+          "path": "licenses/grass-MIT.txt",
+          "sha256": "7d0010e1e803b6920660f1a04f333888722943d6647571111ab1f3cd46d9cc47",
+          "bytes": 1069
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "95e4f4fa10774f5b6d32d3a1e1053f973adde25483656525e4823c149dd69559",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-strip-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "0bd56ac5b6a70e1410cb943c9014213a79f3eeb3cf9c827424158408a608d2a6",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-svgr-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "1d09367710a5cb30ab9dcc56034c628220d8af9eacc588473a789c52ca2db049",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "a0c0d82c987c5f0d2a2bb9aeeeb175f2b4838d4daaa3267a252e0dad22da11b2",
+          "bytes": 358
+        },
+        {
+          "path": "licenses/svgr-rs-MIT.txt",
+          "sha256": "fbe58ecad43fcb729a3993311ba3bd5ada3426c51901b0d42dc6106d671d7a04",
+          "bytes": 1102
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "14086911d0e9c2b587539debb7cd774cf0e4c17f51b512a99c9e77fb8807430b",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "27c179f1214614b95f132d9969670d84f244cdcce410e4c8771d928269ff9514",
+          "bytes": 205069
+        },
+        {
+          "path": "licenses/syntect-MIT.txt",
+          "sha256": "d5ee1f2343ea608da0b7e3f09857b45cfc1c5adc533a032c4c6d48039b704383",
+          "bytes": 1137
+        },
+        {
+          "path": "licenses/two-face-MIT.txt",
+          "sha256": "841043359cb5974b281bba9ab7e6cfb464227c7f71cf6876f8572edf98ffa483",
+          "bytes": 1154
+        },
+        {
+          "path": "licenses/vscode-theme-reference.txt",
+          "sha256": "eb0f2257dc0f3d63a54fa9ec950d2b660c7998cc172ac3c1fe3db05a254fe75c",
+          "bytes": 1105
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "29a9f18392a967dab0a5fcfa4cb7f31e362cd403bc314809a9b9cc4a8dc82b73",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "ffd8a1e5aadc4dbb4b38346fea235a18bfbda64e44abec8ab1f9d34384ea2439",
+          "bytes": 1337
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "134f887d978774b16f9b211ba8083403da8c5fe11a0a2d4190deaa6d4fa5f91b",
+          "bytes": 746
+        },
+        {
+          "path": "licenses/tailwindcss-MIT.txt",
+          "sha256": "60e0b68c0f35c078eef3a5d29419d0b03ff84ec1df9c3f9d6e39a519a5ae7985",
+          "bytes": 1071
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-url-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "2b11d07968ed6bccc3cc1af22d811e3cf9dc57a9670bd04f7a5281e7c96b411e",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-virtual-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "3ac3db0b04a21e66a8da6cb0843ddbdfa5410c0ce9b16f6b41eeaf00e3ad81cb",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "9e0708cf8950c55d0637a47a30edc6b612416bd3783344545a4662e5115cc87b",
+          "bytes": 1083
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-vue-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "a9b8a7063e697a8b3f5706abe76ee7cacb806db651859877ed18453cc5cca4a0",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "8e0fc772badb72c307fffb57ee768b53c8d137790bf6c3f9a7600ff0c5884344",
+          "bytes": 1332
+        },
+        {
+          "path": "THIRD_PARTY_NOTICES.md",
+          "sha256": "5f5492f7f06a5c32637410e78b6ca0bcb6a5e90250462b4c125ddb722fa33142",
+          "bytes": 741
+        },
+        {
+          "path": "licenses/fervid-Apache-2.0.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-vue-jsx-win32-x64-msvc",
+      "version": "0.0.1",
+      "sha256": "cab0f2894e01b068a17930b08233b2b340e41285f701a189ee82273fbf77a92d",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "9421d5ac479cf658f1c8325f2cbad956a854b537a84c24dc184c398c3c7f4636",
+          "bytes": 1251
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-wasm-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "9cda5aa4b0a42203365abf7c841f74609474d84965720964c78bfd24eb5df673",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-worker-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "3de9cfd7e3f25e4865d014d9279ba8e2cbf73268335ed020c6bbb5140fd511b8",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    },
+    {
+      "name": "@farmfe/plugin-yaml-win32-x64-msvc",
+      "version": "2.0.0",
+      "sha256": "5678936f2ac1be2d58271c8434d4362f3bf6382c96243cf9c00804bef47ea4f2",
+      "legal": [
+        {
+          "path": "LICENSE",
+          "sha256": "d1b0f2e2b4b8ad38517fb25525a00eeeba35d920d46ac55e292fbd7cf280cd3a",
+          "bytes": 1085
+        }
+      ],
+      "issues": []
+    }
+  ],
+  "npmConsumer": {
+    "status": "passed",
+    "scope": "Npm Core ESM/CJS/native and strict NodeNext declarations; not Cargo Compiler/Toolkit or public registry installation",
+    "sourceCommit": "af65c1d4bf343290d14898bf3607575a9b7ccbc6",
+    "packages": [
+      {
+        "name": "@farmfe/core",
+        "version": "2.0.0",
+        "archiveSha256": "09aa2b2b9b9f78941b0f6959803ae3e33add7922cf36f634b8109867d4c450b3"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname",
+        "version": "2.0.0",
+        "archiveSha256": "16f6cb4eae5ac4841c40600fb3815cbe0658c8da2afa536cdd00003c7c3b23ba"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-win32-x64-msvc",
+        "version": "2.0.0",
+        "archiveSha256": "28d4efe5269e46d3d040e8fdb177dc5d3376a2641948909e6b049876a236b451"
+      },
+      {
+        "name": "@farmfe/runtime-plugin-hmr",
+        "version": "4.0.0",
+        "archiveSha256": "a9e7ae5063a35b2fecbd112951d7ff17c8a1f5f342a57c417332044f9915fe0f"
+      },
+      {
+        "name": "@farmfe/utils",
+        "version": "2.0.0",
+        "archiveSha256": "a85cd1f305d4a45992f6817c94465b6c4e5a5045ba5c0ff0a025a3da190f557b"
+      },
+      {
+        "name": "@farmfe/runtime-plugin-import-meta",
+        "version": "2.0.0",
+        "archiveSha256": "b90a2c7b77a8c3e7be318d99c34f93ff68911ff6df299e41fb6ecd69bd0d5450"
+      },
+      {
+        "name": "@farmfe/runtime",
+        "version": "2.0.0",
+        "archiveSha256": "0534c40d9fa425fb71f9e39ab7c90c11fbf39ac2a8ecad437758e57d81ffb4cd"
+      },
+      {
+        "name": "@farmfe/core-win32-x64-msvc",
+        "version": "2.0.0",
+        "archiveSha256": "f54d42c293d26571c59a561962f40a69596b7bc9f95342c75a8d8d1ed832725e"
+      }
+    ],
+    "externalRegistryCacheLinks": 60,
+    "workspacePackageLinks": 0,
+    "nativeOverrides": false,
+    "strict": true,
+    "skipLibCheck": false,
+    "negativeTypeAssertions": 6,
+    "diagnostics": 0
+  },
+  "remaining": [
+    "217 platform archives need accessible CI ZIP materialization and full content verification",
+    "Resolve create-farm and JS DTS ISC metadata versus inherited MIT archive text, and qiankun unspecified license",
+    "Full independent Cargo Compiler/Toolkit SDK consumption; only published macro contract and npm Core SDK verified",
+    "Review beta exit and version PR before final stable manifest freeze",
+    "Public registry install/Docs consumer can only finish after selected versions are published",
+    "Vercel production rollback deployment ID read was denied"
+  ]
+}

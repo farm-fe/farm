@@ -17,4 +17,18 @@ test('Node repair retains manual, main-only, explicit publication confirmation',
   assert.match(workflow, /confirm_release:[\s\S]*?default: false/);
   assert.match(workflow, /github.event_name == 'workflow_dispatch' && github.ref == 'refs\/heads\/main' && inputs.confirm_release == true/);
   assert.doesNotMatch(workflow, /^  push:/m);
+  assert.match(workflow, /v2-release-preflight\.mjs --publication --candidate-seal/);
+  assert.match(workflow, /run: pnpm run release/);
+  assert.doesNotMatch(workflow, /uses: \.\/\.github\/workflows\/rust-build/);
+  const release = fs.readFileSync(new URL('./release.mjs', import.meta.url), 'utf8');
+  assert.match(release, /assertStableReleaseState\(root\)/);
+  assert.match(release, /v2-release-preflight\.mjs/);
+  assert.doesNotMatch(release, /changeset publish|buildJsPlugins|npm config set/);
+});
+test('Changesets filesystem and parsing errors cannot select publication', () => {
+  assert.match(workflow, /id: changesets\s+run: node scripts\/check-changeset-status\.mjs/);
+  assert.match(workflow, /changeset_state == 'pending'/);
+  assert.match(workflow, /changeset_state == 'empty'/);
+  assert.doesNotMatch(workflow, /if node .*check-changeset-status/);
+  assert.match(workflow, /group: farm-stable-release/);
 });

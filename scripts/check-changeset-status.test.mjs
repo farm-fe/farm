@@ -1,40 +1,37 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import vm from 'node:vm';
+import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { changesetStatus } from './check-changeset-status.mjs';
 
-const source = fs.readFileSync(new URL('./check-changeset-status.mjs', import.meta.url), 'utf8').replace(/^import .*;\r?\n/gm, '');
-function status({ files = [], pre } = {}) {
-  const stop = new Error('exit');
-  let code;
-  const messages = [];
-  try {
-    vm.runInNewContext(source, {
-      path,
-      readdirSync: () => ['README.md', ...files],
-      existsSync: () => pre !== undefined,
-      readFileSync: () => JSON.stringify(pre),
-      console: { log: message => messages.push(message) },
-      process: { exit: value => { code = value; throw stop; } }
-    });
-  } catch (error) { if (error !== stop) throw error; }
-  return { code, messages };
-}
-
-test('prerelease exit requests stable version generation even when beta consumed every changeset', () => {
-  const result = status({ files: ['fix.md'], pre: { mode: 'exit', changesets: ['fix'] } });
-  assert.equal(result.code, 0);
-  assert.match(result.messages[0], /generate stable versions/);
-  assert.equal(status({ pre: { mode: 'exit', changesets: [] } }).code, 0);
+test('pending, empty and prerelease are explicit states', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-changeset-state-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.mkdirSync(path.join(root, '.changeset'));
+  assert.equal(changesetStatus(root).state, 'empty');
+  fs.writeFileSync(path.join(root, '.changeset/a.md'), '---\n---\nChange');
+  assert.equal(changesetStatus(root).state, 'pending');
+  for (const mode of ['pre', 'exit']) {
+    fs.writeFileSync(path.join(root, '.changeset/pre.json'), JSON.stringify({ mode, changesets: ['a'] }));
+    assert.equal(changesetStatus(root).state, 'pending');
+  }
 });
 
-test('active prerelease only considers unconsumed changesets', () => {
-  assert.equal(status({ files: ['fix.md'], pre: { mode: 'pre', changesets: ['fix'] } }).code, 1);
-  assert.equal(status({ files: ['fix.md', 'new.md'], pre: { mode: 'pre', changesets: ['fix'] } }).code, 0);
-});
-
-test('ordinary release keeps the existing changeset/no-changeset status contract', () => {
-  assert.equal(status().code, 1);
-  assert.equal(status({ files: ['fix.md'] }).code, 0);
+test('missing, malformed and invalid prerelease fail with error, never empty', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-changeset-error-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const check = () => {
+    const result = spawnSync(process.execPath, [fileURLToPath(new URL('./check-changeset-status.mjs', import.meta.url))], { cwd: root, encoding: 'utf8' });
+    assert.equal(result.status, 2);
+    assert.equal(JSON.parse(result.stderr).state, 'error');
+  };
+  check();
+  fs.mkdirSync(path.join(root, '.changeset'));
+  for (const value of ['{', '{}', '{"mode":"pre","changesets":false}']) {
+    fs.writeFileSync(path.join(root, '.changeset/pre.json'), value);
+    check();
+  }
 });
