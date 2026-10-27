@@ -9,7 +9,7 @@ consumer dependencies. Tracked Commerce sources are fingerprinted before/after;
 native hashes are recorded and checked for drift. Cache and output paths are
 inside that temporary workload and are removed after sampling.
 
-One cold warmup is unscored, followed by three serial cold/warm pairs. Each
+One cold warmup is not scored, followed by three serial cold/warm pairs. Each
 cold pair starts with a distinct cache; warm reuses that successful cold cache.
 Without independent cache-hit evidence this means **reusable**, not confirmed
 cache hit. JS/CSS sizes are summed from actual uncompressed output and Node gzip;

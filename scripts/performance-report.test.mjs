@@ -31,7 +31,7 @@ test('failed child command is visible and timeout terminates the owned child tre
     await assert.rejects(command(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { log: path.join(directory, 'timeout.log'), timeoutMs: 100 }), /timedOut/);
   } finally { await fs.rm(directory, { recursive: true }); }
 });
-test('performance job is nonblocking, follows Examples and pins artifact names to SHA', async () => {
+test('performance job is non-blocking, follows Examples and pins artifact names to SHA', async () => {
   const source = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const job = source.split('\n  performance-report:')[1].split('\n  type-check:')[0];
   assert.match(job, /needs: \[examples-test\]/);
