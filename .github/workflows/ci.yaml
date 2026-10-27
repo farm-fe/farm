@@ -228,6 +228,194 @@ jobs:
             ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
             !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
 
+  performance-report:
+    name: Commerce Performance (${{ matrix.settings.os }})
+    needs: [examples-test]
+    continue-on-error: true
+    timeout-minutes: 20
+    runs-on: ${{ matrix.settings.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Initialize performance evidence
+        run: node scripts/performance-evidence.mjs init
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4.1.3
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-sass
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
+          path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-react
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
+          path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-replace-dirname
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-vue
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
+          path: ./rust-plugins/vue/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-vue-jsx
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
+          path: ./rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-auto-import
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
+          path: ./rust-plugins/auto-import/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-compress
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
+          path: ./rust-plugins/compress/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-dsv
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
+          path: ./rust-plugins/dsv/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-dts
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
+          path: ./rust-plugins/dts/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-icons
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
+          path: ./rust-plugins/icons/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-image
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
+          path: ./rust-plugins/image/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-mdx
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
+          path: ./rust-plugins/mdx/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-modular-import
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
+          path: ./rust-plugins/modular-import/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-react-components
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
+          path: ./rust-plugins/react-components/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-strip
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
+          path: ./rust-plugins/strip/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-svgr
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
+          path: ./rust-plugins/svgr/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-url
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
+          path: ./rust-plugins/url/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-virtual
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
+          path: ./rust-plugins/virtual/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-wasm
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
+          path: ./rust-plugins/wasm/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-worker
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
+          path: ./rust-plugins/worker/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-yaml
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
+          path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-tailwindcss
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
+          path: ./rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}
+
+
+      - name: Prepare JavaScript consumers (no Rust rebuild)
+        run: node --input-type=module -e "const b = await import('./scripts/build.mjs'); await b.buildCli(); await b.buildRuntime(); await b.buildCoreCjs();"
+      - name: Sample isolated Commerce baseline
+        env:
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/performance-report.mjs
+      - name: Finalize incomplete performance evidence
+        if: always()
+        run: node scripts/performance-evidence.mjs finalize
+      - name: Preserve performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-${{ github.sha }}-${{ matrix.settings.abi }}
+          path: performance-results/
+          if-no-files-found: warn
+          retention-days: 14
+
   type-check:
     name: Type Check & Changesets
     runs-on: ubuntu-latest
