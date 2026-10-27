@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "migration": "already-prepared-first-stable",
+  "changesets": [
+    "blue-jobs-lick",
+    "bright-tigers-config",
+    "brown-hounds-try",
+    "calm-bikes-cheat",
+    "clean-horses-fix",
+    "compatible-isolated-declarations",
+    "curly-lions-drive",
+    "farm-docs-rust-website",
+    "farm-plugin-vue",
+    "fifty-otters-hope",
+    "glob-membership-cache-invalidation",
+    "gorgeous-teachers-study",
+    "great-coats-grow",
+    "honest-books-cross",
+    "lazy-adults-bathe",
+    "little-mangos-joke",
+    "lovely-rivers-decide",
+    "lucky-panthers-divide",
+    "mean-carpets-occur",
+    "ninety-clocks-change",
+    "polite-donkeys-sass",
+    "postcss-production-watch-dependencies",
+    "quick-snakes-heal",
+    "quiet-hmr-navigation",
+    "quiet-llamas-love",
+    "refresh-watched-module-cache",
+    "rust-tailwind-cached-source-candidates",
+    "safe-virtual-entry-resources",
+    "selfish-crews-taste",
+    "sharp-beers-live",
+    "shy-peas-smell",
+    "slow-cycles-brake",
+    "small-bottles-warn",
+    "soft-wolves-config",
+    "sour-lamps-wave",
+    "tailwind-restored-source-watch-dependencies",
+    "tame-plugins-publish",
+    "thick-trees-collect",
+    "tough-pans-collect",
+    "unified-v2-native-abi",
+    "update-swc-crates",
+    "v2-library-output",
+    "v2-vue-refresh",
+    "vue-jsx-plugin",
+    "warm-pumas-build",
+    "weak-files-hide"
+  ],
+  "versions": [
+    {
+      "name": "@farmfe/cli",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/core",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0"
+    },
+    {
+      "name": "create-farm",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0"
+    },
+    {
+      "name": "create-farm-plugin",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/docs",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "1.0.0"
+    },
+    {
+      "name": "@farmfe/plugin-tools",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/runtime",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/runtime-plugin-hmr",
+      "stable": "4.0.0",
+      "ordinaryCalculated": "4.1.0"
+    },
+    {
+      "name": "@farmfe/runtime-plugin-import-meta",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/utils",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-auto-import",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-compress",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-docs",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-dsv",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-dts",
+      "stable": "1.0.0",
+      "ordinaryCalculated": "1.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-icons",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-image",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-mdx",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-modular-import",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-react",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-react-components",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-sass",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-strip",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-svgr",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-url",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-virtual",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-vue",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-vue-jsx",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0"
+    },
+    {
+      "name": "@farmfe/plugin-wasm",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-worker",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-yaml",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-babel",
+      "stable": "0.0.4",
+      "ordinaryCalculated": "1.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-dts",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-electron",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-less",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-postcss",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-qiankun",
+      "stable": "1.0.0",
+      "ordinaryCalculated": "2.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-react-compiler",
+      "stable": "0.0.4",
+      "ordinaryCalculated": "1.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-sass",
+      "stable": "3.0.0",
+      "ordinaryCalculated": "4.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-svgr",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-tailwindcss",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-visualizer",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-vuetify",
+      "stable": "0.0.2",
+      "ordinaryCalculated": "0.0.2"
+    }
+  ],
+  "applied": true
+}

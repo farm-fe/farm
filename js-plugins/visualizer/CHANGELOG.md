@@ -1,5 +1,15 @@
 # @farmfe/js-plugin-record-viewer
 
+## 2.0.0
+
+### Patch Changes
+
+- e560875: Fix issues:
+
+  1. Move all custom config from `config.custom` to the corresponding config field. For example, move `config.custom.external` to `config.external`.
+  2. Fix visualizer plugin not working issue.
+  3. `?url` does not be removed in plugin static asset
+
 ## 2.0.0-beta.1
 
 ### Patch Changes
@@ -76,7 +86,7 @@
 - e4c9f81e: Break change: reset config and configResolved hooks hook functionality and structure
 - 8846d063: Normalize js plugin hooks name
 
-## 2.0.0
+### Earlier 2.0.0 preparation
 
 ### Major Changes
 

@@ -5085,6 +5085,34 @@ importers:
         version: link:../../packages/plugin-tools
 
   rust-plugins/vue-jsx:
+    optionalDependencies:
+      '@farmfe/plugin-vue-jsx-darwin-arm64':
+        specifier: 0.0.1
+        version: link:npm/darwin-arm64
+      '@farmfe/plugin-vue-jsx-darwin-x64':
+        specifier: 0.0.1
+        version: link:npm/darwin-x64
+      '@farmfe/plugin-vue-jsx-linux-arm64-gnu':
+        specifier: 0.0.1
+        version: link:npm/linux-arm64-gnu
+      '@farmfe/plugin-vue-jsx-linux-arm64-musl':
+        specifier: 0.0.1
+        version: link:npm/linux-arm64-musl
+      '@farmfe/plugin-vue-jsx-linux-x64-gnu':
+        specifier: 0.0.1
+        version: link:npm/linux-x64-gnu
+      '@farmfe/plugin-vue-jsx-linux-x64-musl':
+        specifier: 0.0.1
+        version: link:npm/linux-x64-musl
+      '@farmfe/plugin-vue-jsx-win32-arm64-msvc':
+        specifier: 0.0.1
+        version: link:npm/win32-arm64-msvc
+      '@farmfe/plugin-vue-jsx-win32-ia32-msvc':
+        specifier: 0.0.1
+        version: link:npm/win32-ia32-msvc
+      '@farmfe/plugin-vue-jsx-win32-x64-msvc':
+        specifier: 0.0.1
+        version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*

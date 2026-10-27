@@ -2,6 +2,77 @@
 
 ## 2.0.0
 
+### Minor Changes
+
+- ec5e740: Add reusable Farm Docs packages and Rust plugins for documentation planning, Markdown/MDX, static rendering, snippets, SEO and native styling. Migrate the official website to its independent Farm configuration with multilingual and versioned content.
+
+  Add the Core output ownership, cache completion and runtime/HMR support needed by documentation builds and development updates. Preserve readable compiler errors in the CLI and expose the corresponding public types.
+
+  Preserve license comments and their original source positions when combining ordinary or already hoisted module source maps.
+
+### Patch Changes
+
+- 629aba4: Fix SWC plugin transforms hanging during example builds on macOS and Windows
+  CI runners (reproducible at `FARM_THREAD_NUMS=2`).
+
+  The hang was traced to wasmer's `Engine::compile` / `Engine::validate` paths
+  contending on an internal `std::sync::Mutex` when multiple Farm rayon worker
+  threads ran wasm plugin transforms in parallel. We now serialize the
+  `transform_plugin_executor.transform()` call via a process-wide mutex while
+  keeping every other build phase fully parallel.
+
+  In addition, the plugin host's `block_on` now always runs on a dedicated,
+  process-wide multi-threaded tokio runtime (constructed once instead of
+  per-call) and uses `tokio::task::block_in_place` when invoked from inside an
+  ambient tokio runtime, avoiding worker-thread starvation.
+
+- 9021edf: improve cache perf, support js cache api
+- 5861c49: Revalidate import.meta.glob membership when reusing persistent caches and rebuild glob importers when matching files are added or removed during development. Deliver those changes over the dev server WebSocket in compilation order and retain failed updates for retry.
+- 7266d47: Fix: cjs require doesn't be handled correctly when targetEnv is library
+- 23b6fc9: Fix unexpected process exit when hmr failed with syntax error
+- e560875: Fix issues:
+
+  1. Move all custom config from `config.custom` to the corresponding config field. For example, move `config.custom.external` to `config.external`.
+  2. Fix visualizer plugin not working issue.
+  3. `?url` does not be removed in plugin static asset
+
+- 874f034: feat: add env manual control thread max nums
+- 4ef38cd: Feat(core): Support output.format=umd
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- 5861c49: Invalidate cached modules when watched dependencies change and rerun freeze hooks for expired modules even when their own source content is unchanged. Include watched content fingerprints in generated resource and development CSS caches so freeze-hook output is regenerated after candidate changes.
+- 5861c49: Fix wildcard package export matching and generate safe, distinct filenames for virtual chunks.
+
+  Preserve module identity and cached exports when entries import each other or mix inline and separate runtime chunks. Keep public default and named reexports intact under minification, initialize runtime safely without plugins and in workers, and terminate tree shaking for self/cyclic dynamic imports while retaining their entry resource mappings.
+
+  Preserve built-in runtime module ids during compiler updates and avoid adding the runtime suffix twice, so glob/watch updates can rebuild runtime modules.
+
+  Keep HMR roots internal even when their absolute project paths match external package patterns.
+
+- ba8bf31: Fixed the issue of nested public and output config
+- c4e6901: Fix: incorrect html fallback and hmr port doesn't work as expected
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+- 38b9673: Fix(v2-beta): tailwindcss next bugs
+- 8464298: Advance the internal native plugin ABI identifier after the shared resource and
+  source observation context layout changes. Rebuild Rust plugins against the same
+  V2 core before loading them; older native libraries are rejected by the loader.
+- 2f9ef0e: Update all SWC related crates to latest versions (swc_core v59.0.1)
+- b60d0e8: Accept the existing Rust library bundling strategies in JavaScript configuration
+  without changing the native single-bundle default.
+- 4ef38cd: Feat(core): support css.transformToScript
+- Updated dependencies [5cf6af9]
+- Updated dependencies [ec5e740]
+- Updated dependencies [47d569d]
+- Updated dependencies [61aae5b]
+- Updated dependencies [5861c49]
+- Updated dependencies [6fafa25]
+  - @farmfe/runtime@2.0.0
+  - @farmfe/runtime-plugin-hmr@4.0.0
+  - @farmfe/runtime-plugin-import-meta@2.0.0
+  - @farmfe/utils@2.0.0
+  - @farmfe/plugin-replace-dirname@2.0.0
+
+### Earlier 2.0.0 preparation
+
 ### Patch Changes
 
 - Persist explicit module updates even when source bytes are unchanged, invalidate their generated resource caches, and restore plugin metadata across process restarts. Preserve unloaded sibling modules and newer in-memory entries when refreshing immutable package caches. Bump the persistent cache format so previous cache entries are rebuilt after upgrading.

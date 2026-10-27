@@ -5,6 +5,22 @@
 ### Minor Changes
 
 - b343109: Support loading `tailwindcss.config.js` in both CommonJS and ESM formats, and apply configured color theme extensions during utility generation.
+- ec5e740: Add reusable Farm Docs packages and Rust plugins for documentation planning, Markdown/MDX, static rendering, snippets, SEO and native styling. Migrate the official website to its independent Farm configuration with multilingual and versioned content.
+
+  Add the Core output ownership, cache completion and runtime/HMR support needed by documentation builds and development updates. Preserve readable compiler errors in the CLI and expose the corresponding public types.
+
+  Preserve license comments and their original source positions when combining ordinary or already hoisted module source maps.
+
+### Patch Changes
+
+- 5861c49: Restore candidate scanning for cached source modules and watch initially empty sources so their first utility classes regenerate stylesheets.
+- b343109: Load JSON-serializable Tailwind configuration from `tailwind.config.js` in the Rust TailwindCSS plugin.
+
+### Earlier 2.0.0 preparation
+
+### Minor Changes
+
+- b343109: Support loading `tailwindcss.config.js` in both CommonJS and ESM formats, and apply configured color theme extensions during utility generation.
 
 ### Patch Changes
 
