@@ -27,14 +27,9 @@ export function resourceSnapshot({ platform = process.platform, freeBytes = os.f
     if (availableBytes === null) reason ??= 'MemAvailable probe is unavailable';
   } else {
     method = 'Observed free pages only; available memory is not established';
-    reason = 'Darwin free pages and process.availableMemory are not a calibrated available-memory probe; pressure/reclaimable measurements and business-2048 budget remain required';
+    reason = 'Raw Darwin free pages are not admission evidence. The OS supervisor must verify pressure and complete a full workload bootstrap.';
   }
   return { platform, observedFreeBytes: freeBytes, totalBytes, availableBytes, diskFreeBytes, method, reason,
     ...(platform === 'darwin' ? { diagnostics: darwin ?? (process.platform === 'darwin' ? darwinDiagnostics() : null) } : {}),
-    policy: { memoryFloorBytes: 3.4 * 1024 ** 3, diskFloorBytes: 8 * 1024 ** 3, businessBudgetCalibrated: false } };
-}
-export function assertPerformanceResources(resources) {
-  const fail = (kind, message) => { const error = new Error(message); error.failureKind = kind; throw error; };
-  if (!Number.isFinite(resources.availableBytes) || !Number.isFinite(resources.diskFreeBytes)) fail('resource-unavailable', resources.reason ?? 'Resource probe unavailable');
-  if (resources.availableBytes < resources.policy.memoryFloorBytes || resources.diskFreeBytes < resources.policy.diskFloorBytes) fail('resource-insufficient', 'Resource safety floor not met; business-2048 will not be replaced by baseline');
+    observationOnly: true, policy: { admission: 'Verified OS pressure plus supervised cold/warm bootstrap required', diskFloorBytes: 8 * 1024 ** 3, businessBudgetCalibrated: false } };
 }

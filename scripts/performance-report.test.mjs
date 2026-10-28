@@ -19,10 +19,12 @@ test('failed and missing samples do not become zero-duration measurements', () =
   assert.equal(cells[1].medianMs, null);
 });
 test('baseline requires matching explicit protocol, fixture and toolchain dimensions', () => {
-  const metadata = { protocol: 'v1', fixtureSha256: 'abc', harnessSha256: 'harness-a', node: '22', pnpm: '9', os: 'linux', arch: 'x64', lockSha256: 'def' };
+  const metadata = { protocol: 'v1', fixtureSha256: 'abc', harnessSha256: 'harness-a', node: '22', pnpm: '9', python: 'Python 3.12.8', os: 'linux', arch: 'x64', runnerImage: 'ubuntu24', runnerImageVersion: 'one', lockSha256: 'def' };
   assert.ok(compatible(metadata, { ...metadata }));
   assert.equal(compatible(metadata, { ...metadata, arch: 'arm64' }), false);
   assert.equal(compatible(metadata, { ...metadata, harnessSha256: 'harness-b' }), false);
+  assert.equal(compatible(metadata, { ...metadata, python: 'Python 3.13.0' }), false);
+  assert.equal(compatible(metadata, { ...metadata, runnerImageVersion: 'two' }), false);
   assert.equal(compatible({}, {}), false);
 });
 test('business-2048 generates real business files, never reports files as modules', async () => {

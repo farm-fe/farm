@@ -78,7 +78,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        id: contract-python
+        with:
+          python-version: '3.12'
       - name: Validate report, trust, cleanup and comparison contracts
+        env:
+          FARM_PERFORMANCE_PYTHON: ${{ steps.contract-python.outputs.python-path }}
         run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs
 
   call-rust-build-user:
@@ -380,6 +386,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
       - uses: pnpm/action-setup@v4
+        id: performance-pnpm
         with:
           version: 9.4.0
           run_install: false
@@ -388,6 +395,10 @@ jobs:
           node-version: 22.20.0
       - name: Initialize performance evidence
         run: node scripts/performance-evidence.mjs init
+      - uses: actions/setup-python@v5
+        id: performance-python
+        with:
+          python-version: '3.12'
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Install comparison correctness browser (outside measured samples)
@@ -541,12 +552,16 @@ jobs:
           persist-credentials: false
       - name: Prepare compatible exact-base native consumer
         env:
+          FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
+          FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           GITHUB_TOKEN: ${{ github.token }}
           FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/prepare-performance-base.mjs
       - name: Sample isolated Commerce baseline
         env:
+          FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
+          FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           GITHUB_TOKEN: ${{ github.token }}
           FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}

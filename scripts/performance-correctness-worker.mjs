@@ -3,6 +3,8 @@ import path from 'node:path';
 import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { verifyComparisonBrowser, COMPARISON_PROTOCOL } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
+import { verifyBusinessBrowser } from '../examples/commerce-lab/benchmark/business-correctness.mjs';
+import { BUSINESS_COMPARISON_PROTOCOL } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
 
 export async function serveBuild(directory) {
   const root = await fs.realpath(directory);
@@ -36,6 +38,16 @@ export async function verifyBuiltComparison(root, browser) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { chromium } = await import('playwright-chromium');
   const browser = await chromium.launch({ headless: true });
-  try { await fs.writeFile(process.argv[3], JSON.stringify(await verifyBuiltComparison(process.argv[2], browser))); }
+  try {
+    if (process.argv[2] === '--business') {
+      const results = {};
+      for (const [tool, directory] of [['farm', process.argv[3]], ['vite', process.argv[4]]]) {
+        const server = await serveBuild(directory), context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+        try { const page = await context.newPage(); page.setDefaultTimeout(15000); results[tool] = await verifyBusinessBrowser(page, server.url); }
+        finally { await context.close(); await server.close(); }
+      }
+      await fs.writeFile(process.argv[5], JSON.stringify({ protocol: BUSINESS_COMPARISON_PROTOCOL, status: 'complete', measured: false, results }));
+    } else await fs.writeFile(process.argv[3], JSON.stringify(await verifyBuiltComparison(process.argv[2], browser)));
+  }
   finally { await browser.close(); }
 }

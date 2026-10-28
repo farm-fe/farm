@@ -1,0 +1,335 @@
+"""Single-command, standard-library OS supervision; never a cross-run budget store."""
+# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline
+import ctypes
+import json
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import threading
+import time
+
+
+def pressure_snapshot(directory):
+    result = {"diskFreeBytes": shutil.disk_usage(directory).free, "availableBytes": None}
+    if sys.platform == "darwin":
+        level = int(subprocess.check_output(["/usr/sbin/sysctl", "-n", "kern.memorystatus_vm_pressure_level"], text=True, timeout=2).strip())
+        if level not in (1, 2, 4):
+            raise RuntimeError("Unknown Darwin pressure level")
+        result["pressure"] = {"state": {1: "normal", 2: "warning", 4: "critical"}[level], "raw": level, "source": "kern.memorystatus_vm_pressure_level"}
+        vm = subprocess.check_output(["/usr/bin/vm_stat"], text=True, timeout=2)
+        page_size = re.search(r"page size of (\d+) bytes", vm)
+        if not page_size:
+            raise RuntimeError("Unknown Darwin page size")
+        counters = dict((key, int(value)) for key, value in re.findall(r"^([^:\n]+):\s+(\d+)\.", vm, re.M))
+        if "Pageouts" not in counters:
+            raise RuntimeError("Missing Darwin pageout counter")
+        swap = subprocess.check_output(["/usr/sbin/sysctl", "-n", "vm.swapusage"], text=True, timeout=2)
+        used = re.search(r"used\s*=\s*([\d.]+)([KMG])", swap)
+        if not used:
+            raise RuntimeError("Unknown Darwin swap usage")
+        result["swap"] = {"usedBytes": float(used[1]) * (1024 ** {"K": 1, "M": 2, "G": 3}[used[2]]), "pageouts": counters["Pageouts"], "swapins": counters.get("Swapins"), "swapouts": counters.get("Swapouts"), "pageSize": int(page_size[1])}
+    elif sys.platform.startswith("linux"):
+        with open("/proc/meminfo", encoding="utf-8") as source:
+            memory = dict((key, int(value) * 1024) for key, value in re.findall(r"^(\w+):\s+(\d+) kB", source.read(), re.M))
+        def read_psi():
+            with open("/proc/pressure/memory", encoding="utf-8") as source:
+                return dict((kind, {"avg10": float(average), "total": int(total)}) for kind, average, total in re.findall(r"^(some|full) avg10=([\d.]+).*total=(\d+)$", source.read(), re.M))
+        previous = read_psi(); time.sleep(0.05); psi = read_psi()
+        if set(previous) != {"some", "full"} or set(psi) != {"some", "full"} or "MemAvailable" not in memory:
+            raise RuntimeError("Missing Linux memory pressure/available probe")
+        deltas = dict((kind, psi[kind]["total"] - previous[kind]["total"]) for kind in ("some", "full"))
+        if any(value < 0 for value in deltas.values()):
+            raise RuntimeError("Linux PSI counters moved backwards")
+        result["pressure"] = {"state": "normal" if not any(deltas.values()) else "warning", "source": "Linux PSI: stop on observed memory stalls", "counters": psi, "stallDeltaMicroseconds": deltas, "observationWindowMs": 50}
+        result["availableBytes"] = memory["MemAvailable"]
+        with open("/proc/vmstat", encoding="utf-8") as source:
+            counters = dict((key, int(value)) for key, value in re.findall(r"^(pswpin|pswpout) (\d+)$", source.read(), re.M))
+        if set(counters) != {"pswpin", "pswpout"}:
+            raise RuntimeError("Missing Linux paging counters")
+        result["swap"] = {"usedBytes": memory["SwapTotal"] - memory["SwapFree"], "swapins": counters.get("pswpin"), "pageouts": counters.get("pswpout"), "pageSize": os.sysconf("SC_PAGE_SIZE")}
+    elif os.name == "nt":
+        from ctypes import wintypes as w
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+
+        class Memory(ctypes.Structure):
+            _fields_ = [("length", w.DWORD), ("load", w.DWORD)] + [(name, ctypes.c_ulonglong) for name in ["total", "available", "commitTotal", "commitAvailable", "virtualTotal", "virtualAvailable", "extended"]]
+
+        memory = Memory(); memory.length = ctypes.sizeof(memory)
+        if not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        kernel.CreateMemoryResourceNotification.restype = w.HANDLE
+        notification = kernel.CreateMemoryResourceNotification(0)
+        if not notification:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            low = w.BOOL()
+            if not kernel.QueryMemoryResourceNotification(w.HANDLE(notification), ctypes.byref(low)):
+                raise ctypes.WinError(ctypes.get_last_error())
+        finally:
+            kernel.CloseHandle(w.HANDLE(notification))
+        result["availableBytes"] = memory.available
+        result["pressure"] = {"state": "warning" if low.value else "normal", "source": "Windows LowMemoryResourceNotification", "raw": bool(low.value)}
+        result["swap"] = {"usedBytes": None, "pageouts": None, "reason": "No verified cumulative paging counter; commit/pagefile values are not substituted for swap or RSS"}
+    else:
+        raise RuntimeError("Unsupported pressure platform")
+    return result
+
+
+class ResourceUnavailableError(RuntimeError):
+    pass
+
+
+class ResourceInsufficientError(RuntimeError):
+    pass
+
+
+def verified_snapshot(directory):
+    try:
+        return pressure_snapshot(directory)
+    except Exception as error:
+        raise ResourceUnavailableError(str(error)) from error
+
+
+def admit(snapshot, policy, require_available=True):
+    if snapshot["pressure"]["state"] != "normal":
+        raise ResourceInsufficientError("Memory pressure is not normal")
+    if snapshot["diskFreeBytes"] < policy["diskFloorBytes"]:
+        raise ResourceInsufficientError("Disk safety reserve reached")
+    minimum = policy.get("requiredAvailableBytes")
+    if require_available and minimum and snapshot["availableBytes"] is not None and snapshot["availableBytes"] < minimum:
+        raise ResourceInsufficientError("Measured bootstrap memory admission budget not met")
+
+
+def unix_group_rss(group):
+    rows = subprocess.check_output(["/bin/ps", "-axo", "pid=,pgid=,rss=,time="], text=True, timeout=2)
+    values = [(int(rss) * 1024, cpu) for pid, pgid, rss, cpu in re.findall(r"^\s*(\d+)\s+(\d+)\s+(\d+)\s+([\d:.-]+)\s*$", rows, re.M) if int(pgid) == group]
+    def seconds(value):
+        days, clock = value.split("-", 1) if "-" in value else ("0", value)
+        total = 0.0
+        for part in clock.split(":"):
+            total = total * 60 + float(part)
+        return int(days) * 86400 + total
+    return {"rssBytes": sum(value[0] for value in values), "liveProcessCpuSeconds": sum(seconds(value[1]) for value in values)}
+
+
+class WindowsJob:
+    """Suspended launch + kill-on-close Job Object; no WMI or unrelated PID kills."""
+    def __init__(self, argv, cwd, log):
+        import _winapi
+        import msvcrt
+        from ctypes import wintypes as w
+        self.process = None; self.job = None; self.assigned = False
+        self.kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.psapi = ctypes.WinDLL("psapi", use_last_error=True)
+        self.kernel.CreateJobObjectW.restype = w.HANDLE
+        self.job = self.kernel.CreateJobObjectW(None, None)
+        if not self.job:
+            raise ctypes.WinError(ctypes.get_last_error())
+
+        class Basic(ctypes.Structure):
+            _fields_ = [("processTime", ctypes.c_longlong), ("jobTime", ctypes.c_longlong), ("flags", w.DWORD), ("minWork", ctypes.c_size_t), ("maxWork", ctypes.c_size_t), ("activeLimit", w.DWORD), ("affinity", ctypes.c_size_t), ("priority", w.DWORD), ("scheduling", w.DWORD)]
+        class Io(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_ulonglong) for name in ["readOps", "writeOps", "otherOps", "readBytes", "writeBytes", "otherBytes"]]
+        class Extended(ctypes.Structure):
+            _fields_ = [("basic", Basic), ("io", Io)] + [(name, ctypes.c_size_t) for name in ["processLimit", "jobLimit", "processPeak", "jobPeak"]]
+        self.info = Extended(); self.info.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not self.kernel.SetInformationJobObject(w.HANDLE(self.job), 9, ctypes.byref(self.info), ctypes.sizeof(self.info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        startup = subprocess.STARTUPINFO(); startup.dwFlags = subprocess.STARTF_USESTDHANDLES
+        self.input = open(os.devnull, "rb")
+        for fd in (self.input.fileno(), log.fileno()):
+            os.set_inheritable(fd, True)
+        startup.hStdInput = msvcrt.get_osfhandle(self.input.fileno())
+        startup.hStdOutput = startup.hStdError = msvcrt.get_osfhandle(log.fileno())
+        self.process, thread, self.pid, _ = _winapi.CreateProcess(argv[0], subprocess.list2cmdline(argv), None, None, True, 0x4 | 0x200 | 0x08000000, None, cwd, startup)
+        try:
+            if not self.kernel.AssignProcessToJobObject(w.HANDLE(self.job), w.HANDLE(self.process)):
+                self.kernel.TerminateProcess(w.HANDLE(self.process), 1)
+                raise ctypes.WinError(ctypes.get_last_error())
+            self.assigned = True
+            if self.kernel.ResumeThread(w.HANDLE(thread)) == -1:
+                raise ctypes.WinError(ctypes.get_last_error())
+        finally:
+            self.kernel.CloseHandle(w.HANDLE(thread))
+        self.kernel.OpenProcess.restype = w.HANDLE
+
+    def rss(self):
+        from ctypes import wintypes as w
+        buffer = ctypes.create_string_buffer(8 + ctypes.sizeof(ctypes.c_void_p) * 4096)
+        if not self.kernel.QueryInformationJobObject(w.HANDLE(self.job), 3, buffer, len(buffer), None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        count = ctypes.cast(buffer, ctypes.POINTER(w.DWORD))[1]
+        if count > 4096:
+            raise RuntimeError("Owned process count exceeds bound")
+        ids = (ctypes.c_size_t * count).from_buffer(buffer, 8)
+        measurements = []
+        for pid in ids:
+            try:
+                measurements.append(self.memory(int(pid)))
+            except OSError as error:
+                if error.winerror not in (87, 1168):
+                    raise
+        return {"rssBytes": sum(row[0] for row in measurements), "liveProcessCpuSeconds": sum(row[2] for row in measurements)}
+
+    def memory(self, pid=None):
+        from ctypes import wintypes as w
+        class Counters(ctypes.Structure):
+            _fields_ = [("size", w.DWORD), ("faults", w.DWORD)] + [(name, ctypes.c_size_t) for name in ["peak", "working", "peakPaged", "paged", "peakNonpaged", "nonpaged", "pagefile", "peakPagefile"]]
+        handle = self.process if pid is None or pid == self.pid else self.kernel.OpenProcess(0x410, False, pid)
+        if not handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            info = Counters(); info.size = ctypes.sizeof(info)
+            if not self.psapi.GetProcessMemoryInfo(w.HANDLE(handle), ctypes.byref(info), info.size):
+                raise ctypes.WinError(ctypes.get_last_error())
+            created = w.FILETIME(); exited = w.FILETIME(); kernel = w.FILETIME(); user = w.FILETIME()
+            if not self.kernel.GetProcessTimes(w.HANDLE(handle), ctypes.byref(created), ctypes.byref(exited), ctypes.byref(kernel), ctypes.byref(user)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            cpu = ((kernel.dwHighDateTime << 32) + kernel.dwLowDateTime + (user.dwHighDateTime << 32) + user.dwLowDateTime) / 10000000
+            return info.working, info.peak, cpu
+        finally:
+            if handle != self.process:
+                self.kernel.CloseHandle(w.HANDLE(handle))
+
+    def poll(self):
+        from ctypes import wintypes as w
+        code = w.DWORD()
+        if not self.kernel.GetExitCodeProcess(w.HANDLE(self.process), ctypes.byref(code)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return None if code.value == 259 else code.value
+
+    def cleanup(self):
+        from ctypes import wintypes as w
+        if self.process and not self.assigned:
+            self.kernel.TerminateProcess(w.HANDLE(self.process), 1)
+            if self.kernel.WaitForSingleObject(w.HANDLE(self.process), 5000) != 0:
+                return False
+        if not self.job:
+            return self.process is None
+        if not self.kernel.TerminateJobObject(w.HANDLE(self.job), 1):
+            raise ctypes.WinError(ctypes.get_last_error())
+        for _ in range(50):
+            buffer = ctypes.create_string_buffer(48)
+            if not self.kernel.QueryInformationJobObject(w.HANDLE(self.job), 1, buffer, len(buffer), None):
+                raise ctypes.WinError(ctypes.get_last_error())
+            if ctypes.c_uint32.from_buffer(buffer, 40).value == 0:  # ActiveProcesses
+                return True
+            time.sleep(0.05)
+        return False
+
+
+def run(config):
+    result = {"status": "invalid", "cleanupConfirmed": False, "samples": 0, "peakObservedGroupRssBytes": 0, "kernelPeakRssBytes": None}
+    child = None; job = None
+    started = None; usage = None
+    def cleanup():
+        if job:
+            return job.cleanup()
+        if not child:
+            return True
+        try:
+            os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            return True
+        for _ in range(50):
+            try:
+                os.killpg(child.pid, 0)
+            except ProcessLookupError:
+                return True
+            # Reap the direct child after an interrupted run.
+            try:
+                os.waitpid(child.pid, os.WNOHANG)
+            except ChildProcessError:
+                pass
+            time.sleep(0.05)
+        return False
+    def interrupted(*_):
+        raise RuntimeError("Supervisor interrupted")
+    signal.signal(signal.SIGTERM, interrupted)
+    try:
+        result["before"] = verified_snapshot(config["cwd"]); admit(result["before"], config["policy"])
+        with open(config["log"], "ab", buffering=0) as log:
+            started = time.monotonic()
+            if os.name == "nt":
+                job = WindowsJob.__new__(WindowsJob)
+                job.__init__(config["argv"], config["cwd"], log)
+            else:
+                child = subprocess.Popen(config["argv"], cwd=config["cwd"], stdout=log, stderr=log, start_new_session=True)
+            result["rootPid"] = job.pid if job else child.pid
+            completed = threading.Event()
+            completion = {}
+            def wait_for_root():
+                try:
+                    if job:
+                        from ctypes import wintypes as w
+                        job.kernel.WaitForSingleObject(w.HANDLE(job.process), 0xFFFFFFFF)
+                        completion["code"] = job.poll()
+                    else:
+                        _, status, root_usage = os.wait4(child.pid, 0)
+                        completion["usage"] = root_usage
+                        completion["code"] = os.waitstatus_to_exitcode(status)
+                        child.returncode = completion["code"]
+                    completion["ended"] = time.monotonic()
+                except Exception as error:
+                    completion["error"] = str(error)
+                finally:
+                    completed.set()
+            threading.Thread(target=wait_for_root, daemon=True).start()
+            previous_pressure = result["before"]["pressure"]
+            while True:
+                observation = verified_snapshot(config["cwd"])
+                if sys.platform.startswith("linux"):
+                    for kind in ("some", "full"):
+                        if observation["pressure"]["counters"][kind]["total"] != previous_pressure["counters"][kind]["total"]:
+                            observation["pressure"]["state"] = "warning"
+                    previous_pressure = observation["pressure"]
+                result["lastObservation"] = observation
+                admit(observation, config["policy"], require_available=False)
+                observed = job.rss() if job else unix_group_rss(child.pid)
+                result["samples"] += 1; result["peakObservedGroupRssBytes"] = max(result["peakObservedGroupRssBytes"], observed["rssBytes"])
+                print(json.dumps({"event": "sample", "elapsedMs": (time.monotonic() - started) * 1000, **observed, **observation}), flush=True)
+                if completed.is_set():
+                    if "error" in completion:
+                        raise RuntimeError(completion["error"])
+                    result["exitCode"] = completion["code"]
+                    usage = completion.get("usage")
+                    break
+                if (time.monotonic() - started) * 1000 >= config["timeoutMs"]:
+                    raise RuntimeError("Supervised command deadline reached")
+                completed.wait(1)
+            result["durationMs"] = (completion["ended"] - started) * 1000
+            result["kernelPeakRssBytes"] = job.memory()[1] if job else usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
+            result["rssSource"] = "Windows PeakWorkingSetSize" if job else "wait4 rusage maxrss (Darwin bytes; Linux KiB converted)"
+            result["after"] = verified_snapshot(config["cwd"]); admit(result["after"], config["policy"], require_available=False)
+            if result["exitCode"] != 0:
+                raise RuntimeError("Supervised child failed")
+            if not result["kernelPeakRssBytes"]:
+                raise RuntimeError("Kernel peak RSS unavailable")
+            result["status"] = "complete"
+    except Exception as error:
+        result["error"] = str(error)
+        result["errorType"] = type(error).__name__
+        result["failureKind"] = "resource-unavailable" if isinstance(error, ResourceUnavailableError) else "resource-insufficient" if isinstance(error, ResourceInsufficientError) else "sampling-failure"
+    finally:
+        if started is not None:
+            result["elapsedMs"] = (time.monotonic() - started) * 1000
+        result["phase"] = config.get("phase"); result["cwd"] = config["cwd"]; result["timeoutMs"] = config["timeoutMs"]
+        try:
+            result["cleanupConfirmed"] = cleanup()
+        except Exception as error:
+            result["cleanupError"] = str(error)
+        if not result["cleanupConfirmed"]:
+            result["status"] = "invalid"
+        print(json.dumps({"event": "result", **result}), flush=True)
+    return result
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--probe":
+        print(json.dumps(pressure_snapshot(sys.argv[2])))
+    else:
+        result = run(json.loads(sys.stdin.readline()))
+        sys.exit(0 if result["status"] == "complete" else 1)

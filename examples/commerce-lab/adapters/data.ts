@@ -1,8 +1,11 @@
 import fs from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { compile } from '@mdx-js/mdx';
 import Papa from 'papaparse';
 import { parse } from 'yaml';
 import type { JsPlugin } from '@farmfe/core';
+const markdownRequire = createRequire(new URL('../../../website/package.json', import.meta.url));
 
 /** Thin Farm load hook around the same maintained parsers used at runtime. */
 export function data(): JsPlugin {
@@ -13,9 +16,10 @@ export function data(): JsPlugin {
       async executor(param) {
         const content = await fs.readFile(param.resolvedPath, 'utf8');
         if (param.resolvedPath.endsWith('.mdx')) {
+          const { default: gfm } = await import(pathToFileURL(markdownRequire.resolve('remark-gfm')).href);
           return {
             content: String(
-              await compile(content, { development: false, jsx: false }),
+              await compile(content, { development: false, jsx: false, remarkPlugins: [gfm] }),
             ),
             moduleType: 'js',
           };

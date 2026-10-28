@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resourceSnapshot, assertPerformanceResources, parseDarwinVmStat } from './performance-resources.mjs';
+import { resourceSnapshot, parseDarwinVmStat } from './performance-resources.mjs';
+import { assertPressureObservation } from './performance-supervised.mjs';
 test('Darwin free pages never become available physical memory or an identity error', () => {
   const probe = resourceSnapshot({ platform: 'darwin', freeBytes: 1024, totalBytes: 16 * 1024 ** 3, diskFreeBytes: 30 * 1024 ** 3 });
   assert.equal(probe.availableBytes, null); assert.equal(probe.observedFreeBytes, 1024);
-  assert.throws(() => assertPerformanceResources(probe), error => error.failureKind === 'resource-unavailable');
+  assert.throws(() => assertPressureObservation(probe));
+  assert.equal(probe.observationOnly, true);
+  assertPressureObservation({ ...probe, pressure: { state: 'normal' } });
 });
 test('Darwin VM diagnostics retain page size/counters without double-counting reclaimable memory', () => {
   const parsed = parseDarwinVmStat('Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free: 100.\nPages inactive: 500.\nPages purgeable: 200.\n');
@@ -15,7 +18,7 @@ test('Darwin VM diagnostics retain page size/counters without double-counting re
 });
 test('Linux uses MemAvailable, Windows uses available physical bytes, and insufficient resources stay explicit', () => {
   const linux = resourceSnapshot({ platform: 'linux', freeBytes: 1024, totalBytes: 8 * 1024 ** 3, diskFreeBytes: 30 * 1024 ** 3, linuxMemoryInfo: 'MemAvailable: 5242880 kB\n' });
-  assert.equal(linux.availableBytes, 5 * 1024 ** 3); assertPerformanceResources(linux);
+  assert.equal(linux.availableBytes, 5 * 1024 ** 3); assertPressureObservation({ ...linux, pressure: { state: 'normal' } });
   const windows = resourceSnapshot({ platform: 'win32', freeBytes: 1024, diskFreeBytes: 30 * 1024 ** 3 });
-  assert.throws(() => assertPerformanceResources(windows), error => error.failureKind === 'resource-insufficient');
+  assert.throws(() => assertPressureObservation({ ...windows, pressure: { state: 'normal' } }, { requiredAvailableBytes: 2048 }));
 });

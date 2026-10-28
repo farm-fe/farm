@@ -19,3 +19,30 @@ export function summarizeGraph({ modules, edges }) {
     tracedEdges: pairs.size, edgesWithUnretainedEndpoints: pairs.size - retainedPairs.size,
     limitation: 'The trace records retained post-optimization modules but can retain edges to pruned modules. Query modules are counted by identity, not asserted to be all plugin-generated modules.' };
 }
+
+/** Coverage of input identities, separate from either bundler's retained module count. */
+export function generatedCoverage(expected, stages, generatedRoot, projectRoot) {
+  const normalize = value => value.replaceAll('\\', '/').split('?')[0].replace(/^\/@fs\//, '');
+  const absolute = normalize(generatedRoot).replace(/\/$/, '') + '/';
+  const project = normalize(projectRoot).replace(/\/$/, '') + '/';
+  const relative = absolute.startsWith(project) ? absolute.slice(project.length) : absolute;
+  const observed = new Set();
+  const categories = {};
+  for (const [stage, values] of Object.entries(stages)) {
+    const ids = [...new Set(values)];
+    if (ids.some(id => typeof id !== 'string')) throw new Error('Non-string actual graph identity');
+    categories[stage] = { identities: ids.length, query: ids.filter(id => id.includes('?')).length,
+      virtual: ids.filter(id => id.startsWith('\0') || /^(virtual:|farm-virtual:|~icons\/)/.test(id)).length,
+      css: ids.filter(id => /\.(css|scss|sass)(\?|$)/.test(id)).length,
+      assets: ids.filter(id => /\.(svg|png|jpe?g|webp|wasm)(\?|$)/.test(id)).length };
+    for (const id of ids) {
+      const file = normalize(id);
+      if (file.startsWith(absolute)) observed.add(file.slice(absolute.length));
+      else if (file.startsWith(relative)) observed.add(file.slice(relative.length));
+    }
+  }
+  const files = [...new Set(expected.map(normalize))];
+  if (files.length !== expected.length || files.some(file => file.startsWith('/') || file.split('/').includes('..'))) throw new Error('Invalid expected generated source list');
+  const missing = files.filter(file => !observed.has(file)).sort();
+  return { generatedFiles: files.length, generatedCovered: files.length - missing.length, missing, categories };
+}

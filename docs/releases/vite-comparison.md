@@ -1,3 +1,18 @@
+# Current complete Commerce comparison
+
+The main CI sampler now uses `commerce-full-business-2048-v1` and the complete
+original Commerce HTML/admin app with every business-2048 generated input. See
+[the current performance protocol](./performance-report.md) for supervision,
+full source graph coverage, shared browser acceptance, timing and cache boundaries.
+Vite remains pinned to 5.2.8. Farm persistent reuse and Vite repeat builds are not
+claimed to have equivalent warm-cache semantics. Current implementation still
+requires its own remote validation; historical results below prove only the subset.
+
+The following record is preserved as an independent historical microbenchmark.
+It is not the main comparison, and its samples cannot be mixed into the new protocol.
+
+---
+
 # Real Vite comparison: Commerce catalog/quote subset
 
 Protocol `commerce-catalog-quote-subset-v1` compares Farm's native compiler with

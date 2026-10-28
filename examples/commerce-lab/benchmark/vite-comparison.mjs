@@ -8,6 +8,7 @@ import { performance } from 'node:perf_hooks';
 
 export const VITE_COMPARISON_VERSION = '5.2.8';
 export const COMPARISON_PROTOCOL = 'commerce-catalog-quote-subset-v1';
+export const BUSINESS_COMPARISON_PROTOCOL = 'commerce-full-business-2048-v1';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 

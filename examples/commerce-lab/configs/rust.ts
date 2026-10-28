@@ -34,7 +34,7 @@ export function rustPlugins() {
       autoImport({ presets: ['react'], dts: false }),
       yaml(),
       dsv({ include: ['\\.(csv|tsv)$'] }),
-      mdx({ include: '\\.mdx$' }),
+      mdx({ include: '\\.mdx$', parse: { constructs: { gfmTable: true } } }),
       worker(),
       compress({ algorithm: 'gzip', level: 6, threshold: 1024, deleteOriginFile: false }),
       wasm(),

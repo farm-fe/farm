@@ -23,7 +23,7 @@ export function validateSummary(bytes) {
   assert(Buffer.byteLength(bytes) <= 65536, 'Summary exceeds 64 KiB');
   const value = JSON.parse(bytes);
   assert(exact(value, ['schemaVersion', 'repositoryId', 'runId', 'runAttempt', 'event', 'headSHA', 'baseSHA', 'prNumber', 'protocol', 'reports']), 'Invalid summary schema');
-  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-rust-build-v2' && value.event === 'pull_request', 'Invalid protocol');
+  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-supervised-v1' && value.event === 'pull_request', 'Invalid protocol');
   assert(integer(value.repositoryId) && integer(value.runId) && integer(value.prNumber) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
   assert(Array.isArray(value.reports) && value.reports.length > 0 && value.reports.length <= 3, 'Invalid reports');
   const systems = new Set();
@@ -44,10 +44,10 @@ export function validateSummary(bytes) {
 function validateReport(value) {
   assert(['complete', 'partial', 'invalid'].includes(value.status), 'Invalid status');
   cells(value.cells);
-  assert(exact(value.comparison, ['mode', 'baseCells', 'viteCells', 'farmSubsetCells', 'subsetProtocol']) && ['paired', 'current-only'].includes(value.comparison.mode), 'Invalid comparison');
+  assert(exact(value.comparison, ['mode', 'baseCells', 'viteCells', 'farmBusinessCells', 'businessProtocol']) && ['paired', 'current-only'].includes(value.comparison.mode), 'Invalid comparison');
   cells(value.comparison.baseCells); cells(value.comparison.viteCells);
-  cells(value.comparison.farmSubsetCells);
-  assert(value.comparison.subsetProtocol === 'commerce-catalog-quote-subset-v1', 'Invalid Vite subset protocol');
+  cells(value.comparison.farmBusinessCells);
+  assert(value.comparison.businessProtocol === 'commerce-full-business-2048-v1', 'Invalid complete Commerce protocol');
   assert(Array.isArray(value.history) && value.history.length <= 20, 'Invalid history');
   for (const row of value.history) assert(exact(row, ['headSHA', 'runId', 'medianMs']) && sha(row.headSHA) && integer(row.runId) && Number.isFinite(row.medianMs) && row.medianMs >= 0 && row.medianMs <= 86400000, 'Invalid history row');
 }
@@ -83,7 +83,7 @@ export function renderComment(summary, repository) {
   const timing = cell => cell && cell.medianMs !== null ? `${cell.medianMs.toFixed(1)} ms (IQR ${cell.iqrMs.toFixed(1)}; ${cell.validSamples}/${cell.samples})` : 'Unavailable';
   const diagnostics = (summary.diagnostics ?? []).map(reason => `- ${reason.replace(/[&<>`*_\[\]\\@]/g, character => `&#${character.charCodeAt(0)};`)}`).join('\n');
   const rows = ['cold', 'warm'].map(mode => `| ${mode} | ${timing(summary.cells.find(c => c.cacheMode === mode))} | ${timing(summary.comparison.baseCells.find(c => c.cacheMode === mode))} |`);
-  const subset = `${diagnostics}\n\n### Common catalog/quote subset (separate protocol)\n\nFull Rust Commerce timings above are not compared with this subset. Persistent caching is disabled for both tools.\n\n| Farm subset | Vite 5.2.8 subset |\n|---|---|\n| ${timing(summary.comparison.farmSubsetCells[0])} | ${timing(summary.comparison.viteCells[0])} |`;
+  const subset = `${diagnostics}\n\n### Complete business-2048 production builds\n\nSame original application and generated inputs; new-process wall clock including gzip. Vite 5.2.8 disables production Rollup cache. Its repeat-build samples are recorded separately and are not compared with Farm persistent reuse. Coverage and browser failures make the run invalid; no valid ratio follows from partial samples.\n\n| Farm cold | Vite cold |\n|---|---|\n| ${timing(summary.comparison.farmBusinessCells[0])} | ${timing(summary.comparison.viteCells[0])} |`;
   return `${marker}\n## Performance report\n\nStatus: **${summary.status}**; comparison: **${summary.comparison.mode}**\n\n| Cache | Farm head | Farm base |\n|---|---|---|\n${rows.join('\n')}\n\n${subset}\n\n[Run ${summary.runId}](https://github.com/${repository}/actions/runs/${summary.runId}); head: \`${summary.headSHA}\`\n\nMeasurements are untrusted CI data, informational only; three samples are not formal certification.\n\n### Recent comparable cold builds\n${summary.history.length ? summary.history.map(row => `- \`${row.headSHA.slice(0, 12)}\`: ${row.medianMs.toFixed(1)} ms ([run](https://github.com/${repository}/actions/runs/${row.runId}))`).join('\n') : 'No compatible history available.'}`;
 }
 

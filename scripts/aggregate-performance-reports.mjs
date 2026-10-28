@@ -5,13 +5,14 @@ import { validateSummary } from './performance-pr-reporter.mjs';
 import { validationEvent } from './v2-release-inventory.mjs';
 
 export function compactReport(report) {
+  const fullVite = report.vite?.protocol === 'commerce-full-business-2048-v1';
   const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key] ?? null]));
   return { metadata, status: report.status, cells: report.cells ?? [],
     comparison: { mode: report.comparison?.mode ?? 'current-only', baseCells: report.comparison?.mode === 'paired' ? report.comparison.baseCells : [],
-      farmSubsetCells: report.vite?.farmCells ?? [], viteCells: report.vite?.viteCells ?? [], subsetProtocol: 'commerce-catalog-quote-subset-v1' },
+      farmBusinessCells: fullVite ? report.vite.farmCells ?? [] : [], viteCells: fullVite ? report.vite.viteCells ?? [] : [], businessProtocol: 'commerce-full-business-2048-v1' },
     history: (report.history?.entries ?? []).slice(0, 10).map(row => ({ headSHA: row.sourceHeadSHA, runId: row.runId,
       medianMs: row.cells.find(cell => cell.cacheMode === 'cold')?.medianMs })).filter(row => Number.isFinite(row.medianMs)),
-    diagnostics: [report.failureKind ? `Failure kind: ${report.failureKind}` : null, report.comparison?.reason, report.history?.reason, report.history?.error,
+    diagnostics: [report.failureKind ? `Failure kind: ${report.failureKind}` : null, report.vite && !fullVite ? 'Vite comparison protocol is incompatible; subset results were excluded' : null, report.comparison?.reason, report.history?.reason, report.history?.error,
       ...(report.history?.excluded ?? []).map(row => typeof row === 'string' ? row : `History run ${row.runId}: ${row.reason}${row.detail ? ` (${row.detail})` : ''}`), ...(report.errors ?? [])]
       .filter(value => typeof value === 'string' && value.length).slice(0, 30).map(value => value.replace(/[\x00-\x1f]/g, ' ').slice(0, 500)) };
 }
@@ -32,7 +33,7 @@ async function main() {
   const directory = path.resolve('.performance-reports');
   const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT), event: 'pull_request',
     headSHA: event.pull_request.head.sha, baseSHA: event.pull_request.base.sha, prNumber: event.number,
-    protocol: 'commerce-business-2048-rust-build-v2', reports: [] };
+    protocol: 'commerce-business-2048-supervised-v1', reports: [] };
   const failures = [];
   for (const [abi, os, arch] of platforms) {
     const name = `performance-${process.env.GITHUB_SHA}-${abi}-attempt-${summary.runAttempt}`;
@@ -40,6 +41,7 @@ async function main() {
       const file = path.join(directory, name, 'summary.json');
       if ((await fs.stat(file)).size > 2 * 1024 * 1024) throw new Error('Oversized raw summary');
       const raw = JSON.parse(await fs.readFile(file, 'utf8'));
+      if (raw.protocol !== summary.protocol) throw new Error('Measurement protocol mismatch');
       if (raw.metadata?.revision !== process.env.GITHUB_SHA) throw new Error('Producer SHA mismatch');
       const report = compactReport(raw);
       if (report.metadata.os !== os || report.metadata.arch !== arch) throw new Error('Platform identity mismatch');

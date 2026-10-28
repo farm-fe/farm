@@ -13,4 +13,6 @@ export interface IPluginOptions {
   pragmaImportSource?: string;
   jsxImportSource?: string;
   filepath?: string;
+  /** Native parser options; unspecified constructs keep their CommonMark defaults. */
+  parse?: { constructs?: { gfmTable?: boolean } };
 }
