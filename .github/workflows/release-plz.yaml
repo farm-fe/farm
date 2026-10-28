@@ -48,7 +48,11 @@ jobs:
         with:
           toolchain: nightly-2026-04-10
           components: clippy, rustfmt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
       - name: Run release-plz
+        id: release-plz
         uses: release-plz/action@v0.5
         with:
           # Run `release-plz release-pr` command.
@@ -56,3 +60,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Public registry version preparation requires no publication credential.
+      - name: Bind the exact proposal to this producer run
+        if: steps.release-plz.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_CARGO_ACTION_PR: ${{ steps.release-plz.outputs.pr }}
+        run: node scripts/prepare-cargo-version-proposal.mjs --record-production

@@ -102,6 +102,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         execFileSync('git', ['fetch', 'origin', cargoRecord.headSHA], { cwd: root, timeout: 120000 });
         const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--locked', '--format-version', '1'], { cwd: root, encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 ** 2 }));
         validateCargoPreparation(cargoRecord, baseline, metadata, { baseSHA,
+          repository: process.env.GITHUB_REPOSITORY,
+          readProducerRun: id => JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${id}`], { cwd: root, encoding: 'utf8', timeout: 30000 })),
+          isAncestor: (base, head) => { execFileSync('git', ['merge-base', '--is-ancestor', base, head], { cwd: root }); return true; },
           readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
           changedFiles: (base, head) => execFileSync('git', ['diff', '--name-only', base, head], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean),
           readCurrent: file => fs.readFileSync(path.join(root, file), 'utf8') });

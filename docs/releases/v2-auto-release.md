@@ -30,10 +30,22 @@ push triggered CI. No new credential is created.
 ## Joint future Rust and npm preparation
 
 An open same-repository release-plz proposal must match the current main base and
-the configured workflow bot identity. Only the selected SDK's Cargo manifests,
-Cargo lock and changelogs are accepted. Manifest differences must contain stable
-version fields only; source/dependency rewrites, stale proposals, multiple open
-proposals, SDK closure changes and version downgrades stop preparation.
+the configured workflow bot identity. The producer records its exact run/attempt,
+source SHA, workflow path and proposal head in a bounded PR-body record using its
+existing PR permission. Inspection and application recheck the completed producer
+run and prove that the base is an ancestor of the proposal head; the current PR
+base field alone is insufficient. A workflow-run trigger must match that producer.
+
+The selected SDK's manifests, Cargo lock and changelogs are accepted only within
+the pinned proposal. The actual Cargo path reverse-dependency closure also permits
+dependency-version updates in affected native consumers such as node/react. Their
+package versions, paths, features and other metadata remain untouched; they are
+not added to the Rust publish set. These generated manifest updates have separate
+before/after hashes and are checked again before sealing. Native-owner impact
+uses the same closure, including build/test constraints needed by the workspace.
+Stable numeric constraint updates preserve exact/caret/tilde prefixes. Unrelated
+consumer edits, source/dependency rewrites, stale proposals, multiple proposals,
+SDK closure changes and version downgrades stop preparation.
 
 The Changesets version command copies that exact proposal patch into the version
 PR, records its base/head/file set, and creates a scoped native-consumer Changeset.

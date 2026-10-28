@@ -56,6 +56,8 @@ export async function refreshChangesetsVersionPr(root, number) {
   if (cargoRecord) {
     git('fetch', 'origin', cargoRecord.headSHA);
     cargoFiles = validateCargoPreparation(cargoRecord, baseline, metadata, { baseSHA: pr.base.sha,
+      repository, readProducerRun: id => gh('api', `repos/${repository}/actions/runs/${id}`),
+      isAncestor: (base, head) => { git('merge-base', '--is-ancestor', base, head); return true; },
       readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
       changedFiles: (base, head) => git('diff', '--name-only', base, head).split(/\r?\n/).filter(Boolean),
       readCurrent: file => fs.readFileSync(path.join(root, file), 'utf8') });
