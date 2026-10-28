@@ -18,7 +18,7 @@ import { probeSupervisedResources, finishBootstrap, supervisedCommand } from './
 import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json', 'examples/vite-adapter-vue-css/package.json'];
+export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json', 'examples/vite-adapter-vue-css/package.json', 'examples/vite-adapter-vue-css/performance-tailwind.mjs'];
 export const protocol = 'commerce-business-2048-supervised-v1';
 export const workloadScale = 'business-2048';
 export function businessFixture() { const profile = scaleProfile(workloadScale); return extensionSources(profile.categories, profile); }
@@ -66,6 +66,7 @@ async function prepareLab(sourceRoot, temporary, fixture) {
     const destination = path.join(temporary, owner);
     await fs.mkdir(destination, { recursive: true });
     await fs.copyFile(path.join(sourceRoot, owner, 'package.json'), path.join(destination, 'package.json'));
+    if (owner === 'examples/vite-adapter-vue-css') await fs.copyFile(path.join(sourceRoot, owner, 'performance-tailwind.mjs'), path.join(destination, 'performance-tailwind.mjs'));
     await fs.symlink(path.join(sourceRoot, owner, 'node_modules'), path.join(destination, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   }
   await fs.symlink(path.join(sourceRoot, 'examples/commerce-lab/node_modules'), path.join(lab, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');

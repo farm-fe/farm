@@ -1,3 +1,4 @@
+// cspell:words pids
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -56,7 +57,13 @@ test('real OS supervisor reports root exit and owned descendant cleanup, includi
     const source = `const cp=require('node:child_process').spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});require('node:fs').writeFileSync(process.argv[1],JSON.stringify({parent:process.pid,child:cp.pid}));setInterval(()=>{},1000);`;
     await assert.rejects(supervisedCommand(process.execPath, ['-e', source, pidFile], { ...options, commandLimitMs: 1500 }), error => {
       cleanupConfirmed = error.cleanupConfirmed === true;
-      assert.equal(error.cleanupConfirmed, true); assert.equal(error.supervision.status, 'invalid'); return true;
+      assert.equal(error.cleanupConfirmed, true); assert.equal(error.supervision.status, 'invalid');
+      if (process.platform !== 'win32') {
+        const proof = error.supervision.cleanupScopes.find(row => row.scope === 'root');
+        assert.equal(proof.ownershipVerified, true); assert.equal(proof.rootReaped, true);
+        assert.deepEqual(proof.remaining, []); assert.deepEqual(proof.groupMembers, []);
+      }
+      return true;
     });
     const pids = JSON.parse(fs.readFileSync(pidFile));
     cleanupConfirmed = false;

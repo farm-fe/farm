@@ -141,7 +141,16 @@ test('performance job is non-blocking, follows Examples and pins artifact names 
   assert.match(job, /playwright-chromium\/cli.js install --with-deps chromium/);
   assert.match(source.split('\n  performance-contract-tests:')[1].split('\n  call-rust-build-user:')[0], /node --test scripts\/performance\*\.test\.mjs/);
   const sampler = await fs.readFile(new URL('./performance-report.mjs', import.meta.url), 'utf8');
-  assert.ok(sampler.indexOf('performance-correctness-worker.mjs') > sampler.indexOf('report.vite.status ='));
+  const timingStart = sampler.indexOf('for (let round = -1; round < 3; round++)');
+  const timingEnd = sampler.indexOf('report.comparison.baseCells = aggregate', timingStart);
+  assert.ok(timingStart >= 0 && timingEnd > timingStart);
+  assert.doesNotMatch(sampler.slice(timingStart, timingEnd), /performance-correctness-worker\.mjs|phase: 'correctness'/);
+  const correctnessCall = /await supervisedCommand\(process\.execPath, \[path\.join\(root, 'scripts\/performance-correctness-worker\.mjs'\)/.exec(sampler);
+  assert.ok(correctnessCall && correctnessCall.index > timingEnd, 'Actual browser invocation follows all measured rounds');
+  assert.ok(correctnessCall.index > sampler.indexOf('report.vite.graph ='), 'Graph checks also remain outside measured rounds');
+  const worker = await fs.readFile(new URL('./performance-correctness-worker.mjs', import.meta.url), 'utf8');
+  assert.match(worker, /\['farm', process.argv\[3\]\], \['vite', process.argv\[4\]\]/);
+  assert.match(worker, /await verifyBusinessBrowser\(page, server.url\)/);
 });
 test('setup failure still produces invalid structured evidence', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-evidence-'));

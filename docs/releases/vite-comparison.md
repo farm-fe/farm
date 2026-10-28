@@ -1,3 +1,4 @@
+<!-- cspell:words microbenchmark -->
 # Current complete Commerce comparison
 
 The main CI sampler now uses `commerce-full-business-2048-v1` and the complete

@@ -1,5 +1,5 @@
 """Single-command, standard-library OS supervision; never a cross-run budget store."""
-# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid
+# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid pageout swapusage ulonglong STARTUPINFO winerror nonpaged getsid geteuid euid uid
 import ctypes
 import json
 import os
@@ -226,7 +226,16 @@ def run(config):
     result = {"status": "invalid", "cleanupConfirmed": False, "samples": 0, "peakObservedGroupRssBytes": 0, "kernelPeakRssBytes": None}
     child = None; job = None
     started = None; usage = None
+    completed = threading.Event(); completion = {}; waiter_started = False
+    cleanup_end = None
     browser_group = None
+    def probe_budget(seconds):
+        if cleanup_end is None:
+            return seconds
+        remaining = cleanup_end - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("Owned cleanup deadline exhausted")
+        return min(seconds, remaining)
     def browser_owner():
         if not config.get("browserOwnerFile") or not child:
             return None
@@ -250,24 +259,91 @@ def run(config):
         pid = owner.get("browserPid")
         if not isinstance(pid, int) or pid <= 1:
             raise RuntimeError("Invalid owned browser PID")
-        row = subprocess.check_output(["/bin/ps", "-p", str(pid), "-o", "ppid=,pgid=,lstart="], text=True, timeout=2).strip().split(None, 2)
+        row = subprocess.check_output(["/bin/ps", "-p", str(pid), "-o", "ppid=,pgid=,lstart="], text=True, timeout=probe_budget(2)).strip().split(None, 2)
         if len(row) != 3 or int(row[0]) != child.pid or int(row[1]) != pid:
             raise RuntimeError("Browser group is not a direct owned child")
         browser_group = {"pid": pid, "started": row[2], "parentVerified": True}
         result["browserGroup"] = browser_group
-    def clear_group(group):
-        try:
-            os.killpg(group, signal.SIGKILL)
-        except ProcessLookupError:
-            return True
-        for _ in range(50):
+    def group_state(group):
+        # State/identity queries do not send signals. Keep only owned-group
+        # records in the result; do not log unrelated processes or commands.
+        output = subprocess.check_output(["/bin/ps", "-axo", "pid=,ppid=,pgid=,uid=,stat=,lstart="], text=True, timeout=probe_budget(1))
+        rows = {}
+        for pid, ppid, pgid, uid, state, creation in re.findall(r"^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.+?)\s*$", output, re.M):
+            rows[int(pid)] = {"pid": int(pid), "ppid": int(ppid), "pgid": int(pgid), "uid": int(uid), "state": state, "created": creation}
+        return rows, [row for row in rows.values() if row["pgid"] == group]
+    def clear_group(group, scope):
+        proof = {"operation": "ps-group-state", "scope": scope, "pgid": group, "rootPid": child.pid, "euid": os.geteuid(), "cleanupConfirmed": False}
+        result.setdefault("cleanupScopes", []).append(proof)
+        rows, members = group_state(group)
+        proof["before"] = members[:128]
+        if scope == "root":
+            identity = result.get("rootOwnership")
+            if not identity or not identity.get("verified"):
+                raise RuntimeError("Root creation ownership is unconfirmed; refusing group signal")
+            leader = rows.get(group)
+            if leader and leader["created"] != identity["created"]:
+                raise RuntimeError("Root PID creation identity changed; refusing group signal")
+        proof["operation"] = "validate-group-ownership"
+        if len(members) > 4096:
+            raise RuntimeError("Owned group exceeds observation bound")
+        for member in members:
+            if member["uid"] != os.geteuid():
+                raise RuntimeError("Group ownership UID mismatch; refusing signal")
             try:
-                os.killpg(group, 0)
+                proof["operation"] = "getsid"; proof["targetPid"] = member["pid"]
+                session = os.getsid(member["pid"])
+                if session != group:
+                    raise RuntimeError("Group is outside the spawned owned session; refusing signal")
             except ProcessLookupError:
+                pass  # A disappearing member is checked again in the final table.
+        proof["ownershipVerified"] = True
+        known = {row["pid"] for row in members}
+        if scope == "root":
+            known.add(child.pid)
+        if members and any(not row["state"].startswith("Z") for row in members):
+            proof["operation"] = "killpg-SIGKILL"
+            try:
+                os.killpg(group, signal.SIGKILL)  # At most one terminating signal.
+                proof["signalResult"] = "sent"
+            except ProcessLookupError:
+                proof["signalResult"] = "already-absent"
+            except PermissionError as error:
+                proof["signalResult"] = "denied"; proof["errno"] = error.errno; proof["error"] = str(error)
+                proof["deniedOperation"] = "killpg-SIGKILL"; proof["operation"] = "ps-after-denied-SIGKILL"
+                _, current = group_state(group)
+                proof["afterDeniedSignal"] = current[:128]
+                if any(not row["state"].startswith("Z") for row in current):
+                    result["cleanupError"] = f"killpg-SIGKILL denied for owned PGID {group}: {error}"
+                    result["cleanupErrno"] = error.errno
+                    return False  # No retry or alternate termination API on EPERM.
+                # A zombie-only/empty group has no signalable members. Reap/wait
+                # and prove disappearance; EPERM itself is never success.
+        end = min(time.monotonic() + 3, cleanup_end)
+        while time.monotonic() < end:
+            proof["operation"] = "ps-state-and-reap"
+            if scope == "root" and not waiter_started and not completed.is_set():
+                # Only a thread-start failure can use this fallback. Never race
+                # a second waitpid against the active wait4 reaper thread.
+                proof["operation"] = "wait4-WNOHANG"
+                pid, status, _ = os.wait4(child.pid, os.WNOHANG)
+                if pid:
+                    child.returncode = os.waitstatus_to_exitcode(status)
+                    completion["code"] = child.returncode; completed.set()
+            proof["operation"] = "ps-state-and-reap"
+            rows, current = group_state(group)
+            remaining = [rows[pid] for pid in known if pid in rows]
+            proof["remaining"] = remaining[:128]; proof["groupMembers"] = current[:128]
+            proof["rootReaped"] = scope != "root" or (completed.is_set() and "code" in completion)
+            if not current and not remaining and proof["rootReaped"]:
+                proof["cleanupConfirmed"] = True
                 return True
-            time.sleep(0.05)
+            completed.wait(0.05) if not completed.is_set() else time.sleep(0.05)
+        proof["error"] = "Owned group/PIDs did not disappear within bounded reap wait"
         return False
     def cleanup():
+        nonlocal cleanup_end
+        cleanup_end = time.monotonic() + 6
         if job:
             return job.cleanup()
         if not child:
@@ -281,10 +357,10 @@ def run(config):
             if config.get("browserOwnerFile"):
                 if browser_group:
                     pid = browser_group["pid"]
-                    row = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart="], text=True, capture_output=True, timeout=2)
+                    row = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart="], text=True, capture_output=True, timeout=probe_budget(2))
                     if row.stderr.strip() or (row.returncode == 0 and row.stdout.strip() != browser_group["started"]):
                         raise RuntimeError("Browser PID creation identity unavailable/changed; refusing kill")
-                    browser_clean = clear_group(pid)
+                    browser_clean = clear_group(pid, "browser")
                 else:
                     # Public BrowserServer.close must finish if the short-lived
                     # browser exited before registration. Failed launches remain
@@ -292,30 +368,19 @@ def run(config):
                     owner = browser_owner()
                     browser_clean = False
                     if owner is not None and owner.get("state") == "closed" and isinstance(owner.get("browserPid"), int) and owner["browserPid"] > 1:
-                        try:
-                            os.killpg(owner["browserPid"], 0)
-                        except ProcessLookupError:
-                            browser_clean = True
+                        end = min(time.monotonic() + 3, cleanup_end)
+                        while time.monotonic() < end:
+                            rows, members = group_state(owner["browserPid"])
+                            if owner["browserPid"] not in rows and not members:
+                                browser_clean = True
+                                break
+                            time.sleep(0.05)
         except Exception as error:
             browser_clean = False
             result["browserCleanupError"] = str(error)
+            result["browserCleanupErrno"] = getattr(error, "errno", None)
         # Even a browser ownership/probe error must stop the proven owned root.
-        try:
-            os.killpg(child.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            return browser_clean
-        for _ in range(50):
-            try:
-                os.killpg(child.pid, 0)
-            except ProcessLookupError:
-                return browser_clean
-            # Reap the direct child after an interrupted run.
-            try:
-                os.waitpid(child.pid, os.WNOHANG)
-            except ChildProcessError:
-                pass
-            time.sleep(0.05)
-        return False
+        return clear_group(child.pid, "root") and browser_clean
     def interrupted(*_):
         raise RuntimeError("Supervisor interrupted")
     signal.signal(signal.SIGTERM, interrupted)
@@ -329,8 +394,6 @@ def run(config):
             else:
                 child = subprocess.Popen(config["argv"], cwd=config["cwd"], stdout=log, stderr=log, start_new_session=True)
             result["rootPid"] = job.pid if job else child.pid
-            completed = threading.Event()
-            completion = {}
             def wait_for_root():
                 try:
                     if job:
@@ -349,6 +412,18 @@ def run(config):
                 finally:
                     completed.set()
             threading.Thread(target=wait_for_root, daemon=True).start()
+            waiter_started = True
+            if child:
+                rows, _ = group_state(child.pid)
+                identity = rows.get(child.pid)
+                if identity:
+                    if identity["ppid"] != os.getpid() or identity["pgid"] != child.pid or identity["uid"] != os.geteuid():
+                        raise RuntimeError("Spawned root ownership could not be verified")
+                    result["rootOwnership"] = {**identity, "verified": True, "observerPid": os.getpid(), "newSessionRequested": True}
+                elif completed.is_set() and "code" in completion:
+                    result["rootOwnership"] = {"pid": child.pid, "created": None, "verified": True, "leaderAlreadyReaped": True, "observerPid": os.getpid(), "newSessionRequested": True}
+                else:
+                    raise RuntimeError("Root observation absent without completed reaping")
             previous_pressure = result["before"]["pressure"]
             while True:
                 observation = verified_snapshot(config["cwd"])
@@ -389,6 +464,9 @@ def run(config):
         result["errorType"] = type(error).__name__
         result["failureKind"] = "resource-unavailable" if isinstance(error, ResourceUnavailableError) else "resource-insufficient" if isinstance(error, ResourceInsufficientError) else "sampling-failure"
     finally:
+        # Defer only repeated stop signals while this bounded cleanup completes.
+        # The live build has already entered its failure/exit path.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
         if started is not None:
             result["elapsedMs"] = (time.monotonic() - started) * 1000
         result["phase"] = config.get("phase"); result["cwd"] = config["cwd"]; result["timeoutMs"] = config["timeoutMs"]
@@ -396,6 +474,8 @@ def run(config):
             result["cleanupConfirmed"] = cleanup()
         except Exception as error:
             result["cleanupError"] = str(error)
+            result["cleanupErrno"] = getattr(error, "errno", None)
+            result["cleanupExceptionType"] = type(error).__name__
         if not result["cleanupConfirmed"]:
             result["status"] = "invalid"
         print(json.dumps({"event": "result", **result}), flush=True)

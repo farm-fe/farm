@@ -1,3 +1,4 @@
+<!-- cspell:words pageout microbenchmark -->
 # Commerce CI performance report
 
 The optional three-OS job follows Examples, Docs and consumer acceptance, uses
@@ -70,6 +71,11 @@ process identity and an atomic ownership receipt: the supervisor checks its live
 parent/group/creation time, includes that group in observations, and verifies its
 cleanup separately. An unregistered failed launch is unconfirmed rather than
 treated as successful cleanup; no unverified PID is killed based only on JSON.
+Unix cleanup records each signal/probe operation, errno, owned PID/group identity
+and process state. A single root reaper avoids competing waits. Zombie-only groups
+receive a bounded reap/disappearance wait; a permission error is never treated as
+proof of exit. A denied signal with live members stops without another termination
+API. Cleanup is confirmed only after the known PIDs and group members disappear.
 
 ## Base, Vite and history
 

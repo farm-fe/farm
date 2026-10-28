@@ -20,7 +20,6 @@ import { generatedCoverage } from './graph-summary.mjs';
 
 export { BUSINESS_COMPARISON_PROTOCOL };
 const svgRequire = createRequire(new URL('../../../js-plugins/svgr/package.json', import.meta.url));
-const tailwindRequire = createRequire(new URL('../../vite-adapter-vue-css/package.json', import.meta.url));
 const markdownRequire = createRequire(new URL('../../../website/package.json', import.meta.url));
 const matches = (filters, value) => filters?.some(pattern => new RegExp(pattern).test(value));
 const clean = id => id.split('?')[0].replaceAll('\\', '/');
@@ -65,7 +64,7 @@ export async function viteBusinessConfig(root, { outDir, graph } = {}) {
   assert.equal(path.resolve(process.cwd()), root, 'Run the isolated Vite worker with the original lab as cwd');
   await assertViteVersion();
   const { transformWithEsbuild } = await import('vite');
-  const { default: tailwind } = await import(pathToFileURL(tailwindRequire.resolve('@tailwindcss/vite')).href);
+  const { default: tailwind } = await import(new URL('../../vite-adapter-vue-css/performance-tailwind.mjs', import.meta.url).href);
   const { transform: svgTransform } = await import(pathToFileURL(svgRequire.resolve('@svgr/core')).href);
   const { default: svgJsx } = await import(pathToFileURL(svgRequire.resolve('@svgr/plugin-jsx')).href);
   const { default: gfm } = await import(pathToFileURL(markdownRequire.resolve('remark-gfm')).href);

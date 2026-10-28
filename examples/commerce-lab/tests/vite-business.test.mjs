@@ -5,6 +5,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { commerceHook, viteBusinessConfig } from '../benchmark/vite-business.mjs';
+import tailwind from '../../vite-adapter-vue-css/performance-tailwind.mjs';
+
+test('import-only Tailwind resolves under the declared owner using actual ESM import conditions', async () => {
+  assert.equal(typeof tailwind, 'function');
+  const owner = JSON.parse(await fs.readFile(new URL('../../vite-adapter-vue-css/package.json', import.meta.url), 'utf8'));
+  assert.ok(owner.devDependencies['@tailwindcss/vite']);
+});
 
 test('thin Commerce load transport retains query and asset identity and explicitly lowers SVG JSX', async () => {
   let lowered, query, emitted;

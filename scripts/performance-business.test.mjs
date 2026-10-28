@@ -34,6 +34,9 @@ test('main performance protocol runs the complete original app, guarded pairs an
   assert.match(sampler, /warmComparable = false/);
   assert.doesNotMatch(sampler, /prepareComparisonFixture|vite-subset|sample.buildMs/);
   assert.match(sampler, /copyFile\(path.join\(sourceRoot, 'tsconfig.base.json'\)/);
+  assert.match(sampler, /performance-tailwind\.mjs/);
+  assert.match(config, /import\(new URL\('\.\.\/\.\.\/vite-adapter-vue-css\/performance-tailwind\.mjs'/);
+  assert.doesNotMatch(config, /require\.resolve\(['"]@tailwindcss\/vite|tailwindRequire|import\.meta\.resolve/);
   assert.match(sampler, /supervision.durationMs/);
   const yaml = read('../.github/workflows/ci.yaml').split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
   assert.match(yaml, /os: macos-latest\s+abi: darwin-arm64/); assert.doesNotMatch(yaml, /macos-15-intel|darwin-x64/);
