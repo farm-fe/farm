@@ -597,6 +597,9 @@ jobs:
   type-check:
     name: Type Check & Changesets
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v3
         with:

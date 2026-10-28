@@ -22,10 +22,11 @@ the official Changesets plan before consuming it, then refreshes the exact versi
 PR's inventory, receipt and intent. The full family remains visible, while only
 the changed publication delta is packed. Unchanged immutable versions require
 registry checksums; a JS-only patch does not republish Core, Rust or native packages.
-Explicit validation dispatch is implemented, but requires the version job's
-existing token to have `actions:write`. That additional permission has not been
-enabled here; until approved, this step fails closed rather than assuming a token
-push triggered CI. No new credential is created.
+Explicit validation dispatch uses the approved version job's existing token with
+job-scoped `actions:write`. Only the release-request and type-check jobs also
+receive `actions:read` for producer evidence. Workflow-global permissions remain
+unchanged and no new credential is created. Missing or denied evidence/dispatch
+still fails closed; permission configuration alone is not execution evidence.
 
 ## Joint future Rust and npm preparation
 
