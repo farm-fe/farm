@@ -8,11 +8,41 @@ import { command } from './performance-report.mjs';
 import { resolvePnpmCli, probePnpmCli } from './v2-pnpm-cli.mjs';
 import { writeBuildFailure, redactDiagnostic } from './v2-release-diagnostics.mjs';
 
-export function candidateJsBuilds(plan) {
+export function orderJsCandidates(packages) {
+  assert.ok(packages.every(row => row.directory.startsWith('js-plugins/') && typeof row.manifest.name === 'string'), 'Invalid JS build candidate');
+  const byName = new Map(packages.map(row => [row.manifest.name, row]));
+  assert.equal(byName.size, packages.length, 'Duplicate JS candidate name');
+  const pending = new Set(), done = new Set(), ordered = [];
+  function visit(name) {
+    if (done.has(name)) return;
+    assert.ok(!pending.has(name), `Cyclic JS build prerequisite: ${[...pending, name].join(' -> ')}`);
+    pending.add(name);
+    const row = byName.get(name);
+    const dependencies = new Set(['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']
+      .flatMap(field => Object.entries(row.manifest[field] ?? {}).filter(([, range]) => String(range).startsWith('workspace:')).map(([name]) => name)));
+    for (const dependency of [...dependencies].sort()) {
+      if (dependency.startsWith('@farmfe/js-plugin-')) assert.ok(byName.has(dependency), `Missing selected JS build prerequisite: ${name} -> ${dependency}`);
+      if (byName.has(dependency)) visit(dependency);
+    }
+    pending.delete(name); done.add(name); ordered.push(row.directory);
+  }
+  for (const name of [...byName.keys()].sort()) visit(name);
+  return ordered;
+}
+
+export function candidateJsBuilds(plan, { root = fileURLToPath(new URL('../', import.meta.url)) } = {}) {
+  // CLI's project-reference bootstrap and the assembled native cohort are kept
+  // separate from the JS plugin graph. Config imports require built devDependencies,
+  // not just each plugin's runtime dependency list.
   const initial = ['packages/cli', 'packages/core', 'packages/runtime', 'packages/runtime-plugin-hmr', 'packages/runtime-plugin-import-meta', 'packages/plugin-tools', 'packages/utils'];
   const remaining = plan.npm.primary.filter(pkg => !pkg.manifestPath.startsWith('rust-plugins/') && pkg.name !== 'create-farm')
-    .map(pkg => path.dirname(pkg.manifestPath).replaceAll('\\', '/')).filter(dir => !initial.includes(dir));
-  return [...initial, ...remaining.filter(dir => dir.startsWith('js-plugins/')).sort(), ...remaining.filter(dir => !dir.startsWith('js-plugins/')).sort()];
+    .map(pkg => ({ ...pkg, directory: path.dirname(pkg.manifestPath).replaceAll('\\', '/') })).filter(pkg => !initial.includes(pkg.directory));
+  const plugins = remaining.filter(pkg => pkg.directory.startsWith('js-plugins/')).map(pkg => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, pkg.manifestPath)));
+    assert.equal(manifest.name, pkg.name, 'JS build candidate manifest identity mismatch');
+    return { directory: pkg.directory, manifest };
+  });
+  return [...initial, ...orderJsCandidates(plugins), ...remaining.filter(pkg => !pkg.directory.startsWith('js-plugins/')).map(pkg => pkg.directory).sort()];
 }
 async function main() {
   const root = fileURLToPath(new URL('../', import.meta.url));
