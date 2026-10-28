@@ -44,6 +44,7 @@ jobs:
       - name: Check release source and failure paths without publishing
         run: >-
           node --test scripts/v2-*.test.mjs scripts/release-archive.test.mjs
+          scripts/check-pr-changesets.test.mjs
           scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs

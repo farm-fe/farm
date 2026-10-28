@@ -1,6 +1,8 @@
 name: Prepare Changesets version PR
 on:
-  push:
+  workflow_run:
+    workflows: [Release-plz]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 permissions:
@@ -10,10 +12,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   check-release-request:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-24.04
     outputs:
       changeset_state: ${{ steps.changesets.outputs.state }}
+      cargo_proposal: ${{ steps.changesets.outputs.proposal }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,7 +24,9 @@ jobs:
           node-version: 22.20.0
       - name: Read Changesets state (errors fail closed)
         id: changesets
-        run: node scripts/check-changeset-status.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/prepare-cargo-version-proposal.mjs --inspect
   changeset-version:
     name: Prepare reviewed version PR
     needs: [check-release-request]
@@ -40,6 +45,12 @@ jobs:
         with:
           node-version: 22.20.0
       - run: pnpm install --frozen-lockfile
+      - name: Install the pinned metadata toolchain
+        run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Mark a Cargo-only proposal for the official Changesets action
+        env:
+          FARM_CARGO_PROPOSAL: ${{ needs.check-release-request.outputs.cargo_proposal }}
+        run: node scripts/prepare-cargo-version-proposal.mjs --seed
       # Publication credentials are never available to this versioning action.
       # A reviewed version PR must also refresh its exact plan/intent and seal.
       - uses: changesets/action@v1
@@ -50,9 +61,8 @@ jobs:
           title: 'chore: release packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install the pinned metadata toolchain
-        if: steps.changesets.outputs.pullRequestNumber != ''
-        run: rustup toolchain install nightly-2026-04-10 --profile minimal
+          GH_TOKEN: ${{ github.token }}
+          FARM_CARGO_PROPOSAL: ${{ needs.check-release-request.outputs.cargo_proposal }}
       - name: Refresh exact version PR inputs and explicitly request validation
         if: steps.changesets.outputs.pullRequestNumber != ''
         env:

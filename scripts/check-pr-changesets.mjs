@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { validationEvent, changesetsPublication } from './v2-release-inventory.mjs';
+import { cargoChangesetId, validateCargoPreparation } from './prepare-cargo-version-proposal.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const digest = text => crypto.createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
 
@@ -46,7 +47,7 @@ export function verifyPreparedRelease(directory, { readGitFile, readGitChangeset
   }
   return { status: 'verified-stable-preparation', versions: record.versions.length, consumed: record.changesets.length, sourceCommit: record.sourceCommit };
 }
-export function verifyChangesetsPreparation(directory, { readGitFile, isAncestor, generatedDiff } = {}) {
+export function verifyChangesetsPreparation(directory, { readGitFile, isAncestor, generatedDiff, verifyCargoRecord } = {}) {
   const plan = JSON.parse(fs.readFileSync(path.join(directory, 'docs/releases/v2-candidate.json')));
   const record = JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/changesets-preparation.json')));
   assert.equal(record.mode, 'changesets'); assert.equal(record.schemaVersion, 1);
@@ -59,11 +60,22 @@ export function verifyChangesetsPreparation(directory, { readGitFile, isAncestor
   const official = JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/changesets-version-plan.json')));
   assert.equal(digest(JSON.stringify(official)), record.officialPlanSha256);
   assert.ok(official.changesets.length > 0 && official.releases.length > 0);
+  const cargoRecord = official.changesets.some(row => row.id === cargoChangesetId)
+    ? JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/cargo-version-proposal.json'))) : null;
+  const baseline = JSON.parse(readGitFile(record.baseSHA, 'docs/releases/v2-candidate.json'));
+  if (cargoRecord) {
+    assert.equal(typeof verifyCargoRecord, 'function', 'Cargo proposal verifier required');
+    verifyCargoRecord(cargoRecord, baseline, record.baseSHA);
+    for (const name of cargoRecord.requiredNpm) {
+      const release = official.releases.find(row => row.name === name);
+      assert.ok(release && release.newVersion !== baseline.npm.primary.find(row => row.name === name)?.version, `Cargo native consumer version missing: ${name}`);
+    }
+  }
   for (const change of official.changesets) {
     assert.match(change.id, /^[a-z0-9-]+$/);
-    assert.equal(digest(readGitFile(record.baseSHA, `.changeset/${change.id}.md`)), record.consumed.find(row => row.id === change.id)?.sha256, 'Consumed Changeset source differs');
+    const original = change.id === cargoChangesetId && cargoRecord ? cargoRecord.changeset : readGitFile(record.baseSHA, `.changeset/${change.id}.md`);
+    assert.equal(digest(original), record.consumed.find(row => row.id === change.id)?.sha256, 'Consumed Changeset source differs');
   }
-  const baseline = JSON.parse(readGitFile(record.baseSHA, 'docs/releases/v2-candidate.json'));
   const expected = changesetsPublication(plan, baseline, official.releases);
   for (const row of expected.npm.primary) {
     assert.equal(JSON.parse(fs.readFileSync(path.join(directory, row.manifestPath))).version, row.version);
@@ -85,7 +97,15 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
       readGitChangesets: sha => execFileSync('git', ['ls-tree', '--name-only', `${sha}:.changeset`], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(name => name.endsWith('.md') && name !== 'README.md').map(name => name.slice(0, -3)),
       isAncestor: sha => { try { execFileSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: root }); return true; } catch { return false; } },
-      generatedDiff: sha => execFileSync('git', ['diff', '--name-only', sha, 'HEAD'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean)
+      generatedDiff: sha => execFileSync('git', ['diff', '--name-only', sha, 'HEAD'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean),
+      verifyCargoRecord: (cargoRecord, baseline, baseSHA) => {
+        execFileSync('git', ['fetch', 'origin', cargoRecord.headSHA], { cwd: root, timeout: 120000 });
+        const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--locked', '--format-version', '1'], { cwd: root, encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 ** 2 }));
+        validateCargoPreparation(cargoRecord, baseline, metadata, { baseSHA,
+          readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
+          changedFiles: (base, head) => execFileSync('git', ['diff', '--name-only', base, head], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean),
+          readCurrent: file => fs.readFileSync(path.join(root, file), 'utf8') });
+      }
     });
     // Also checks all 297 source versions/dependencies and Cargo manifest digests.
     execFileSync(process.execPath, [path.join(root, 'scripts/v2-release-preflight.mjs')], { cwd: root, stdio: 'inherit' });

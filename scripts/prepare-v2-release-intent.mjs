@@ -6,6 +6,7 @@ import { digest, requiredWorkflows, requiredCiJobs } from './v2-auto-release.mjs
 import { rustPublicationOrder } from './release-rust-metadata.mjs';
 import { execFileSync } from 'node:child_process';
 import { npmInventory, cargoInventory, changesetsPublication } from './v2-release-inventory.mjs';
+import { cargoChangesetId, validateCargoPreparation } from './prepare-cargo-version-proposal.mjs';
 export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   assert.ok(Number.isSafeInteger(pullRequest) && pullRequest > 0, 'Reviewed version PR number is required');
   const compatibility = { farmfe_macro_cache_item: 'published-macro-compat.json', farmfe_macro_plugin: 'published-plugin-macro-compat.json' };
@@ -48,12 +49,23 @@ export async function refreshChangesetsVersionPr(root, number) {
   const official = read('docs/release-evidence/changesets-version-plan.json');
   assert.ok(official.changesets?.length && official.releases?.length, 'Official Changesets plan required');
   const baseline = JSON.parse(show('docs/releases/v2-candidate.json'));
+  const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--locked', '--format-version', '1'], { cwd: root, encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 ** 2 }));
+  const cargoRecordFile = 'docs/release-evidence/cargo-version-proposal.json';
+  const cargoRecord = official.changesets.some(row => row.id === cargoChangesetId) ? read(cargoRecordFile) : null;
+  let cargoFiles = [];
+  if (cargoRecord) {
+    git('fetch', 'origin', cargoRecord.headSHA);
+    cargoFiles = validateCargoPreparation(cargoRecord, baseline, metadata, { baseSHA: pr.base.sha,
+      readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
+      changedFiles: (base, head) => git('diff', '--name-only', base, head).split(/\r?\n/).filter(Boolean),
+      readCurrent: file => fs.readFileSync(path.join(root, file), 'utf8') });
+  }
   const allowedBeforeRefresh = new Set(['pnpm-lock.yaml', 'docs/release-evidence/changesets-version-plan.json', 'docs/release-evidence/changesets-preparation.json', 'docs/releases/v2-candidate.json', 'docs/releases/v2-release-intent.json', '.github/workflows/v2-stable-release.yaml', 'scripts/release-fixtures/sdk-consumer/Cargo.toml',
     ...baseline.npm.primary.flatMap(row => [row.manifestPath, `${path.dirname(row.manifestPath).replaceAll('\\', '/')}/CHANGELOG.md`]),
-    ...baseline.npm.payloads.map(row => row.manifestPath), ...official.changesets.map(row => `.changeset/${row.id}.md`)]);
+    ...baseline.npm.payloads.flatMap(row => [row.manifestPath, `${path.dirname(row.manifestPath).replaceAll('\\', '/')}/CHANGELOG.md`]), ...official.changesets.map(row => `.changeset/${row.id}.md`)]);
+  if (cargoRecord) for (const file of [cargoRecordFile, ...cargoFiles]) allowedBeforeRefresh.add(file);
   const modified = git('diff', '--name-only', pr.base.sha, pr.head.sha).split(/\r?\n/).filter(Boolean);
   assert.ok(modified.every(file => allowedBeforeRefresh.has(file)), 'Version PR contains non-generated source changes; review before granting validation execution');
-  const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--locked', '--format-version', '1'], { cwd: root, encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 ** 2 }));
   const componentFiles = [];
   for (const owner of baseline.npm.primary) {
     const file = `${path.dirname(owner.manifestPath).replaceAll('\\', '/')}/license-components.json`;
@@ -98,7 +110,7 @@ export async function refreshChangesetsVersionPr(root, number) {
   write('docs/releases/v2-candidate.json', plan);
   const record = { schemaVersion: 1, mode: 'changesets', baseSHA: pr.base.sha, sourceHeadSHA: pr.head.sha,
     officialPlanSha256: digest(JSON.stringify(official)), planSha256: digest(JSON.stringify(plan)),
-    consumed: official.changesets.map(change => ({ id: change.id, sha256: digest(execFileSync('git', ['show', `${pr.base.sha}:.changeset/${change.id}.md`], { cwd: root, encoding: 'utf8' }).replaceAll('\r\n', '\n')) })) };
+    consumed: official.changesets.map(change => ({ id: change.id, sha256: digest(change.id === cargoChangesetId && cargoRecord ? cargoRecord.changeset : execFileSync('git', ['show', `${pr.base.sha}:.changeset/${change.id}.md`], { cwd: root, encoding: 'utf8' }).replaceAll('\r\n', '\n')) })) };
   write('docs/release-evidence/changesets-preparation.json', record);
   const intent = createReleaseIntent(root, plan, metadata, number); write('docs/releases/v2-release-intent.json', intent);
   const workflow = path.join(root, '.github/workflows/v2-stable-release.yaml');

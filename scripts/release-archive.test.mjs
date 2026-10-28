@@ -60,12 +60,14 @@ test('a complete valid archive set can pass; missing, changed and unlicensed pac
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-seal-test-'));
   try {
     fs.mkdirSync(path.join(directory, 'pkg'));
+    fs.writeFileSync(path.join(directory, 'pkg/package.json'), base['package/package.json']);
     fs.writeFileSync(path.join(directory, 'pkg/LICENSE'), base['package/LICENSE']);
     const bytes = tar(base);
     fs.writeFileSync(path.join(directory, 'pkg.tgz'), bytes);
     const plan = { npm: { primary: [expected], payloads: [] } };
     const receipt = { records: [{ ...expected, file: 'pkg.tgz', sha256: sha256(bytes) }] };
-    assert.equal(verifyCandidateSeal(plan, receipt, directory, directory).candidateArchivesVerified, true);
+    const result = verifyCandidateSeal(plan, receipt, directory, directory);
+    assert.equal(result.candidateArchivesVerified, true, JSON.stringify(result.errors));
     assert.equal(verifyCandidateSeal(plan, { records: [] }, directory, directory).candidateArchivesVerified, false);
     fs.writeFileSync(path.join(directory, 'pkg/LICENSE'), 'Changed source license');
     assert.equal(verifyCandidateSeal(plan, receipt, directory, directory).candidateArchivesVerified, false);

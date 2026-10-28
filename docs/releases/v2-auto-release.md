@@ -6,9 +6,10 @@ not a sample. Inventory and checksums must match the reviewed source and archive
 
 PR #2329 merging into main starts the current sealed release DAG. Unmerged PR
 updates, ordinary feature PRs and pushes to the feature branch cannot publish.
-Website deployment and auto-merge are not included. Subsequent main pushes use
-Changesets Action to prepare version PRs; Cargo version PR preparation uses
-release-plz. Neither versioning action receives npm publication credentials.
+Website deployment and auto-merge are not included. Subsequent main pushes first
+run release-plz version preparation. Its successful completion schedules the
+Changesets preparation workflow on trusted main, without relying on token pushes
+to trigger another run. Neither preparation workflow receives publication credentials.
 Only actual publication uses the farm-stable-release lock. Changesets and Cargo
 version PR preparation use separate concurrency groups so their pending runs
 cannot displace a pending publication after the same merge.
@@ -25,6 +26,31 @@ Explicit validation dispatch is implemented, but requires the version job's
 existing token to have `actions:write`. That additional permission has not been
 enabled here; until approved, this step fails closed rather than assuming a token
 push triggered CI. No new credential is created.
+
+## Joint future Rust and npm preparation
+
+An open same-repository release-plz proposal must match the current main base and
+the configured workflow bot identity. Only the selected SDK's Cargo manifests,
+Cargo lock and changelogs are accepted. Manifest differences must contain stable
+version fields only; source/dependency rewrites, stale proposals, multiple open
+proposals, SDK closure changes and version downgrades stop preparation.
+
+The Changesets version command copies that exact proposal patch into the version
+PR, records its base/head/file set, and creates a scoped native-consumer Changeset.
+Cargo dependency reachability determines the affected npm native owners; Core is
+always included for an SDK release. An ABI change requires the entire Farm ABI
+cohort to advance. create-farm's independent Node-API-4 boundary is excluded from
+an ABI-only cohort, but still advances when its actual Cargo dependencies change.
+Official Changesets generates the owner versions and changelogs. A subsequent
+synchronization updates their platform manifests and exact optional dependencies,
+then pnpm regenerates the lock before inventory and hashes are taken.
+
+The final version PR verifier reads the pinned original Cargo proposal again and
+compares its exact contents, version delta and required consumers. It does not
+accept a blanket Cargo-path exception. The separate Cargo proposal is an input,
+not another PR that must first be merged or a publication trigger. The single
+Changesets version PR owns the combined tested tree, release identity and sealed
+delta. These new paths await CI execution; the first stable path remains separate.
 
 ## Ordered executable chain
 

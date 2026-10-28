@@ -15,8 +15,12 @@ test('all stable publication jobs use the supported pinned Node version', () => 
 test('ordinary main changes use Changesets version PRs without publication credentials', () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /github.ref == 'refs\/heads\/main'/);
-  assert.match(workflow, /^  push:/m);
+  assert.match(workflow, /^  workflow_run:/m);
+  assert.match(workflow, /workflows: \[Release-plz\]/);
+  assert.match(workflow, /workflow_run.conclusion == 'success'/);
   assert.match(workflow, /uses: changesets\/action@v1/);
+  assert.match(workflow, /FARM_CARGO_PROPOSAL:/);
+  assert.ok(workflow.indexOf('prepare-cargo-version-proposal.mjs --seed') < workflow.indexOf('uses: changesets/action@v1'), 'Cargo-only input must be visible before Changesets decides whether to version');
   assert.match(workflow, /title: 'chore: release packages'/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|CARGO_REGISTRY_TOKEN|run: pnpm run release/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
@@ -31,7 +35,8 @@ test('ordinary main changes use Changesets version PRs without publication crede
   assert.doesNotMatch(release, /changeset publish|buildJsPlugins|npm config set/);
 });
 test('Changesets filesystem and parsing errors cannot select publication', () => {
-  assert.match(workflow, /id: changesets\s+run: node scripts\/check-changeset-status\.mjs/);
+  assert.match(workflow, /id: changesets/);
+  assert.match(workflow, /run: node scripts\/prepare-cargo-version-proposal\.mjs --inspect/);
   assert.match(workflow, /changeset_state == 'pending'/);
   assert.doesNotMatch(workflow, /changeset_state == 'empty'/);
   assert.doesNotMatch(workflow, /if node .*check-changeset-status/);
@@ -40,6 +45,7 @@ test('Changesets filesystem and parsing errors cannot select publication', () =>
   const cargo = fs.readFileSync(new URL('../.github/workflows/release-plz.yaml', import.meta.url), 'utf8');
   assert.match(cargo, /group: farm-cargo-version-/);
   assert.doesNotMatch(cargo, /group: farm-stable-release/);
+  assert.doesNotMatch(cargo, /CARGO_REGISTRY_TOKEN/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
   assert.match(stable, /group: farm-stable-release/);
 });
