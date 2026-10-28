@@ -19,6 +19,29 @@ export function assertCompleteSealInputs(plan, npm, sdk) {
   assert.deepEqual(identities(sdk.packages), identities(plan.cargo), 'Incomplete or duplicate Rust candidate coverage');
   for (const key of ['sourceCommit', 'testedCommit', 'testedTree']) assert.match(npm[key], /^[a-f0-9]{40}$/);
 }
+export function portableSdkFiles(directory, materialization) {
+  const files = new Set(['sdk-consumer.json', 'sdk-test.log', 'sdk-metadata.json', 'consumer.Cargo.toml', 'consumer.Cargo.lock', 'materialization.json', 'verification.json']);
+  for (const row of [...materialization.selected, ...materialization.reused]) {
+    assert.match(row.name, /^[a-zA-Z0-9_-]+$/); assert.match(row.version, /^\d+\.\d+\.\d+$/);
+    files.add(`registry/${row.name}-${row.version}.crate`);
+  }
+  if (materialization.reused.length) {
+    files.add('published-macro-license.json');
+    const provenance = JSON.parse(fs.readFileSync(path.join(directory, 'published-macro-license.json')));
+    for (const row of materialization.reused.filter(row => provenance.packages.some(item => item.name === row.name && item.version === row.version))) files.add(`licenses/${row.name}.LICENSE`);
+  }
+  const actual = [];
+  function visit(relative) {
+    const file = path.join(directory, relative), stat = fs.lstatSync(file);
+    assert.ok(!stat.isSymbolicLink(), 'Portable SDK symlink refused');
+    if (stat.isDirectory()) {
+      assert.ok(['', 'registry', 'licenses'].includes(relative), 'Unexpected portable SDK directory');
+      for (const name of fs.readdirSync(file)) visit(relative ? `${relative}/${name}` : name);
+    } else { assert.ok(stat.isFile() && files.has(relative), `Unreviewed portable SDK member: ${relative}`); actual.push(relative); }
+  }
+  visit(''); assert.deepEqual(actual.sort(), [...files].sort(), 'Portable SDK members missing');
+  return [...files].sort();
+}
 export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output }) {
   const read = file => JSON.parse(fs.readFileSync(file));
   const plan = read(path.join(root, 'docs/releases/v2-candidate.json'));
@@ -31,8 +54,12 @@ export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output })
   assert.equal(materialization.registry, 'registry', 'Compose only a portable SDK seal');
   const metadata = read(path.join(sdkDirectory, 'sdk-metadata.json'));
   const order = rustPublicationOrder(plan, metadata);
+  const portable = portableSdkFiles(sdkDirectory, materialization);
   fs.mkdirSync(output);
-  fs.cpSync(sdkDirectory, output, { recursive: true, force: false, errorOnExist: true });
+  for (const file of portable) {
+    fs.mkdirSync(path.dirname(path.join(output, file)), { recursive: true });
+    fs.copyFileSync(path.join(sdkDirectory, file), path.join(output, file), fs.constants.COPYFILE_EXCL);
+  }
   const receipt = { ...npm, rust: [], sdkProof: 'sdk-consumer.json', status: 'complete-seal', published: false };
   for (const row of npm.records) {
     assert.equal(path.basename(row.file), row.file);

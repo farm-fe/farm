@@ -13,6 +13,7 @@ import { loadComparableHistory } from './performance-cohorts.mjs';
 import { prepareComparisonFixture, COMPARISON_PROTOCOL, VITE_COMPARISON_VERSION } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
 import { scaleProfile } from '../examples/commerce-lab/benchmark/scale-profiles.mjs';
 import { resourceSnapshot, assertPerformanceResources } from './performance-resources.mjs';
+import { diagnosticTail, redactDiagnostic } from './v2-release-diagnostics.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const protocol = 'commerce-business-2048-rust-build-v2';
@@ -52,6 +53,7 @@ async function prepareLab(sourceRoot, temporary, fixture) {
   const lab = path.join(temporary, 'examples', 'commerce-lab');
   await fs.mkdir(path.dirname(lab), { recursive: true });
   await fs.cp(path.join(sourceRoot, 'examples/commerce-lab'), lab, { recursive: true, filter: source => !source.split(path.sep).some(part => ['node_modules', 'dist', '.cache', 'reports', 'extensions'].includes(part)) });
+  await fs.copyFile(path.join(sourceRoot, 'tsconfig.base.json'), path.join(temporary, 'tsconfig.base.json'));
   for (const name of ['packages', 'rust-plugins', 'js-plugins', 'node_modules']) await fs.symlink(path.join(sourceRoot, name), path.join(temporary, name), process.platform === 'win32' ? 'junction' : 'dir');
   await fs.symlink(path.join(sourceRoot, 'examples/commerce-lab/node_modules'), path.join(lab, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   for (const [name, content] of Object.entries(fixture)) {
@@ -118,12 +120,24 @@ export async function waitForCommand(child, { timeoutMs = 120000, cleanupTimeout
   try { return await Promise.race([exit.then(result => expired ? timeout : result), timeout]); }
   finally { clearTimeout(timer); child.removeListener('error', onError); child.removeListener('close', onClose); }
 }
-export async function command(executable, args, { cwd, env, log, timeoutMs = 120000 } = {}) {
+export async function command(executable, args, { cwd, env, log, timeoutMs = 120000, phase = 'command' } = {}) {
+  const started = performance.now();
+  const identity = { phase, cwd, timeoutMs };
+  console.log('[command start] ' + JSON.stringify(identity));
   const handle = await fs.open(log, 'a');
   try {
     const child = spawn(executable, args, { cwd, env, windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', handle.fd, handle.fd] });
     const exit = await waitForCommand(child, { timeoutMs });
-    if (exit.code !== 0) throw new Error(`Command failed: ${executable} ${args.join(' ')} (${JSON.stringify(exit)})`);
+    if (exit.code !== 0) throw Object.assign(new Error(`Command failed: ${executable} ${args.join(' ')} (${JSON.stringify(exit)})`), { exitCode: exit.code, signal: exit.signal, pid: child.pid });
+  } catch (error) {
+    Object.assign(error, { phase, cwd, timeoutMs, elapsedMs: performance.now() - started });
+    try {
+      console.error('[command failed] ' + JSON.stringify({ ...identity, elapsedMs: error.elapsedMs,
+        error: redactDiagnostic(error.message, env ?? process.env), exitCode: error.exitCode ?? null,
+        timedOut: error.timedOut === true, cleanupConfirmed: error.cleanupConfirmed ?? null,
+        tail: diagnosticTail(log, env ?? process.env) }));
+    } catch (diagnosticError) { console.error('[command diagnostics unavailable] ' + redactDiagnostic(diagnosticError.message, env ?? process.env)); }
+    throw error;
   } finally { await handle.close(); }
 }
 export function rethrowUnsafeCleanup(error) {
@@ -219,7 +233,7 @@ async function main() {
         if (cacheMode === 'warm' && !coldSuccess.has(cohort.name)) { record.error = 'Preceding cold build failed'; await persist(); continue; }
         const started = performance.now();
         try {
-          await command(process.execPath, [path.join(cohort.root, 'packages/cli/bin/farm.mjs'), 'build', '--config', 'farm.rust.config.ts'], { cwd: cohort.lab, log, timeoutMs: Math.min(120000, deadline - Date.now()), env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: id, COMMERCE_OUTPUT_ID: id } });
+          await command(process.execPath, [path.join(cohort.root, 'packages/cli/bin/farm.mjs'), 'build', '--config', 'farm.rust.config.ts'], { phase: `${cohort.name}/${round < 0 ? 'warmup' : 'sample-' + round}/${cacheMode}`, cwd: cohort.lab, log, timeoutMs: Math.min(120000, deadline - Date.now()), env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: id, COMMERCE_OUTPUT_ID: id } });
           record.durationMs = performance.now() - started;
           record.artifacts = await sizes(path.join(cohort.lab, 'dist/benchmark', id, 'rust'));
           if (record.artifacts.js.bytes === 0) throw new Error('Build produced no JavaScript');
@@ -236,7 +250,7 @@ async function main() {
       const graphDisk = await fs.statfs(temp);
       report.resources = resourceSnapshot({ diskFreeBytes: graphDisk.bavail * graphDisk.bsize }); assertPerformanceResources(report.resources);
       const graphFile = path.join(temp, `graph-${cohort.name}.json`);
-      await command(process.execPath, [path.join(cohort.root, 'scripts/performance-graph-worker.mjs'), cohort.lab, graphFile], { cwd: cohort.lab, log,
+      await command(process.execPath, [path.join(cohort.root, 'scripts/performance-graph-worker.mjs'), cohort.lab, graphFile], { phase: `${cohort.name}/graph`, cwd: cohort.lab, log,
         timeoutMs: Math.min(120000, deadline - Date.now()), env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: 'graph-final', COMMERCE_OUTPUT_ID: 'graph-final' } });
       const graph = JSON.parse(await fs.readFile(graphFile, 'utf8'));
       if (graph.status !== 'complete' || !Number.isInteger(graph.summary?.retainedModules) || graph.summary.retainedModules <= 0) throw new Error('Actual graph count is unavailable');

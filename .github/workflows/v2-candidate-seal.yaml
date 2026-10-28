@@ -69,21 +69,22 @@ jobs:
       - name: Seal portable SDK evidence and compose the complete candidate
         run: |
           node scripts/seal-sdk-consumer.mjs .release-work/sdk/sdk-consumer.json .release-work/sdk-portable
-          node scripts/compose-v2-release-seal.mjs .release-work/npm .release-work/sdk-portable .release-candidate
+          node scripts/compose-v2-release-seal.mjs .release-work/npm .release-work/sdk-portable release-candidate
       - uses: actions/upload-artifact@v4
         with:
           name: v2-release-seal-${{ github.sha }}
-          path: .release-candidate/
+          path: release-candidate/
           if-no-files-found: error
           retention-days: 90
+      - name: Collect bounded generated diagnostics without environment or workspace uploads
+        if: failure()
+        run: node scripts/v2-release-diagnostics.mjs .release-work
       - name: Preserve incomplete diagnostics without calling them a seal
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: v2-release-diagnostics-${{ github.sha }}-${{ github.run_attempt }}
           path: |
-            .release-work/**/*.log
-            .release-work/**/receipt.json
-            .release-work/**/verification.json
-            .release-work/**/sdk-consumer.json
+            release-diagnostics/js-build-failure.json
+            release-diagnostics/seal-failure.json
           if-no-files-found: warn
