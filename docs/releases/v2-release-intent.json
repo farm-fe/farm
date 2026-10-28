@@ -180,14 +180,14 @@
     "Release source contracts",
     "Check declared native inputs (not ABI execution)",
     "Type Check & Changesets",
-    "Examples Test (ubuntu-latest)",
-    "Typescript Test (ubuntu-latest)",
+    "Examples Test (ubuntu-24.04)",
+    "Typescript Test (ubuntu-24.04)",
     "Examples Test (macos-latest)",
     "Typescript Test (macos-latest)",
     "Examples Test (windows-latest)",
     "Typescript Test (windows-latest)",
     "Docs / windows-latest",
-    "Docs / ubuntu-latest",
+    "Docs / ubuntu-24.04",
     "Seal complete npm and Rust candidates"
   ],
   "performanceRequired": false

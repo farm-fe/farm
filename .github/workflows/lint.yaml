@@ -16,7 +16,7 @@ jobs:
         run: cargo clippy
   lint:
     name: TS Code Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Setup pnpm

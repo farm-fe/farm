@@ -11,7 +11,7 @@ concurrency:
 jobs:
   check-release-request:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       changeset_state: ${{ steps.changesets.outputs.state }}
     steps:
@@ -26,7 +26,7 @@ jobs:
     name: Prepare reviewed version PR
     needs: [check-release-request]
     if: needs.check-release-request.outputs.changeset_state == 'pending'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pull-requests: write

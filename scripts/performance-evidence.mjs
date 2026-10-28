@@ -13,7 +13,7 @@ if (process.argv[2] === 'init') {
   try { revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim(); } catch { /* Identity is unknown, never substitute a claimed SHA. */ }
   const disk = await fs.statfs(os.tmpdir());
   await fs.writeFile(raw, JSON.stringify({ schemaVersion: 1, protocol: 'commerce-business-2048-rust-build-v2', status: 'partial', failureKind: 'setup-incomplete', publishable: false,
-    metadata: { revision, artifactProducerSHA: process.env.GITHUB_SHA ?? null, os: process.platform, arch: process.arch, baseSHA: process.env.FARM_BASE_SHA ?? null },
+    metadata: { revision, artifactProducerSHA: process.env.GITHUB_SHA ?? null, os: process.platform, arch: process.arch, runnerImage: process.env.ImageOS ?? process.env.RUNNER_OS ?? process.platform, runnerImageVersion: process.env.ImageVersion ?? null, baseSHA: process.env.FARM_BASE_SHA ?? null },
     resources: resourceSnapshot({ diskFreeBytes: disk.bavail * disk.bsize }), records: [], errors: ['Setup or sampling has not completed.'] }, null, 2));
   for (const name of ['run.log', 'samples.csv', 'summary.md']) await fs.writeFile(path.join(directory, name), '');
 } else if (process.argv[2] === 'finalize') {

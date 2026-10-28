@@ -10,8 +10,8 @@ import { verifyExistingNpm } from './release.mjs';
 export const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 export const requiredWorkflows = ['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml', 'lint-pr-title.yml'].map(name => `.github/workflows/${name}`);
 export const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
-  ...['ubuntu-latest', 'macos-latest', 'windows-latest'].flatMap(os => [`Examples Test (${os})`, `Typescript Test (${os})`]),
-  'Docs / windows-latest', 'Docs / ubuntu-latest', 'Seal complete npm and Rust candidates'];
+  ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].flatMap(os => [`Examples Test (${os})`, `Typescript Test (${os})`]),
+  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Seal complete npm and Rust candidates'];
 export function validateRequiredCiJobs(jobs) {
   for (const name of requiredCiJobs) {
     const matches = jobs.filter(job => job.name === name || job.name.endsWith(` / ${name}`));

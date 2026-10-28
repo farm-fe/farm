@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
             abi: linux-x64-gnu
             target: x86_64-unknown-linux-gnu

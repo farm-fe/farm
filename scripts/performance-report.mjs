@@ -166,7 +166,7 @@ async function main() {
   try {
     const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
     report.metadata = { protocol, revision, artifactProducerSHA: process.env.GITHUB_SHA ?? revision, baseSHA: process.env.FARM_BASE_SHA ?? null,
-      os: process.platform, arch: process.arch, node: process.version, runnerImage: process.env.ImageOS ?? process.env.RUNNER_OS ?? process.platform,
+      os: process.platform, arch: process.arch, node: process.version, runnerImage: process.env.ImageOS ?? process.env.RUNNER_OS ?? process.platform, runnerImageVersion: process.env.ImageVersion ?? null,
       pnpm: null, fixtureSha256: null, harnessSha256: null, lockSha256: null,
       scale: { name: workloadScale, ...scaleProfile(workloadScale), fixtureGenerated: false } };
     await persist();

@@ -14,7 +14,7 @@ concurrency:
 jobs:
   release-contract-tests:
     name: Release source contracts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-24.04, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,7 +78,7 @@ jobs:
   check-native-candidate-assembly:
     name: Check declared native inputs (not ABI execution)
     needs: [call-rust-build-user, call-rust-build-release]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -111,7 +111,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-x64-gnu
           - os: macos-latest
             abi: darwin-arm64
@@ -352,7 +352,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-x64-gnu
           - os: macos-latest
             abi: darwin-arm64
@@ -551,7 +551,7 @@ jobs:
     needs: [performance-report]
     if: always() && github.event_name == 'pull_request'
     continue-on-error: true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -582,7 +582,7 @@ jobs:
 
   type-check:
     name: Type Check & Changesets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
         with:
@@ -626,7 +626,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-x64-gnu
           # - os: ubuntu-20.04
           #   abi: linux-x64-gnu

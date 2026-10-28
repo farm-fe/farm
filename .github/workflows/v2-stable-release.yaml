@@ -9,7 +9,7 @@ concurrency:
   group: farm-stable-release
   cancel-in-progress: false
 env:
-  FARM_RELEASE_INTENT_SHA256: 95c320b870e3b3b5c370c1dcb8cbd6a511617ef262730f19149b665f260b5059
+  FARM_RELEASE_INTENT_SHA256: 2e4051395c0330236529c9d6fbde56b733b8f839edacc23c3f0caf3a4d6a5161
 # Publication jobs install no workspace dependencies or package hooks.
 # Public consumer code runs on a separate machine with read-only permissions.
 jobs:
@@ -78,7 +78,7 @@ jobs:
         run: node scripts/v2-auto-release.mjs npm
   public-consumers:
     needs: [npm]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
       contents: read

@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             abi: linux-x64-musl
             target: x86_64-unknown-linux-musl
@@ -35,11 +35,11 @@ jobs:
           - os: windows-latest
             abi: win32-arm64-msvc
             target: aarch64-pc-windows-msvc
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-arm64-musl
             target: aarch64-unknown-linux-musl
             zig: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true

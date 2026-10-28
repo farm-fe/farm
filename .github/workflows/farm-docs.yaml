@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-24.04]
     env:
       CARGO_BUILD_JOBS: '2'
       CODEX_DOCS_EVIDENCE_PHASE: p10

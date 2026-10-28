@@ -39,7 +39,7 @@ test('E2E calls Docs, keeps both OS lanes and release reference until actual com
   const docs = await fs.readFile(new URL('../.github/workflows/farm-docs.yaml', import.meta.url), 'utf8');
   assert.match(ci, /uses: \.\/\.github\/workflows\/farm-docs.yaml/);
   assert.match(docs, /workflow_call:/); assert.doesNotMatch(docs, /^  pull_request:/m);
-  assert.match(docs, /os: \[windows-latest, ubuntu-latest\]/);
+  assert.match(docs, /os: \[windows-latest, ubuntu-24.04\]/);
   assert.match(docs, /run: pnpm --dir packages\/core run build:rs/);
   assert.match(docs, /cargo test .*farmfe_docs_snapshot/);
   assert.match(docs, /CODEX_DOCS_NATIVE_BASELINE/);
