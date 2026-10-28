@@ -121,7 +121,7 @@ export async function viteBusinessConfig(root, { outDir, graph } = {}) {
     },
   };
   return {
-    root, configFile: false, clearScreen: false, logLevel: 'info', base: '/',
+    root, configFile: false, clearScreen: false, logLevel: 'info', base: '/', cacheDir: path.join(root, '.cache/vite-business'),
     resolve: { alias: { '@commerce-extension': path.join(generatedRoot, 'index.ts') } },
     define: { __COMMERCE_GROUP__: JSON.stringify('vite') }, // The original app labels its real builder honestly.
     esbuild: { jsx: 'automatic' },

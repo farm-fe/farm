@@ -26,6 +26,7 @@ test('real installed Vite factory preserves original entry and parses actual MDX
   assert.equal(config.build.target, 'esnext'); assert.equal(config.build.sourcemap, true);
   assert.equal(config.build.minify, 'esbuild'); assert.equal(config.build.rollupOptions.cache, false);
   assert.equal(config.build.rollupOptions.input, path.join(root, 'index.html'));
+  assert.equal(config.cacheDir, path.join(root, '.cache/vite-business'));
   assert.equal(config.resolve.alias['@commerce-extension'], path.join(root, 'packages/extensions/business-2048/index.ts'));
   const plugins = config.plugins.flat(Infinity);
   for (const name of ['vite-commerce-js-wasm', 'vite-commerce-js-channel-virtual', 'vite-commerce-js-product-url', 'vite-commerce-js-product-image-dom', 'vite-commerce-js-local-components', 'commerce-vite-svg', 'commerce-vite-gzip']) assert.ok(plugins.some(plugin => plugin.name === name), name);

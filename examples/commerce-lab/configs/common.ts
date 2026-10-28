@@ -23,7 +23,7 @@ export function common(group: Group): UserConfig {
     compilation: {
       resolve: { alias: { '@commerce-extension': path.resolve('packages/extensions', scale, 'index.ts') } },
       input: { index: './index.html' },
-      output: { path: outputId ? `dist/benchmark/${outputId}/${group}` : `dist/${group}` },
+      output: { path: outputId ? `dist/benchmark/${outputId}/${group}` : `dist/${group}`, targetEnv: 'browser-esnext' },
       persistentCache: { cacheDir: path.resolve('.cache', group, cacheId) },
       lazyCompilation: false,
       sourcemap: true,

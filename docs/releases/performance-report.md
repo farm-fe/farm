@@ -13,6 +13,9 @@ are never relabeled as module counts. Original HTML, admin entry, lazy pages,
 adapters, data, worker and WASM inputs stay intact. The temporary project also
 receives its inherited root TypeScript configuration. The complete copied input
 closure, generator, lockfile and supervision harness are fingerprinted.
+The inherited root TypeScript config and explicit dependency-owner manifests are
+also hashed. Isolated projects retain minimal owner manifests/node_modules links
+for Markdown and Tailwind resolution; these are not extra application inputs.
 
 A complete cold/warm bootstrap is not scored. Three scored pairs follow,
 alternating tool/cohort order serially on the same runner. Each sample uses a new
@@ -62,6 +65,11 @@ or commit. Group RSS may double-count shared pages; live CPU totals are diagnost
 not formal CPU benchmarks. Phase, cwd, allocated timeout, elapsed time, pressure,
 disk, RSS, cleanup and bounded sanitized log tails are retained. No global process
 kill is used. Actual OS behavior must be verified by the new remote CI run.
+Playwright creates a separate Unix group. Correctness uses public BrowserServer
+process identity and an atomic ownership receipt: the supervisor checks its live
+parent/group/creation time, includes that group in observations, and verifies its
+cleanup separately. An unregistered failed launch is unconfirmed rather than
+treated as successful cleanup; no unverified PID is killed based only on JSON.
 
 ## Base, Vite and history
 

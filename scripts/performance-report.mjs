@@ -18,6 +18,7 @@ import { probeSupervisedResources, finishBootstrap, supervisedCommand } from './
 import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json', 'examples/vite-adapter-vue-css/package.json'];
 export const protocol = 'commerce-business-2048-supervised-v1';
 export const workloadScale = 'business-2048';
 export function businessFixture() { const profile = scaleProfile(workloadScale); return extensionSources(profile.categories, profile); }
@@ -33,7 +34,8 @@ export async function workloadFileCounts(sourceRoot, fixture) {
   }
   await visit('');
   const generatedFiles = Object.keys(fixture).length;
-  return { baseSourceFiles, generatedFiles, totalSourceFiles: baseSourceFiles + generatedFiles, scope: 'All copied workload inputs, including config, benchmark and test files', fileCountIsNotModuleCount: true };
+  return { baseSourceFiles, generatedFiles, totalSourceFiles: baseSourceFiles + generatedFiles,
+    auxiliaryInputs: auxiliaryWorkloadInputs, scope: 'Copied lab files plus generated files; inherited config and external dependency-owner manifests are listed separately', fileCountIsNotModuleCount: true };
 }
 export async function harnessFingerprint(sourceRoot) {
   const hash = crypto.createHash('sha256');
@@ -57,6 +59,15 @@ async function prepareLab(sourceRoot, temporary, fixture) {
   await fs.cp(path.join(sourceRoot, 'examples/commerce-lab'), lab, { recursive: true, filter: source => !source.split(path.sep).some(part => ['node_modules', 'dist', '.cache', 'reports', 'extensions'].includes(part)) });
   await fs.copyFile(path.join(sourceRoot, 'tsconfig.base.json'), path.join(temporary, 'tsconfig.base.json'));
   for (const name of ['packages', 'rust-plugins', 'js-plugins', 'node_modules']) await fs.symlink(path.join(sourceRoot, name), path.join(temporary, name), process.platform === 'win32' ? 'junction' : 'dir');
+  // Copied adapters resolve dependencies from these explicit workspace owners.
+  // Preserve their manifests and installed dependencies without copying Docs or
+  // another application into the timed workload.
+  for (const owner of ['website', 'examples/vite-adapter-vue-css']) {
+    const destination = path.join(temporary, owner);
+    await fs.mkdir(destination, { recursive: true });
+    await fs.copyFile(path.join(sourceRoot, owner, 'package.json'), path.join(destination, 'package.json'));
+    await fs.symlink(path.join(sourceRoot, owner, 'node_modules'), path.join(destination, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+  }
   await fs.symlink(path.join(sourceRoot, 'examples/commerce-lab/node_modules'), path.join(lab, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   for (const [name, content] of Object.entries(fixture)) {
     const file = path.join(lab, 'packages/extensions', workloadScale, name);
@@ -66,6 +77,7 @@ async function prepareLab(sourceRoot, temporary, fixture) {
 }
 export async function workloadFingerprint(sourceRoot, fixture) {
   const hash = crypto.createHash('sha256').update(JSON.stringify(fixture));
+  for (const file of auxiliaryWorkloadInputs) hash.update(file).update('\0').update(await fs.readFile(path.join(sourceRoot, file))).update('\0');
   const source = path.join(sourceRoot, 'examples/commerce-lab');
   async function visit(relative) {
     const target = path.join(source, relative);

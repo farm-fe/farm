@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 import { diagnosticTail, redactDiagnostic } from './v2-release-diagnostics.mjs';
 
 export const safetyProtocol = 'business-2048-supervised-bootstrap-v1';
@@ -70,9 +71,11 @@ export async function supervisedCommand(executable, args, { cwd, env = process.e
   console.log('[performance command start] ' + JSON.stringify(metadata));
   const started = Date.now(); let lastProgress = 0, buffer = '', result;
   const interpreter = python(env);
+  const browserOwnerFile = phase === 'correctness' ? path.join(path.dirname(log), `browser-owner-${randomUUID()}.json`) : null;
+  if (browserOwnerFile) fs.writeFileSync(browserOwnerFile, JSON.stringify({ state: 'not-started', rootPid: null, browserPid: null }), { flag: 'wx' });
   const fd = fs.openSync(log, 'a');
-  const child = spawn(interpreter, [supervisor], { env, windowsHide: true, stdio: ['pipe', 'pipe', fd] });
-  child.stdin.end(JSON.stringify({ argv: [executable, ...args], cwd, log, phase, timeoutMs: allocation.timeoutMs, policy: allocation.policy }) + '\n');
+  const child = spawn(interpreter, [supervisor], { env: browserOwnerFile ? { ...env, FARM_PERFORMANCE_BROWSER_OWNER: browserOwnerFile } : env, windowsHide: true, stdio: ['pipe', 'pipe', fd] });
+  child.stdin.end(JSON.stringify({ argv: [executable, ...args], cwd, log, phase, browserOwnerFile, timeoutMs: allocation.timeoutMs, policy: allocation.policy }) + '\n');
   let timer, stopTimer, failure;
   try {
     await new Promise((resolve, reject) => {
@@ -109,6 +112,7 @@ export async function supervisedCommand(executable, args, { cwd, env = process.e
       timer = setTimeout(() => stop(new Error('Supervisor exceeded bounded cleanup deadline')), allocation.timeoutMs + 10000);
     });
     assert.equal(result?.status, 'complete'); assert.equal(result.cleanupConfirmed, true);
+    assert.equal(result.phase, phase); assert.equal(result.cwd, cwd); assert.equal(result.timeoutMs, allocation.timeoutMs); assert.equal(result.exitCode, 0);
     assert.ok(result.durationMs > 0 && result.kernelPeakRssBytes > 0, 'Actual time/RSS evidence unavailable');
     return { ...result, allocation, phase, cwd };
   } catch (cause) {

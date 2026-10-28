@@ -1,11 +1,12 @@
 """Single-command, standard-library OS supervision; never a cross-run budget store."""
-# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline
+# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid
 import ctypes
 import json
 import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import threading
@@ -103,9 +104,9 @@ def admit(snapshot, policy, require_available=True):
         raise ResourceInsufficientError("Measured bootstrap memory admission budget not met")
 
 
-def unix_group_rss(group):
+def unix_group_rss(groups):
     rows = subprocess.check_output(["/bin/ps", "-axo", "pid=,pgid=,rss=,time="], text=True, timeout=2)
-    values = [(int(rss) * 1024, cpu) for pid, pgid, rss, cpu in re.findall(r"^\s*(\d+)\s+(\d+)\s+(\d+)\s+([\d:.-]+)\s*$", rows, re.M) if int(pgid) == group]
+    values = [(int(rss) * 1024, cpu) for pid, pgid, rss, cpu in re.findall(r"^\s*(\d+)\s+(\d+)\s+(\d+)\s+([\d:.-]+)\s*$", rows, re.M) if int(pgid) in groups]
     def seconds(value):
         days, clock = value.split("-", 1) if "-" in value else ("0", value)
         total = 0.0
@@ -225,20 +226,89 @@ def run(config):
     result = {"status": "invalid", "cleanupConfirmed": False, "samples": 0, "peakObservedGroupRssBytes": 0, "kernelPeakRssBytes": None}
     child = None; job = None
     started = None; usage = None
+    browser_group = None
+    def browser_owner():
+        if not config.get("browserOwnerFile") or not child:
+            return None
+        info = os.lstat(config["browserOwnerFile"])
+        if not stat.S_ISREG(info.st_mode) or info.st_size > 4096:
+            raise RuntimeError("Invalid owned browser receipt")
+        with open(config["browserOwnerFile"], encoding="utf-8") as source:
+            owner = json.load(source)
+        if owner.get("rootPid") != child.pid:
+            if owner.get("state") == "not-started":
+                return owner
+            raise RuntimeError("Browser receipt root mismatch")
+        return owner
+    def register_browser():
+        nonlocal browser_group
+        if browser_group:
+            return
+        owner = browser_owner()
+        if not owner or owner.get("state") != "open":
+            return
+        pid = owner.get("browserPid")
+        if not isinstance(pid, int) or pid <= 1:
+            raise RuntimeError("Invalid owned browser PID")
+        row = subprocess.check_output(["/bin/ps", "-p", str(pid), "-o", "ppid=,pgid=,lstart="], text=True, timeout=2).strip().split(None, 2)
+        if len(row) != 3 or int(row[0]) != child.pid or int(row[1]) != pid:
+            raise RuntimeError("Browser group is not a direct owned child")
+        browser_group = {"pid": pid, "started": row[2], "parentVerified": True}
+        result["browserGroup"] = browser_group
+    def clear_group(group):
+        try:
+            os.killpg(group, signal.SIGKILL)
+        except ProcessLookupError:
+            return True
+        for _ in range(50):
+            try:
+                os.killpg(group, 0)
+            except ProcessLookupError:
+                return True
+            time.sleep(0.05)
+        return False
     def cleanup():
         if job:
             return job.cleanup()
         if not child:
             return True
+        # Playwright intentionally creates a separate Unix browser process group.
+        # A receipt alone is not ownership: register against its live parent and
+        # creation identity before killing the build's group.
+        browser_clean = True
+        try:
+            register_browser()
+            if config.get("browserOwnerFile"):
+                if browser_group:
+                    pid = browser_group["pid"]
+                    row = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "lstart="], text=True, capture_output=True, timeout=2)
+                    if row.stderr.strip() or (row.returncode == 0 and row.stdout.strip() != browser_group["started"]):
+                        raise RuntimeError("Browser PID creation identity unavailable/changed; refusing kill")
+                    browser_clean = clear_group(pid)
+                else:
+                    # Public BrowserServer.close must finish if the short-lived
+                    # browser exited before registration. Failed launches remain
+                    # unconfirmed. Never kill an unverified group from JSON alone.
+                    owner = browser_owner()
+                    browser_clean = False
+                    if owner is not None and owner.get("state") == "closed" and isinstance(owner.get("browserPid"), int) and owner["browserPid"] > 1:
+                        try:
+                            os.killpg(owner["browserPid"], 0)
+                        except ProcessLookupError:
+                            browser_clean = True
+        except Exception as error:
+            browser_clean = False
+            result["browserCleanupError"] = str(error)
+        # Even a browser ownership/probe error must stop the proven owned root.
         try:
             os.killpg(child.pid, signal.SIGKILL)
         except ProcessLookupError:
-            return True
+            return browser_clean
         for _ in range(50):
             try:
                 os.killpg(child.pid, 0)
             except ProcessLookupError:
-                return True
+                return browser_clean
             # Reap the direct child after an interrupted run.
             try:
                 os.waitpid(child.pid, os.WNOHANG)
@@ -265,7 +335,8 @@ def run(config):
                 try:
                     if job:
                         from ctypes import wintypes as w
-                        job.kernel.WaitForSingleObject(w.HANDLE(job.process), 0xFFFFFFFF)
+                        if job.kernel.WaitForSingleObject(w.HANDLE(job.process), 0xFFFFFFFF) != 0:
+                            raise ctypes.WinError(ctypes.get_last_error())
                         completion["code"] = job.poll()
                     else:
                         _, status, root_usage = os.wait4(child.pid, 0)
@@ -288,7 +359,9 @@ def run(config):
                     previous_pressure = observation["pressure"]
                 result["lastObservation"] = observation
                 admit(observation, config["policy"], require_available=False)
-                observed = job.rss() if job else unix_group_rss(child.pid)
+                if not job:
+                    register_browser()
+                observed = job.rss() if job else unix_group_rss({child.pid, *([browser_group["pid"]] if browser_group else [])})
                 result["samples"] += 1; result["peakObservedGroupRssBytes"] = max(result["peakObservedGroupRssBytes"], observed["rssBytes"])
                 print(json.dumps({"event": "sample", "elapsedMs": (time.monotonic() - started) * 1000, **observed, **observation}), flush=True)
                 if completed.is_set():
@@ -301,6 +374,8 @@ def run(config):
                     raise RuntimeError("Supervised command deadline reached")
                 completed.wait(1)
             result["durationMs"] = (completion["ended"] - started) * 1000
+            if result["durationMs"] > config["timeoutMs"]:
+                raise RuntimeError("Child completed after its allocated timeout")
             result["kernelPeakRssBytes"] = job.memory()[1] if job else usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
             result["rssSource"] = "Windows PeakWorkingSetSize" if job else "wait4 rusage maxrss (Darwin bytes; Linux KiB converted)"
             result["after"] = verified_snapshot(config["cwd"]); admit(result["after"], config["policy"], require_available=False)

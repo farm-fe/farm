@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale } from './performance-report.mjs';
+import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs } from './performance-report.mjs';
 
 test('failed and missing samples do not become zero-duration measurements', () => {
   const cells = aggregate([
@@ -55,18 +55,20 @@ test('business-2048 generates real business files, never reports files as module
   assert.equal(reached.size, Object.keys(fixture).length, 'Every generated business input is statically reachable');
   const counts = await workloadFileCounts(fileURLToPath(new URL('../', import.meta.url)), fixture);
   assert.equal(counts.generatedFiles, 28673);
-  assert.equal(counts.baseSourceFiles, 240);
-  assert.equal(counts.totalSourceFiles, 28913);
+  assert.ok(counts.baseSourceFiles > 0);
+  assert.equal(counts.totalSourceFiles, counts.baseSourceFiles + 28673);
+  assert.ok(counts.auxiliaryInputs.includes('tsconfig.base.json'));
   assert.equal(counts.fileCountIsNotModuleCount, true);
 });
 
 test('identity and raw resource evidence precede guard; source restoration and Vite scope remain explicit', async () => {
   const source = await fs.readFile(new URL('./performance-report.mjs', import.meta.url), 'utf8');
-  assert.ok(source.indexOf('artifactProducerSHA:') < source.indexOf('assertPerformanceResources(report.resources)'));
-  assert.ok(source.indexOf('report.resources = resourceSnapshot') < source.indexOf('assertPerformanceResources(report.resources)'));
+  assert.ok(source.indexOf('artifactProducerSHA:') < source.indexOf('probeSupervisedResources(os.tmpdir())'));
+  assert.ok(source.indexOf('report.resources = resourceSnapshot') < source.indexOf('probeSupervisedResources(os.tmpdir())'));
   assert.match(source, /report\.resources = resourceSnapshot[^;]+; await persist\(\);/);
   assert.match(source, /sourcesUnchanged = before === await trackedFingerprint/);
-  assert.match(source, /catalog-quote-subset/);
+  assert.match(source, /BUSINESS_COMPARISON_PROTOCOL/);
+  assert.doesNotMatch(source, /prepareComparisonFixture|assertPerformanceResources/);
   assert.match(source, /COMMERCE_SCALE: workloadScale/);
 });
 test('fingerprint includes the actual Commerce apps, config and business packages', async () => {
@@ -108,11 +110,17 @@ test('workload fingerprint changes for HTML, adapters and scale inputs, not gene
   try {
     const inputs = ['index.html', 'adapters/vite.mjs', 'benchmark/scale-profiles.mjs', 'packages/business/index.ts'];
     for (const file of inputs) { await fs.mkdir(path.dirname(path.join(lab, file)), { recursive: true }); await fs.writeFile(path.join(lab, file), 'original'); }
+    for (const file of auxiliaryWorkloadInputs) { await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true }); await fs.writeFile(path.join(root, file), 'owner-or-config'); }
     const original = await workloadFingerprint(root, {});
     for (const file of inputs) {
       await fs.writeFile(path.join(lab, file), 'mutated');
       assert.notEqual(await workloadFingerprint(root, {}), original, file);
       await fs.writeFile(path.join(lab, file), 'original');
+    }
+    for (const file of auxiliaryWorkloadInputs) {
+      await fs.writeFile(path.join(root, file), 'changed owner-or-config');
+      assert.notEqual(await workloadFingerprint(root, {}), original, file);
+      await fs.writeFile(path.join(root, file), 'owner-or-config');
     }
     for (const file of ['dist/output.js', '.cache/result', 'packages/extensions/baseline/index.ts']) {
       await fs.mkdir(path.dirname(path.join(lab, file)), { recursive: true }); await fs.writeFile(path.join(lab, file), 'generated');

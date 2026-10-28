@@ -62,6 +62,18 @@ test('real OS supervisor reports root exit and owned descendant cleanup, includi
     cleanupConfirmed = false;
     for (const pid of Object.values(pids)) assert.throws(() => process.kill(pid, 0), error => error.code === 'ESRCH');
     cleanupConfirmed = true;
+    // Playwright creates a distinct Unix browser group. A plain root-group
+    // cleanup would leave this actual child alive and must not pass this test.
+    const browserPidFile = path.join(directory, 'detached-child.json');
+    const detached = `const fs=require('node:fs');const cp=require('node:child_process').spawn(process.execPath,['-e','setTimeout(()=>process.exit(0),30000)'],{stdio:'ignore',detached:process.platform!=='win32'});const data={rootPid:process.pid,browserPid:cp.pid,state:'open'};const receipt=process.env.FARM_PERFORMANCE_BROWSER_OWNER;fs.writeFileSync(receipt+'.tmp',JSON.stringify(data),{flag:'wx'});fs.renameSync(receipt+'.tmp',receipt);fs.writeFileSync(process.argv[1],JSON.stringify(data));setTimeout(()=>process.exit(0),31000);`;
+    await assert.rejects(supervisedCommand(process.execPath, ['-e', detached, browserPidFile], { ...options, phase: 'correctness', budget: finishBootstrap(rows(), identity), commandLimitMs: 1500 }), error => {
+      cleanupConfirmed = error.cleanupConfirmed === true;
+      assert.equal(error.cleanupConfirmed, true); return true;
+    });
+    const ownedBrowser = JSON.parse(fs.readFileSync(browserPidFile));
+    cleanupConfirmed = false;
+    for (const pid of [ownedBrowser.rootPid, ownedBrowser.browserPid]) assert.throws(() => process.kill(pid, 0), error => error.code === 'ESRCH');
+    cleanupConfirmed = true;
   } catch (error) {
     if (error.cleanupConfirmed === false) cleanupConfirmed = false;
     throw error;

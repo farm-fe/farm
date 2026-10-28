@@ -37,8 +37,24 @@ export async function verifyBuiltComparison(root, browser) {
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { chromium } = await import('playwright-chromium');
-  const browser = await chromium.launch({ headless: true });
+  const ownerFile = process.env.FARM_PERFORMANCE_BROWSER_OWNER;
+  async function owner(state, browserPid = null) {
+    if (!ownerFile) return;
+    const stat = await fs.lstat(ownerFile);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4096) throw new Error('Invalid supervisor browser receipt');
+    const old = JSON.parse(await fs.readFile(ownerFile, 'utf8'));
+    if (old.rootPid !== null && old.rootPid !== process.pid) throw new Error('Browser receipt owner mismatch');
+    const temporary = ownerFile + '.tmp';
+    await fs.writeFile(temporary, JSON.stringify({ rootPid: process.pid, browserPid, state }), { flag: 'wx' });
+    await fs.rename(temporary, ownerFile);
+  }
+  let server, browser, browserPid;
+  await owner('launching');
   try {
+    server = await chromium.launchServer({ headless: true, timeout: 30000 });
+    browserPid = server.process().pid;
+    await owner('open', browserPid);
+    browser = await chromium.connect(server.wsEndpoint());
     if (process.argv[2] === '--business') {
       const results = {};
       for (const [tool, directory] of [['farm', process.argv[3]], ['vite', process.argv[4]]]) {
@@ -49,5 +65,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       await fs.writeFile(process.argv[5], JSON.stringify({ protocol: BUSINESS_COMPARISON_PROTOCOL, status: 'complete', measured: false, results }));
     } else await fs.writeFile(process.argv[3], JSON.stringify(await verifyBuiltComparison(process.argv[2], browser)));
   }
-  finally { await browser.close(); }
+  finally {
+    try { await browser?.close(); }
+    finally {
+      await server?.close();
+      if (server) {
+        const child = server.process();
+        if (child.exitCode === null && child.signalCode === null) throw new Error('BrowserServer close did not confirm process exit');
+        await owner('closed', browserPid);
+      }
+    }
+  }
 }
