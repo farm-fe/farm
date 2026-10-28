@@ -16,7 +16,7 @@ on:
           - release-pr
 
 concurrency:
-  group: farm-stable-release
+  group: farm-cargo-version-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: farm-stable-release
+  group: farm-changesets-version-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   check-release-request:
@@ -46,5 +46,6 @@ jobs:
         with:
           version: pnpm run bump
           branch: main
+          title: 'chore: release packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

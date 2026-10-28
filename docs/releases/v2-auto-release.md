@@ -9,7 +9,9 @@ updates, ordinary feature PRs and pushes to the feature branch cannot publish.
 Website deployment and auto-merge are not included. Subsequent main pushes use
 Changesets Action to prepare version PRs; Cargo version PR preparation uses
 release-plz. Neither versioning action receives npm publication credentials.
-All versioning/publication workflows share the farm-stable-release lock.
+Only actual publication uses the farm-stable-release lock. Changesets and Cargo
+version PR preparation use separate concurrency groups so their pending runs
+cannot displace a pending publication after the same merge.
 
 A later changeset-release version PR may enter the same merge DAG only after its
 release plan, reviewed PR-number intent/hash and complete evidence are refreshed

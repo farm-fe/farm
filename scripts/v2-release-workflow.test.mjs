@@ -17,6 +17,7 @@ test('ordinary main changes use Changesets version PRs without publication crede
   assert.match(workflow, /github.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /^  push:/m);
   assert.match(workflow, /uses: changesets\/action@v1/);
+  assert.match(workflow, /title: 'chore: release packages'/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|CARGO_REGISTRY_TOKEN|run: pnpm run release/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
   assert.match(stable, /types: \[closed\]/);
@@ -34,5 +35,11 @@ test('Changesets filesystem and parsing errors cannot select publication', () =>
   assert.match(workflow, /changeset_state == 'pending'/);
   assert.doesNotMatch(workflow, /changeset_state == 'empty'/);
   assert.doesNotMatch(workflow, /if node .*check-changeset-status/);
-  assert.match(workflow, /group: farm-stable-release/);
+  assert.match(workflow, /group: farm-changesets-version-/);
+  assert.doesNotMatch(workflow, /group: farm-stable-release/);
+  const cargo = fs.readFileSync(new URL('../.github/workflows/release-plz.yaml', import.meta.url), 'utf8');
+  assert.match(cargo, /group: farm-cargo-version-/);
+  assert.doesNotMatch(cargo, /group: farm-stable-release/);
+  const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
+  assert.match(stable, /group: farm-stable-release/);
 });
