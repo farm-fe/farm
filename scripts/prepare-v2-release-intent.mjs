@@ -6,7 +6,7 @@ import { digest, requiredWorkflows, requiredCiJobs } from './v2-auto-release.mjs
 import { rustPublicationOrder } from './release-rust-metadata.mjs';
 import { execFileSync } from 'node:child_process';
 import { npmInventory, cargoInventory, changesetsPublication } from './v2-release-inventory.mjs';
-import { cargoChangesetId, validateCargoPreparation } from './prepare-cargo-version-proposal.mjs';
+import { cargoChangesetId, validateCargoPreparation, readCargoArtifact } from './prepare-cargo-version-proposal.mjs';
 export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   assert.ok(Number.isSafeInteger(pullRequest) && pullRequest > 0, 'Reviewed version PR number is required');
   const compatibility = { farmfe_macro_cache_item: 'published-macro-compat.json', farmfe_macro_plugin: 'published-plugin-macro-compat.json' };
@@ -57,6 +57,7 @@ export async function refreshChangesetsVersionPr(root, number) {
     git('fetch', 'origin', cargoRecord.headSHA);
     cargoFiles = validateCargoPreparation(cargoRecord, baseline, metadata, { baseSHA: pr.base.sha,
       repository, readProducerRun: id => gh('api', `repos/${repository}/actions/runs/${id}`),
+      readProducerArtifact: readCargoArtifact,
       isAncestor: (base, head) => { git('merge-base', '--is-ancestor', base, head); return true; },
       readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
       changedFiles: (base, head) => git('diff', '--name-only', base, head).split(/\r?\n/).filter(Boolean),

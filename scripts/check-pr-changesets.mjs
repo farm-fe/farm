@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { validationEvent, changesetsPublication } from './v2-release-inventory.mjs';
-import { cargoChangesetId, validateCargoPreparation } from './prepare-cargo-version-proposal.mjs';
+import { cargoChangesetId, validateCargoPreparation, readCargoArtifact } from './prepare-cargo-version-proposal.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const digest = text => crypto.createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
 
@@ -103,6 +103,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
         const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--no-deps', '--locked', '--format-version', '1'], { cwd: root, encoding: 'utf8', timeout: 120000, maxBuffer: 16 * 1024 ** 2 }));
         validateCargoPreparation(cargoRecord, baseline, metadata, { baseSHA,
           repository: process.env.GITHUB_REPOSITORY,
+          readProducerArtifact: readCargoArtifact,
           readProducerRun: id => JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${id}`], { cwd: root, encoding: 'utf8', timeout: 30000 })),
           isAncestor: (base, head) => { execFileSync('git', ['merge-base', '--is-ancestor', base, head], { cwd: root }); return true; },
           readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),

@@ -1,3 +1,4 @@
+// cspell:words gpgsign
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,8 +7,28 @@ import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
-import { assertVersionOnlyManifest, assertNewRustVersion, cargoChangeset, synchronizeNativePayloads, validateCargoPreparation, cargoProposalScope, updateConsumerDependencyVersions, affectedCargoConsumers, validateCargoProduction } from './prepare-cargo-version-proposal.mjs';
+import { assertVersionOnlyManifest, assertNewRustVersion, cargoChangeset, synchronizeNativePayloads, validateCargoPreparation, cargoProposalScope, updateConsumerDependencyVersions, affectedCargoConsumers, validateCargoProduction, validateCargoArtifact, releasePlzProposal, recordCargoProduction, versionPreparationState } from './prepare-cargo-version-proposal.mjs';
 import { changesetsPublication } from './v2-release-inventory.mjs';
+
+test('official no-Cargo output leaves a JS Changeset pending without recording a false proposal', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-js-only-version-'));
+  try {
+    fs.mkdirSync(path.join(directory, '.changeset'));
+    fs.writeFileSync(path.join(directory, '.changeset/js-patch.md'), '---\n"@farmfe/js-plugin-example": patch\n---\n\nJS patch.\n');
+    const none = releasePlzProposal(JSON.parse('{}'), 'false');
+    assert.equal(none, null);
+    // This must return before Git/API/environment inspection.
+    assert.deepEqual(recordCargoProduction({}, 'false'), { status: 'no-cargo-proposal' });
+    assert.equal(versionPreparationState(none, directory), 'pending');
+    fs.unlinkSync(path.join(directory, '.changeset/js-patch.md'));
+    assert.equal(versionPreparationState(none, directory), 'empty');
+    const update = { number: 7, base_branch: 'main', head_branch: 'release-plz-existing' };
+    assert.equal(releasePlzProposal(update, 'true'), update, 'An existing proposal returned in prs is also processed');
+    for (const [value, flag] of [[{}, 'true'], [update, 'false'], [null, 'false'], [[], 'false'], [{ unexpected: true }, 'false'], [{ ...update, head_branch: 'feature' }, 'true'], [{ ...update, base_branch: 'other' }, 'true'], [{}, undefined]]) {
+      assert.throws(() => releasePlzProposal(value, flag));
+    }
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
 
 test('one real Core patch Changeset generates an official owner bump then synchronizes platform wrappers', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-official-version-'));
@@ -89,8 +110,11 @@ test('joint Cargo receipt binds exact proposal files and rejects source, stale b
   const requiredNpm = ['@farmfe/core', '@farmfe/plugin-react'];
   const record = { schemaVersion: 2, number: 7, baseSHA: 'a'.repeat(40), headSHA: 'b'.repeat(40), branch: 'release-plz-example', files: ['crates/core/Cargo.toml'], versions: [{ name: 'farmfe_core', version: '2.2.1' }], requiredNpm, changeset: cargoChangeset(requiredNpm), consumerManifests: [...scope.consumers].map(([file, value]) => ({ file, beforeSha256: hash(value.before), afterSha256: hash(value.after) })) };
   record.production = { schemaVersion: 1, workflowPath: '.github/workflows/release-plz.yaml', sourceSHA: record.baseSHA, proposalHeadSHA: record.headSHA, number: record.number, branch: record.branch, runId: 44, runAttempt: 1 };
+  const receiptText = JSON.stringify(record.production) + '\n';
+  record.production.artifact = { id: 55, digest: 'sha256:' + 'd'.repeat(64), receiptSha256: hash(receiptText) };
+  const artifact = { id: 55, name: `cargo-version-proposal-${record.baseSHA}-44-1`, expired: false, digest: record.production.artifact.digest, size_in_bytes: 1024, workflow_run: { id: 44, head_sha: record.baseSHA } };
   const run = { id: 44, run_attempt: 1, path: record.production.workflowPath, repository: { full_name: 'farm-fe/farm' }, head_sha: record.baseSHA, head_branch: 'main', event: 'push', status: 'completed', conclusion: 'success' };
-  const options = { baseSHA: record.baseSHA, repository: 'farm-fe/farm', isAncestor: () => true, readProducerRun: () => run, changedFiles: () => record.files, readGitFile: (sha, file) => (sha === record.baseSHA ? beforeFiles : proposedFiles)[file],
+  const options = { baseSHA: record.baseSHA, repository: 'farm-fe/farm', isAncestor: () => true, readProducerRun: () => run, readProducerArtifact: index => validateCargoArtifact(index, artifact, receiptText), changedFiles: () => record.files, readGitFile: (sha, file) => (sha === record.baseSHA ? beforeFiles : proposedFiles)[file],
     readCurrent: file => file.endsWith('lib.rs') ? 'pub const VERSION: &str = "0.5.4";' : scope.consumers.get(file)?.after ?? proposedFiles[file] };
   assert.deepEqual(validateCargoPreparation(record, baseline, metadata, options), [...record.files, ...scope.consumers.keys()]);
   assert.equal(baseline.cargo.length, 4, 'Private native consumers are not publication records');
@@ -105,6 +129,9 @@ test('joint Cargo receipt binds exact proposal files and rejects source, stale b
   assert.throws(() => validateCargoPreparation(record, baseline, metadata, { ...options, isAncestor: () => false }), /does not contain/);
   assert.throws(() => validateCargoPreparation(record, baseline, metadata, { ...options, readProducerRun: () => ({ ...run, path: '.github/workflows/ci.yaml' }) }));
   assert.throws(() => validateCargoProduction(record.production, { ...run, head_sha: 'c'.repeat(40) }, record, 'farm-fe/farm'));
+  for (const change of [{ id: 56 }, { digest: 'sha256:' + 'e'.repeat(64) }, { expired: true }, { workflow_run: { id: 45, head_sha: record.baseSHA } }, { name: 'other-receipt' }]) assert.throws(() => validateCargoArtifact(record.production, { ...artifact, ...change }, receiptText));
+  assert.throws(() => validateCargoArtifact(record.production, artifact, receiptText.replace('\n', '\r\n')), /hash differs/);
+  assert.throws(() => validateCargoArtifact({ ...record.production, proposalHeadSHA: 'c'.repeat(40) }, artifact, receiptText), /differs from proposal index/);
   for (const change of [{ path: '.github/workflows/ci.yaml' }, { event: 'pull_request' }, { head_branch: 'feature' }, { run_attempt: 2 }, { conclusion: 'failure' }, { repository: { full_name: 'other/farm' } }]) assert.throws(() => validateCargoProduction(record.production, { ...run, ...change }, record, 'farm-fe/farm'));
   const nodeFile = 'crates/node/Cargo.toml';
   assert.throws(() => validateCargoPreparation(record, baseline, metadata, { ...options, readCurrent: file => file === nodeFile ? scope.consumers.get(file).after.replace(/^version = "[^"]+"/m, 'version = "99.0.0"') : options.readCurrent(file) }), /Consumer dependency update differs/);

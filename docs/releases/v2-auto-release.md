@@ -30,11 +30,21 @@ push triggered CI. No new credential is created.
 ## Joint future Rust and npm preparation
 
 An open same-repository release-plz proposal must match the current main base and
-the configured workflow bot identity. The producer records its exact run/attempt,
-source SHA, workflow path and proposal head in a bounded PR-body record using its
-existing PR permission. Inspection and application recheck the completed producer
-run and prove that the base is an ancestor of the proposal head; the current PR
-base field alone is insufficient. A workflow-run trigger must match that producer.
+the configured workflow bot identity. The producer uploads its exact run/attempt,
+source SHA, workflow path and proposal head as an immutable artifact. Its bounded
+PR-body record is only an index containing artifact ID/digest and the raw receipt
+hash. Consumers read that artifact from the exact run, verify its immutable API
+identity, digest, member set and receipt bytes, then compare proposal/run data.
+An expired/missing artifact or denied read stops preparation without another
+credential or mutable-body fallback. Retention is 90 days; refresh an expired
+proposal instead of reusing it. Inspection and application also prove that the
+base is an ancestor of the proposal head; the PR base field alone is insufficient.
+A workflow-run trigger must match that producer.
+
+The official action's valid no-proposal output (`pr={}`, `prs_created=false`)
+is an explicit no-op, allowing pending JS Changesets to continue. Updated existing
+proposals returned by the action are recorded too. Inconsistent flags, malformed
+objects or untrusted branches fail rather than being silently skipped.
 
 The selected SDK's manifests, Cargo lock and changelogs are accepted only within
 the pinned proposal. The actual Cargo path reverse-dependency closure also permits

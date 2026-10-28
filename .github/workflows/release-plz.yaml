@@ -61,8 +61,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Public registry version preparation requires no publication credential.
       - name: Bind the exact proposal to this producer run
-        if: steps.release-plz.outputs.pr != ''
+        id: cargo-production
+        # The action emits pr='{}', prs_created='false' for a valid no-op.
+        # Validate both outputs even then, so malformed data cannot be ignored.
+        if: steps.release-plz.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_CARGO_ACTION_PR: ${{ steps.release-plz.outputs.pr }}
+          FARM_CARGO_PRS_CREATED: ${{ steps.release-plz.outputs.prs_created }}
         run: node scripts/prepare-cargo-version-proposal.mjs --record-production
+      - name: Preserve immutable proposal receipt
+        if: steps.cargo-production.outputs.has_proposal == 'true'
+        id: cargo-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.cargo-production.outputs.artifact_name }}
+          path: .release-cargo-producer/receipt.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Index the immutable receipt on its proposal
+        if: steps.cargo-production.outputs.has_proposal == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_CARGO_ARTIFACT_ID: ${{ steps.cargo-artifact.outputs.artifact-id }}
+          FARM_CARGO_ARTIFACT_DIGEST: ${{ steps.cargo-artifact.outputs.artifact-digest }}
+        run: node scripts/prepare-cargo-version-proposal.mjs --index-production

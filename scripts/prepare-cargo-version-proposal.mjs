@@ -4,6 +4,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { cargoInventory, farmAbiOwners } from './v2-release-inventory.mjs';
 import { changesetStatus } from './check-changeset-status.mjs';
 
@@ -26,6 +27,7 @@ export function assertNewRustVersion(previous, next) {
   assert.ok(index >= 0 && b[index] > a[index], 'Rust proposal must advance the immutable version');
 }
 const textHash = text => crypto.createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
+const byteHash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 export function affectedCargoConsumers(metadata, changedNames) {
   const affected = new Set(changedNames);
   const byPath = new Map(metadata.packages.map(pkg => [path.resolve(path.dirname(pkg.manifest_path)), pkg.name]));
@@ -125,12 +127,15 @@ export function requiredNativeOwners(plan, metadata, changedNames, abi = plan.ab
   }
   return [...names].sort();
 }
-export function validateCargoPreparation(record, baseline, metadata, { baseSHA, readGitFile, changedFiles, readCurrent, isAncestor, readProducerRun, repository }) {
+export function validateCargoPreparation(record, baseline, metadata, { baseSHA, readGitFile, changedFiles, readCurrent, isAncestor, readProducerRun, readProducerArtifact, repository }) {
   assert.equal(record.schemaVersion, 2); assert.equal(record.baseSHA, baseSHA);
   assert.match(record.headSHA, /^[a-f0-9]{40}$/); assert.match(record.branch, /^release-plz-/);
   assert.equal(typeof isAncestor, 'function'); assert.ok(isAncestor(baseSHA, record.headSHA), 'Cargo proposal does not contain its base');
   assert.equal(typeof readProducerRun, 'function');
   assert.ok(record.production && Number.isSafeInteger(record.production.runId), 'Missing Cargo producer evidence');
+  assert.equal(typeof readProducerArtifact, 'function', 'Immutable Cargo producer artifact reader required');
+  const expectedProduction = { ...record.production }; delete expectedProduction.artifact;
+  assert.deepEqual(readProducerArtifact(record.production), expectedProduction, 'Cargo producer artifact differs');
   validateCargoProduction(record.production, readProducerRun(record.production.runId), record, repository);
   assert.deepEqual(changedFiles(record.baseSHA, record.headSHA), record.files, 'Cargo proposal file set drift');
   const { manifests, consumers, allowed } = cargoProposalScope(baseline, metadata, file => readGitFile(baseSHA, file), file => readGitFile(record.headSHA, file));
@@ -176,6 +181,40 @@ export function validateCargoProduction(record, run, proposal, repository) {
   assert.ok(['push', 'workflow_dispatch'].includes(run.event));
   assert.equal(run.status, 'completed'); assert.equal(run.conclusion, 'success');
 }
+const productionArtifactName = record => `cargo-version-proposal-${record.sourceSHA}-${record.runId}-${record.runAttempt}`;
+export function validateCargoArtifactMetadata(index, artifact) {
+  assert.ok(index.artifact && Number.isSafeInteger(index.artifact.id) && index.artifact.id > 0, 'Missing immutable Cargo artifact index');
+  assert.equal(artifact.id, index.artifact.id); assert.equal(artifact.name, productionArtifactName(index));
+  assert.equal(artifact.expired, false); assert.equal(artifact.workflow_run.id, index.runId);
+  assert.equal(artifact.workflow_run.head_sha, index.sourceSHA);
+  assert.match(index.artifact.digest, /^sha256:[a-f0-9]{64}$/); assert.equal(artifact.digest, index.artifact.digest);
+  assert.ok(artifact.size_in_bytes > 0 && artifact.size_in_bytes <= 65536, 'Cargo producer artifact exceeds bound');
+}
+export function validateCargoArtifact(index, artifact, receiptText) {
+  validateCargoArtifactMetadata(index, artifact);
+  assert.ok(Buffer.byteLength(receiptText) <= 8192, 'Cargo producer receipt exceeds bound');
+  assert.equal(byteHash(receiptText), index.artifact.receiptSha256, 'Immutable Cargo receipt hash differs');
+  const expected = { ...index }; delete expected.artifact;
+  const receipt = JSON.parse(receiptText); assert.deepEqual(receipt, expected, 'Cargo artifact receipt differs from proposal index');
+  return receipt;
+}
+export function readCargoArtifact(index) {
+  const repository = process.env.GITHUB_REPOSITORY;
+  assert.ok(index.artifact && Number.isSafeInteger(index.artifact.id), 'Missing Cargo artifact ID');
+  const artifact = gh(`repos/${repository}/actions/artifacts/${index.artifact?.id}`);
+  validateCargoArtifactMetadata(index, artifact);
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-cargo-receipt-'));
+  try {
+    // Existing Actions artifact transport only. Never fall back to another token,
+    // unauthenticated URL or mutable PR-body data if permission/download fails.
+    execFileSync('gh', ['run', 'download', String(index.runId), '--repo', repository, '--name', artifact.name, '--dir', directory], { cwd: root, encoding: 'utf8', timeout: 30000 });
+    assert.deepEqual(fs.readdirSync(directory), ['receipt.json'], 'Unexpected Cargo producer artifact members');
+    const file = path.join(directory, 'receipt.json'); assert.ok(fs.lstatSync(file).isFile() && !fs.lstatSync(file).isSymbolicLink());
+    assert.ok(fs.statSync(file).size <= 8192);
+    // Re-read by immutable ID to detect a name replacement during transport.
+    return validateCargoArtifact(index, gh(`repos/${repository}/actions/artifacts/${artifact.id}`), fs.readFileSync(file, 'utf8'));
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+}
 function liveProposal(pr, baseSHA) {
   const repository = process.env.GITHUB_REPOSITORY;
   assert.equal(pr.state, 'open'); assert.equal(pr.user.login, 'github-actions[bot]');
@@ -186,6 +225,7 @@ function liveProposal(pr, baseSHA) {
   git('merge-base', '--is-ancestor', baseSHA, pr.head.sha);
   const proposal = { number: pr.number, headSHA: pr.head.sha, baseSHA, branch: pr.head.ref };
   const production = productionRecord(pr.body);
+  readCargoArtifact(production);
   validateCargoProduction(production, gh(`repos/${repository}/actions/runs/${production.runId}`), proposal, repository);
   if (process.env.GITHUB_EVENT_NAME === 'workflow_run') {
     const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH));
@@ -194,8 +234,23 @@ function liveProposal(pr, baseSHA) {
   }
   return { ...proposal, production };
 }
-function recordCargoProduction(value) {
-  if (!value) return;
+export function releasePlzProposal(value, created) {
+  assert.ok(['true', 'false'].includes(created), 'Missing or invalid release-plz proposal flag');
+  assert.ok(value && typeof value === 'object' && !Array.isArray(value), 'Malformed release-plz proposal output');
+  if (created === 'false') {
+    assert.deepEqual(Object.keys(value), [], 'No-proposal flag conflicts with proposal data');
+    return null;
+  }
+  assert.ok(Number.isSafeInteger(value.number) && value.number > 0, 'Missing proposal number');
+  assert.equal(value.base_branch, 'main'); assert.match(value.head_branch ?? '', /^release-plz-[\w.-]+$/);
+  return value;
+}
+export function versionPreparationState(proposal, directory) {
+  return proposal ? 'pending' : changesetStatus(directory).state;
+}
+export function recordCargoProduction(value, created) {
+  value = releasePlzProposal(value, created);
+  if (!value) return { status: 'no-cargo-proposal' };
   const repository = process.env.GITHUB_REPOSITORY, baseSHA = git('rev-parse', 'HEAD').trim();
   assert.equal(process.env.GITHUB_WORKFLOW_REF, `${repository}/${producerPath}@refs/heads/main`);
   assert.equal(baseSHA, process.env.GITHUB_SHA);
@@ -210,7 +265,27 @@ function recordCargoProduction(value) {
     runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
     number: pr.number, proposalHeadSHA: pr.head.sha, branch: pr.head.ref };
   assert.ok(Number.isSafeInteger(record.runId) && record.runId > 0 && Number.isSafeInteger(record.runAttempt) && record.runAttempt > 0);
-  const body = (pr.body ?? '').replace(/\n?<!-- farm-cargo-production:[^\n]+ -->/g, '') + `\n<!-- farm-cargo-production:${JSON.stringify(record)} -->`;
+  const directory = path.join(root, '.release-cargo-producer');
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, 'receipt.json'), JSON.stringify(record) + '\n', { flag: 'wx' });
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `has_proposal=true\nartifact_name=${productionArtifactName(record)}\n`);
+  return { status: 'cargo-producer-prepared' };
+}
+function indexCargoProduction() {
+  const file = path.join(root, '.release-cargo-producer/receipt.json');
+  const bytes = fs.readFileSync(file, 'utf8'); assert.ok(Buffer.byteLength(bytes) <= 8192);
+  const record = JSON.parse(bytes), repository = process.env.GITHUB_REPOSITORY;
+  const artifact = { id: Number(process.env.FARM_CARGO_ARTIFACT_ID), digest: `sha256:${process.env.FARM_CARGO_ARTIFACT_DIGEST}`, receiptSha256: byteHash(bytes) };
+  assert.ok(Number.isSafeInteger(artifact.id) && artifact.id > 0);
+  assert.match(artifact.digest, /^sha256:[a-f0-9]{64}$/);
+  assert.equal(record.runId, Number(process.env.GITHUB_RUN_ID)); assert.equal(record.runAttempt, Number(process.env.GITHUB_RUN_ATTEMPT));
+  const index = { ...record, artifact };
+  // Identity/digest are trusted outputs of the preceding upload in this job.
+  // Consumers independently check the immutable API object and downloaded bytes.
+  const pr = gh(`repos/${repository}/pulls/${record.number}`);
+  assert.equal(pr.head.sha, record.proposalHeadSHA); assert.equal(pr.base.sha, record.sourceSHA);
+  assert.equal(pr.head.repo.full_name, repository); assert.equal(pr.user.login, 'github-actions[bot]');
+  const body = (pr.body ?? '').replace(/\n?<!-- farm-cargo-production:[^\n]+ -->/g, '') + `\n<!-- farm-cargo-production:${JSON.stringify(index)} -->`;
   assert.ok(Buffer.byteLength(body) <= 60000, 'Cargo proposal body exceeds safe bound');
   execFileSync('gh', ['api', '--method', 'PATCH', `repos/${repository}/pulls/${pr.number}`, '--input', '-'], { cwd: root, input: JSON.stringify({ body }), encoding: 'utf8', timeout: 30000 });
 }
@@ -263,8 +338,11 @@ export function applyCargoProposal(proposal) {
   fs.writeFileSync(path.join(root, 'docs/release-evidence/cargo-version-proposal.json'), JSON.stringify({ schemaVersion: 2, ...proposal, files, consumerManifests, versions: changed.map(({ name, version }) => ({ name, version })), requiredNpm, changeset }, null, 2) + '\n');
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (process.argv[2] === '--record-production') {
-    recordCargoProduction(JSON.parse(process.env.FARM_CARGO_ACTION_PR ?? 'null'));
+  if (process.argv[2] === '--index-production') {
+    indexCargoProduction();
+  } else if (process.argv[2] === '--record-production') {
+    const result = recordCargoProduction(JSON.parse(process.env.FARM_CARGO_ACTION_PR ?? 'null'), process.env.FARM_CARGO_PRS_CREATED);
+    console.log(JSON.stringify(result ?? { status: 'cargo-producer-recorded' }));
   } else if (process.argv[2] === '--seed') {
     const proposal = JSON.parse(process.env.FARM_CARGO_PROPOSAL ?? 'null');
     if (proposal) {
@@ -273,7 +351,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     }
   } else {
   assert.equal(process.argv[2], '--inspect');
-  const proposal = inspectCargoProposal(), state = proposal ? 'pending' : changesetStatus(root).state;
+  const proposal = inspectCargoProposal(), state = versionPreparationState(proposal, root);
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `state=${state}\nproposal=${JSON.stringify(proposal)}\n`);
   console.log(JSON.stringify({ state, proposal }));
   }

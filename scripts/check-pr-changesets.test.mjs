@@ -27,7 +27,7 @@ function fixture(t) {
 }
 test('fully consumed stable preparation validates versions, changelogs and immutable source changesets', t => {
   const { root, options } = fixture(t);
-  assert.deepEqual(verifyPreparedRelease(root, options), { status: 'verified-stable-preparation', versions: 1, consumed: 1, sourceCommit: 'a'.repeat(40) });
+  assert.deepEqual(verifyPreparedRelease(root, { ...options, readProducerRun: () => assert.fail('First stable must not query future Cargo runs'), readProducerArtifact: () => assert.fail('First stable must not download future Cargo artifacts') }), { status: 'verified-stable-preparation', versions: 1, consumed: 1, sourceCommit: 'a'.repeat(40) });
 });
 test('manifest, changelog, ancestor, omitted source and pending changeset drift cannot bypass Changesets', t => {
   for (const mutate of [

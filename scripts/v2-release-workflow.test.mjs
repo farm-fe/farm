@@ -46,6 +46,12 @@ test('Changesets filesystem and parsing errors cannot select publication', () =>
   assert.match(cargo, /group: farm-cargo-version-/);
   assert.doesNotMatch(cargo, /group: farm-stable-release/);
   assert.doesNotMatch(cargo, /CARGO_REGISTRY_TOKEN/);
+  assert.match(cargo, /if: steps.release-plz.outcome == 'success'/);
+  assert.match(cargo, /FARM_CARGO_PRS_CREATED: \$\{\{ steps.release-plz.outputs.prs_created \}\}/);
+  assert.doesNotMatch(cargo, /outputs.pr != ''/);
+  assert.match(cargo, /uses: actions\/upload-artifact@v4/);
+  assert.match(cargo, /path: .release-cargo-producer\/receipt.json/);
+  assert.match(cargo, /--index-production/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
   assert.match(stable, /group: farm-stable-release/);
 });
