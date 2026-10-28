@@ -32,6 +32,8 @@ the independent Farm configuration. All configured languages share one server;
 visit `/zh/` for Chinese instead of passing Docusaurus's `--locale` option.
 
 The old Docusaurus build/configuration entry points have been removed.
-Migration details and the exact Windows validation status are in
-[`docs/farm-docs`](../docs/farm-docs/README.md). Local build and preview commands
+The current running instructions are in
+[Farm Docs usage](docs/farm-docs/usage.md). Historical migration and deployment
+records are in [`docs/farm-docs`](../docs/farm-docs/); those records do not establish
+the validation status of the current checkout. Local build and preview commands
 do not publish or deploy the website.

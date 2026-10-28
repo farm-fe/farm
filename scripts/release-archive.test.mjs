@@ -25,6 +25,18 @@ function tar(files) {
   return gzipSync(Buffer.concat([...chunks, Buffer.alloc(1024)]));
 }
 const expected = { name: 'example-candidate', version: '2.0.0', manifestPath: 'pkg/package.json' };
+test('archive uses normal-pack bin, wildcard and stable dependency contracts', () => {
+  const manifest = { ...expected, license: 'MIT', bin: { example: './bin/run.js' }, exports: { './*': './dist/*.js' } };
+  const files = { 'package/package.json': JSON.stringify(manifest), 'package/LICENSE': 'MIT License', 'package/bin/run.js': 'run', 'package/dist/a.js': 'export {}' };
+  assert.deepEqual(inspectNpmArchive(tar(files), expected).issues, []);
+  for (const missing of ['package/bin/run.js', 'package/dist/a.js', 'package/LICENSE']) {
+    const broken = { ...files }; delete broken[missing];
+    assert.ok(inspectNpmArchive(tar(broken), expected).issues.length, missing);
+  }
+  for (const dependencies of [{ internal: 'workspace:*' }, { '@farmfe/core': '2.0.0-beta.1' }]) {
+    assert.ok(inspectNpmArchive(tar({ ...files, 'package/package.json': JSON.stringify({ ...manifest, dependencies }) }), expected).issues.length);
+  }
+});
 test('existing npm versions are reusable only when exact sealed bytes match registry integrity', () => {
   const bytes = Buffer.from('sealed');
   const metadata = { name: expected.name, version: expected.version, dist: { integrity: `sha512-${crypto.createHash('sha512').update(bytes).digest('base64')}` } };
@@ -38,7 +50,9 @@ const base = { 'package/package.json': JSON.stringify({ name: expected.name, ver
 test('inspects actual package identity, entries, dependencies and legal bytes', () => {
   assert.deepEqual(inspectNpmArchive(tar(base), expected).issues, []);
   const bad = { ...base, 'package/package.json': JSON.stringify({ name: expected.name, version: expected.version, main: 'missing.js', dependencies: { dep: 'workspace:*' } }) };
-  assert.equal(inspectNpmArchive(tar(bad), expected).issues.length, 2);
+  const issues = inspectNpmArchive(tar(bad), expected).issues;
+  assert.ok(issues.some(issue => issue.includes('workspace')));
+  assert.ok(issues.some(issue => issue.includes('missing.js')));
   assert.throws(() => archiveFiles(tar({ '../escape': 'bad' })), /Unsafe/);
   assert.throws(() => inspectNpmArchive(tar(base), { ...expected, version: '3.0.0' }), /identity/);
 });

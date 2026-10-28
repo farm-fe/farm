@@ -89,8 +89,9 @@ The website's `website/docs/farm-docs/overview.md` and `website/docs/farm-docs/u
 The candidate `site.ai` configuration opts in to native semantic Markdown, a
 `docs-ai-manifest.json` and a small `llms.txt`. No AI output is implied when the
 configuration is absent. Eligible document pages get a public Markdown URL and
-SHA256 bound to the same build snapshot as their HTML. The default theme exposes
-Copy Markdown and View Markdown; an Agent guide link is optional site content.
+SHA256 bound to the same build snapshot as their HTML. The default theme shows no
+Markdown actions. A custom theme must explicitly render `DocumentActions` to
+enable Copy Markdown and View Markdown; an Agent guide link is optional site content.
 
 Unknown MDX components or dynamic expressions fail with `DOCS_AI_UNSUPPORTED`
 instead of silently producing incomplete instructions. Generic TSX website pages

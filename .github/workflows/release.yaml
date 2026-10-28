@@ -1,29 +1,8 @@
-name: Publish packages and crates
-# Merging source is not publication approval. Versioning and publication are separate manual operations.
+name: Prepare Changesets version PR
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      confirm_release:
-        description: Confirm this separately reviewed manual operation
-        required: true
-        type: boolean
-        default: false
-      release_action:
-        description: Prepare a version PR, or publish an already sealed stable candidate
-        required: true
-        type: choice
-        options:
-          - prepare-version-pr
-          - publish-sealed
-        default: prepare-version-pr
-      seal_run_id:
-        description: Successful trusted workflow run holding the complete approved candidate evidence
-        type: string
-        required: false
-      seal_artifact_name:
-        description: Exact v2-release-seal-<40-character-source-SHA> artifact name
-        type: string
-        required: false
 permissions:
   contents: read
 concurrency:
@@ -31,31 +10,22 @@ concurrency:
   cancel-in-progress: false
 jobs:
   check-release-request:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_release == true
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       changeset_state: ${{ steps.changesets.outputs.state }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js 22.20.0
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - name: Read Changesets state (parse and filesystem errors fail closed)
+      - name: Read Changesets state (errors fail closed)
         id: changesets
         run: node scripts/check-changeset-status.mjs
-      - name: Check explicit publication evidence inputs
-        if: inputs.release_action == 'publish-sealed'
-        env:
-          SEAL_RUN_ID: ${{ inputs.seal_run_id }}
-          SEAL_ARTIFACT_NAME: ${{ inputs.seal_artifact_name }}
-        run: |
-          node --input-type=module -e "if (!/^[1-9][0-9]*$/.test(process.env.SEAL_RUN_ID ?? '') || !/^v2-release-seal-[a-f0-9]{40}$/.test(process.env.SEAL_ARTIFACT_NAME ?? '')) throw new Error('Exact sealed-candidate run ID and artifact name are required');"
-          node scripts/check-stable-release-state.mjs
   changeset-version:
     name: Prepare reviewed version PR
     needs: [check-release-request]
-    if: inputs.release_action == 'prepare-version-pr' && needs.check-release-request.outputs.changeset_state == 'pending'
+    if: needs.check-release-request.outputs.changeset_state == 'pending'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -66,54 +36,15 @@ jobs:
         with:
           version: 9.4.0
           run_install: false
-      - name: Setup Node.js 22.20.0
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
       - run: pnpm install --frozen-lockfile
-      # This honors existing prerelease state; stable beta exit requires a reviewed source change first.
-      - name: Create version PR only (never publish)
-        uses: changesets/action@v1
+      # Publication credentials are never available to this versioning action.
+      # A reviewed version PR must also refresh its exact plan/intent and seal.
+      - uses: changesets/action@v1
         with:
           version: pnpm run bump
           branch: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  release:
-    name: Publish exact verified stable archives
-    needs: [check-release-request]
-    if: inputs.release_action == 'publish-sealed' && needs.check-release-request.outputs.changeset_state == 'empty'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.4.0
-          run_install: false
-      - name: Setup Node.js 22.20.0
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-          registry-url: https://registry.npmjs.org
-      - name: Read exact approved candidate evidence
-        uses: actions/download-artifact@v4
-        with:
-          run-id: ${{ inputs.seal_run_id }}
-          name: ${{ inputs.seal_artifact_name }}
-          github-token: ${{ github.token }}
-          path: .release-candidate
-      - run: pnpm install --frozen-lockfile
-      - name: Verify actual archive, SDK and live Rust registry prerequisites
-        run: node scripts/v2-release-preflight.mjs --publication --candidate-seal .release-candidate/receipt.json --sdk-proof .release-candidate/sdk-consumer.json
-      - name: Publish only sealed allowlisted archives
-        run: pnpm run release
-        env:
-          FARM_RELEASE_CANDIDATE_DIRECTORY: .release-candidate
-          FARM_RELEASE_SDK_PROOF: .release-candidate/sdk-consumer.json
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

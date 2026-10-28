@@ -1,0 +1,83 @@
+name: Seal reviewed stable candidate
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  seal:
+    name: Seal complete npm and Rust candidates
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CARGO_BUILD_JOBS: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      # Legal blockers fail before installs, JS work or the SDK compilation.
+      - name: Audit all selected source license declarations and original text
+        run: node scripts/audit-v2-source-licenses.mjs
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/check-pr-changesets.mjs --verify-prepared
+      - run: mkdir .release-work
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ github.sha }}-*
+          path: .native-artifacts
+      - name: Assemble all current-run native outputs and build JS only
+        run: pnpm exec node scripts/prepare-v2-candidate-js.mjs .native-artifacts .release-work/native-assembly.json
+      - name: Read current-run artifact identities without downloading another run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --paginate --slurp repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts?per_page=100 > .release-work/artifact-index.json
+      - name: Normally pack and verify all 297 selected npm candidates
+        run: pnpm exec node scripts/pack-v2-npm-candidates.mjs .release-work/native-assembly.json .release-work/artifact-index.json .release-work/npm
+      - name: Install the pinned SDK validation toolchain
+        run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Fetch locked public dependencies, without compiling native products
+        run: |
+          cargo +nightly-2026-04-10 fetch --locked
+          node scripts/prepare-sdk-frozen-lock.mjs fetch-recipe .release-work/public-fetch
+          cargo +nightly-2026-04-10 fetch --manifest-path .release-work/public-fetch/Cargo.toml
+      - name: Package selected Cargo SDK candidates without publishing or native rebuilding
+        run: node scripts/seal-v2-rust-packages.mjs .release-work/rust
+      - name: Materialize verified isolated registry and bind only candidate checksums
+        run: |
+          node scripts/sdk-candidate-registry.mjs .release-work/rust .release-work/sdk
+          node scripts/prepare-sdk-frozen-lock.mjs bind-candidate .release-work/sdk
+          node -e "require('node:fs').appendFileSync(process.env.GITHUB_ENV,'FARM_SDK_WINDOW_END='+new Date(Date.now()+90*60*1000).toISOString()+'\n')"
+      - name: Independently consume the exact packaged SDK, with no workspace patches
+        env:
+          FARM_SDK_FROZEN_LOCK: '1'
+        run: node scripts/run-sdk-consumer.mjs .release-work/sdk
+      - name: Seal portable SDK evidence and compose the complete candidate
+        run: |
+          node scripts/seal-sdk-consumer.mjs .release-work/sdk/sdk-consumer.json .release-work/sdk-portable
+          node scripts/compose-v2-release-seal.mjs .release-work/npm .release-work/sdk-portable .release-candidate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v2-release-seal-${{ github.sha }}
+          path: .release-candidate/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Preserve incomplete diagnostics without calling them a seal
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-release-diagnostics-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            .release-work/**/*.log
+            .release-work/**/receipt.json
+            .release-work/**/verification.json
+            .release-work/**/sdk-consumer.json
+          if-no-files-found: warn

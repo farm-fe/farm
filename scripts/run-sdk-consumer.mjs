@@ -101,7 +101,10 @@ async function main() {
   }
   try {
     save();
-    await command('lock', ['generate-lockfile', '--offline']);
+    if (process.env.FARM_SDK_FROZEN_LOCK === '1') {
+      assert.ok(fs.existsSync(path.join(consumer, 'Cargo.lock')), 'Frozen SDK dependency receipt is missing');
+      report.lockMode = 'frozen-public-dependencies'; save();
+    } else await command('lock', ['generate-lockfile', '--offline']);
     await command('metadata', ['metadata', '--format-version', '1', '--offline', '--locked'], path.join(output, 'sdk-metadata.json'));
     const lock = fs.readFileSync(path.join(consumer, 'Cargo.lock'), 'utf8').replaceAll('\r\n', '\n');
     report.packages = inspectSdkMetadata(JSON.parse(fs.readFileSync(path.join(output, 'sdk-metadata.json'))), materialization, lock);

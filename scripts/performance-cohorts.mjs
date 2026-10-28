@@ -125,7 +125,7 @@ export async function prepareBaseConsumer({ baseRoot, revision, cohort, protocol
     return { mode: 'paired', reason: cohort.reason, root: path.resolve(baseRoot), revision, nativeProvenance, runId: cohort.runId };
   } catch (error) { return unavailable(`Base consumer unavailable: ${error.message}`); }
 }
-export const historyCompatibilityKeys = ['protocol', 'fixtureSha256', 'node', 'pnpm', 'os', 'arch', 'runnerImage', 'runnerImageVersion', 'lockSha256'];
+export const historyCompatibilityKeys = ['protocol', 'fixtureSha256', 'harnessSha256', 'node', 'pnpm', 'os', 'arch', 'runnerImage', 'runnerImageVersion', 'lockSha256'];
 export async function loadComparableHistory({ repository, abi, metadata, workflow = 'ci.yaml', api = githubClient(), limit = 10, currentRunId = process.env.GITHUB_RUN_ID }) {
   const result = { entries: [], excluded: [], status: 'missing' };
   try {

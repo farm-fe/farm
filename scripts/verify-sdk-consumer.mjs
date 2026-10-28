@@ -49,5 +49,6 @@ export function verifySdkConsumer(plan, proofFile, fixtureFile) {
     packageCount: packages.length, planSha256: sdk.planSha256,
     logSha256: sdk.logSha256, manifestSha256: hash(normalized(manifest)), lockSha256: hash(normalized(lockFile)),
     metadataSha256: hash(fs.readFileSync(path.join(directory, 'sdk-metadata.json'))),
+    coreArchiveSha256: packages.find(pkg => pkg.name === 'farmfe_core')?.sha256,
     publishedRegistryConsumer: false };
 }

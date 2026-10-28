@@ -1,63 +1,32 @@
 # Name of the workflow: you can change it.
 name: Release-plz
 
-# Publishing is manual. A merge to main must never publish packages or tags.
+# Cargo version-PR preparation only. Stable publication uses the sealed V2 DAG.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       operation:
-        description: Explicit release preparation or publication; publishing requires a separate release decision
+        description: Prepare a reviewed Cargo version PR; this workflow cannot publish
         required: true
         type: choice
         default: release-pr
         options:
           - release-pr
-          - release
+
+concurrency:
+  group: farm-stable-release
+  cancel-in-progress: false
 
 jobs:
-  # Release unpublished packages.
-  # If you want release-plz to only update your packages,
-  # and you want to handle `cargo publish` and git tag push by yourself,
-  # remove this job.
-  release-plz-release:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release'
-    name: Release-plz release
-    runs-on: ubuntu-latest
-    # Used to push tags, and create releases.
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          # `fetch-depth: 0` is needed to clone all the git history, which is necessary to
-          # release from the latest commit of the release PR.
-          fetch-depth: 0
-      # Use the project's pinned nightly toolchain (rust-toolchain.toml).
-      # The previously published farmfe_core 2.1.0 was built against this
-      # nightly and uses syntax (let-chains) that does not compile on stable.
-      # When release-plz verifies the package tarball it re-downloads and
-      # compiles the published crate, so the toolchain here MUST match.
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-04-10
-          components: clippy, rustfmt
-      - name: Run release-plz
-        uses: release-plz/action@v0.5
-        with:
-          # Run `release-plz release` command.
-          command: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
+  # Publication is owned by the exact sealed V2 DAG, never workspace-wide release-plz.
   # Create a PR with the new versions and changelog, preparing the next release.
   # If you want release-plz to only release your packages
   # and you want to update `Cargo.toml` versions and changelogs by yourself,
   # remove this job.
   release-plz-pr:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'release-pr'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.operation == 'release-pr')
     name: Release-plz PR
     runs-on: ubuntu-latest
     permissions:
@@ -67,9 +36,6 @@ jobs:
       contents: write
 
     # The concurrency block is explained below (after the code block).
-    concurrency:
-      group: release-plz-${{ github.ref }}
-      cancel-in-progress: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -7,5 +7,6 @@ rust-plugins/vue/**/licenses/fervid-Apache-2.0.txt -text
 rust-plugins/icons/**/licenses/fervid-Apache-2.0.txt -text
 rust-plugins/icons/**/licenses/svgr-rs-MIT.txt -text
 docs/release-evidence/licenses/published-macros.LICENSE -text
+docs/releases/v2-release-intent.json text eol=lf
 # Diagram manifests hash exact source bytes on every platform.
 website/static/diagrams/*.mmd text eol=lf

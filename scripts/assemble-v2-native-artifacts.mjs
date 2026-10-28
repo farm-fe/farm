@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { nativeArtifactInventory } from './native-artifact-inventory.mjs';
 
 export function nativeArtifactRoute(root, pool, sourceSHA, pkg, plan) {
   assert.match(sourceSHA, /^[a-f0-9]{40}$/);
@@ -31,15 +32,19 @@ export function assembleNativeArtifacts(root, pool, sourceSHA, plan) {
   const routes = plan.npm.payloads.map(pkg => nativeArtifactRoute(root, pool, sourceSHA, pkg, plan));
   const realPool = fs.realpathSync(pool), realRoot = fs.realpathSync(root);
   let bytes = 0;
+  const issues = [];
   // Validate every required artifact before changing the candidate source tree.
   for (const route of routes) {
+   try {
     const stat = fs.lstatSync(route.source);
     assert.ok(stat.isFile() && !stat.isSymbolicLink(), `Missing regular native artifact: ${route.artifact}`);
     assert.ok(fs.realpathSync(route.source).startsWith(realPool + path.sep), 'Artifact symlink escapes its pool');
     assert.ok(fs.realpathSync(path.dirname(route.destination)).startsWith(realRoot + path.sep), 'Native destination escapes candidate source');
     route.sha256 = hashFile(route.source); route.bytes = stat.size; bytes += stat.size;
     if (fs.existsSync(route.destination)) assert.equal(hashFile(route.destination), route.sha256, `Refusing to overwrite different existing native bytes: ${route.name}`);
+   } catch (error) { issues.push({ package: route.name, platform: route.platform, artifact: route.artifact, reason: error.message }); }
   }
+  if (issues.length) throw new AggregateError(issues.map(row => new Error(`${row.package} (${row.platform}): ${row.reason}`)), `Native input verification failed (${issues.length}):\n${issues.map(row => `${row.artifact}: ${row.reason}`).join('\n')}`);
   const disk = fs.statfsSync(root);
   assert.ok(disk.bavail * disk.bsize - bytes >= 8 * 1024 ** 3, 'Native assembly disk guard');
   for (const route of routes) {
@@ -53,7 +58,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const root = path.resolve(explicitRoot ?? fileURLToPath(new URL('../', import.meta.url)));
   const sourceSHA = explicitSHA ?? process.env.GITHUB_SHA;
   if (!pool || !output) throw new Error('Expected artifact directory and assembly receipt');
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = nativeArtifactInventory(root);
   const records = assembleNativeArtifacts(root, path.resolve(pool), sourceSHA, plan);
   fs.writeFileSync(output, JSON.stringify({ schemaVersion: 1, sourceCommit: sourceSHA, records, count: records.length, published: false }, null, 2));
   console.log(JSON.stringify({ assembled: records.length, sourceCommit: sourceSHA, published: false }));

@@ -16,6 +16,7 @@ const pool=path.join(fixture,'artifacts'),trace=path.join(fixture,'trace.txt');
 fs.mkdirSync(path.join(fixture,'scripts'),{recursive:true});
 fs.copyFileSync(path.join(root,'scripts/check-native-build-node.mjs'),path.join(fixture,'scripts/check-native-build-node.mjs'));
 fs.copyFileSync(path.join(root,'scripts/v2-node-engines.mjs'),path.join(fixture,'scripts/v2-node-engines.mjs'));
+for(const file of ['scripts/ci-build-rust-artifacts.sh','.github/workflows/rust-build-user.yaml','.github/workflows/rust-build-release.yaml']){const target=path.join(fixture,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,file),target);}
 for(const dir of ['packages/core','packages/create-farm',...plugins.map(p=>'rust-plugins/'+p)])for(const abi of abis)fs.mkdirSync(path.join(fixture,dir,'npm',abi),{recursive:true});
 const realNode=unix(process.execPath);
 const stub=`set -eu
@@ -41,10 +42,9 @@ const sha='0123456789012345678901234567890123456789';
 const env={...process.env,TRACE:unix(trace),ARTIFACT_POOL:unix(pool),PROBE_SHA:sha,FARM_BUILD_PROFILE:'ci'};
 const receipts=[];
 for(const abi of abis){cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:{...env,FARM_BUILD_ABI:abi},windowsHide:true,encoding:'utf8',timeout:30000});const names=fs.readdirSync(pool).filter(n=>n.startsWith(sha+'-'+abi+'-plugin-')).map(n=>n.slice((sha+'-'+abi+'-plugin-').length)).sort();const expected=[...base,...(supported.has(abi)?docs:[])].sort();assert.deepEqual(names,expected);receipts.push({abi,plugins:names.length,expected:names.length});}
-const plan=JSON.parse(fs.readFileSync(path.join(root,'docs/releases/v2-candidate.json'),'utf8'));
-fs.mkdirSync(path.join(fixture,'docs/releases'),{recursive:true});
-fs.writeFileSync(path.join(fixture,'docs/releases/v2-candidate.json'),JSON.stringify(plan));
-for(const pkg of plan.npm.payloads){const dest=path.join(fixture,pkg.manifestPath);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,pkg.manifestPath),dest);}
+const inventoryUrl=require('node:url').pathToFileURL(path.join(root,'scripts/native-artifact-inventory.mjs')).href;
+const plan=JSON.parse(cp.execFileSync(process.execPath,['--input-type=module','-e',`import {nativeArtifactInventory} from ${JSON.stringify(inventoryUrl)};process.stdout.write(JSON.stringify(nativeArtifactInventory(${JSON.stringify(root)})));`],{encoding:'utf8',windowsHide:true,timeout:30000}));
+for(const pkg of [...plan.npm.primary,...plan.npm.payloads]){const dest=path.join(fixture,pkg.manifestPath);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,pkg.manifestPath),dest);}
 const assembler=path.join(root,'scripts/assemble-v2-native-artifacts.mjs');
 const ciWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ci.yaml'),'utf8');
 assert.match(ciWorkflow,/run: node scripts\/assemble-v2-native-artifacts\.mjs \.native-artifacts native-assembly\.json/,'CI must call the tested assembler');

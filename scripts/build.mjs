@@ -2,6 +2,7 @@ import fs, { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { logger } from "./logger.mjs";
+import { exampleNativeInput } from './example-native-inputs.mjs';
 
 // Display verbose output
 const isVerbose =
@@ -85,6 +86,10 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
   const builtRustPlugins = new Set();
   const hasPrebuiltRustPluginArtifact = (rustPluginPath) => {
     const npmPath = join(rustPluginPath, "npm");
+    const abi = process.env.FARM_EXAMPLE_ABI;
+    if (abi) {
+      return Boolean(exampleNativeInput(rustPluginPath, abi));
+    }
 
     if (!existsSync(npmPath)) {
       return false;
@@ -200,6 +205,7 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
         builtRustPlugins.add(rustPluginName);
         continue;
       }
+      if (process.env.FARM_EXAMPLE_PREBUILT_ONLY === '1') throw new Error(`Missing current-platform prebuilt native input for ${rustPluginName}; source compilation is disabled in this lane`);
 
       await execa("npm", ["run", "build"], {
         cwd: rustPluginPath,

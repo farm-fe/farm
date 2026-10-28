@@ -1,8 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compactReport, unavailableReport, platforms } from './aggregate-performance-reports.mjs';
+import { compactReport, unavailableReport, unavailableReason, platforms } from './aggregate-performance-reports.mjs';
+import fs from 'node:fs/promises';
 import { validateSummary, renderComment } from './performance-pr-reporter.mjs';
 const cell = value => ({ cacheMode: 'cold', samples: 3, validSamples: 3, medianMs: value, iqrMs: 1 });
+test('missing artifacts after skipped sampling produce explicit unavailable reports', async () => {
+  const reason = unavailableReason(new Error('ENOENT'), { samplingResult: 'skipped', downloadOutcome: 'failure' });
+  assert.match(reason, /Sampling job: skipped/);
+  assert.match(reason, /Artifact download: failure/);
+  const reports = platforms.map(([, os, arch]) => unavailableReport(os, arch, 'a'.repeat(40), 'b'.repeat(40), reason));
+  assert.equal(reports.length, 3);
+  for (const report of reports) {
+    assert.equal(report.status, 'invalid'); assert.deepEqual(report.cells, []);
+    assert.ok(report.diagnostics.includes(reason));
+  }
+  const workflow = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
+  const summary = workflow.split('\n  performance-summary:')[1].split('\n  type-check:')[0];
+  assert.match(summary, /id: performance-inputs\r?\n\s+continue-on-error: true/);
+  assert.match(summary, /PERFORMANCE_SAMPLING_RESULT:/);
+  assert.match(summary, /run: node scripts\/aggregate-performance-reports.mjs/);
+});
 test('full Commerce and common-subset measurements retain separate identities', () => {
   const raw = { metadata: {}, status: 'complete', cells: [cell(100)], comparison: { mode: 'paired', baseCells: [cell(120)] },
     vite: { farmCells: [cell(10)], viteCells: [cell(20)] } };
@@ -14,7 +31,7 @@ test('full Commerce and common-subset measurements retain separate identities', 
 });
 
 test('all three missing platforms remain explicit invalid evidence with reasons', () => {
-  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-baseline-rust-build-v1',
+  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-rust-build-v2',
     reports: platforms.map(([, os, arch]) => unavailableReport(os, arch, 'c'.repeat(40), 'b'.repeat(40), 'Report artifact missing')) };
   validateSummary(JSON.stringify(summary));
   assert.deepEqual(summary.reports.map(row => row.metadata.os), ['linux', 'darwin', 'win32']);
@@ -35,4 +52,13 @@ test('missing baseline, subset and history stay absent rather than zero', () => 
   assert.equal(report.comparison.mode, 'current-only');
   for (const key of ['baseCells', 'farmSubsetCells', 'viteCells']) assert.deepEqual(report.comparison[key], []);
   assert.deepEqual(report.history, []);
+});
+test('Darwin resource failure retains observed producer identity and the actual reason', () => {
+  const report = compactReport({ status: 'invalid', failureKind: 'resource-unavailable', metadata: { os: 'darwin', arch: 'arm64', revision: 'c'.repeat(40), baseSHA: 'b'.repeat(40) },
+    errors: ['Available memory probe unavailable; observed free pages are not available memory'] });
+  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-rust-build-v2', reports: [report] };
+  validateSummary(JSON.stringify(summary));
+  assert.equal(report.metadata.revision, 'c'.repeat(40));
+  assert.ok(report.diagnostics.includes('Failure kind: resource-unavailable'));
+  assert.match(renderComment(summary, 'farm-fe/farm'), /free pages/);
 });

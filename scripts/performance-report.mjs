@@ -11,9 +11,32 @@ import { quantile, toCsv } from '../examples/commerce-lab/benchmark/statistics.m
 import { extensionSources } from '../examples/commerce-lab/benchmark/extension-generator.mjs';
 import { loadComparableHistory } from './performance-cohorts.mjs';
 import { prepareComparisonFixture, COMPARISON_PROTOCOL, VITE_COMPARISON_VERSION } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
+import { scaleProfile } from '../examples/commerce-lab/benchmark/scale-profiles.mjs';
+import { resourceSnapshot, assertPerformanceResources } from './performance-resources.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-export const protocol = 'commerce-baseline-rust-build-v1';
+export const protocol = 'commerce-business-2048-rust-build-v2';
+export const workloadScale = 'business-2048';
+export function businessFixture() { const profile = scaleProfile(workloadScale); return extensionSources(profile.categories, profile); }
+export async function workloadFileCounts(sourceRoot, fixture) {
+  let baseSourceFiles = 0;
+  const lab = path.join(sourceRoot, 'examples/commerce-lab');
+  async function visit(relative) {
+    if (relative.replaceAll('\\', '/') === 'packages/extensions') return;
+    const file = path.join(lab, relative), stat = await fs.lstat(file);
+    if (stat.isSymbolicLink()) throw new Error('Workload input symlink is not counted');
+    if (stat.isDirectory()) for (const name of await fs.readdir(file)) { if (!['node_modules', '.cache', 'dist', 'reports', 'extensions', '.git'].includes(name)) await visit(path.join(relative, name)); }
+    else if (stat.isFile()) baseSourceFiles++;
+  }
+  await visit('');
+  const generatedFiles = Object.keys(fixture).length;
+  return { baseSourceFiles, generatedFiles, totalSourceFiles: baseSourceFiles + generatedFiles, scope: 'All copied workload inputs, including config, benchmark and test files', fileCountIsNotModuleCount: true };
+}
+export async function harnessFingerprint(sourceRoot) {
+  const hash = crypto.createHash('sha256');
+  for (const file of ['performance-report.mjs', 'performance-graph-worker.mjs', 'performance-resources.mjs', 'performance-cohorts.mjs']) hash.update(file).update((await fs.readFile(path.join(sourceRoot, 'scripts', file), 'utf8')).replaceAll('\r\n', '\n')).update('\0');
+  return hash.digest('hex');
+}
 export function aggregate(records) {
   return ['cold', 'warm'].map(cacheMode => {
     const samples = records.filter(row => row.scored && row.cacheMode === cacheMode);
@@ -23,7 +46,7 @@ export function aggregate(records) {
   });
 }
 export function compatible(a, b) {
-  return ['protocol', 'fixtureSha256', 'node', 'pnpm', 'os', 'arch', 'lockSha256'].every(key => a[key] !== undefined && a[key] === b[key]);
+  return ['protocol', 'fixtureSha256', 'harnessSha256', 'node', 'pnpm', 'os', 'arch', 'lockSha256'].every(key => a[key] !== undefined && a[key] === b[key]);
 }
 async function prepareLab(sourceRoot, temporary, fixture) {
   const lab = path.join(temporary, 'examples', 'commerce-lab');
@@ -32,7 +55,7 @@ async function prepareLab(sourceRoot, temporary, fixture) {
   for (const name of ['packages', 'rust-plugins', 'js-plugins', 'node_modules']) await fs.symlink(path.join(sourceRoot, name), path.join(temporary, name), process.platform === 'win32' ? 'junction' : 'dir');
   await fs.symlink(path.join(sourceRoot, 'examples/commerce-lab/node_modules'), path.join(lab, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   for (const [name, content] of Object.entries(fixture)) {
-    const file = path.join(lab, 'packages/extensions/baseline', name);
+    const file = path.join(lab, 'packages/extensions', workloadScale, name);
     await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, content);
   }
   return lab;
@@ -61,24 +84,50 @@ async function terminate(child) {
   if (process.platform === 'win32') {
     await new Promise((resolve, reject) => {
       const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
-      killer.once('error', reject); killer.once('close', code => code === 0 ? resolve() : reject(new Error(`taskkill failed: ${code}`)));
+      let diagnostic = '';
+      for (const stream of [killer.stdout, killer.stderr]) stream?.on('data', bytes => { diagnostic = (diagnostic + bytes.toString()).slice(-8192); });
+      killer.once('error', reject); killer.once('close', code => code === 0 ? resolve() : reject(new Error(`taskkill failed: ${code}; ${diagnostic.trim()}`)));
     });
   } else {
     try { process.kill(-child.pid, 'SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') throw error; }
   }
 }
+export async function waitForCommand(child, { timeoutMs = 120000, cleanupTimeoutMs = 5000, terminateProcess = terminate } = {}) {
+  let timer;
+  let expired = false;
+  let onError, onClose;
+  const exit = new Promise((resolve, reject) => {
+    onError = reject; onClose = (code, signal) => resolve({ code, signal });
+    child.once('error', onError); child.once('close', onClose);
+  });
+  const bounded = (promise, milliseconds) => {
+    let deadline;
+    return Promise.race([promise, new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error('Cleanup deadline exceeded')), milliseconds); })]).finally(() => clearTimeout(deadline));
+  };
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(async () => {
+      expired = true;
+      let cleanupError;
+      try { await bounded(terminateProcess(child), cleanupTimeoutMs); await bounded(exit, cleanupTimeoutMs); }
+      catch (error) { cleanupError = error.message; }
+      const error = new Error(`Command timedOut; pid=${child.pid}; ${cleanupError ? `cleanup failed: ${cleanupError}; process cleanup unconfirmed` : 'process tree terminated and handles closed'}`);
+      Object.assign(error, { timedOut: true, pid: child.pid, cleanupConfirmed: !cleanupError, cleanupError });
+      reject(error);
+    }, timeoutMs);
+  });
+  try { return await Promise.race([exit.then(result => expired ? timeout : result), timeout]); }
+  finally { clearTimeout(timer); child.removeListener('error', onError); child.removeListener('close', onClose); }
+}
 export async function command(executable, args, { cwd, env, log, timeoutMs = 120000 } = {}) {
   const handle = await fs.open(log, 'a');
-  let timer;
-  let timedOut = false;
-  let cleanup = Promise.resolve();
   try {
     const child = spawn(executable, args, { cwd, env, windowsHide: true, detached: process.platform !== 'win32', stdio: ['ignore', handle.fd, handle.fd] });
-    timer = setTimeout(() => { timedOut = true; cleanup = terminate(child); cleanup.catch(() => {}); }, timeoutMs);
-    const exit = await new Promise((resolve, reject) => { child.once('error', reject); child.once('close', (code, signal) => resolve({ code, signal })); });
-    await cleanup;
-    if (timedOut || exit.code !== 0) throw new Error(`Command failed: ${executable} ${args.join(' ')} (${JSON.stringify({ ...exit, timedOut })})`);
-  } finally { clearTimeout(timer); await handle.close(); }
+    const exit = await waitForCommand(child, { timeoutMs });
+    if (exit.code !== 0) throw new Error(`Command failed: ${executable} ${args.join(' ')} (${JSON.stringify(exit)})`);
+  } finally { await handle.close(); }
+}
+export function rethrowUnsafeCleanup(error) {
+  if (error.cleanupConfirmed === false) throw error;
 }
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 async function sizes(directory) {
@@ -107,6 +156,7 @@ async function main() {
   const report = { schemaVersion: 1, protocol, status: 'partial', publishable: false, records: [], errors: [], comparison: { mode: 'current-only', reason: 'No compatible exact-base-SHA native cohort and workload receipt supplied; no regression conclusion.' } };
   let temp;
   let before;
+  let phase = 'identity';
   const startedAt = Number(process.env.FARM_PERFORMANCE_STARTED_AT ?? Date.now());
   if (!Number.isFinite(startedAt) || startedAt <= 0 || startedAt > Date.now()) throw new Error('Invalid performance job start timestamp');
   const deadline = startedAt + 18 * 60 * 1000;
@@ -114,23 +164,34 @@ async function main() {
   const persist = async () => fs.writeFile(path.join(output, 'raw.json'), `${JSON.stringify(report, null, 2)}\n`);
   await persist();
   try {
-    const disk = await fs.statfs(os.tmpdir());
-    if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 8 * 1024 ** 3) throw new Error('Resource guard: requires 3.4 GiB available RAM and 8 GiB free scratch disk');
     const revision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+    report.metadata = { protocol, revision, artifactProducerSHA: process.env.GITHUB_SHA ?? revision, baseSHA: process.env.FARM_BASE_SHA ?? null,
+      os: process.platform, arch: process.arch, node: process.version, runnerImage: process.env.ImageOS ?? process.env.RUNNER_OS ?? process.platform,
+      pnpm: null, fixtureSha256: null, harnessSha256: null, lockSha256: null,
+      scale: { name: workloadScale, ...scaleProfile(workloadScale), fixtureGenerated: false } };
+    await persist();
     if (process.env.GITHUB_SHA && revision !== process.env.GITHUB_SHA) throw new Error('Checkout does not match artifact producer SHA');
-    const fixture = extensionSources(4);
+    phase = 'resources';
+    const disk = await fs.statfs(os.tmpdir());
+    report.resources = resourceSnapshot({ diskFreeBytes: disk.bavail * disk.bsize }); await persist();
+    assertPerformanceResources(report.resources);
+    phase = 'fixture';
+    const fixture = businessFixture();
     report.metadata = { protocol, revision, baseSHA: process.env.FARM_BASE_SHA ?? null,
       os: process.platform, arch: process.arch, cpu: os.cpus()[0]?.model, runner: process.env.RUNNER_NAME,
-      runnerImage: process.env.ImageOS ?? process.env.RUNNER_OS, runnerImageVersion: process.env.ImageVersion,
+      runnerImage: process.env.ImageOS ?? process.env.RUNNER_OS ?? process.platform, runnerImageVersion: process.env.ImageVersion,
       node: process.version, pnpm: execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['--version'], { encoding: 'utf8', shell: process.platform === 'win32' }).trim(),
-      lockSha256: hash(await fs.readFile(path.join(root, 'pnpm-lock.yaml'))), fixtureSha256: await workloadFingerprint(root, fixture), scale: { name: 'baseline', categories: 4 },
+      lockSha256: hash(await fs.readFile(path.join(root, 'pnpm-lock.yaml'))), fixtureSha256: await workloadFingerprint(root, fixture), harnessSha256: await harnessFingerprint(root),
+      scale: { name: workloadScale, ...scaleProfile(workloadScale), fixtureGenerated: true, generatedFileCount: Object.keys(fixture).length, fileCountIsNotModuleCount: true },
       cacheSemantics: 'Unique cold directory; warm reuses successful cold directory. Reusable cache, not independently proven cache hit.',
       artifactProducerSHA: process.env.GITHUB_SHA ?? revision };
+    report.metadata.scale.files = await workloadFileCounts(root, fixture);
     before = await trackedFingerprint();
     const { captureNativeProvenance } = await import('../examples/commerce-lab/benchmark/native-provenance.mjs');
     report.native = await captureNativeProvenance({ groups: ['rust'] });
     temp = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-'));
     const lab = await prepareLab(root, temp, fixture);
+    phase = 'sampling';
     const cohorts = [{ root, lab, records: report.records, name: 'head' }];
     try {
       const base = JSON.parse(await fs.readFile(path.join(root, '.performance-base-receipt.json'), 'utf8'));
@@ -138,7 +199,7 @@ async function main() {
       const baseRoot = path.join(root, '.performance-base');
       if (path.resolve(base.root) !== baseRoot || base.revision !== report.metadata.baseSHA) throw new Error('Base receipt identity mismatch');
       const baseMetadata = { ...report.metadata, revision: base.revision,
-        fixtureSha256: await workloadFingerprint(baseRoot, fixture), lockSha256: hash(await fs.readFile(path.join(baseRoot, 'pnpm-lock.yaml'))) };
+        fixtureSha256: await workloadFingerprint(baseRoot, fixture), harnessSha256: await harnessFingerprint(baseRoot), lockSha256: hash(await fs.readFile(path.join(baseRoot, 'pnpm-lock.yaml'))) };
       if (!compatible(report.metadata, baseMetadata)) throw new Error('Base workload, lockfile or protocol is incompatible');
       const baseTemp = path.join(temp, 'base'); await fs.mkdir(baseTemp);
       report.comparison = { mode: 'paired', reason: 'Same runner, fixture, lockfile and toolchain; isolated exact-base native cohort', metadata: baseMetadata, records: [], native: base.nativeProvenance };
@@ -152,24 +213,35 @@ async function main() {
        for (const cohort of round % 2 === 0 ? cohorts : [...cohorts].reverse()) {
         if (Date.now() >= deadline) throw new Error('Performance protocol deadline reached');
         const disk = await fs.statfs(temp);
-        if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 8 * 1024 ** 3) throw new Error('Resource guard stopped sampling before the next build');
+        report.resources = resourceSnapshot({ diskFreeBytes: disk.bavail * disk.bsize }); assertPerformanceResources(report.resources);
         const record = { round, scored: round >= 0, cacheMode, cohort: cohort.name, success: false, durationMs: null };
         cohort.records.push(record);
         if (cacheMode === 'warm' && !coldSuccess.has(cohort.name)) { record.error = 'Preceding cold build failed'; await persist(); continue; }
         const started = performance.now();
         try {
-          await command(process.execPath, [path.join(cohort.root, 'packages/cli/bin/farm.mjs'), 'build', '--config', 'farm.rust.config.ts'], { cwd: cohort.lab, log, timeoutMs: Math.min(120000, deadline - Date.now()), env: { ...process.env, COMMERCE_SCALE: 'baseline', COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: id, COMMERCE_OUTPUT_ID: id } });
+          await command(process.execPath, [path.join(cohort.root, 'packages/cli/bin/farm.mjs'), 'build', '--config', 'farm.rust.config.ts'], { cwd: cohort.lab, log, timeoutMs: Math.min(120000, deadline - Date.now()), env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: id, COMMERCE_OUTPUT_ID: id } });
           record.durationMs = performance.now() - started;
           record.artifacts = await sizes(path.join(cohort.lab, 'dist/benchmark', id, 'rust'));
           if (record.artifacts.js.bytes === 0) throw new Error('Build produced no JavaScript');
           await fs.access(path.join(cohort.lab, '.cache/rust', id));
           record.success = true; if (cacheMode === 'cold') coldSuccess.add(cohort.name);
-        } catch (error) { record.error = error.message; }
+        } catch (error) { record.error = error.message; rethrowUnsafeCleanup(error); }
         await persist();
        }
       }
     }
     report.comparison.baseCells = aggregate(report.comparison.records ?? []);
+    report.graphs = [];
+    for (const cohort of cohorts) {
+      const graphDisk = await fs.statfs(temp);
+      report.resources = resourceSnapshot({ diskFreeBytes: graphDisk.bavail * graphDisk.bsize }); assertPerformanceResources(report.resources);
+      const graphFile = path.join(temp, `graph-${cohort.name}.json`);
+      await command(process.execPath, [path.join(cohort.root, 'scripts/performance-graph-worker.mjs'), cohort.lab, graphFile], { cwd: cohort.lab, log,
+        timeoutMs: Math.min(120000, deadline - Date.now()), env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: 'graph-final', COMMERCE_OUTPUT_ID: 'graph-final' } });
+      const graph = JSON.parse(await fs.readFile(graphFile, 'utf8'));
+      if (graph.status !== 'complete' || !Number.isInteger(graph.summary?.retainedModules) || graph.summary.retainedModules <= 0) throw new Error('Actual graph count is unavailable');
+      report.graphs.push({ cohort: cohort.name, ...graph });
+    }
     const comparisonRoot = path.join(temp, 'vite-subset');
     const subset = await prepareComparisonFixture(comparisonRoot);
     report.vite = { protocol: COMPARISON_PROTOCOL, version: VITE_COMPARISON_VERSION, fingerprint: subset.fingerprint, records: [], publishable: false,
@@ -177,7 +249,7 @@ async function main() {
     for (let round = -1; round < 3; round++) for (const tool of round % 2 === 0 ? ['farm', 'vite'] : ['vite', 'farm']) {
       if (Date.now() >= deadline) throw new Error('Deadline reached before comparison sample');
       const disk = await fs.statfs(temp);
-      if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 8 * 1024 ** 3) throw new Error('Resource guard stopped comparison sampling');
+      report.resources = resourceSnapshot({ diskFreeBytes: disk.bavail * disk.bsize }); assertPerformanceResources(report.resources);
       const record = { round, tool, scored: round >= 0, cacheMode: 'cold', success: false, durationMs: null };
       report.vite.records.push(record);
       const result = path.join(comparisonRoot, `${tool}-${round}.json`);
@@ -186,7 +258,7 @@ async function main() {
         const sample = JSON.parse(await fs.readFile(result, 'utf8'));
         if (sample.protocol !== COMPARISON_PROTOCOL || sample.viteVersion !== VITE_COMPARISON_VERSION || !Number.isFinite(sample.buildMs) || sample.buildMs < 0) throw new Error('Invalid comparison sample');
         Object.assign(record, { success: true, durationMs: sample.buildMs, artifacts: sample.artifacts });
-      } catch (error) { record.error = error.message; }
+      } catch (error) { record.error = error.message; rethrowUnsafeCleanup(error); }
       await persist();
     }
     report.vite.farmCells = aggregate(report.vite.records.filter(row => row.tool === 'farm')).filter(row => row.cacheMode === 'cold');
@@ -205,10 +277,11 @@ async function main() {
     const nativeAfter = await captureNativeProvenance({ groups: ['rust'] });
     report.nativeUnchanged = Object.entries(report.native.artifacts).every(([name, artifact]) => nativeAfter.artifacts[name]?.sha256 === artifact.sha256);
     if (!report.nativeUnchanged) throw new Error('Native cohort changed during sampling');
-  } catch (error) { report.status = 'invalid'; report.errors.push(error.message); }
+  } catch (error) { report.status = 'invalid'; report.cleanupUnconfirmed = error.cleanupConfirmed === false; report.failureKind = report.cleanupUnconfirmed ? 'cleanup-failure' : error.failureKind ?? (phase === 'identity' ? 'identity-failure' : phase === 'resources' ? 'resource-unavailable' : 'sampling-failure'); report.errors.push(error.message); }
   finally {
     if (before) { report.sourcesUnchanged = before === await trackedFingerprint(); if (!report.sourcesUnchanged) { report.status = 'invalid'; report.errors.push('Tracked Commerce source changed'); } }
-    if (temp) { try { await fs.rm(temp, { recursive: true }); report.temporaryDirectoryRemoved = true; } catch (error) { report.status = 'invalid'; report.errors.push(`Cleanup: ${error.message}`); } }
+    if (temp && report.cleanupUnconfirmed) { report.temporaryDirectoryRemoved = false; report.errors.push(`Temporary inputs retained because process cleanup is unconfirmed: ${temp}`); }
+    else if (temp) { try { await fs.rm(temp, { recursive: true }); report.temporaryDirectoryRemoved = true; } catch (error) { report.status = 'invalid'; report.errors.push(`Cleanup: ${error.message}`); } }
     report.cells = aggregate(report.records);
     report.limitations = ['Three scored pairs are insufficient for formal performance certification.', 'No HMR, RSS or CPU sampling.', 'No cross-OS absolute ranking.', report.comparison.reason];
     await persist();

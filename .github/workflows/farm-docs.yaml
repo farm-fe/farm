@@ -2,25 +2,7 @@ name: Farm Docs
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'crates/**'
-      - 'rust-ecosystem/**'
-      - 'rust-plugins/**'
-      - 'packages/**'
-      - 'website/**'
-      - 'examples/docs-*/**'
-      - 'scripts/farm-docs-*'
-      - 'scripts/v2-normal-pack-contract.mjs'
-      - 'docs/farm-docs/consumer-fixtures/**'
-      - 'Cargo.*'
-      - 'rust-toolchain.toml'
-      - '.cargo/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
-      - 'tsconfig.base.json'
-      - '.github/workflows/farm-docs.yaml'
+  workflow_call:
 
 permissions:
   contents: read
@@ -64,19 +46,23 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
       - name: Check local source prerequisites and registry-only consumer rejection paths
-        run: node --test scripts/farm-docs-registry-consumer.test.mjs scripts/farm-docs-example-prerequisites.test.mjs scripts/farm-docs-main-deploy-gate.test.mjs scripts/farm-docs-vercel-build.test.mjs scripts/farm-docs-native-guard.test.mjs
+        run: |
+          node scripts/farm-docs-suites.mjs audit
+          node scripts/farm-docs-suites.mjs source
       - name: Check platform manifest preparation without native compilation
-        run: node --experimental-strip-types --test scripts/farm-docs-platform-preparation.test.mjs
+        run: node scripts/farm-docs-suites.mjs platform
       - name: Check distribution contracts and fixture chain without native compilation
-        run: node --test scripts/farm-docs-package-contract.test.mjs scripts/farm-docs-consumer-isolation.test.mjs scripts/farm-docs-local-registry.test.mjs scripts/farm-docs-distribution-chain.test.mjs scripts/farm-docs-target-closure.test.mjs
+        run: node scripts/farm-docs-suites.mjs distribution
       - name: Check npm archive extraction and provenance receipts without product builds
-        run: python scripts/farm-docs-extract-package.test.py
+        run: node scripts/farm-docs-suites.mjs archive-python
       - name: Build shared JS prerequisites and plugin tools
         run: |
           for package in utils runtime runtime-plugin-hmr runtime-plugin-import-meta plugin-tools; do
             pnpm --dir "packages/$package" run build
           done
       - name: Build current Core native binding
+        # Kept as a release-profile reference until real ci/release compatibility
+        # is exercised. Presence/hash checks alone cannot justify its removal.
         run: pnpm --dir packages/core run build:rs
       - name: Build Docs native plugin closure
         run: |
@@ -88,10 +74,8 @@ jobs:
           for package in core cli docs docs-theme-default; do
             pnpm --dir "packages/$package" run build
           done
-      - name: Check CLI native error diagnostics
-        run: node --test scripts/farm-docs-cli-diagnostics.test.mjs
-      - name: Check target cache identity and invalidation boundaries
-        run: node --test packages/docs/tests/build-cache.test.mjs
+      - name: Check compiled CLI, cache identity and alias contracts
+        run: node scripts/farm-docs-suites.mjs compiled
       - name: Check native content, blog planning and development invalidation
         run: |
           cargo test -p farmfe_core -p farmfe_docs_content -p farmfe_docs_config -p farmfe_docs_plan -p farmfe_plugin_docs -p farmfe_docs_snapshot -p farmfe_plugin_docs_snapshot -p farmfe_plugin_docs_snippets --lib --tests -j 1 -- --test-threads=1
@@ -121,7 +105,7 @@ jobs:
           const directory=path.join(process.env.RUNNER_TEMP,'farm-docs-native');
           fs.mkdirSync(directory,{recursive:true});
           const baseline=path.join(directory,'baseline.json');
-          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,binaries},null,2),{flag:'wx'});
+          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,profile:'release',ciProfileCompatibility:'not-yet-validated',binaries},null,2),{flag:'wx'});
           fs.appendFileSync(process.env.GITHUB_ENV,`CODEX_DOCS_NATIVE_BASELINE=${baseline}
           CODEX_DOCS_NATIVE_GUARD_DIR=${path.join(directory,'guards')}
           `);
@@ -130,9 +114,7 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT,`node_options=${nodeOptions}\n`);
           NODE
       - name: Verify maintained static diagrams
-        run: node --test scripts/check-doc-diagrams.test.mjs
-      - name: Verify Docs alias configuration
-        run: node scripts/farm-docs-config-alias.test.mjs
+        run: node scripts/farm-docs-suites.mjs diagrams
       - name: Build minimal and multilingual consumers
         env:
           NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
@@ -142,7 +124,7 @@ jobs:
       - name: Verify third-party notice sources before the website build
         env:
           NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
-        run: node scripts/farm-docs-notices.test.mjs --source-only
+        run: node scripts/farm-docs-suites.mjs notices-source
       - name: Build the real website with its independent Farm configuration
         env:
           NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
@@ -150,7 +132,7 @@ jobs:
       - name: Verify published third-party notices
         env:
           NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
-        run: node scripts/farm-docs-notices.test.mjs
+        run: node scripts/farm-docs-suites.mjs notices-built
       - name: Install Chromium
         env:
           NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
@@ -158,13 +140,7 @@ jobs:
       - name: Exercise public theme, runtime, and full blog build/dev behavior
         env:
           NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
-        run: >-
-          node scripts/farm-docs-run-guarded.mjs
-          scripts/farm-docs-full-list-theme.test.mjs
-          scripts/farm-docs-admonition-labels.test.mjs
-          scripts/farm-docs-blog-list-content.test.mjs
-          scripts/farm-docs-theme.test.mjs
-          scripts/farm-docs-runtime.test.mjs
+        run: node scripts/farm-docs-suites.mjs browser
       - name: Preserve build output, reports and native provenance
         if: always()
         uses: actions/upload-artifact@v4

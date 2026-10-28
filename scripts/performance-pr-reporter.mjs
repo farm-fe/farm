@@ -23,7 +23,7 @@ export function validateSummary(bytes) {
   assert(Buffer.byteLength(bytes) <= 65536, 'Summary exceeds 64 KiB');
   const value = JSON.parse(bytes);
   assert(exact(value, ['schemaVersion', 'repositoryId', 'runId', 'runAttempt', 'event', 'headSHA', 'baseSHA', 'prNumber', 'protocol', 'reports']), 'Invalid summary schema');
-  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-baseline-rust-build-v1' && value.event === 'pull_request', 'Invalid protocol');
+  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-rust-build-v2' && value.event === 'pull_request', 'Invalid protocol');
   assert(integer(value.repositoryId) && integer(value.runId) && integer(value.prNumber) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
   assert(Array.isArray(value.reports) && value.reports.length > 0 && value.reports.length <= 3, 'Invalid reports');
   const systems = new Set();

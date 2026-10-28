@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {verifyPublicEntries,verifyWorkspaceConversion} from './v2-normal-pack-contract.mjs';
+import {assertStableManifest,verifyPublicEntries,verifyWorkspaceConversion} from './v2-normal-pack-contract.mjs';
 
 function member(name) {
   assert(typeof name==='string'&&name.length>0&&!path.posix.isAbsolute(name)&&!path.win32.isAbsolute(name)&&!name.includes('\\')&&!name.split('/').some(part=>['','.','..'].includes(part)),`Invalid package member: ${name}`);
@@ -56,6 +56,7 @@ export async function verifyDocsPackageDirectory(directory,{original,versions,re
   const manifest=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8'));
   assert.equal(manifest.name,original.name,'Packed package name differs');
   assert.equal(manifest.version,original.version,'Packed package version differs');
+  assertStableManifest(manifest,new Set(versions.keys()));
   assert(manifest.license,'Missing package license declaration');
   assert(files.some(file=>/^LICENSE(?:\.[^/]+)?$/i.test(file.path)&&file.bytes>0),'Missing package LICENSE text');
   if(!platform)assert(files.some(file=>/^README(?:\.[^/]+)?$/i.test(file.path)&&file.bytes>0),'Missing package README');
@@ -67,7 +68,7 @@ export async function verifyDocsPackageDirectory(directory,{original,versions,re
     }
   }
   verifyWorkspaceConversion(original,manifest,versions);
-  for(const field of ['main','module','types','bin','exports'])assert.deepEqual(manifest[field],original[field],`Public entries differ: ${field}`);
+  for(const field of ['main','module','types','typings','bin','exports'])assert.deepEqual(manifest[field],original[field],`Public entries differ: ${field}`);
   verifyPublicEntries(manifest,files);
   for(const name of requiredFiles)requireFile(name);
   let nativeReceipt;

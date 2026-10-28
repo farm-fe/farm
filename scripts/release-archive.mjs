@@ -1,5 +1,6 @@
 import { gunzipSync } from 'node:zlib';
 import crypto from 'node:crypto';
+import { assertStableManifest, verifyPublicEntries } from './v2-normal-pack-contract.mjs';
 
 export const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 export function nativePlatformMatches(bytes, platform) {
@@ -55,12 +56,8 @@ export function inspectNpmArchive(bytes, expected) {
       if (/^(workspace:|file:|link:|git\+|https?:\/\/)/.test(version)) issues.push(`Non-registry dependency ${name}: ${version}`);
     }
   }
-  function checkEntry(entry) {
-    if (typeof entry === 'string' && !entry.includes('*') && entry.startsWith('./') && !files.has(`package/${entry.slice(2)}`)) issues.push(`Missing declared entry ${entry}`);
-    else if (entry && typeof entry === 'object') for (const value of Object.values(entry)) checkEntry(value);
-  }
-  for (const key of ['main', 'module', 'types', 'typings']) if (typeof manifest[key] === 'string') checkEntry('./' + manifest[key].replace(/^\.\//, ''));
-  checkEntry(manifest.exports);
+  try { assertStableManifest(manifest); } catch (error) { issues.push(error.message); }
+  try { verifyPublicEntries(manifest, [...files.keys()].map(name => ({ path: name.replace(/^package\//, '') }))); } catch (error) { issues.push(error.message); }
   const legal = [...files].filter(([name]) => /\/(LICENSE(?:\.[^/]*)?|THIRD_PARTY_NOTICES\.md)$/.test(name) || name.startsWith('package/licenses/')).map(([name, content]) => ({ path: name.slice(8), sha256: sha256(content), bytes: content.length }));
   if (!legal.some(row => /^LICENSE(?:\.|$)/.test(row.path) && row.bytes > 0)) issues.push('Missing package license text');
   return { manifest, files, legal, issues };

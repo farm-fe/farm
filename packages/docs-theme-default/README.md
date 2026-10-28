@@ -57,7 +57,7 @@ Copy fetches only a site-relative Markdown resource, rejects redirects and verif
 its SHA256 before writing text. Errors are announced through an accessible status
 message. It does not install a skill, create an AI service or start a chat session.
 
-`DocPage` uses this component for eligible native document pages, with optional
-`documentActionsLabels` and `agentGuideUrl` presentation props. A host can translate
-the labels or export the standalone component in its own theme slot. Absent native
+The default `DocPage` does not render this component and shows no Markdown actions.
+A custom theme slot must explicitly render the exported `DocumentActions`, passing
+the native page metadata and optional labels or guide URL. Absent native
 metadata means absent Markdown controls; do not construct guessed URLs in a theme.

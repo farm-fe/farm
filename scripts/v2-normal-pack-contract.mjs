@@ -24,7 +24,7 @@ function publicTargets(value) {
 
 export function verifyPublicEntries(manifest, files) {
   const names = files.map(row => row.path);
-  const targets = [...new Set(['main', 'module', 'types', 'bin', 'exports'].flatMap(field => publicTargets(manifest[field])))];
+  const targets = [...new Set(['main', 'module', 'types', 'typings', 'bin', 'exports'].flatMap(field => publicTargets(manifest[field])))];
   assert(targets.length, manifest.name + ': no public entry');
   for (const target of targets) {
     assert(!path.posix.isAbsolute(target) && !path.win32.isAbsolute(target) && !target.includes('\\') && !target.split('/').includes('..'), target);

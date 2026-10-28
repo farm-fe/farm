@@ -7,6 +7,7 @@ import { npmInventory, root } from './v2-release-inventory.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { checkPublishedRustCore } from './check-published-rust-core.mjs';
 import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
+import { checkPublishedRustClosure } from './check-published-rust-closure.mjs';
 
 const plan = JSON.parse(fs.readFileSync(new URL('../docs/releases/v2-candidate.json', import.meta.url), 'utf8'));
 assert.deepEqual(npmInventory(), plan.npm, 'Candidate manifests drifted; regenerate and review the release scope');
@@ -55,19 +56,24 @@ if (sealPath) {
 }
 if (!report.candidateArchivesVerified) report.pending.push('Complete verified archives for all 297 selected npm packages, including original legal bytes and native ABI/platform provenance');
 const sdkPath = option('--sdk-proof');
+let sdkPackages;
 if (sdkPath) {
   report.sdkEvidence = verifySdkConsumer(plan, sdkPath, path.join(root, 'scripts/release-fixtures/sdk-consumer/Cargo.toml'));
   execFileSync('git', ['diff', '--quiet', report.sdkEvidence.sourceCommit, 'HEAD', '--', 'Cargo.toml', 'Cargo.lock', 'crates', 'rust-ecosystem', 'patches'], { cwd: root });
   report.externalSdkVerified = true;
+  sdkPackages = JSON.parse(fs.readFileSync(sdkPath)).packages;
 }
 if (!report.externalSdkVerified) report.pending.push('Independent sealed/public-registry Core, Compiler and Toolkit consumer proof, without workspace patches');
 if (process.argv.includes('--publication') && report.candidateArchivesVerified && report.externalSdkVerified && report.stableVersionStateReady) {
   // Live registry verification is a real prerequisite, not a scripted constant.
   // This verifies evidence only; it never publishes or grants publication approval.
   report.publishedRustCore = await checkPublishedRustCore();
+  assert.equal(report.publishedRustCore.archiveSha256, report.sdkEvidence.coreArchiveSha256, 'Published Rust Core differs from independently tested sealed SDK bytes');
+  report.publishedRustSdk = await checkPublishedRustClosure(sdkPackages);
   report.publishedRustCoreVerified = true;
 }
-if (!report.publishedRustCoreVerified) report.pending.push('Before stable npm publication: live published Rust Core 2.2.0 checksum and ABI 0.5.4 verification');
-report.readyToPublish = report.candidateArchivesVerified && report.externalSdkVerified && report.publishedRustCoreVerified && report.stableVersionStateReady;
+report.publishedRustSdkVerified = report.publishedRustSdk?.verified === true;
+if (!report.publishedRustCoreVerified) report.pending.push('Before stable npm publication: live published Rust Core 2.2.0 checksum/ABI 0.5.4 and all selected SDK registry checksums');
+report.readyToPublish = report.candidateArchivesVerified && report.externalSdkVerified && report.publishedRustCoreVerified && report.publishedRustSdkVerified && report.stableVersionStateReady;
 console.log(JSON.stringify(report, null, 2));
 if ((process.argv.includes('--publication') && !report.readyToPublish) || (sealPath && !report.candidateArchivesVerified)) process.exitCode = 1;

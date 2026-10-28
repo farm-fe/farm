@@ -4,13 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { validateSummary } from './performance-pr-reporter.mjs';
 
 export function compactReport(report) {
-  const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key]]));
-  return { metadata, status: report.status, cells: report.cells,
+  const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key] ?? null]));
+  return { metadata, status: report.status, cells: report.cells ?? [],
     comparison: { mode: report.comparison?.mode ?? 'current-only', baseCells: report.comparison?.mode === 'paired' ? report.comparison.baseCells : [],
       farmSubsetCells: report.vite?.farmCells ?? [], viteCells: report.vite?.viteCells ?? [], subsetProtocol: 'commerce-catalog-quote-subset-v1' },
     history: (report.history?.entries ?? []).slice(0, 10).map(row => ({ headSHA: row.sourceHeadSHA, runId: row.runId,
       medianMs: row.cells.find(cell => cell.cacheMode === 'cold')?.medianMs })).filter(row => Number.isFinite(row.medianMs)),
-    diagnostics: [report.comparison?.reason, report.history?.reason, report.history?.error,
+    diagnostics: [report.failureKind ? `Failure kind: ${report.failureKind}` : null, report.comparison?.reason, report.history?.reason, report.history?.error,
       ...(report.history?.excluded ?? []).map(row => typeof row === 'string' ? row : `History run ${row.runId}: ${row.reason}${row.detail ? ` (${row.detail})` : ''}`), ...(report.errors ?? [])]
       .filter(value => typeof value === 'string' && value.length).slice(0, 30).map(value => value.replace(/[\x00-\x1f]/g, ' ').slice(0, 500)) };
 }
@@ -20,12 +20,18 @@ export function unavailableReport(os, arch, revision, baseSHA, reason) {
   report.metadata = { os, arch, revision, baseSHA, node: null, pnpm: null, fixtureSha256: null, lockSha256: null, runnerImage: null };
   return report;
 }
+export function unavailableReason(error, { samplingResult, downloadOutcome } = {}) {
+  const context = [];
+  if (samplingResult) context.push(`Sampling job: ${samplingResult}`);
+  if (downloadOutcome) context.push(`Artifact download: ${downloadOutcome}`);
+  return [...context, `Missing or invalid platform evidence: ${error.message}`].join('; ');
+}
 async function main() {
   const event = JSON.parse(await fs.readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
   const directory = path.resolve('.performance-reports');
   const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT), event: 'pull_request',
     headSHA: event.pull_request.head.sha, baseSHA: event.pull_request.base.sha, prNumber: event.number,
-    protocol: 'commerce-baseline-rust-build-v1', reports: [] };
+    protocol: 'commerce-business-2048-rust-build-v2', reports: [] };
   const failures = [];
   for (const [abi, os, arch] of platforms) {
     const name = `performance-${process.env.GITHUB_SHA}-${abi}-attempt-${summary.runAttempt}`;
@@ -40,7 +46,8 @@ async function main() {
       summary.reports.push(report);
     } catch (error) {
       failures.push(`${name}: ${error.message}`);
-      summary.reports.push(unavailableReport(os, arch, process.env.GITHUB_SHA, summary.baseSHA, `Missing or invalid platform evidence: ${error.message}`));
+      summary.reports.push(unavailableReport(os, arch, process.env.GITHUB_SHA, summary.baseSHA,
+        unavailableReason(error, { samplingResult: process.env.PERFORMANCE_SAMPLING_RESULT, downloadOutcome: process.env.PERFORMANCE_DOWNLOAD_OUTCOME })));
     }
   }
   validateSummary(JSON.stringify(summary));

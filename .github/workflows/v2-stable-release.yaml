@@ -1,0 +1,133 @@
+name: Stable V2 from reviewed release PR
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: farm-stable-release
+  cancel-in-progress: false
+env:
+  FARM_RELEASE_INTENT_SHA256: 95c320b870e3b3b5c370c1dcb8cbd6a511617ef262730f19149b665f260b5059
+# Publication jobs install no workspace dependencies or package hooks.
+# Public consumer code runs on a separate machine with read-only permissions.
+jobs:
+  evidence:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || startsWith(github.event.pull_request.head.ref, 'changeset-release/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: 'prepare exact sealed release stage'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/v2-auto-release.mjs prepare
+  rust:
+    needs: [evidence]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: 'rust exact sealed release stage'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: node scripts/v2-auto-release.mjs rust
+  npm:
+    needs: [rust]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+          registry-url: https://registry.npmjs.org
+      - name: 'npm exact sealed release stage'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/v2-auto-release.mjs npm
+  public-consumers:
+    needs: [npm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: 'verify exact sealed release stage'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/v2-auto-release.mjs verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v2-registry-consumer-${{ github.event.pull_request.merge_commit_sha }}-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          path: .release-consumer-proof/receipt.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Preserve consumer evidence on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-registry-consumer-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .release-candidate/public-consumer/
+          if-no-files-found: warn
+          retention-days: 90
+  release:
+    needs: [public-consumers]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: 'release exact sealed release stage'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/v2-auto-release.mjs release
