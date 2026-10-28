@@ -11,6 +11,7 @@ jobs:
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: 1
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:

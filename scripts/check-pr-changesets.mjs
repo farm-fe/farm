@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { validationEvent, changesetsPublication } from './v2-release-inventory.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const digest = text => crypto.createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
 
@@ -45,14 +46,46 @@ export function verifyPreparedRelease(directory, { readGitFile, readGitChangeset
   }
   return { status: 'verified-stable-preparation', versions: record.versions.length, consumed: record.changesets.length, sourceCommit: record.sourceCommit };
 }
+export function verifyChangesetsPreparation(directory, { readGitFile, isAncestor, generatedDiff } = {}) {
+  const plan = JSON.parse(fs.readFileSync(path.join(directory, 'docs/releases/v2-candidate.json')));
+  const record = JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/changesets-preparation.json')));
+  assert.equal(record.mode, 'changesets'); assert.equal(record.schemaVersion, 1);
+  assert.ok(!fs.existsSync(path.join(directory, '.changeset/pre.json')));
+  assert.equal(fs.readdirSync(path.join(directory, '.changeset')).filter(file => file.endsWith('.md') && file !== 'README.md').length, 0);
+  assert.ok(isAncestor(record.sourceHeadSHA), 'Prepared head no longer belongs to this version PR');
+  const allowed = new Set(['docs/releases/v2-candidate.json', 'docs/releases/v2-release-intent.json', 'docs/release-evidence/changesets-preparation.json', '.github/workflows/v2-stable-release.yaml', 'scripts/release-fixtures/sdk-consumer/Cargo.toml']);
+  for (const row of plan.npm.primary) allowed.add(`${path.dirname(row.manifestPath).replaceAll('\\', '/')}/license-components.json`);
+  assert.ok(generatedDiff(record.sourceHeadSHA).every(file => allowed.has(file)), 'Source changed after version preparation');
+  const official = JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/changesets-version-plan.json')));
+  assert.equal(digest(JSON.stringify(official)), record.officialPlanSha256);
+  assert.ok(official.changesets.length > 0 && official.releases.length > 0);
+  for (const change of official.changesets) {
+    assert.match(change.id, /^[a-z0-9-]+$/);
+    assert.equal(digest(readGitFile(record.baseSHA, `.changeset/${change.id}.md`)), record.consumed.find(row => row.id === change.id)?.sha256, 'Consumed Changeset source differs');
+  }
+  const baseline = JSON.parse(readGitFile(record.baseSHA, 'docs/releases/v2-candidate.json'));
+  const expected = changesetsPublication(plan, baseline, official.releases);
+  for (const row of expected.npm.primary) {
+    assert.equal(JSON.parse(fs.readFileSync(path.join(directory, row.manifestPath))).version, row.version);
+    const text = fs.readFileSync(path.join(directory, path.dirname(row.manifestPath), 'CHANGELOG.md'), 'utf8');
+    assert.ok(text.split(/\r?\n/).includes(`## ${row.version}`), `Official changelog version missing: ${row.name}`);
+  }
+  assert.equal(digest(JSON.stringify(plan)), record.planSha256);
+  assert.deepEqual(plan.publication.npm, expected.npm); assert.deepEqual(plan.publication.cargo, expected.cargo);
+  assert.equal(plan.publication.releaseIdentity, expected.releaseIdentity);
+  return { status: 'verified-changesets-preparation', packages: expected.counts.total };
+}
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const event = process.env.GITHUB_EVENT_PATH ? JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH)) : null;
-  const prepared = event?.number === 2329 && event.pull_request?.base?.ref === 'main';
+  const event = process.env.GITHUB_EVENT_PATH ? validationEvent() : null;
+  const mode = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json'))).preparation?.mode ?? 'first-stable';
+  assert.ok(['first-stable', 'changesets'].includes(mode), 'Unknown version preparation mode');
+  const prepared = event?.pull_request?.base?.ref === 'main' && (event.number === 2329 || event.pull_request.head.ref === 'changeset-release/main');
   if (prepared || process.argv.includes('--verify-prepared')) {
-    const result = verifyPreparedRelease(root, {
+    const result = (mode === 'changesets' ? verifyChangesetsPreparation : verifyPreparedRelease)(root, {
       readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
       readGitChangesets: sha => execFileSync('git', ['ls-tree', '--name-only', `${sha}:.changeset`], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(name => name.endsWith('.md') && name !== 'README.md').map(name => name.slice(0, -3)),
-      isAncestor: sha => { try { execFileSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: root }); return true; } catch { return false; } }
+      isAncestor: sha => { try { execFileSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], { cwd: root }); return true; } catch { return false; } },
+      generatedDiff: sha => execFileSync('git', ['diff', '--name-only', sha, 'HEAD'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean)
     });
     // Also checks all 297 source versions/dependencies and Cargo manifest digests.
     execFileSync(process.execPath, [path.join(root, 'scripts/v2-release-preflight.mjs')], { cwd: root, stdio: 'inherit' });

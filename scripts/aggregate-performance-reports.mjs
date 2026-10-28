@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateSummary } from './performance-pr-reporter.mjs';
+import { validationEvent } from './v2-release-inventory.mjs';
 
 export function compactReport(report) {
   const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key] ?? null]));
@@ -27,7 +28,7 @@ export function unavailableReason(error, { samplingResult, downloadOutcome } = {
   return [...context, `Missing or invalid platform evidence: ${error.message}`].join('; ');
 }
 async function main() {
-  const event = JSON.parse(await fs.readFile(process.env.GITHUB_EVENT_PATH, 'utf8'));
+  const event = validationEvent();
   const directory = path.resolve('.performance-reports');
   const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT), event: 'pull_request',
     headSHA: event.pull_request.head.sha, baseSHA: event.pull_request.base.sha, prNumber: event.number,

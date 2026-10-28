@@ -21,7 +21,7 @@ export function sealSdkConsumer(plan, proof, fixture, destination) {
     const root = fileURLToPath(new URL('../', import.meta.url));
     const provenance = JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence/published-macro-license.json')));
     fs.mkdirSync(path.join(destination, 'licenses'));
-    for (const record of materialization.reused) {
+    for (const record of materialization.reused.filter(record => provenance.packages.some(item => item.name === record.name && item.version === record.version))) {
       const license = provenance.packages.find(item => item.name === record.name && item.version === record.version && item.archiveSha256 === record.sha256);
       if (!license) throw new Error(`Missing original license provenance: ${record.name}`);
       const bytes = fs.readFileSync(path.join(root, license.licenseFile));

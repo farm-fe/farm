@@ -1,5 +1,14 @@
 name: Lint
-on: [pull_request]
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        required: true
+        type: string
+      release_base:
+        required: true
+        type: string
 
 jobs:
   rust-lint:

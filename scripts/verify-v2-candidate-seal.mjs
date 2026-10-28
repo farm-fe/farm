@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inspectNpmArchive, sha256, nativePlatformMatches } from './release-archive.mjs';
+import { verifyLicenseComponents } from './v2-normal-pack-contract.mjs';
+import { publicationNpm } from './v2-release-inventory.mjs';
 
 function sourceLegal(directory) {
   const files = new Map();
@@ -13,12 +15,13 @@ function sourceLegal(directory) {
     if (stat.isDirectory()) for (const name of fs.readdirSync(file)) collect(`${relative}/${name}`);
     else if (stat.isFile()) files.set(relative, sha256(fs.readFileSync(file)));
   }
-  for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses']) collect(name);
+  for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses', 'license-components.json']) collect(name);
   return files;
 }
 
 export function verifyCandidateSeal(plan, receipt, directory, sourceRoot = fileURLToPath(new URL('../', import.meta.url))) {
-  const expected = new Map([...plan.npm.primary, ...plan.npm.payloads].map(pkg => [pkg.name, pkg]));
+  const selected = publicationNpm(plan);
+  const expected = new Map([...selected.primary, ...selected.payloads].map(pkg => [pkg.name, pkg]));
   const seen = new Set();
   const records = [];
   const errors = [];
@@ -35,12 +38,14 @@ export function verifyCandidateSeal(plan, receipt, directory, sourceRoot = fileU
         if (result.manifest.optionalDependencies?.[payload.name] !== payload.version) result.issues.push(`Native optional dependency version mismatch: ${payload.name}`);
       }
       const owner = pkg.owner ? plan.npm.primary.find(row => row.name === pkg.owner) : pkg;
+      const ownerDirectory = path.dirname(path.join(sourceRoot, owner.manifestPath));
+      verifyLicenseComponents(ownerDirectory, JSON.parse(fs.readFileSync(path.join(ownerDirectory, 'package.json'))), sourceRoot);
       const legal = sourceLegal(path.dirname(path.join(sourceRoot, owner.manifestPath)));
       if (!legal.has('LICENSE')) result.issues.push('Source package license text is missing');
       for (const [file, digest] of legal) if (sha256(result.files.get(`package/${file}`) ?? Buffer.alloc(0)) !== digest) result.issues.push(`Legal bytes absent or changed: ${file}`);
       if (pkg.platform) {
         const independentGenerator = pkg.owner === 'create-farm';
-        if (independentGenerator ? record.nativeInterface !== 'node-api-4' : record.abi !== '0.5.4') result.issues.push('Missing or mismatched native interface provenance');
+        if (independentGenerator ? record.nativeInterface !== 'node-api-4' : record.abi !== (plan.abi ?? '0.5.4')) result.issues.push('Missing or mismatched native interface provenance');
         if (!/^[a-f0-9]{64}$/.test(record.nativeSha256 ?? '')) result.issues.push('Missing native hash provenance');
         const main = result.manifest.main;
         const native = typeof main === 'string' ? result.files.get(`package/${main.replace(/^\.\//, '')}`) : null;

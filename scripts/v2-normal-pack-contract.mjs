@@ -1,5 +1,31 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+
+export function verifyLicenseComponents(directory, manifest, repositoryRoot = directory) {
+  const file = path.join(directory, 'license-components.json');
+  if (!fs.existsSync(file)) return;
+  const record = JSON.parse(fs.readFileSync(file));
+  assert.equal(record.schemaVersion, 1);
+  assert.equal(record.declaration, manifest.license, 'Component SPDX declaration differs from package');
+  const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+  for (const component of record.components) {
+    assert.equal(component.status, 'verified', `Unresolved license component ${component.name}: ${component.reason}`);
+    const licenses = component.licenseFiles ?? [{ file: component.licenseFile, sha256: component.licenseSha256, normalization: component.licenseNormalization }];
+    assert.ok(licenses.length, 'Original license material required');
+    for (const license of licenses) {
+      assert.ok(license.file && !path.isAbsolute(license.file) && !license.file.split('/').includes('..'));
+      const bytes = fs.readFileSync(path.join(directory, license.file));
+      assert.equal(digest(license.normalization === 'lf' ? bytes.toString('utf8').replaceAll('\r\n', '\n') : bytes), license.sha256, `Original license bytes changed: ${component.name}`);
+    }
+    for (const source of component.sourceFiles ?? []) {
+      const target = path.resolve(directory, source.file), relative = path.relative(repositoryRoot, target);
+      assert.ok(!relative.startsWith('..') && !path.isAbsolute(relative), 'Component source escapes repository');
+      assert.equal(digest(fs.readFileSync(target, 'utf8').replaceAll('\r\n', '\n')), source.sha256, `Component source scope changed: ${source.file}`);
+    }
+  }
+}
 
 export function assertStableManifest(manifest, ownNames = new Set()) {
   assert(/^\d+\.\d+\.\d+$/.test(manifest.version) && manifest.version !== '0.0.0', manifest.name + ': stable version required');

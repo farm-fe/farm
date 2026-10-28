@@ -27,7 +27,7 @@ export function uploadMetadata(pkg) {
     keywords: pkg.keywords, categories: pkg.categories, license: pkg.license, license_file: pkg.license_file,
     repository: pkg.repository, badges: {}, links: pkg.links, rust_version: pkg.rust_version };
 }
-export function rustPublicationOrder(plan, metadata) {
+export function rustPublicationOrder(plan, metadata, { includeUploadMetadata = true } = {}) {
   const selected = new Map(plan.cargo.map(record => {
     const matches = metadata.packages.filter(pkg => pkg.name === record.name && pkg.version === record.version);
     assert.equal(matches.length, 1, `Missing exact Rust SDK package: ${record.name}`);
@@ -40,7 +40,7 @@ export function rustPublicationOrder(plan, metadata) {
     const pkg = selected.get(name);
     const dependencies = [...new Set(pkg.dependencies.filter(dep => dep.kind !== 'dev' && selected.has(dep.name)).map(dep => dep.name))].sort();
     for (const dependency of dependencies) visit(dependency);
-    visiting.delete(name); visited.add(name); order.push({ name, version: pkg.version, dependencies, metadata: uploadMetadata(pkg) });
+    visiting.delete(name); visited.add(name); order.push({ name, version: pkg.version, dependencies, ...(includeUploadMetadata ? { metadata: uploadMetadata(pkg) } : {}) });
   }
   for (const name of [...selected.keys()].sort()) visit(name);
   return order;

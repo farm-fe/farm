@@ -5,6 +5,19 @@ const intent = { schemaVersion: 1, pullRequest: 2329, baseBranch: 'main', source
 const bytes = JSON.stringify(intent);
 const event = { action: 'closed', number: 2329, pull_request: { merged: true, base: { ref: 'main' }, head: { sha: 'a'.repeat(40) }, merge_commit_sha: 'b'.repeat(40) } };
 
+test('future version PR validates its own intent and explicitly dispatched final head', () => {
+  const future = { ...intent, preparationMode: 'changesets', pullRequest: 2400, tag: 'packages-' + 'c'.repeat(16), requiredWorkflows: requiredWorkflows.filter(file => !file.endsWith('lint-pr-title.yml')) };
+  const futureEvent = { ...event, number: 2400 };
+  const content = JSON.stringify(future);
+  validateTrigger(futureEvent, future, content, digest(content));
+  const run = { id: 2, path: '.github/workflows/ci.yaml', event: 'workflow_dispatch', conclusion: 'success', head_sha: event.pull_request.head.sha };
+  assert.equal(selectRequiredRuns([run], [run.path], run.head_sha, 2400, { allowDispatch: true })[0].id, 2);
+  assert.throws(() => selectRequiredRuns([run], [run.path], 'd'.repeat(40), 2400, { allowDispatch: true }), /absent/);
+  validateCandidateRun(run, { ...future, seal: { workflowPath: run.path } }, futureEvent, 'same', 'same');
+  assert.throws(() => validateCandidateRun(run, { ...future, seal: { workflowPath: run.path } }, futureEvent, 'tested', 'merged'), /tree differs/);
+  assert.throws(() => validateTrigger(futureEvent, future, content, '0'.repeat(64)), /intent changed/);
+});
+
 test('every functional lane including integrated Docs is required despite informational performance', () => {
   const jobs = requiredCiJobs.map(name => ({ name, status: 'completed', conclusion: 'success' }));
   validateRequiredCiJobs([...jobs, { name: 'Commerce Performance', status: 'completed', conclusion: 'failure' }]);

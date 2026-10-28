@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "declaration": "MIT",
+  "scope": "Direct source components only; not a complete transitive/binary distribution audit",
+  "components": [
+    {
+      "name": "Farm qiankun adapter",
+      "spdx": "MIT",
+      "status": "verified",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "beeb6a9391ccb0d48b3934ed515ba887583a04c7edc79358462669ce9314970b",
+      "source": "https://github.com/farm-fe/farm/pull/2269",
+      "scope": [
+        "src/qiankun-farm-plugin.ts",
+        "src/qiankun-farm-plugin-helper.ts"
+      ],
+      "sourceFiles": [
+        {
+          "file": "src/qiankun-farm-plugin.ts",
+          "sha256": "34fa7ccd260d30e9fbb424cc3e9f029482c05a106f83e259c2e798bce919d6c5"
+        },
+        {
+          "file": "src/qiankun-farm-plugin-helper.ts",
+          "sha256": "53f1ff2c154fa8340cd2e4c3ff36ad3be98273ea323ca97f96abb7192802cc99"
+        }
+      ],
+      "licenseNormalization": "lf"
+    },
+    {
+      "name": "vite-plugin-qiankun reference",
+      "spdx": "MIT",
+      "status": "verified",
+      "licenseFile": "licenses/vite-plugin-qiankun-MIT.txt",
+      "licenseSha256": "46af31330c2b691446cb7cfef90bd84bd1f0a3557f3195802db5fdfc9998d096",
+      "source": "https://github.com/tengmaoqing/vite-plugin-qiankun/blob/164e6dc344edef8c9a44e936cd9c1c747d6be6a1/LICENSE",
+      "scope": [
+        "src/qiankun-farm-plugin.ts",
+        "src/qiankun-farm-plugin-helper.ts"
+      ],
+      "limitation": "Matching lifecycle registration/reference implementation; not a claim of original import revision or transitive dependency audit.",
+      "sourceFiles": [
+        {
+          "file": "src/qiankun-farm-plugin.ts",
+          "sha256": "34fa7ccd260d30e9fbb424cc3e9f029482c05a106f83e259c2e798bce919d6c5"
+        },
+        {
+          "file": "src/qiankun-farm-plugin-helper.ts",
+          "sha256": "53f1ff2c154fa8340cd2e4c3ff36ad3be98273ea323ca97f96abb7192802cc99"
+        }
+      ]
+    }
+  ]
+}

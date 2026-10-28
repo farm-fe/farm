@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 export function lockedPackages(lock) {
   return lock.replaceAll('\r\n', '\n').split('[[package]]').slice(1).map(block => {
@@ -12,6 +13,7 @@ export function lockedPackages(lock) {
 export function publicFetchManifest(plan, lock) {
   const own = new Set(plan.cargo.map(row => `${row.name}@${row.version}`));
   const packages = lockedPackages(lock).filter(row => row.source && !own.has(`${row.name}@${row.version}`));
+  for (const row of plan.publication?.reuseRust ?? []) packages.push({ ...row, source: 'registry+https://github.com/rust-lang/crates.io-index', checksum: row.sha256 });
   assert.ok(packages.length);
   for (const pkg of packages) {
     assert.equal(pkg.source, 'registry+https://github.com/rust-lang/crates.io-index', 'Unreviewed non-public SDK dependency');
@@ -45,6 +47,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   } else {
     assert.equal(mode, 'bind-candidate');
     const materialization = JSON.parse(fs.readFileSync(path.join(destination, 'materialization.json')));
-    fs.writeFileSync(path.join(destination, 'consumer/Cargo.lock'), bindCandidateChecksums(lock, materialization));
+    const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+    if (plan.preparation?.mode === 'changesets') {
+      // New crate versions cannot inherit the first-stable frozen resolution.
+      // Resolve only against the already verified isolated registry, never paths.
+      fs.rmSync(path.join(destination, 'consumer/Cargo.lock'), { force: true });
+      execFileSync('cargo', ['+nightly-2026-04-10', 'generate-lockfile', '--offline'], { cwd: path.resolve(destination, 'consumer'), stdio: 'inherit', timeout: 120000 });
+    } else fs.writeFileSync(path.join(destination, 'consumer/Cargo.lock'), bindCandidateChecksums(lock, materialization));
   }
 }

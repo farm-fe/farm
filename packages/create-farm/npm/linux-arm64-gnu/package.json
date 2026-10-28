@@ -9,7 +9,11 @@
   ],
   "main": "create-farm.linux-arm64-gnu.node",
   "files": [
-    "create-farm.linux-arm64-gnu.node"
+    "create-farm.linux-arm64-gnu.node",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "license-components.json"
   ],
   "description": "Rapidly create a new farm project.",
   "keywords": [
@@ -18,7 +22,7 @@
   ],
   "author": "",
   "homepage": "https://www.farmfe.org/docs/quick-start#create-a-farm-project",
-  "license": "ISC",
+  "license": "MIT",
   "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
   "bugs": {
     "url": "https://github.com/farm-fe/farm/issues"

@@ -5,7 +5,7 @@
   "tag": "v2.0.0",
   "abi": "0.5.4",
   "rustCoreVersion": "2.2.0",
-  "candidatePlanSha256": "81d11f5c0b868b1a90a1f705aba749975f9fda357fe2dc962e51c7fda31a5e75",
+  "candidatePlanSha256": "f028154b548e395cd55c6a02ea0a3e69007fced728583dfc6d9227f8169842c8",
   "counts": {
     "primary": 51,
     "payloads": 246,
@@ -173,7 +173,7 @@
   ],
   "registryVerification": {
     "script": "scripts/verify-published-v2-consumers.mjs",
-    "sha256": "e92014c16689242918a9e0d08ad08a04446e1715d3fd155345a06aba00f58925"
+    "sha256": "f89785ff15a1079f8575946164be7c5837f4b4e3ba50fa123b3f86b4745d6512"
   },
   "websiteDeployment": false,
   "requiredCiJobs": [
@@ -190,5 +190,6 @@
     "Docs / ubuntu-24.04",
     "Seal complete npm and Rust candidates"
   ],
-  "performanceRequired": false
+  "performanceRequired": false,
+  "preparationMode": "first-stable"
 }

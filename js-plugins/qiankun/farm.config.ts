@@ -3,7 +3,7 @@ import dts from '@farmfe/js-plugin-dts';
 
 export default defineConfig({
   compilation: {
-    external: ['@farmfe/core'],
+    external: ['@farmfe/core', 'cheerio'],
     input: {
       'qiankun-farm-plugin': './src/qiankun-farm-plugin.ts'
     },

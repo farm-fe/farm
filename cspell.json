@@ -6,6 +6,17 @@
   "language": "en",
   // words - list of words to be always considered correct
   "words": [
+    "taskkill",
+    "unyanked",
+    "statfs",
+    "bavail",
+    "unscored",
+    "purgeable",
+    "npmjs",
+    "TMQ",
+    "qmhc",
+    "Tauri",
+    "Conservancy",
     "bytecheck",
     "simdutf",
     "unittests",

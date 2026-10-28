@@ -1,8 +1,21 @@
 name: E2E Tests
 on:
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        description: Exact same-repository Changesets version PR
+        required: true
+        type: string
+      release_base:
+        description: Reviewed version preparation base SHA
+        required: true
+        type: string
   pull_request:
     branches:
       - main
+
+env:
+  GH_TOKEN: ${{ github.token }}
 
 permissions:
   contents: read
@@ -44,7 +57,7 @@ jobs:
       contents: read
 
   release-candidate-seal:
-    if: github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || startsWith(github.head_ref, 'changeset-release/'))
+    if: (github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || startsWith(github.head_ref, 'changeset-release/'))) || github.event_name == 'workflow_dispatch'
     needs: [check-native-candidate-assembly, examples-test, type-check, ts-test]
     uses: ./.github/workflows/v2-candidate-seal.yaml
     permissions:
@@ -519,19 +532,19 @@ jobs:
       - name: Check out exact base separately
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ github.event.pull_request.base.sha || inputs.release_base }}
           path: .performance-base
           persist-credentials: false
       - name: Prepare compatible exact-base native consumer
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/prepare-performance-base.mjs
       - name: Sample isolated Commerce baseline
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/performance-report.mjs
       - name: Finalize incomplete performance evidence
@@ -549,7 +562,7 @@ jobs:
   performance-summary:
     name: Aggregate informational performance report
     needs: [performance-report]
-    if: always() && github.event_name == 'pull_request'
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 5

@@ -29,27 +29,29 @@ export function validateTrigger(event, intent, bytes, expectedHash) {
   assert.equal(event.pull_request?.base?.ref, 'main');
   assert.equal(intent.schemaVersion, 1);
   assert.equal(intent.baseBranch, 'main');
-  assert.deepEqual(intent.requiredWorkflows, requiredWorkflows, 'Required release workflows changed');
+  const changesets = intent.preparationMode === 'changesets';
+  if (!changesets) assert.equal(intent.pullRequest, 2329, 'First stable preparation is single-use');
+  assert.deepEqual(intent.requiredWorkflows, changesets ? requiredWorkflows.filter(file => !file.endsWith('lint-pr-title.yml')) : requiredWorkflows, 'Required release workflows changed');
   assert.deepEqual(intent.requiredCiJobs, requiredCiJobs, 'Required functional CI jobs changed');
   assert.equal(intent.performanceRequired, false, 'Exploratory performance is not a publication certification');
-  assert.equal(intent.abi, '0.5.4'); assert.equal(intent.rustCoreVersion, '2.2.0');
+  assert.match(intent.abi, /^\d+\.\d+\.\d+$/); assert.match(intent.rustCoreVersion, /^2\.\d+\.\d+$/);
   assert.equal(digest(bytes), expectedHash, 'Reviewed release intent changed');
   assert.match(event.pull_request.merge_commit_sha, /^[a-f0-9]{40}$/);
   assert.match(event.pull_request.head.sha, /^[a-f0-9]{40}$/);
-  assert.match(intent.tag, /^v2\.\d+\.\d+$/);
+  assert.match(intent.tag, changesets ? /^(?:v2\.\d+\.\d+|packages-[a-f0-9]{16})$/ : /^v2\.\d+\.\d+$/);
 }
 export function validateCandidateRun(ci, intent, event, testedTree, mergeTree) {
   assert.equal(ci.path, intent.seal.workflowPath);
-  assert.equal(ci.event, 'pull_request');
+  assert.ok(ci.event === 'pull_request' || (intent.preparationMode === 'changesets' && ci.event === 'workflow_dispatch'));
   assert.equal(ci.conclusion, 'success');
-  assert.ok(ci.pull_requests?.some(pr => pr.number === event.number && pr.head.sha === event.pull_request.head.sha), 'Stale candidate CI');
+  assert.ok(ci.event === 'workflow_dispatch' ? ci.head_sha === event.pull_request.head.sha : ci.pull_requests?.some(pr => pr.number === event.number && pr.head.sha === event.pull_request.head.sha), 'Stale candidate CI');
   assert.equal(testedTree, mergeTree, 'Tested PR tree differs from final merge; fresh validation required');
 }
-export function selectRequiredRuns(runs, paths, headSHA, prNumber) {
+export function selectRequiredRuns(runs, paths, headSHA, prNumber, { allowDispatch = false } = {}) {
   assert.ok(Array.isArray(paths) && paths.length >= 1 && new Set(paths).size === paths.length, 'Required workflow set is missing');
   return paths.map(path => {
     assert.match(path, /^\.github\/workflows\/[a-z0-9-]+\.ya?ml$/);
-    const selected = runs.filter(run => run.path === path && run.head_sha === headSHA && run.event === 'pull_request' && run.pull_requests?.some(pr => pr.number === prNumber && pr.head.sha === headSHA)).sort((a, b) => b.id - a.id)[0];
+    const selected = runs.filter(run => run.path === path && run.head_sha === headSHA && ((run.event === 'pull_request' && run.pull_requests?.some(pr => pr.number === prNumber && pr.head.sha === headSHA)) || (allowDispatch && run.event === 'workflow_dispatch'))).sort((a, b) => b.id - a.id)[0];
     assert.ok(selected, `Required final-head workflow is absent: ${path}`);
     return selected;
   });
@@ -166,15 +168,18 @@ async function main() {
     async prepare() {
       const plan = read(path.join(root, 'docs/releases/v2-candidate.json'));
       assert.equal(digest(JSON.stringify(plan)), intent.candidatePlanSha256);
-      assert.equal(intent.tag, `v${plan.npm.primary.find(pkg => pkg.name === '@farmfe/core').version}`, 'Release tag differs from selected stable Core');
-      const runs = ghJson(['api', `repos/${repository}/actions/runs?event=pull_request&head_sha=${event.pull_request.head.sha}&per_page=100`]).workflow_runs;
-      for (const selected of selectRequiredRuns(runs, intent.requiredWorkflows, event.pull_request.head.sha, event.number)) {
+      assert.equal(intent.tag, plan.publication?.releaseIdentity ?? `v${plan.npm.primary.find(pkg => pkg.name === '@farmfe/core').version}`, 'Release identity differs from selected publication delta');
+      assert.equal(intent.rustCoreVersion, plan.cargo.find(pkg => pkg.name === 'farmfe_core').version);
+      assert.equal(intent.abi, fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1]);
+      const runs = ghJson(['api', `repos/${repository}/actions/runs?head_sha=${event.pull_request.head.sha}&per_page=100`]).workflow_runs;
+      const allowDispatch = intent.preparationMode === 'changesets';
+      for (const selected of selectRequiredRuns(runs, intent.requiredWorkflows, event.pull_request.head.sha, event.number, { allowDispatch })) {
         run('gh', ['run', 'watch', String(selected.id), '--repo', repository, '--exit-status']);
         const completed = ghJson(['api', `repos/${repository}/actions/runs/${selected.id}`]);
         assert.equal(completed.repository.full_name, repository); assert.equal(completed.head_sha, event.pull_request.head.sha);
         assert.equal(completed.path, selected.path); assert.equal(completed.status, 'completed'); assert.equal(completed.conclusion, 'success');
       }
-      const candidates = runs.filter(row => row.path === intent.seal.workflowPath && row.pull_requests?.some(pr => pr.number === event.number && pr.head.sha === event.pull_request.head.sha));
+      const candidates = selectRequiredRuns(runs, [intent.seal.workflowPath], event.pull_request.head.sha, event.number, { allowDispatch });
       assert.ok(candidates.length, 'No final PR evidence run; producer must complete before publication');
       const selected = candidates.sort((a, b) => b.id - a.id)[0];
       const headSha = selected.head_sha;
@@ -211,6 +216,11 @@ async function main() {
       for (const record of receipt.records) {
         const response = await request(`https://registry.npmjs.org/${encodeURIComponent(record.name)}/${encodeURIComponent(record.version)}`);
         verifyExistingNpm(record, fs.readFileSync(safeFile(directory, record.file)), response ? await response.json() : null);
+      }
+      for (const record of plan.publication?.reuseNpm ?? []) {
+        const response = await request(`https://registry.npmjs.org/${encodeURIComponent(record.name)}/${encodeURIComponent(record.version)}`);
+        assert.ok(response, `Unchanged immutable npm prerequisite missing: ${record.name}`);
+        assert.equal((await response.json()).dist?.integrity, record.integrity, `Unchanged npm registry integrity differs: ${record.name}`);
       }
       assert.equal(digest(fs.readFileSync(path.join(root, intent.registryVerification.script), 'utf8').replaceAll('\r\n', '\n')), intent.registryVerification.sha256, 'Registry consumer verifier changed');
       assert.deepEqual((receipt.rust ?? []).map(row => ({ name: row.name, version: row.version })), intent.rust.map(({ name, version }) => ({ name, version })));

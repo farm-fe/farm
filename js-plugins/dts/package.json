@@ -24,7 +24,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "chalk": "^5.2.0",
     "fast-glob": "^3.2.12",
@@ -38,6 +38,10 @@
   },
   "files": [
     "dist",
-    "build"
+    "build",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "license-components.json"
   ]
 }

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "declaration": "MIT",
+  "scope": "Direct source components only; not a complete transitive/binary distribution audit",
+  "components": [
+    {
+      "name": "Farm DTS MIT wrapper and adaptations",
+      "spdx": "MIT",
+      "status": "verified",
+      "scope": [
+        "src/index.ts",
+        "src/context.ts",
+        "src/logger.ts",
+        "src/types.ts",
+        "src/options.ts",
+        "src/utils.ts"
+      ],
+      "sourceFiles": [
+        {
+          "file": "src/index.ts",
+          "sha256": "04bb052b9161fa3e0ed6d57b0a1d3f9484b2448dff37d564d818fa9313ed8b60"
+        },
+        {
+          "file": "src/context.ts",
+          "sha256": "dea6de12db6d0d07e98c7f7bfbb42ae24c007b681574c91c8bde5f56d34d4253"
+        },
+        {
+          "file": "src/logger.ts",
+          "sha256": "50b4c4275c881967165b6210f174591df728cc7a884d326b0bfe83cf8e726e93"
+        },
+        {
+          "file": "src/types.ts",
+          "sha256": "6ca73d637582404c7114ec38d7a4fabad98b61a095e0faf9e5d1550e16a6cd39"
+        },
+        {
+          "file": "src/options.ts",
+          "sha256": "f3bb1705d75c83a9a790251076b35c84e38e61796ba826ad963ff7b51e2fd2cb"
+        },
+        {
+          "file": "src/utils.ts",
+          "sha256": "46859dee84b0e649340e425d4e4df9bb992b8a8c5984567c0dc3fc31cd0c7511"
+        }
+      ],
+      "licenseFile": "LICENSE",
+      "licenseSha256": "beeb6a9391ccb0d48b3934ed515ba887583a04c7edc79358462669ce9314970b",
+      "authorization": "User confirmed Farm-owned code is MIT and the prior ISC declaration was erroneous (2026-10-28). Third-party scope remains separately attributed.",
+      "licenseNormalization": "lf"
+    },
+    {
+      "name": "qmhc utility reference",
+      "spdx": "MIT",
+      "status": "verified",
+      "licenseFile": "licenses/vite-plugin-dts-MIT.txt",
+      "licenseSha256": "e296f27abd4a476f0c16ddb6145dad41382f24522e30719c558561e176d777ad",
+      "source": "https://github.com/qmhc/unplugin-dts/blob/25ea95475caf192e045dabfc676bd562ee08c23d/LICENSE",
+      "scope": [
+        "src/utils.ts"
+      ],
+      "functions": [
+        "isNativeObj",
+        "isRegExp",
+        "isPromise",
+        "mergeObjects",
+        "ensureAbsolute",
+        "ensureArray",
+        "runParallel",
+        "queryPublicPath",
+        "getTsConfig"
+      ],
+      "limitation": "Reference snapshot correspondence, not proof of original import revision. No complete logger/context/types attribution inferred.",
+      "sourceFiles": [
+        {
+          "file": "src/utils.ts",
+          "sha256": "46859dee84b0e649340e425d4e4df9bb992b8a8c5984567c0dc3fc31cd0c7511"
+        }
+      ]
+    }
+  ]
+}

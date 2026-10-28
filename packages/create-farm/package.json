@@ -12,7 +12,7 @@
     "create-farm"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -54,5 +54,11 @@
     "create-farm-win32-arm64-msvc": "2.0.0",
     "create-farm-win32-ia32-msvc": "2.0.0",
     "create-farm-win32-x64-msvc": "2.0.0"
-  }
+  },
+  "files": [
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "license-components.json"
+  ]
 }

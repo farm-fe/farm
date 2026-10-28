@@ -6,12 +6,14 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assertStableReleaseState } from './check-stable-release-state.mjs';
 import { archiveFiles } from './release-archive.mjs';
+import { publicationNpm } from './v2-release-inventory.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export function publicationOrder(plan, records, directory) {
+  const selected = publicationNpm(plan);
   const byName = new Map(records.map(record => [record.name, record]));
-  const primary = new Map(plan.npm.primary.map(pkg => [pkg.name, pkg]));
-  const ordered = plan.npm.payloads.map(pkg => byName.get(pkg.name));
+  const primary = new Map(selected.primary.map(pkg => [pkg.name, pkg]));
+  const ordered = selected.payloads.map(pkg => byName.get(pkg.name));
   const visiting = new Set();
   const visited = new Set();
   function visit(name) {
@@ -26,7 +28,7 @@ export function publicationOrder(plan, records, directory) {
     visiting.delete(name); visited.add(name); ordered.push(record);
   }
   for (const name of primary.keys()) visit(name);
-  if (ordered.some(record => !record) || ordered.length !== plan.counts.total) throw new Error('Incomplete exact publication allowlist');
+  if (ordered.some(record => !record) || ordered.length !== selected.primary.length + selected.payloads.length) throw new Error('Incomplete exact publication allowlist');
   return ordered;
 }
 

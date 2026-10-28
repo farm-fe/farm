@@ -11,8 +11,10 @@ import { checkPublishedRustClosure } from './check-published-rust-closure.mjs';
 
 const plan = JSON.parse(fs.readFileSync(new URL('../docs/releases/v2-candidate.json', import.meta.url), 'utf8'));
 assert.deepEqual(npmInventory(), plan.npm, 'Candidate manifests drifted; regenerate and review the release scope');
-assert.equal(plan.npm.primary.find(pkg => pkg.name === '@farmfe/js-plugin-vuetify')?.version, '0.0.2');
-assert.equal(plan.npm.primary.find(pkg => pkg.name === 'create-farm-plugin')?.version, '2.0.0');
+if ((plan.preparation?.mode ?? 'first-stable') === 'first-stable') {
+  assert.equal(plan.npm.primary.find(pkg => pkg.name === '@farmfe/js-plugin-vuetify')?.version, '0.0.2');
+  assert.equal(plan.npm.primary.find(pkg => pkg.name === 'create-farm-plugin')?.version, '2.0.0');
+}
 assert.equal(plan.counts.total, plan.npm.primary.length + plan.npm.payloads.length);
 assert.ok(!plan.cargo.some(pkg => pkg.version.startsWith('3.')), 'Rust V3 is outside this release scope');
 for (const pkg of plan.cargo) {
@@ -22,6 +24,8 @@ for (const pkg of plan.cargo) {
 }
 const hashText = file => crypto.createHash('sha256').update(fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n')).digest('hex');
 const planDigest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
+const firstStable = (plan.preparation?.mode ?? 'first-stable') === 'first-stable';
+if (firstStable) {
 const macro = JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence/published-macro-compat.json')));
 assert.equal(hashText(path.join(root, macro.traitSource)), macro.traitSourceSha256, 'Macro contract source drift');
 for (const file of macro.fixtureFiles) assert.equal(hashText(path.join(root, file.file)), file.sha256, 'Macro compatibility fixture drift');
@@ -36,7 +40,8 @@ assert.equal(pluginMacro.registryPackage.sha256, '59ac048afc3bfcba0cefe8bbb25e1c
 for (const file of pluginMacro.fixtureFiles) assert.equal(hashText(path.join(root, file.file)), file.sha256, 'Plugin macro fixture drift');
 assert.equal(hashText(path.join(root, pluginMacro.log)), pluginMacro.logSha256);
 assert.match(fs.readFileSync(path.join(root, pluginMacro.log), 'utf8'), /test result: ok\. 1 passed; 0 failed/);
-const report = { sourceInventory: 'consistent', counts: plan.counts, publishedMacroContractVerified: true, candidateArchivesVerified: false, externalSdkVerified: false, publishedRustCoreVerified: false, readyToPublish: false, pending: [] };
+}
+const report = { sourceInventory: 'consistent', counts: plan.counts, publishedMacroContractVerified: firstStable, candidateArchivesVerified: false, externalSdkVerified: false, publishedRustCoreVerified: false, readyToPublish: false, pending: [] };
 const preFile = path.join(root, '.changeset/pre.json');
 const pendingChangesets = fs.readdirSync(path.join(root, '.changeset')).filter(name => name.endsWith('.md') && name !== 'README.md').length;
 report.versionState = { prerelease: fs.existsSync(preFile) ? JSON.parse(fs.readFileSync(preFile))?.mode : null, pendingChangesets };
@@ -54,7 +59,7 @@ if (sealPath) {
   report.candidateArchivesVerified = seal.candidateArchivesVerified;
   report.archiveCoverage = { inspected: seal.inspected, missing: seal.missing.length, invalid: seal.invalid.length, errors: seal.errors.length };
 }
-if (!report.candidateArchivesVerified) report.pending.push('Complete verified archives for all 297 selected npm packages, including original legal bytes and native ABI/platform provenance');
+if (!report.candidateArchivesVerified) report.pending.push('Complete verified archives for every selected npm publication delta, including original legal bytes and native ABI/platform provenance');
 const sdkPath = option('--sdk-proof');
 let sdkPackages;
 if (sdkPath) {

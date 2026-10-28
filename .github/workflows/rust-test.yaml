@@ -1,5 +1,15 @@
 name: Unit Tests
 on:
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        description: Exact same-repository Changesets version PR
+        required: true
+        type: string
+      release_base:
+        description: Reviewed version preparation base SHA
+        required: true
+        type: string
   pull_request:
     branches:
       - main

@@ -43,9 +43,19 @@ jobs:
       # Publication credentials are never available to this versioning action.
       # A reviewed version PR must also refresh its exact plan/intent and seal.
       - uses: changesets/action@v1
+        id: changesets
         with:
           version: pnpm run bump
           branch: main
           title: 'chore: release packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install the pinned metadata toolchain
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Refresh exact version PR inputs and explicitly request validation
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
+        run: node scripts/prepare-v2-release-intent.mjs --changesets-pr "$VERSION_PR"

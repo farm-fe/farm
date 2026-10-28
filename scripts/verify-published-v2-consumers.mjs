@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { command } from './performance-report.mjs';
 
 export function publicConsumerManifest(plan) {
-  const names = ['@farmfe/core', '@farmfe/cli', '@farmfe/docs', '@farmfe/docs-theme-default'];
+  const names = [...new Set(['@farmfe/core', '@farmfe/cli', '@farmfe/docs', '@farmfe/docs-theme-default', ...(plan.publication?.npm.primary ?? []).map(row => row.name)])];
   const dependencies = Object.fromEntries(names.map(name => {
     const pkg = plan.npm.primary.find(row => row.name === name);
     assert.ok(pkg && /^\d+\.\d+\.\d+$/.test(pkg.version), `Missing stable public consumer dependency: ${name}`);

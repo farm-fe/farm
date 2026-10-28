@@ -7,10 +7,12 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assertReviewedCandidatePackHooks } from './candidate-pack-hooks.mjs';
 import { archiveFiles, inspectNpmArchive, sha256, nativePlatformMatches } from './release-archive.mjs';
-import { verifyWorkspaceConversion } from './v2-normal-pack-contract.mjs';
+import { verifyWorkspaceConversion, verifyLicenseComponents } from './v2-normal-pack-contract.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
+import { publicationNpm, validationEvent } from './v2-release-inventory.mjs';
 
 export function assertSourceLicense(directory, manifest) {
+  verifyLicenseComponents(directory, manifest, fileURLToPath(new URL('../', import.meta.url)));
   const text = fs.readFileSync(path.join(directory, 'LICENSE'), 'utf8');
   assert.ok(text.trim(), `Missing license text: ${manifest.name}`);
   assert.ok(typeof manifest.license === 'string', `Missing license declaration: ${manifest.name}`);
@@ -29,6 +31,7 @@ export function assertNativeAssembly(plan, assembly, artifactIndex, sourceSHA) {
   }
 }
 export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceCommit, testedCommit, testedTree, runId, output, pnpm }) {
+  const selected = publicationNpm(plan);
   assert.match(sourceCommit, /^[a-f0-9]{40}$/); assert.match(testedCommit, /^[a-f0-9]{40}$/); assert.match(testedTree, /^[a-f0-9]{40}$/);
   assert.ok(Number.isSafeInteger(runId) && runId > 0); assert.ok(fs.existsSync(pnpm));
   assertNativeAssembly(plan, assembly, artifactIndex, testedCommit);
@@ -37,7 +40,7 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
   const save = () => fs.writeFileSync(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2));
   const guard = () => { const disk = fs.statfsSync(output); assert.ok(os.freemem() >= 3.4 * 1024 ** 3 && disk.bavail * disk.bsize >= 8 * 1024 ** 3, 'Candidate pack resource guard'); };
   function legalCopy(directory, destination) {
-    for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses']) {
+    for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses', 'license-components.json']) {
       const source = path.join(directory, name);
       if (fs.existsSync(source)) fs.cpSync(source, path.join(destination, name), { recursive: true, filter: file => { assert.ok(!fs.lstatSync(file).isSymbolicLink(), 'Legal source symlink'); return true; } });
     }
@@ -62,18 +65,18 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
   }
   try {
     // Fail all source/legal/native prerequisites before starting normal packing.
-    for (const pkg of plan.npm.primary) {
+    for (const pkg of selected.primary) {
       const directory = path.dirname(path.join(root, pkg.manifestPath));
       const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json')));
       assertSourceLicense(directory, manifest); assertReviewedCandidatePackHooks(directory, manifest);
     }
-    for (const pkg of plan.npm.payloads) {
+    for (const pkg of selected.payloads) {
       const row = assembly.records.find(item => item.name === pkg.name);
       const bytes = fs.readFileSync(path.join(root, row.file));
       assert.equal(sha256(bytes), row.sha256); assert.ok(nativePlatformMatches(bytes, pkg.platform), `Wrong platform: ${pkg.name}`);
     }
-    for (const pkg of plan.npm.primary) pack(path.dirname(path.join(root, pkg.manifestPath)), pkg);
-    for (const pkg of plan.npm.payloads) {
+    for (const pkg of selected.primary) pack(path.dirname(path.join(root, pkg.manifestPath)), pkg);
+    for (const pkg of selected.payloads) {
       const row = assembly.records.find(item => item.name === pkg.name);
       const owner = plan.npm.primary.find(item => item.name === pkg.owner);
       const directory = path.dirname(path.join(root, owner.manifestPath));
@@ -84,11 +87,11 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
       if (pkg.platform.endsWith('-musl')) manifest.libc = ['musl'];
       const stage = path.join(output, `platform-${receipt.records.length}`); fs.mkdirSync(stage);
       legalCopy(directory, stage);
-      manifest.files = [...new Set([...(manifest.files ?? []), manifest.main, 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses'])];
+      manifest.files = [...new Set([...(manifest.files ?? []), manifest.main, 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses', 'license-components.json'])];
       fs.copyFileSync(path.join(root, row.file), path.join(stage, manifest.main));
       fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify(manifest, null, 2));
       const artifact = artifactIndex.find(item => item.name === row.artifact && !item.expired);
-      pack(stage, pkg, { nativeSha256: row.sha256, ...(pkg.owner === 'create-farm' ? { nativeInterface: 'node-api-4' } : { abi: '0.5.4' }), producer: { kind: 'github-actions', sourceCommit: testedCommit, runId, artifactId: artifact.id } });
+      pack(stage, pkg, { nativeSha256: row.sha256, ...(pkg.owner === 'create-farm' ? { nativeInterface: 'node-api-4' } : { abi: plan.abi ?? '0.5.4' }), producer: { kind: 'github-actions', sourceCommit: testedCommit, runId, artifactId: artifact.id } });
     }
     const verified = verifyCandidateSeal(plan, receipt, output, root);
     fs.writeFileSync(path.join(output, 'verification.json'), JSON.stringify(verified, null, 2));
@@ -102,7 +105,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   assert.ok(assemblyFile && artifactFile && destination && process.env.npm_execpath, 'Expected assembly/index/output; run through pnpm exec');
   const root = fileURLToPath(new URL('../', import.meta.url));
   const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
-  const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH));
+  const event = validationEvent();
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
   const testedCommit = git('rev-parse', 'HEAD'); assert.equal(testedCommit, process.env.GITHUB_SHA);
   const testedTree = git('rev-parse', 'HEAD^{tree}'); assert.equal(testedTree, git('rev-parse', `${event.pull_request.head.sha}^{tree}`));

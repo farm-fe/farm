@@ -7,13 +7,15 @@ import { sha256 } from './release-archive.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
 import { rustPublicationOrder } from './release-rust-metadata.mjs';
+import { publicationNpm } from './v2-release-inventory.mjs';
 
 export function assertCompleteSealInputs(plan, npm, sdk) {
   assert.equal(npm.status, 'sealed', 'npm producer is incomplete');
   assert.equal(npm.planSha256, sha256(Buffer.from(JSON.stringify(plan))));
   assert.equal(sdk.planSha256, npm.planSha256); assert.equal(sdk.status, 'passed');
   const identities = values => values.map(row => `${row.name}@${row.version}`).sort();
-  assert.deepEqual(identities(npm.records), identities([...plan.npm.primary, ...plan.npm.payloads]), 'Incomplete or duplicate npm candidate coverage');
+  const selected = publicationNpm(plan);
+  assert.deepEqual(identities(npm.records), identities([...selected.primary, ...selected.payloads]), 'Incomplete or duplicate npm candidate coverage');
   assert.deepEqual(identities(sdk.packages), identities(plan.cargo), 'Incomplete or duplicate Rust candidate coverage');
   for (const key of ['sourceCommit', 'testedCommit', 'testedTree']) assert.match(npm[key], /^[a-f0-9]{40}$/);
 }
@@ -48,7 +50,9 @@ export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output })
     fs.writeFileSync(path.join(output, file), archive, { flag: 'wx' });
     const bytes = Buffer.from(JSON.stringify(row.metadata)); fs.writeFileSync(path.join(output, metadataFile), bytes, { flag: 'wx' });
     const record = { name: row.name, version: row.version, file, sha256: source.sha256, metadata: metadataFile, metadataSha256: sha256(bytes), dependencies: row.dependencies };
-    if (compatibility[row.name]) record.reuseEvidence = { archiveSha256: source.sha256, compatible: true, file: compatibility[row.name], sha256: sha256(Buffer.from(JSON.stringify(read(path.join(root, compatibility[row.name]))))) };
+    const reused = plan.publication?.reuseRust?.find(item => item.name === row.name && item.version === row.version);
+    const evidence = reused ? 'docs/release-evidence/changesets-preparation.json' : compatibility[row.name];
+    if (evidence) record.reuseEvidence = { archiveSha256: source.sha256, compatible: true, file: evidence, sha256: sha256(Buffer.from(JSON.stringify(read(path.join(root, evidence))))) };
     receipt.rust.push(record);
   }
   fs.writeFileSync(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2), { flag: 'wx' });

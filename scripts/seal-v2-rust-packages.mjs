@@ -14,7 +14,7 @@ const macro = JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence/
 const pluginMacro = JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence/published-plugin-macro-compat.json')));
 if (macro.status !== 'passed' || macro.registryPackage.name !== 'farmfe_macro_cache_item' || macro.registryPackage.version !== '2.1.0') throw new Error('Published macro compatibility evidence is required');
 if (pluginMacro.status !== 'passed' || pluginMacro.registryPackage.name !== 'farmfe_macro_plugin' || pluginMacro.registryPackage.version !== '2.0.0') throw new Error('Published plugin macro compatibility evidence is required');
-const reused = [macro.registryPackage, pluginMacro.registryPackage];
+const reused = plan.preparation?.mode === 'changesets' ? plan.publication.reuseRust : [macro.registryPackage, pluginMacro.registryPackage];
 const selected = plan.cargo.filter(row => !reused.some(item => item.name === row.name));
 fs.mkdirSync(output, { recursive: true });
 const disk = fs.statfsSync(output);
@@ -37,8 +37,8 @@ else {
   // together. --no-verify disables compilation, never source normalization.
   const args = ['+nightly-2026-04-10', 'package', '--no-verify', '--offline', '--locked', '--allow-dirty', ...selected.flatMap(row => ['-p', row.name])];
   const cargo = process.env.FARM_CARGO_EXECUTABLE ?? (process.platform === 'win32' ? path.join(os.homedir(), '.cargo/bin/cargo.exe') : 'cargo');
-  const result = spawnSync(cargo, args, { cwd: root, env: { ...process.env, CARGO_TARGET_DIR: path.join(output, 'target') },
-    encoding: 'utf8', windowsHide: true, timeout: 120000, maxBuffer: 16 * 1024 ** 2 });
+  const result = selected.length ? spawnSync(cargo, args, { cwd: root, env: { ...process.env, CARGO_TARGET_DIR: path.join(output, 'target') },
+    encoding: 'utf8', windowsHide: true, timeout: 120000, maxBuffer: 16 * 1024 ** 2 }) : { status: 0, stdout: 'All SDK archives reused from verified public registry; no package command executed.', stderr: '' };
   fs.writeFileSync(path.join(output, 'stdout.txt'), result.stdout ?? '');
   fs.writeFileSync(path.join(output, 'diagnostic.txt'), result.stderr ?? '');
   receipt.command = ['cargo', ...args]; receipt.exitCode = result.status;
