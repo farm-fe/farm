@@ -150,6 +150,9 @@ jobs:
           retry_wait_seconds: 60
           command: pnpm i --frozen-lockfile
 
+      - name: Check real pnpm exec candidate entrypoints without lifecycle metadata
+        run: node --test scripts/v2-pnpm-cli.test.mjs
+
       # run headless chrome install
       - name: Install headless chrome
         run: node node_modules/playwright-chromium/install.js

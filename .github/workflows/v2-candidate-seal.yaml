@@ -25,6 +25,7 @@ jobs:
       - name: Audit all selected source license declarations and original text
         run: node scripts/audit-v2-source-licenses.mjs
       - uses: pnpm/action-setup@v4
+        id: pnpm-setup
         with:
           version: 9.4.0
           run_install: false
@@ -36,12 +37,16 @@ jobs:
           pattern: ${{ github.sha }}-*
           path: .native-artifacts
       - name: Assemble all current-run native outputs and build JS only
+        env:
+          FARM_PNPM_CLI: ${{ steps.pnpm-setup.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
         run: pnpm exec node scripts/prepare-v2-candidate-js.mjs .native-artifacts .release-work/native-assembly.json
       - name: Read current-run artifact identities without downloading another run
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api --paginate --slurp repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts?per_page=100 > .release-work/artifact-index.json
       - name: Normally pack and verify all 297 selected npm candidates
+        env:
+          FARM_PNPM_CLI: ${{ steps.pnpm-setup.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
         run: pnpm exec node scripts/pack-v2-npm-candidates.mjs .release-work/native-assembly.json .release-work/artifact-index.json .release-work/npm
       - name: Install the pinned SDK validation toolchain
         run: rustup toolchain install nightly-2026-04-10 --profile minimal

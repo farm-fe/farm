@@ -10,6 +10,7 @@ import { archiveFiles, inspectNpmArchive, sha256, nativePlatformMatches } from '
 import { verifyWorkspaceConversion, verifyLicenseComponents } from './v2-normal-pack-contract.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { publicationNpm, validationEvent } from './v2-release-inventory.mjs';
+import { resolvePnpmCli, probePnpmCli } from './v2-pnpm-cli.mjs';
 
 export function assertSourceLicense(directory, manifest) {
   verifyLicenseComponents(directory, manifest, fileURLToPath(new URL('../', import.meta.url)));
@@ -33,7 +34,8 @@ export function assertNativeAssembly(plan, assembly, artifactIndex, sourceSHA) {
 export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceCommit, testedCommit, testedTree, runId, output, pnpm }) {
   const selected = publicationNpm(plan);
   assert.match(sourceCommit, /^[a-f0-9]{40}$/); assert.match(testedCommit, /^[a-f0-9]{40}$/); assert.match(testedTree, /^[a-f0-9]{40}$/);
-  assert.ok(Number.isSafeInteger(runId) && runId > 0); assert.ok(fs.existsSync(pnpm));
+  assert.ok(Number.isSafeInteger(runId) && runId > 0);
+  pnpm = resolvePnpmCli({ repositoryRoot: root, entry: pnpm });
   assertNativeAssembly(plan, assembly, artifactIndex, testedCommit);
   fs.mkdirSync(output); // Preserve partial runs; never overwrite evidence.
   const receipt = { schemaVersion: 1, sourceCommit, testedCommit, testedTree, planSha256: sha256(Buffer.from(JSON.stringify(plan))), published: false, status: 'incomplete', records: [], errors: [] };
@@ -102,7 +104,10 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [assemblyFile, artifactFile, destination] = process.argv.slice(2);
-  assert.ok(assemblyFile && artifactFile && destination && process.env.npm_execpath, 'Expected assembly/index/output; run through pnpm exec');
+  if (assemblyFile === '--check-package-manager' && process.argv.length === 3) console.log(JSON.stringify(probePnpmCli()));
+  else {
+  assert.ok(assemblyFile && artifactFile && destination, 'Expected assembly/index/output');
+  const pnpm = resolvePnpmCli();
   const root = fileURLToPath(new URL('../', import.meta.url));
   const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
   const event = validationEvent();
@@ -111,5 +116,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const testedTree = git('rev-parse', 'HEAD^{tree}'); assert.equal(testedTree, git('rev-parse', `${event.pull_request.head.sha}^{tree}`));
   const pages = JSON.parse(fs.readFileSync(artifactFile));
   const artifactIndex = Array.isArray(pages) ? pages.flatMap(page => page.artifacts) : pages.artifacts;
-  packNpmCandidates({ root, plan, assembly: JSON.parse(fs.readFileSync(assemblyFile)), artifactIndex, sourceCommit: event.pull_request.head.sha, testedCommit, testedTree, runId: Number(process.env.GITHUB_RUN_ID), output: path.resolve(destination), pnpm: process.env.npm_execpath });
+  packNpmCandidates({ root, plan, assembly: JSON.parse(fs.readFileSync(assemblyFile)), artifactIndex, sourceCommit: event.pull_request.head.sha, testedCommit, testedTree, runId: Number(process.env.GITHUB_RUN_ID), output: path.resolve(destination), pnpm });
+  }
 }

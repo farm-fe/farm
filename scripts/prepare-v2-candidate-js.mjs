@@ -5,6 +5,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { assembleNativeArtifacts } from './assemble-v2-native-artifacts.mjs';
 import { command } from './performance-report.mjs';
+import { resolvePnpmCli, probePnpmCli } from './v2-pnpm-cli.mjs';
 
 export function candidateJsBuilds(plan) {
   const initial = ['packages/cli', 'packages/core', 'packages/runtime', 'packages/runtime-plugin-hmr', 'packages/runtime-plugin-import-meta', 'packages/plugin-tools', 'packages/utils'];
@@ -14,7 +15,10 @@ export function candidateJsBuilds(plan) {
 }
 async function main() {
   const root = fileURLToPath(new URL('../', import.meta.url));
-  const [pool, output] = process.argv.slice(2); assert.ok(pool && output && process.env.npm_execpath);
+  const [pool, output] = process.argv.slice(2);
+  if (pool === '--check-package-manager' && process.argv.length === 3) { console.log(JSON.stringify(probePnpmCli())); return; }
+  assert.ok(pool && output, 'Expected native pool and assembly output');
+  const pnpm = resolvePnpmCli();
   const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
   const records = assembleNativeArtifacts(root, path.resolve(pool), process.env.GITHUB_SHA, plan);
   fs.writeFileSync(path.resolve(output), JSON.stringify({ schemaVersion: 1, sourceCommit: process.env.GITHUB_SHA, count: records.length, records, published: false }, null, 2), { flag: 'wx' });
@@ -28,7 +32,7 @@ async function main() {
     assert.ok(os.freemem() >= 3.4 * 1024 ** 3 && disk.bavail * disk.bsize >= 9.75 * 1024 ** 3 && Date.now() < deadline, 'Candidate JS producer resource/time guard');
     const manifest = JSON.parse(fs.readFileSync(path.join(root, directory, 'package.json')));
     assert.ok(manifest.scripts?.build && !/\bcargo\b|\bnapi\b|farm-plugin-tools build/.test(manifest.scripts.build), 'Unreviewed native build in JS candidate recipe');
-    await command(process.execPath, [process.env.npm_execpath, 'run', 'build'], { cwd: path.join(root, directory), env: process.env,
+    await command(process.execPath, [pnpm, 'run', 'build'], { cwd: path.join(root, directory), env: process.env,
       log: path.join(path.dirname(path.resolve(output)), `${directory.replaceAll('/', '-')}.log`), timeoutMs: Math.min(300000, deadline - Date.now()) });
   }
 }
