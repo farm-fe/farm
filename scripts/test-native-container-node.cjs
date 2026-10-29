@@ -81,11 +81,36 @@ try {
       results.push({abi, mode, exit: run.status});
     }
   }
+  // Inspect the actual exported shell recipe, not a duplicated inline workflow.
+  const wrapperUrl = require('node:url').pathToFileURL(path.join(root, 'scripts/v2-docker-cargo-cache.mjs')).href;
+  const shell = JSON.parse(cp.execFileSync(process.execPath, ['--input-type=module', '-e',
+    `import {containerBuild} from ${JSON.stringify(wrapperUrl)}; process.stdout.write(JSON.stringify(containerBuild));`],
+    { encoding: 'utf8', windowsHide: true, timeout: 30000 }));
+  const setup = shell.indexOf('. ./scripts/setup-native-container-node.sh');
+  const build = shell.indexOf('./scripts/ci-build-rust-artifacts.sh');
+  assert.ok(setup >= 0 && build > setup, 'Container must source pinned Node setup before native build');
+  assert.match(shell, /^set -eu/);
+  assert.equal(shell.slice(build).trim(), './scripts/ci-build-rust-artifacts.sh', 'Native build remains the final shell command');
+  const implementation = fs.readFileSync(path.join(root, 'scripts/v2-docker-cargo-cache.mjs'), 'utf8');
+  assert.ok(implementation.includes("'--workdir', '/build'"), 'Docker must preserve repository working directory');
+  for (const key of ['FARM_BUILD_PROFILE', 'FARM_BUILD_ABI', 'FARM_BUILD_TARGET', 'FARM_BUILD_ZIG'])
+    assert.ok(implementation.includes(key), `Docker must forward ${key}`);
   for (const name of ['rust-build-user.yaml', 'rust-build-release.yaml']) {
     const workflow = fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8').replaceAll('\r\n', '\n');
-    const docker = workflow.split('      - name: Build in docker\n')[1]?.split('      - name: Build\n')[0];
-    assert.ok(docker, 'Docker step must exist');
-    assert.match(docker, /          run: \|\n            \. \.\/scripts\/setup-native-container-node\.sh\n            \.\/scripts\/ci-build-rust-artifacts\.sh\n$/);
+    const steps = workflow.split(/\n(?=      - (?:name:|uses:|run:))/);
+    const docker = steps.filter(step => /^        run: node scripts\/v2-docker-cargo-cache\.mjs$/m.test(step));
+    assert.equal(docker.length, 1, 'Exactly one reviewed Docker wrapper step must exist');
+    assert.match(docker[0], /if: \$\{\{ matrix\.settings\.docker \}\}/);
+    for (const [key, expression] of Object.entries({
+      FARM_BUILD_IMAGE: 'matrix.settings.docker', FARM_BUILD_PROFILE: 'inputs.profile',
+      FARM_BUILD_ABI: 'matrix.settings.abi', FARM_BUILD_TARGET: "matrix.settings.target || ''",
+      FARM_BUILD_ZIG: 'matrix.settings.zig || false',
+    })) assert.ok(docker[0].includes(`${key}: \${{ ${expression} }}`), `${name}: ${key} must retain its matrix/profile identity`);
+    const image = name === 'rust-build-user.yaml' ? 'lts-debian' : 'lts-alpine';
+    const abi = name === 'rust-build-user.yaml' ? 'linux-x64-gnu' : 'linux-x64-musl';
+    assert.ok(workflow.includes(`docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}`));
+    assert.ok(workflow.includes(`abi: ${abi}`));
+    assert.doesNotMatch(workflow, /addnab\/docker-run-action/);
   }
   console.log(JSON.stringify({status: 'passed', cases: results, scope: 'Mocked shell routing and failures with real installed engine guard; actual GNU/musl execution remains a CI gate.'}));
 } finally {

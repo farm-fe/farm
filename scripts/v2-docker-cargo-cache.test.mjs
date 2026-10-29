@@ -13,7 +13,16 @@ function fixture(mode = {}) {
   const id = 'a'.repeat(64), calls = []; let nonce, started = false, stopped = false;
   function docker(executable, args) {
     assert.equal(executable, 'docker'); calls.push(args);
-    if (args[0] === 'create') { nonce = args[args.indexOf('--label') + 1].split('=')[1]; return { status: 0, stdout: id }; }
+    if (args[0] === 'create') {
+      nonce = args[args.indexOf('--label') + 1].split('=')[1];
+      assert.equal(args[args.indexOf('--workdir') + 1], '/build');
+      for (const key of ['FARM_BUILD_PROFILE', 'FARM_BUILD_ABI', 'FARM_BUILD_TARGET', 'FARM_BUILD_ZIG']) {
+        const index = args.indexOf(`${key}=${env[key]}`);
+        assert.ok(index > 0 && args[index - 1] === '--env', `${key} must be forwarded unchanged`);
+      }
+      assert.deepEqual(args.slice(-4), [env.FARM_BUILD_IMAGE, 'sh', '-c', containerBuild]);
+      return { status: 0, stdout: id };
+    }
     if (args[0] === 'start') { started = true; return mode.timeout ? { status: null, error: { code: 'ETIMEDOUT' } } : { status: mode.buildExit ?? 0 }; }
     if (args[0] === 'inspect') return { status: 0, stdout: JSON.stringify([{ Id: id, Config: { Env: [`CARGO_HOME=${mode.cargoHome ?? '/usr/local/cargo'}`, 'HOME=/root'], Labels: { 'farm.cargo-cache-owner': mode.wrongOwner ? 'other' : nonce } },
       State: { Running: Boolean(mode.timeout && started && !stopped), Status: !started ? 'created' : mode.timeout && !stopped ? 'running' : 'exited', ExitCode: mode.timeout && stopped ? 137 : mode.buildExit ?? 0 } }]) };
