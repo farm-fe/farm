@@ -1,4 +1,4 @@
-<!-- cspell:words pageout microbenchmark -->
+<!-- cspell:words pageout microbenchmark errno -->
 # Commerce CI performance report
 
 The optional three-OS job follows Examples, Docs and consumer acceptance, uses
@@ -7,7 +7,7 @@ standard ARM64 cohort. No local measurement is implied by the implementation.
 
 ## Complete workload and timing
 
-Protocol `commerce-business-2048-supervised-v1` generates **business-2048** with
+Protocol `commerce-business-2048-farm-supervised-v1` generates **business-2048** with
 `business: true`: 2,048 categories, 14 unique files per category plus index,
 28,673 generated source files. Base input counts are measured separately; files
 are never relabeled as module counts. Original HTML, admin entry, lazy pages,
@@ -16,20 +16,21 @@ receives its inherited root TypeScript configuration. The complete copied input
 closure, generator, lockfile and supervision harness are fingerprinted.
 The inherited root TypeScript config and explicit dependency-owner manifests are
 also hashed. Isolated projects retain minimal owner manifests/node_modules links
-for Markdown and Tailwind resolution; these are not extra application inputs.
+for Markdown resolution; these are not extra application inputs.
 
 A complete cold/warm bootstrap is not scored. Three scored pairs follow,
-alternating tool/cohort order serially on the same runner. Each sample uses a new
-process, and both tools report full child-process wall clock including config,
+alternating head/base cohort order serially on the same runner. Each sample uses a new
+process, and Farm reports full child-process wall clock including config,
 compiler startup and gzip output generation. Fixture generation, extra graph
 compilation, browser checks and normalized JS/CSS size collection are outside
 the measured child. Gzip sidecars use level 6 and threshold 1,024 without deleting
 originals; normalized size accounting uses Node gzip level 9 on raw JS/CSS only.
 
 Farm warm samples reuse the successful cold cache directory, without asserting
-an independently proven cache hit. Vite 5.2.8 production Rollup cache is disabled;
-its second build is **repeat**, not persistent-cache reuse. Repeat samples remain
-in raw JSON/CSV and never generate a warm-cache speed ratio.
+an independently proven cache hit. CI measures Farm only: no Vite dependency
+preparation, warmup, measured build, graph compilation or browser run is scheduled.
+Every enabled Farm cohort must have exactly three valid cold and three valid warm
+samples; missing samples cannot pass through an empty-array success check.
 
 Failed, interrupted and absent samples remain null. Timeout, incomplete pairs,
 missing source coverage or browser failure makes the report invalid. No workload
@@ -77,7 +78,7 @@ receive a bounded reap/disappearance wait; a permission error is never treated a
 proof of exit. A denied signal with live members stops without another termination
 API. Cleanup is confirmed only after the known PIDs and group members disappear.
 
-## Base, Vite and history
+## Farm base/head and history
 
 Base/head require identical fixture, harness, Node/pnpm/Python, OS/architecture,
 runner image/version and lockfile. Exact-base native artifacts are independently
@@ -85,29 +86,27 @@ validated; head native artifacts are never substituted. Base JS preparation uses
 the same supervisor. Incompatible or missing base becomes explicit current-only.
 An unconfirmed base process tree prevents head sampling.
 
-The main Vite comparison now uses `commerce-full-business-2048-v1`, the same
-original app and generated inputs, ESNext, sourcemaps and minification. Thin hooks
-reuse existing content/AST implementations for virtual modules, media, component
-imports, strip, data and WASM. Existing locked SVGR, Tailwind Vite and Markdown
-plugins are resolved from explicit owning workspace manifests, not assumed hoists.
-The existing pipeline badge labels Vite as Vite, rather than claiming Rust plugins.
-GFM tables are explicitly enabled in both MDX implementations. The old catalog/
-quote subset remains a separate historical microbenchmark and is not sampled by
-this main protocol or mixed into its history.
-
-Unscored Farm and Vite graph checks prove coverage of all generated source files,
-classify CSS/assets/query/virtual identities and keep emitted module counts
-separate. Vite worker graphs are listed separately; Farm's parent trace does not
-claim to expose the nested native worker compiler graph. Both built outputs run
-the same browser assertions, including first/middle/last category interaction,
-stock/discount/shipping rules, MDX/SVG/styles, original worker import and WASM type
-generation. Three category interactions do not claim all-category UI coverage.
+Unscored Farm graph checks prove coverage of all 28,673 generated source files,
+classify CSS/assets/query/virtual identities and keep retained module counts
+separate. The parent trace does not claim to expose the nested native worker
+compiler graph. Every enabled cohort, including base in paired mode, runs full
+Commerce browser acceptance after measured rounds: first/middle/last category
+interaction, stock/discount/shipping, MDX/SVG/styles, original worker import and
+WASM type generation. Three interactions do not claim all-category UI coverage.
 Page/console/request/HTTP errors invalidate the result. Only local mock data is used.
+
+The Farm-only protocol is distinct from retired mixed-tool and subset protocols;
+old reports are rejected rather than relabeled or reused as compatible history.
+Current-only needs eight measured/bootstrap builds plus one graph build and one
+browser run. Paired mode doubles those counts. The existing 18-minute sampling
+and 20-minute job deadlines remain bounded, not a claim that either budget is
+sufficient on every OS. Remote CI must establish completion; deadline exhaustion
+stays invalid without reducing workload or the three scored pairs.
 
 History reads at most ten prior trusted runs and distinguishes missing, expired,
 incompatible and invalid evidence. Artifacts retain 14 days; history is not permanent
 storage. Protocol/harness/fixture/toolchain/image cohorts must match. No cross-OS
-absolute ranking is made. Complete full-tool sampling may exhaust the current job
+absolute ranking is made. Complete Farm sampling may exhaust the current job
 budget; that remains invalid evidence, not a reduced fixture or fewer valid pairs.
 
 ## Reports and trust

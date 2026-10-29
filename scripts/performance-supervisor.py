@@ -1,5 +1,5 @@
 """Single-command, standard-library OS supervision; never a cross-run budget store."""
-# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid pageout swapusage ulonglong STARTUPINFO winerror nonpaged getsid geteuid euid uid
+# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid pageout swapusage ulonglong STARTUPINFO winerror nonpaged getsid geteuid euid uid signalable getpid
 import ctypes
 import json
 import os

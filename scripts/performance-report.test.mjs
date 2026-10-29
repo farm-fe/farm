@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs } from './performance-report.mjs';
+import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs } from './performance-report.mjs';
 
 test('failed and missing samples do not become zero-duration measurements', () => {
   const cells = aggregate([
@@ -61,13 +61,13 @@ test('business-2048 generates real business files, never reports files as module
   assert.equal(counts.fileCountIsNotModuleCount, true);
 });
 
-test('identity and raw resource evidence precede guard; source restoration and Vite scope remain explicit', async () => {
+test('identity and raw resource evidence precede guard; source restoration and Farm scope remain explicit', async () => {
   const source = await fs.readFile(new URL('./performance-report.mjs', import.meta.url), 'utf8');
   assert.ok(source.indexOf('artifactProducerSHA:') < source.indexOf('probeSupervisedResources(os.tmpdir())'));
   assert.ok(source.indexOf('report.resources = resourceSnapshot') < source.indexOf('probeSupervisedResources(os.tmpdir())'));
   assert.match(source, /report\.resources = resourceSnapshot[^;]+; await persist\(\);/);
   assert.match(source, /sourcesUnchanged = before === await trackedFingerprint/);
-  assert.match(source, /BUSINESS_COMPARISON_PROTOCOL/);
+  assert.match(source, /BUSINESS_CORRECTNESS_PROTOCOL/);
   assert.doesNotMatch(source, /prepareComparisonFixture|assertPerformanceResources/);
   assert.match(source, /COMMERCE_SCALE: workloadScale/);
 });
@@ -108,7 +108,7 @@ test('workload fingerprint changes for HTML, adapters and scale inputs, not gene
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-inputs-'));
   const lab = path.join(root, 'examples/commerce-lab');
   try {
-    const inputs = ['index.html', 'adapters/vite.mjs', 'benchmark/scale-profiles.mjs', 'packages/business/index.ts'];
+    const inputs = ['index.html', 'adapters/data.ts', 'benchmark/scale-profiles.mjs', 'packages/business/index.ts'];
     for (const file of inputs) { await fs.mkdir(path.dirname(path.join(lab, file)), { recursive: true }); await fs.writeFile(path.join(lab, file), 'original'); }
     for (const file of auxiliaryWorkloadInputs) { await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true }); await fs.writeFile(path.join(root, file), 'owner-or-config'); }
     const original = await workloadFingerprint(root, {});
@@ -147,10 +147,12 @@ test('performance job is non-blocking, follows Examples and pins artifact names 
   assert.doesNotMatch(sampler.slice(timingStart, timingEnd), /performance-correctness-worker\.mjs|phase: 'correctness'/);
   const correctnessCall = /await supervisedCommand\(process\.execPath, \[path\.join\(root, 'scripts\/performance-correctness-worker\.mjs'\)/.exec(sampler);
   assert.ok(correctnessCall && correctnessCall.index > timingEnd, 'Actual browser invocation follows all measured rounds');
-  assert.ok(correctnessCall.index > sampler.indexOf('report.vite.graph ='), 'Graph checks also remain outside measured rounds');
+  assert.ok(correctnessCall.index > sampler.indexOf('report.graphs.push('), 'Graph checks also remain outside measured rounds');
   const worker = await fs.readFile(new URL('./performance-correctness-worker.mjs', import.meta.url), 'utf8');
-  assert.match(worker, /\['farm', process.argv\[3\]\], \['vite', process.argv\[4\]\]/);
-  assert.match(worker, /await verifyBusinessBrowser\(page, server.url\)/);
+  assert.match(worker, /verifyBuiltFarm\(process.argv\[3\], browser\)/);
+  assert.doesNotMatch(worker, /vite-comparison|--business|verifyBuiltComparison/);
+  assert.match(worker, /verify = verifyBusinessBrowser/);
+  assert.match(worker, /await verify\(page, server.url\)/);
 });
 test('setup failure still produces invalid structured evidence', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-perf-evidence-'));
@@ -163,4 +165,19 @@ test('setup failure still produces invalid structured evidence', async () => {
     assert.deepEqual(report.records, []);
     for (const file of ['summary.json', 'samples.csv', 'run.log']) await fs.access(path.join(directory, 'performance-results', file));
   } finally { await fs.rm(directory, { recursive: true }); }
+});
+
+test('each enabled Farm cohort needs exactly three valid cold/warm samples', () => {
+  const rows = ['cold', 'warm'].flatMap(cacheMode => [0, 1, 2].map(round => ({ cacheMode, round, scored: true, success: true, durationMs: 10 })));
+  assert.equal(completePairs(rows), true);
+  for (const invalid of [[], rows.slice(1), [...rows, rows[0]], rows.map((row, i) => i === 0 ? { ...row, success: false } : row), rows.map(row => ({ ...row, durationMs: null }))]) assert.equal(completePairs(invalid), false);
+});
+
+test('Farm sampler cannot prepare or start Vite even when its executable is unavailable', async () => {
+  const source = await fs.readFile(new URL('./performance-report.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /vite|VITE|cohort.tool|report.vite/);
+  assert.match(source, /const measurementCohorts = cohorts/);
+  assert.match(source, /cohorts.every\(cohort => completePairs\(cohort.records\)\)/);
+  assert.match(source, /business-correctness-\$\{cohort.name\}/);
+  assert.doesNotMatch(auxiliaryWorkloadInputs.join(' '), /vite|tailwind/);
 });

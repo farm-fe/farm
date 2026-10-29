@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { monitorBrowserHealth } from '../tests/browser-health.mjs';
-import { BUSINESS_COMPARISON_PROTOCOL } from './vite-comparison.mjs';
+export const BUSINESS_CORRECTNESS_PROTOCOL = 'commerce-farm-business-2048-browser-v1';
 
-/** Identical assertions for both built outputs, outside measured build processes. */
+/** Full Farm assertions for each enabled cohort, outside measured build processes. */
 export async function verifyBusinessBrowser(page, url) {
   const health = monitorBrowserHealth(page);
   const diagnostics = [];
@@ -72,7 +72,7 @@ export async function verifyBusinessBrowser(page, url) {
       await page.getByRole('heading', { name: heading, exact: true }).waitFor();
     }
     health.assertHealthy(); assert.deepEqual(diagnostics, []);
-    return { protocol: BUSINESS_COMPARISON_PROTOCOL, functional: true, browserHealth: health.evidence,
+    return { protocol: BUSINESS_CORRECTNESS_PROTOCOL, functional: true, browserHealth: health.evidence,
       checks: ['2048-options', 'first-middle-last-category-interaction', 'required-field', 'SCSS-border', 'Tailwind-grid', 'MDX-table', 'SVG', 'YAML-discount-reservation', 'CSV-tier', 'TSV-shipping', 'image-DOM-auto-component', 'worker-CSV-validation', 'WASM-TypeScript-generation', 'virtual-channels-icons', 'production-strip-during-mock-publication', 'lazy-pages'],
       limitation: 'Three representative category interactions; complete compilation is proven separately by generated source coverage. No real orders or payments.' };
   } finally { health.stop(); page.off('console', diagnostic); }

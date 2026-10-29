@@ -20,24 +20,19 @@ test('missing artifacts after skipped sampling produce explicit unavailable repo
   assert.match(summary, /PERFORMANCE_SAMPLING_RESULT:/);
   assert.match(summary, /run: node scripts\/aggregate-performance-reports.mjs/);
 });
-test('Farm and Vite complete Commerce measurements retain separate tool identities', () => {
-  const raw = { metadata: {}, status: 'complete', cells: [cell(100)], comparison: { mode: 'paired', baseCells: [cell(120)] },
-    vite: { protocol: 'commerce-full-business-2048-v1', farmCells: [cell(100)], viteCells: [cell(20)] } };
-  const report = compactReport(raw);
+test('Farm base/head cells remain separate and comparison fields are absent', () => {
+  const report = compactReport({ metadata: {}, status: 'complete', cells: [cell(100)], comparison: { mode: 'paired', baseCells: [cell(120)] } });
   assert.equal(report.cells[0].medianMs, 100);
   assert.equal(report.comparison.baseCells[0].medianMs, 120);
-  assert.equal(report.comparison.farmBusinessCells[0].medianMs, 100);
-  assert.equal(report.comparison.viteCells[0].medianMs, 20);
+  assert.deepEqual(Object.keys(report.comparison).sort(), ['baseCells', 'mode']);
 });
 
-test('historical subset samples cannot be relabeled as full business comparisons', () => {
-  const report = compactReport({ status: 'invalid', vite: { protocol: 'commerce-catalog-quote-subset-v1', farmCells: [cell(10)], viteCells: [cell(20)] } });
-  assert.deepEqual(report.comparison.farmBusinessCells, []); assert.deepEqual(report.comparison.viteCells, []);
-  assert.ok(report.diagnostics.some(reason => reason.includes('subset results were excluded')));
+test('old mixed-tool protocol is rejected instead of relabeled as Farm-only history', () => {
+  assert.throws(() => validateSummary(JSON.stringify({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-supervised-v1', reports: [] })));
 });
 
 test('all three missing platforms remain explicit invalid evidence with reasons', () => {
-  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-supervised-v1',
+  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1',
     reports: platforms.map(([, os, arch]) => unavailableReport(os, arch, 'c'.repeat(40), 'b'.repeat(40), 'Report artifact missing')) };
   validateSummary(JSON.stringify(summary));
   assert.deepEqual(summary.reports.map(row => row.metadata.os), ['linux', 'darwin', 'win32']);
@@ -53,16 +48,16 @@ test('base and history exclusions survive compaction and render as escaped text'
   const text = renderComment({ ...report, runId: 2, headSHA: 'a'.repeat(40) }, 'farm-fe/farm');
   assert.doesNotMatch(text, /<script>/); assert.match(text, /&#60;script&#62;/);
 });
-test('missing baseline, full Vite and history stay absent rather than zero', () => {
+test('missing baseline and history stay absent rather than zero', () => {
   const report = compactReport({ status: 'invalid', cells: [] });
   assert.equal(report.comparison.mode, 'current-only');
-  for (const key of ['baseCells', 'farmBusinessCells', 'viteCells']) assert.deepEqual(report.comparison[key], []);
+  for (const key of ['baseCells']) assert.deepEqual(report.comparison[key], []);
   assert.deepEqual(report.history, []);
 });
 test('Darwin resource failure retains observed producer identity and the actual reason', () => {
   const report = compactReport({ status: 'invalid', failureKind: 'resource-unavailable', metadata: { os: 'darwin', arch: 'arm64', revision: 'c'.repeat(40), baseSHA: 'b'.repeat(40) },
     errors: ['Available memory probe unavailable; observed free pages are not available memory'] });
-  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-supervised-v1', reports: [report] };
+  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1', reports: [report] };
   validateSummary(JSON.stringify(summary));
   assert.equal(report.metadata.revision, 'c'.repeat(40));
   assert.ok(report.diagnostics.includes('Failure kind: resource-unavailable'));

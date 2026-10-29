@@ -2,9 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
 import { pathToFileURL } from 'node:url';
-import { verifyComparisonBrowser, COMPARISON_PROTOCOL } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
-import { verifyBusinessBrowser } from '../examples/commerce-lab/benchmark/business-correctness.mjs';
-import { BUSINESS_COMPARISON_PROTOCOL } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
+import { verifyBusinessBrowser, BUSINESS_CORRECTNESS_PROTOCOL } from '../examples/commerce-lab/benchmark/business-correctness.mjs';
 
 export async function serveBuild(directory) {
   const root = await fs.realpath(directory);
@@ -22,18 +20,16 @@ export async function serveBuild(directory) {
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   return { url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }) };
 }
-export async function verifyBuiltComparison(root, browser) {
-  const results = {};
-  for (const tool of ['farm', 'vite']) {
-    const server = await serveBuild(path.join(root, `dist-${tool}`));
-    let context;
-    try {
-      context = await browser.newContext();
-      const page = await context.newPage(); page.setDefaultTimeout(15000);
-      results[tool] = await verifyComparisonBrowser(page, server.url);
-    } finally { await context?.close(); await server.close(); }
-  }
-  return { protocol: COMPARISON_PROTOCOL, status: 'complete', measured: false, results };
+export async function verifyBuiltFarm(directory, browser, verify = verifyBusinessBrowser) {
+  const server = await serveBuild(directory);
+  let context;
+  try {
+    context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const page = await context.newPage(); page.setDefaultTimeout(15000);
+    const result = await verify(page, server.url);
+    if (result?.functional !== true) throw new Error('Farm browser correctness failed');
+    return { protocol: BUSINESS_CORRECTNESS_PROTOCOL, status: 'complete', measured: false, result };
+  } finally { try { await context?.close(); } finally { await server.close(); } }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { chromium } = await import('playwright-chromium');
@@ -55,15 +51,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     browserPid = server.process().pid;
     await owner('open', browserPid);
     browser = await chromium.connect(server.wsEndpoint());
-    if (process.argv[2] === '--business') {
-      const results = {};
-      for (const [tool, directory] of [['farm', process.argv[3]], ['vite', process.argv[4]]]) {
-        const server = await serveBuild(directory), context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-        try { const page = await context.newPage(); page.setDefaultTimeout(15000); results[tool] = await verifyBusinessBrowser(page, server.url); }
-        finally { await context.close(); await server.close(); }
-      }
-      await fs.writeFile(process.argv[5], JSON.stringify({ protocol: BUSINESS_COMPARISON_PROTOCOL, status: 'complete', measured: false, results }));
-    } else await fs.writeFile(process.argv[3], JSON.stringify(await verifyBuiltComparison(process.argv[2], browser)));
+    if (process.argv[2] !== '--farm') throw new Error('Expected --farm output-directory receipt-file');
+    await fs.writeFile(process.argv[4], JSON.stringify(await verifyBuiltFarm(process.argv[3], browser)));
   }
   finally {
     try { await browser?.close(); }

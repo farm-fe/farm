@@ -26,7 +26,7 @@ export function probeSupervisedResources(cwd, env = process.env) {
 export function finishBootstrap(records, identity) {
   assert.ok(identity?.fixtureSha256 && identity?.harnessSha256 && identity?.revision && identity?.os && identity?.arch, 'Bootstrap must bind the actual fixture, harness, revision and runner');
   assert.ok(records.length >= 2 && records.length % 2 === 0, 'Complete cold/warm bootstrap pairs required');
-  assert.ok(records.every(row => ['head', 'base', 'vite'].includes(row.cohort) && ['cold', 'warm'].includes(row.cacheMode)), 'Known bootstrap cohort and cache mode required');
+  assert.ok(records.every(row => ['head', 'base'].includes(row.cohort) && ['cold', 'warm'].includes(row.cacheMode)), 'Known bootstrap cohort and cache mode required');
   for (const cohort of new Set(records.map(row => row.cohort))) for (const mode of ['cold', 'warm']) {
     const values = records.filter(row => row.cohort === cohort && row.cacheMode === mode);
     assert.equal(values.length, 1); assert.equal(values[0].success, true);
@@ -46,8 +46,8 @@ export function finishBootstrap(records, identity) {
     limitation: 'Group RSS is sampled at 1 Hz and sums shared pages; kernel max RSS is separately reported, never footprint or commit bytes' };
 }
 export function commandBudget({ phase, cacheMode, budget, deadline, now = Date.now() }) {
-  assert.ok(['bootstrap', 'base-preparation', 'sampling', 'graph', 'comparison', 'correctness'].includes(phase), 'Explicit supervised phase required');
-  if (['sampling', 'graph', 'comparison', 'correctness'].includes(phase)) {
+  assert.ok(['bootstrap', 'base-preparation', 'sampling', 'graph', 'correctness'].includes(phase), 'Explicit supervised phase required');
+  if (['sampling', 'graph', 'correctness'].includes(phase)) {
     assert.equal(budget?.status, 'passed', 'Successful full cold/warm bootstrap required before measured work');
     assert.equal(budget.protocol, safetyProtocol, 'Bootstrap safety protocol mismatch');
   }
@@ -56,7 +56,7 @@ export function commandBudget({ phase, cacheMode, budget, deadline, now = Date.n
   const initialCap = cacheMode === 'warm' ? 180000 : 240000;
   const measured = budget?.bootstrap?.filter(row => row.cacheMode === (cacheMode ?? 'cold')).map(row => row.durationMs) ?? [];
   const empiricalCap = measured.length ? Math.ceil(Math.max(...measured) * 1.5 + 10000) : initialCap;
-  return { timeoutMs: Math.min(remaining, phase === 'comparison' ? 120000 : Math.min(initialCap, empiricalCap)),
+  return { timeoutMs: Math.min(remaining, Math.min(initialCap, empiricalCap)),
     policy: { diskFloorBytes: diskEmergencyReserveBytes + (budget ? budget.observedDiskGrowthBytes : 0),
       requiredAvailableBytes: budget ? Math.ceil(Math.max(budget.kernelPeakRssBytes, budget.sampledGroupPeakRssBytes) * 2) : null,
       admission: budget ? 'same-run measured RSS x2 and observed disk growth; pressure watchdog remains authoritative' : 'supervised bootstrap, no invented available-memory floor' } };

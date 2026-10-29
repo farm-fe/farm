@@ -4,7 +4,7 @@ import { validateSummary, verifyIdentity, renderComment, marker, readSummaryZip,
 
 const head = 'a'.repeat(40), base = 'b'.repeat(40);
 const cell = { cacheMode: 'cold', samples: 5, validSamples: 5, medianMs: 100, iqrMs: 10 };
-const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-business-2048-supervised-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell], comparison: { mode: 'paired', baseCells: [cell], viteCells: [cell], farmBusinessCells: [cell], businessProtocol: 'commerce-full-business-2048-v1' }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
+const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell], comparison: { mode: 'paired', baseCells: [cell] }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
 const run = { id: 2, repository: { id: 1 }, event: 'pull_request', name: 'E2E Tests', status: 'completed', head_sha: head, head_repository: { id: 9 }, pull_requests: [{ number: 3, head: { sha: head } }] };
 const pr = { number: 3, state: 'open', head: { sha: head, repo: { id: 9 } }, base: { sha: base, repo: { id: 1 } } };
 function zip(text, name = 'summary.json') {
@@ -89,4 +89,14 @@ test('same run new attempt replaces old partial; old attempts cannot overwrite i
     ? Response.json({ ...run, run_attempt: 3 }) : fetcher(url, options);
   await assert.rejects(report({ token: 'test', repository: 'farm-fe/farm', event: { workflow_run: { id: 2 }, repository: { id: 1 } }, fetcher: newerAttempt }), /attempt/);
   assert.equal(writes.length, 0);
+});
+
+test('Farm-only schema and comment exclude legacy Vite fields and mixed-tool protocols', () => {
+  const value = fixture();
+  assert.doesNotMatch(renderComment(value, 'farm-fe/farm'), /Vite|vite/);
+  value.reports[0].comparison.viteCells = [cell];
+  assert.throws(() => validateSummary(JSON.stringify(value)), /Invalid comparison/);
+  delete value.reports[0].comparison.viteCells;
+  value.protocol = 'commerce-business-2048-supervised-v1';
+  assert.throws(() => validateSummary(JSON.stringify(value)));
 });

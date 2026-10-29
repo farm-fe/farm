@@ -8,7 +8,7 @@ import { assertPressureObservation, finishBootstrap, commandBudget, supervisedCo
 
 const observation = () => ({ availableBytes: null, diskFreeBytes: 30 * 1024 ** 3, pressure: { state: 'normal', source: 'fixture only' } });
 const identity = { fixtureSha256: 'f'.repeat(64), harnessSha256: 'e'.repeat(64), revision: 'a'.repeat(40), os: 'darwin', arch: 'arm64' };
-const rows = () => ['head', 'vite'].flatMap(cohort => ['cold', 'warm'].map(cacheMode => ({ cohort, cacheMode, success: true,
+const rows = () => ['head', 'base'].flatMap(cohort => ['cold', 'warm'].map(cacheMode => ({ cohort, cacheMode, success: true,
   supervision: { status: 'complete', cleanupConfirmed: true, samples: 2, durationMs: cacheMode === 'cold' ? 150000 : 60000,
     kernelPeakRssBytes: 1024, peakObservedGroupRssBytes: 2048, rssSource: 'fixture', before: observation(), after: observation() } })));
 

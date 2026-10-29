@@ -25,19 +25,14 @@ test('missing generated inputs stay missing; retained chunks never substitute an
 
 test('main performance protocol runs the complete original app, guarded pairs and unscored coverage/correctness', () => {
   const read = relative => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
-  const config = read('../examples/commerce-lab/benchmark/vite-business.mjs'), sampler = read('./performance-report.mjs');
-  assert.match(config, /target: 'esnext', sourcemap: true, minify: 'esbuild'/);
-  assert.match(config, /input: path.join\(root, 'index.html'\)/); assert.match(config, /cache: false/);
-  assert.match(config, /generated.length, 28673/); assert.match(config, /level: 6/);
-  assert.match(config, /transformWithEsbuild\(jsx/);
-  assert.match(sampler, /measurementCohorts/); assert.match(sampler, /for \(const cacheMode of \['cold', 'warm'\]\)/);
-  assert.match(sampler, /warmComparable = false/);
-  assert.doesNotMatch(sampler, /prepareComparisonFixture|vite-subset|sample.buildMs/);
+  const sampler = read('./performance-report.mjs');
+  assert.match(sampler, /measurementCohorts/);
+  assert.match(sampler, /for \(const cacheMode of \['cold', 'warm'\]\)/);
+  assert.doesNotMatch(sampler, /vite|VITE|sample.buildMs/);
   assert.match(sampler, /copyFile\(path.join\(sourceRoot, 'tsconfig.base.json'\)/);
-  assert.match(sampler, /performance-tailwind\.mjs/);
-  assert.match(config, /import\(new URL\('\.\.\/\.\.\/vite-adapter-vue-css\/performance-tailwind\.mjs'/);
-  assert.doesNotMatch(config, /require\.resolve\(['"]@tailwindcss\/vite|tailwindRequire|import\.meta\.resolve/);
   assert.match(sampler, /supervision.durationMs/);
+  assert.match(sampler, /report.graphs.length === cohorts.length/);
+  assert.match(sampler, /report.correctness.length === cohorts.length/);
   const yaml = read('../.github/workflows/ci.yaml').split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
   assert.match(yaml, /os: macos-latest\s+abi: darwin-arm64/); assert.doesNotMatch(yaml, /macos-15-intel|darwin-x64/);
   assert.match(yaml, /performance-python/);

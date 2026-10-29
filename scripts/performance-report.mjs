@@ -10,7 +10,7 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import { quantile, toCsv } from '../examples/commerce-lab/benchmark/statistics.mjs';
 import { extensionSources } from '../examples/commerce-lab/benchmark/extension-generator.mjs';
 import { loadComparableHistory } from './performance-cohorts.mjs';
-import { BUSINESS_COMPARISON_PROTOCOL, VITE_COMPARISON_VERSION } from '../examples/commerce-lab/benchmark/vite-comparison.mjs';
+import { BUSINESS_CORRECTNESS_PROTOCOL } from '../examples/commerce-lab/benchmark/business-correctness.mjs';
 import { scaleProfile } from '../examples/commerce-lab/benchmark/scale-profiles.mjs';
 import { resourceSnapshot } from './performance-resources.mjs';
 import { diagnosticTail, redactDiagnostic } from './v2-release-diagnostics.mjs';
@@ -18,8 +18,8 @@ import { probeSupervisedResources, finishBootstrap, supervisedCommand } from './
 import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json', 'examples/vite-adapter-vue-css/package.json', 'examples/vite-adapter-vue-css/performance-tailwind.mjs'];
-export const protocol = 'commerce-business-2048-supervised-v1';
+export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json'];
+export const protocol = 'commerce-business-2048-farm-supervised-v1';
 export const workloadScale = 'business-2048';
 export function businessFixture() { const profile = scaleProfile(workloadScale); return extensionSources(profile.categories, profile); }
 export async function workloadFileCounts(sourceRoot, fixture) {
@@ -39,7 +39,7 @@ export async function workloadFileCounts(sourceRoot, fixture) {
 }
 export async function harnessFingerprint(sourceRoot) {
   const hash = crypto.createHash('sha256');
-  for (const file of ['performance-report.mjs', 'performance-graph-worker.mjs', 'performance-correctness-worker.mjs', 'performance-vite-business-worker.mjs', 'performance-resources.mjs', 'performance-cohorts.mjs', 'performance-supervised.mjs', 'performance-supervisor.py', 'v2-release-diagnostics.mjs', 'v2-pnpm-cli.mjs']) hash.update(file).update((await fs.readFile(path.join(sourceRoot, 'scripts', file), 'utf8')).replaceAll('\r\n', '\n')).update('\0');
+  for (const file of ['performance-report.mjs', 'performance-graph-worker.mjs', 'performance-correctness-worker.mjs', 'performance-resources.mjs', 'performance-cohorts.mjs', 'performance-supervised.mjs', 'performance-supervisor.py', 'v2-release-diagnostics.mjs', 'v2-pnpm-cli.mjs']) hash.update(file).update((await fs.readFile(path.join(sourceRoot, 'scripts', file), 'utf8')).replaceAll('\r\n', '\n')).update('\0');
   return hash.digest('hex');
 }
 export function aggregate(records) {
@@ -48,6 +48,12 @@ export function aggregate(records) {
     const values = samples.filter(row => row.success).map(row => row.durationMs);
     return { cacheMode, samples: samples.length, validSamples: values.length,
       medianMs: quantile(values, .5), iqrMs: values.length ? quantile(values, .75) - quantile(values, .25) : null };
+  });
+}
+export function completePairs(rows) {
+  return Array.isArray(rows) && ['cold', 'warm'].every(mode => {
+    const samples = rows.filter(row => row.scored && row.cacheMode === mode);
+    return samples.length === 3 && samples.every(row => row.success && Number.isFinite(row.durationMs) && row.durationMs > 0);
   });
 }
 export function compatible(a, b) {
@@ -62,11 +68,10 @@ async function prepareLab(sourceRoot, temporary, fixture) {
   // Copied adapters resolve dependencies from these explicit workspace owners.
   // Preserve their manifests and installed dependencies without copying Docs or
   // another application into the timed workload.
-  for (const owner of ['website', 'examples/vite-adapter-vue-css']) {
+  for (const owner of ['website']) {
     const destination = path.join(temporary, owner);
     await fs.mkdir(destination, { recursive: true });
     await fs.copyFile(path.join(sourceRoot, owner, 'package.json'), path.join(destination, 'package.json'));
-    if (owner === 'examples/vite-adapter-vue-css') await fs.copyFile(path.join(sourceRoot, owner, 'performance-tailwind.mjs'), path.join(destination, 'performance-tailwind.mjs'));
     await fs.symlink(path.join(sourceRoot, owner, 'node_modules'), path.join(destination, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
   }
   await fs.symlink(path.join(sourceRoot, 'examples/commerce-lab/node_modules'), path.join(lab, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
@@ -238,9 +243,7 @@ async function main() {
       report.comparison = { mode: 'paired', reason: 'Same runner, fixture, lockfile and toolchain; isolated exact-base native cohort', metadata: baseMetadata, records: [], native: base.nativeProvenance };
       cohorts.push({ root: baseRoot, lab: await prepareLab(baseRoot, baseTemp, fixture), records: report.comparison.records, name: 'base' });
     } catch (error) { report.comparison.reason = `Current only: ${error.message}`; }
-    report.vite = { protocol: BUSINESS_COMPARISON_PROTOCOL, version: VITE_COMPARISON_VERSION, fingerprint: report.metadata.fixtureSha256, records: [], publishable: false,
-      semantics: 'Original HTML/admin entry and every generated business source; separate new processes, complete build wall clock including gzip. Farm persistent reuse and Vite cache-disabled repeat builds are not equivalent warm caches.' };
-    const measurementCohorts = [...cohorts, { root, lab, records: report.vite.records, name: 'vite', tool: 'vite' }];
+    const measurementCohorts = cohorts;
     await persist();
     for (let round = -1; round < 3; round++) {
       const id = `perf-${round < 0 ? 'warmup' : round}`;
@@ -248,19 +251,18 @@ async function main() {
       for (const cacheMode of ['cold', 'warm']) {
        for (const cohort of round % 2 === 0 ? measurementCohorts : [...measurementCohorts].reverse()) {
         if (Date.now() >= deadline) throw new Error('Performance protocol deadline reached');
-        const record = { round, scored: round >= 0, cacheMode, cohort: cohort.name, tool: cohort.tool ?? 'farm',
-          cacheSemantics: cohort.tool === 'vite' && cacheMode === 'warm' ? 'repeat build; no persistent Rollup build cache' : cacheMode === 'warm' ? 'reuse successful cold directory; hit not independently proven' : 'unique cold output/cache identity', success: false, durationMs: null };
+        const record = { round, scored: round >= 0, cacheMode, cohort: cohort.name, tool: 'farm',
+          cacheSemantics: cacheMode === 'warm' ? 'reuse successful cold directory; hit not independently proven' : 'unique cold output/cache identity', success: false, durationMs: null };
         cohort.records.push(record);
         if (cacheMode === 'warm' && !coldSuccess.has(cohort.name)) { record.error = 'Preceding cold build failed'; await persist(); continue; }
         try {
-          const args = cohort.tool === 'vite' ? [path.join(root, 'scripts/performance-vite-business-worker.mjs'), cohort.lab, id, path.join(temp, `vite-${round}-${cacheMode}.json`)]
-            : [path.join(cohort.root, 'packages/cli/bin/farm.mjs'), 'build', '--config', 'farm.rust.config.ts'];
+          const args = [path.join(cohort.root, 'packages/cli/bin/farm.mjs'), 'build', '--config', 'farm.rust.config.ts'];
           record.supervision = await supervisedCommand(process.execPath, args, { phase: round < 0 ? 'bootstrap' : 'sampling', cacheMode, budget: report.budget, deadline, trace: path.join(output, 'resource-watch.jsonl'), cwd: cohort.lab, log,
             env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: id, COMMERCE_OUTPUT_ID: id } });
           record.durationMs = record.supervision.durationMs;
-          record.artifacts = await sizes(path.join(cohort.lab, 'dist/benchmark', id, cohort.tool === 'vite' ? 'vite' : 'rust'));
+          record.artifacts = await sizes(path.join(cohort.lab, 'dist/benchmark', id, 'rust'));
           if (record.artifacts.js.bytes === 0) throw new Error('Build produced no JavaScript');
-          if (cohort.tool !== 'vite') await fs.access(path.join(cohort.lab, '.cache/rust', id));
+          await fs.access(path.join(cohort.lab, '.cache/rust', id));
           record.success = true; if (cacheMode === 'cold') coldSuccess.add(cohort.name);
         } catch (error) { record.error = error.message; record.supervision = error.supervision ?? record.supervision; await persist(); throw error; }
         await persist();
@@ -282,32 +284,19 @@ async function main() {
       report.graphs.push({ cohort: cohort.name, supervision, status: graph.status, summary: graph.summary,
         coverage: { generatedFiles: graph.coverage.generatedFiles, generatedCovered: graph.coverage.generatedCovered, missing: graph.coverage.missing }, detail: path.basename(graphFile) });
     }
-    report.vite.farmCells = aggregate(report.records).filter(row => row.cacheMode === 'cold');
-    report.vite.viteCells = aggregate(report.vite.records).filter(row => row.cacheMode === 'cold');
-    report.vite.repeatCells = aggregate(report.vite.records).filter(row => row.cacheMode === 'warm').map(row => ({ ...row, cacheMode: 'repeat' }));
-    report.vite.status = 'partial';
-    const viteGraphFile = path.join(output, 'vite-graph.json');
-    report.vite.graphSupervision = await supervisedCommand(process.execPath,
-      [path.join(root, 'scripts/performance-vite-business-worker.mjs'), lab, 'graph-final', path.join(temp, 'vite-graph-receipt.json'), viteGraphFile],
-      { phase: 'graph', budget: report.budget, deadline, trace: path.join(output, 'resource-watch.jsonl'), cwd: lab, env: { ...process.env, COMMERCE_SCALE: workloadScale }, log });
-    const viteGraph = JSON.parse(await fs.readFile(viteGraphFile, 'utf8'));
-    if (viteGraph.protocol !== BUSINESS_COMPARISON_PROTOCOL || viteGraph.status !== 'complete' || viteGraph.generatedFiles !== Object.keys(fixture).length || viteGraph.generatedCovered !== Object.keys(fixture).length) throw new Error('Incomplete actual Vite workload coverage');
-    report.vite.graph = { status: viteGraph.status, generatedFiles: viteGraph.generatedFiles, generatedCovered: viteGraph.generatedCovered,
-      loadedModules: viteGraph.loaded.length, transformedModules: viteGraph.transformed.length, emittedChunkModules: viteGraph.emittedChunkModules.length,
-      workerModules: viteGraph.workerModules.length, detail: 'vite-graph.json' };
-    const correctnessFile = path.join(output, 'business-correctness.json');
-    await supervisedCommand(process.execPath, [path.join(root, 'scripts/performance-correctness-worker.mjs'), '--business',
-      path.join(lab, 'dist/benchmark/graph-final/rust'), path.join(lab, 'dist/benchmark/graph-final/vite'), correctnessFile],
-      { phase: 'correctness', budget: report.budget, deadline, trace: path.join(output, 'resource-watch.jsonl'), cwd: lab, env: process.env, log });
-    report.vite.correctness = JSON.parse(await fs.readFile(correctnessFile, 'utf8'));
-    if (report.vite.correctness.protocol !== BUSINESS_COMPARISON_PROTOCOL || report.vite.correctness.status !== 'complete' || !['farm', 'vite'].every(tool => report.vite.correctness.results?.[tool]?.functional === true)) throw new Error('Full Commerce browser correctness failed');
-    const completePairs = rows => ['cold', 'warm'].every(mode => rows.filter(row => row.scored && row.cacheMode === mode && row.success).length === 3);
-    if (!completePairs(report.records) || !completePairs(report.vite.records)) throw new Error('Three complete pairs per tool required; no timing ratio available');
-    report.vite.status = 'complete';
-    report.vite.coldComparable = true;
-    report.vite.warmComparable = false; // Repeat build is not Farm's persistent-cache semantics.
+    report.correctness = [];
+    for (const cohort of cohorts) {
+      const correctnessFile = path.join(output, `business-correctness-${cohort.name}.json`);
+      await supervisedCommand(process.execPath, [path.join(root, 'scripts/performance-correctness-worker.mjs'), '--farm',
+        path.join(cohort.lab, 'dist/benchmark/graph-final/rust'), correctnessFile],
+        { phase: 'correctness', budget: report.budget, deadline, trace: path.join(output, 'resource-watch.jsonl'), cwd: cohort.lab, env: process.env, log });
+      const evidence = JSON.parse(await fs.readFile(correctnessFile, 'utf8'));
+      if (evidence.protocol !== BUSINESS_CORRECTNESS_PROTOCOL || evidence.status !== 'complete' || evidence.result?.functional !== true) throw new Error(`Full Farm Commerce browser correctness failed: ${cohort.name}`);
+      report.correctness.push({ cohort: cohort.name, ...evidence });
+    }
+    if (!cohorts.every(cohort => completePairs(cohort.records))) throw new Error('Three complete cold/warm pairs per enabled Farm cohort required');
     report.history = await loadComparableHistory({ repository: process.env.GITHUB_REPOSITORY, abi: process.env.FARM_PERFORMANCE_ABI, metadata: report.metadata });
-    report.status = report.records.every(row => row.success) && (report.comparison.records ?? []).every(row => row.success) && report.vite.status === 'complete' ? 'complete' : 'invalid';
+    report.status = cohorts.every(cohort => completePairs(cohort.records) && cohort.records.every(row => row.success)) && report.graphs.length === cohorts.length && report.correctness.length === cohorts.length ? 'complete' : 'invalid';
     const nativeAfter = await captureNativeProvenance({ groups: ['rust'] });
     report.nativeUnchanged = Object.entries(report.native.artifacts).every(([name, artifact]) => nativeAfter.artifacts[name]?.sha256 === artifact.sha256);
     if (!report.nativeUnchanged) throw new Error('Native cohort changed during sampling');
@@ -320,7 +309,7 @@ async function main() {
     report.limitations = ['Three scored pairs are insufficient for formal performance certification.', 'No HMR sampling. OS kernel peak RSS and sampled summed process-group RSS are distinct; live group CPU is diagnostic only, not a formal CPU benchmark.', 'No cross-OS absolute ranking.', report.comparison.reason];
     await persist();
     await fs.writeFile(path.join(output, 'summary.json'), JSON.stringify({ ...report, records: undefined, native: undefined }, null, 2));
-    await fs.writeFile(path.join(output, 'samples.csv'), toCsv([...report.records, ...(report.comparison.records ?? []), ...(report.vite?.records ?? []).map(row => ({ ...row, cohort: 'vite-business-2048', cacheMode: row.cacheMode === 'warm' ? 'repeat' : row.cacheMode }))], ['round', 'scored', 'cohort', 'tool', 'cacheMode', 'cacheSemantics', 'success', 'durationMs', 'error', 'artifacts']));
+    await fs.writeFile(path.join(output, 'samples.csv'), toCsv([...report.records, ...(report.comparison.records ?? [])], ['round', 'scored', 'cohort', 'tool', 'cacheMode', 'cacheSemantics', 'success', 'durationMs', 'error', 'artifacts']));
     const markdown = `### Commerce performance (${process.platform}/${process.arch})\n\nStatus: **${report.status}**; publishable: **false**; comparison: **${report.comparison.mode}**.\n\n| Cache | Valid samples | Median ms | IQR ms |\n|---|---:|---:|---:|\n${report.cells.map(cell => `| ${cell.cacheMode} | ${cell.validSamples} | ${cell.medianMs ?? 'unavailable'} | ${cell.iqrMs ?? 'unavailable'} |`).join('\n')}\n\n${report.errors.join('\n')}\n\n${report.limitations.join('\n\n')}\n`;
     await fs.writeFile(path.join(output, 'summary.md'), markdown);
     if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);

@@ -1,16 +1,12 @@
 <!-- cspell:words microbenchmark -->
-# Current complete Commerce comparison
+# Retired Vite comparison record
 
-The main CI sampler now uses `commerce-full-business-2048-v1` and the complete
-original Commerce HTML/admin app with every business-2048 generated input. See
-[the current performance protocol](./performance-report.md) for supervision,
-full source graph coverage, shared browser acceptance, timing and cache boundaries.
-Vite remains pinned to 5.2.8. Farm persistent reuse and Vite repeat builds are not
-claimed to have equivalent warm-cache semantics. Current implementation still
-requires its own remote validation; historical results below prove only the subset.
-
-The following record is preserved as an independent historical microbenchmark.
-It is not the main comparison, and its samples cannot be mixed into the new protocol.
+CI now measures Farm only. See [the Farm performance protocol](./performance-report.md).
+Comparator-specific workers, adapters, fixtures and tests have been removed; the
+following historical record describes the former implementation and is not a
+runnable CI recipe or evidence for the current Farm-only cohort. Existing Vite
+Examples remain independent and unchanged. Historical measurements must not be
+relabeled as current results.
 
 ---
 
@@ -60,7 +56,7 @@ before listen and includes HTTP readiness, not process spawn or module import.
 Gzip sizes are computed for every emitted file, without HTTP headers; they are
 comparable size evidence rather than precompressed artifact delivery.
 
-Lightweight tests: `node --test examples/commerce-lab/tests/vite-comparison.test.mjs`.
+The retired lightweight tests were `examples/commerce-lab/tests/vite-comparison.test.mjs`.
 These test deterministic sources, actual installed version, business outcomes,
 matched config and size accounting. They are not browser/build acceptance.
 
