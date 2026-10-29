@@ -1,5 +1,5 @@
 import { resolveNpmCli } from './v2-npm-cli.mjs';
-// cspell:words statfs bavail
+// cspell:words statfs bavail userconfig USERCONFIG
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
