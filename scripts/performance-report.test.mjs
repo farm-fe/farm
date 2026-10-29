@@ -222,3 +222,12 @@ test('graph/browser failure keeps build times diagnostic and exposes no valid pe
   assert.equal(valid.cells[0].medianMs, 100); assert.equal(valid.cells[0].validSamples, 3);
   assert.deepEqual(valid.comparison.baseCells, []);
 });
+
+test('failed full acceptance preserves historical measurements only as diagnostic data', () => {
+  const history = { status: 'available', entries: [{ runId: 7, cells: [{ medianMs: 100 }] }] };
+  const report = { status: 'invalid', records: [], comparison: { mode: 'current-only' }, history };
+  finalizePerformanceMetrics(report);
+  assert.equal(report.diagnosticHistory, history);
+  assert.deepEqual(report.history.entries, []);
+  assert.equal(report.history.status, 'unavailable');
+});

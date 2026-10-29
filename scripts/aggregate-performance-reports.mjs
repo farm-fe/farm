@@ -1,4 +1,4 @@
-import { qualifiedPerformanceCells } from './performance-metrics.mjs';
+import { qualifiedPerformanceCells, completePerformanceCells } from './performance-metrics.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,8 +9,8 @@ export function compactReport(report) {
   const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key] ?? null]));
   return { metadata, status: report.status, cells: qualifiedPerformanceCells(report.status, report.cells ?? []),
     comparison: { mode: report.comparison?.mode ?? 'current-only', baseCells: report.comparison?.mode === 'paired' ? qualifiedPerformanceCells(report.status, report.comparison.baseCells ?? []) : [] },
-    history: (report.history?.entries ?? []).slice(0, 10).map(row => ({ headSHA: row.sourceHeadSHA, runId: row.runId,
-      medianMs: row.cells.find(cell => cell.cacheMode === 'cold')?.medianMs })).filter(row => Number.isFinite(row.medianMs)),
+    history: (report.status === 'complete' ? report.history?.entries ?? [] : []).filter(row => row.status === 'complete' && completePerformanceCells(row.cells)).slice(0, 10).map(row => ({ headSHA: row.sourceHeadSHA, runId: row.runId,
+      medianMs: row.cells.find(cell => cell.cacheMode === 'cold')?.medianMs })).filter(row => Number.isFinite(row.medianMs) && row.medianMs > 0),
     diagnostics: [report.failureKind ? `Failure kind: ${report.failureKind}` : null, report.comparison?.reason, report.history?.reason, report.history?.error,
       ...(report.history?.excluded ?? []).map(row => typeof row === 'string' ? row : `History run ${row.runId}: ${row.reason}${row.detail ? ` (${row.detail})` : ''}`), ...(report.errors ?? [])]
       .filter(value => typeof value === 'string' && value.length).slice(0, 30).map(value => value.replace(/[\x00-\x1f]/g, ' ').slice(0, 500)) };

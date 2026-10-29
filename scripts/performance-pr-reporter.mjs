@@ -54,7 +54,8 @@ function validateReport(value) {
   }
   if (value.status !== 'complete') assert([...value.cells, ...value.comparison.baseCells].every(cell => cell.validSamples === 0 && cell.medianMs === null && cell.iqrMs === null), 'Unqualified report must not expose valid timing metrics');
   assert(Array.isArray(value.history) && value.history.length <= 20, 'Invalid history');
-  for (const row of value.history) assert(exact(row, ['headSHA', 'runId', 'medianMs']) && sha(row.headSHA) && integer(row.runId) && Number.isFinite(row.medianMs) && row.medianMs >= 0 && row.medianMs <= 86400000, 'Invalid history row');
+  if (value.status !== 'complete') assert(value.history.length === 0, 'Unqualified report must not expose comparable history');
+  for (const row of value.history) assert(exact(row, ['headSHA', 'runId', 'medianMs']) && sha(row.headSHA) && integer(row.runId) && Number.isFinite(row.medianMs) && row.medianMs > 0 && row.medianMs <= 86400000, 'Invalid history row');
 }
 
 // Parse one bounded ZIP entry without extracting paths or executing artifact content.
@@ -85,11 +86,15 @@ export function verifyIdentity(summary, run, pr, repositoryId) {
 }
 export function renderComment(summary, repository) {
   if (summary.reports) return `${marker}\n<!-- farm-performance-run:${summary.runId}:${summary.runAttempt} -->\n## Performance report\n\n[Run ${summary.runId}, attempt ${summary.runAttempt}](https://github.com/${repository}/actions/runs/${summary.runId}) · Head: \`${summary.headSHA}\`\n\nPlatforms are reported separately.\n\n${summary.reports.map(report => `### ${report.metadata.os} / ${report.metadata.arch}\n\n${renderComment({ ...summary, ...report, reports: null }, repository).split('## Performance report\n')[1]}`).join('\n\n')}`;
+  const accepted = summary.status === 'complete' && completePerformanceCells(summary.cells)
+    && (summary.comparison.mode !== 'paired' || completePerformanceCells(summary.comparison.baseCells));
   const timing = cell => cell && cell.medianMs !== null ? `${cell.medianMs.toFixed(1)} ms (IQR ${cell.iqrMs.toFixed(1)}; ${cell.validSamples}/${cell.samples})` : 'Unavailable';
+  const history = accepted
+    ? (summary.history ?? []).filter(row => sha(row.headSHA) && integer(row.runId) && Number.isFinite(row.medianMs) && row.medianMs > 0 && row.medianMs <= 86400000) : [];
   const diagnostics = (summary.diagnostics ?? []).map(reason => `- ${reason.replace(/[&<>`*_\[\]\\@]/g, character => `&#${character.charCodeAt(0)};`)}`).join('\n');
-  const rows = ['cold', 'warm'].map(mode => `| ${mode} | ${timing(qualifiedPerformanceCells(summary.status, summary.cells).find(c => c.cacheMode === mode))} | ${timing(qualifiedPerformanceCells(summary.status, summary.comparison.baseCells).find(c => c.cacheMode === mode))} |`);
+  const rows = ['cold', 'warm'].map(mode => `| ${mode} | ${timing(qualifiedPerformanceCells(accepted ? 'complete' : 'invalid', summary.cells).find(c => c.cacheMode === mode))} | ${timing(qualifiedPerformanceCells(accepted ? 'complete' : 'invalid', summary.comparison.baseCells).find(c => c.cacheMode === mode))} |`);
 
-  return `${marker}\n## Performance report\n\nStatus: **${summary.status}**; comparison: **${summary.comparison.mode}**\n\n| Cache | Farm head | Farm base |\n|---|---|---|\n${rows.join('\n')}\n\n${diagnostics}\n\n[Run ${summary.runId}](https://github.com/${repository}/actions/runs/${summary.runId}); head: \`${summary.headSHA}\`\n\nMeasurements are untrusted CI data, informational only; three samples are not formal certification.\n\n### Recent comparable cold builds\n${summary.history.length ? summary.history.map(row => `- \`${row.headSHA.slice(0, 12)}\`: ${row.medianMs.toFixed(1)} ms ([run](https://github.com/${repository}/actions/runs/${row.runId}))`).join('\n') : 'No compatible history available.'}`;
+  return `${marker}\n## Performance report\n\nStatus: **${summary.status}**; comparison: **${summary.comparison.mode}**\n\n| Cache | Farm head | Farm base |\n|---|---|---|\n${rows.join('\n')}\n\n${diagnostics}\n\n[Run ${summary.runId}](https://github.com/${repository}/actions/runs/${summary.runId}); head: \`${summary.headSHA}\`\n\nMeasurements are untrusted CI data, informational only; three samples are not formal certification.\n\n### Recent comparable cold builds\n${history.length ? history.map(row => `- \`${row.headSHA.slice(0, 12)}\`: ${row.medianMs.toFixed(1)} ms ([run](https://github.com/${repository}/actions/runs/${row.runId}))`).join('\n') : 'No compatible history available.'}`;
 }
 
 export async function report({ token, repository, event, api = 'https://api.github.com', fetcher = fetch }) {

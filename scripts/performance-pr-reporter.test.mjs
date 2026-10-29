@@ -126,7 +126,7 @@ test('complete receipts reject empty, incomplete, failed and zero-duration head/
 test('invalid and partial receipts retain missing/failed samples and their diagnostics', () => {
   for (const status of ['invalid', 'partial']) {
     const value = fixture(), row = value.reports[0];
-    row.status = status; row.cells = []; row.comparison.baseCells = [];
+    row.status = status; row.cells = []; row.comparison.baseCells = []; row.history = [];
     row.diagnostics = ['Sampling failed before complete cold/warm pairs'];
     validateSummary(JSON.stringify(value));
     assert.match(renderComment(value, 'farm-fe/farm'), /Sampling failed/);
@@ -143,4 +143,24 @@ test('invalid build-only timing receipts are rejected and direct rendering canno
   assert.throws(() => validateSummary(JSON.stringify(value)), /Unqualified report/);
   const rendered = renderComment(value, 'farm-fe/farm');
   assert.doesNotMatch(rendered, /100.0 ms/); assert.match(rendered, /Unavailable/);
+});
+
+test('direct history rendering rejects partial acceptance and invalid numerical history', () => {
+  for (const status of ['invalid', 'partial']) {
+    const value = fixture(), row = value.reports[0]; row.status = status;
+    assert.doesNotMatch(renderComment(value, 'farm-fe/farm'), /100.0 ms/);
+    row.cells = []; row.comparison = { mode: 'current-only', baseCells: [] };
+    assert.throws(() => validateSummary(JSON.stringify(value)), /comparable history/);
+  }
+  for (const medianMs of [0, -1, NaN, Infinity]) {
+    const value = fixture(); value.reports[0].history = [{ headSHA: head, runId: 2, medianMs }];
+    assert.throws(() => validateSummary(JSON.stringify(value)), /Invalid history row/);
+    assert.match(renderComment(value, 'farm-fe/farm'), /No compatible history available/);
+  }
+});
+
+test('direct rendering cannot qualify complete labels with incomplete samples', () => {
+  const value = fixture(); value.reports[0].cells = [cell];
+  assert.doesNotMatch(renderComment(value, 'farm-fe/farm'), /100.0 ms/);
+  assert.match(renderComment(value, 'farm-fe/farm'), /Unavailable/);
 });

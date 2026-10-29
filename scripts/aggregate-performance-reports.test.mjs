@@ -73,3 +73,12 @@ test('invalid producer receipts cannot expose build-only timings as valid head/b
   assert.doesNotMatch(rendered, /123.0 ms|456.0 ms/);
   assert.match(rendered, /Unavailable/);
 });
+
+test('history compaction excludes invalid acceptance and incomplete historical samples', () => {
+  const cells = [cell(100), { ...cell(50), cacheMode: 'warm' }];
+  const entries = ['invalid', 'partial', 'complete'].map(status => ({ status, sourceHeadSHA: 'a'.repeat(40), runId: 2, cells }));
+  entries.push({ ...entries[2], cells: [cell(200)] });
+  for (const status of ['invalid', 'partial']) assert.deepEqual(compactReport({ status, cells, history: { entries } }).history, []);
+  const result = compactReport({ status: 'complete', cells, history: { entries } });
+  assert.equal(result.history.length, 1); assert.equal(result.history[0].medianMs, 100);
+});

@@ -149,8 +149,8 @@ export async function loadComparableHistory({ repository, abi, metadata, workflo
         if (report.status !== 'complete') { result.excluded.push({ runId: run.id, reason: 'invalid', detail: 'Full workload acceptance did not pass' }); continue; }
         if (report.metadata?.revision !== producerSHA || historyCompatibilityKeys.some(key => metadata[key] === undefined || report.metadata[key] !== metadata[key])) { result.excluded.push({ runId: run.id, reason: 'incompatible' }); continue; }
         if (!completePerformanceCells(report.cells)) throw new Error('Invalid complete sample summary');
-        const cells = report.cells.map(({ cacheMode, medianMs, iqrMs, validSamples }) => ({ cacheMode, medianMs, iqrMs, validSamples }));
-        result.entries.push({ revision: producerSHA, sourceHeadSHA: run.head_sha, event: run.event, runId: run.id, artifactId: artifact.id, createdAt: run.created_at, os: metadata.os, arch: metadata.arch, cells });
+        const cells = report.cells.map(({ cacheMode, samples, medianMs, iqrMs, validSamples }) => ({ cacheMode, samples, medianMs, iqrMs, validSamples }));
+        result.entries.push({ status: report.status, revision: producerSHA, sourceHeadSHA: run.head_sha, event: run.event, runId: run.id, artifactId: artifact.id, createdAt: run.created_at, os: metadata.os, arch: metadata.arch, cells });
       } catch (error) { result.excluded.push({ runId: run.id, reason: 'invalid', detail: error.message }); }
     }
     result.status = result.entries.length ? 'available' : result.excluded.some(row => row.reason === 'incompatible') ? 'incompatible' : 'missing';

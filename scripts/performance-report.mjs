@@ -57,6 +57,10 @@ export function finalizePerformanceMetrics(report) {
   if (report.status !== 'complete') report.diagnosticBuildMeasurements = {
     eligibleForComparison: false, reason: 'Build-only timings failed full acceptance; diagnostic evidence only', head, base,
   };
+  if (report.status !== 'complete' && report.history) {
+    report.diagnosticHistory = report.history;
+    report.history = { ...report.history, entries: [], status: 'unavailable', reason: 'Current workload acceptance did not pass' };
+  }
   report.cells = qualifiedPerformanceCells(report.status, head);
   report.comparison.baseCells = qualifiedPerformanceCells(report.status, base);
   for (const row of [...(report.records ?? []), ...(report.comparison.records ?? [])]) row.eligibleForComparison = report.status === 'complete' && row.scored === true && row.success === true;
