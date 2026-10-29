@@ -45,7 +45,11 @@ A workflow-run trigger must match that producer.
 The official action's valid no-proposal output (`pr={}`, `prs_created=false`)
 is an explicit no-op, allowing pending JS Changesets to continue. Updated existing
 proposals returned by the action are recorded too. Inconsistent flags, malformed
-objects or untrusted branches fail rather than being silently skipped.
+objects or untrusted branches fail rather than being silently skipped. A proposal
+whose exact bot/repository/branch/head and SDK version delta already match the
+receipt reviewed into main is treated as consumed, even if its old Cargo PR is
+still open. A moved head or unmatched version is not ignored; a new JS-only
+Changeset can proceed without replaying the consumed Cargo proposal.
 
 The selected SDK's manifests, Cargo lock and changelogs are accepted only within
 the pinned proposal. The actual Cargo path reverse-dependency closure also permits
@@ -79,7 +83,13 @@ delta. These new paths await CI execution; the first stable path remains separat
 
 1. Evidence: exact reviewed PR head, successful latest required workflows and
    individual functional jobs, including both integrated Docs lanes, all three
-   Examples/TypeScript lanes, release source contracts and full candidate seal.
+   Examples/TypeScript lanes, release source contracts, full candidate seal and
+   all three candidate registry-consumer lanes. Three valid Farm-only performance
+   reports and their aggregate are required for publication. Slow timings have no
+   uncalibrated regression threshold: completeness, correct source and successful
+   cleanup are the gates. PR performance jobs may remain informational, but their
+   actual per-job conclusions and bounded strict-schema summary artifact from the
+   same CI run/attempt must pass; overall workflow success alone is insufficient.
 2. Compare PR head, actual artifact producer and final merge trees. A changed
    merge tree requires new validation; no old-head green result is substituted.
 3. Download only the exact run's complete seal; verify all archive identities,
@@ -89,14 +99,24 @@ delta. These new paths await CI execution; the first stable path remains separat
    macros additionally require pinned compatibility evidence and registry bytes.
 5. Verify live Core/ABI and every Rust SDK checksum, then publish only the exact
    sealed npm allowlist in dependency order, never workspace-wide changeset publish.
+   Publish archives under release-version tags before reconciling latest. Read
+   latest immediately before changing it and read it back afterwards; an already
+   higher version is preserved. Immutable reuse still requires byte-identical
+   archives, not only a matching version number. npm and Rust keep explicit
+   pending/success/failure states for every selected package in generated
+   `.release-publication-status/` diagnostics. The shared publication lock prevents
+   concurrent Farm release runs; npm offers no compare-and-swap for external tag
+   writers, so external manual publication must stay coordinated with this chain.
 6. A separate read-only job verifies registry archive bytes and independently
    consumes public npm/Rust packages without workspace patches or production tokens.
 7. Only its exact-run proof permits the immutable tag/GitHub Release. Existing
    identical tag/Release may be reused; different provenance is never overwritten.
 
-Performance is explicitly informational, not a publication certification. Its
-continue-on-error outcome is not used as proof of functional acceptance. Required
-functional jobs are checked separately even when the overall workflow is green.
+Timing comparisons are informational, not a performance certification. Complete,
+valid Farm-only evidence is nevertheless required for publication. A job configured
+with continue-on-error cannot substitute for its actual conclusion and strict
+report receipt. Functional acceptance and the candidate consumers are separate
+required evidence even when the overall workflow is green.
 No chain relies on GITHUB_TOKEN recursively triggering another workflow.
 
 ## Reviewed intent

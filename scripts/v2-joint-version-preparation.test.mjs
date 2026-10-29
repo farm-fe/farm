@@ -7,7 +7,7 @@ import test from 'node:test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
-import { assertVersionOnlyManifest, assertNewRustVersion, cargoChangeset, synchronizeNativePayloads, validateCargoPreparation, cargoProposalScope, updateConsumerDependencyVersions, affectedCargoConsumers, validateCargoProduction, validateCargoArtifact, releasePlzProposal, recordCargoProduction, versionPreparationState } from './prepare-cargo-version-proposal.mjs';
+import { assertVersionOnlyManifest, assertNewRustVersion, cargoChangeset, synchronizeNativePayloads, validateCargoPreparation, cargoProposalScope, updateConsumerDependencyVersions, affectedCargoConsumers, validateCargoProduction, validateCargoArtifact, releasePlzProposal, recordCargoProduction, versionPreparationState, consumedCargoProposal } from './prepare-cargo-version-proposal.mjs';
 import { changesetsPublication } from './v2-release-inventory.mjs';
 
 test('official no-Cargo output leaves a JS Changeset pending without recording a false proposal', () => {
@@ -181,4 +181,25 @@ test('ABI changes cannot reuse an old plugin binary; independent Node-API genera
   next.npm.primary[1].version = '2.0.1'; next.npm.payloads[1].version = '2.0.1'; official.push({ name: '@farmfe/plugin-example', newVersion: '2.0.1' });
   const delta = changesetsPublication(next, old, official);
   assert.equal(delta.counts.total, 4); assert.ok(!delta.npm.primary.some(row => row.name === 'create-farm'));
+});
+
+test('a reviewed consumed Cargo proposal does not block the next JS-only version lifecycle', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-consumed-cargo-'));
+  try {
+    fs.mkdirSync(path.join(directory, '.changeset'));
+    fs.writeFileSync(path.join(directory, '.changeset/js-next.md'), '---\n"@farmfe/js-plugin-example": patch\n---\n\nNext JS patch.\n');
+    const repository = 'farm-fe/farm', headSHA = 'a'.repeat(40);
+    const record = { schemaVersion: 2, number: 7, branch: 'release-plz-main', headSHA, versions: [{ name: 'farmfe_core', version: '2.2.1' }] };
+    const pr = { number: 7, user: { login: 'github-actions[bot]' }, head: { sha: headSHA, ref: record.branch, repo: { full_name: repository } }, base: { ref: 'main', repo: { full_name: repository } } };
+    const plan = { cargo: [{ name: 'farmfe_core', version: '2.2.1' }] };
+    assert.equal(consumedCargoProposal(pr, record, plan, repository), true);
+    const pending = consumedCargoProposal(pr, record, plan, repository) ? null : pr;
+    assert.equal(versionPreparationState(pending, directory), 'pending');
+    fs.unlinkSync(path.join(directory, '.changeset/js-next.md'));
+    assert.equal(versionPreparationState(pending, directory), 'empty');
+    assert.equal(consumedCargoProposal({ ...pr, head: { ...pr.head, sha: 'b'.repeat(40) } }, record, plan, repository), false);
+    assert.equal(consumedCargoProposal(pr, record, { cargo: [{ name: 'farmfe_core', version: '2.2.0' }] }, repository), false);
+    assert.equal(consumedCargoProposal({ ...pr, user: { login: 'someone' } }, record, plan, repository), false);
+    assert.equal(consumedCargoProposal(pr, null, plan, repository), false);
+  } finally { fs.rmSync(directory, { recursive: true }); }
 });

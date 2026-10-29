@@ -1,5 +1,7 @@
+// cspell:words cgroup jitless
 import fs from 'node:fs';
 import os from 'node:os';
+import { getHeapStatistics } from 'node:v8';
 import { execFileSync } from 'node:child_process';
 export function parseDarwinVmStat(text) {
   const pageSize = Number(text.match(/page size of (\d+) bytes/)?.[1]);
@@ -33,3 +35,27 @@ export function resourceSnapshot({ platform = process.platform, freeBytes = os.f
     ...(platform === 'darwin' ? { diagnostics: darwin ?? (process.platform === 'darwin' ? darwinDiagnostics() : null) } : {}),
     observationOnly: true, policy: { admission: 'Verified OS pressure plus supervised cold/warm bootstrap required', diskFloorBytes: 8 * 1024 ** 3, businessBudgetCalibrated: false } };
 }
+
+// Only numeric heap flags may keep their values. Never print arbitrary runtime
+// arguments, script/eval contents, environment variables or application paths.
+export function diagnosticExecArgv(values) {
+  const numeric = /^--(?:max[-_]old[-_]space[-_]size|max[-_]semi[-_]space[-_]size|stack[-_]size)=\d+$/;
+  const names = new Set(['--import', '--require', '--jitless', '--no-lazy', '--expose-gc', '--trace-gc']);
+  return values.slice(0, 40).map(value => typeof value === 'string' && value.length <= 120 && numeric.test(value) ? value : names.has(value) ? value : '[argument omitted]');
+}
+export function nodeRuntimeDiagnostics({ platform = process.platform, execArgv = process.execArgv,
+  heap = getHeapStatistics(), constrainedBytes = process.constrainedMemory?.(), read = file => fs.readFileSync(file, 'utf8') } = {}) {
+  const cgroup = {};
+  if (platform === 'linux') for (const file of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory.high', '/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory/memory.limit_in_bytes']) {
+    try {
+      const value = read(file).trim();
+      cgroup[file] = value === 'max' ? { unlimited: true } : /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? { bytes: Number(value) } : { unavailable: true, reason: 'Non-numeric limit' };
+    } catch (error) { cgroup[file] = { unavailable: true, code: /^[A-Z_]+$/.test(error.code ?? '') ? error.code : 'UNKNOWN' }; }
+  }
+  return { node: process.version, pid: process.pid, platform, heap_size_limit: heap.heap_size_limit,
+    execArgv: diagnosticExecArgv(execArgv), constrainedMemoryBytes: Number.isFinite(constrainedBytes) && constrainedBytes > 0 ? constrainedBytes : null,
+    cgroup, scope: 'Actual Node root heap limit and OS/container observations; not total process-tree RSS or an OOM diagnosis' };
+}
+// Supervised Node commands preload this exact module through an explicit argv
+// flag. The marker enables only the bounded whitelist record, not an env dump.
+if (process.env.FARM_PERFORMANCE_RUNTIME_DIAGNOSTIC === '1') process.stderr.write('[performance node runtime] ' + JSON.stringify(nodeRuntimeDiagnostics()) + '\n');

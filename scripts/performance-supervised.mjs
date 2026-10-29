@@ -2,11 +2,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { diagnosticTail, redactDiagnostic } from './v2-release-diagnostics.mjs';
 
-export const safetyProtocol = 'business-2048-supervised-bootstrap-v1';
+export const safetyProtocol = 'business-2048-supervised-bootstrap-v2';
+export const performanceTotalBudgetMs = 75 * 60 * 1000;
+export const performanceJobTimeoutMinutes = 90;
+export function performanceDeadline(startedAt) {
+  assert.ok(Number.isFinite(startedAt) && startedAt > 0, 'Known performance start time required');
+  return startedAt + performanceTotalBudgetMs;
+}
 export const diskEmergencyReserveBytes = 8 * 1024 ** 3; // Existing workspace safety reserve, not a calibrated workload budget.
 const supervisor = fileURLToPath(new URL('./performance-supervisor.py', import.meta.url));
 function python(env) {
@@ -53,9 +59,9 @@ export function commandBudget({ phase, cacheMode, budget, deadline, now = Date.n
   }
   const remaining = deadline - now - 15000;
   assert.ok(remaining > 0, 'Total performance deadline exhausted; reserve cleanup time');
-  const initialCap = cacheMode === 'warm' ? 180000 : 240000;
+  const initialCap = phase === 'correctness' ? 180000 : cacheMode === 'warm' ? 180000 : 240000;
   const measured = budget?.bootstrap?.filter(row => row.cacheMode === (cacheMode ?? 'cold')).map(row => row.durationMs) ?? [];
-  const empiricalCap = measured.length ? Math.ceil(Math.max(...measured) * 1.5 + 10000) : initialCap;
+  const empiricalCap = phase === 'correctness' ? initialCap : measured.length ? Math.ceil(Math.max(...measured) * 1.5 + 10000) : initialCap;
   return { timeoutMs: Math.min(remaining, Math.min(initialCap, empiricalCap)),
     policy: { diskFloorBytes: diskEmergencyReserveBytes + (budget ? budget.observedDiskGrowthBytes : 0),
       requiredAvailableBytes: budget ? Math.ceil(Math.max(budget.kernelPeakRssBytes, budget.sampledGroupPeakRssBytes) * 2) : null,
@@ -74,8 +80,11 @@ export async function supervisedCommand(executable, args, { cwd, env = process.e
   const browserOwnerFile = phase === 'correctness' ? path.join(path.dirname(log), `browser-owner-${randomUUID()}.json`) : null;
   if (browserOwnerFile) fs.writeFileSync(browserOwnerFile, JSON.stringify({ state: 'not-started', rootPid: null, browserPid: null }), { flag: 'wx' });
   const fd = fs.openSync(log, 'a');
-  const child = spawn(interpreter, [supervisor], { env: browserOwnerFile ? { ...env, FARM_PERFORMANCE_BROWSER_OWNER: browserOwnerFile } : env, windowsHide: true, stdio: ['pipe', 'pipe', fd] });
-  child.stdin.end(JSON.stringify({ argv: [executable, ...args], cwd, log, phase, browserOwnerFile, timeoutMs: allocation.timeoutMs, policy: allocation.policy }) + '\n');
+  const nodeRuntime = executable === process.execPath;
+  const childEnv = { ...env, ...(nodeRuntime ? { FARM_PERFORMANCE_RUNTIME_DIAGNOSTIC: '1' } : {}), ...(browserOwnerFile ? { FARM_PERFORMANCE_BROWSER_OWNER: browserOwnerFile } : {}) };
+  const childArgs = nodeRuntime ? ['--import', pathToFileURL(fileURLToPath(new URL('./performance-resources.mjs', import.meta.url))).href, ...args] : args;
+  const child = spawn(interpreter, [supervisor], { env: childEnv, windowsHide: true, stdio: ['pipe', 'pipe', fd] });
+  child.stdin.end(JSON.stringify({ argv: [executable, ...childArgs], cwd, log, phase, browserOwnerFile, timeoutMs: allocation.timeoutMs, policy: allocation.policy }) + '\n');
   let timer, stopTimer, failure;
   try {
     await new Promise((resolve, reject) => {

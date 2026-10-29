@@ -34,9 +34,15 @@ jobs:
             target: x86_64-pc-windows-msvc
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve the host Cargo cache for Docker mounts
+        shell: bash
+        run: |
+          mkdir -p "$HOME/.cargo/git" "$HOME/.cargo/registry"
+          printf 'FARM_CARGO_HOME=%s/.cargo\n' "$HOME" >> "$GITHUB_ENV"
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
+          workspaces: ". -> target"
           prefix-key: rust-build-${{ inputs.profile }}-${{ matrix.settings.abi }}
           shared-key: rust-build-${{ matrix.settings.abi }}
       - name: Setup pnpm
@@ -97,8 +103,8 @@ jobs:
             -e FARM_BUILD_ABI=${{ matrix.settings.abi }}
             -e FARM_BUILD_TARGET=${{ matrix.settings.target || '' }}
             -e FARM_BUILD_ZIG=${{ matrix.settings.zig || false }}
-            -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git
-            -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry
+            -v ${{ env.FARM_CARGO_HOME }}/git:/root/.cargo/git
+            -v ${{ env.FARM_CARGO_HOME }}/registry:/root/.cargo/registry
             -v ${{ github.workspace }}:/build
             -w /build
           run: |

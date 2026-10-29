@@ -41,6 +41,12 @@ jobs:
         with:
           node-version: 22.20.0
       - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check spelling before native builds
+        run: pnpm exec cspell "**" --gitignore
+      - name: Check native routing and container entry contracts without compiling
+        run: |
+          node scripts/test-native-container-node.cjs
+          node scripts/test-native-artifact-flow.cjs
       - name: Check release source and failure paths without publishing
         run: >-
           node --test scripts/v2-*.test.mjs scripts/release-archive.test.mjs
@@ -48,7 +54,7 @@ jobs:
           scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
-          scripts/verify-published-v2-consumers.test.mjs
+          scripts/verify-published-v2-consumers.test.mjs scripts/create-farm-pack.test.mjs
 
   docs-acceptance:
     name: Docs release-profile reference and contracts
@@ -88,10 +94,12 @@ jobs:
         run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs
 
   call-rust-build-user:
+    needs: [release-contract-tests, performance-contract-tests]
     uses: ./.github/workflows/rust-build-user.yaml
     secrets: inherit
 
   call-rust-build-release:
+    needs: [release-contract-tests, performance-contract-tests]
     uses: ./.github/workflows/rust-build-release.yaml
     secrets: inherit
 
@@ -366,7 +374,7 @@ jobs:
     name: Commerce Performance (${{ matrix.settings.os }})
     needs: [examples-test, docs-acceptance, ts-test, type-check, check-native-candidate-assembly]
     continue-on-error: true
-    timeout-minutes: 20
+    timeout-minutes: 90
     runs-on: ${{ matrix.settings.os }}
     permissions:
       contents: read

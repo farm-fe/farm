@@ -5,13 +5,18 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { verifyExistingNpm } from './release.mjs';
+import { verifyExistingNpm, verifyLatestTarget } from './release.mjs';
+import { validateSummary } from './performance-pr-reporter.mjs';
 
 export const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 export const requiredWorkflows = ['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml', 'lint-pr-title.yml'].map(name => `.github/workflows/${name}`);
+export const performancePolicy = Object.freeze({ requiredForPublication: true, protocol: 'commerce-business-2048-farm-supervised-v1',
+  platforms: Object.freeze([['linux', 'x64'], ['darwin', 'arm64'], ['win32', 'x64']]), regressionThreshold: null });
 export const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
   ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].flatMap(os => [`Examples Test (${os})`, `Typescript Test (${os})`]),
-  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Seal complete npm and Rust candidates'];
+  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Seal complete npm and Rust candidates',
+  ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].map(os => `Commerce Performance (${os})`), 'Aggregate informational performance report',
+  ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].map(os => `Candidate registry consumer (${os})`)];
 export function validateRequiredCiJobs(jobs) {
   for (const name of requiredCiJobs) {
     const matches = jobs.filter(job => job.name === name || job.name.endsWith(` / ${name}`));
@@ -19,6 +24,19 @@ export function validateRequiredCiJobs(jobs) {
     assert.equal(matches[0].status, 'completed', `Required CI job not complete: ${name}`);
     assert.equal(matches[0].conclusion, 'success', `Required CI job not successful: ${name}`);
   }
+}
+export function validatePerformanceEvidence(bytes, expected) {
+  const summary = validateSummary(bytes);
+  assert.equal(summary.protocol, performancePolicy.protocol);
+  for (const key of ['runId', 'runAttempt', 'headSHA', 'baseSHA', 'repositoryId', 'prNumber']) assert.equal(summary[key], expected[key], `Performance ${key} differs`);
+  assert.equal(summary.reports.length, performancePolicy.platforms.length, 'Three platform performance reports required');
+  for (const [os, arch] of performancePolicy.platforms) {
+    const row = summary.reports.find(report => report.metadata.os === os && report.metadata.arch === arch);
+    assert.ok(row, `Missing performance platform ${os}/${arch}`);
+    assert.equal(row.status, 'complete', `Incomplete performance platform ${os}/${arch}`);
+    assert.equal(row.metadata.revision, expected.producerSHA, 'Performance producer differs from sealed source');
+  }
+  return summary;
 }
 const root = fileURLToPath(new URL('../', import.meta.url));
 export function validateTrigger(event, intent, bytes, expectedHash) {
@@ -33,7 +51,7 @@ export function validateTrigger(event, intent, bytes, expectedHash) {
   if (!changesets) assert.equal(intent.pullRequest, 2329, 'First stable preparation is single-use');
   assert.deepEqual(intent.requiredWorkflows, changesets ? requiredWorkflows.filter(file => !file.endsWith('lint-pr-title.yml')) : requiredWorkflows, 'Required release workflows changed');
   assert.deepEqual(intent.requiredCiJobs, requiredCiJobs, 'Required functional CI jobs changed');
-  assert.equal(intent.performanceRequired, false, 'Exploratory performance is not a publication certification');
+  assert.equal(intent.performanceRequired, performancePolicy.requiredForPublication, 'Publication requires complete Farm performance evidence, without an uncalibrated speed threshold');
   assert.match(intent.abi, /^\d+\.\d+\.\d+$/); assert.match(intent.rustCoreVersion, /^2\.\d+\.\d+$/);
   assert.equal(digest(bytes), expectedHash, 'Reviewed release intent changed');
   assert.match(event.pull_request.merge_commit_sha, /^[a-f0-9]{40}$/);
@@ -74,11 +92,12 @@ export async function immutablePublish(record, api, action = 'reuse') {
       assert.equal(record.reuseEvidence?.compatible, true);
       await api.verifyReuse(record);
     } else { assert.equal(typeof api.verifySealedCandidate, 'function', 'Resuming a new version requires sealed candidate validation'); await api.verifySealedCandidate(record); }
-    return;
+    return 'reused';
   }
   assert.equal(action, 'publish', `Reviewed reuse version is absent: ${record.name}`);
   await api.publish(record);
   await confirmRegistryChecksum(record, api.lookup, api.sleep);
+  return 'published';
 }
 export async function confirmRegistryChecksum(record, lookup, sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))) {
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -209,6 +228,17 @@ async function main() {
       assert.equal(read(path.join(directory, 'materialization.json')).registry, 'registry', 'Release requires portable contained SDK storage');
       validateArchiveProvenance(receipt, event, producerSha, tested.tree.sha, head.tree.sha, merged.tree.sha);
       assert.equal(receipt.planSha256, intent.candidatePlanSha256);
+      const performanceName = `performance-pr-summary-${ci.run_attempt}`;
+      const performanceArtifacts = pages.flatMap(page => page.artifacts).filter(row => row.name === performanceName && !row.expired);
+      assert.equal(performanceArtifacts.length, 1, 'Exactly one same-attempt performance summary is required');
+      assert.ok(performanceArtifacts[0].size_in_bytes > 0 && performanceArtifacts[0].size_in_bytes <= 131072, 'Performance summary archive exceeds bound');
+      const performanceDirectory = path.join(root, '.release-performance-proof');
+      run('gh', ['run', 'download', String(ci.id), '--repo', repository, '--name', performanceName, '--dir', performanceDirectory]);
+      assert.deepEqual(fs.readdirSync(performanceDirectory), ['summary.json'], 'Unexpected performance proof members');
+      const performanceFile = path.join(performanceDirectory, 'summary.json'), performanceStat = fs.lstatSync(performanceFile);
+      assert.ok(performanceStat.isFile() && !performanceStat.isSymbolicLink() && performanceStat.size <= 65536, 'Invalid performance proof file');
+      validatePerformanceEvidence(fs.readFileSync(performanceFile, 'utf8'), { runId: ci.id, runAttempt: ci.run_attempt, headSHA: event.pull_request.head.sha,
+        baseSHA: event.pull_request.base.sha, repositoryId: ci.repository.id, prNumber: event.number, producerSHA: producerSha });
       gate(false);
       await inspectFinalRelease(); // Reject a known tag/Release collision before publishing anything.
       // Discover every immutable collision before the first Rust upload, not
@@ -261,7 +291,9 @@ async function main() {
     sourceGate: () => gate(false),
     async rust() {
       assert.ok(process.env.CARGO_REGISTRY_TOKEN, 'Existing CARGO_REGISTRY_TOKEN secret is required');
-      const completed = new Set();
+      const completed = new Set(), states = receipt.rust.map(record => ({ name: record.name, version: record.version, sha256: record.sha256, status: 'pending' }));
+      const stateDirectory = path.join(root, '.release-publication-status'); fs.mkdirSync(stateDirectory, { recursive: true });
+      const persist = () => fs.writeFileSync(path.join(stateDirectory, 'rust.json'), JSON.stringify({ schemaVersion: 1, sourceCommit: receipt.sourceCommit, packages: states }, null, 2) + '\n');
       for (const record of receipt.rust) {
         assert.match(record.sha256, /^[a-f0-9]{64}$/);
         const archive = fs.readFileSync(safeFile(directory, record.file));
@@ -272,29 +304,33 @@ async function main() {
         const upload = JSON.parse(metadata);
         assert.equal(upload.name, record.name); assert.equal(upload.vers, record.version);
         for (const dependency of record.dependencies ?? []) assert.ok(completed.has(dependency), 'Rust dependency order is not sealed');
-        await immutablePublish(record, {
-          async lookup(row) {
-            const response = await request(`https://crates.io/api/v1/crates/${encodeURIComponent(row.name)}/${encodeURIComponent(row.version)}`);
-            return response ? (await response.json()).version.checksum : null;
-          },
-          async verifyReuse(row) {
-            const evidence = row.reuseEvidence;
-            const approved = intent.rust.find(pkg => pkg.name === row.name);
-            assert.equal(approved.registryChecksum, row.sha256, 'Existing Rust version lacks reviewed immutable checksum');
-            assert.equal(approved.reuseEvidenceSha256, evidence.sha256, 'Rust compatibility proof is not reviewed in release intent');
-            assert.equal(evidence.file, approved.reuseEvidenceFile);
-            assert.equal(digest(JSON.stringify(read(path.join(root, evidence.file)))), evidence.sha256);
-          },
-          async verifySealedCandidate(row) {
-            assert.equal(intent.rust.find(pkg => pkg.name === row.name)?.action, 'publish');
-            assert.ok(receipt.rust.some(pkg => pkg.name === row.name && pkg.sha256 === row.sha256));
-            assert.equal(sourceValidated, true, 'Candidate SDK/archive gate has not passed');
-          },
-          async publish() {
-            const size = value => { const buffer = Buffer.alloc(4); buffer.writeUInt32LE(value); return buffer; };
-            await request('https://crates.io/api/v1/crates/new', { method: 'PUT', headers: { Authorization: process.env.CARGO_REGISTRY_TOKEN, 'Content-Type': 'application/octet-stream' }, body: Buffer.concat([size(metadata.length), metadata, size(archive.length), archive]) });
-          }
-        }, intent.rust.find(pkg => pkg.name === record.name).action);
+        const state = states.find(row => row.name === record.name); state.status = 'verifying'; persist();
+        try {
+          state.status = await immutablePublish(record, {
+            async lookup(row) {
+              const response = await request(`https://crates.io/api/v1/crates/${encodeURIComponent(row.name)}/${encodeURIComponent(row.version)}`);
+              return response ? (await response.json()).version.checksum : null;
+            },
+            async verifyReuse(row) {
+              const evidence = row.reuseEvidence;
+              const approved = intent.rust.find(pkg => pkg.name === row.name);
+              assert.equal(approved.registryChecksum, row.sha256, 'Existing Rust version lacks reviewed immutable checksum');
+              assert.equal(approved.reuseEvidenceSha256, evidence.sha256, 'Rust compatibility proof is not reviewed in release intent');
+              assert.equal(evidence.file, approved.reuseEvidenceFile);
+              assert.equal(digest(JSON.stringify(read(path.join(root, evidence.file)))), evidence.sha256);
+            },
+            async verifySealedCandidate(row) {
+              assert.equal(intent.rust.find(pkg => pkg.name === row.name)?.action, 'publish');
+              assert.ok(receipt.rust.some(pkg => pkg.name === row.name && pkg.sha256 === row.sha256));
+              assert.equal(sourceValidated, true, 'Candidate SDK/archive gate has not passed');
+            },
+            async publish() {
+              const size = value => { const buffer = Buffer.alloc(4); buffer.writeUInt32LE(value); return buffer; };
+              await request('https://crates.io/api/v1/crates/new', { method: 'PUT', headers: { Authorization: process.env.CARGO_REGISTRY_TOKEN, 'Content-Type': 'application/octet-stream' }, body: Buffer.concat([size(metadata.length), metadata, size(archive.length), archive]) });
+            }
+          }, intent.rust.find(pkg => pkg.name === record.name).action);
+          persist();
+        } catch (error) { state.status = 'failed'; state.error = error.message.slice(0, 500); persist(); throw error; }
         completed.add(record.name);
       }
     },
@@ -312,6 +348,10 @@ async function main() {
         assert.equal(url.protocol, 'https:'); assert.equal(url.hostname, 'registry.npmjs.org');
         const archive = await request(url);
         await verifyRegistryArchive(archive, record.sha256, fs.statSync(safeFile(directory, record.file)).size);
+        const latest = await request(`https://registry.npmjs.org/${encodeURIComponent(record.name)}/latest`);
+        assert.ok(latest, `Published latest tag missing: ${record.name}`);
+        const latestMetadata = await latest.json(); assert.equal(latestMetadata.name, record.name);
+        verifyLatestTarget(record, latestMetadata.version);
       }
       if (consumer) run(process.execPath, [intent.registryVerification.script], { env: { ...process.env, FARM_RELEASE_CANDIDATE_DIRECTORY: directory } });
     },

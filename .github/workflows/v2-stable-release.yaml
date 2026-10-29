@@ -9,7 +9,7 @@ concurrency:
   group: farm-stable-release
   cancel-in-progress: false
 env:
-  FARM_RELEASE_INTENT_SHA256: 427d997d03132fd5856f9b78bbdebab7c1eb384c3a97b27c2d70aaf52f53603c
+  FARM_RELEASE_INTENT_SHA256: e8263eecc3411eec1ec3f1057e9381b2ec3d7def84d7b17909c02438a2b7af4f
 # Publication jobs install no workspace dependencies or package hooks.
 # Public consumer code runs on a separate machine with read-only permissions.
 jobs:
@@ -54,6 +54,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: node scripts/v2-auto-release.mjs rust
+      - name: Preserve exact per-package rust publication states
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-rust-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .release-publication-status/rust.json
+          if-no-files-found: warn
+          retention-days: 90
   npm:
     needs: [rust]
     runs-on: ubuntu-latest
@@ -76,6 +85,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node scripts/v2-auto-release.mjs npm
+      - name: Preserve exact per-package npm publication states
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-npm-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .release-publication-status/npm.json
+          if-no-files-found: warn
+          retention-days: 90
   public-consumers:
     needs: [npm]
     runs-on: ubuntu-24.04

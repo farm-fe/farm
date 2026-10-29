@@ -14,7 +14,7 @@ import { BUSINESS_CORRECTNESS_PROTOCOL } from '../examples/commerce-lab/benchmar
 import { scaleProfile } from '../examples/commerce-lab/benchmark/scale-profiles.mjs';
 import { resourceSnapshot } from './performance-resources.mjs';
 import { diagnosticTail, redactDiagnostic } from './v2-release-diagnostics.mjs';
-import { probeSupervisedResources, finishBootstrap, supervisedCommand } from './performance-supervised.mjs';
+import { probeSupervisedResources, finishBootstrap, supervisedCommand, performanceDeadline } from './performance-supervised.mjs';
 import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -203,7 +203,8 @@ async function main() {
   let phase = 'identity';
   const startedAt = Number(process.env.FARM_PERFORMANCE_STARTED_AT ?? Date.now());
   if (!Number.isFinite(startedAt) || startedAt <= 0 || startedAt > Date.now()) throw new Error('Invalid performance job start timestamp');
-  const deadline = startedAt + 18 * 60 * 1000;
+  const deadline = performanceDeadline(startedAt);
+  report.timeBudget = { totalMs: deadline - startedAt, deadline, cleanupReserveMs: 15000, policy: 'Hard shared deadline, not expected duration; incomplete pairs remain invalid' };
   const log = path.join(output, 'run.log');
   const persist = async () => fs.writeFile(path.join(output, 'raw.json'), `${JSON.stringify(report, null, 2)}\n`);
   await persist();

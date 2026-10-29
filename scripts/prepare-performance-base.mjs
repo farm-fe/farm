@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverBaseCohort, prepareBaseConsumer } from './performance-cohorts.mjs';
 import { protocol } from './performance-report.mjs';
-import { supervisedCommand } from './performance-supervised.mjs';
+import { supervisedCommand, performanceDeadline } from './performance-supervised.mjs';
 import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -27,7 +27,7 @@ try {
         ['--filter', '@farmfe/runtime-plugin-import-meta', 'build'],
         ['--filter', '@farmfe/core', 'build:cjs']];
       for (const args of steps) {
-        const deadline = Number(process.env.FARM_PERFORMANCE_STARTED_AT ?? Date.now()) + 18 * 60 * 1000;
+        const deadline = performanceDeadline(Number(process.env.FARM_PERFORMANCE_STARTED_AT ?? Date.now()));
         await supervisedCommand(process.execPath, [pnpm, ...args], { phase: 'base-preparation', deadline, cwd: baseRoot, env: process.env, log });
       }
     }

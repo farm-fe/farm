@@ -88,3 +88,42 @@ jobs:
             release-diagnostics/js-build-failure.json
             release-diagnostics/seal-failure.json
           if-no-files-found: warn
+
+  consumers:
+    name: Candidate registry consumer (${{ matrix.os }})
+    needs: [seal]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Download only the current producer sealed candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: v2-release-seal-${{ github.sha }}
+          path: release-candidate
+      - name: Independently install exact candidates and execute only the host native ABI
+        run: node scripts/verify-v2-npm-consumer.mjs release-candidate candidate-consumer-results
+      - name: Preserve independent consumer result and bounded stage logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-candidate-consumer-${{ github.sha }}-${{ matrix.os }}-${{ github.run_attempt }}
+          path: |
+            candidate-consumer-results/result.json
+            candidate-consumer-results/runtime-proof.json
+            candidate-consumer-results/package-lock.json
+            candidate-consumer-results/*.log
+          if-no-files-found: warn
+          retention-days: 30

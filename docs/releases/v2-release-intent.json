@@ -5,7 +5,7 @@
   "tag": "v2.0.0",
   "abi": "0.5.4",
   "rustCoreVersion": "2.2.0",
-  "candidatePlanSha256": "f028154b548e395cd55c6a02ea0a3e69007fced728583dfc6d9227f8169842c8",
+  "candidatePlanSha256": "607fbfc68bf7129a8ea6d7684de22237d5a6ea8adb43e03189f67d399128cfbe",
   "counts": {
     "primary": 51,
     "payloads": 246,
@@ -173,7 +173,7 @@
   ],
   "registryVerification": {
     "script": "scripts/verify-published-v2-consumers.mjs",
-    "sha256": "f89785ff15a1079f8575946164be7c5837f4b4e3ba50fa123b3f86b4745d6512"
+    "sha256": "3b84481b5cb46f1f63dff6b0b81525bf327096009724a62a9f61822ccf982078"
   },
   "websiteDeployment": false,
   "requiredCiJobs": [
@@ -188,8 +188,15 @@
     "Typescript Test (windows-latest)",
     "Docs / windows-latest",
     "Docs / ubuntu-24.04",
-    "Seal complete npm and Rust candidates"
+    "Seal complete npm and Rust candidates",
+    "Commerce Performance (ubuntu-24.04)",
+    "Commerce Performance (macos-latest)",
+    "Commerce Performance (windows-latest)",
+    "Aggregate informational performance report",
+    "Candidate registry consumer (ubuntu-24.04)",
+    "Candidate registry consumer (macos-latest)",
+    "Candidate registry consumer (windows-latest)"
   ],
-  "performanceRequired": false,
+  "performanceRequired": true,
   "preparationMode": "first-stable"
 }

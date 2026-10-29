@@ -1,7 +1,7 @@
 <!-- cspell:words pageout microbenchmark errno -->
 # Commerce CI performance report
 
-The optional three-OS job follows Examples, Docs and consumer acceptance, uses
+The non-blocking PR job for three OS platforms follows Examples and Docs acceptance, uses
 its own exact-SHA native artifacts, and never rebuilds Rust. macOS remains the
 standard ARM64 cohort. No local measurement is implied by the implementation.
 
@@ -35,7 +35,9 @@ samples; missing samples cannot pass through an empty-array success check.
 Failed, interrupted and absent samples remain null. Timeout, incomplete pairs,
 missing source coverage or browser failure makes the report invalid. No workload
 reduction or zero substitution is allowed. Three pairs are exploratory and all
-reports retain `publishable:false`; these are not release performance thresholds.
+reports retain `publishable:false`; these are not release speed thresholds. The
+stable release gate nevertheless requires complete valid reports on all three
+platforms, independently of continue-on-error workflow behavior.
 
 ## Same-run resource supervision
 
@@ -43,21 +45,46 @@ Identity and raw resource observations are written before admission. Darwin free
 pages remain free-page observations, never invented available physical memory.
 Python 3.12 standard-library supervision queries kernel memory pressure on macOS,
 PSI plus MemAvailable on Linux, and low-memory notification plus available bytes
-on Windows. Unknown/failed probes and warning/critical pressure stop the owned
-build. Swap/pageout observations retain their source and units; unsupported
-Windows paging counters remain explicitly unavailable.
+on Windows. Unknown/failed probes and established warning/critical pressure stop
+the owned build. Linux PSI is system-wide contention, not proof that this build
+caused OOM. Raw kernel `avg10` and total stall counters remain recorded. One tiny
+counter increment does not stop the run: the supervisor uses a five-second window,
+three elevated intervals, and a two-clear-interval reset before window warning.
+Window thresholds are 10% some stall or 2% full stall; a one-second interval with
+at least 50% full stall is critical. Kernel ten-second averages still warn at
+20% some / 5% full and stop critically at 20% full. These are explicit conservative
+safety rules, not a calibrated performance-regression threshold. Counter rollback,
+missing values and non-finite probes fail closed. Every decision keeps elapsed
+window, raw deltas, ratios and policy so transient and sustained signals are visible.
+Swap/pageout observations retain their source and units; unsupported Windows
+paging counters remain explicitly unavailable.
 
 The existing 8 GiB emergency disk reserve is retained. Initial supervised cold
 and graph command caps are 240 seconds, warm 180 seconds, bounded by the same
-18-minute total sampling deadline and 20-minute job limit. This replaces the
+75-minute shared preparation/sampling deadline and 90-minute job limit. This replaces the
 previous universal 120-second cap, which timed out the Windows complete workload
-without proving whether compilation was merely slow. After full successful
+without proving whether compilation was merely slow. Correctness commands keep a separate 180-second ceiling rather than deriving a browser limit from build time. After full successful
 bootstrap pairs and confirmed cleanup, this run records observed durations, disk
 growth and RSS. Later admission conservatively requires twice the larger observed
 root/group RSS where actual available bytes exist, plus observed disk growth over
 the reserve. Caps derive from bootstrap time with margin and never exceed their
 initial cap or remaining deadline. This is same-run evidence, not a portable
-capacity certification or permission to reduce safety floors elsewhere.
+capacity certification or permission to reduce safety floors elsewhere. The job
+allows 15 minutes beyond the shared deadline for bounded setup/finalization and
+upload; every command still reserves 15 seconds for cleanup and cannot exceed the
+remaining shared budget. The 75/90-minute values are hard ceilings, not expected
+runtime or a guarantee that every command can consume its individual ceiling.
+Current-only performs eight builds plus graph/browser; paired mode performs
+sixteen plus a graph/browser for each cohort. Exhaustion stays invalid rather
+than dropping samples. Base preparation imports the same deadline function.
+
+Each supervised Node root preloads a small diagnostic module before the CLI or
+package manager. Its log contains the actual V8 heap size limit, numeric memory
+flags with other argument values omitted, Node's reported constrained memory and
+numeric Linux container memory limits when readable. It never prints environment
+values, arbitrary eval/script contents or unfiltered arguments. Limits and missing
+probes retain their units/status; they are separate from observed process-tree RSS
+and never automatically diagnose OOM or raise the heap limit.
 
 Unix builds own a process group. Windows launches suspended into a kill-on-close
 Job Object before resuming. Every exit/timeout verifies group/job cleanup; unknown
@@ -98,8 +125,8 @@ Page/console/request/HTTP errors invalidate the result. Only local mock data is 
 The Farm-only protocol is distinct from retired mixed-tool and subset protocols;
 old reports are rejected rather than relabeled or reused as compatible history.
 Current-only needs eight measured/bootstrap builds plus one graph build and one
-browser run. Paired mode doubles those counts. The existing 18-minute sampling
-and 20-minute job deadlines remain bounded, not a claim that either budget is
+browser run. Paired mode doubles those counts. The shared 75-minute deadline
+and 90-minute job limit remain bounded, not a claim that either budget is
 sufficient on every OS. Remote CI must establish completion; deadline exhaustion
 stays invalid without reducing workload or the three scored pairs.
 

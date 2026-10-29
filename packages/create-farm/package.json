@@ -56,6 +56,9 @@
     "create-farm-win32-x64-msvc": "2.0.0"
   },
   "files": [
+    "index.js",
+    "index.d.ts",
+    "create-farm.js",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "licenses",

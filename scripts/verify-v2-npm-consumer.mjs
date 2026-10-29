@@ -1,83 +1,78 @@
-import fs from 'node:fs';
+// cspell:words statfs bavail
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createRequire } from 'node:module';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
-import { archiveFiles, sha256 } from './release-archive.mjs';
+import { command } from './performance-report.mjs';
+import { publicConsumerManifest, cleanupConsumerScratch } from './verify-published-v2-consumers.mjs';
+import { candidateNpmEvidence, serveCandidateRegistry, verifyInstalledNpmLock } from './v2-consumer-registry.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const [sealArg, outputArg] = process.argv.slice(2);
-if (!sealArg || !outputArg) throw new Error('Specify seal directory and new consumer directory');
-const seal = path.resolve(sealArg);
-const output = path.resolve(outputArg);
-if (fs.existsSync(output)) throw new Error('Preserve existing consumer evidence');
-fs.mkdirSync(output, { recursive: true });
-fs.writeFileSync(path.join(output, 'package.json'), '{"private":true,"type":"module"}\n');
-const receipt = JSON.parse(fs.readFileSync(path.join(seal, 'receipt.json')));
-const records = new Map(receipt.records.map(record => [record.name, record]));
-const installed = [];
-const selected = new Set();
-function install(name) {
-  if (selected.has(name)) return;
-  selected.add(name);
-  const record = records.get(name);
-  if (!record) throw new Error(`Missing sealed dependency: ${name}`);
-  const bytes = fs.readFileSync(path.join(seal, record.file));
-  if (sha256(bytes) !== record.sha256) throw new Error('Sealed archive checksum drift');
-  const files = archiveFiles(bytes);
-  const manifest = JSON.parse(files.get('package/package.json').toString('utf8'));
-  const directory = path.join(output, 'node_modules', name);
-  for (const [file, content] of files) {
-    if (!file.startsWith('package/')) throw new Error('Unexpected npm archive prefix');
-    const target = path.resolve(directory, file.slice(8));
-    if (!target.startsWith(directory + path.sep)) throw new Error('Unsafe package file');
-    fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, content);
-  }
-  installed.push({ name, version: manifest.version, archiveSha256: record.sha256 });
-  for (const section of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
-    for (const dep of Object.keys(manifest[section] ?? {})) {
-      if (!dep.startsWith('@farmfe/')) continue;
-      if (section === 'optionalDependencies' && !records.has(dep)) continue;
-      install(dep);
-    }
-  }
+assert.ok(sealArg && outputArg, 'Specify seal directory and new consumer evidence directory');
+const seal = path.resolve(sealArg), output = path.resolve(outputArg);
+await fs.mkdir(output); // Never overwrite prior consumer evidence.
+const plan = JSON.parse(await fs.readFile(path.join(root, 'docs/releases/v2-candidate.json')));
+const receipt = JSON.parse(await fs.readFile(path.join(seal, 'receipt.json')));
+if (process.env.GITHUB_SHA) assert.equal(receipt.testedCommit, process.env.GITHUB_SHA, 'Candidate producer SHA differs from this run');
+const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-npm-candidate-consumer-'));
+const result = { status: 'running', sourceCommit: receipt.sourceCommit, testedCommit: receipt.testedCommit, scratch,
+  installation: 'real npm install from exact sealed loopback registry plus verified immutable registry reuse',
+  externalRegistryCacheLinks: 0, workspacePackageLinks: 0, nativeOverrides: false, stages: [],
+  platform: { os: process.platform, arch: process.arch }, scope: 'All selected primary packages install; only host native ABI executes. Other targets have static sealed archive/hash evidence, not runtime proof.' };
+let registry;
+const env = { ...process.env, npm_config_cache: path.join(scratch, '.npm-cache') };
+for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN', 'NAPI_RS_NATIVE_LIBRARY_PATH', 'FARM_LIB_CORE_PATH', 'npm_config_registry', 'NPM_CONFIG_REGISTRY', 'NPM_CONFIG_USERCONFIG', 'npm_config_userconfig']) delete env[key];
+const deadline = Date.now() + 20 * 60 * 1000;
+async function run(stage, args, timeout = 120000) {
+  const disk = await fs.statfs(scratch); assert.ok(disk.bavail * disk.bsize >= 8 * 1024 ** 3, 'Candidate consumer disk reserve');
+  assert.ok(Date.now() < deadline, 'Candidate consumer deadline exceeded');
+  await command(process.execPath, args, { cwd: scratch, env, log: path.join(output, `${stage}.log`), timeoutMs: Math.min(timeout, deadline - Date.now()) });
+  result.stages.push(stage);
 }
-install('@farmfe/core');
-let externalLinks = 0;
-function link(name, source) {
-  if (name.startsWith('@farmfe/')) return;
-  const real = fs.realpathSync(source);
-  if (['packages', 'rust-plugins', 'js-plugins', 'examples'].some(group => real.startsWith(path.join(root, group) + path.sep)) || real === root) return;
-  const destination = path.join(output, 'node_modules', name);
-  if (fs.existsSync(destination)) return;
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.symlinkSync(real, destination, process.platform === 'win32' ? 'junction' : 'dir');
-  externalLinks++;
+try {
+  const evidence = await candidateNpmEvidence(plan, receipt, seal);
+  registry = await serveCandidateRegistry(evidence);
+  const manifest = publicConsumerManifest(plan);
+  await fs.writeFile(path.join(scratch, 'package.json'), JSON.stringify(manifest, null, 2));
+  await fs.writeFile(path.join(scratch, 'empty-user.npmrc'), '');
+  env.NPM_CONFIG_USERCONFIG = path.join(scratch, 'empty-user.npmrc');
+  await fs.writeFile(path.join(scratch, '.npmrc'), `registry=${registry.url}\n@farmfe:registry=${registry.url}\nignore-scripts=true\naudit=false\nfund=false\n`);
+  const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
+  await run('install', [npm, 'install', '--ignore-scripts', '--no-audit', '--no-fund', `--registry=${registry.url}`], 10 * 60 * 1000);
+  const lock = JSON.parse(await fs.readFile(path.join(scratch, 'package-lock.json')));
+  verifyInstalledNpmLock(plan, manifest, lock, evidence, { registry: registry.url });
+  await fs.copyFile(path.join(scratch, 'package-lock.json'), path.join(output, 'package-lock.json'));
+  result.installedPrimary = Object.entries(manifest.dependencies).map(([name, version]) => ({ name, version, integrity: evidence.get(name).integrity }));
+  result.nativeTargetEvidence = plan.npm.payloads.map(row => ({ name: row.name, version: row.version, integrity: evidence.get(row.name).integrity, proof: evidence.get(row.name).kind }));
+  const hostAbi = `${process.platform}-${process.arch}${process.platform === 'linux' ? process.report.getReport().header.glibcVersionRuntime ? '-gnu' : '-musl' : ''}`;
+  const hostCore = plan.npm.payloads.find(row => row.owner === '@farmfe/core' && row.platform === hostAbi);
+  assert.ok(hostCore, `Unsupported consumer native target: ${hostAbi}`);
+  const expectedNative = evidence.get(hostCore.name);
+  await fs.writeFile(path.join(scratch, 'probe.mjs'), `import assert from 'node:assert/strict'; import path from 'node:path'; import fs from 'node:fs'; import {createRequire} from 'node:module'; import * as esm from '@farmfe/core'; import {defineDocsConfig} from '@farmfe/docs'; const require=createRequire(import.meta.url), cjs=require('@farmfe/core'); assert.equal(typeof esm.build,'function');assert.equal(typeof cjs.build,'function');assert.equal(typeof defineDocsConfig,'function'); const identity=await esm.compilerNativeIdentity(); assert.ok(path.resolve(identity.path).startsWith(path.join(process.cwd(),'node_modules',${JSON.stringify(hostCore.name)})+path.sep));if(${JSON.stringify(expectedNative.nativeSha256 ?? null)})assert.equal(identity.sha256,${JSON.stringify(expectedNative.nativeSha256 ?? null)}); const generator=require('create-farm');assert.equal(typeof generator.run,'function');fs.writeFileSync('runtime-proof.json',JSON.stringify({esmCjs:true,nativeIdentity:identity,createFarm:true}));`);
+  // create-farm is included explicitly for stable support/entry verification.
+  if (!manifest.dependencies['create-farm']) throw new Error('Candidate consumer support set lacks create-farm');
+  await run('runtime', ['probe.mjs']);
+  await fs.copyFile(path.join(scratch, 'runtime-proof.json'), path.join(output, 'runtime-proof.json'));
+  await run('create-farm-help', ['node_modules/create-farm/create-farm.js', '--help']);
+  await fs.writeFile(path.join(scratch, 'consumer.mts'), `import {build} from '@farmfe/core';import {defineDocsConfig} from '@farmfe/docs';import {run} from 'create-farm';void run;defineDocsConfig({title:'Candidate',url:'https://example.invalid'});\n// @ts-expect-error wrong input must remain an error\nbuild(42);\n`);
+  await run('types', ['node_modules/typescript/bin/tsc', '--noEmit', '--strict', '--skipLibCheck', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', 'consumer.mts']);
+  await fs.mkdir(path.join(scratch, 'docs'));
+  await fs.writeFile(path.join(scratch, 'docs/quick.md'), '# Sealed candidate installed\n\nIndependent npm installation.\n');
+  await fs.writeFile(path.join(scratch, 'farm.config.mjs'), `import {defineDocsConfig} from '@farmfe/docs';export default defineDocsConfig({title:'Candidate',url:'https://example.invalid',docs:{collections:[{id:'docs',dir:'docs',routeBase:'/docs/'}]}},{compilation:{persistentCache:false,output:{path:'dist'}}});`);
+  await run('docs-build', ['node_modules/@farmfe/cli/bin/farm.mjs', 'build', '--config', 'farm.config.mjs'], 300000);
+  const rendered = [];
+  async function scan(directory) { for (const row of await fs.readdir(directory, { withFileTypes: true })) { const file = path.join(directory, row.name); if (row.isDirectory()) await scan(file); else if (row.name.endsWith('.html')) rendered.push(await fs.readFile(file, 'utf8')); } }
+  await scan(path.join(scratch, 'dist'));
+  assert.ok(rendered.some(html => html.includes('Sealed candidate installed')), 'Independent candidate Docs output missing');
+  result.status = 'passed';
+} catch (error) {
+  result.status = 'failed'; result.error = error.message; result.cleanupConfirmed = error.cleanupConfirmed !== false;
+  result.cleanupError = error.cleanupError ?? null; result.ownedPid = error.pid ?? null; process.exitCode = 1;
+} finally {
+  try { await registry?.close(); } catch (error) { result.status = 'failed'; result.cleanupConfirmed = false; result.cleanupError = `Candidate registry close failed: ${error.message}`; }
+  await cleanupConsumerScratch(scratch, result);
+  if (result.status !== 'passed') process.exitCode = 1;
+  await fs.writeFile(path.join(output, 'result.json'), JSON.stringify(result, null, 2));
 }
-for (const modules of [path.join(root, 'packages/core/node_modules'), path.join(root, 'node_modules')]) {
-  for (const entry of fs.readdirSync(modules, { withFileTypes: true })) {
-    if (entry.name.startsWith('.')) continue;
-    const source = path.join(modules, entry.name);
-    if (entry.name.startsWith('@')) {
-      if (entry.name === '@farmfe') continue;
-      for (const name of fs.readdirSync(source)) link(`${entry.name}/${name}`, path.join(source, name));
-    } else if (entry.isDirectory() || entry.isSymbolicLink()) link(entry.name, source);
-  }
-}
-const platform = records.get('@farmfe/core-win32-x64-msvc');
-if (process.platform !== 'win32' || process.arch !== 'x64' || !platform) throw new Error('This receipt currently validates the Windows x64 candidate only');
-const runtimeFile = path.join(output, 'runtime.mjs');
-fs.writeFileSync(runtimeFile, `import assert from 'node:assert/strict';import path from 'node:path';import {createRequire} from 'node:module';const esm=await import('@farmfe/core');const cjs=createRequire(import.meta.url)('@farmfe/core');assert.deepEqual(Object.keys(esm).sort(),Object.keys(cjs).sort());for(const module of [esm,cjs]){const identity=await module.compilerNativeIdentity();assert.equal(identity.sha256,${JSON.stringify(platform.nativeSha256)});assert.ok(path.resolve(identity.path).startsWith(${JSON.stringify(path.join(output, 'node_modules', '@farmfe/core-win32-x64-msvc'))}));}console.log(JSON.stringify({esmCjs:true,nativeFromSealedPlatform:true}));\n`);
-const env = { ...process.env }; delete env.NAPI_RS_NATIVE_LIBRARY_PATH; delete env.FARM_LIB_CORE_PATH;
-const run = spawnSync(process.execPath, [runtimeFile], { cwd: output, env, encoding: 'utf8', timeout: 60000 });
-fs.writeFileSync(path.join(output, 'runtime.log'), `${run.stdout}\n${run.stderr}`);
-if (run.status !== 0) throw new Error(`Sealed runtime failed: ${run.stderr}`);
-const contract = `import {defineConfig,type UserConfig,type JsPlugin,type Compiler} from '@farmfe/core';\nconst config:UserConfig=defineConfig({compilation:{input:{index:'./entry.ts'},output:{path:'./dist'}}});\nconst plugin:JsPlugin={name:'external-contract'};declare const compiler:Compiler;void compiler;void config;void plugin;\n// @ts-expect-error input entries require string paths\nconst badInput:UserConfig={compilation:{input:{index:42}}};\n// @ts-expect-error port must be numeric\nconst badPort:UserConfig={server:{port:'bad'}};\n// @ts-expect-error plugin names must be strings\nconst badPlugin:JsPlugin={name:17};void badInput;void badPort;void badPlugin;\n`;
-for (const extension of ['mts', 'cts']) fs.writeFileSync(path.join(output, `consumer.${extension}`), contract);
-const require = createRequire(import.meta.url);
-const ts = require('typescript');
-const program = ts.createProgram(['mts', 'cts'].map(extension => path.join(output, `consumer.${extension}`)), { noEmit: true, strict: true, skipLibCheck: false, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext, types: ['node'], typeRoots: [path.join(output, 'node_modules/@types')], esModuleInterop: true });
-const diagnostics = ts.getPreEmitDiagnostics(program);
-if (diagnostics.length) throw new Error(ts.formatDiagnosticsWithColorAndContext(diagnostics, { getCurrentDirectory: () => output, getCanonicalFileName: file => file, getNewLine: () => '\n' }));
-fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ status: 'passed', scope: 'Npm Core ESM/CJS/native and strict NodeNext declarations; not Cargo Compiler/Toolkit or public registry installation', sourceCommit: receipt.sourceCommit, packages: installed, externalRegistryCacheLinks: externalLinks, workspacePackageLinks: 0, nativeOverrides: false, strict: true, skipLibCheck: false, negativeTypeAssertions: 6, diagnostics: 0 }, null, 2));
-console.log(JSON.stringify({ status: 'passed', sealedFarmPackages: installed.length, workspacePackageLinks: 0, strictDiagnostics: 0 }));

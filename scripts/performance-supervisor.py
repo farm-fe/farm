@@ -1,6 +1,7 @@
 """Single-command, standard-library OS supervision; never a cross-run budget store."""
-# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid pageout swapusage ulonglong STARTUPINFO winerror nonpaged getsid geteuid euid uid signalable getpid
+# cspell:words ctypes wintypes pswpin pswpout maxrss sysctl pageouts swapouts swapins memorystatus sysconf winapi msvcrt psapi STARTF USESTDHANDLES WNOHANG killpg waitpid pgid rusage osfhandle cmdline lstart ppid pageout swapusage ulonglong STARTUPINFO winerror nonpaged getsid geteuid euid uid signalable getpid isfinite
 import ctypes
+import math
 import json
 import os
 import re
@@ -11,6 +12,67 @@ import subprocess
 import sys
 import threading
 import time
+
+
+# PSI values are system-wide stall observations, not per-build OOM evidence.
+# Keep raw counters and evaluate a sustained window instead of any positive delta.
+LINUX_PSI_POLICY = {"windowSeconds": 5, "elevatedSamplesBeforeStop": 3,
+                    "someRatio": 0.10, "fullRatio": 0.02,
+                    "clearSomeRatio": 0.05, "clearFullRatio": 0.01,
+                    "criticalFullRatio": 0.50, "criticalIntervalSeconds": 1,
+                    "warningSomeAvg10": 20, "warningFullAvg10": 5, "criticalFullAvg10": 20}
+
+
+def linux_pressure(counters):
+    if set(counters) != {"some", "full"}:
+        raise RuntimeError("Missing Linux PSI counters")
+    for value in counters.values():
+        if not isinstance(value.get("total"), int) or value["total"] < 0 or not isinstance(value.get("avg10"), (int, float)) or not math.isfinite(value["avg10"]) or not 0 <= value["avg10"] <= 100:
+            raise RuntimeError("Malformed Linux PSI counters")
+    state = "critical" if counters["full"]["avg10"] >= LINUX_PSI_POLICY["criticalFullAvg10"] else "warning" if counters["some"]["avg10"] >= LINUX_PSI_POLICY["warningSomeAvg10"] or counters["full"]["avg10"] >= LINUX_PSI_POLICY["warningFullAvg10"] else "normal"
+    return {"state": state, "source": "Linux PSI kernel avg10 and sustained stall window", "counters": counters,
+            "policy": LINUX_PSI_POLICY, "reason": "Kernel 10-second average pressure" if state != "normal" else "No sustained pressure established"}
+
+
+class LinuxPressureWindow:
+    def __init__(self):
+        self.points = []
+        self.elevated = 0
+        self.clear = 0
+
+    def observe(self, pressure, now):
+        if not isinstance(now, (int, float)) or not math.isfinite(now):
+            raise ResourceUnavailableError("Linux PSI observation time is unknown")
+        value = linux_pressure(pressure["counters"])
+        point = (now, pressure["counters"])
+        previous = self.points[-1] if self.points else None
+        if previous is not None:
+            if now <= previous[0]:
+                raise ResourceUnavailableError("Linux PSI observation time did not advance")
+            if any(point[1][kind]["total"] < previous[1][kind]["total"] for kind in ("some", "full")):
+                raise ResourceUnavailableError("Linux PSI counters moved backwards")
+        self.points.append(point)
+        # Retain one sample preceding the window boundary for exact counter delta.
+        while len(self.points) > 2 and self.points[1][0] <= now - LINUX_PSI_POLICY["windowSeconds"]:
+            self.points.pop(0)
+        elapsed = now - self.points[0][0]
+        deltas = {kind: point[1][kind]["total"] - self.points[0][1][kind]["total"] for kind in ("some", "full")}
+        ratios = {kind: deltas[kind] / (elapsed * 1000000) if elapsed > 0 else 0 for kind in ("some", "full")}
+        interval = now - previous[0] if previous else 0
+        interval_ratios = {kind: (point[1][kind]["total"] - previous[1][kind]["total"]) / (interval * 1000000) if interval > 0 else 0 for kind in ("some", "full")}
+        elevated = interval_ratios["some"] >= LINUX_PSI_POLICY["someRatio"] or interval_ratios["full"] >= LINUX_PSI_POLICY["fullRatio"]
+        clear = interval_ratios["some"] < LINUX_PSI_POLICY["clearSomeRatio"] and interval_ratios["full"] < LINUX_PSI_POLICY["clearFullRatio"]
+        self.clear = self.clear + 1 if clear else 0
+        self.elevated = self.elevated + 1 if elevated else 0 if self.clear >= 2 else self.elevated
+        if interval >= LINUX_PSI_POLICY["criticalIntervalSeconds"] and interval_ratios["full"] >= LINUX_PSI_POLICY["criticalFullRatio"]:
+            value["state"] = "critical"; value["reason"] = "At least half of the observed interval was fully stalled"
+        elif value["state"] == "normal" and elapsed >= LINUX_PSI_POLICY["windowSeconds"] and self.elevated >= LINUX_PSI_POLICY["elevatedSamplesBeforeStop"] and (ratios["some"] >= LINUX_PSI_POLICY["someRatio"] or ratios["full"] >= LINUX_PSI_POLICY["fullRatio"]):
+            value["state"] = "warning"; value["reason"] = "Sustained PSI window and repeated elevated intervals"
+        value["observedAtMonotonic"] = now
+        value["window"] = {"elapsedMs": elapsed * 1000, "stallDeltaMicroseconds": deltas, "stallRatios": ratios,
+                           "intervalMs": interval * 1000, "intervalStallRatios": interval_ratios,
+                           "elevatedSamples": self.elevated, "clearSamples": self.clear}
+        return value
 
 
 def pressure_snapshot(directory):
@@ -38,13 +100,9 @@ def pressure_snapshot(directory):
         def read_psi():
             with open("/proc/pressure/memory", encoding="utf-8") as source:
                 return dict((kind, {"avg10": float(average), "total": int(total)}) for kind, average, total in re.findall(r"^(some|full) avg10=([\d.]+).*total=(\d+)$", source.read(), re.M))
-        previous = read_psi(); time.sleep(0.05); psi = read_psi()
-        if set(previous) != {"some", "full"} or set(psi) != {"some", "full"} or "MemAvailable" not in memory:
-            raise RuntimeError("Missing Linux memory pressure/available probe")
-        deltas = dict((kind, psi[kind]["total"] - previous[kind]["total"]) for kind in ("some", "full"))
-        if any(value < 0 for value in deltas.values()):
-            raise RuntimeError("Linux PSI counters moved backwards")
-        result["pressure"] = {"state": "normal" if not any(deltas.values()) else "warning", "source": "Linux PSI: stop on observed memory stalls", "counters": psi, "stallDeltaMicroseconds": deltas, "observationWindowMs": 50}
+        psi = read_psi()
+        result["pressure"] = linux_pressure(psi)
+        result["pressure"]["observedAtMonotonic"] = time.monotonic()
         result["availableBytes"] = memory["MemAvailable"]
         with open("/proc/vmstat", encoding="utf-8") as source:
             counters = dict((key, int(value)) for key, value in re.findall(r"^(pswpin|pswpout) (\d+)$", source.read(), re.M))
@@ -424,14 +482,13 @@ def run(config):
                     result["rootOwnership"] = {"pid": child.pid, "created": None, "verified": True, "leaderAlreadyReaped": True, "observerPid": os.getpid(), "newSessionRequested": True}
                 else:
                     raise RuntimeError("Root observation absent without completed reaping")
-            previous_pressure = result["before"]["pressure"]
+            linux_window = LinuxPressureWindow() if sys.platform.startswith("linux") else None
+            if linux_window:
+                result["before"]["pressure"] = linux_window.observe(result["before"]["pressure"], result["before"]["pressure"]["observedAtMonotonic"])
             while True:
                 observation = verified_snapshot(config["cwd"])
-                if sys.platform.startswith("linux"):
-                    for kind in ("some", "full"):
-                        if observation["pressure"]["counters"][kind]["total"] != previous_pressure["counters"][kind]["total"]:
-                            observation["pressure"]["state"] = "warning"
-                    previous_pressure = observation["pressure"]
+                if linux_window:
+                    observation["pressure"] = linux_window.observe(observation["pressure"], observation["pressure"]["observedAtMonotonic"])
                 result["lastObservation"] = observation
                 admit(observation, config["policy"], require_available=False)
                 if not job:
@@ -453,7 +510,10 @@ def run(config):
                 raise RuntimeError("Child completed after its allocated timeout")
             result["kernelPeakRssBytes"] = job.memory()[1] if job else usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
             result["rssSource"] = "Windows PeakWorkingSetSize" if job else "wait4 rusage maxrss (Darwin bytes; Linux KiB converted)"
-            result["after"] = verified_snapshot(config["cwd"]); admit(result["after"], config["policy"], require_available=False)
+            result["after"] = verified_snapshot(config["cwd"])
+            if linux_window:
+                result["after"]["pressure"] = linux_window.observe(result["after"]["pressure"], result["after"]["pressure"]["observedAtMonotonic"])
+            admit(result["after"], config["policy"], require_available=False)
             if result["exitCode"] != 0:
                 raise RuntimeError("Supervised child failed")
             if not result["kernelPeakRssBytes"]:

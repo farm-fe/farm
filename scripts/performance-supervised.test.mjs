@@ -1,10 +1,12 @@
-// cspell:words pids
+// cspell:words pids importlib dont
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { assertPressureObservation, finishBootstrap, commandBudget, supervisedCommand, safetyProtocol } from './performance-supervised.mjs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { assertPressureObservation, finishBootstrap, commandBudget, supervisedCommand, safetyProtocol, performanceDeadline, performanceTotalBudgetMs, performanceJobTimeoutMinutes } from './performance-supervised.mjs';
 
 const observation = () => ({ availableBytes: null, diskFreeBytes: 30 * 1024 ** 3, pressure: { state: 'normal', source: 'fixture only' } });
 const identity = { fixtureSha256: 'f'.repeat(64), harnessSha256: 'e'.repeat(64), revision: 'a'.repeat(40), os: 'darwin', arch: 'arm64' };
@@ -53,6 +55,11 @@ test('real OS supervisor reports root exit and owned descendant cleanup, includi
     const options = { cwd: directory, log: path.join(directory, 'child.log'), phase: 'bootstrap', deadline: Date.now() + 40000 };
     const result = await supervisedCommand(process.execPath, ['-e', 'setTimeout(()=>process.exit(0),200)'], options);
     assert.equal(result.cleanupConfirmed, true); assert.ok(result.kernelPeakRssBytes > 0 && result.durationMs > 0);
+    const runtimeLine = fs.readFileSync(options.log, 'utf8').split('\n').find(line => line.startsWith('[performance node runtime] '));
+    assert.ok(runtimeLine, 'Actual supervised Node preload emits bounded runtime evidence');
+    const runtime = JSON.parse(runtimeLine.slice('[performance node runtime] '.length));
+    assert.ok(Number.isFinite(runtime.heap_size_limit) && runtime.heap_size_limit > 0);
+    assert.doesNotMatch(JSON.stringify(runtime.execArgv), /setTimeout|process.exit/);
     const pidFile = path.join(directory, 'owned-child.json');
     const source = `const cp=require('node:child_process').spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});require('node:fs').writeFileSync(process.argv[1],JSON.stringify({parent:process.pid,child:cp.pid}));setInterval(()=>{},1000);`;
     await assert.rejects(supervisedCommand(process.execPath, ['-e', source, pidFile], { ...options, commandLimitMs: 1500 }), error => {
@@ -85,4 +92,51 @@ test('real OS supervisor reports root exit and owned descendant cleanup, includi
     if (error.cleanupConfirmed === false) cleanupConfirmed = false;
     throw error;
   } finally { if (cleanupConfirmed) fs.rmSync(directory, { recursive: true, force: true }); else console.error('Unconfirmed cleanup; fixture preserved: ' + directory); }
+});
+
+test('Farm-only base preparation and sampling share a finite 75-minute deadline inside the 90-minute job', () => {
+  assert.equal(performanceTotalBudgetMs, 75 * 60 * 1000);
+  assert.equal(performanceJobTimeoutMinutes, 90);
+  assert.equal(performanceDeadline(1000), 1000 + performanceTotalBudgetMs);
+  assert.ok(performanceJobTimeoutMinutes * 60000 - performanceTotalBudgetMs >= 15 * 60000);
+  assert.throws(() => performanceDeadline(NaN));
+  const budget = finishBootstrap(rows(), identity), now = 1000;
+  assert.equal(commandBudget({ phase: 'correctness', budget, now, deadline: performanceDeadline(now) }).timeoutMs, 180000);
+  const base = fs.readFileSync(new URL('./prepare-performance-base.mjs', import.meta.url), 'utf8');
+  const sampler = fs.readFileSync(new URL('./performance-report.mjs', import.meta.url), 'utf8');
+  assert.match(base, /performanceDeadline\(Number/); assert.match(sampler, /performanceDeadline\(startedAt\)/);
+  assert.doesNotMatch(base + sampler, /18 \* 60 \* 1000/);
+});
+
+test('Linux PSI retains transient stalls but stops sustained pressure and rejects malformed counters', { skip: !process.env.FARM_PERFORMANCE_PYTHON }, () => {
+  const source = String.raw`
+import importlib.util, json, sys
+sys.dont_write_bytecode = True
+spec = importlib.util.spec_from_file_location("supervisor_contract", sys.argv[1])
+module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+def pressure(some=0, full=0, average=0):
+    return module.linux_pressure({"some": {"avg10": average, "total": some}, "full": {"avg10": 0, "total": full}})
+transient = module.LinuxPressureWindow(); transient.observe(pressure(), 0)
+values = [transient.observe(pressure(1000, 10), i)["state"] for i in range(1, 8)]
+assert values == ["normal"] * 7
+reset = module.LinuxPressureWindow(); reset.observe(pressure(), 0)
+for moment, total in [(1, 200000), (2, 400000), (3, 400000), (4, 400000), (5, 600000)]:
+    last = reset.observe(pressure(total), moment)
+assert last["state"] == "normal" and last["window"]["elevatedSamples"] == 1
+sustained = module.LinuxPressureWindow(); sustained.observe(pressure(), 0)
+values = [sustained.observe(pressure(i * 200000), i) for i in range(1, 7)]
+assert values[0]["state"] == "normal" and values[4]["state"] == "warning"
+assert values[4]["window"]["elapsedMs"] == 5000
+assert values[4]["window"]["stallDeltaMicroseconds"]["some"] == 1000000
+critical = module.LinuxPressureWindow(); critical.observe(pressure(), 0)
+assert critical.observe(pressure(600000, 600000), 1)["state"] == "critical"
+assert pressure(average=25)["state"] == "warning"
+for action in [lambda: module.linux_pressure({}), lambda: module.linux_pressure({"some": {"avg10": float("nan"), "total": 0}, "full": {"avg10": 0, "total": 0}}), lambda: sustained.observe(pressure(0), 7), lambda: sustained.observe(pressure(1400000), float("nan"))]:
+    try: action()
+    except RuntimeError: pass
+    else: raise AssertionError("Invalid pressure must fail closed")
+print(json.dumps({"transient": "normal", "sustained": "warning", "critical": "critical"}))
+`;
+  const result = execFileSync(process.env.FARM_PERFORMANCE_PYTHON, ['-c', source, fileURLToPath(new URL('./performance-supervisor.py', import.meta.url))], { encoding: 'utf8', timeout: 10000 });
+  assert.deepEqual(JSON.parse(result), { transient: 'normal', sustained: 'warning', critical: 'critical' });
 });

@@ -5,9 +5,11 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command } from './performance-report.mjs';
+import { publicationNpm } from './v2-release-inventory.mjs';
+import { candidateNpmEvidence, verifyInstalledNpmLock } from './v2-consumer-registry.mjs';
 
 export function publicConsumerManifest(plan) {
-  const names = [...new Set(['@farmfe/core', '@farmfe/cli', '@farmfe/docs', '@farmfe/docs-theme-default', ...(plan.publication?.npm.primary ?? []).map(row => row.name)])];
+  const names = [...new Set(['@farmfe/core', '@farmfe/cli', '@farmfe/docs', '@farmfe/docs-theme-default', 'create-farm', ...publicationNpm(plan).primary.map(row => row.name)])];
   const dependencies = Object.fromEntries(names.map(name => {
     const pkg = plan.npm.primary.find(row => row.name === name);
     assert.ok(pkg && /^\d+\.\d+\.\d+$/.test(pkg.version), `Missing stable public consumer dependency: ${name}`);
@@ -15,6 +17,16 @@ export function publicConsumerManifest(plan) {
   }));
   return { name: 'farm-public-registry-consumer', version: '0.0.0', private: true, type: 'module', dependencies,
     devDependencies: { typescript: '5.6.3', '@types/node': '18.19.67' } };
+}
+export async function cleanupConsumerScratch(scratch, report, remove = fs.rm) {
+  if (report.cleanupConfirmed === false) {
+    report.scratchRemoved = false;
+    report.scratchRetainedReason = 'Owned process cleanup is unconfirmed; retain inputs and diagnostics';
+    report.status = 'failed';
+    return;
+  }
+  try { await remove(scratch, { recursive: true, force: true }); report.scratchRemoved = true; }
+  catch (error) { report.status = 'failed'; report.scratchRemoved = false; report.scratchRetainedReason = `Scratch cleanup failed: ${error.message}`; }
 }
 export function assertPublicRustLock(receipt, lock) {
   assert.ok(!/name = "(?:wax|tardar)"/.test(lock), 'Removed dependency returned in public registry consumer');
@@ -36,7 +48,7 @@ async function main() {
   const report = { status: 'running', publicRegistry: true, workspacePatches: false, scratch, stages: [], startedAt: new Date().toISOString() };
   const reportFile = path.join(output, 'result.json');
   const deadline = Date.now() + 100 * 60 * 1000;
-  const env = { ...process.env, CARGO_HOME: path.join(scratch, 'cargo-home'), CARGO_TARGET_DIR: path.join(scratch, 'target'), CARGO_REGISTRIES_CRATES_IO_PROTOCOL: 'sparse' };
+  const env = { ...process.env, CARGO_HOME: path.join(scratch, 'cargo-home'), CARGO_TARGET_DIR: path.join(scratch, 'target'), CARGO_REGISTRIES_CRATES_IO_PROTOCOL: 'sparse', npm_config_cache: path.join(scratch, '.npm-cache') };
   for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'CARGO_REGISTRY_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN', 'CARGO_NET_OFFLINE', 'NAPI_RS_NATIVE_LIBRARY_PATH', 'FARM_LIB_CORE_PATH']) delete env[key];
   async function run(stage, executable, args, cwd = scratch, timeout = 120000) {
     const disk = await fs.statfs(scratch);
@@ -47,7 +59,9 @@ async function main() {
   }
   try {
     await fs.writeFile(path.join(scratch, 'package.json'), JSON.stringify(publicConsumerManifest(plan), null, 2));
-    await fs.writeFile(path.join(scratch, '.npmrc'), 'registry=https://registry.npmjs.org/\nignore-scripts=true\n');
+    await fs.writeFile(path.join(scratch, 'empty-user.npmrc'), '');
+    env.NPM_CONFIG_USERCONFIG = path.join(scratch, 'empty-user.npmrc');
+    await fs.writeFile(path.join(scratch, '.npmrc'), 'registry=https://registry.npmjs.org/\n@farmfe:registry=https://registry.npmjs.org/\nignore-scripts=true\n');
     const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
     await run('npm-install', process.execPath, [npm, 'install', '--ignore-scripts', '--registry=https://registry.npmjs.org'], scratch, 600000);
     const lock = JSON.parse(await fs.readFile(path.join(scratch, 'package-lock.json')));
@@ -55,6 +69,7 @@ async function main() {
       assert.ok(!pkg.link, `Linked package in public registry consumer: ${name}`);
       if (pkg.resolved) assert.equal(new URL(pkg.resolved).hostname, 'registry.npmjs.org');
     }
+    verifyInstalledNpmLock(plan, publicConsumerManifest(plan), lock, await candidateNpmEvidence(plan, receipt, directory), { registry: 'https://registry.npmjs.org/' });
     await fs.copyFile(path.join(scratch, 'package-lock.json'), path.join(output, 'package-lock.json'));
     await fs.writeFile(path.join(scratch, 'probe.mjs'), `import assert from 'node:assert/strict'; import { createRequire } from 'node:module'; import fs from 'node:fs'; import path from 'node:path'; import * as core from '@farmfe/core'; import { defineDocsConfig } from '@farmfe/docs'; const require=createRequire(import.meta.url); assert.equal(typeof core.build,'function'); assert.equal(typeof require('@farmfe/core').build,'function'); assert.equal(typeof defineDocsConfig,'function'); for(const name of ['@farmfe/core','@farmfe/docs']) assert.ok(fs.realpathSync(require.resolve(name)).startsWith(path.join(process.cwd(),'node_modules')+path.sep));`);
     await run('esm-cjs', process.execPath, ['probe.mjs']);
@@ -76,10 +91,11 @@ async function main() {
     assertPublicRustLock(receipt, cargoLock); await fs.writeFile(path.join(output, 'Cargo.lock'), cargoLock);
     assert.match(await fs.readFile(path.join(output, 'sdk.log'), 'utf8'), /test result: ok\. 3 passed; 0 failed/);
     report.status = 'passed';
-  } catch (error) { report.status = 'failed'; report.error = error.message; process.exitCode = 1; }
+  } catch (error) { report.status = 'failed'; report.error = error.message; report.cleanupConfirmed = error.cleanupConfirmed !== false; report.cleanupError = error.cleanupError ?? null; report.ownedPid = error.pid ?? null; process.exitCode = 1; }
   finally {
     // Scratch belongs exclusively to this command, not a user workspace/cache.
-    await fs.rm(scratch, { recursive: true, force: true }); report.scratchRemoved = true;
+    await cleanupConsumerScratch(scratch, report);
+    if (report.status !== 'passed') process.exitCode = 1;
     report.finishedAt = new Date().toISOString(); await fs.writeFile(reportFile, JSON.stringify(report, null, 2));
   }
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { digest, requiredWorkflows, requiredCiJobs } from './v2-auto-release.mjs';
+import { digest, requiredWorkflows, requiredCiJobs, performancePolicy } from './v2-auto-release.mjs';
 import { rustPublicationOrder } from './release-rust-metadata.mjs';
 import { execFileSync } from 'node:child_process';
 import { npmInventory, cargoInventory, changesetsPublication } from './v2-release-inventory.mjs';
@@ -30,7 +30,7 @@ export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   const abi = fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1];
   return { schemaVersion: 1, preparationMode: changesets ? 'changesets' : 'first-stable', pullRequest, baseBranch: 'main', tag: plan.publication?.releaseIdentity ?? `v${plan.npm.primary.find(pkg => pkg.name === '@farmfe/core').version}`,
     abi, rustCoreVersion: plan.cargo.find(row => row.name === 'farmfe_core').version, candidatePlanSha256: digest(JSON.stringify(plan)), counts: plan.publication?.counts ?? plan.counts,
-    requiredWorkflows: changesets ? requiredWorkflows.filter(file => !file.endsWith('lint-pr-title.yml')) : requiredWorkflows, requiredCiJobs, performanceRequired: false, seal: { workflowPath: '.github/workflows/ci.yaml' }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
+    requiredWorkflows: changesets ? requiredWorkflows.filter(file => !file.endsWith('lint-pr-title.yml')) : requiredWorkflows, requiredCiJobs, performanceRequired: performancePolicy.requiredForPublication, seal: { workflowPath: '.github/workflows/ci.yaml' }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
     rust, registryVerification: { script, sha256: digest(fs.readFileSync(path.join(root, script), 'utf8').replaceAll('\r\n', '\n')) }, websiteDeployment: false };
 }
 export async function refreshChangesetsVersionPr(root, number) {

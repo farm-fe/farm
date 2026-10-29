@@ -289,6 +289,14 @@ function indexCargoProduction() {
   assert.ok(Buffer.byteLength(body) <= 60000, 'Cargo proposal body exceeds safe bound');
   execFileSync('gh', ['api', '--method', 'PATCH', `repos/${repository}/pulls/${pr.number}`, '--input', '-'], { cwd: root, input: JSON.stringify({ body }), encoding: 'utf8', timeout: 30000 });
 }
+export function consumedCargoProposal(pr, record, plan, repository) {
+  if (!record || pr.number !== record.number) return false;
+  // Only the proposal receipt already reviewed into this main checkout may be
+  // ignored. A moved head or unmatched version remains a live, blocking proposal.
+  if (record.schemaVersion !== 2 || pr.head.sha !== record.headSHA || pr.head.ref !== record.branch) return false;
+  if (pr.user?.login !== 'github-actions[bot]' || pr.head.repo?.full_name !== repository || pr.base.repo?.full_name !== repository || pr.base.ref !== 'main') return false;
+  return Array.isArray(record.versions) && record.versions.length > 0 && record.versions.every(row => plan.cargo.some(pkg => pkg.name === row.name && pkg.version === row.version));
+}
 export function inspectCargoProposal() {
   const repository = process.env.GITHUB_REPOSITORY; assert.match(repository, /^[\w.-]+\/[\w.-]+$/);
   const baseSHA = git('rev-parse', 'HEAD').trim();
@@ -299,9 +307,13 @@ export function inspectCargoProposal() {
     if (rows.length < 100) break;
     assert.ok(page < 10, 'Cargo proposal search exceeded bound');
   }
-  assert.ok(proposals.length <= 1, 'Multiple Cargo proposals require review');
-  if (!proposals.length) return null;
-  return liveProposal(proposals[0], baseSHA);
+  const consumedFile = path.join(root, 'docs/release-evidence/cargo-version-proposal.json');
+  const consumed = fs.existsSync(consumedFile) ? JSON.parse(fs.readFileSync(consumedFile, 'utf8')) : null;
+  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const pending = proposals.filter(pr => !consumedCargoProposal(pr, consumed, plan, repository));
+  assert.ok(pending.length <= 1, 'Multiple unconsumed Cargo proposals require review');
+  if (!pending.length) return null;
+  return liveProposal(pending[0], baseSHA);
 }
 export function applyCargoProposal(proposal) {
   if (!proposal) return;
