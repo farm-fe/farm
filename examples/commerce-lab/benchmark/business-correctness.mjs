@@ -1,6 +1,46 @@
+// cspell:words raf hashchange
 import assert from 'node:assert/strict';
 import { monitorBrowserHealth } from '../tests/browser-health.mjs';
 export const BUSINESS_CORRECTNESS_PROTOCOL = 'commerce-farm-business-2048-browser-v1';
+
+export async function waitForExtensionCategories(page, health, { expected = 2048, timeout = 15000 } = {}) {
+  health.assertHealthy();
+  const category = page.getByLabel('Extension category', { exact: true });
+  await category.waitFor({ state: 'visible', timeout });
+  // React.lazy/hashchange can finish after click resolves. Poll the real DOM,
+  // rather than accepting zero options or sleeping for an arbitrary duration.
+  await page.waitForFunction(count => {
+    const selects = document.querySelectorAll('select[aria-label="Extension category"]');
+    return selects.length === 1 && selects[0].options.length === count;
+  }, expected, { timeout, polling: 'raf' });
+  health.assertHealthy();
+  assert.equal(await category.locator('option').count(), expected);
+  return category;
+}
+
+const boundedText = (value, length = 2000) => String(value ?? '').slice(0, length);
+export async function browserFailureEvidence(page, health, { timeoutMs = 1500 } = {}) {
+  const browserHealth = {}, counts = {};
+  for (const [name, rows] of Object.entries(health.evidence)) {
+    counts[name] = rows.length;
+    browserHealth[name] = rows.slice(-50).map(row => typeof row === 'string' ? boundedText(row)
+      : Object.fromEntries(Object.entries(row).map(([key, value]) => [key, typeof value === 'string' ? boundedText(value) : value && typeof value === 'object' ? boundedText(JSON.stringify(value)) : value])));
+  }
+  const evidence = { url: null, browserHealth, counts };
+  try { evidence.url = boundedText(page.url()); } catch (error) { evidence.urlUnavailable = boundedText(error.message); }
+  let timer;
+  try {
+    assert.ok(Number.isFinite(timeoutMs) && timeoutMs > 0 && timeoutMs <= 5000, 'Bounded diagnostic deadline required');
+    const documentTask = Promise.resolve().then(() => page.evaluate(() => ({ title: document.title.slice(0, 500),
+      headings: [...document.querySelectorAll('h1,h2,h3')].slice(0, 20).map(node => (node.textContent ?? '').slice(0, 200)),
+      body: (document.body?.innerHTML ?? '').slice(0, 8192) })));
+    // Promise.race observes late rejection too; do not block the original failure
+    // receipt forever on a page whose main thread no longer responds.
+    evidence.document = await Promise.race([documentTask, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Failure DOM diagnostic deadline exceeded')), timeoutMs); })]);
+  } catch (error) { evidence.documentUnavailable = boundedText(error.message); }
+  finally { clearTimeout(timer); }
+  return evidence;
+}
 
 /** Full Farm assertions for each enabled cohort, outside measured build processes. */
 export async function verifyBusinessBrowser(page, url) {
@@ -13,8 +53,7 @@ export async function verifyBusinessBrowser(page, url) {
     await page.getByTestId('workspace-ready').waitFor();
     await page.getByRole('button', { name: 'Reset demo' }).click();
     await page.getByRole('link', { name: 'Components', exact: true }).click();
-    const category = page.getByLabel('Extension category', { exact: true });
-    assert.equal(await category.locator('option').count(), 2048);
+    const category = await waitForExtensionCategories(page, health);
     for (const id of ['category-001', 'category-1024', 'category-2048']) {
       await category.selectOption(id);
       const section = page.locator(`.extension-${id}`);
@@ -25,7 +64,7 @@ export async function verifyBusinessBrowser(page, url) {
       await section.getByRole('button', { name: 'Save attributes' }).click();
       await section.locator('form').getByRole('status').filter({ hasText: `Verified ${id}` }).waitFor();
       assert.ok(await section.locator('svg').count() > 0);
-      assert.ok(await section.locator('.category-guide table').count() > 0, 'MDX table must survive both production builds');
+      assert.ok(await section.locator('.category-guide table').count() > 0, 'MDX table must survive the production build');
       const style = await section.evaluate(node => ({ display: getComputedStyle(node).display, border: getComputedStyle(node).borderLeftWidth }));
       assert.equal(style.display, 'grid'); assert.equal(style.border, '4px');
       await section.getByLabel('Preview quantity', { exact: true }).fill('5');
@@ -75,5 +114,10 @@ export async function verifyBusinessBrowser(page, url) {
     return { protocol: BUSINESS_CORRECTNESS_PROTOCOL, functional: true, browserHealth: health.evidence,
       checks: ['2048-options', 'first-middle-last-category-interaction', 'required-field', 'SCSS-border', 'Tailwind-grid', 'MDX-table', 'SVG', 'YAML-discount-reservation', 'CSV-tier', 'TSV-shipping', 'image-DOM-auto-component', 'worker-CSV-validation', 'WASM-TypeScript-generation', 'virtual-channels-icons', 'production-strip-during-mock-publication', 'lazy-pages'],
       limitation: 'Three representative category interactions; complete compilation is proven separately by generated source coverage. No real orders or payments.' };
+  } catch (original) {
+    const error = original instanceof Error ? original : new Error(String(original));
+    try { health.assertHealthy(); } catch (healthError) { error.browserHealthFailure = boundedText(healthError.message, 4000); }
+    error.browserEvidence = await browserFailureEvidence(page, health);
+    throw error;
   } finally { health.stop(); page.off('console', diagnostic); }
 }

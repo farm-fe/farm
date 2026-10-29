@@ -10,7 +10,7 @@ import { validateSummary } from './performance-pr-reporter.mjs';
 
 export const digest = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 export const requiredWorkflows = ['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml', 'lint-pr-title.yml'].map(name => `.github/workflows/${name}`);
-export const performancePolicy = Object.freeze({ requiredForPublication: true, protocol: 'commerce-business-2048-farm-supervised-v1',
+export const performancePolicy = Object.freeze({ requiredForPublication: true, protocol: 'commerce-business-2048-farm-supervised-v2',
   platforms: Object.freeze([['linux', 'x64'], ['darwin', 'arm64'], ['win32', 'x64']]), regressionThreshold: null });
 export const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
   ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].flatMap(os => [`Examples Test (${os})`, `Typescript Test (${os})`]),

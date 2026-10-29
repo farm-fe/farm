@@ -4,7 +4,7 @@ import { validateSummary, verifyIdentity, renderComment, marker, readSummaryZip,
 
 const head = 'a'.repeat(40), base = 'b'.repeat(40);
 const cell = { cacheMode: 'cold', samples: 3, validSamples: 3, medianMs: 100, iqrMs: 10 };
-const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell, { ...cell, cacheMode: 'warm' }], comparison: { mode: 'paired', baseCells: [cell, { ...cell, cacheMode: 'warm' }] }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
+const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v2', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell, { ...cell, cacheMode: 'warm' }], comparison: { mode: 'paired', baseCells: [cell, { ...cell, cacheMode: 'warm' }] }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
 const run = { id: 2, repository: { id: 1 }, event: 'pull_request', name: 'E2E Tests', status: 'completed', head_sha: head, head_repository: { id: 9 }, pull_requests: [{ number: 3, head: { sha: head } }] };
 const pr = { number: 3, state: 'open', head: { sha: head, repo: { id: 9 } }, base: { sha: base, repo: { id: 1 } } };
 function zip(text, name = 'summary.json') {
@@ -136,4 +136,11 @@ test('invalid and partial receipts retain missing/failed samples and their diagn
     row.comparison = { mode: 'current-only', baseCells: [cell] };
     assert.throws(() => validateSummary(JSON.stringify(value)), /Current-only/);
   }
+});
+
+test('invalid build-only timing receipts are rejected and direct rendering cannot display their medians', () => {
+  const value = fixture(); value.reports[0].status = 'invalid';
+  assert.throws(() => validateSummary(JSON.stringify(value)), /Unqualified report/);
+  const rendered = renderComment(value, 'farm-fe/farm');
+  assert.doesNotMatch(rendered, /100.0 ms/); assert.match(rendered, /Unavailable/);
 });

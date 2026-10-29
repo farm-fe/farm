@@ -54,6 +54,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: ". -> target"
+          cache-on-failure: false
+          # Restore compatible existing caches; reserve new target archives for the three primary ABIs.
+          save-if: false
           prefix-key: rust-release-${{ inputs.profile }}-${{ matrix.settings.abi }}
           shared-key: rust-release-${{ matrix.settings.target }}-${{ matrix.settings.docker || 'host' }}
       - name: Setup pnpm
@@ -92,23 +95,24 @@ jobs:
           large-packages: true
           docker-images: false
           swap-storage: true
-      - name: Build in docker
-        uses: addnab/docker-run-action@v3
+      - name: Build in Docker with host-owned Cargo cache export
         if: ${{ matrix.settings.docker }}
+        run: node scripts/v2-docker-cargo-cache.mjs
+        env:
+          FARM_BUILD_IMAGE: ${{ matrix.settings.docker }}
+          FARM_BUILD_PROFILE: ${{ inputs.profile }}
+          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
+          FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
+          FARM_BUILD_ZIG: ${{ matrix.settings.zig || false }}
+      - name: Preserve owned-container cache readability and build exit evidence
+        if: ${{ always() && matrix.settings.docker }}
+        uses: actions/upload-artifact@v4
         with:
-          image: ${{ matrix.settings.docker }}
-          options: >-
-            -e FARM_BUILD_PROFILE=${{ inputs.profile }}
-            -e FARM_BUILD_ABI=${{ matrix.settings.abi }}
-            -e FARM_BUILD_TARGET=${{ matrix.settings.target || '' }}
-            -e FARM_BUILD_ZIG=${{ matrix.settings.zig || false }}
-            -v ${{ env.FARM_CARGO_HOME }}/git:/root/.cargo/git
-            -v ${{ env.FARM_CARGO_HOME }}/registry:/root/.cargo/registry
-            -v ${{ github.workspace }}:/build
-            -w /build
-          run: |
-            . ./scripts/setup-native-container-node.sh
-            ./scripts/ci-build-rust-artifacts.sh
+          name: cargo-cache-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .ci-native-cache/${{ matrix.settings.abi }}.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Build
         if: ${{ !matrix.settings.docker }}
         run: ./scripts/ci-build-rust-artifacts.sh

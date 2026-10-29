@@ -36,13 +36,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-          cache: pnpm
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: farm-docs-${{ matrix.os }}
+          # Keep reference validation, without competing for new target-cache storage.
+          save-if: false
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
       - name: Check local source prerequisites and registry-only consumer rejection paths

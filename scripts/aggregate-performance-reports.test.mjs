@@ -32,7 +32,7 @@ test('old mixed-tool protocol is rejected instead of relabeled as Farm-only hist
 });
 
 test('all three missing platforms remain explicit invalid evidence with reasons', () => {
-  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1',
+  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v2',
     reports: platforms.map(([, os, arch]) => unavailableReport(os, arch, 'c'.repeat(40), 'b'.repeat(40), 'Report artifact missing')) };
   validateSummary(JSON.stringify(summary));
   assert.deepEqual(summary.reports.map(row => row.metadata.os), ['linux', 'darwin', 'win32']);
@@ -57,9 +57,19 @@ test('missing baseline and history stay absent rather than zero', () => {
 test('Darwin resource failure retains observed producer identity and the actual reason', () => {
   const report = compactReport({ status: 'invalid', failureKind: 'resource-unavailable', metadata: { os: 'darwin', arch: 'arm64', revision: 'c'.repeat(40), baseSHA: 'b'.repeat(40) },
     errors: ['Available memory probe unavailable; observed free pages are not available memory'] });
-  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1', reports: [report] };
+  const summary = { schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: 'a'.repeat(40), baseSHA: 'b'.repeat(40), prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v2', reports: [report] };
   validateSummary(JSON.stringify(summary));
   assert.equal(report.metadata.revision, 'c'.repeat(40));
   assert.ok(report.diagnostics.includes('Failure kind: resource-unavailable'));
   assert.match(renderComment(summary, 'farm-fe/farm'), /free pages/);
+});
+
+test('invalid producer receipts cannot expose build-only timings as valid head/base metrics', () => {
+  const report = compactReport({ status: 'invalid', cells: [cell(123)], comparison: { mode: 'paired', baseCells: [cell(456)] } });
+  for (const row of [...report.cells, ...report.comparison.baseCells]) {
+    assert.equal(row.validSamples, 0); assert.equal(row.medianMs, null); assert.equal(row.iqrMs, null);
+  }
+  const rendered = renderComment({ ...report, runId: 1, headSHA: 'a'.repeat(40) }, 'farm-fe/farm');
+  assert.doesNotMatch(rendered, /123.0 ms|456.0 ms/);
+  assert.match(rendered, /Unavailable/);
 });

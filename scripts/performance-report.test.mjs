@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs, enablePairedCohort } from './performance-report.mjs';
+import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs, enablePairedCohort, finalizePerformanceMetrics } from './performance-report.mjs';
 
 test('failed and missing samples do not become zero-duration measurements', () => {
   const cells = aggregate([
@@ -203,4 +203,22 @@ test('paired state appears only after base preparation succeeds and shares its e
   assert.equal(cohorts[1].lab, '/isolated/base/lab');
   assert.equal(cohorts[1].records, report.comparison.records);
   assert.equal(completePairs(cohorts[1].records), false);
+});
+
+test('graph/browser failure keeps build times diagnostic and exposes no valid performance cells', () => {
+  const records = ['cold', 'warm'].flatMap(cacheMode => [0, 1, 2].map(round => ({ cacheMode, round, scored: true, success: true, durationMs: 100 })));
+  for (const status of ['invalid', 'partial']) {
+    const report = { status, records: structuredClone(records), comparison: { mode: 'paired', records: structuredClone(records) } };
+    finalizePerformanceMetrics(report);
+    for (const row of [...report.cells, ...report.comparison.baseCells]) {
+      assert.equal(row.validSamples, 0); assert.equal(row.medianMs, null); assert.equal(row.iqrMs, null); assert.equal(row.samples, 3);
+    }
+    assert.equal(report.diagnosticBuildMeasurements.head[0].medianMs, 100);
+    assert.equal(report.diagnosticBuildMeasurements.eligibleForComparison, false);
+    assert.ok(report.records.every(row => row.durationMs === 100 && row.eligibleForComparison === false));
+  }
+  const valid = { status: 'complete', records, comparison: { mode: 'current-only' } };
+  finalizePerformanceMetrics(valid);
+  assert.equal(valid.cells[0].medianMs, 100); assert.equal(valid.cells[0].validSamples, 3);
+  assert.deepEqual(valid.comparison.baseCells, []);
 });

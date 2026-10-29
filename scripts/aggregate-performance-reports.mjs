@@ -1,3 +1,4 @@
+import { qualifiedPerformanceCells } from './performance-metrics.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,8 +7,8 @@ import { validationEvent } from './v2-release-inventory.mjs';
 
 export function compactReport(report) {
   const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key] ?? null]));
-  return { metadata, status: report.status, cells: report.cells ?? [],
-    comparison: { mode: report.comparison?.mode ?? 'current-only', baseCells: report.comparison?.mode === 'paired' ? report.comparison.baseCells : [] },
+  return { metadata, status: report.status, cells: qualifiedPerformanceCells(report.status, report.cells ?? []),
+    comparison: { mode: report.comparison?.mode ?? 'current-only', baseCells: report.comparison?.mode === 'paired' ? qualifiedPerformanceCells(report.status, report.comparison.baseCells ?? []) : [] },
     history: (report.history?.entries ?? []).slice(0, 10).map(row => ({ headSHA: row.sourceHeadSHA, runId: row.runId,
       medianMs: row.cells.find(cell => cell.cacheMode === 'cold')?.medianMs })).filter(row => Number.isFinite(row.medianMs)),
     diagnostics: [report.failureKind ? `Failure kind: ${report.failureKind}` : null, report.comparison?.reason, report.history?.reason, report.history?.error,
@@ -31,7 +32,7 @@ async function main() {
   const directory = path.resolve('.performance-reports');
   const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT), event: 'pull_request',
     headSHA: event.pull_request.head.sha, baseSHA: event.pull_request.base.sha, prNumber: event.number,
-    protocol: 'commerce-business-2048-farm-supervised-v1', reports: [] };
+    protocol: 'commerce-business-2048-farm-supervised-v2', reports: [] };
   const failures = [];
   for (const [abi, os, arch] of platforms) {
     const name = `performance-${process.env.GITHUB_SHA}-${abi}-attempt-${summary.runAttempt}`;

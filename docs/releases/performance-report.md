@@ -7,7 +7,7 @@ standard ARM64 cohort. No local measurement is implied by the implementation.
 
 ## Complete workload and timing
 
-Protocol `commerce-business-2048-farm-supervised-v1` generates **business-2048** with
+Protocol `commerce-business-2048-farm-supervised-v2` generates **business-2048** with
 `business: true`: 2,048 categories, 14 unique files per category plus index,
 28,673 generated source files. Base input counts are measured separately; files
 are never relabeled as module counts. Original HTML, admin entry, lazy pages,
@@ -32,7 +32,10 @@ preparation, warmup, measured build, graph compilation or browser run is schedul
 Every enabled Farm cohort must have exactly three valid cold and three valid warm
 samples; missing samples cannot pass through an empty-array success check.
 
-Failed, interrupted and absent samples remain null. Timeout, incomplete pairs,
+Failed, interrupted and absent samples remain null. Build times that precede a
+failed graph/browser/provenance/cleanup check remain only in raw diagnostic
+measurements: public head/base cells have zero valid samples and null timings,
+and such a report cannot enter history or regression comparisons. Timeout, incomplete pairs,
 missing source coverage or browser failure makes the report invalid. No workload
 reduction or zero substitution is allowed. Three pairs are exploratory and all
 reports retain `publishable:false`; these are not release speed thresholds. The
@@ -146,3 +149,15 @@ old SHAs/attempts cannot overwrite newer evidence. No artifact code is executed,
 no new token is created, and `pull_request_target` is not used. The reporter must
 exist on the default branch before live comments work; source implementation is
 not proof that a comment was posted. HMR benchmarking remains outside this protocol.
+
+## CI cache scope
+
+Only the Linux x64 GNU, Windows x64 MSVC and Darwin ARM64 native producers save
+new Rust target caches. The other six release architectures and the independent
+Docs reference restore compatible existing caches without saving new archives.
+The Docs pnpm cache is disabled. Existing remote caches are not deleted by this
+policy; storage reduction depends on their eventual expiry or separate review.
+Toolchain, target, profile and dependency keys stay distinct. Cached dependencies
+never replace exact-SHA native artifacts or the final nine-architecture assembly.
+Docs still builds its release reference until actual ci/release functional
+compatibility is proven; hash presence alone does not authorize switching it off.

@@ -14,15 +14,17 @@ test('native matrices wait for cheap spelling, release/pack and three-platform p
   }
 });
 
-test('Cargo caches include the six release targets and actual Docker host mounts without caching uploaded payloads', () => {
+test('Cargo restores cover all nine targets while only the three primary producers save target caches', () => {
   for (const file of ['rust-build-user.yaml', 'rust-build-release.yaml']) {
     const source = read(file);
     assert.match(source, /uses: Swatinem\/rust-cache@v2/);
     assert.match(source, /workspaces: ". -> target"/);
     assert.match(source, /FARM_CARGO_HOME=%s\/.cargo/);
-    assert.match(source, /env.FARM_CARGO_HOME \}\}\/registry:\/root\/.cargo\/registry/);
+    assert.match(source, /node scripts\/v2-docker-cargo-cache.mjs/);
+    assert.match(source, /cache-on-failure: false/);
+    assert.match(source, /path: .ci-native-cache\/\$\{\{ matrix.settings.abi \}\}.json/);
     assert.doesNotMatch(source, /env.HOME/);
-    assert.ok(source.includes('-v ${{ github.workspace }}:/build'));
+    assert.doesNotMatch(source, /addnab\/docker-run-action|:\/root\/.cargo\/(?:git|registry)/);
     assert.ok(source.includes('scripts/ci-build-rust-artifacts.sh'));
     assert.ok(source.includes('name: ${{ github.sha }}-${{ matrix.settings.abi }}'));
   }
@@ -38,4 +40,18 @@ test('three independent candidate consumer jobs install the exact current seal w
   assert.ok(source.includes('name: v2-release-seal-${{ github.sha }}'));
   assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-consumer-results/);
   assert.doesNotMatch(source, /pnpm install|cargo |NPM_TOKEN|secrets:/);
+});
+
+test('cache writers are limited without replacing the Docs release reference or final nine-ABI assembly', () => {
+  const user = read('rust-build-user.yaml'), release = read('rust-build-release.yaml'), docs = read('farm-docs.yaml');
+  assert.match(user, /save-if: true/);
+  assert.match(release, /save-if: false/);
+  assert.match(docs, /save-if: false/);
+  assert.doesNotMatch(docs, /cache: pnpm/);
+  assert.match(docs, /pnpm --dir packages\/core run build:rs/);
+  assert.match(docs, /ciProfileCompatibility:'not-yet-validated'/);
+  const ci = read('ci.yaml');
+  assert.match(ci.split('  docs-acceptance:')[1].split('  release-candidate-seal:')[0], /needs: \[call-rust-build-user\]/);
+  const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
+  assert.match(assembly, /needs: \[call-rust-build-user, call-rust-build-release\]/);
 });

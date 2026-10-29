@@ -58,7 +58,8 @@ jobs:
 
   docs-acceptance:
     name: Docs release-profile reference and contracts
-    needs: [check-native-candidate-assembly]
+    # This independent release reference does not consume the nine-ABI assembly.
+    needs: [call-rust-build-user]
     uses: ./.github/workflows/farm-docs.yaml
     permissions:
       contents: read

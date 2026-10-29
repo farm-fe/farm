@@ -1,3 +1,5 @@
+import { performanceDeadline } from './performance-supervised.mjs';
+import { completePerformanceCells } from './performance-metrics.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -11,7 +13,7 @@ const unavailable = reason => ({ mode: 'current-only', reason, root: null, revis
 export function githubClient({ token = process.env.GITHUB_TOKEN, fetchImpl = fetch } = {}) {
   return async (route, binary = false) => {
     if (!token) throw new Error('GITHUB_TOKEN is unavailable');
-    const remaining = Number(process.env.FARM_PERFORMANCE_STARTED_AT ?? Date.now()) + 18 * 60 * 1000 - Date.now();
+    const remaining = performanceDeadline(Number(process.env.FARM_PERFORMANCE_STARTED_AT ?? Date.now())) - Date.now();
     if (!Number.isFinite(remaining) || remaining <= 0) throw new Error('Performance metadata request budget exhausted');
     const response = await fetchImpl(`https://api.github.com${route}`, { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, signal: AbortSignal.timeout(Math.min(30000, remaining)) });
     if (!response.ok) throw new Error(`GitHub REST ${response.status}`);
@@ -144,9 +146,10 @@ export async function loadComparableHistory({ repository, abi, metadata, workflo
           const [head, producer] = await Promise.all([api(`${prefix}/git/commits/${run.head_sha}`), api(`${prefix}/git/commits/${producerSHA}`)]);
           if (!head.tree?.sha || head.tree.sha !== producer.tree?.sha) throw new Error('Historical producer tree differs from API-confirmed source');
         }
-        if (report.status !== 'complete' || report.metadata?.revision !== producerSHA || historyCompatibilityKeys.some(key => metadata[key] === undefined || report.metadata[key] !== metadata[key])) { result.excluded.push({ runId: run.id, reason: 'incompatible' }); continue; }
-        const cells = (report.cells ?? []).filter(cell => ['cold', 'warm'].includes(cell.cacheMode) && Number.isFinite(cell.medianMs) && Number.isFinite(cell.iqrMs) && cell.validSamples >= 3).map(({ cacheMode, medianMs, iqrMs, validSamples }) => ({ cacheMode, medianMs, iqrMs, validSamples }));
-        if (cells.length !== 2) throw new Error('Invalid sample summary');
+        if (report.status !== 'complete') { result.excluded.push({ runId: run.id, reason: 'invalid', detail: 'Full workload acceptance did not pass' }); continue; }
+        if (report.metadata?.revision !== producerSHA || historyCompatibilityKeys.some(key => metadata[key] === undefined || report.metadata[key] !== metadata[key])) { result.excluded.push({ runId: run.id, reason: 'incompatible' }); continue; }
+        if (!completePerformanceCells(report.cells)) throw new Error('Invalid complete sample summary');
+        const cells = report.cells.map(({ cacheMode, medianMs, iqrMs, validSamples }) => ({ cacheMode, medianMs, iqrMs, validSamples }));
         result.entries.push({ revision: producerSHA, sourceHeadSHA: run.head_sha, event: run.event, runId: run.id, artifactId: artifact.id, createdAt: run.created_at, os: metadata.os, arch: metadata.arch, cells });
       } catch (error) { result.excluded.push({ runId: run.id, reason: 'invalid', detail: error.message }); }
     }

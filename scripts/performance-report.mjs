@@ -1,3 +1,4 @@
+import { qualifiedPerformanceCells } from './performance-metrics.mjs';
 // cspell:words taskkill statfs bavail
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -19,7 +20,7 @@ import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json'];
-export const protocol = 'commerce-business-2048-farm-supervised-v1';
+export const protocol = 'commerce-business-2048-farm-supervised-v2';
 export const workloadScale = 'business-2048';
 export function businessFixture() { const profile = scaleProfile(workloadScale); return extensionSources(profile.categories, profile); }
 export async function workloadFileCounts(sourceRoot, fixture) {
@@ -39,7 +40,7 @@ export async function workloadFileCounts(sourceRoot, fixture) {
 }
 export async function harnessFingerprint(sourceRoot) {
   const hash = crypto.createHash('sha256');
-  for (const file of ['performance-report.mjs', 'performance-graph-worker.mjs', 'performance-correctness-worker.mjs', 'performance-resources.mjs', 'performance-cohorts.mjs', 'performance-supervised.mjs', 'performance-supervisor.py', 'v2-release-diagnostics.mjs', 'v2-pnpm-cli.mjs']) hash.update(file).update((await fs.readFile(path.join(sourceRoot, 'scripts', file), 'utf8')).replaceAll('\r\n', '\n')).update('\0');
+  for (const file of ['performance-metrics.mjs', 'performance-report.mjs', 'performance-graph-worker.mjs', 'performance-correctness-worker.mjs', 'performance-resources.mjs', 'performance-cohorts.mjs', 'performance-supervised.mjs', 'performance-supervisor.py', 'v2-release-diagnostics.mjs', 'v2-pnpm-cli.mjs']) hash.update(file).update((await fs.readFile(path.join(sourceRoot, 'scripts', file), 'utf8')).replaceAll('\r\n', '\n')).update('\0');
   return hash.digest('hex');
 }
 export function aggregate(records) {
@@ -49,6 +50,16 @@ export function aggregate(records) {
     return { cacheMode, samples: samples.length, validSamples: values.length,
       medianMs: quantile(values, .5), iqrMs: values.length ? quantile(values, .75) - quantile(values, .25) : null };
   });
+}
+export function finalizePerformanceMetrics(report) {
+  const head = aggregate(report.records ?? []);
+  const base = report.comparison.mode === 'paired' ? aggregate(report.comparison.records ?? []) : [];
+  if (report.status !== 'complete') report.diagnosticBuildMeasurements = {
+    eligibleForComparison: false, reason: 'Build-only timings failed full acceptance; diagnostic evidence only', head, base,
+  };
+  report.cells = qualifiedPerformanceCells(report.status, head);
+  report.comparison.baseCells = qualifiedPerformanceCells(report.status, base);
+  for (const row of [...(report.records ?? []), ...(report.comparison.records ?? [])]) row.eligibleForComparison = report.status === 'complete' && row.scored === true && row.success === true;
 }
 export function completePairs(rows) {
   return Array.isArray(rows) && ['cold', 'warm'].every(mode => {
@@ -288,7 +299,7 @@ async function main() {
       const supervision = await supervisedCommand(process.execPath, [path.join(cohort.root, 'scripts/performance-graph-worker.mjs'), cohort.lab, graphFile], { phase: 'graph', budget: report.budget, deadline, trace: path.join(output, 'resource-watch.jsonl'), cwd: cohort.lab, log,
         env: { ...process.env, COMMERCE_SCALE: workloadScale, COMMERCE_GROUP: 'rust', COMMERCE_CACHE_ID: 'graph-final', COMMERCE_OUTPUT_ID: 'graph-final' } });
       const graph = JSON.parse(await fs.readFile(graphFile, 'utf8'));
-      if (graph.status !== 'complete' || !Number.isInteger(graph.summary?.retainedModules) || graph.summary.retainedModules <= 0) throw new Error('Actual graph count is unavailable');
+      if (graph.status !== 'complete' || !Number.isInteger(graph.summary?.retainedModules) || graph.summary.retainedModules <= 0) throw new Error(`Actual graph count or coverage unavailable: ${graph.reason ?? graph.coverage?.reason ?? 'Missing retained-module evidence'}`);
       report.graphs.push({ cohort: cohort.name, supervision, status: graph.status, summary: graph.summary,
         coverage: { generatedFiles: graph.coverage.generatedFiles, generatedCovered: graph.coverage.generatedCovered, missing: graph.coverage.missing }, detail: path.basename(graphFile) });
     }
@@ -313,11 +324,11 @@ async function main() {
     if (before) { report.sourcesUnchanged = before === await trackedFingerprint(); if (!report.sourcesUnchanged) { report.status = 'invalid'; report.errors.push('Tracked Commerce source changed'); } }
     if (temp && report.cleanupUnconfirmed) { report.temporaryDirectoryRemoved = false; report.errors.push(`Temporary inputs retained because process cleanup is unconfirmed: ${temp}`); }
     else if (temp) { try { await fs.rm(temp, { recursive: true }); report.temporaryDirectoryRemoved = true; } catch (error) { report.status = 'invalid'; report.errors.push(`Cleanup: ${error.message}`); } }
-    report.cells = aggregate(report.records);
+    finalizePerformanceMetrics(report);
     report.limitations = ['Three scored pairs are insufficient for formal performance certification.', 'No HMR sampling. OS kernel peak RSS and sampled summed process-group RSS are distinct; live group CPU is diagnostic only, not a formal CPU benchmark.', 'No cross-OS absolute ranking.', report.comparison.reason];
     await persist();
     await fs.writeFile(path.join(output, 'summary.json'), JSON.stringify({ ...report, records: undefined, native: undefined }, null, 2));
-    await fs.writeFile(path.join(output, 'samples.csv'), toCsv([...report.records, ...(report.comparison.records ?? [])], ['round', 'scored', 'cohort', 'tool', 'cacheMode', 'cacheSemantics', 'success', 'durationMs', 'error', 'artifacts']));
+    await fs.writeFile(path.join(output, 'samples.csv'), toCsv([...report.records, ...(report.comparison.records ?? [])], ['round', 'scored', 'cohort', 'tool', 'cacheMode', 'cacheSemantics', 'success', 'eligibleForComparison', 'durationMs', 'error', 'artifacts']));
     const markdown = `### Commerce performance (${process.platform}/${process.arch})\n\nStatus: **${report.status}**; publishable: **false**; comparison: **${report.comparison.mode}**.\n\n| Cache | Valid samples | Median ms | IQR ms |\n|---|---:|---:|---:|\n${report.cells.map(cell => `| ${cell.cacheMode} | ${cell.validSamples} | ${cell.medianMs ?? 'unavailable'} | ${cell.iqrMs ?? 'unavailable'} |`).join('\n')}\n\n${report.errors.join('\n')}\n\n${report.limitations.join('\n\n')}\n`;
     await fs.writeFile(path.join(output, 'summary.md'), markdown);
     if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);

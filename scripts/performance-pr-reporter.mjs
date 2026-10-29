@@ -1,3 +1,4 @@
+import { qualifiedPerformanceCells, completePerformanceCells } from './performance-metrics.mjs';
 import fs from 'node:fs/promises';
 import { inflateRawSync } from 'node:zlib';
 import { pathToFileURL } from 'node:url';
@@ -23,7 +24,7 @@ export function validateSummary(bytes) {
   assert(Buffer.byteLength(bytes) <= 65536, 'Summary exceeds 64 KiB');
   const value = JSON.parse(bytes);
   assert(exact(value, ['schemaVersion', 'repositoryId', 'runId', 'runAttempt', 'event', 'headSHA', 'baseSHA', 'prNumber', 'protocol', 'reports']), 'Invalid summary schema');
-  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-farm-supervised-v1' && value.event === 'pull_request', 'Invalid protocol');
+  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-farm-supervised-v2' && value.event === 'pull_request', 'Invalid protocol');
   assert(integer(value.repositoryId) && integer(value.runId) && integer(value.prNumber) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
   assert(Array.isArray(value.reports) && value.reports.length > 0 && value.reports.length <= 3, 'Invalid reports');
   const systems = new Set();
@@ -48,13 +49,10 @@ function validateReport(value) {
   cells(value.comparison.baseCells);
   if (value.comparison.mode === 'current-only') assert(value.comparison.baseCells.length === 0, 'Current-only report must not contain base samples');
   if (value.status === 'complete') {
-    const complete = rows => rows.length === 2 && ['cold', 'warm'].every(mode => {
-      const row = rows.find(cell => cell.cacheMode === mode);
-      return row?.samples === 3 && row.validSamples === 3 && Number.isFinite(row.medianMs) && row.medianMs > 0;
-    });
-    assert(complete(value.cells), 'Complete report requires three valid cold/warm head samples');
-    if (value.comparison.mode === 'paired') assert(complete(value.comparison.baseCells), 'Complete paired report requires three valid cold/warm base samples');
+    assert(completePerformanceCells(value.cells), 'Complete report requires three valid cold/warm head samples');
+    if (value.comparison.mode === 'paired') assert(completePerformanceCells(value.comparison.baseCells), 'Complete paired report requires three valid cold/warm base samples');
   }
+  if (value.status !== 'complete') assert([...value.cells, ...value.comparison.baseCells].every(cell => cell.validSamples === 0 && cell.medianMs === null && cell.iqrMs === null), 'Unqualified report must not expose valid timing metrics');
   assert(Array.isArray(value.history) && value.history.length <= 20, 'Invalid history');
   for (const row of value.history) assert(exact(row, ['headSHA', 'runId', 'medianMs']) && sha(row.headSHA) && integer(row.runId) && Number.isFinite(row.medianMs) && row.medianMs >= 0 && row.medianMs <= 86400000, 'Invalid history row');
 }
@@ -89,7 +87,7 @@ export function renderComment(summary, repository) {
   if (summary.reports) return `${marker}\n<!-- farm-performance-run:${summary.runId}:${summary.runAttempt} -->\n## Performance report\n\n[Run ${summary.runId}, attempt ${summary.runAttempt}](https://github.com/${repository}/actions/runs/${summary.runId}) · Head: \`${summary.headSHA}\`\n\nPlatforms are reported separately.\n\n${summary.reports.map(report => `### ${report.metadata.os} / ${report.metadata.arch}\n\n${renderComment({ ...summary, ...report, reports: null }, repository).split('## Performance report\n')[1]}`).join('\n\n')}`;
   const timing = cell => cell && cell.medianMs !== null ? `${cell.medianMs.toFixed(1)} ms (IQR ${cell.iqrMs.toFixed(1)}; ${cell.validSamples}/${cell.samples})` : 'Unavailable';
   const diagnostics = (summary.diagnostics ?? []).map(reason => `- ${reason.replace(/[&<>`*_\[\]\\@]/g, character => `&#${character.charCodeAt(0)};`)}`).join('\n');
-  const rows = ['cold', 'warm'].map(mode => `| ${mode} | ${timing(summary.cells.find(c => c.cacheMode === mode))} | ${timing(summary.comparison.baseCells.find(c => c.cacheMode === mode))} |`);
+  const rows = ['cold', 'warm'].map(mode => `| ${mode} | ${timing(qualifiedPerformanceCells(summary.status, summary.cells).find(c => c.cacheMode === mode))} | ${timing(qualifiedPerformanceCells(summary.status, summary.comparison.baseCells).find(c => c.cacheMode === mode))} |`);
 
   return `${marker}\n## Performance report\n\nStatus: **${summary.status}**; comparison: **${summary.comparison.mode}**\n\n| Cache | Farm head | Farm base |\n|---|---|---|\n${rows.join('\n')}\n\n${diagnostics}\n\n[Run ${summary.runId}](https://github.com/${repository}/actions/runs/${summary.runId}); head: \`${summary.headSHA}\`\n\nMeasurements are untrusted CI data, informational only; three samples are not formal certification.\n\n### Recent comparable cold builds\n${summary.history.length ? summary.history.map(row => `- \`${row.headSHA.slice(0, 12)}\`: ${row.medianMs.toFixed(1)} ms ([run](https://github.com/${repository}/actions/runs/${row.runId}))`).join('\n') : 'No compatible history available.'}`;
 }
