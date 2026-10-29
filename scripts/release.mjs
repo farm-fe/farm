@@ -1,3 +1,4 @@
+import { resolveNpmCli } from './v2-npm-cli.mjs';
 // cspell:words npmjs
 import fs from 'node:fs';
 import path from 'node:path';
@@ -83,7 +84,7 @@ export async function release({ directory = process.env.FARM_RELEASE_CANDIDATE_D
   execFileSync(process.execPath, [path.join(root, 'scripts/v2-release-preflight.mjs'), '--publication', '--candidate-seal', receiptPath, '--sdk-proof', path.resolve(sdkProof)], { cwd: root, stdio: 'inherit' });
   const receipt = JSON.parse(fs.readFileSync(receiptPath));
   const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
-  const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
+  const npm = resolveNpmCli();
   const ordered = publicationOrder(plan, receipt.records, path.resolve(directory));
   // Check every immutable destination before the first upload. Retrying after a
   // partial publication reuses only byte-identical registry versions.

@@ -1,3 +1,4 @@
+import { resolveNpmCli } from './v2-npm-cli.mjs';
 // cspell:words statfs bavail
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -6,7 +7,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command } from './performance-report.mjs';
 import { publicConsumerManifest, cleanupConsumerScratch } from './verify-published-v2-consumers.mjs';
-import { candidateNpmEvidence, serveCandidateRegistry, verifyInstalledNpmLock } from './v2-consumer-registry.mjs';
+import { candidateNpmEvidence, serveCandidateRegistry, verifyInstalledNpmLock, consumerHostAbi } from './v2-consumer-registry.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const [sealArg, outputArg] = process.argv.slice(2);
@@ -39,14 +40,15 @@ try {
   await fs.writeFile(path.join(scratch, 'empty-user.npmrc'), '');
   env.NPM_CONFIG_USERCONFIG = path.join(scratch, 'empty-user.npmrc');
   await fs.writeFile(path.join(scratch, '.npmrc'), `registry=${registry.url}\n@farmfe:registry=${registry.url}\nignore-scripts=true\naudit=false\nfund=false\n`);
-  const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
+  const npm = resolveNpmCli();
   await run('install', [npm, 'install', '--ignore-scripts', '--no-audit', '--no-fund', `--registry=${registry.url}`], 10 * 60 * 1000);
   const lock = JSON.parse(await fs.readFile(path.join(scratch, 'package-lock.json')));
   verifyInstalledNpmLock(plan, manifest, lock, evidence, { registry: registry.url });
   await fs.copyFile(path.join(scratch, 'package-lock.json'), path.join(output, 'package-lock.json'));
   result.installedPrimary = Object.entries(manifest.dependencies).map(([name, version]) => ({ name, version, integrity: evidence.get(name).integrity }));
   result.nativeTargetEvidence = plan.npm.payloads.map(row => ({ name: row.name, version: row.version, integrity: evidence.get(row.name).integrity, proof: evidence.get(row.name).kind }));
-  const hostAbi = `${process.platform}-${process.arch}${process.platform === 'linux' ? process.report.getReport().header.glibcVersionRuntime ? '-gnu' : '-musl' : ''}`;
+  const hostAbi = consumerHostAbi();
+  result.platform.abi = hostAbi;
   const hostCore = plan.npm.payloads.find(row => row.owner === '@farmfe/core' && row.platform === hostAbi);
   assert.ok(hostCore, `Unsupported consumer native target: ${hostAbi}`);
   const expectedNative = evidence.get(hostCore.name);

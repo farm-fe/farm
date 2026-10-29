@@ -1,3 +1,4 @@
+import { resolveNpmCli } from './v2-npm-cli.mjs';
 // cspell:words statfs bavail
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -62,7 +63,7 @@ async function main() {
     await fs.writeFile(path.join(scratch, 'empty-user.npmrc'), '');
     env.NPM_CONFIG_USERCONFIG = path.join(scratch, 'empty-user.npmrc');
     await fs.writeFile(path.join(scratch, '.npmrc'), 'registry=https://registry.npmjs.org/\n@farmfe:registry=https://registry.npmjs.org/\nignore-scripts=true\n');
-    const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
+    const npm = resolveNpmCli();
     await run('npm-install', process.execPath, [npm, 'install', '--ignore-scripts', '--registry=https://registry.npmjs.org'], scratch, 600000);
     const lock = JSON.parse(await fs.readFile(path.join(scratch, 'package-lock.json')));
     for (const [name, pkg] of Object.entries(lock.packages ?? {})) {

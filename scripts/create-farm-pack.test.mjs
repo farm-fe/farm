@@ -1,3 +1,4 @@
+import { resolveNpmCli } from './v2-npm-cli.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -15,7 +16,7 @@ test('normal create-farm pack preserves actual JS, bin, declarations and origina
     for (const entry of ['index.js', 'index.d.ts', 'create-farm.js']) assert.ok(manifest.files.includes(entry));
     await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(manifest));
     for (const entry of manifest.files) await fs.cp(path.join(source, entry), path.join(root, entry), { recursive: true });
-    const npm = path.join(path.dirname(process.execPath), 'node_modules/npm/bin/npm-cli.js');
+    const npm = resolveNpmCli();
     execFileSync(process.execPath, [npm, 'pack', '--ignore-scripts', '--json', '--pack-destination', root], { cwd: root, timeout: 30000, stdio: 'pipe' });
     const files = await fs.readdir(root), archive = files.filter(file => file.endsWith('.tgz'));
     assert.equal(archive.length, 1);

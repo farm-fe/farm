@@ -8,6 +8,19 @@ import { publicationNpm } from './v2-release-inventory.mjs';
 
 const integrity = bytes => `sha512-${crypto.createHash('sha512').update(bytes).digest('base64')}`;
 const packageIdentity = row => `${row.name}@${row.version}`;
+// Exact target spelling follows the Core NAPI loader and declared payloads.
+export function consumerHostAbi({ platform = process.platform, arch = process.arch, report = () => process.report.getReport() } = {}) {
+  if (platform === 'win32' && ['x64', 'arm64', 'ia32'].includes(arch)) return `win32-${arch}-msvc`;
+  if (platform === 'darwin' && ['x64', 'arm64'].includes(arch)) return `darwin-${arch}`;
+  if (platform === 'linux' && ['x64', 'arm64'].includes(arch)) {
+    const header = report()?.header;
+    assert.ok(header && typeof header === 'object', 'Linux libc report is unavailable');
+    const glibc = header.glibcVersionRuntime;
+    assert.ok(glibc === undefined || (typeof glibc === 'string' && glibc.length > 0), 'Invalid Linux libc identity');
+    return `linux-${arch}-${glibc ? 'gnu' : 'musl'}`;
+  }
+  throw new Error(`Unsupported consumer platform: ${platform}/${arch}`);
+}
 export async function candidateNpmEvidence(plan, receipt, directory) {
   assert.equal(receipt.planSha256, sha256(Buffer.from(JSON.stringify(plan))), 'Candidate plan identity mismatch');
   const selected = publicationNpm(plan), expected = [...selected.primary, ...selected.payloads];

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { gzipSync } from 'node:zlib';
-import { candidateNpmEvidence, verifyInstalledNpmLock, serveCandidateRegistry, readRegistryBody } from './v2-consumer-registry.mjs';
+import { candidateNpmEvidence, verifyInstalledNpmLock, serveCandidateRegistry, readRegistryBody, consumerHostAbi } from './v2-consumer-registry.mjs';
 import { sha256 } from './release-archive.mjs';
 function tar(manifest) {
   const bytes = Buffer.from(JSON.stringify(manifest)), header = Buffer.alloc(512);
@@ -52,4 +52,15 @@ test('external registry bodies are bounded while streaming, including absent/fal
   await assert.rejects(readRegistryBody(new Response(new ReadableStream({ start(controller) {
     controller.enqueue(new Uint8Array(5)); controller.enqueue(new Uint8Array(5)); controller.close();
   } })), 8), /too large/);
+});
+
+test('consumer native ABI uses declared Windows MSVC, Darwin and Linux libc targets', () => {
+  const unavailable = () => { throw new Error('Non-Linux must not inspect libc'); };
+  for (const arch of ['x64', 'arm64', 'ia32']) assert.equal(consumerHostAbi({ platform: 'win32', arch, report: unavailable }), `win32-${arch}-msvc`);
+  for (const arch of ['x64', 'arm64']) {
+    assert.equal(consumerHostAbi({ platform: 'darwin', arch, report: unavailable }), `darwin-${arch}`);
+    assert.equal(consumerHostAbi({ platform: 'linux', arch, report: () => ({ header: { glibcVersionRuntime: '2.39' } }) }), `linux-${arch}-gnu`);
+    assert.equal(consumerHostAbi({ platform: 'linux', arch, report: () => ({ header: {} }) }), `linux-${arch}-musl`);
+  }
+  for (const options of [{ platform: 'win32', arch: 'arm' }, { platform: 'unknown', arch: 'x64' }, { platform: 'linux', arch: 'x64', report: () => null }, { platform: 'linux', arch: 'x64', report: () => ({ header: { glibcVersionRuntime: 42 } }) }]) assert.throws(() => consumerHostAbi(options));
 });
