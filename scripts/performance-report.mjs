@@ -56,6 +56,13 @@ export function completePairs(rows) {
     return samples.length === 3 && samples.every(row => row.success && Number.isFinite(row.durationMs) && row.durationMs > 0);
   });
 }
+export async function enablePairedCohort(report, cohorts, { baseRoot, metadata, native, prepare }) {
+  // Preparation must finish before exposing paired state or an enabled cohort.
+  const lab = await prepare();
+  const comparison = { mode: 'paired', reason: 'Same runner, fixture, lockfile and toolchain; isolated exact-base native cohort', metadata, records: [], native };
+  cohorts.push({ root: baseRoot, lab, records: comparison.records, name: 'base' });
+  report.comparison = comparison;
+}
 export function compatible(a, b) {
   return ['protocol', 'fixtureSha256', 'harnessSha256', 'node', 'pnpm', 'python', 'os', 'arch', 'runnerImage', 'runnerImageVersion', 'lockSha256'].every(key => a[key] !== undefined && a[key] === b[key]);
 }
@@ -240,9 +247,9 @@ async function main() {
         fixtureSha256: await workloadFingerprint(baseRoot, fixture), harnessSha256: await harnessFingerprint(baseRoot), lockSha256: hash(await fs.readFile(path.join(baseRoot, 'pnpm-lock.yaml'))) };
       if (!compatible(report.metadata, baseMetadata)) throw new Error('Base workload, lockfile or protocol is incompatible');
       const baseTemp = path.join(temp, 'base'); await fs.mkdir(baseTemp);
-      report.comparison = { mode: 'paired', reason: 'Same runner, fixture, lockfile and toolchain; isolated exact-base native cohort', metadata: baseMetadata, records: [], native: base.nativeProvenance };
-      cohorts.push({ root: baseRoot, lab: await prepareLab(baseRoot, baseTemp, fixture), records: report.comparison.records, name: 'base' });
-    } catch (error) { report.comparison.reason = `Current only: ${error.message}`; }
+      await enablePairedCohort(report, cohorts, { baseRoot, metadata: baseMetadata, native: base.nativeProvenance,
+        prepare: () => prepareLab(baseRoot, baseTemp, fixture) });
+    } catch (error) { report.comparison = { mode: 'current-only', reason: `Current only: ${error.message}` }; }
     const measurementCohorts = cohorts;
     await persist();
     for (let round = -1; round < 3; round++) {

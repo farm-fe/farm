@@ -46,6 +46,15 @@ function validateReport(value) {
   cells(value.cells);
   assert(exact(value.comparison, ['mode', 'baseCells']) && ['paired', 'current-only'].includes(value.comparison.mode), 'Invalid comparison');
   cells(value.comparison.baseCells);
+  if (value.comparison.mode === 'current-only') assert(value.comparison.baseCells.length === 0, 'Current-only report must not contain base samples');
+  if (value.status === 'complete') {
+    const complete = rows => rows.length === 2 && ['cold', 'warm'].every(mode => {
+      const row = rows.find(cell => cell.cacheMode === mode);
+      return row?.samples === 3 && row.validSamples === 3 && Number.isFinite(row.medianMs) && row.medianMs > 0;
+    });
+    assert(complete(value.cells), 'Complete report requires three valid cold/warm head samples');
+    if (value.comparison.mode === 'paired') assert(complete(value.comparison.baseCells), 'Complete paired report requires three valid cold/warm base samples');
+  }
   assert(Array.isArray(value.history) && value.history.length <= 20, 'Invalid history');
   for (const row of value.history) assert(exact(row, ['headSHA', 'runId', 'medianMs']) && sha(row.headSHA) && integer(row.runId) && Number.isFinite(row.medianMs) && row.medianMs >= 0 && row.medianMs <= 86400000, 'Invalid history row');
 }

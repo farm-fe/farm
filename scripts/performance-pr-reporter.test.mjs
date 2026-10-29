@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { validateSummary, verifyIdentity, renderComment, marker, readSummaryZip, report, findSummaryArtifacts } from './performance-pr-reporter.mjs';
 
 const head = 'a'.repeat(40), base = 'b'.repeat(40);
-const cell = { cacheMode: 'cold', samples: 5, validSamples: 5, medianMs: 100, iqrMs: 10 };
-const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell], comparison: { mode: 'paired', baseCells: [cell] }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
+const cell = { cacheMode: 'cold', samples: 3, validSamples: 3, medianMs: 100, iqrMs: 10 };
+const fixture = () => ({ schemaVersion: 2, repositoryId: 1, runId: 2, runAttempt: 1, event: 'pull_request', headSHA: head, baseSHA: base, prNumber: 3, protocol: 'commerce-business-2048-farm-supervised-v1', reports: [{ metadata: { os: 'linux', arch: 'x64', revision: 'c'.repeat(40), baseSHA: base, node: 'v22.4.0', pnpm: '9.4.0', fixtureSha256: 'a'.repeat(64), lockSha256: 'b'.repeat(64), runnerImage: 'ubuntu24' }, status: 'complete', diagnostics: [], cells: [cell, { ...cell, cacheMode: 'warm' }], comparison: { mode: 'paired', baseCells: [cell, { ...cell, cacheMode: 'warm' }] }, history: [{ headSHA: head, runId: 2, medianMs: 100 }] }] });
 const run = { id: 2, repository: { id: 1 }, event: 'pull_request', name: 'E2E Tests', status: 'completed', head_sha: head, head_repository: { id: 9 }, pull_requests: [{ number: 3, head: { sha: head } }] };
 const pr = { number: 3, state: 'open', head: { sha: head, repo: { id: 9 } }, base: { sha: base, repo: { id: 1 } } };
 function zip(text, name = 'summary.json') {
@@ -99,4 +99,41 @@ test('Farm-only schema and comment exclude legacy Vite fields and mixed-tool pro
   delete value.reports[0].comparison.viteCells;
   value.protocol = 'commerce-business-2048-supervised-v1';
   assert.throws(() => validateSummary(JSON.stringify(value)));
+});
+
+test('complete receipts reject empty, incomplete, failed and zero-duration head/base samples', () => {
+  const mutations = [
+    row => { row.cells = []; },
+    row => { row.cells.pop(); },
+    row => { row.cells[0] = { ...cell, samples: 2, validSamples: 2 }; },
+    row => { row.cells[0] = { ...cell, validSamples: 2 }; },
+    row => { row.cells[0] = { ...cell, medianMs: 0 }; },
+    row => { row.cells[0] = { ...cell, medianMs: null, iqrMs: null, validSamples: 0 }; },
+    row => { row.comparison.baseCells = []; },
+    row => { row.comparison.baseCells.pop(); },
+    row => { row.comparison.baseCells[0] = { ...cell, validSamples: 2 }; },
+    row => { row.comparison.baseCells[0] = { ...cell, medianMs: 0 }; },
+    row => { row.comparison.mode = 'current-only'; },
+  ];
+  for (const mutate of mutations) {
+    const value = fixture(); mutate(value.reports[0]);
+    assert.throws(() => validateSummary(JSON.stringify(value)));
+  }
+  const current = fixture(); current.reports[0].comparison = { mode: 'current-only', baseCells: [] };
+  validateSummary(JSON.stringify(current));
+});
+
+test('invalid and partial receipts retain missing/failed samples and their diagnostics', () => {
+  for (const status of ['invalid', 'partial']) {
+    const value = fixture(), row = value.reports[0];
+    row.status = status; row.cells = []; row.comparison.baseCells = [];
+    row.diagnostics = ['Sampling failed before complete cold/warm pairs'];
+    validateSummary(JSON.stringify(value));
+    assert.match(renderComment(value, 'farm-fe/farm'), /Sampling failed/);
+    assert.match(renderComment(value, 'farm-fe/farm'), /Unavailable/);
+    row.cells = [{ ...cell, samples: 1, validSamples: 0, medianMs: null, iqrMs: null }];
+    validateSummary(JSON.stringify(value));
+    row.comparison = { mode: 'current-only', baseCells: [cell] };
+    assert.throws(() => validateSummary(JSON.stringify(value)), /Current-only/);
+  }
 });

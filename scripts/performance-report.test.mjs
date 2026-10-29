@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs } from './performance-report.mjs';
+import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs, enablePairedCohort } from './performance-report.mjs';
 
 test('failed and missing samples do not become zero-duration measurements', () => {
   const cells = aggregate([
@@ -180,4 +180,27 @@ test('Farm sampler cannot prepare or start Vite even when its executable is unav
   assert.match(source, /cohorts.every\(cohort => completePairs\(cohort.records\)\)/);
   assert.match(source, /business-correctness-\$\{cohort.name\}/);
   assert.doesNotMatch(auxiliaryWorkloadInputs.join(' '), /vite|tailwind/);
+});
+
+test('failed base lab preparation cannot expose paired state or an empty base cohort', async () => {
+  const comparison = { mode: 'current-only', reason: 'Base not enabled' };
+  const report = { comparison }, head = { name: 'head', records: [] }, cohorts = [head];
+  await assert.rejects(enablePairedCohort(report, cohorts, { baseRoot: '/base', metadata: {}, native: {},
+    prepare: async () => { throw new Error('Base lab preparation failed'); } }), /Base lab preparation failed/);
+  assert.equal(report.comparison, comparison);
+  assert.equal(report.comparison.mode, 'current-only');
+  assert.deepEqual(cohorts, [head]);
+});
+
+test('paired state appears only after base preparation succeeds and shares its enabled sample records', async () => {
+  const report = { comparison: { mode: 'current-only' } }, cohorts = [{ name: 'head', records: [] }];
+  await enablePairedCohort(report, cohorts, { baseRoot: '/base', metadata: { revision: 'b'.repeat(40) }, native: {},
+    prepare: async () => {
+      assert.equal(report.comparison.mode, 'current-only'); assert.equal(cohorts.length, 1);
+      return '/isolated/base/lab';
+    } });
+  assert.equal(report.comparison.mode, 'paired'); assert.equal(cohorts.length, 2);
+  assert.equal(cohorts[1].lab, '/isolated/base/lab');
+  assert.equal(cohorts[1].records, report.comparison.records);
+  assert.equal(completePairs(cohorts[1].records), false);
 });
