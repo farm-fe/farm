@@ -9,6 +9,31 @@ import { command } from './performance-report.mjs';
 import { publicationNpm } from './v2-release-inventory.mjs';
 import { candidateNpmEvidence, verifyInstalledNpmLock } from './v2-consumer-registry.mjs';
 
+export function assertConsumerPackagePath(consumerRoot, packageName, actual, io, paths, diagnostic = value => console.error(JSON.stringify({ consumerPath: value }))) {
+  const details = { packageName, rawRoot: consumerRoot, rawExpected: paths.join(consumerRoot, 'node_modules', packageName), rawActual: actual,
+    canonicalRoot: null, canonicalExpected: null, canonicalActual: null, relative: null };
+  try {
+    assert.match(packageName, /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/i, 'Invalid expected consumer package');
+    details.canonicalRoot = io.realpathSync(consumerRoot);
+    details.canonicalExpected = io.realpathSync(details.rawExpected);
+    details.canonicalActual = io.realpathSync(actual);
+    details.relative = paths.relative(details.canonicalExpected, details.canonicalActual);
+    assert.ok(!actual.split(/[\\/]/).includes('..'), 'Consumer path contains a parent traversal');
+    let expected = details.canonicalRoot;
+    for (const component of ['node_modules', ...packageName.split('/')]) {
+      expected = paths.join(expected, component);
+      const canonical = io.realpathSync(expected);
+      assert.equal(paths.relative(expected, canonical), '', 'Consumer package directory redirects outside its expected location');
+    }
+    assert.ok(details.relative && !paths.isAbsolute(details.relative) && details.relative !== '..' && !details.relative.startsWith(`..${paths.sep}`), 'Consumer file is outside the exact installed package');
+    assert.ok(io.statSync(details.canonicalActual).isFile(), 'Consumer entry must be a regular file');
+    return details;
+  } catch (error) {
+    diagnostic({ ...details, error: error.message });
+    throw error;
+  }
+}
+
 export function publicConsumerManifest(plan) {
   const names = [...new Set(['@farmfe/core', '@farmfe/cli', '@farmfe/docs', '@farmfe/docs-theme-default', 'create-farm', ...publicationNpm(plan).primary.map(row => row.name)])];
   const dependencies = Object.fromEntries(names.map(name => {
@@ -72,7 +97,7 @@ async function main() {
     }
     verifyInstalledNpmLock(plan, publicConsumerManifest(plan), lock, await candidateNpmEvidence(plan, receipt, directory), { registry: 'https://registry.npmjs.org/' });
     await fs.copyFile(path.join(scratch, 'package-lock.json'), path.join(output, 'package-lock.json'));
-    await fs.writeFile(path.join(scratch, 'probe.mjs'), `import assert from 'node:assert/strict'; import { createRequire } from 'node:module'; import fs from 'node:fs'; import path from 'node:path'; import * as core from '@farmfe/core'; import { defineDocsConfig } from '@farmfe/docs'; const require=createRequire(import.meta.url); assert.equal(typeof core.build,'function'); assert.equal(typeof require('@farmfe/core').build,'function'); assert.equal(typeof defineDocsConfig,'function'); for(const name of ['@farmfe/core','@farmfe/docs']) assert.ok(fs.realpathSync(require.resolve(name)).startsWith(path.join(process.cwd(),'node_modules')+path.sep));`);
+    await fs.writeFile(path.join(scratch, 'probe.mjs'), `import assert from 'node:assert/strict'; import { createRequire } from 'node:module'; import fs from 'node:fs'; import path from 'node:path'; import * as core from '@farmfe/core'; import { defineDocsConfig } from '@farmfe/docs'; const require=createRequire(import.meta.url); assert.equal(typeof core.build,'function'); assert.equal(typeof require('@farmfe/core').build,'function'); assert.equal(typeof defineDocsConfig,'function'); const assertConsumerPackagePath=${assertConsumerPackagePath.toString()};for(const name of ['@farmfe/core','@farmfe/docs']) assertConsumerPackagePath(process.cwd(),name,require.resolve(name),fs,path);`);
     await run('esm-cjs', process.execPath, ['probe.mjs']);
     await fs.writeFile(path.join(scratch, 'probe.mts'), `import {build} from '@farmfe/core'; import {defineDocsConfig} from '@farmfe/docs'; defineDocsConfig({title:'Registry',url:'https://example.invalid'});\n// @ts-expect-error wrong argument must remain an error\nbuild(42);\n// @ts-expect-error title must remain typed\ndefineDocsConfig({title:42,url:'https://example.invalid'});\n`);
     await run('types', process.execPath, ['node_modules/typescript/bin/tsc', '--noEmit', '--module', 'NodeNext', '--moduleResolution', 'NodeNext', '--skipLibCheck', '--strict', 'probe.mts']);

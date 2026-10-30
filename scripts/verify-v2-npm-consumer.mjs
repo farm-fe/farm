@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command } from './performance-report.mjs';
-import { publicConsumerManifest, cleanupConsumerScratch } from './verify-published-v2-consumers.mjs';
+import { publicConsumerManifest, cleanupConsumerScratch, assertConsumerPackagePath } from './verify-published-v2-consumers.mjs';
 import { candidateNpmEvidence, serveCandidateRegistry, verifyInstalledNpmLock, consumerHostAbi, candidateInstallArgs } from './v2-consumer-registry.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -52,7 +52,7 @@ try {
   const hostCore = plan.npm.payloads.find(row => row.owner === '@farmfe/core' && row.platform === hostAbi);
   assert.ok(hostCore, `Unsupported consumer native target: ${hostAbi}`);
   const expectedNative = evidence.get(hostCore.name);
-  await fs.writeFile(path.join(scratch, 'probe.mjs'), `import assert from 'node:assert/strict'; import path from 'node:path'; import fs from 'node:fs'; import {createRequire} from 'node:module'; import * as esm from '@farmfe/core'; import {defineDocsConfig} from '@farmfe/docs'; const require=createRequire(import.meta.url), cjs=require('@farmfe/core'); assert.equal(typeof esm.build,'function');assert.equal(typeof cjs.build,'function');assert.equal(typeof defineDocsConfig,'function'); const identity=await esm.compilerNativeIdentity(); assert.ok(path.resolve(identity.path).startsWith(path.join(process.cwd(),'node_modules',${JSON.stringify(hostCore.name)})+path.sep));if(${JSON.stringify(expectedNative.nativeSha256 ?? null)})assert.equal(identity.sha256,${JSON.stringify(expectedNative.nativeSha256 ?? null)}); const generator=require('create-farm');assert.equal(typeof generator.run,'function');fs.writeFileSync('runtime-proof.json',JSON.stringify({esmCjs:true,nativeIdentity:identity,createFarm:true}));`);
+  await fs.writeFile(path.join(scratch, 'probe.mjs'), `import assert from 'node:assert/strict'; import path from 'node:path'; import fs from 'node:fs'; import {createRequire} from 'node:module'; import * as esm from '@farmfe/core'; import {defineDocsConfig} from '@farmfe/docs'; const require=createRequire(import.meta.url), cjs=require('@farmfe/core'); assert.equal(typeof esm.build,'function');assert.equal(typeof cjs.build,'function');assert.equal(typeof defineDocsConfig,'function'); const identity=await esm.compilerNativeIdentity(); const assertConsumerPackagePath=${assertConsumerPackagePath.toString()};const nativePath=assertConsumerPackagePath(process.cwd(),${JSON.stringify(hostCore.name)},identity.path,fs,path);if(${JSON.stringify(expectedNative.nativeSha256 ?? null)})assert.equal(identity.sha256,${JSON.stringify(expectedNative.nativeSha256 ?? null)}); const generator=require('create-farm');assert.equal(typeof generator.run,'function');fs.writeFileSync('runtime-proof.json',JSON.stringify({esmCjs:true,nativeIdentity:identity,nativePath,createFarm:true}));`);
   // create-farm is included explicitly for stable support/entry verification.
   if (!manifest.dependencies['create-farm']) throw new Error('Candidate consumer support set lacks create-farm');
   await run('runtime', ['probe.mjs']);

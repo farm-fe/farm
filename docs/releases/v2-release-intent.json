@@ -173,7 +173,7 @@
   ],
   "registryVerification": {
     "script": "scripts/verify-published-v2-consumers.mjs",
-    "sha256": "ed71ffc1c09117021311b3a15583bb6b08a1177aac423f79905893c2ba8531aa"
+    "sha256": "daab64b194484cd7312b557547b881db728eb6a95374432977fd012d99c640d2"
   },
   "websiteDeployment": false,
   "requiredCiJobs": [
