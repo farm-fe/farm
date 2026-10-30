@@ -153,11 +153,34 @@ not proof that a comment was posted. HMR benchmarking remains outside this proto
 ## CI cache scope
 
 Only the Linux x64 GNU, Windows x64 MSVC and Darwin ARM64 native producers save
-new Rust target caches. The other six release architectures and the independent
-Docs reference restore compatible existing caches without saving new archives.
-The Docs pnpm cache is disabled. Existing remote caches are not deleted by this
-policy; storage reduction depends on their eventual expiry or separate review.
-Toolchain, target, profile and dependency keys stay distinct. Cached dependencies
-never replace exact-SHA native artifacts or the final nine-architecture assembly.
-Docs still builds its release reference until actual ci/release functional
-compatibility is proven; hash presence alone does not authorize switching it off.
+new dependency-source and native-target archives. The other six native jobs,
+Docs and Unit restore only small dependency sources: registry archives/index and Git object databases, never
+credentials, tool binaries or compiled targets. pnpm caching remains disabled.
+Source keys include a schema epoch, OS/host architecture, explicit maintenance
+generation and dependency/configuration hash; same-OS source fallback still uses
+locked Cargo resolution and checksum validation. Immutable entries are not updated
+in place: a generation change is an explicit maintenance decision, not a per-run key.
+
+The native target action has an isolated cache-only Cargo home. Its metadata
+command uses one validated locked metadata snapshot captured before cache setup.
+The post cleanup reuses that snapshot without a second network request; input drift
+fails verification before successful job completion. The actual build environment
+is unchanged.
+Source and target actions therefore do not upload the same Cargo directories.
+Target keys retain profile, ABI, Rust environment and dependency hashes, plus the
+actual container image ID or hosted-runner image identity. No cross-profile or
+Ubuntu-host/Debian-container compiled-dependency compatibility is assumed.
+
+Docs starts its independent release reference alongside native builds after the
+cheap contracts. Unit keeps the original ci-test profile and default assertion/
+overflow semantics. Their bounded locked dependency fetch retries network failures;
+compiler/test failures are not retried. Neither job waits for the current run to
+produce a new cache. Cached dependencies never replace exact-SHA native artifacts,
+the nine-architecture assembly or the nineteen required release jobs.
+
+The new layout does not delete existing remote caches or guarantee a hard 10 GB
+limit. Old and new immutable entries can coexist until expiry/eviction or separately
+reviewed cleanup. Actual hit rate, archive size and wall-clock improvement require
+CI evidence; no local benchmark or profile-equivalence claim is made here. The new
+prefix/generation starts cold; runner-image and installed-toolchain changes can
+also require a new target archive. This is not a promise of a faster first run.

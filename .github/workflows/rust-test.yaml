@@ -21,14 +21,22 @@ concurrency:
 jobs:
   cargo-check:
     name: Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
 
+      - name: Restore dependency sources without native target/profile reuse
+        uses: ./.github/actions/cargo-source-cache
+      - name: Fetch locked dependencies with bounded network retries
+        timeout-minutes: 10
+        env:
+          CARGO_NET_RETRY: '3'
+          CARGO_HTTP_TIMEOUT: '60'
+        run: cargo fetch --locked
       - name: Run cargo check
-        run: cargo check --color always --all --all-targets
+        run: cargo check --locked --color always --all --all-targets
   cargo-test:
     name: Test - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -64,5 +72,13 @@ jobs:
           retry_wait_seconds: 60
           command: pnpm i --frozen-lockfile
 
+      - name: Restore dependency sources without native target/profile reuse
+        uses: ./.github/actions/cargo-source-cache
+      - name: Fetch locked dependencies with bounded network retries
+        timeout-minutes: 10
+        env:
+          CARGO_NET_RETRY: '3'
+          CARGO_HTTP_TIMEOUT: '60'
+        run: cargo fetch --locked
       - name: Run cargo test
-        run: cargo test --profile ci-test --tests
+        run: cargo test --locked --profile ci-test --tests

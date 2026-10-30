@@ -48,17 +48,15 @@ jobs:
       - name: Resolve the host Cargo cache for Docker mounts
         shell: bash
         run: |
-          mkdir -p "$HOME/.cargo/git" "$HOME/.cargo/registry"
-          printf 'FARM_CARGO_HOME=%s/.cargo\n' "$HOME" >> "$GITHUB_ENV"
-      - name: Cache Cargo dependencies and target artifacts
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ". -> target"
-          cache-on-failure: false
-          # Restore compatible existing caches; reserve new target archives for the three primary ABIs.
-          save-if: false
-          prefix-key: rust-release-${{ inputs.profile }}-${{ matrix.settings.abi }}
-          shared-key: rust-release-${{ matrix.settings.target }}-${{ matrix.settings.docker || 'host' }}
+          node --input-type=commonjs <<'NODE'
+          const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+          const home = path.join(os.homedir(), '.cargo');
+          if (/[\r\n]/.test(home)) throw Error('Cargo source home must be a single line');
+          for (const member of ['git', 'registry']) fs.mkdirSync(path.join(home, member), {recursive: true});
+          fs.appendFileSync(process.env.GITHUB_ENV, `FARM_CARGO_HOME=${home}\n`);
+          NODE
+      - name: Restore small dependency sources without saving target archives
+        uses: ./.github/actions/cargo-source-cache
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:

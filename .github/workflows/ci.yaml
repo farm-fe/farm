@@ -58,8 +58,8 @@ jobs:
 
   docs-acceptance:
     name: Docs release-profile reference and contracts
-    # This independent release reference does not consume the nine-ABI assembly.
-    needs: [call-rust-build-user]
+    # Independent release compilation starts alongside native producers after cheap gates.
+    needs: [release-contract-tests, performance-contract-tests]
     uses: ./.github/workflows/farm-docs.yaml
     permissions:
       contents: read
@@ -92,7 +92,7 @@ jobs:
       - name: Validate report, trust, cleanup and comparison contracts
         env:
           FARM_PERFORMANCE_PYTHON: ${{ steps.contract-python.outputs.python-path }}
-        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs
+        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs
 
   call-rust-build-user:
     needs: [release-contract-tests, performance-contract-tests]

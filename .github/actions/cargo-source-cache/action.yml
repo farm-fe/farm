@@ -1,0 +1,32 @@
+name: Cargo source cache
+description: Restore verified Cargo dependency sources without compiled targets or credentials
+inputs:
+  writer:
+    description: Only the three primary native producers may save source archives
+    default: 'false'
+  generation:
+    description: Explicit maintenance generation, never a run ID or source SHA
+    default: 'g1'
+runs:
+  using: composite
+  steps:
+    - name: Restore dependency sources for a primary writer
+      if: inputs.writer == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry/cache
+          ~/.cargo/registry/index
+          ~/.cargo/git/db
+        key: cargo-source-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.generation }}-${{ hashFiles('Cargo.lock', 'Cargo.toml', 'crates/*/Cargo.toml', 'rust-plugins/*/Cargo.toml', 'rust-ecosystem/*/Cargo.toml', 'packages/create-farm/Cargo.toml', '.cargo/config.toml', 'rust-toolchain.toml') }}
+        restore-keys: cargo-source-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.generation }}-
+    - name: Restore dependency sources without uploading a second archive
+      if: inputs.writer != 'true'
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          ~/.cargo/registry/cache
+          ~/.cargo/registry/index
+          ~/.cargo/git/db
+        key: cargo-source-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.generation }}-${{ hashFiles('Cargo.lock', 'Cargo.toml', 'crates/*/Cargo.toml', 'rust-plugins/*/Cargo.toml', 'rust-ecosystem/*/Cargo.toml', 'packages/create-farm/Cargo.toml', '.cargo/config.toml', 'rust-toolchain.toml') }}
+        restore-keys: cargo-source-v1-${{ runner.os }}-${{ runner.arch }}-${{ inputs.generation }}-
