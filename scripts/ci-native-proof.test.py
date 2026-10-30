@@ -83,8 +83,8 @@ class NativeProofContracts(unittest.TestCase):
             manifest, expected, github, body = fixture(); archive = bundle(manifest, github, body, member)
             self.assertEqual(proof.resolve_reuse(expected, [30], lambda _: (archive, github))["action"], "build")
 
-    def test_members_reject_noncanonical_windows_reserved_and_filesystem_collisions(self):
-        for member in ["payload//farm.node", "./payload/farm.node", "payload/./farm.node", "payload/", "payload/CON.node", "payload/lpt1", "payload/COM¹.bin", "payload/file. ", "payload/file.", "payload/line\nname", "payload/control\u202ename", "payload/cafe\u0301.node"]:
+    def test_members_reject_unsafe_spelling_windows_reserved_and_filesystem_collisions(self):
+        for member in ["payload//farm.node", "./payload/farm.node", "payload/./farm.node", "payload/", "payload/CON.node", "payload/lpt1", "payload/COM¹.bin", "payload/file. ", "payload/file.", "payload/line\nname", "payload/control" + "\u202e" + "name", "payload/cafe\u0301.node"]:
             with self.subTest(member=member), self.assertRaises(ValueError):
                 proof.safe_member(member)
         for abi in ["win32-x64-msvc", "darwin-arm64"]:
