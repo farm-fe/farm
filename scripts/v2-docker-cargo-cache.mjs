@@ -62,7 +62,21 @@ export function readableCache(roots, { io = fs } = {}) {
   return result;
 }
 
-export function runDockerCargoBuild({ workspace = process.cwd(), env = process.env, docker = spawnSync, buildTimeoutMs = 90 * 60 * 1000 } = {}) {
+export function nativeBuildBudget(abi, image, requestedTimeoutMs) {
+  const settings = {
+    'linux-x64-gnu': { image: 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian', minutes: 90 },
+    'linux-x64-musl': { image: 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine', minutes: 120 },
+  };
+  const selected = settings[abi];
+  assert.ok(selected, 'Explicit supported Docker ABI required for build budget');
+  assert.equal(image, selected.image, 'Docker budget ABI/image differs');
+  const limitMs = selected.minutes * 60 * 1000;
+  const timeoutMs = requestedTimeoutMs === undefined ? limitMs : requestedTimeoutMs;
+  assert.ok(Number.isSafeInteger(timeoutMs) && timeoutMs > 0 && timeoutMs <= limitMs, 'Build timeout must be finite and within the selected ABI/image budget');
+  return { timeoutMs, limitMs };
+}
+
+export function runDockerCargoBuild({ workspace = process.cwd(), env = process.env, docker = spawnSync, buildTimeoutMs } = {}) {
   const root = fs.realpathSync(workspace), home = fs.realpathSync(env.FARM_CARGO_HOME);
   assert.ok(!root.includes(',') && !home.includes(','), 'Docker bind paths may not contain mount-option delimiters');
   const image = env.FARM_BUILD_IMAGE, abi = env.FARM_BUILD_ABI;
@@ -72,9 +86,10 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
   assert.equal(env.FARM_BUILD_TARGET, abi === 'linux-x64-gnu' ? 'x86_64-unknown-linux-gnu' : 'x86_64-unknown-linux-musl', 'Docker ABI/target differs');
   assert.equal(image, abi === 'linux-x64-gnu' ? 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian' : 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine', 'Docker ABI/image differs');
   assert.ok(['true', 'false'].includes(env.FARM_BUILD_ZIG ?? 'false'));
-  assert.ok(Number.isSafeInteger(buildTimeoutMs) && buildTimeoutMs > 0 && buildTimeoutMs <= 90 * 60 * 1000);
+  const budget = nativeBuildBudget(abi, image, buildTimeoutMs);
   const nonce = randomUUID(), name = `farm-cache-${nonce}`;
   const report = { schemaVersion: 1, abi, image, profile: env.FARM_BUILD_PROFILE, target: env.FARM_BUILD_TARGET,
+    buildTimeoutMs: budget.timeoutMs, buildTimeoutLimitMs: budget.limitMs,
     buildExitCode: null, clientExitCode: null, timedOut: false, cacheExported: false, cleanupConfirmed: false,
     saveConfirmed: false, saveEvidence: 'Host readability only; actual cache action post-save must be confirmed in Actions logs.', errors: [] };
   const receiptDirectory = path.join(root, '.ci-native-cache'); fs.mkdirSync(receiptDirectory, { recursive: true });
@@ -116,7 +131,7 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
     report.containerCargoHome = containerCargoHome(containerConfig.Env);
     assert.equal(report.containerCargoHome, cargoHome, 'Container Cargo home differs from explicit image policy');
     report.containerCargoHomeSource = 'Project explicit per-image Cargo home policy; Config.Env verification plus shell checks before build. Image ID is recorded separately, not a registry digest or inferred default';
-    const started = invoke(['start', '--attach', id], { stdio: 'inherit', timeout: buildTimeoutMs });
+    const started = invoke(['start', '--attach', id], { stdio: 'inherit', timeout: budget.timeoutMs });
     report.clientExitCode = started.status;
     report.timedOut = started.error?.code === 'ETIMEDOUT';
     let state = inspect();

@@ -1163,24 +1163,10 @@ mod snapshot_update_tests {
   use super::*;
   use farmfe_core::plugin::{PluginUpdateModulesHookParam, UpdateType};
 
-  struct Fixture(PathBuf);
-  impl Drop for Fixture {
-    fn drop(&mut self) {
-      let _ = fs::remove_dir_all(&self.0);
-    }
-  }
-
   fn fixture(test: impl FnOnce(&FarmPluginDocs, &Arc<CompilationContext>, &PathBuf)) {
-    let unique = std::time::SystemTime::now()
-      .duration_since(std::time::UNIX_EPOCH)
-      .unwrap()
-      .as_nanos();
-    let root = std::env::temp_dir().join(format!(
-      "farm-docs-snapshot-{}-{unique}",
-      std::process::id()
-    ));
-    fs::create_dir(&root).unwrap();
-    let _owner = Fixture(root.clone());
+    let owner = super::preflight_fixture::FixtureRoot::new()
+      .expect("reserve an independent snapshot fixture directory");
+    let root = owner.path().to_path_buf();
     let source = root.join("snapshot.json");
     write_snapshot(&source, "initial");
     let mut config = Config::default();
@@ -1189,6 +1175,29 @@ mod snapshot_update_tests {
     let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
     plugin.build_start(&context).unwrap();
     test(&plugin, &context, &source);
+  }
+
+  #[test]
+  fn nested_snapshot_fixtures_keep_independent_content_and_cleanup() {
+    let mut outer_root = None;
+    fixture(|_, _, outer| {
+      outer_root = Some(outer.parent().unwrap().to_path_buf());
+      let mut inner_root = None;
+      fixture(|_, _, inner| {
+        inner_root = Some(inner.parent().unwrap().to_path_buf());
+        assert_ne!(outer.parent(), inner.parent());
+        write_snapshot(inner, "inner");
+        let snapshot: serde_json::Value =
+          serde_json::from_slice(&fs::read(outer).unwrap()).unwrap();
+        assert_eq!(snapshot["snapshotId"], "initial");
+      });
+      assert!(!inner_root.unwrap().exists());
+      assert!(
+        outer.exists(),
+        "dropping an inner fixture must preserve its sibling"
+      );
+    });
+    assert!(!outer_root.unwrap().exists());
   }
 
   fn write_snapshot(source: &PathBuf, id: &str) {

@@ -18,6 +18,8 @@ jobs:
   build:
     name: Build and Upload Release Artifacts - ${{ matrix.settings.abi }}
     runs-on: ${{ matrix.settings.os }}
+    # Only musl receives the tighter outer bound; other targets keep the 360-minute default.
+    timeout-minutes: ${{ matrix.settings.abi == 'linux-x64-musl' && 150 || 360 }}
     strategy:
       fail-fast: false
       matrix:

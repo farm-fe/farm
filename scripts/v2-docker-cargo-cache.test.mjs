@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { runDockerCargoBuild, readableCache, containerBuild, containerCargoHome } from './v2-docker-cargo-cache.mjs';
+import { runDockerCargoBuild, readableCache, containerBuild, containerCargoHome, nativeBuildBudget } from './v2-docker-cargo-cache.mjs';
 
 function fixture(mode = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-docker-cache-contract-'));
@@ -12,8 +12,8 @@ function fixture(mode = {}) {
   const env = { FARM_CARGO_HOME: home, FARM_BUILD_IMAGE: 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine',
     FARM_BUILD_ABI: 'linux-x64-musl', FARM_BUILD_TARGET: 'x86_64-unknown-linux-musl', FARM_BUILD_PROFILE: 'ci', FARM_BUILD_ZIG: 'false' };
   if (mode.cargoHome === '/usr/local/cargo') Object.assign(env, { FARM_BUILD_IMAGE: 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian', FARM_BUILD_ABI: 'linux-x64-gnu', FARM_BUILD_TARGET: 'x86_64-unknown-linux-gnu' });
-  const id = 'a'.repeat(64), calls = []; let nonce, explicitHome, started = false, stopped = false;
-  function docker(executable, args) {
+  const id = 'a'.repeat(64), calls = [], startOptions = []; let nonce, explicitHome, started = false, stopped = false;
+  function docker(executable, args, options) {
     assert.equal(executable, 'docker'); calls.push(args);
     if (args[0] === 'create') {
       nonce = args[args.indexOf('--label') + 1].split('=')[1];
@@ -28,7 +28,7 @@ function fixture(mode = {}) {
       assert.deepEqual(args.slice(-4), [env.FARM_BUILD_IMAGE, 'sh', '-c', containerBuild]);
       return { status: 0, stdout: id };
     }
-    if (args[0] === 'start') { started = true; return mode.timeout ? { status: null, error: { code: 'ETIMEDOUT' } } : { status: mode.buildExit ?? 0 }; }
+    if (args[0] === 'start') { startOptions.push(options); started = true; return mode.timeout ? { status: null, error: { code: 'ETIMEDOUT' } } : { status: mode.buildExit ?? 0 }; }
     if (args[0] === 'inspect') return { status: 0, stdout: JSON.stringify([{ Id: id, Image: `sha256:${'c'.repeat(64)}`, Config: { Env: mode.missingCargoHome ? [] : [...(mode.inspectHome ? [`CARGO_HOME=${mode.inspectHome}`] : explicitHome), ...(mode.omitHome ? [] : ['HOME=/root'])], Labels: { 'farm.cargo-cache-owner': mode.wrongOwner ? 'other' : nonce } },
       State: { Running: Boolean(mode.timeout && started && !stopped), Status: !started ? 'created' : mode.timeout && !stopped ? 'running' : 'exited', ExitCode: mode.timeout && stopped ? 137 : mode.buildExit ?? 0 } }]) };
     if (args[0] === 'stop') { stopped = true; return { status: 0 }; }
@@ -41,7 +41,7 @@ function fixture(mode = {}) {
     if (args[0] === 'rm') { assert.equal(args[1], id); assert.equal(args.length, 2); return { status: 0 }; }
     assert.fail(`Unexpected Docker command: ${args[0]}`);
   }
-  return { root, home, env, calls, docker };
+  return { root, home, env, calls, docker, startOptions };
 }
 
 test('Docker uses read-only cache seeds, host-owned copy export and a readability receipt without claiming a save', () => {
@@ -77,7 +77,8 @@ test('timeout stops only a label-proven owned container and remains a failed out
   const f = fixture({ timeout: true });
   try {
     const report = runDockerCargoBuild({ workspace: f.root, env: f.env, docker: f.docker, buildTimeoutMs: 1000 });
-    assert.equal(report.timedOut, true); assert.notEqual(report.exitCode, 0);
+    assert.equal(report.timedOut, true); assert.equal(report.exitCode, 137);
+    assert.equal(report.buildTimeoutMs, 1000); assert.equal(f.startOptions[0].timeout, 1000);
     assert.equal(report.cleanupConfirmed, true);
     assert.equal(f.calls.filter(args => args[0] === 'stop').length, 1);
   } finally { fs.rmSync(f.root, { recursive: true }); }
@@ -147,4 +148,35 @@ test('shell checks the fixed Cargo home again after sourcing Node setup without 
   assert.match(containerBuild, /readonly cargo_home expected_cargo_home/);
   assert.match(containerBuild, /test "\$cargo_home" = "\$expected_cargo_home"/);
   assert.doesNotMatch(containerBuild, /(?:export )?(?:HOME|RUSTUP_HOME|PATH)=/);
+});
+
+test('native Docker budgets are selected only by the verified ABI and image', () => {
+  const minute = 60 * 1000;
+  for (const [abi, image, minutes] of [
+    ['linux-x64-gnu', 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian', 90],
+    ['linux-x64-musl', 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine', 120],
+  ]) {
+    assert.deepEqual(nativeBuildBudget(abi, image), { timeoutMs: minutes * minute, limitMs: minutes * minute });
+    for (const invalid of [0, -1, null, NaN, Infinity, 1.5, '120', minutes * minute + 1]) assert.throws(() => nativeBuildBudget(abi, image, invalid));
+  }
+  assert.throws(() => nativeBuildBudget('linux-x64-musl', 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian'));
+  assert.throws(() => nativeBuildBudget('unknown', 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine'));
+});
+
+test('actual attach timeout and receipt use the selected bounded budget without changing cleanup', () => {
+  for (const [cargoHome, minutes] of [['/usr/local/cargo', 90], ['/root/.cargo', 120]]) {
+    const f = fixture({ cargoHome });
+    try {
+      const report = runDockerCargoBuild({ workspace: f.root, env: f.env, docker: f.docker });
+      assert.equal(f.startOptions[0].timeout, minutes * 60 * 1000);
+      assert.equal(report.buildTimeoutMs, f.startOptions[0].timeout);
+      assert.equal(report.buildTimeoutLimitMs, minutes * 60 * 1000);
+      assert.equal(report.exitCode, 0); assert.equal(report.cacheExported, true); assert.equal(report.cleanupConfirmed, true);
+    } finally { fs.rmSync(f.root, { recursive: true }); }
+  }
+});
+
+test('only the musl release matrix job has a 150-minute outer bound', () => {
+  const workflow = fs.readFileSync(new URL('../.github/workflows/rust-build-release.yaml', import.meta.url), 'utf8');
+  assert.ok(workflow.includes("timeout-minutes: ${{ matrix.settings.abi == 'linux-x64-musl' && 150 || 360 }}"));
 });
