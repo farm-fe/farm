@@ -161,3 +161,16 @@ jobs:
           cell: "rust-tests:ci-test:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
           artifact-suffix: ${{ matrix.os || 'single' }}
+
+  required-linux-test-compatibility:
+    name: Test - ubuntu-latest
+    if: always()
+    needs: [cargo-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require the complete Rust test matrix to succeed
+        shell: bash
+        env:
+          UPSTREAM_RESULT: ${{ needs.cargo-test.result }}
+        run: test "$UPSTREAM_RESULT" = success

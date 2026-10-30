@@ -866,3 +866,43 @@ jobs:
           cell: "ts-tests:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+
+  required-examples-compatibility:
+    name: ${{ matrix.context }}
+    if: always()
+    needs: [examples-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: Examples Test (ubuntu-latest, linux-x64-gnu)
+          - context: Examples Test (windows-latest, win32-x64-msvc)
+          - context: Examples Test (macos-latest, darwin-arm64)
+    steps:
+      - name: Require the complete Examples matrix to succeed
+        shell: bash
+        env:
+          UPSTREAM_RESULT: ${{ needs.examples-test.result }}
+        run: test "$UPSTREAM_RESULT" = success
+
+  required-typescript-compatibility:
+    name: ${{ matrix.context }}
+    if: always()
+    needs: [ts-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: Typescript Test (ubuntu-latest, linux-x64-gnu)
+          - context: Typescript Test (windows-latest, win32-x64-msvc)
+          - context: Typescript Test (macos-latest, darwin-arm64)
+    steps:
+      - name: Require the complete TypeScript matrix to succeed
+        shell: bash
+        env:
+          UPSTREAM_RESULT: ${{ needs.ts-test.result }}
+        run: test "$UPSTREAM_RESULT" = success
