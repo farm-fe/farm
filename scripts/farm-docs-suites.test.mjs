@@ -43,7 +43,8 @@ test('E2E calls Docs, keeps both OS lanes and release reference until actual com
   assert.match(docs, /run: pnpm --dir packages\/core run build:rs/);
   assert.match(docs, /cargo test .*farmfe_docs_snapshot/);
   assert.match(docs, /CODEX_DOCS_NATIVE_BASELINE/);
-  const examples = ci.split('\n  examples-test:')[1].split('\n  performance-report:')[0];
+  const platform = await fs.readFile(new URL('../.github/workflows/ci-primary-platform.yaml', import.meta.url), 'utf8');
+  const examples = platform.split('\n  examples-test:')[1].split('\n  ts-test:')[0];
   for (const plugin of ['ssr-css', 'syntax-highlight', 'docs', 'docs-snapshot', 'docs-seo', 'docs-snippets']) assert.ok(examples.includes(`-plugin-${plugin}`));
   assert.match(examples, /FARM_EXAMPLE_PREBUILT_ONLY: '1'/);
 });

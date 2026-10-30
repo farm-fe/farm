@@ -81,15 +81,32 @@ def cell_outcomes(rows):
     return outcomes, required_failures
 
 
+def read_observations(directory):
+    directory = Path(directory).resolve(strict=True); rows = []; unavailable = []; total = 0
+    for file in directory.rglob("*.json"):
+        if file.is_symlink() or not file.resolve(strict=True).is_relative_to(directory):
+            raise ValueError("Receipt path redirects outside artifact input")
+        total += file.stat().st_size
+        if total > 1024 * 1024 or len(rows) >= 64:
+            raise ValueError("Receipt input exceeds bound")
+        observed = json.loads(file.read_text(encoding="utf-8"))
+        rows.append(observed)
+        if observed.get("status") == "unavailable":
+            source = observed.get("error", {})
+            detail = receipt.safe_error_fields(source) if isinstance(source, dict) else {}
+            unavailable.append({**receipt.safe_context({"CI_IMPACT_CELL": observed.get("cell"), "GITHUB_RUN_ID": source.get("runId") if isinstance(source, dict) else None, "GITHUB_RUN_ATTEMPT": source.get("runAttempt") if isinstance(source, dict) else None}), "error": detail})
+    return rows, unavailable
+
+
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--plan", required=True); parser.add_argument("--receipts"); parser.add_argument("--output", required=True); args = parser.parse_args()
     try:
-        plan = json.loads(Path(args.plan).read_text())
+        plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
-        plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False, "planHash": None, "unavailable": str(error)[:1000]}
+        plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False, "planHash": None, "unavailable": receipt.report_error("read-plan", error)}
     needs = json.loads(os.environ["CI_IMPACT_NEEDS"])
     try:
-        event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+        event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
     except (OSError, ValueError, KeyError):
         event = {}
     # No selected task may be skipped in shadow execution. Seal is conditional on
@@ -105,32 +122,35 @@ def main():
         report["allExpectedJobsSuccessful"] = False
     report["cellBindingsVerified"] = False; report["cellOutcomes"] = []
     report["requiredCellFailures"] = []; report["allRequiredCellsSuccessful"] = False
+    operation = "read-event"
     try:
-        event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+        event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
+        operation = "git-tree"
+        actual_tree = impact.git("rev-parse", "HEAD^{tree}").decode("ascii").strip()
+        operation = "validate-identity"
         pr = event.get("pull_request", {})
         identity = {"headSHA": pr.get("head", {}).get("sha") or os.environ["GITHUB_SHA"], "baseSHA": pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base"),
-                    "testedSHA": os.environ["GITHUB_SHA"], "testedTree": impact.git("rev-parse", "HEAD^{tree}").decode().strip(), "runId": os.environ["GITHUB_RUN_ID"],
+                    "testedSHA": os.environ["GITHUB_SHA"], "testedTree": actual_tree, "runId": os.environ["GITHUB_RUN_ID"],
                     "runAttempt": os.environ["GITHUB_RUN_ATTEMPT"], "repository": os.environ["GITHUB_REPOSITORY"], "policy": impact.POLICY, "planHash": plan.get("planHash")}
         candidate = impact.release_candidate(event, os.environ)
         inventory = impact.execution_cells(os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate)
         if not args.receipts:
             raise ValueError("Current-run matrix receipts unavailable")
-        directory = Path(args.receipts).resolve(strict=True); rows = []; total = 0
-        for file in directory.rglob("*.json"):
-            if file.is_symlink() or not file.resolve(strict=True).is_relative_to(directory):
-                raise ValueError("Receipt path redirects outside artifact input")
-            total += file.stat().st_size
-            if total > 1024 * 1024 or len(rows) >= 64:
-                raise ValueError("Receipt input exceeds bound")
-            rows.append(receipt.bind_observation(plan, json.loads(file.read_text())))
+        operation = "read-observations"
+        observations, report["unavailableCells"] = read_observations(args.receipts)
+        if report["unavailableCells"]:
+            raise ValueError("Current cells have unavailable execution identity")
+        operation = "bind-observations"
+        rows = [receipt.bind_observation(plan, observed) for observed in observations]
+        operation = "validate-inventory"
         validate_cells(plan, rows, trusted_inventory=inventory, expected_identity=identity, require_success=False)
         report["cellBindingsVerified"] = True
         report["cellOutcomes"], report["requiredCellFailures"] = cell_outcomes(rows)
         report["allRequiredCellsSuccessful"] = not report["requiredCellFailures"]
     except Exception as error:
-        report["cellBindingsError"] = str(error)[:1000]
+        report["cellBindingsError"] = receipt.report_error(operation, error)
     report["allExpectedJobsSuccessful"] = report["allExpectedJobsSuccessful"] and report["cellBindingsVerified"] and report["allRequiredCellsSuccessful"]
-    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(report, indent=2) + "\n")
+    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as stream:

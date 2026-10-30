@@ -333,7 +333,7 @@ def make_plan(base, head, tested, scope="e2e", release_candidate=True):
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--output", required=True); parser.add_argument("--event", default=os.environ.get("GITHUB_EVENT_PATH")); args = parser.parse_args()
     try:
-        event = json.loads(Path(args.event).read_text())
+        event = json.loads(Path(args.event).read_text(encoding="utf-8"))
         pr = event.get("pull_request", {})
         base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base")
         head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA")
@@ -341,9 +341,9 @@ def main():
         result = make_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate)
     except Exception as error:
         result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
-                  "fullRequired": True, "reasons": [{"reason": "planning-failed", "detail": str(error)[:1200]}], "proposedSuites": ALL, "executedSuites": ALL}
+                  "fullRequired": True, "reasons": [{"reason": "planning-failed", "errorClass": type(error).__name__}], "proposedSuites": ALL, "executedSuites": ALL}
         result["planHash"] = digest(result)
-    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(result, indent=2) + "\n")
+    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: result[key] for key in ["mode", "planHash", "fullRequired", "skipAuthorized", "proposedSuites"]}))
 
 

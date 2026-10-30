@@ -6,12 +6,16 @@ on:
         required: false
         type: string
         default: ci
+      platform:
+        required: false
+        type: string
+        default: all
 
 permissions:
   contents: read
 
 concurrency:
-  group: rust-build-user-${{ github.workflow }}-${{ github.ref }}
+  group: rust-build-user-${{ github.workflow }}-${{ github.ref }}-${{ inputs.platform }}
   cancel-in-progress: true
 
 jobs:
@@ -23,17 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        settings:
-          - os: ubuntu-24.04
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            abi: linux-x64-gnu
-            target: x86_64-unknown-linux-gnu
-          - os: macos-latest
-            abi: darwin-arm64
-            target: aarch64-apple-darwin
-          - os: windows-latest
-            abi: win32-x64-msvc
-            target: x86_64-pc-windows-msvc
+        settings: ${{ fromJSON(inputs.platform == 'all' && '[{"os":"ubuntu-24.04","docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian","abi":"linux-x64-gnu","target":"x86_64-unknown-linux-gnu"},{"os":"macos-latest","abi":"darwin-arm64","target":"aarch64-apple-darwin"},{"os":"windows-latest","abi":"win32-x64-msvc","target":"x86_64-pc-windows-msvc"}]' || inputs.platform == 'linux-x64-gnu' && '[{"os":"ubuntu-24.04","docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian","abi":"linux-x64-gnu","target":"x86_64-unknown-linux-gnu"}]' || inputs.platform == 'darwin-arm64' && '[{"os":"macos-latest","abi":"darwin-arm64","target":"aarch64-apple-darwin"}]' || inputs.platform == 'win32-x64-msvc' && '[{"os":"windows-latest","abi":"win32-x64-msvc","target":"x86_64-pc-windows-msvc"}]' || '[]') }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve the host Cargo cache for Docker mounts

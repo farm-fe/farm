@@ -8,9 +8,35 @@ test('native matrices wait for cheap spelling, release/pack and three-platform p
   const preflight = ci.split('  release-contract-tests:')[1].split('  docs-acceptance:')[0];
   assert.match(preflight, /pnpm exec cspell "\*\*" --gitignore/);
   for (const command of ['test-native-container-node.cjs', 'test-native-artifact-flow.cjs', 'pack-v2-npm-candidates.test.mjs', 'verify-published-v2-consumers.test.mjs']) assert.ok(preflight.includes(command), command);
-  for (const job of ['call-rust-build-user', 'call-rust-build-release']) {
+  for (const job of ['primary-linux', 'primary-macos', 'primary-windows', 'call-rust-build-release']) {
     const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
     assert.match(block, /needs: \[release-contract-tests, performance-contract-tests\]/);
+  }
+});
+
+test('primary platform consumers wait only for their own successful producer', () => {
+  const ci = read('ci.yaml'), platform = read('ci-primary-platform.yaml'), native = read('rust-build-user.yaml');
+  const lanes = [['primary-linux', 'ubuntu-24.04', 'linux-x64-gnu'], ['primary-macos', 'macos-latest', 'darwin-arm64'], ['primary-windows', 'windows-latest', 'win32-x64-msvc']];
+  for (const [job, os, abi] of lanes) {
+    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    assert.match(block, /uses: \.\/\.github\/workflows\/ci-primary-platform.yaml/);
+    assert.ok(block.includes(`os: ${os}`)); assert.ok(block.includes(`abi: ${abi}`));
+    assert.ok(native.includes(`inputs.platform == '${abi}'`));
+  }
+  assert.match(platform, /platform: \$\{\{ inputs.abi \}\}/);
+  for (const job of ['examples-test', 'ts-test']) {
+    const block = platform.split(`  ${job}:`)[1].split('\n\n')[0];
+    assert.match(block, /needs: \[native\]/);
+    assert.doesNotMatch(block, /call-rust-build-user|call-rust-build-release|primary-linux|primary-macos|primary-windows/);
+  }
+  assert.match(native, /group: rust-build-user-.*inputs.platform/);
+  assert.match(native, /inputs.platform == 'all'/);
+  assert.ok(native.includes("|| '[]'"), 'Unknown platform cannot choose a successful empty execution');
+  for (const job of ['call-rust-build-user', 'examples-test', 'ts-test']) {
+    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    assert.match(block, /if: always\(\)/);
+    assert.match(block, /needs: \[primary-linux, primary-macos, primary-windows\]/);
+    assert.ok(block.includes('test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success'));
   }
 });
 

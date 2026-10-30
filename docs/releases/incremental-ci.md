@@ -113,3 +113,38 @@ to three producers; missing or expired artifacts fall back to building. Shadow
 plan and summary artifacts use 14-day retention. This rollout does not create
 additional large target-cache writers, paid runners, credentials or retention
 without bounds.
+
+## Same-run platform chains under review
+
+The follow-up branch separates three primary chains. Each calls the same native
+build recipe with one fixed ABI, then starts its own Examples and TypeScript jobs
+after that producer succeeds. These consumers no longer wait for the other two
+primary producers. The producer concurrency group includes the selected platform
+so the three calls cannot cancel each other. The six extended native targets and
+the two independent release-profile Docs lanes remain unchanged.
+
+| Existing functional name | Name after reusable workflow prefix |
+| --- | --- |
+| Examples Test (ubuntu-24.04) | Primary Linux / Examples Test (ubuntu-24.04) |
+| Examples Test (macos-latest) | Primary macOS / Examples Test (macos-latest) |
+| Examples Test (windows-latest) | Primary Windows / Examples Test (windows-latest) |
+| Typescript Test (ubuntu-24.04) | Primary Linux / Typescript Test (ubuntu-24.04) |
+| Typescript Test (macos-latest) | Primary macOS / Typescript Test (macos-latest) |
+| Typescript Test (windows-latest) | Primary Windows / Typescript Test (windows-latest) |
+
+The release verifier already requires exactly one exact or slash-prefixed match;
+its required functional names remain unchanged. Native producer names gain a
+platform and `native` caller prefix but retain their exact ABI suffix, which the
+read-only evidence audit already matches uniquely. Existing seven branch-rule
+compatibility names remain exact and require all primary chains to succeed.
+
+The `call-rust-build-user`, `examples-test` and `ts-test` job keys remain strict
+aggregate barriers for existing final consumers. Assembly still requires all nine
+native targets; seal still requires complete assembly and functional evidence.
+The primary aggregate now waits for the entire three-platform TS/Examples chains,
+so assembly waits more conservatively than its previous native-only barrier.
+Performance still waits for the existing full functional/Docs/assembly barriers
+and keeps the complete business-2048 workload. Those final barriers are deliberately
+conservative; this change only starts platform functional tests sooner. It neither
+omits tests nor enables cross-run reuse. Actual check names, execution timing and
+unchanged final gate behavior must be confirmed in CI before claiming a speedup.
