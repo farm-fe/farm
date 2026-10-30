@@ -115,7 +115,7 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
     report.containerImageId = containerImage;
     report.containerCargoHome = containerCargoHome(containerConfig.Env);
     assert.equal(report.containerCargoHome, cargoHome, 'Container Cargo home differs from explicit image policy');
-    report.containerCargoHomeSource = 'Project explicit per-image Cargo home policy; Config.Env readback plus shell checks before build. Image ID is recorded separately, not a registry digest or inferred default';
+    report.containerCargoHomeSource = 'Project explicit per-image Cargo home policy; Config.Env verification plus shell checks before build. Image ID is recorded separately, not a registry digest or inferred default';
     const started = invoke(['start', '--attach', id], { stdio: 'inherit', timeout: buildTimeoutMs });
     report.clientExitCode = started.status;
     report.timedOut = started.error?.code === 'ETIMEDOUT';
