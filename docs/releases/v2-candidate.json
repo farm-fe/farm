@@ -100,7 +100,7 @@
         "version": "0.0.1",
         "manifestPath": "rust-plugins/docs/package.json",
         "manifestSha256": "63be2ffc07578f5f06dc39f5949910d0023a94981370d12d80443acda2d0c12c",
-        "sourceSha256": "5df8c72e3903a7ed4aef8f707f1656a402b6ca889e8b1063ef1069b8a970ad49"
+        "sourceSha256": "9f9784c94fd07a98b06fa448a3a0617b7636fca1c23bda967906478627419757"
       },
       {
         "name": "@farmfe/plugin-docs-seo",
