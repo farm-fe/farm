@@ -1,10 +1,11 @@
+// cspell:words estree
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { gzipSync } from 'node:zlib';
-import { candidateNpmEvidence, verifyInstalledNpmLock, serveCandidateRegistry, readRegistryBody, consumerHostAbi } from './v2-consumer-registry.mjs';
+import { candidateNpmEvidence, verifyInstalledNpmLock, serveCandidateRegistry, readRegistryBody, consumerHostAbi, candidateInstallArgs } from './v2-consumer-registry.mjs';
 import { sha256 } from './release-archive.mjs';
 function tar(manifest) {
   const bytes = Buffer.from(JSON.stringify(manifest)), header = Buffer.alloc(512);
@@ -23,6 +24,8 @@ test('candidate registry serves only checked immutable archives and npm lock pro
     const evidence = await candidateNpmEvidence(plan, receipt, directory);
     server = await serveCandidateRegistry(evidence, { fetcher: async () => { throw new Error('No external network expected'); } });
     const metadata = await (await fetch(`${server.url}${encodeURIComponent(row.name)}`)).json();
+    assert.equal(metadata.versions[row.version].dist.tarball, `${server.url}archives/${encodeURIComponent(row.name)}`);
+    assert.equal(metadata.versions[row.version].dist.integrity, evidence.get(row.name).integrity);
     const archive = Buffer.from(await (await fetch(metadata.versions[row.version].dist.tarball)).arrayBuffer());
     assert.equal(sha256(archive), receipt.records[0].sha256);
     const manifest = { dependencies: { [row.name]: row.version } };
@@ -63,4 +66,40 @@ test('consumer native ABI uses declared Windows MSVC, Darwin and Linux libc targ
     assert.equal(consumerHostAbi({ platform: 'linux', arch, report: () => ({ header: {} }) }), `linux-${arch}-musl`);
   }
   for (const options of [{ platform: 'win32', arch: 'arm' }, { platform: 'unknown', arch: 'x64' }, { platform: 'linux', arch: 'x64', report: () => null }, { platform: 'linux', arch: 'x64', report: () => ({ header: { glibcVersionRuntime: 42 } }) }]) assert.throws(() => consumerHostAbi(options));
+});
+
+
+test('candidate install preserves official tarball hosts and keeps package scripts disabled', () => {
+  assert.deepEqual(candidateInstallArgs('/trusted/npm-cli.js', 'http://127.0.0.1:1234/'), [
+    '/trusted/npm-cli.js', 'install', '--ignore-scripts', '--no-audit', '--no-fund',
+    '--replace-registry-host=never', '--registry=http://127.0.0.1:1234/',
+  ]);
+});
+
+test('external scoped and plain package metadata retains official archive URLs and integrity', async () => {
+  const requests = [];
+  const manifests = new Map([
+    ['@types/estree', { name: '@types/estree', version: '1.0.9', dist: { tarball: 'https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz', integrity: 'sha512-YWJjZA==' } }],
+    ['plain-package', { name: 'plain-package', version: '1.0.0', dist: { tarball: 'https://registry.npmjs.org/plain-package/-/plain-package-1.0.0.tgz', integrity: 'sha512-YWJjZA==' } }],
+  ]);
+  const server = await serveCandidateRegistry(new Map(), { fetcher: async url => {
+    requests.push(url);
+    const name = decodeURIComponent(new URL(url).pathname.slice(1));
+    const manifest = manifests.get(name); assert.ok(manifest, 'Only expected official metadata may be requested');
+    return new Response(JSON.stringify({ name, versions: { [manifest.version]: manifest } }), { headers: { 'content-type': 'application/json' } });
+  } });
+  try {
+    for (const [name, manifest] of manifests) {
+      const response = await fetch(`${server.url}${encodeURIComponent(name)}`);
+      assert.equal(response.status, 200);
+      const metadata = await response.json();
+      assert.deepEqual(metadata.versions[manifest.version].dist, manifest.dist);
+    }
+    assert.deepEqual(requests, [...manifests.keys()].map(name => `https://registry.npmjs.org/${encodeURIComponent(name)}`));
+    const count = requests.length;
+    for (const route of ['@types/estree/-/estree-1.0.9.tgz', 'plain-package/-/plain-package-1.0.0.tgz', 'archives/unknown', 'plain-package?unexpected=1']) {
+      assert.equal((await fetch(`${server.url}${route}`)).status, 502);
+      assert.equal(requests.length, count, 'Rejected routes must not request upstream metadata or archives');
+    }
+  } finally { await server.close(); }
 });

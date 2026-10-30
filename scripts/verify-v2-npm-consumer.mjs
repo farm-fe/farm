@@ -7,7 +7,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { command } from './performance-report.mjs';
 import { publicConsumerManifest, cleanupConsumerScratch } from './verify-published-v2-consumers.mjs';
-import { candidateNpmEvidence, serveCandidateRegistry, verifyInstalledNpmLock, consumerHostAbi } from './v2-consumer-registry.mjs';
+import { candidateNpmEvidence, serveCandidateRegistry, verifyInstalledNpmLock, consumerHostAbi, candidateInstallArgs } from './v2-consumer-registry.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const [sealArg, outputArg] = process.argv.slice(2);
@@ -41,7 +41,7 @@ try {
   env.NPM_CONFIG_USERCONFIG = path.join(scratch, 'empty-user.npmrc');
   await fs.writeFile(path.join(scratch, '.npmrc'), `registry=${registry.url}\n@farmfe:registry=${registry.url}\nignore-scripts=true\naudit=false\nfund=false\n`);
   const npm = resolveNpmCli();
-  await run('install', [npm, 'install', '--ignore-scripts', '--no-audit', '--no-fund', `--registry=${registry.url}`], 10 * 60 * 1000);
+  await run('install', candidateInstallArgs(npm, registry.url), 10 * 60 * 1000);
   const lock = JSON.parse(await fs.readFile(path.join(scratch, 'package-lock.json')));
   verifyInstalledNpmLock(plan, manifest, lock, evidence, { registry: registry.url });
   await fs.copyFile(path.join(scratch, 'package-lock.json'), path.join(output, 'package-lock.json'));

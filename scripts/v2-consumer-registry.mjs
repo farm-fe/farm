@@ -46,6 +46,9 @@ export async function candidateNpmEvidence(plan, receipt, directory) {
   }
   return evidence;
 }
+export function candidateInstallArgs(npm, registry) {
+  return [npm, 'install', '--ignore-scripts', '--no-audit', '--no-fund', '--replace-registry-host=never', `--registry=${registry}`];
+}
 export function verifyInstalledNpmLock(plan, manifest, lock, evidence, { registry }) {
   const registryURL = new URL(registry);
   assert.ok(lock.lockfileVersion >= 2 && lock.packages, 'Actual npm lock required');
