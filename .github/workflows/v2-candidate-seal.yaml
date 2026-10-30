@@ -88,6 +88,14 @@ jobs:
             release-diagnostics/js-build-failure.json
             release-diagnostics/seal-failure.json
           if-no-files-found: warn
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "seal"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   consumers:
     name: Candidate registry consumer (${{ matrix.os }})
@@ -127,3 +135,11 @@ jobs:
             candidate-consumer-results/*.log
           if-no-files-found: warn
           retention-days: 30
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "consumers:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}

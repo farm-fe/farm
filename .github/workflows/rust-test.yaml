@@ -19,6 +19,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  impact-plan:
+    name: Incremental Unit CI plan (shadow only)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Plan Unit scope without changing execution
+        env:
+          CI_IMPACT_SCOPE: unit
+        run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan/plan.json
+          if-no-files-found: error
+          retention-days: 14
+
+  impact-summary:
+    name: Incremental Unit CI shadow summary
+    continue-on-error: true
+    if: always()
+    needs: [impact-plan, cargo-check, cargo-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: impact-cell-${{ github.sha }}-*-${{ github.run_attempt }}
+          path: impact-cell-receipts
+      - name: Report current Unit scope outcomes without publication authority
+        if: always()
+        env:
+          CI_IMPACT_SCOPE: unit
+          CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
+        run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: impact-summary-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-summary/summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
   cargo-check:
     name: Check
     runs-on: ubuntu-24.04
@@ -37,6 +99,15 @@ jobs:
         run: cargo fetch --locked
       - name: Run cargo check
         run: cargo check --locked --color always --all --all-targets
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "cargo-check"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.os || 'single' }}
+
   cargo-test:
     name: Test - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -82,3 +153,11 @@ jobs:
         run: cargo fetch --locked
       - name: Run cargo test
         run: cargo test --locked --profile ci-test --tests
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "rust-tests:ci-test:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.os || 'single' }}

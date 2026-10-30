@@ -157,3 +157,11 @@ jobs:
             examples/docs-features/build
             docs/farm-docs/evidence/p10/ci
             ${{ runner.temp }}/farm-docs-native
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "docs:release:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}

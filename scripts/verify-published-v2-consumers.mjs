@@ -14,15 +14,17 @@ export function assertConsumerPackagePath(consumerRoot, packageName, actual, io,
     canonicalRoot: null, canonicalExpected: null, canonicalActual: null, relative: null };
   try {
     assert.match(packageName, /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/i, 'Invalid expected consumer package');
-    details.canonicalRoot = io.realpathSync(consumerRoot);
-    details.canonicalExpected = io.realpathSync(details.rawExpected);
-    details.canonicalActual = io.realpathSync(actual);
+    assert.equal(typeof io.realpathSync?.native, 'function', 'Native filesystem canonicalization is required');
+    const canonicalize = value => io.realpathSync.native(value);
+    details.canonicalRoot = canonicalize(consumerRoot);
+    details.canonicalExpected = canonicalize(details.rawExpected);
+    details.canonicalActual = canonicalize(actual);
     details.relative = paths.relative(details.canonicalExpected, details.canonicalActual);
     assert.ok(!actual.split(/[\\/]/).includes('..'), 'Consumer path contains a parent traversal');
     let expected = details.canonicalRoot;
     for (const component of ['node_modules', ...packageName.split('/')]) {
       expected = paths.join(expected, component);
-      const canonical = io.realpathSync(expected);
+      const canonical = canonicalize(expected);
       assert.equal(paths.relative(expected, canonical), '', 'Consumer package directory redirects outside its expected location');
     }
     assert.ok(details.relative && !paths.isAbsolute(details.relative) && details.relative !== '..' && !details.relative.startsWith(`..${paths.sep}`), 'Consumer file is outside the exact installed package');

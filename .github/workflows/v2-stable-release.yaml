@@ -9,7 +9,7 @@ concurrency:
   group: farm-stable-release
   cancel-in-progress: false
 env:
-  FARM_RELEASE_INTENT_SHA256: 7894a088e7d3896005c265d25ef775a2e75f9eb270d55376f1f7c1597f78259c
+  FARM_RELEASE_INTENT_SHA256: 63359edcfc0a9710918a5eb6ccd54faa30f4cf1f198b4e9e76e45302d80ea6db
 # Publication jobs install no workspace dependencies or package hooks.
 # Public consumer code runs on a separate machine with read-only permissions.
 jobs:

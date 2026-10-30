@@ -25,6 +25,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  impact-plan:
+    name: Incremental CI plan (shadow only)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check conservative planning and producer proof contracts
+        run: |
+          python scripts/ci-impact-plan.test.py
+          python scripts/ci-native-proof.test.py
+          python scripts/ci-native-evidence.test.py
+          python scripts/ci-impact-receipt.test.py
+      - name: Compute committed base and head impact without changing execution
+        run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan/plan.json
+          if-no-files-found: error
+          retention-days: 14
+
+  impact-summary:
+    name: Incremental CI shadow summary
+    continue-on-error: true
+    if: always()
+    needs: [impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, release-candidate-seal, performance-report, performance-summary]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: impact-cell-${{ github.sha }}-*-${{ github.run_attempt }}
+          path: impact-cell-receipts
+      - name: Report actual results without inheriting old acceptance
+        if: always()
+        env:
+          CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
+        run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: impact-summary-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-summary/summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
   release-contract-tests:
     name: Release source contracts
     runs-on: ubuntu-24.04
@@ -54,7 +119,15 @@ jobs:
           scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
-          scripts/verify-published-v2-consumers.test.mjs scripts/create-farm-pack.test.mjs
+          scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "contracts"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   docs-acceptance:
     name: Docs release-profile reference and contracts
@@ -92,7 +165,15 @@ jobs:
       - name: Validate report, trust, cleanup and comparison contracts
         env:
           FARM_PERFORMANCE_PYTHON: ${{ steps.contract-python.outputs.python-path }}
-        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs
+        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "performance-contracts:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   call-rust-build-user:
     needs: [release-contract-tests, performance-contract-tests]
@@ -126,11 +207,34 @@ jobs:
           path: .native-artifacts
       - name: Assemble the exact candidate manifest without rebuilding Rust
         run: node scripts/assemble-v2-native-artifacts.mjs .native-artifacts native-assembly.json
+      - uses: actions/setup-python@v5
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+      - name: Bind shadow producer identities using existing read-only access (no ZIP download)
+        continue-on-error: true
+        run: python scripts/ci-native-evidence.py --audit-current-run --output native-shadow-identities.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: native-shadow-identities-${{ github.sha }}-${{ github.run_attempt }}
+          path: native-shadow-identities.json
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: native-assembly-${{ github.sha }}
           path: native-assembly.json
           if-no-files-found: error
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "native-assembly"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   examples-test:
     name: Examples Test (${{ matrix.settings.os }})
@@ -370,6 +474,14 @@ jobs:
             ${{ steps.create-farm-candidates.outputs.evidence }}/**/result.json
             ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
             !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "examples:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   performance-report:
     name: Commerce Performance (${{ matrix.settings.os }})
@@ -586,6 +698,14 @@ jobs:
           path: performance-results/
           if-no-files-found: warn
           retention-days: 14
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "performance:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   performance-summary:
     name: Aggregate informational performance report
@@ -620,6 +740,14 @@ jobs:
           path: performance-pr-summary/summary.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "performance-summary"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   type-check:
     name: Type Check & Changesets
@@ -658,6 +786,14 @@ jobs:
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
         run: node scripts/check-pr-changesets.mjs
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "types"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   ts-test:
     # Vitest runs in node/forks; browser E2E jobs keep their downloads.
@@ -722,4 +858,11 @@ jobs:
           pnpm --filter @farmfe/js-plugin-babel run build
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
-
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "ts-tests:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}

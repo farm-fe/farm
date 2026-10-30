@@ -18,6 +18,8 @@ jobs:
   build:
     name: Build and Upload User Artifacts - ${{ matrix.settings.abi }}
     runs-on: ${{ matrix.settings.os }}
+    env:
+      FARM_NATIVE_PROOF_MODE: shadow
     strategy:
       fail-fast: false
       matrix:
@@ -329,3 +331,34 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snippets
           path: rust-plugins/docs-snippets/npm/${{ matrix.settings.abi }}/index.farm
           if-no-files-found: error
+      - uses: actions/setup-python@v5
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+      - name: Capture successful producer bytes and committed input ledger (shadow only)
+        continue-on-error: true
+        env:
+          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
+          FARM_BUILD_PROFILE: ${{ inputs.profile }}
+          FARM_BUILD_TARGET: ${{ matrix.settings.target }}
+        run: |
+          node scripts/ci-native-capture.mjs products
+          python scripts/ci-native-evidence.py --products .ci-native-proof/${{ matrix.settings.abi }}/products.json --output .ci-native-proof/${{ matrix.settings.abi }}/source.json
+      - name: Preserve bounded shadow producer context without duplicating native archives
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-shadow-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .ci-native-proof/${{ matrix.settings.abi }}/*.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "native:${{ inputs.profile }}:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
