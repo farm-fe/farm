@@ -7,30 +7,37 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const label = 'farm.cargo-cache-owner';
-const images = new Set(['ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian', 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine']);
+const imageCargoHomes = new Map([
+  ['ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian', '/usr/local/cargo'],
+  ['ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine', '/root/.cargo'],
+]);
+const images = new Set(imageCargoHomes.keys());
 // The read-only seed is copied into the container, never mutated by root on the
 // host. docker cp without --archive copies back with the invoking host user's
 // ownership: https://docs.docker.com/reference/cli/docker/container/cp/
 export const containerBuild = `set -eu
-cargo_home="$(printenv CARGO_HOME || true)"
-if [ -z "$cargo_home" ]; then cargo_home="$HOME/.cargo"; fi
+cargo_home="$(printenv CARGO_HOME)"
+expected_cargo_home="$(printenv FARM_EXPECTED_CARGO_HOME)"
+readonly cargo_home expected_cargo_home
+test "$cargo_home" = "$expected_cargo_home"
 case "$cargo_home" in /usr/local/cargo|/root/.cargo) ;; *) exit 64 ;; esac
 mkdir -p "$cargo_home/git" "$cargo_home/registry"
 cp -R /cargo-cache-seed/git/. "$cargo_home/git/"
 cp -R /cargo-cache-seed/registry/. "$cargo_home/registry/"
 . ./scripts/setup-native-container-node.sh
+test "$(printenv CARGO_HOME)" = "$cargo_home"
 ./scripts/ci-build-rust-artifacts.sh`;
 
 export function containerCargoHome(environment) {
   assert.ok(Array.isArray(environment), 'Image Cargo environment metadata is unavailable');
   const selected = new Map();
   for (const entry of environment) {
-    if (typeof entry !== 'string' || !/^(CARGO_HOME|HOME)=/.test(entry)) continue;
+    if (typeof entry !== 'string' || !/^CARGO_HOME=/.test(entry)) continue;
     const equal = entry.indexOf('='), name = entry.slice(0, equal);
     assert.ok(!selected.has(name), 'Ambiguous image Cargo environment');
     selected.set(name, entry.slice(equal + 1));
   }
-  const home = selected.get('CARGO_HOME') || (selected.get('HOME') ? `${selected.get('HOME')}/.cargo` : null);
+  const home = selected.get('CARGO_HOME');
   assert.ok(['/usr/local/cargo', '/root/.cargo'].includes(home), 'Unsupported or unknown image Cargo home');
   return home;
 }
@@ -72,7 +79,7 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
     saveConfirmed: false, saveEvidence: 'Host readability only; actual cache action post-save must be confirmed in Actions logs.', errors: [] };
   const receiptDirectory = path.join(root, '.ci-native-cache'); fs.mkdirSync(receiptDirectory, { recursive: true });
   const receiptFile = path.join(receiptDirectory, `${abi}.json`);
-  let id, containerConfig;
+  let id, containerConfig, containerImage;
   const invoke = (args, options = {}) => docker('docker', args, { encoding: 'utf8', timeout: 120000, windowsHide: true, ...options });
   const successful = result => !result.error && result.status === 0;
   function checked(args, options) {
@@ -85,6 +92,8 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
     assert.equal(value.Id, id, 'Container identity changed');
     assert.equal(value.Config?.Labels?.[label], nonce, 'Container ownership label changed');
     containerConfig = value.Config;
+    containerImage = value.Image;
+    if (report.containerImageId) assert.equal(containerImage, report.containerImageId, 'Container image identity changed');
     return value.State;
   }
   try {
@@ -94,11 +103,19 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
       '--mount', `type=bind,source=${path.join(home, 'registry')},target=/cargo-cache-seed/registry,readonly`,
       '--mount', `type=bind,source=${root},target=/build`, '--workdir', '/build'];
     for (const key of ['FARM_BUILD_PROFILE', 'FARM_BUILD_ABI', 'FARM_BUILD_TARGET', 'FARM_BUILD_ZIG']) args.push('--env', `${key}=${env[key] ?? 'false'}`);
+    // Alpine installs rustup in root's default home without declaring HOME or
+    // CARGO_HOME in image metadata. Set the reviewed path explicitly instead of
+    // inferring a runtime HOME from an incomplete Config.Env array.
+    const cargoHome = imageCargoHomes.get(image);
+    args.push('--env', `CARGO_HOME=${cargoHome}`, '--env', `FARM_EXPECTED_CARGO_HOME=${cargoHome}`);
     args.push(image, 'sh', '-c', containerBuild);
     id = checked(args, { timeout: 10 * 60 * 1000 }); assert.match(id, /^[a-f0-9]{64}$/);
     inspect();
+    assert.match(containerImage ?? '', /^sha256:[a-f0-9]{64}$/, 'Actual container image ID is unavailable');
+    report.containerImageId = containerImage;
     report.containerCargoHome = containerCargoHome(containerConfig.Env);
-    report.containerCargoHomeSource = 'Verified image CARGO_HOME/HOME only; other environment values are neither logged nor forwarded';
+    assert.equal(report.containerCargoHome, cargoHome, 'Container Cargo home differs from explicit image policy');
+    report.containerCargoHomeSource = 'Project explicit per-image Cargo home policy; Config.Env readback plus shell checks before build. Image ID is recorded separately, not a registry digest or inferred default';
     const started = invoke(['start', '--attach', id], { stdio: 'inherit', timeout: buildTimeoutMs });
     report.clientExitCode = started.status;
     report.timedOut = started.error?.code === 'ETIMEDOUT';
@@ -115,6 +132,7 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
     if (!started.error && started.status !== 0 && state.ExitCode === 0) report.errors.push('Docker start failed without a matching build failure');
     assert.ok(Number.isInteger(state.ExitCode), 'Actual container build exit code is unavailable');
     report.buildExitCode = state.ExitCode;
+    assert.equal(containerCargoHome(containerConfig.Env), report.containerCargoHome, 'Container Cargo home changed before cache export');
     // No -a/--archive: host ownership is required, not root ownership from source.
     for (const part of ['git', 'registry']) checked(['cp', `${id}:${report.containerCargoHome}/${part}/.`, path.join(home, part)], { timeout: 5 * 60 * 1000 });
     report.cacheExported = true;
