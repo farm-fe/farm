@@ -1,3 +1,4 @@
+// cspell:words cksum
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -65,4 +66,46 @@ test('verified original registry bytes are copied unchanged and excluded from th
     receipt.reusedRegistry.forEach((row, index) => assert.deepEqual(fs.readFileSync(path.join(output, row.file)), bytes[index]));
     assert.equal(receipt.compiled, false); assert.equal(receipt.published, false);
   } finally { fs.rmSync(f.root, { recursive: true }); }
+});
+
+
+test('all new SDK archives use the explicit public registry without archive locks or repackaging public macros', () => {
+  const f = fixture();
+  try {
+    const plan = JSON.parse(fs.readFileSync(new URL('../docs/releases/v2-candidate.json', import.meta.url)));
+    const selected = plan.cargo.filter(row => !macros.some(macro => macro.name === row.name));
+    assert.equal(selected.length, 26); assert.equal(plan.cargo.length, 28);
+    fs.writeFileSync(path.join(f.root, 'docs/releases/v2-candidate.json'), JSON.stringify(plan));
+    fs.mkdirSync(f.cache, { recursive: true });
+    const originals = [Buffer.from('original registry cache macro fixture'), Buffer.from('original registry plugin macro fixture')];
+    macros.forEach((row, index) => fs.writeFileSync(path.join(f.cache, `${row.name}-${row.version}.crate`), originals[index]));
+    const output = path.join(f.root, 'all-sdk'); let calls = 0;
+    const receipt = sealRustPackages({ ...options(f), output, packageRunner(executable, args, settings) {
+      calls++;
+      assert.deepEqual(args, ['+nightly-2026-04-10', 'package', '--no-verify', '--exclude-lockfile', '--registry', 'crates-io', '--offline', '--locked', '--allow-dirty', ...selected.flatMap(row => ['-p', row.name])]);
+      assert.equal(settings.cwd, f.root); assert.equal(settings.timeout, 120000);
+      const directory = path.join(settings.env.CARGO_TARGET_DIR, 'package'); fs.mkdirSync(directory, { recursive: true });
+      for (const row of selected) fs.writeFileSync(path.join(directory, `${row.name}-${row.version}.crate`), `candidate ${row.name}`);
+      return { status: 0, stdout: '', stderr: '' };
+    } });
+    assert.equal(calls, 1); assert.equal(receipt.status, 'packaged-not-compiled');
+    assert.deepEqual(receipt.records.map(row => row.name), selected.map(row => row.name));
+    for (const row of receipt.records) assert.equal(row.sha256, digest(fs.readFileSync(path.join(output, row.file))));
+    receipt.reusedRegistry.forEach((row, index) => assert.deepEqual(fs.readFileSync(path.join(output, row.file)), originals[index]));
+    assert.equal(receipt.compiled, false); assert.equal(receipt.published, false);
+  } finally { fs.rmSync(f.root, { recursive: true }); }
+});
+
+test('locked prefetch precedes archive preparation and isolated frozen SDK validation remains mandatory', () => {
+  const workflow = fs.readFileSync(new URL('../.github/workflows/v2-candidate-seal.yaml', import.meta.url), 'utf8');
+  const fetch = workflow.indexOf('cargo +nightly-2026-04-10 fetch --locked');
+  const packageStep = workflow.indexOf('node scripts/seal-v2-rust-packages.mjs');
+  const registry = workflow.indexOf('node scripts/sdk-candidate-registry.mjs');
+  const bind = workflow.indexOf('node scripts/prepare-sdk-frozen-lock.mjs bind-candidate');
+  const consumer = workflow.indexOf('node scripts/run-sdk-consumer.mjs');
+  assert.ok(fetch >= 0 && fetch < packageStep && packageStep < registry && registry < bind && bind < consumer);
+  assert.ok(workflow.includes("FARM_SDK_FROZEN_LOCK: '1'"));
+  const materializer = fs.readFileSync(new URL('./sdk-candidate-registry.mjs', import.meta.url), 'utf8');
+  assert.ok(materializer.includes('target/package/tmp-registry/index'));
+  assert.ok(materializer.includes('metadata.cksum !== record.sha256'));
 });

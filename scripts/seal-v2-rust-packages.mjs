@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { rustRegistryReuse, copyVerifiedRegistryArchives } from './v2-rust-registry-reuse.mjs';
 
 const defaultRoot = fileURLToPath(new URL('../', import.meta.url));
-export function sealRustPackages({ root = defaultRoot, output, env = process.env, sourceCommit, resources } = {}) {
+export function sealRustPackages({ root = defaultRoot, output, env = process.env, sourceCommit, resources, packageRunner = spawnSync } = {}) {
   if (!output || fs.existsSync(output)) throw new Error('Specify a fresh output directory; preserve previous evidence');
   output = path.resolve(output); fs.mkdirSync(output, { recursive: true });
   const receipt = { schemaVersion: 1, sourceCommit: sourceCommit ?? null, status: 'not-started', compiled: false, published: false, reusedRegistry: [], records: [] };
@@ -32,11 +32,13 @@ export function sealRustPackages({ root = defaultRoot, output, env = process.env
       const cache = path.join(env.CARGO_HOME ?? path.join(os.homedir(), '.cargo'), 'registry/cache');
       receipt.reusedRegistry = copyVerifiedRegistryArchives(reused, cache, output);
       // Official multi-package preparation resolves unpublished SDK dependencies
-      // together. --no-verify disables compilation, never source normalization.
-      const args = ['+nightly-2026-04-10', 'package', '--no-verify', '--offline', '--locked', '--allow-dirty', ...selected.flatMap(row => ['-p', row.name])];
+      // together. Explicit registry keeps the generated candidate index with no verification.
+      // Excluding archive locks avoids resolving patched workspace locks again.
+      // The prior locked fetch and independent frozen SDK lock remain separate checks.
+      const args = ['+nightly-2026-04-10', 'package', '--no-verify', '--exclude-lockfile', '--registry', 'crates-io', '--offline', '--locked', '--allow-dirty', ...selected.flatMap(row => ['-p', row.name])];
       const cargo = env.FARM_CARGO_EXECUTABLE ?? (process.platform === 'win32' ? path.join(os.homedir(), '.cargo/bin/cargo.exe') : 'cargo');
       stage = 'cargo-package';
-      const result = selected.length ? spawnSync(cargo, args, { cwd: root, env: { ...env, CARGO_TARGET_DIR: path.join(output, 'target') },
+      const result = selected.length ? packageRunner(cargo, args, { cwd: root, env: { ...env, CARGO_TARGET_DIR: path.join(output, 'target') },
         encoding: 'utf8', windowsHide: true, timeout: 120000, maxBuffer: 16 * 1024 ** 2 }) : { status: 0, stdout: 'All SDK archives reused from verified public registry; no package command executed.', stderr: '' };
       fs.writeFileSync(path.join(output, 'stdout.txt'), result.stdout ?? '');
       fs.writeFileSync(path.join(output, 'diagnostic.txt'), result.stderr ?? '');
