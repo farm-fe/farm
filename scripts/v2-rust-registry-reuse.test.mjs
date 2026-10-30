@@ -105,7 +105,7 @@ test('locked prefetch precedes archive preparation and isolated frozen SDK valid
   const consumer = workflow.indexOf('node scripts/run-sdk-consumer.mjs');
   assert.ok(fetch >= 0 && fetch < packageStep && packageStep < registry && registry < bind && bind < consumer);
   assert.ok(workflow.includes("FARM_SDK_FROZEN_LOCK: '1'"));
-  const materializer = fs.readFileSync(new URL('./sdk-candidate-registry.mjs', import.meta.url), 'utf8');
-  assert.ok(materializer.includes('target/package/tmp-registry/index'));
-  assert.ok(materializer.includes('metadata.cksum !== record.sha256'));
+  const registryScript = fs.readFileSync(new URL('./sdk-candidate-registry.mjs', import.meta.url), 'utf8');
+  assert.ok(registryScript.includes('target/package/tmp-registry/index'));
+  assert.ok(registryScript.includes('metadata.cksum !== record.sha256'));
 });
