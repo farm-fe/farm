@@ -3,7 +3,7 @@
 No command in this file uploads packages, creates Git refs or reads publication
 credentials. PRs can plan; live evidence reads are restricted to main Actions.
 """
-# cspell:words argparse importlib urllib
+# cspell:words argparse importlib urllib finalizer postpublish
 import argparse
 import hashlib
 import importlib.util

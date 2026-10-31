@@ -1,5 +1,5 @@
 """Read-only release entrypoint contracts with independent mock API facts."""
-# cspell:words importlib
+# cspell:words importlib reversioned
 import copy
 import hashlib
 import importlib.util

@@ -1,3 +1,4 @@
+<!-- cspell:words finalizer -->
 # Independent incremental CI and publication
 
 CI and release share impact rules, never build bytes. The CI namespace is

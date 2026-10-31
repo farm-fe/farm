@@ -1,4 +1,4 @@
-// cspell:words XDG
+// cspell:words XDG NOSYSTEM
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

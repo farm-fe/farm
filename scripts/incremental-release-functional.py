@@ -1,5 +1,5 @@
 """Verify functional acceptance of the exact release tree, without CI build bytes."""
-# cspell:words importlib IFMT ISREG
+# cspell:words importlib IFMT ISREG redispatch
 import argparse
 import hashlib
 import math

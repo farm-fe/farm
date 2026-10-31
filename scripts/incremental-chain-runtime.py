@@ -1,5 +1,5 @@
 """Actual Actions entrypoint for independently verified chain planning."""
-# cspell:words argparse importlib
+# cspell:words argparse importlib vitest
 import argparse
 import importlib.util
 import json

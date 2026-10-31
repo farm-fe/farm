@@ -4,7 +4,7 @@ No release bytes, inherited test results, credentials or mutable cache entries
 are accepted. Only Linux GNU is enabled; every other ABI still builds and all
 current TS/Examples/performance suites still execute.
 """
-# cspell:words argparse importlib tomllib IFMT IFREG
+# cspell:words argparse importlib tomllib IFMT IFREG RUSTFLAGS
 import argparse
 import copy
 import hashlib

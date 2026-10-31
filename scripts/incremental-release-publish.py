@@ -3,7 +3,7 @@
 Commands consume original release archives and keep a durable lock through
 public consumer verification and exact tag/Release confirmation.
 """
-# cspell:words argparse importlib npmjs urllib
+# cspell:words argparse importlib npmjs urllib USERCONFIG postpublish
 import argparse
 import hashlib
 import importlib.util

@@ -1,5 +1,5 @@
 """Pure HTTP/Release finalization contracts; no real requests or registry writes."""
-# cspell:words importlib
+# cspell:words importlib stopall finalizer postpublish nonpublishing nonbaseline
 import copy
 import hashlib
 import importlib.util
