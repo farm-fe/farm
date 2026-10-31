@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v2.0.1...farmfe_plugin_lazy_compilation-v2.2.0) - 2026-10-31
+
+### Added
+
+- unify Farm V2 release candidate, docs and fixes ([#2329](https://github.com/farm-fe/farm/pull/2329))
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v2.0.0...farmfe_plugin_lazy_compilation-v2.0.1) - 2025-09-21
 
 ### Other

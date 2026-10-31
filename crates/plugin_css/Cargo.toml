@@ -13,7 +13,7 @@ documentation = "https://docs.rs/farmfe_plugin_css"
 farmfe_core = { path = "../core", version = "=2.2.0" }
 farmfe_toolkit = { path = "../toolkit", version = "=2.2.0" }
 farmfe_utils = { path = "../utils", version = "=2.1.1" }
-farmfe_macro_cache_item = { path = "../macro_cache_item", version = "=2.1.0" }
+farmfe_macro_cache_item = { path = "../macro_cache_item", version = "=2.1.1" }
 rkyv = { workspace = true }
 
 [dev-dependencies]

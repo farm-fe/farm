@@ -14,7 +14,7 @@ readme = "README.md"
 no-default-features = true
 
 [dependencies]
-farmfe_macro_cache_item = { version = "=2.1.0", path = "../macro_cache_item" }
+farmfe_macro_cache_item = { version = "=2.1.1", path = "../macro_cache_item" }
 farmfe_utils = { version = "=2.1.1", path = "../utils" }
 farmfe_ecosystem_glob = { version = "=0.1.0", path = "../../rust-ecosystem/glob" }
 serde = { version = "1.0", features = ["derive", "rc"] }
