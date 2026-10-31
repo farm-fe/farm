@@ -4,12 +4,12 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      release_pr:
-        description: Exact same-repository Changesets version PR
+      pr_number:
+        description: Exact same-repository PR to validate at its current head
         required: true
         type: string
-      release_base:
-        description: Reviewed version preparation base SHA
+      base_sha:
+        description: Exact current PR base SHA
         required: true
         type: string
   pull_request:
@@ -49,7 +49,8 @@ jobs:
           python scripts/ci-impact-receipt.test.py
       - name: Compute committed base and head impact without changing execution
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
-      - uses: actions/upload-artifact@v4
+      - name: Upload fixed source impact plan
+        uses: actions/upload-artifact@v4
         with:
           name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
           path: impact-plan/plan.json
@@ -72,7 +73,7 @@ jobs:
     name: Incremental CI shadow summary
     continue-on-error: true
     if: always()
-    needs: [impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, release-candidate-seal, performance-report, performance-summary]
+    needs: [impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, performance-report, performance-summary]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -150,10 +151,13 @@ jobs:
           python scripts/incremental-release-publish.test.py
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
-          node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-pr-validation.test.mjs
+          node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-chain-boundaries.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
           python scripts/ci-execution-ledger.test.py
           python scripts/ci-execution-evidence.test.py
+          python scripts/ci-suite-attempts.test.py
+          python scripts/ci-rerun-dag.test.py
+          python scripts/ci-restore-depth.test.py
       - name: Check release source and failure paths without publishing
         run: >-
           node --test scripts/v2-*.test.mjs scripts/release-archive.test.mjs
@@ -162,7 +166,7 @@ jobs:
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
           scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs scripts/ci-suite-inventory.test.mjs
-          scripts/ci-suite-execution.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-selection.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
+          scripts/ci-suite-execution.test.mjs scripts/ci-suite-rerun.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-selection.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
       - name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
@@ -173,20 +177,12 @@ jobs:
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   docs-acceptance:
-    name: Docs release-profile reference and contracts
-    # Independent release compilation starts alongside native producers after cheap gates.
+    name: Docs CI quality checks
+    # Documentation validation is part of CI and produces no release candidates.
     needs: [release-contract-tests, performance-contract-tests]
     uses: ./.github/workflows/farm-docs.yaml
     permissions:
       contents: read
-
-  release-candidate-seal:
-    if: (github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || startsWith(github.head_ref, 'changeset-release/'))) || github.event_name == 'workflow_dispatch'
-    needs: [check-native-candidate-assembly, examples-test, type-check, ts-test]
-    uses: ./.github/workflows/v2-candidate-seal.yaml
-    permissions:
-      contents: read
-      actions: read
 
   performance-contract-tests:
     name: Performance report contract (${{ matrix.os }})
@@ -219,6 +215,9 @@ jobs:
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   primary-linux:
+    permissions:
+      contents: read
+      actions: read
     name: Primary Linux
     needs: [release-contract-tests, performance-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
@@ -231,6 +230,9 @@ jobs:
     secrets: inherit
 
   primary-macos:
+    permissions:
+      contents: read
+      actions: read
     name: Primary macOS
     needs: [release-contract-tests, performance-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
@@ -241,6 +243,9 @@ jobs:
     secrets: inherit
 
   primary-windows:
+    permissions:
+      contents: read
+      actions: read
     name: Primary Windows
     needs: [release-contract-tests, performance-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
@@ -282,6 +287,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -294,11 +300,12 @@ jobs:
         if: needs.type-check.outputs.linux_native_mode == 'reuse'
         with:
           python-version: '3.13'
-      - uses: actions/download-artifact@v4
+      - name: Restore original same-run CI consumer materialization
         if: needs.type-check.outputs.linux_native_mode == 'reuse'
-        with:
-          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-materialization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLUTION_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py restore --hash "$RESOLUTION_HASH" --output ci-materialization
       - name: Verify original GNU bytes into assembly staging with separate origin
         if: needs.type-check.outputs.linux_native_mode == 'reuse'
         env:
@@ -376,6 +383,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         id: performance-pnpm
         with:
@@ -392,11 +400,12 @@ jobs:
           python-version: '3.12'
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v4
+      - name: Restore original same-run CI consumer materialization
         if: matrix.settings.abi == 'linux-x64-gnu' && needs.type-check.outputs.linux_native_mode == 'reuse'
-        with:
-          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-materialization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLUTION_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py restore --hash "$RESOLUTION_HASH" --output ci-materialization
       - name: Verify and consume unchanged CI GNU bytes before performance sampling
         if: matrix.settings.abi == 'linux-x64-gnu' && needs.type-check.outputs.linux_native_mode == 'reuse'
         env:
@@ -571,7 +580,7 @@ jobs:
       - name: Check out exact base separately
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha || inputs.release_base || github.event.before }}
+          ref: ${{ github.event.pull_request.base.sha || inputs.base_sha || github.event.before }}
           path: .performance-base
           persist-credentials: false
       - name: Prepare compatible exact-base native consumer
@@ -579,7 +588,7 @@ jobs:
           FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
           FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base || github.event.before }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha || github.event.before }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/prepare-performance-base.mjs
       - name: Sample isolated Commerce baseline
@@ -587,7 +596,7 @@ jobs:
           FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
           FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base || github.event.before }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha || github.event.before }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/performance-report.mjs
       - name: Finalize incomplete performance evidence
@@ -626,18 +635,13 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/download-artifact@v4
-        id: performance-inputs
-        continue-on-error: true
-        with:
-          pattern: performance-${{ github.sha }}-*-attempt-${{ github.run_attempt }}
-          path: .performance-reports
-      - name: Validate and compact measurements (no artifact code execution)
+      - name: Validate and compact independently verified platform measurements
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           PERFORMANCE_SAMPLING_RESULT: ${{ needs.performance-report.result }}
-          PERFORMANCE_DOWNLOAD_OUTCOME: ${{ steps.performance-inputs.outcome }}
         run: node scripts/aggregate-performance-reports.mjs
-      - uses: actions/upload-artifact@v4
+      - name: Upload current CI consumer native materialization
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: performance-pr-summary-${{ github.run_attempt }}
@@ -652,17 +656,12 @@ jobs:
         if: success()
         with:
           python-version: '3.12'
-      - name: Download actual suite-count evidence from this exact run
+      - name: Resolve original successful suite attempts without rebuilding
         if: success()
-        uses: actions/download-artifact@v4
-        with:
-          pattern: farm-ci-suite-*-${{ github.sha }}-*-${{ github.run_attempt }}
-          path: ci-baseline-inputs/suites
-      - uses: actions/download-artifact@v4
-        if: needs.type-check.outputs.suite_selection_hash != ''
-        with:
-          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-suite-selection
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+        run: python -B scripts/ci-suite-attempts.py --output ci-baseline-inputs/suites
       - name: Validate complete discovered and executed suite coverage
         env:
           FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
@@ -785,6 +784,15 @@ jobs:
           status: ${{ job.status }}
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
+      - name: Upload CI consumer materialization receipt
+        if: steps.ci-leaf.outputs.mode == 'reuse'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-consumer-native-proof-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-consumer-materialization/consumer.json
+          if-no-files-found: error
+          retention-days: 14
+
   ts-test:
     name: All primary TypeScript chains
     if: always()
@@ -843,6 +851,9 @@ jobs:
         run: test "$UPSTREAM_RESULT" = success && test "$EXECUTION_GATE" = success
 
   incremental-execution-gate:
+    permissions:
+      contents: read
+      actions: read
     name: Incremental CI execution gate
     if: always()
     needs: [type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
@@ -869,11 +880,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - uses: actions/download-artifact@v4
+      - name: Restore original same-run CI consumer materialization
         if: needs.type-check.outputs.linux_native_mode == 'reuse'
-        with:
-          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-materialization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLUTION_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py restore --hash "$RESOLUTION_HASH" --output ci-materialization
       - name: Independently recheck the committed resolution and original byte inventory
         if: needs.type-check.outputs.linux_native_mode == 'reuse'
         env:
@@ -881,18 +893,14 @@ jobs:
         run: |
           mkdir gate-native-proof
           python -B scripts/ci-leaf-native.py consume --input ci-materialization --hash "$RESOLUTION_HASH" --destination gate-native-proof
-      - uses: actions/download-artifact@v4
-        if: needs.type-check.outputs.suite_selection_hash != ''
-        with:
-          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-suite-selection
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: farm-ci-suite-*-${{ github.sha }}-*-${{ github.run_attempt }}
-          path: ci-gate-suites
+      - name: Resolve original successful suite attempts without rebuilding
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+        run: python -B scripts/ci-suite-attempts.py --output ci-gate-suites
       - name: Validate actual selected suite files and case counts on every platform
         env:
           FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}

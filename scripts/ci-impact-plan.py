@@ -25,13 +25,11 @@ class WorkspaceIdentityError(ValueError):
 
 
 def release_candidate(event, environment):
-    pr = event.get("pull_request", {})
-    repository = environment.get("GITHUB_REPOSITORY")
-    same_repository = bool(repository) and pr.get("head", {}).get("repo", {}).get("full_name") == repository
-    return environment.get("GITHUB_EVENT_NAME") == "workflow_dispatch" or (same_repository and (event.get("number") == 2329 or pr.get("head", {}).get("ref", "").startswith("changeset-release/")))
+    # Retained argument compatibility: CI never schedules release candidates.
+    return False
 
 
-def execution_cells(scope="e2e", release_candidate=True):
+def execution_cells(scope="e2e", release_candidate=False):
     # Full execution remains unchanged. Any workflow matrix/policy change forces
     # full planning and requires updating this reviewed shadow contract.
     if scope == "unit":
@@ -40,8 +38,7 @@ def execution_cells(scope="e2e", release_candidate=True):
         raise ValueError("Unknown execution scope")
     return (["native:ci:" + abi for abi in TARGETS]
             + [suite + ":" + abi for suite in ["examples", "ts-tests", "performance", "performance-contracts"] for abi in PRIMARY]
-            + ["docs:release:linux-x64-gnu", "docs:release:win32-x64-msvc", "types", "contracts", "native-assembly", "performance-summary"]
-            + (["seal", *["consumers:" + abi for abi in PRIMARY]] if release_candidate else []))
+            + ["docs:ci:linux-x64-gnu", "docs:ci:win32-x64-msvc", "types", "contracts", "native-assembly", "performance-summary"])
 
 
 def proposed_dag(suites, examples):
@@ -54,13 +51,11 @@ def proposed_dag(suites, examples):
         tasks["ts-tests:" + abi] = [producer]
         tasks["examples:" + abi] = [producer]
         tasks["rust-tests:ci-test:" + abi] = ["contracts"]
-        tasks["consumers:" + abi] = ["seal"]
         tasks["performance:" + abi] = ["examples:" + abi, "ts-tests:" + abi, "types", "docs-acceptance"]
     tasks["native-assembly"] = ["native:ci:" + abi for abi in TARGETS]
-    tasks["seal"] = ["native-assembly", "types", *["examples:" + abi for abi in PRIMARY], *["ts-tests:" + abi for abi in PRIMARY]]
-    tasks["docs:release:linux-x64-gnu"] = ["contracts"]
-    tasks["docs:release:win32-x64-msvc"] = ["contracts"]
-    tasks["docs-acceptance"] = ["docs:release:linux-x64-gnu", "docs:release:win32-x64-msvc"]
+    tasks["docs:ci:linux-x64-gnu"] = ["contracts"]
+    tasks["docs:ci:win32-x64-msvc"] = ["contracts"]
+    tasks["docs-acceptance"] = ["docs:ci:linux-x64-gnu", "docs:ci:win32-x64-msvc"]
     return {"tasks": tasks, "selectedSuites": suites, "exampleDirectories": examples,
             "docsSuites": ["source", "distribution", "platform", "compiled", "browser", "diagrams", "notices-source", "notices-built", "archive-python"] if "docs" in suites else [],
             "executionEnabled": False, "note": "Semantic suites and platform-local needs are a shadow proposal, not task omission authority."}
@@ -380,7 +375,7 @@ def main():
     try:
         event = json.loads(Path(args.event).read_text(encoding="utf-8"))
         pr = event.get("pull_request", {})
-        base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base") or event.get("before")
+        base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("base_sha") or event.get("inputs", {}).get("release_base") or event.get("before")
         head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA")
         candidate = release_candidate(event, os.environ)
         result = make_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate)

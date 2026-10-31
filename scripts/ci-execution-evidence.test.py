@@ -46,7 +46,7 @@ def fixture():
     repository = {"id": 1, "default_branch": "main"}
     def step(name):
         return {"name": name, "status": "completed", "conclusion": "success", "started_at": "2026-10-31T01:01:00Z", "completed_at": "2026-10-31T01:03:00Z"}
-    jobs = [{"id": index + 10, "run_id": 2, "name": name, "status": "completed", "conclusion": "success", "steps": []}
+    jobs = [{"id": index + 10, "run_id": 2, "name": name, "status": "completed", "conclusion": "success", "started_at":"2026-10-31T01:00:00Z", "completed_at":"2026-10-31T01:04:00Z", "steps": []}
             for index, name in enumerate(ledger["requiredJobs"])]
     for job in jobs:
         if job["name"] == proof.PRODUCER:

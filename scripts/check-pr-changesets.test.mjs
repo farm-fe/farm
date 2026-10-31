@@ -100,3 +100,11 @@ test('ordinary Changesets receipt is independent of first stable and rejects sta
   write('pkg/package.json', { name: 'pkg', version: '1.0.2' });
   assert.throws(() => verifyChangesetsPreparation(directory, options));
 });
+
+
+test('generic CI dispatch uses the exact verified base without release-only inputs',()=>{
+  const sha='a'.repeat(40),repository='farm-fe/farm';
+  const event={inputs:{base_sha:sha},pull_request:{base:{ref:'main',sha,repo:{full_name:repository}}}};
+  assert.equal(changesetBase(event,{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository}).sha,sha);
+  assert.throws(()=>changesetBase({...event,inputs:{base_sha:'b'.repeat(40)}},{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository}));
+});

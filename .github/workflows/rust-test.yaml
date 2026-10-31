@@ -39,7 +39,8 @@ jobs:
         env:
           CI_IMPACT_SCOPE: unit
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
-      - uses: actions/upload-artifact@v4
+      - name: Upload fixed source impact plan
+        uses: actions/upload-artifact@v4
         with:
           name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
           path: impact-plan/plan.json

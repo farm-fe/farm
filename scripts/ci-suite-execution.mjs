@@ -43,7 +43,7 @@ export function typeScriptChildEnvironment(env) {
   const child = {...env};
   // Farm exposes FARM_* to application config. Harness-only receipt/selection
   // controls stay in the parent and must not change product tests or snapshots.
-  for (const name of ['FARM_SUITE_ABI', 'FARM_SUITE_SELECTION_HASH', 'FARM_SUITE_RESULTS_FILE']) delete child[name];
+  for (const name of ['FARM_SUITE_ABI', 'FARM_SUITE_SELECTION_HASH', 'CI_SUITE_SELECTION_PRODUCER_ATTEMPT', 'FARM_SUITE_RESULTS_FILE']) delete child[name];
   return child;
 }
 
@@ -173,10 +173,17 @@ export async function runTypeScriptEvidence({ directory = root, env = process.en
   return saveSuiteReceipt(output, inventory, data, env, directory);
 }
 
-export function validateCollectedSuites(inventory, rows, env = process.env) {
+export function validateCollectedSuites(inventory, rows, env = process.env, resolution = null) {
   const expected = receiptIdentity(inventory, { ...env, FARM_SUITE_ABI: 'linux-x64-gnu' });
   const abis = ['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc'];
   assert.equal(rows.length, 6, 'All three platforms require TS and browser evidence');
+  if (resolution) {
+    assert.equal(resolution.schemaVersion, 1); assert.equal(resolution.sourceSHA, expected.sourceSHA); assert.equal(resolution.sourceTree, expected.sourceTree);
+    assert.equal(resolution.runId, expected.run.runId); assert.equal(resolution.aggregationAttempt, expected.run.runAttempt);
+    assert.deepEqual(Object.keys(resolution.producers).sort(), rows.map(row => row.artifactName).sort());
+  }
+  if (resolution && env.FARM_SUITE_SELECTION_HASH) assert.ok(Number.isSafeInteger(resolution.selectionAttempt) && resolution.selectionAttempt > 0 && resolution.selectionAttempt <= expected.run.runAttempt, 'Original suite selection attempt is missing');
+  const planEnv = resolution?.selectionAttempt ? {...env, GITHUB_RUN_ATTEMPT:String(resolution.selectionAttempt)} : env;
   const seen = new Set();
   for (const row of rows) {
     const key = row.data.kind + ':' + row.data.abi;
@@ -185,19 +192,27 @@ export function validateCollectedSuites(inventory, rows, env = process.env) {
     assert.equal(row.data.schemaVersion, 1); assert.equal(row.data.chain, 'ci');
     assert.equal(row.data.receiptKind, 'actual-suite-execution-not-byte-reuse');
     assert.equal(row.data.sourceSHA, expected.sourceSHA); assert.equal(row.data.sourceTree, expected.sourceTree);
-    assert.deepEqual(row.data.run, expected.run); assert.equal(row.data.acceptanceInherited, false);
+    const binding = resolution?.producers[row.artifactName];
+    const producerAttempt = binding?.runAttempt ?? expected.run.runAttempt;
+    assert.ok(Number.isSafeInteger(producerAttempt) && producerAttempt > 0 && producerAttempt <= expected.run.runAttempt);
+    if (binding) {
+      assert.equal(binding.profile, 'ci'); assert.equal(binding.workflowPath, '.github/workflows/ci.yaml');
+      for (const key of ['jobId','artifactId']) assert.ok(Number.isSafeInteger(binding[key]) && binding[key] > 0);
+      assert.match(binding.artifactDigest, /^sha256:[a-f0-9]{64}$/);
+    }
+    assert.deepEqual(row.data.run, {...expected.run, runAttempt:producerAttempt}); assert.equal(row.data.acceptanceInherited, false);
     const label = row.data.kind === 'ts' ? 'ts' : 'browser';
     assert.equal(row.data.jobKey, row.data.kind === 'ts' ? 'ts-test' : 'examples-test');
     assert.equal(row.data.workflowRef, expected.workflowRef);
-    assert.equal(row.artifactName, `farm-ci-suite-${label}-${expected.sourceSHA}-${row.data.abi}-${expected.run.runAttempt}`, 'Suite artifact namespace differs');
-    const plan = executionPlan(inventory, row.data.kind, root, env);
+    assert.equal(row.artifactName, `farm-ci-suite-${label}-${expected.sourceSHA}-${row.data.abi}-${producerAttempt}`, 'Suite artifact namespace differs');
+    const plan = executionPlan(inventory, row.data.kind, root, planEnv);
     if (row.data.kind === 'examples-browser') assert.deepEqual(row.data.excludedCases ?? [], plan.excludedCases ?? [], 'Browser case exclusion receipt differs from committed policy');
     assert.equal(row.data.inventoryHash, inventory.inventoryHash); assert.equal(row.data.planHash, plan.planHash);
     assert.deepEqual(row.data.selectedIds, plan.ids); assert.deepEqual(row.data.executedIds, plan.ids);
     if (env.FARM_SUITE_SELECTION_HASH && row.data.kind === 'examples-browser') {
-      const buildPlan = executionPlan(inventory, 'examples-build', root, env), build = row.data.buildExecution;
+      const buildPlan = executionPlan(inventory, 'examples-build', root, planEnv), build = row.data.buildExecution;
       assert.ok(build, 'Selected browser evidence requires actual build coverage');
-      assert.equal(build.sourceSHA, expected.sourceSHA); assert.equal(build.sourceTree, expected.sourceTree); assert.deepEqual(build.run, expected.run);
+      assert.equal(build.sourceSHA, expected.sourceSHA); assert.equal(build.sourceTree, expected.sourceTree); assert.deepEqual(build.run, row.data.run);
       assert.equal(build.abi, row.data.abi); assert.equal(build.inventoryHash, inventory.inventoryHash); assert.equal(build.planHash, buildPlan.planHash);
       assert.deepEqual(build.selectedIds, buildPlan.ids); assert.deepEqual(build.executedIds, buildPlan.ids);
       assert.equal(build.failed, 0); assert.equal(build.skipped, 0);
@@ -217,13 +232,19 @@ export function validateCollectedSuites(inventory, rows, env = process.env) {
     assert.equal(count, row.data.executedCases, 'Suite case totals differ');
   }
   return { schemaVersion: 1, kind: 'complete-ci-suite-counts-not-build-bytes', ...expected,
-    cells: rows.map(row => ({ ...row.data, artifactName: row.artifactName })), acceptanceInherited: false };
+    cells: rows.map(row => ({ ...row.data, artifactName: row.artifactName, ...(resolution ? {producerBinding:resolution.producers[row.artifactName]} : {}) })), acceptanceInherited: false };
 }
 
 export function collectSuites(input, output, directory = root, env = process.env) {
   const inventory = actualSuiteInventory(directory), rows = [];
   assert.ok(fs.statSync(input).isDirectory() && !fs.lstatSync(input).isSymbolicLink(), 'Suite input directory redirects');
-  const artifacts = fs.readdirSync(input);
+  const resolutionFile = path.join(input, 'producers.json');
+  let resolution = null;
+  if (fs.existsSync(resolutionFile)) {
+    assert.ok(fs.lstatSync(resolutionFile).isFile() && !fs.lstatSync(resolutionFile).isSymbolicLink() && fs.statSync(resolutionFile).size <= 1024 ** 2);
+    resolution = JSON.parse(fs.readFileSync(resolutionFile, 'utf8'));
+  }
+  const artifacts = fs.readdirSync(input).filter(name => name !== 'producers.json');
   assert.equal(artifacts.length, 6, 'Missing or extra suite artifact');
   for (const artifactName of artifacts) {
     const folder = path.join(input, artifactName);
@@ -234,7 +255,7 @@ export function collectSuites(input, output, directory = root, env = process.env
     assert.ok(info.isFile() && !info.isSymbolicLink() && info.size > 0 && info.size <= 1024 ** 2, 'Suite receipt is invalid or exceeds bound');
     rows.push({ artifactName, data: JSON.parse(fs.readFileSync(file, 'utf8')) });
   }
-  const result = validateCollectedSuites(inventory, rows, env);
+  const result = validateCollectedSuites(inventory, rows, env, resolution);
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, JSON.stringify(result, null, 2) + '\n');
   return result;

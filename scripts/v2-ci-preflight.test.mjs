@@ -65,17 +65,17 @@ test('Cargo restores cover all nine targets while only the three primary produce
   for (const target of ['linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu']) assert.ok(release.includes(`abi: ${target}`));
 });
 
-test('three independent candidate consumer jobs install the exact current seal without workspace dependencies', () => {
-  const source = read('v2-candidate-seal.yaml').split('  consumers:')[1];
+test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
+  const source = read('incremental-release.yaml').split('  candidate-consumers:')[1].split('  publisher:')[0];
   assert.ok(source);
-  assert.match(source, /needs: \[seal\]/);
+  assert.match(source, /needs: \[source, producer\]/);
   assert.match(source, /os: \[ubuntu-24.04, macos-latest, windows-latest\]/);
-  assert.ok(source.includes('name: v2-release-seal-${{ github.sha }}'));
-  assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-consumer-results/);
+  assert.ok(source.includes('name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}'));
+  assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-results/);
   assert.doesNotMatch(source, /pnpm install|cargo |NPM_TOKEN|secrets:/);
 });
 
-test('cache writers are limited without replacing the Docs release reference or final nine-ABI assembly', () => {
+test('cache writers are limited while Docs stays inside CI and native assembly remains complete', () => {
   const user = read('rust-build-user.yaml'), release = read('rust-build-release.yaml'), docs = read('farm-docs.yaml');
   assert.match(user, /save-if: true/);
   for (const source of [release, docs]) {
@@ -83,10 +83,11 @@ test('cache writers are limited without replacing the Docs release reference or 
     assert.match(source, /uses: \.\/\.github\/actions\/cargo-source-cache/);
   }
   assert.doesNotMatch(docs, /cache: pnpm/);
-  assert.match(docs, /pnpm --dir packages\/core run build:rs/);
-  assert.match(docs, /ciProfileCompatibility:'not-yet-validated'/);
+  assert.match(docs, /pnpm --dir packages\/core run build:rs:ci/);
+  assert.match(docs, /profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false/);
+  assert.match(docs,/cell: "docs:ci:/);
   const ci = read('ci.yaml');
-  assert.match(ci.split('  docs-acceptance:')[1].split('  release-candidate-seal:')[0], /needs: \[release-contract-tests, performance-contract-tests\]/);
+  assert.match(ci.split('  docs-acceptance:')[1].split('  performance-contract-tests:')[0], /needs: \[release-contract-tests, performance-contract-tests\]/);
   const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
   assert.match(assembly, /needs: \[call-rust-build-user, call-rust-build-release, type-check\]/);
 });

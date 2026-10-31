@@ -19,6 +19,7 @@ on:
         default: ''
 permissions:
   contents: read
+  actions: read
 env:
   GH_TOKEN: ${{ github.token }}
 jobs:
@@ -60,11 +61,12 @@ jobs:
         if: inputs.native_mode == 'reuse'
         with:
           node-version: 22.20.0
-      - uses: actions/download-artifact@v4
+      - name: Restore original same-run CI consumer materialization
         if: inputs.native_mode == 'reuse'
-        with:
-          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-materialization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLUTION_HASH: ${{ inputs.resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py restore --hash "$RESOLUTION_HASH" --output ci-materialization
       - name: Verify every reused byte and actually load the GNU native binding
         if: inputs.native_mode == 'reuse'
         env:
@@ -90,20 +92,22 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/download-artifact@v4
-        if: inputs.suite_selection_hash != ''
-        with:
-          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-suite-selection
       - uses: actions/setup-python@v5
-        if: inputs.native_mode == 'reuse'
+        if: inputs.native_mode == 'reuse' || inputs.suite_selection_hash != ''
         with:
           python-version: '3.13'
-      - uses: actions/download-artifact@v4
+      - name: Restore original same-run suite selection
+        if: inputs.suite_selection_hash != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+        run: python -B scripts/ci-suite-attempts.py --selection-only
+      - name: Restore original same-run CI consumer materialization
         if: inputs.native_mode == 'reuse'
-        with:
-          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-materialization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLUTION_HASH: ${{ inputs.resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py restore --hash "$RESOLUTION_HASH" --output ci-materialization
       - name: Consume the exact current-run binding to original CI native bytes
         if: inputs.native_mode == 'reuse'
         env:
@@ -403,20 +407,22 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/download-artifact@v4
-        if: inputs.suite_selection_hash != ''
-        with:
-          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-suite-selection
       - uses: actions/setup-python@v5
-        if: inputs.native_mode == 'reuse'
+        if: inputs.native_mode == 'reuse' || inputs.suite_selection_hash != ''
         with:
           python-version: '3.13'
-      - uses: actions/download-artifact@v4
+      - name: Restore original same-run suite selection
+        if: inputs.suite_selection_hash != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+        run: python -B scripts/ci-suite-attempts.py --selection-only
+      - name: Restore original same-run CI consumer materialization
         if: inputs.native_mode == 'reuse'
-        with:
-          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-materialization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLUTION_HASH: ${{ inputs.resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py restore --hash "$RESOLUTION_HASH" --output ci-materialization
       - name: Consume the exact current-run binding to original CI native bytes
         if: inputs.native_mode == 'reuse'
         env:

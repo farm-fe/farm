@@ -59,6 +59,8 @@ test('real isolated Git leaf change selects actual runner files and proves empty
     assert.equal(ts.mode, 'not-applicable');
     assert.equal(checkVitestExecution(inventory, { success: true, testResults: [], numTotalTests: 0, numPassedTests: 0 }, fixture.directory, value => value, ts).disposition, 'not-applicable');
     assert.throws(() => executionPlan(inventory, 'ts', fixture.directory, { ...env, GITHUB_RUN_ATTEMPT: '2' }));
+    assert.deepEqual(executionPlan(inventory, 'examples-browser', fixture.directory, {...env,GITHUB_RUN_ATTEMPT:'3',CI_SUITE_SELECTION_PRODUCER_ATTEMPT:'1'}),browser);
+    assert.throws(()=>executionPlan(inventory,'ts',fixture.directory,{...env,GITHUB_RUN_ATTEMPT:'3',CI_SUITE_SELECTION_PRODUCER_ATTEMPT:'4'}));
     fs.writeFileSync(path.join(folder, 'selection.json'), '{}');
     assert.throws(() => executionPlan(inventory, 'ts', fixture.directory, env));
   } finally { fixture.close(); }
@@ -70,5 +72,6 @@ test('actual workflow binds selection to all platforms and stable suite-count ga
   assert.equal(workflow.split('suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}').length - 1, 3);
   assert.ok(workflow.includes('ci-suite-baseline.py --output ci-suite-selection/selection.json'));
   assert.ok(workflow.includes('ci-suite-execution.mjs --collect ci-gate-suites'));
-  assert.equal(primary.split('FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}').length - 1, 3);
+  assert.ok(primary.includes('scripts/ci-suite-attempts.py --selection-only'));
+  assert.ok(primary.includes('FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}'));
 });

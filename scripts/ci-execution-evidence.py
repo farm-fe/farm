@@ -53,7 +53,7 @@ def fetch_json_artifact(transport, run, name, member="ledger.json"):
         import io
         import stat
         import zipfile
-        check(member in ["ts.json", "browser.json", "result.json"], "Unexpected execution receipt member")
+        check(member in ["ts.json", "browser.json", "result.json", "selection.json"], "Unexpected execution receipt member")
         check(len(body) == artifact["size_in_bytes"] and artifact["digest"] == "sha256:" + hashlib.sha256(body).hexdigest(), "Execution artifact bytes differ")
         with zipfile.ZipFile(io.BytesIO(body)) as archive:
             entries = archive.infolist()
@@ -68,6 +68,52 @@ def upload_binding(job, step_name, artifact):
     steps = [step for step in job.get("steps", []) if step.get("name") == step_name]
     check(len(steps) == 1 and steps[0]["status"] == "completed" and steps[0]["conclusion"] == "success", "Actual producer upload did not succeed")
     check(steps[0]["started_at"] <= artifact["created_at"] <= steps[0]["completed_at"], "Artifact is outside its fixed upload step")
+
+
+def actual_producer(transport, run, name, current_jobs=None, cache=None):
+    """Newest real execution wins, including failures; carried jobs retain origin."""
+    check(type(run['run_attempt']) is int and 0 < run['run_attempt'] <= 32, 'Rerun attempt exceeds bound')
+    observations = {} if cache is None else cache
+    for attempt in range(run['run_attempt'], 0, -1):
+        if attempt in observations: continue
+        execution = run if attempt == run['run_attempt'] and current_jobs is not None else transport.get('/actions/runs/' + str(run['id']) + '/attempts/' + str(attempt))
+        check(all(execution.get(key) == run.get(key) for key in ['id', 'path', 'head_sha', 'event'])
+              and execution.get('run_attempt') == attempt
+              and execution.get('repository', {}).get('id') == run['repository']['id']
+              and execution.get('head_repository', {}).get('id') == run['head_repository']['id'], 'Rerun source or workflow differs')
+        observations[attempt] = (execution, current_jobs if attempt == run['run_attempt'] and current_jobs is not None else jobs_for(transport, execution))
+    for attempt in range(run['run_attempt'], 0, -1):
+        execution, jobs = observations[attempt]
+        matches = [job for job in jobs if job['name'] == name or job['name'].endswith(' / ' + name)]
+        check(len(matches) <= 1, 'Ambiguous suite producer')
+        if not matches: continue
+        job = matches[0]
+        check(type(job.get('id')) is int and job['id'] > 0 and job.get('run_id') == run['id'], 'Suite producer job identity differs')
+        check(job.get('started_at') and job.get('completed_at') and job.get('status') == 'completed' and job.get('conclusion') == 'success', 'Latest actual suite producer did not succeed')
+        prior = [item for item in observations.get(attempt - 1, (None, []))[1] if item['name'] == name or item['name'].endswith(' / ' + name)]
+        check(len(prior) <= 1, 'Ambiguous prior suite producer')
+        if prior and (job['started_at'], job.get('completed_at')) == (prior[0].get('started_at'), prior[0].get('completed_at')):
+            check(job.get('id') == prior[0].get('id') and prior[0].get('status') == 'completed' and prior[0].get('conclusion') == 'success', 'Unproven carried suite producer')
+            continue
+        check(not prior or not prior[0].get('completed_at') or job['started_at'] >= prior[0]['completed_at'], 'Suite producer times overlap')
+        check(job.get('run_id') == run['id'] and job.get('status') == 'completed' and job.get('conclusion') == 'success', 'Latest actual suite producer did not succeed')
+        return execution, job
+    raise ValueError('Actual suite producer missing')
+
+
+def suite_receipt(transport, run, source, kind, abi, current_jobs=None, cache=None):
+    label, filename, job_label, step = ('ts', 'ts.json', 'Typescript Test', 'Preserve actual TypeScript discovery and execution counts') if kind == 'ts' else ('browser', 'browser.json', 'Examples Test', 'Preserve actual browser discovery and execution counts')
+    prefix = {'linux-x64-gnu':'Primary Linux', 'darwin-arm64':'Primary macOS', 'win32-x64-msvc':'Primary Windows'}[abi]
+    execution, job = actual_producer(transport, run, prefix + ' / ' + job_label + ' (' + PLATFORMS[abi] + ')', current_jobs, cache)
+    name = 'farm-ci-suite-' + label + '-' + source['sha'] + '-' + abi + '-' + str(execution['run_attempt'])
+    actual, meta = fetch_json_artifact(transport, execution, name, filename)
+    upload_binding(job, step, meta)
+    expected = {'repositoryId':run['repository']['id'], 'runId':run['id'], 'runAttempt':execution['run_attempt'], 'event':run['event']}
+    check(actual.get('run') == expected and actual.get('sourceSHA') == source['sha'] and actual.get('sourceTree') == source['tree'], 'Original suite source or attempt differs')
+    check(actual.get('chain') == 'ci' and actual.get('acceptanceInherited') is False
+          and actual.get('kind') == kind and actual.get('abi') == abi, 'Original suite profile or cell differs')
+    return actual, meta, {'runAttempt':execution['run_attempt'], 'jobId':job['id'], 'artifactId':meta['id'],
+                          'artifactDigest':meta['digest'], 'profile':'ci', 'workflowPath':run['path']}
 
 
 def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, source, trusted, required_jobs,
@@ -91,15 +137,16 @@ def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, 
     check(ledger.get("acceptanceInputsHash") == acceptance_inputs(source), "Execution input closure differs")
     check(ledger.get("buildByteReuseAuthorized") is False and ledger.get("publicationAuthorized") is False, "Execution ledger claims unauthorized authority")
     check(ledger.get("producerJob") == PRODUCER and ledger.get("uploadStep") == UPLOAD, "Ledger cannot choose its producer")
-    check(artifact.get("name") == "farm-ci-execution-baseline-" + str(run["id"]) + "-" + str(run["run_attempt"])
+    attempts = {}
+    aggregation, producer = actual_producer(transport, run, PRODUCER, jobs, attempts)
+    check(artifact.get("name") == "farm-ci-execution-baseline-" + str(run["id"]) + "-" + str(aggregation["run_attempt"])
           and artifact["workflow_run"]["id"] == run["id"] and artifact["expired"] is False, "Execution ledger artifact origin differs")
-    expected_run = {"repositoryId": repository["id"], "runId": run["id"], "runAttempt": run["run_attempt"], "event": run["event"]}
+    expected_run = {"repositoryId": repository["id"], "runId": run["id"], "runAttempt": aggregation["run_attempt"], "event": run["event"]}
     check(ledger.get("run") == expected_run, "Execution attempt differs")
     check(sorted(ledger.get("requiredJobs", [])) == sorted(required_jobs), "Trusted full acceptance inventory differs")
     for name in required_jobs:
-        job = evidence.successful_job(jobs, name)
+        _, job = actual_producer(transport, run, name, jobs, attempts)
         check(job["run_id"] == run["id"], "Acceptance job belongs to another run")
-    producer = evidence.successful_job(jobs, PRODUCER)
     upload_binding(producer, UPLOAD, artifact)
     cells = ledger.get("coverage", {}).get("cells", [])
     expected_cells = {kind + ":" + abi for kind in ["ts", "examples-browser"] for abi in PLATFORMS}
@@ -108,12 +155,18 @@ def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, 
     check(discovered["sourceIdentity"]["commit"] == source["sha"] and discovered["sourceIdentity"]["tree"] == source["tree"], "Independent suite source differs")
     for cell in cells:
         label, filename, job_label, step = ("ts", "ts.json", "Typescript Test", "Preserve actual TypeScript discovery and execution counts") if cell["kind"] == "ts" else ("browser", "browser.json", "Examples Test", "Preserve actual browser discovery and execution counts")
-        name = "farm-ci-suite-" + label + "-" + source["sha"] + "-" + cell["abi"] + "-" + str(run["run_attempt"])
-        actual, meta = fetch_json_artifact(transport, run, name, filename)
-        check(actual == {key: value for key, value in cell.items() if key != "artifactName"}, "Ledger suite values differ from original runner artifact")
-        job = evidence.successful_job(jobs, job_label + " (" + PLATFORMS[cell["abi"]] + ")")
-        upload_binding(job, step, meta)
-        check(actual["run"] == expected_run and actual["sourceSHA"] == source["sha"] and actual["sourceTree"] == source["tree"], "Actual semantic receipt source differs")
+        if 'producerBinding' in cell:
+            actual, meta, binding = suite_receipt(transport, run, source, cell['kind'], cell['abi'], jobs, attempts)
+            check(binding == cell['producerBinding'], 'Suite original producer proof differs')
+            check(cell['artifactName'] == meta['name'], 'Suite original artifact name differs')
+        else:
+            name = "farm-ci-suite-" + label + "-" + source["sha"] + "-" + cell["abi"] + "-" + str(aggregation["run_attempt"])
+            actual, meta = fetch_json_artifact(transport, run, name, filename)
+            _, job = actual_producer(transport, run, job_label + " (" + PLATFORMS[cell["abi"]] + ")", jobs, attempts)
+            upload_binding(job, step, meta)
+            check(actual["run"] == expected_run, 'Actual semantic attempt differs')
+        check(actual == {key: value for key, value in cell.items() if key not in ['artifactName', 'producerBinding']}, "Ledger suite values differ from original runner artifact")
+        check(actual["sourceSHA"] == source["sha"] and actual["sourceTree"] == source["tree"], "Actual semantic receipt source differs")
         expected = discovered["plans"][cell["kind"]]
         if cell['kind'] == 'examples-browser':
             check(actual.get('excludedCases', []) == expected.get('excludedCases', []), 'Runner browser exclusions differ from independent source discovery')
@@ -126,6 +179,6 @@ def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, 
         check(len(counts) == len(actual["selectedIds"]) and {row["id"] for row in counts} == set(actual["selectedIds"])
               and all(isinstance(row.get("executedCases"), int) and not isinstance(row["executedCases"], bool) and row["executedCases"] > 0 for row in counts)
               and sum(row["executedCases"] for row in counts) == actual["executedCases"], "Actual per-file semantic counts differ")
-    return {"runId": run["id"], "runAttempt": run["run_attempt"], "artifactId": artifact["id"], "artifactDigest": artifact["digest"],
+    return {"runId": run["id"], "runAttempt": aggregation["run_attempt"], "observedAttempt": run["run_attempt"], "artifactId": artifact["id"], "artifactDigest": artifact["digest"],
             "sourceSHA": source["sha"], "sourceTree": source["tree"], "policySHA": trusted["sha"], "acceptanceInputsHash": ledger["acceptanceInputsHash"],
             "scope": "e2e-only", "unitExecutionRequired": True, "buildBytesReused": False}

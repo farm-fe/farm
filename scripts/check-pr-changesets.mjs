@@ -26,8 +26,8 @@ export function changesetBase(event, environment) {
   assert.ok(!base.ref.includes('..') && !base.ref.includes('//') && !base.ref.endsWith('.lock') && !/[/.]$/.test(base.ref), 'Invalid PR base ref');
   if (environment.GITHUB_BASE_REF) assert.equal(base.ref, environment.GITHUB_BASE_REF, 'PR base ref differs from runner');
   if (kind === 'workflow_dispatch') {
-    assert.equal(base.ref, 'main', 'Dispatch requires the verified release PR base');
-    assert.equal(event.inputs?.release_base, base.sha, 'Dispatch release base differs');
+    assert.equal(base.ref, 'main', 'Dispatch requires the verified PR base');
+    assert.equal(event.inputs?.base_sha ?? event.inputs?.release_base, base.sha, 'Dispatch base differs');
   }
   return { sha: base.sha, ref: base.ref };
 }

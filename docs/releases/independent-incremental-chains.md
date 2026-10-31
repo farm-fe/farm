@@ -1,11 +1,12 @@
-<!-- cspell:words finalizer -->
+<!-- cspell:words finalizer unstarted -->
 # Independent incremental CI and publication
 
 CI and release share impact rules, never build bytes. The CI namespace is
 `farm-ci-v1`, with profile `ci`. The release namespace is `farm-release-v1`, with
-profile `release`. Unit `ci-test` and Docs release-profile reference builds are
-separate acceptance tasks; a release profile alone does not authorize their bytes
-for publication. Neither chain imports artifacts from the other.
+profile `release`. Unit `ci-test` and Docs CI-profile quality checks remain
+inside CI. There is no third PR release-reference chain. Candidate, SDK and
+consumer validation are internal stages of the one fixed-main Release workflow.
+Neither chain imports artifacts from the other.
 
 ## First implementation batch
 
@@ -114,3 +115,37 @@ no-op, not an empty publisher transaction. Same-version rebuilt archive bytes
 must equal the independently verified original, including mixed publication
 batches. Removed packages require an explicit retirement contract and currently
 block publication.
+
+
+## Two workflow chains and rerun evidence
+
+Ordinary PRs trigger only CI (`ci.yaml`, Unit and ordinary quality checks).
+CI builds with its own CI recipes, runs selected TS/Examples/E2E suites and Docs
+quality checks, and records original execution evidence. It does not call a
+release candidate seal or dispatch the main Release workflow from a PR branch.
+The former PR release-validation workflow and namespace have been retired.
+
+`incremental-release.yaml` runs only against a fixed main snapshot. A main push
+or explicit main dispatch follows the same release plan, release-profile build,
+seal, SDK and candidate-consumer stages. `publish=false` is a dry-run of that
+same chain; registry writes still require explicit `publish=true`, exact source
+and profile proof, the publication fence, conflict checks and public acceptance.
+Version preparation may validate its PR through CI; it cannot launch a release
+reference on that PR. Release ABI/profile checks remain inside Release.
+
+The shared impact rules do not permit CI and Release artifacts to cross chains.
+Same-source reruns retain each successful producer's actual job ID, original
+attempt, upload step, immutable artifact name and digest. A present but unstarted/queued,
+skipped, cancelled or failed newer job cannot fall back to an older success.
+Carried jobs require completed/success, the same job ID and identical times.
+CI/Unit impact plans, suite selections, suite receipts, performance reports,
+summary/ledger and GNU materializations all resolve their original producers.
+Restoring a materialization never rewrites its receipt as a new native build or
+inherits earlier test acceptance; current consumers check the original bytes.
+
+A new HEAD must obtain its own real CI result. These workflow/recipe changes do
+not authorize importing the old HEAD's native products. After a successful
+fixed-HEAD execution, rerun only the failed leaf performance job or the relevant
+gate/summary: those subgraphs do not rerun upstream native producers. Do not use
+a Type Check or primary native producer as an aggregation retry shortcut.
+Old-run local diagnostics cannot stand in for new-HEAD GitHub checks or baselines.

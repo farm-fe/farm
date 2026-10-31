@@ -78,9 +78,10 @@ test('reviewed version intents select independent main release without authorizi
 
 test('version preparation dispatches independent read-only planning and never edits a publication workflow', () => {
   const dispatches = validationDispatches(2330, 'a'.repeat(40));
-  assert.equal(dispatches.length, 5);
-  assert.deepEqual(dispatches.at(-1), {workflow: 'incremental-release.yaml', inputs: ['publish=false']});
-  assert.ok(dispatches.slice(0, 4).every(row => row.inputs.includes('release_pr=2330') && row.inputs.includes('release_base=' + 'a'.repeat(40))));
+  assert.equal(dispatches.length, 4);
+  assert.ok(dispatches.every(row=>row.workflow!=='incremental-release.yaml'));
+  assert.deepEqual(dispatches[0],{workflow:'ci.yaml',inputs:['pr_number=2330','base_sha='+'a'.repeat(40)]});
+  assert.ok(dispatches.slice(1).every(row => row.inputs.includes('release_pr=2330') && row.inputs.includes('release_base=' + 'a'.repeat(40))));
   const source = fs.readFileSync(new URL('./prepare-v2-release-intent.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /v2-stable-release\.yaml|FARM_RELEASE_INTENT_SHA256|--no-verify|publish=true/);
   assert.match(source, /serializeReleaseIntent\(intent\)/);
@@ -98,7 +99,8 @@ test('generated intent binds the independent release producer and preserves revi
   assert.deepEqual(intent.publication, independentPublicationPolicy());
   assert.deepEqual(intent.requiredWorkflows, ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow]);
   assert.equal(intent.performanceRequired, true);
-  assert.ok(intent.requiredCiJobs.includes('Independent release candidate consumer (windows-latest)'));
+  assert.ok(intent.requiredReleaseJobs.includes('Independent release candidate consumer (windows-latest)'));
+  assert.ok(intent.requiredCiJobs.every(name=>!intent.requiredReleaseJobs.includes(name)));
   assert.equal(JSON.parse(serializeReleaseIntent(intent)).publication.publishDefault, false);
 });
 

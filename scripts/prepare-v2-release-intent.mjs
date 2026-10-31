@@ -21,8 +21,8 @@ const requiredWorkflows = ['.github/workflows/ci.yaml', '.github/workflows/rust-
 const platforms = ['ubuntu-24.04', 'macos-latest', 'windows-latest'];
 const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
   ...['Examples Test', 'Typescript Test', 'Commerce Performance'].flatMap(name => platforms.map(platform => `${name} (${platform})`)),
-  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Aggregate informational performance report',
-  'Build independent release candidates', ...platforms.map(platform => `Independent release candidate consumer (${platform})`)];
+  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Aggregate informational performance report'];
+const requiredReleaseJobs = ['Build independent release candidates', ...platforms.map(platform => `Independent release candidate consumer (${platform})`)];
 export function serializeReleaseIntent(intent) {
   assert.deepEqual(intent.publication, independentPublicationPolicy(), 'Intent cannot enable publication or select another build chain');
   assert.equal(intent.seal?.workflowPath, independentReleaseWorkflow, 'Release seal must come from its independent release producer');
@@ -30,9 +30,8 @@ export function serializeReleaseIntent(intent) {
 }
 export function validationDispatches(number, baseSHA) {
   assert.ok(Number.isSafeInteger(number) && number > 0); assert.match(baseSHA, /^[a-f0-9]{40}$/);
-  return [...['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml'].map(workflow =>
-    ({workflow, inputs: [`release_pr=${number}`, `release_base=${baseSHA}`]})),
-    {workflow: 'incremental-release.yaml', inputs: ['publish=false']}];
+  return ['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml'].map(workflow =>
+    ({workflow, inputs: workflow === 'ci.yaml' ? [`pr_number=${number}`, `base_sha=${baseSHA}`] : [`release_pr=${number}`, `release_base=${baseSHA}`]}));
 }
 export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   assert.ok(Number.isSafeInteger(pullRequest) && pullRequest > 0, 'Reviewed version PR number is required');
@@ -57,7 +56,7 @@ export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   const abi = fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1];
   return { schemaVersion: 1, preparationMode: changesets ? 'changesets' : 'first-stable', pullRequest, baseBranch: 'main', tag: plan.publication?.releaseIdentity ?? `v${plan.npm.primary.find(pkg => pkg.name === '@farmfe/core').version}`,
     abi, rustCoreVersion: plan.cargo.find(row => row.name === 'farmfe_core').version, candidatePlanSha256: digest(JSON.stringify(plan)), counts: plan.publication?.counts ?? plan.counts,
-    requiredWorkflows, requiredCiJobs, performanceRequired: true, publication: independentPublicationPolicy(), seal: { workflowPath: independentReleaseWorkflow }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
+    requiredWorkflows, requiredCiJobs, requiredReleaseJobs, performanceRequired: true, publication: independentPublicationPolicy(), seal: { workflowPath: independentReleaseWorkflow }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
     rust, registryVerification: { script, sha256: digest(fs.readFileSync(path.join(root, script), 'utf8').replaceAll('\r\n', '\n')) }, websiteDeployment: false };
 }
 export async function refreshChangesetsVersionPr(root, number) {

@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { measurementResolver, measurementPlatforms } from './performance-attempts.mjs';
+import { githubClient } from './performance-cohorts.mjs';
 import { qualifiedPerformanceCells, completePerformanceCells } from './performance-metrics.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -15,7 +18,7 @@ export function measurementIdentity(event,environment=process.env){
     return {event:'push',headSHA:event.after,baseSHA:event.before,prNumber:null};
   }
   assert.ok(event.pull_request&&Number.isSafeInteger(event.number)&&event.number>0,'Exact PR measurement identity required');
-  return {event:'pull_request',headSHA:event.pull_request.head.sha,baseSHA:event.pull_request.base.sha,prNumber:event.number};
+  return {event:environment.GITHUB_EVENT_NAME === 'workflow_dispatch' ? 'workflow_dispatch' : 'pull_request',headSHA:event.pull_request.head.sha,baseSHA:event.pull_request.base.sha,prNumber:event.number};
 }
 
 export function compactReport(report) {
@@ -42,25 +45,30 @@ export function unavailableReason(error, { samplingResult, downloadOutcome } = {
 }
 async function main() {
   const event = process.env.GITHUB_EVENT_NAME==='push' ? JSON.parse(await fs.readFile(process.env.GITHUB_EVENT_PATH,'utf8')) : validationEvent();
-  const directory = path.resolve('.performance-reports');
-  const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+  const summary = { schemaVersion: 3, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
     ...measurementIdentity(event),
-    protocol: 'commerce-business-2048-farm-supervised-v2', reports: [] };
+    protocol: 'commerce-business-2048-farm-supervised-v2', reports: [], measurementSources: [] };
   const failures = [];
-  for (const [abi, os, arch] of platforms) {
+  assert.equal(execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),process.env.GITHUB_SHA,'Aggregation checkout differs');
+  let resolve, resolutionError;
+  try {
+    resolve = await measurementResolver({api:githubClient(), repository:process.env.GITHUB_REPOSITORY, summary, producerSHA:process.env.GITHUB_SHA,
+      testedTree:execFileSync('git',['rev-parse','HEAD^{tree}'],{encoding:'utf8'}).trim()});
+  } catch(error) { resolutionError = error; }
+  for (const platform of measurementPlatforms) {
+    const [abi, os, arch] = platform;
     const name = `performance-${process.env.GITHUB_SHA}-${abi}-attempt-${summary.runAttempt}`;
     try {
-      const file = path.join(directory, name, 'summary.json');
-      if ((await fs.stat(file)).size > 2 * 1024 * 1024) throw new Error('Oversized raw summary');
-      const raw = JSON.parse(await fs.readFile(file, 'utf8'));
-      if (raw.protocol !== summary.protocol) throw new Error('Measurement protocol mismatch');
-      if (raw.metadata?.revision !== process.env.GITHUB_SHA) throw new Error('Producer SHA mismatch');
+      if (resolutionError) throw resolutionError;
+      const {raw, source} = await resolve(platform);
       const report = compactReport(raw);
       if (report.metadata.os !== os || report.metadata.arch !== arch) throw new Error('Platform identity mismatch');
-      validateSummary(JSON.stringify({ ...summary, reports: [report] }));
+      validateSummary(JSON.stringify({ ...summary, reports: [report], measurementSources:[source] }));
       summary.reports.push(report);
+      summary.measurementSources.push(source);
     } catch (error) {
       failures.push(`${name}: ${error.message}`);
+      summary.measurementSources.push(null);
       summary.reports.push(unavailableReport(os, arch, process.env.GITHUB_SHA, summary.baseSHA,
         unavailableReason(error, { samplingResult: process.env.PERFORMANCE_SAMPLING_RESULT, downloadOutcome: process.env.PERFORMANCE_DOWNLOAD_OUTCOME })));
     }

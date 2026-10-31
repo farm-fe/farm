@@ -179,23 +179,18 @@ def resolve(transport,current,trusted,environment,read_source=evidence.source_re
         if inputs(origin)!=inputs(current):continue
         changed={name for name in set(current['files'])|set(origin['files']) if current['files'].get(name)!=origin['files'].get(name) or current['modes'].get(name)!=origin['modes'].get(name)}
         if not changed or not all(leaf(name,current['modes'].get(name,origin['modes'].get(name))) for name in changed):continue
-        name='farm-ci-byte-bundle-'+run['head_sha']+'-'+ABI+'-'+str(run['run_attempt'])
+        execution=load('leaf_original_native_attempt','ci-execution-evidence.py')
+        producer_run,producer_job=execution.actual_producer(transport,run,SUFFIX)
+        name='farm-ci-byte-bundle-'+run['head_sha']+'-'+ABI+'-'+str(producer_run['run_attempt'])
         listed=transport.get('/actions/runs/'+str(run['id'])+'/artifacts?per_page=2&name='+name)
         if listed.get('total_count')!=1:continue
         artifact=transport.get('/actions/artifacts/'+str(listed['artifacts'][0]['id']))
         if artifact.get('expired') is not False or not 0<artifact.get('size_in_bytes',0)<=MAX:continue
-        jobs=[]
-        for page in range(1,4):
-            batch=transport.get('/actions/runs/'+str(run['id'])+'/attempts/'+str(run['run_attempt'])+'/jobs?per_page=100&page='+str(page))['jobs'];jobs+=batch
-            if len(batch)<100:break
-        matches=[job for job in jobs if job['name'].endswith(SUFFIX)]
-        if len(matches)!=1:continue
-        if matches[0].get('status')!='completed' or matches[0].get('conclusion')!='success':continue
         if image is None:image=measure_image()
-        manifest,bodies=inspect_bundle(transport.archive(artifact['id']),artifact,run,matches[0],current,origin,image)
+        manifest,bodies=inspect_bundle(transport.archive(artifact['id']),artifact,producer_run,producer_job,current,origin,image)
         check(transport.get('/branches/main')['commit']['sha']==trusted['sha'],'Trusted main changed during resolution')
         receipt={'kind':'ci-consumer-materialization-not-a-new-build','chain':'ci','profile':'ci','abi':ABI,'originBuildSHA':manifest['sourceSHA'],
-                 'originTree':manifest['sourceTree'],'originRunId':run['id'],'originAttempt':run['run_attempt'],'originArtifactId':artifact['id'],
+                 'originTree':manifest['sourceTree'],'originRunId':run['id'],'originAttempt':producer_run['run_attempt'],'originArtifactId':artifact['id'],
                  'originArtifactDigest':artifact['digest'],'originContext':manifest['context'],'consumerSHA':current['sha'],'consumerTree':current['tree'],
                  'runId':int(environment['GITHUB_RUN_ID']),'attempt':int(environment['GITHUB_RUN_ATTEMPT']),'inputHash':inputs(current),
                  'records':manifest['records'],'acceptanceInherited':False,'nativeBuildMatrix':[abi for abi in chain.impact.TARGETS if abi!=ABI],
@@ -232,12 +227,77 @@ def materialize(receipt,bodies,directory):
     (target/'consumer.json').write_bytes((json.dumps(receipt,indent=2)+'\n').encode('utf-8'))
 
 
+def consumer_producer(transport, source, environment, commitment):
+    """Verify original same-run materialization; no new build/test acceptance."""
+    execution = load('leaf_consumer_attempts', 'ci-execution-evidence.py')
+    run_id, attempt = int(environment['GITHUB_RUN_ID']), int(environment['GITHUB_RUN_ATTEMPT'])
+    run = transport.get('/actions/runs/' + str(run_id) + '/attempts/' + str(attempt))
+    check(run['id'] == run_id and run['run_attempt'] == attempt and run['path'] == WORKFLOW
+          and run['repository']['id'] == int(environment['GITHUB_REPOSITORY_ID']) == run['head_repository']['id']
+          and run['event'] == environment['GITHUB_EVENT_NAME'], 'Materialization current execution differs')
+    check(run['head_sha'] == source['sha'] or run['event'] == 'pull_request' and run['head_sha'] in source.get('parents', []), 'Materialization current source differs')
+    original, job = execution.actual_producer(transport, run, 'Type Check & Changesets')
+    name = 'ci-consumer-native-' + ABI + '-' + str(run_id) + '-' + str(original['run_attempt'])
+    listed = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=2&name=' + name)
+    check(listed.get('total_count') == 1 and len(listed['artifacts']) == 1, 'Original consumer materialization missing or ambiguous')
+    artifact = transport.get('/actions/artifacts/' + str(listed['artifacts'][0]['id']))
+    check(artifact['name'] == name and artifact['expired'] is False and artifact['workflow_run']['id'] == run_id
+          and 0 < artifact['size_in_bytes'] <= MAX, 'Original consumer artifact differs')
+    execution.upload_binding(job, 'Upload current CI consumer native materialization', artifact)
+    body = transport.archive(artifact['id'])
+    check(len(body) == artifact['size_in_bytes'] and artifact['digest'] == 'sha256:' + hashlib.sha256(body).hexdigest(), 'Original materialization archive digest differs')
+    with zipfile.ZipFile(io.BytesIO(body)) as archive:
+        rows = archive.infolist(); names = [row.filename for row in rows]
+        check(len(rows) <= 256 and len(names) == len(set(names)) and sum(row.file_size for row in rows) <= MAX, 'Materialization archive exceeds member bound')
+        for row in rows:
+            proof.safe_member(row.filename.rstrip('/'))
+            check(not row.flag_bits & 1 and stat.S_IFMT(row.external_attr >> 16) in [0, stat.S_IFREG, stat.S_IFDIR], 'Materialization special member rejected')
+        check(0 < archive.getinfo('consumer.json').file_size <= 256 * 1024, 'Materialization receipt exceeds bound')
+        raw = archive.read('consumer.json'); receipt = json.loads(raw.decode('utf-8'))
+        check(hashlib.sha256(raw).hexdigest() == commitment, 'Original materialization commitment differs')
+        check(receipt['consumerSHA'] == source['sha'] and receipt['consumerTree'] == source['tree'] and receipt['runId'] == run_id
+              and receipt['attempt'] == original['run_attempt'] and receipt['inputHash'] == inputs(source), 'Original materialization source or attempt differs')
+        check(receipt['chain'] == 'ci' and receipt['profile'] == 'ci' and receipt['abi'] == ABI and receipt['acceptanceInherited'] is False, 'Original materialization profile differs')
+        expected = {'consumer.json'} | {row['file'] for row in receipt['records']}
+        regular = {row.filename for row in rows if not row.is_dir()}
+        check(regular == expected, 'Materialization file inventory differs')
+        files = {name:archive.read(name) for name in regular}
+        wanted = products(source)
+        check(len(receipt['records']) == len(wanted) and {row['name'] for row in receipt['records']} == set(wanted), 'Original materialization complete family differs')
+        measured = receipt['originContext']
+        check(measured.get('profile') == 'ci' and measured.get('abi') == ABI and measured.get('farmABI') == farm_abi(source)
+              and measured.get('target') == 'x86_64-unknown-linux-gnu' and measured.get('node') == 'v22.20.0'
+              and measured.get('flagsHash') == requested_flags() and measured.get('inputHash') == inputs(source), 'Original materialization recipe or inputs differ')
+        for row in receipt['records']:
+            check(all(row[key] == value for key,value in wanted[row['name']].items()), 'Original materialization product route differs')
+            data = files[row['file']]
+            check(len(data) == row['bytes'] and hashlib.sha256(data).hexdigest() == row['sha256'], 'Original materialization product bytes differ')
+            gnu_header(data)
+    return receipt, files, {'resolutionAttempt':original['run_attempt'], 'consumerAttempt':attempt, 'jobId':job['id'], 'artifactId':artifact['id'], 'artifactDigest':artifact['digest'], 'acceptanceInherited':False}
+
+
+def restore_materialization(transport, source, environment, commitment, destination):
+    receipt, files, binding = consumer_producer(transport, source, environment, commitment)
+    root = Path(destination); check(not root.exists(), 'Refuse stale materialization destination')
+    root.mkdir(parents=True)
+    for name, body in files.items():
+        target=root/name;target.parent.mkdir(parents=True,exist_ok=True)
+        with target.open('xb') as stream:stream.write(body)
+    return binding
+
+
 def consume(directory,expected_hash,source,environment,destination,pool=False):
     root=Path(directory).resolve(strict=True);raw=(root/'consumer.json').read_bytes();receipt=json.loads(raw.decode('utf-8'))
     check(hashlib.sha256(raw).hexdigest()==expected_hash and receipt['resolutionHash']==chain.digest({key:value for key,value in receipt.items() if key!='resolutionHash'}),'Consumer materialization commitment differs')
     check(receipt['kind']=='ci-consumer-materialization-not-a-new-build' and receipt['chain']=='ci' and receipt['profile']=='ci' and receipt['abi']==ABI,'Foreign/cross-chain materialization')
     check(receipt['consumerSHA']==source['sha'] and receipt['consumerTree']==source['tree'] and receipt['inputHash']==inputs(source)
-          and receipt['runId']==int(environment['GITHUB_RUN_ID']) and receipt['attempt']==int(environment['GITHUB_RUN_ATTEMPT']),'Consumer source/run/attempt differs')
+          and receipt['runId']==int(environment['GITHUB_RUN_ID']),'Consumer source/run differs')
+    if receipt['attempt'] != int(environment['GITHUB_RUN_ATTEMPT']):
+        check(0 < receipt['attempt'] < int(environment['GITHUB_RUN_ATTEMPT']), 'Consumer original attempt differs')
+        check(environment.get('GH_TOKEN'), 'Consumer source/run/attempt requires independent original producer proof')
+        transport=evidence.transport_module.GitHubReadOnly(environment['GITHUB_REPOSITORY'],environment['GH_TOKEN'],allow_archive=True)
+        original, files, binding=consumer_producer(transport,source,environment,expected_hash)
+        check(original == receipt and files['consumer.json'] == raw, 'Consumer original receipt differs')
     check(receipt['nativeBuildMatrix']==[abi for abi in chain.impact.TARGETS if abi!=ABI]
           and receipt['tsMatrix']==chain.impact.PRIMARY and receipt['examplesMatrix']==chain.impact.PRIMARY
           and receipt['acceptanceInherited'] is False,'Incomplete or altered actual execution inventory')
@@ -267,6 +327,7 @@ def main():
     parser=argparse.ArgumentParser();sub=parser.add_subparsers(dest='stage',required=True)
     producer=sub.add_parser('produce');producer.add_argument('--products',required=True);producer.add_argument('--output',required=True)
     lookup=sub.add_parser('resolve');lookup.add_argument('--output',required=True);lookup.add_argument('--plan-output',default='ci-native-execution-plan.json')
+    restore=sub.add_parser('restore');restore.add_argument('--output',required=True);restore.add_argument('--hash',required=True)
     consumer=sub.add_parser('consume');consumer.add_argument('--input',required=True);consumer.add_argument('--hash',required=True);consumer.add_argument('--destination',default='.');consumer.add_argument('--pool',action='store_true')
     gate=sub.add_parser('gate');gate.add_argument('--mode',required=True);gate.add_argument('--outcomes',required=True)
     args=parser.parse_args()
@@ -280,6 +341,10 @@ def main():
         (output/'bundle.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
         for member,body in bodies.items():file=output/member;file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(body)
         print(json.dumps({'kind':manifest['kind'],'products':len(bodies)}));return
+    if args.stage=='restore':
+        check(os.environ.get('GITHUB_ACTIONS')=='true','Restore runs only in Actions')
+        transport=evidence.transport_module.GitHubReadOnly(os.environ['GITHUB_REPOSITORY'],os.environ['GH_TOKEN'],allow_archive=True)
+        print(json.dumps(restore_materialization(transport,source,os.environ,args.hash,args.output)));return
     if args.stage=='consume':
         receipt=consume(args.input,args.hash,source,os.environ,args.destination,args.pool)
         check(re.fullmatch('[a-f0-9]{40}',receipt['originBuildSHA']) and type(receipt['originArtifactId']) is int and receipt['originArtifactId']>0,'Original producer identity missing')

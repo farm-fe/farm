@@ -23,7 +23,8 @@ test('missing artifacts after skipped sampling produce explicit unavailable repo
   }
   const workflow = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const summary = workflow.split('\n  performance-summary:')[1].split('\n  type-check:')[0];
-  assert.match(summary, /id: performance-inputs\r?\n\s+continue-on-error: true/);
+  assert.match(summary, /GITHUB_TOKEN: \$\{\{ github.token \}\}/);
+  assert.doesNotMatch(summary, /pattern: performance-/);
   assert.match(summary, /PERFORMANCE_SAMPLING_RESULT:/);
   assert.match(summary, /run: node scripts\/aggregate-performance-reports.mjs/);
 });
@@ -88,4 +89,10 @@ test('history compaction excludes invalid acceptance and incomplete historical s
   for (const status of ['invalid', 'partial']) assert.deepEqual(compactReport({ status, cells, history: { entries } }).history, []);
   const result = compactReport({ status: 'complete', cells, history: { entries } });
   assert.equal(result.history.length, 1); assert.equal(result.history[0].medianMs, 100);
+});
+
+
+test('validated manual PR measurements retain their actual dispatch event',()=>{
+ const identity=measurementIdentity({number:3,pull_request:{head:{sha:'a'.repeat(40)},base:{sha:'b'.repeat(40)}}},{GITHUB_EVENT_NAME:'workflow_dispatch'});
+ assert.equal(identity.event,'workflow_dispatch');assert.equal(identity.prNumber,3);
 });

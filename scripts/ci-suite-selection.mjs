@@ -33,7 +33,8 @@ export function executionPlan(inventory, kind, directory = root, env = process.e
   const bytes = fs.readFileSync(file); assert.equal(digest(bytes), env.FARM_SUITE_SELECTION_HASH, 'Selection does not match trusted job output');
   const value = JSON.parse(bytes);
   assert.equal(value.sourceSHA, env.GITHUB_SHA); assert.equal(value.runId, Number(env.GITHUB_RUN_ID));
-  assert.equal(value.attempt, Number(env.GITHUB_RUN_ATTEMPT)); assert.equal(value.repositoryId, Number(env.GITHUB_REPOSITORY_ID));
+  assert.equal(value.attempt, Number(env.CI_SUITE_SELECTION_PRODUCER_ATTEMPT ?? env.GITHUB_RUN_ATTEMPT)); assert.equal(value.repositoryId, Number(env.GITHUB_REPOSITORY_ID));
+  assert.ok(Number.isSafeInteger(value.attempt) && value.attempt > 0 && value.attempt <= Number(env.GITHUB_RUN_ATTEMPT), 'Future selection attempt');
   const actual = calculateSelection(value, directory);
   assert.deepEqual(actual, value, 'Actual suite impact differs from bound selection');
   assert.equal(value.inventoryHash, inventory.inventoryHash);

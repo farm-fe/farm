@@ -32,8 +32,10 @@ def lookup(transport, current, environment, read_source=evidence.source_reader,i
             if run['conclusion']!='success':continue
             source=read_source(run['head_sha'])
             evidence.check(is_ancestor(source['sha'],trusted['sha']),'Suite baseline is not an ancestor of trusted main')
-            ledger,artifact=acceptance.fetch_json_artifact(transport,run,'farm-ci-execution-baseline-'+str(run['id'])+'-'+str(run['run_attempt']))
-            proof=acceptance.verify_execution_ledger(transport,run,repository,ledger,artifact,acceptance.jobs_for(transport,run),source,trusted,acceptance.runtime.ci_required_jobs(),suite_discovery=suite_discovery)
+            jobs=acceptance.jobs_for(transport,run)
+            aggregation,_=acceptance.actual_producer(transport,run,acceptance.PRODUCER,jobs)
+            ledger,artifact=acceptance.fetch_json_artifact(transport,aggregation,'farm-ci-execution-baseline-'+str(run['id'])+'-'+str(aggregation['run_attempt']))
+            proof=acceptance.verify_execution_ledger(transport,run,repository,ledger,artifact,jobs,source,trusted,acceptance.runtime.ci_required_jobs(),suite_discovery=suite_discovery)
         except (ValueError,KeyError,OSError,UnicodeError,subprocess.SubprocessError):
             continue
         evidence.check(transport.get('/branches/main')['commit']['sha']==trusted['sha'],'Trusted baseline moved')

@@ -1,5 +1,5 @@
 """First build -> trusted same-chain bundle -> actual leaf resolution/consumption."""
-# cspell:words importlib
+# cspell:words importlib unstarted
 import copy
 import hashlib
 import importlib.util
@@ -52,7 +52,7 @@ class Contracts(unittest.TestCase):
         self.run={'id':1,'run_attempt':1,'head_sha':self.origin['sha'],'path':live.WORKFLOW,'event':'push','head_branch':'main','status':'completed','conclusion':'success',
                   'repository':{'id':5},'head_repository':{'id':5}}
         self.job={'id':2,'run_id':1,'name':'Primary Linux / native / '+live.SUFFIX,'status':'completed','conclusion':'success',
-                  'steps':[{'name':live.UPLOAD,'status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z'}]}
+                  'started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z','steps':[{'name':live.UPLOAD,'status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z'}]}
         self.main=self.origin['sha'];self.runs=[{'id':1,'run_attempt':1}]
         self.transport=mock.Mock();self.transport.get.side_effect=self.get;self.transport.archive.side_effect=lambda number:self.body
         self.pack()
@@ -95,6 +95,73 @@ class Contracts(unittest.TestCase):
         destination=self.root/'consumer';destination.mkdir()
         live.consume(materialized,commitment,self.current,self.environment,destination)
         self.assertEqual((destination/'packages/core/binding/farm.linux-x64-gnu.node').read_bytes(),self.native)
+
+    def rerun_materialization(self):
+        _,receipt,bodies=self.schedule()
+        self.rerun_count=getattr(self,'rerun_count',0)+1
+        folder=self.root/('original-materialization-'+str(self.rerun_count));live.materialize(receipt,bodies,folder)
+        raw=(folder/'consumer.json').read_bytes();commitment=hashlib.sha256(raw).hexdigest()
+        archive=io.BytesIO()
+        with zipfile.ZipFile(archive,'w') as output:
+            for file in folder.rglob('*'):
+                if file.is_file():output.writestr(file.relative_to(folder).as_posix(),file.read_bytes())
+        body=archive.getvalue();artifact={'id':900,'name':'ci-consumer-native-linux-x64-gnu-9-1','workflow_run':{'id':9},'expired':False,'created_at':'2026-01-01T00:01:00Z','size_in_bytes':len(body),'digest':'sha256:'+hashlib.sha256(body).hexdigest()}
+        current={**self.run,'id':9,'head_sha':self.current['sha'],'event':'pull_request','status':'in_progress'}
+        job={'id':901,'run_id':9,'name':'Type Check & Changesets','status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z','steps':[{'name':'Upload current CI consumer native materialization','status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z'}]}
+        rows={attempt:[copy.deepcopy(job)] for attempt in [1,2,3]}
+        def get(route):
+            if '/actions/runs/9/attempts/' in route:
+                number=int(route.split('/attempts/')[1].split('/')[0]);return {'jobs':rows[number]} if '/jobs?' in route else {**current,'run_attempt':number}
+            if route.startswith('/actions/runs/9/artifacts?'):return {'total_count':1,'artifacts':[artifact]}
+            if route=='/actions/artifacts/900':return artifact
+            raise AssertionError('Unexpected rerun proof route '+route)
+        transport=mock.Mock();transport.get.side_effect=get;transport.archive.return_value=body
+        environment={**self.environment,'GITHUB_RUN_ATTEMPT':'3','GH_TOKEN':'mock-token'}
+        return transport,environment,commitment,raw,artifact,rows
+
+    def test_reuse_rerun_restores_original_attempt1_and_current_attempt3_consumes_without_rewriting_receipt(self):
+        transport,environment,commitment,raw,artifact,rows=self.rerun_materialization()
+        restored=self.root/'restored-attempt3'
+        binding=live.restore_materialization(transport,self.current,environment,commitment,restored)
+        self.assertEqual(binding['resolutionAttempt'],1);self.assertEqual(binding['consumerAttempt'],3)
+        self.assertFalse(binding['acceptanceInherited']);self.assertEqual((restored/'consumer.json').read_bytes(),raw)
+        destination=self.root/'consumer-attempt3';destination.mkdir()
+        with mock.patch.object(live.evidence.transport_module,'GitHubReadOnly',return_value=transport):
+            receipt=live.consume(restored,commitment,self.current,environment,destination)
+        self.assertEqual(receipt['attempt'],1);self.assertEqual(receipt['originAttempt'],1)
+        self.assertEqual((destination/'packages/core/binding/farm.linux-x64-gnu.node').read_bytes(),self.native)
+        self.assertEqual((restored/'consumer.json').read_bytes(),raw)
+
+    def test_reuse_rerun_rejects_new_unstarted_or_failed_resolver_instead_of_old_materialization(self):
+        for status,conclusion in [('queued',None),('in_progress',None),('completed','skipped'),('completed','cancelled')]:
+            with self.subTest(status=status,conclusion=conclusion):
+                transport,environment,commitment,raw,artifact,rows=self.rerun_materialization()
+                rows[3][0].update(status=status,conclusion=conclusion,started_at=None,completed_at=None)
+                with self.assertRaisesRegex(ValueError,'Latest actual suite producer'):
+                    live.consumer_producer(transport,self.current,environment,commitment)
+
+    def test_reuse_rerun_rejects_changed_archive_source_profile_or_commitment(self):
+        transport,environment,commitment,raw,artifact,rows=self.rerun_materialization()
+        artifact['digest']='sha256:'+'0'*64
+        with self.assertRaisesRegex(ValueError,'archive digest'):live.consumer_producer(transport,self.current,environment,commitment)
+        artifact['digest']='sha256:'+hashlib.sha256(transport.archive.return_value).hexdigest()
+        with self.assertRaisesRegex(ValueError,'commitment differs'):live.consumer_producer(transport,self.current,environment,'0'*64)
+        wrong=copy.deepcopy(self.current);wrong['tree']='f'*40
+        with self.assertRaisesRegex(ValueError,'source or attempt'):live.consumer_producer(transport,wrong,environment,commitment)
+
+    def test_main_gate_only_rerun_retains_original_native_bundle_attempt(self):
+        self.runs=[{'id':1,'run_attempt':3}]
+        original=self.transport.get.side_effect
+        def get(route):
+            if '/actions/runs/1/attempts/' in route:
+                number=int(route.split('/attempts/')[1].split('/')[0])
+                return {'jobs':[copy.deepcopy(self.job)]} if '/jobs?' in route else {**self.run,'run_attempt':number}
+            return original(route)
+        self.transport.get.side_effect=get
+        decision,receipt,_=self.schedule()
+        self.assertEqual(decision['nativeMode'],'reuse');self.assertEqual(receipt['originAttempt'],1)
+        self.assertEqual(receipt['originArtifactId'],8)
+        self.transport.archive.assert_called_once_with(8)
 
     def test_non_leaf_source_chmod_unknown_policy_and_lock_change_rebuild(self):
         for change in ['source','mode','policy','lock']:

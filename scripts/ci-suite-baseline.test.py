@@ -72,6 +72,14 @@ class Contracts(unittest.TestCase):
         result=self.lookup()
         self.assertEqual(result['baselineEvidence']['runAttempt'],1)
         self.assertTrue(any('/attempts/2' in route for route in self.calls))
+    def test_gate_only_rerun_uses_original_summary_ledger_not_a_renamed_latest_artifact(self):
+        self.candidates=[{'id':2,'run_attempt':2}]
+        result=self.lookup()
+        self.assertEqual(result['baselineEvidence']['runAttempt'],1)
+        self.assertEqual(result['baselineEvidence']['observedAttempt'],2)
+        self.assertFalse(any('name=farm-ci-execution-baseline-2-2' in route for route in self.calls))
+        self.assertTrue(any('name=farm-ci-execution-baseline-2-1' in route for route in self.calls))
+
     def test_default_branch_change_is_rejected_before_any_archive_read(self):
         self.repository['default_branch']='other'
         with self.assertRaisesRegex(ValueError,'repository'):self.lookup()

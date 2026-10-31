@@ -113,13 +113,10 @@ def main():
         event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
     except (OSError, ValueError, KeyError):
         event = {}
-    # No selected task may be skipped in shadow execution. Seal is conditional on
-    # the existing release scope and is accounted for by the publication gate.
+    # CI shadow reporting has no release candidate or publication stage.
     expected = ["impact-plan", "release-contract-tests", "performance-contract-tests", "call-rust-build-user", "call-rust-build-release", "check-native-candidate-assembly", "examples-test", "docs-acceptance", "type-check", "ts-test", "performance-report", "performance-summary"]
     if os.environ.get("CI_IMPACT_SCOPE") == "unit":
         expected = ["impact-plan", "cargo-check", "cargo-test"]
-    elif impact.release_candidate(event, os.environ):
-        expected.append("release-candidate-seal")
     report = summarize(plan, needs, expected)
     report["planningFallback"] = plan.get("planningFallback") is True
     report["planUnavailable"] = plan.get("unavailable")
@@ -134,7 +131,7 @@ def main():
         actual_tree = impact.git("rev-parse", "HEAD^{tree}").decode("ascii").strip()
         operation = "validate-identity"
         pr = event.get("pull_request", {})
-        identity = {"headSHA": pr.get("head", {}).get("sha") or os.environ["GITHUB_SHA"], "baseSHA": pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base"),
+        identity = {"headSHA": pr.get("head", {}).get("sha") or os.environ["GITHUB_SHA"], "baseSHA": pr.get("base", {}).get("sha") or event.get("inputs", {}).get("base_sha") or event.get("inputs", {}).get("release_base"),
                     "testedSHA": os.environ["GITHUB_SHA"], "testedTree": actual_tree, "runId": os.environ["GITHUB_RUN_ID"],
                     "runAttempt": os.environ["GITHUB_RUN_ATTEMPT"], "repository": os.environ["GITHUB_REPOSITORY"], "policy": impact.POLICY, "planHash": plan.get("planHash")}
         candidate = impact.release_candidate(event, os.environ)

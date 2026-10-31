@@ -1,3 +1,4 @@
+import {observeAttempts,actualJob} from './ci-attempt-producers.mjs';
 import { qualifiedPerformanceCells, completePerformanceCells } from './performance-metrics.mjs';
 import fs from 'node:fs/promises';
 import { inflateRawSync } from 'node:zlib';
@@ -23,9 +24,10 @@ function cells(value) {
 export function validateSummary(bytes) {
   assert(Buffer.byteLength(bytes) <= 65536, 'Summary exceeds 64 KiB');
   const value = JSON.parse(bytes);
-  assert(exact(value, ['schemaVersion', 'repositoryId', 'runId', 'runAttempt', 'event', 'headSHA', 'baseSHA', 'prNumber', 'protocol', 'reports']), 'Invalid summary schema');
-  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-farm-supervised-v2' && ['pull_request','push'].includes(value.event), 'Invalid protocol');
-  assert(integer(value.repositoryId) && integer(value.runId) && (value.event==='pull_request' ? integer(value.prNumber) : value.prNumber===null) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
+  const sourceKeys = value.schemaVersion === 3 ? ['measurementSources'] : [];
+  assert(exact(value, [...sourceKeys, 'schemaVersion', 'repositoryId', 'runId', 'runAttempt', 'event', 'headSHA', 'baseSHA', 'prNumber', 'protocol', 'reports']), 'Invalid summary schema');
+  assert([2,3].includes(value.schemaVersion) && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-farm-supervised-v2' && (value.schemaVersion === 3 ? ['pull_request','push','workflow_dispatch'] : ['pull_request','push']).includes(value.event), 'Invalid protocol');
+  assert(integer(value.repositoryId) && integer(value.runId) && (['pull_request','workflow_dispatch'].includes(value.event) ? integer(value.prNumber) : value.prNumber===null) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
   assert(Array.isArray(value.reports) && value.reports.length > 0 && value.reports.length <= 3, 'Invalid reports');
   const systems = new Set();
   for (const report of value.reports) {
@@ -39,6 +41,22 @@ export function validateSummary(bytes) {
   for (const key of ['node', 'pnpm', 'runnerImage']) assert((report.status === 'invalid' && metadata[key] === null) || (typeof metadata[key] === 'string' && /^[A-Za-z0-9._+() -]{1,100}$/.test(metadata[key])), 'Invalid runtime metadata');
   for (const key of ['fixtureSha256', 'lockSha256']) assert((report.status === 'invalid' && metadata[key] === null) || (typeof metadata[key] === 'string' && /^[a-f0-9]{64}$/.test(metadata[key])), 'Invalid fingerprint');
   validateReport(report);
+  }
+  if (value.schemaVersion === 3) {
+    assert(Array.isArray(value.measurementSources) && value.measurementSources.length === value.reports.length, 'Missing per-platform measurement sources');
+    for (const [index, source] of value.measurementSources.entries()) {
+      const report = value.reports[index];
+      if (source === null) { assert(report.status === 'invalid', 'Complete report lacks producer proof'); continue; }
+      assert(exact(source, [...('nativeKind' in source ? ['nativeKind'] : []), 'abi','runId','runAttempt','jobId','artifactId','artifactDigest','rawSummarySha256','producerSHA','testedTree','profile','workflowPath','nativeAttempt','nativeJobId','nativeArtifactId','nativeArtifactDigest','harnessSha256']), 'Invalid measurement source schema');
+      assert(!('nativeKind' in source) || ['build','materialization'].includes(source.nativeKind), 'Invalid native source kind');
+      const abi = {linux:'linux-x64-gnu',darwin:'darwin-arm64',win32:'win32-x64-msvc'}[report.metadata.os];
+      assert(source.abi === abi && source.runId === value.runId && source.profile === 'ci' && source.workflowPath === '.github/workflows/ci.yaml', 'Measurement chain differs');
+      for (const key of ['runAttempt','nativeAttempt']) assert(integer(source[key]) && source[key] <= value.runAttempt, 'Future measurement attempt');
+      for (const key of ['jobId','artifactId','nativeJobId','nativeArtifactId']) assert(integer(source[key]), 'Invalid measurement producer ID');
+      for (const key of ['artifactDigest','nativeArtifactDigest']) assert(/^sha256:[a-f0-9]{64}$/.test(source[key]), 'Invalid measurement archive digest');
+      for (const key of ['rawSummarySha256','harnessSha256']) assert(/^[a-f0-9]{64}$/.test(source[key]), 'Invalid measurement input hash');
+      assert(sha(source.testedTree) && source.producerSHA === report.metadata.revision, 'Measurement tree or producer differs');
+    }
   }
   return value;
 }
@@ -85,7 +103,7 @@ export function verifyIdentity(summary, run, pr, repositoryId) {
   assert(run.head_repository.id === pr.head.repo.id && run.pull_requests.some(item => item.number === pr.number && item.head.sha === summary.headSHA), 'Run does not belong to PR');
 }
 export function renderComment(summary, repository) {
-  if (summary.reports) return `${marker}\n<!-- farm-performance-run:${summary.runId}:${summary.runAttempt} -->\n## Performance report\n\n[Run ${summary.runId}, attempt ${summary.runAttempt}](https://github.com/${repository}/actions/runs/${summary.runId}) · Head: \`${summary.headSHA}\`\n\nPlatforms are reported separately.\n\n${summary.reports.map(report => `### ${report.metadata.os} / ${report.metadata.arch}\n\n${renderComment({ ...summary, ...report, reports: null }, repository).split('## Performance report\n')[1]}`).join('\n\n')}`;
+  if (summary.reports) return `${marker}\n<!-- farm-performance-run:${summary.runId}:${summary.runAttempt} -->\n## Performance report\n\n[Run ${summary.runId}, attempt ${summary.runAttempt}](https://github.com/${repository}/actions/runs/${summary.runId}) - Head: \`${summary.headSHA}\`\n\nPlatforms are reported separately. Aggregation attempt does not relabel earlier measurements.\n\n${summary.reports.map((report,index) => `### ${report.metadata.os} / ${report.metadata.arch}\n\n${summary.measurementSources?.[index] ? `Measurement attempt ${summary.measurementSources[index].runAttempt}; job ${summary.measurementSources[index].jobId}; artifact ${summary.measurementSources[index].artifactId}.\n\n` : ''}${renderComment({ ...summary, ...report, reports: null }, repository).split('## Performance report\n')[1]}`).join('\n\n')}`;
   const accepted = summary.status === 'complete' && completePerformanceCells(summary.cells)
     && (summary.comparison.mode !== 'paired' || completePerformanceCells(summary.comparison.baseCells));
   const timing = cell => cell && cell.medianMs !== null ? `${cell.medianMs.toFixed(1)} ms (IQR ${cell.iqrMs.toFixed(1)}; ${cell.validSamples}/${cell.samples})` : 'Unavailable';
@@ -108,14 +126,16 @@ export async function report({ token, repository, event, api = 'https://api.gith
   const run = await request(`/actions/runs/${runId}`);
   assert(run.repository.id === event.repository.id && run.name === 'E2E Tests' && run.status === 'completed', 'Invalid triggering run');
   if(run.event!=='pull_request')return {skipped:'Only PR runs may update a PR comment'};
-  const matches = await findSummaryArtifacts(request, runId, run.run_attempt ?? 1);
+  let aggregationAttempt = run.run_attempt ?? 1;
+  if (aggregationAttempt > 1) aggregationAttempt = actualJob(await observeAttempts(request, '', run), 'Aggregate informational performance report').attempt;
+  const matches = await findSummaryArtifacts(request, runId, aggregationAttempt);
   assert(matches.length === 1 && matches[0].size_in_bytes <= 131072, 'Missing or ambiguous summary artifact');
   const response = await fetcher(`${api}/repos/${repository}/actions/artifacts/${matches[0].id}/zip`, { headers: { Authorization: `Bearer ${token}` } });
   assert(response.ok, 'Artifact download failed');
   const reader = response.body.getReader(); const chunks = []; let length = 0;
   for (;;) { const { done, value } = await reader.read(); if (done) break; length += value.length; if (length > 131072) { await reader.cancel(); throw new Error('Artifact too large'); } chunks.push(Buffer.from(value)); }
   const summary = validateSummary(readSummaryZip(Buffer.concat(chunks)));
-  const pr = await request(`/pulls/${summary.prNumber}`); verifyIdentity(summary, run, pr, event.repository.id);
+  const pr = await request(`/pulls/${summary.prNumber}`); verifyIdentity(summary, {...run,run_attempt:aggregationAttempt}, pr, event.repository.id);
   const comments = [];
   for (let page = 1; page <= 100; page++) {
     const batch = await request(`/issues/${pr.number}/comments?per_page=100&page=${page}`); comments.push(...batch);
@@ -127,7 +147,9 @@ export async function report({ token, repository, event, api = 'https://api.gith
   const previousRun = existing.length && /<!-- farm-performance-run:(\d+)(?::(\d+))? -->/.exec(existing[0].body);
   if (previousRun && (Number(previousRun[1]) > summary.runId || (Number(previousRun[1]) === summary.runId && Number(previousRun[2] ?? 1) >= summary.runAttempt))) return { skipped: 'An equal or newer run already reported' };
   // Recheck immediately before writing; workflow concurrency serializes reporter runs.
-  verifyIdentity(summary, await request(`/actions/runs/${runId}`), await request(`/pulls/${pr.number}`), event.repository.id);
+  const freshRun = await request(`/actions/runs/${runId}`);
+  assert((freshRun.run_attempt ?? 1) === (run.run_attempt ?? 1), 'Run attempt moved before comment update');
+  verifyIdentity(summary, {...freshRun,run_attempt:aggregationAttempt}, await request(`/pulls/${pr.number}`), event.repository.id);
   const body = JSON.stringify({ body: renderComment(summary, repository) });
   return request(existing.length ? `/issues/comments/${existing[0].id}` : `/issues/${pr.number}/comments`, { method: existing.length ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body });
 }

@@ -211,28 +211,28 @@ class PlannerContracts(unittest.TestCase):
         self.assertFalse(report["dynamicMatrixVerified"])
         self.assertEqual([row["result"] for row in report["jobs"]], ["skipped", "missing"])
 
-    def test_release_scope_matches_same_repository_workflow_condition(self):
+    def test_ci_scope_never_schedules_release_candidates(self):
         environment = {"GITHUB_REPOSITORY": "farm-fe/farm", "GITHUB_EVENT_NAME": "pull_request"}
         event = {"number": 2329, "pull_request": {"head": {"repo": {"full_name": "farm-fe/farm"}, "ref": "topic"}}}
-        self.assertTrue(impact.release_candidate(event, environment))
+        self.assertFalse(impact.release_candidate(event, environment))
         event["number"] = 3000
         self.assertFalse(impact.release_candidate(event, environment))
         event["pull_request"]["head"]["ref"] = "changeset-release/main"
-        self.assertTrue(impact.release_candidate(event, environment))
+        self.assertFalse(impact.release_candidate(event, environment))
         event["pull_request"]["head"]["repo"]["full_name"] = "fork/farm"
         for number in [2329, 3000]:
             event["number"] = number
             self.assertFalse(impact.release_candidate(event, environment))
-        self.assertTrue(impact.release_candidate({}, {**environment, "GITHUB_EVENT_NAME": "workflow_dispatch"}))
+        self.assertFalse(impact.release_candidate({}, {**environment, "GITHUB_EVENT_NAME": "workflow_dispatch"}))
 
-    def test_failed_seal_and_consumer_remain_required_cell_failures(self):
-        rows = [{"cell": "seal", "status": "executed-failure"}, {"cell": "consumers:win32-x64-msvc", "status": "executed-cancelled"},
+    def test_failed_ci_native_and_suite_remain_required_cell_failures(self):
+        rows = [{"cell": "native:ci:linux-x64-gnu", "status": "executed-failure"}, {"cell": "ts-tests:win32-x64-msvc", "status": "executed-cancelled"},
                 {"cell": "performance:darwin-arm64", "status": "executed-failure"}, {"cell": "contracts", "status": "executed-success"}]
         outcomes, failures = summary.cell_outcomes(rows)
         self.assertEqual(len(outcomes), 4)
-        self.assertEqual([row["cell"] for row in failures], ["seal", "consumers:win32-x64-msvc"])
+        self.assertEqual([row["cell"] for row in failures], ["native:ci:linux-x64-gnu", "ts-tests:win32-x64-msvc"])
         plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False}
-        report = summary.summarize(plan, {"release-candidate-seal": {"result": "failure"}}, ["release-candidate-seal"])
+        report = summary.summarize(plan, {"incremental-execution-gate": {"result": "failure"}}, ["incremental-execution-gate"])
         self.assertFalse(report["allExpectedJobsSuccessful"])
         self.assertFalse(report["publicationAuthorized"])
 

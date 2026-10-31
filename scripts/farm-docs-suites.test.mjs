@@ -34,17 +34,27 @@ test('all retained Docs tests belong to explicit source/distribution/compiled/br
   assert.equal(docsSuiteCommand('archive-python').args[0], 'scripts/farm-docs-extract-package.test.py');
   assert.throws(() => docsSuiteCommand('all'), /Unknown Docs suite/);
 });
-test('E2E calls Docs, keeps both OS lanes and release reference until actual compatibility validation', async () => {
+test('E2E calls Docs CI quality checks and keeps both OS lanes within the CI profile', async () => {
   const ci = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const docs = await fs.readFile(new URL('../.github/workflows/farm-docs.yaml', import.meta.url), 'utf8');
   assert.match(ci, /uses: \.\/\.github\/workflows\/farm-docs.yaml/);
   assert.match(docs, /workflow_call:/); assert.doesNotMatch(docs, /^  pull_request:/m);
   assert.match(docs, /os: \[windows-latest, ubuntu-24.04\]/);
-  assert.match(docs, /run: pnpm --dir packages\/core run build:rs/);
+  assert.match(docs, /run: pnpm --dir packages\/core run build:rs:ci/);
+  assert.match(docs, /FARM_BUILD_PROFILE: ci/);
+  assert.match(docs, /--profile ci/);
   assert.match(docs, /cargo test .*farmfe_docs_snapshot/);
   assert.match(docs, /CODEX_DOCS_NATIVE_BASELINE/);
   const platform = await fs.readFile(new URL('../.github/workflows/ci-primary-platform.yaml', import.meta.url), 'utf8');
   const examples = platform.split('\n  examples-test:')[1].split('\n  ts-test:')[0];
   for (const plugin of ['ssr-css', 'syntax-highlight', 'docs', 'docs-snapshot', 'docs-seo', 'docs-snippets']) assert.ok(examples.includes(`-plugin-${plugin}`));
   assert.match(examples, /FARM_EXAMPLE_PREBUILT_ONLY: '1'/);
+});
+
+
+test('Docs native baseline records the actual CI recipe and never labels it release',async()=>{
+  const source=await fs.readFile(new URL('../.github/workflows/farm-docs.yaml',import.meta.url),'utf8');
+  assert.match(source,/FARM_BUILD_PROFILE: ci/);assert.match(source,/run build:rs:ci/);assert.match(source,/--profile ci/);
+  assert.match(source,/profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false/);
+  assert.doesNotMatch(source,/profile:'release'|ciProfileCompatibility:'not-yet-validated'/);
 });
