@@ -37,3 +37,20 @@ test('fully reported clean worker preserves passing results',async()=>{
   assert.equal(results.size,1);
   assert.equal(results.get('before')[0].passed,true);
 });
+test('completed owned worker exits cleanly after explicit flush despite a lingering timer',async()=>{
+  const helper=new URL('./worker-finish.mjs',import.meta.url).href;
+  const file=fixture(`setInterval(()=>{},1000);process.send(${passed},async()=>{const {finishWorker}=await import(${JSON.stringify(helper)});await finishWorker({flushLogs:async()=>{},send:(message,callback)=>process.send(message,callback),disconnect:()=>{if(process.connected)process.disconnect();},exit:code=>process.exit(code)});});`);
+  const active=new Set(),results=await runWorker(['before'],0,file,'unused',active);
+  assert.equal(results.size,1);assert.equal(results.get('before')[0].passed,true);assert.equal(active.size,0);
+});
+test('done followed by parent shutdown remains a lifecycle failure rather than ignored signal',async()=>{
+  const file=fixture(`setInterval(()=>{},1000);process.send(${passed},()=>process.send({type:'done'}));`);
+  const results=await runWorker(['before'],0,file,'unused',new Set());
+  assert.equal(results.get('__worker_1__')[0].passed,false);
+  assert.match(results.get('__worker_1__')[0].error.message,/completion watchdog sent SIGTERM/);
+});
+test('unexpected worker termination without done fails even with complete business results',async()=>{
+  const file=fixture(`process.send(${passed},()=>process.kill(process.pid,'SIGTERM'));`);
+  const results=await runWorker(['before'],0,file,'unused',new Set());
+  assert.equal(results.get('__worker_1__')[0].passed,false);
+});

@@ -245,7 +245,9 @@ async function main() {
       lockSha256: hash(await fs.readFile(path.join(root, 'pnpm-lock.yaml'))), fixtureSha256: await workloadFingerprint(root, fixture), harnessSha256: await harnessFingerprint(root),
       scale: { name: workloadScale, ...scaleProfile(workloadScale), fixtureGenerated: true, generatedFileCount: Object.keys(fixture).length, fileCountIsNotModuleCount: true },
       cacheSemantics: 'Unique cold directory; warm reuses successful cold directory. Reusable cache, not independently proven cache hit.',
-      artifactProducerSHA: process.env.GITHUB_SHA ?? revision };
+      artifactProducerSHA: process.env.GITHUB_SHA ?? revision,
+      nativeReuse: process.env.FARM_CI_NATIVE_ORIGIN_SHA ? {chain:'ci',originBuildSHA:process.env.FARM_CI_NATIVE_ORIGIN_SHA,
+        originArtifactId:process.env.FARM_CI_NATIVE_ARTIFACT_ID,consumerSHA:revision,acceptanceInherited:false} : null };
     report.metadata.scale.files = await workloadFileCounts(root, fixture);
     before = await trackedFingerprint();
     const { captureNativeProvenance } = await import('../examples/commerce-lab/benchmark/native-provenance.mjs');

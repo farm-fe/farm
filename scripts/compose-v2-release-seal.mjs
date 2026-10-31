@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -44,7 +45,7 @@ export function portableSdkFiles(directory, materialization) {
 }
 export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output }) {
   const read = file => JSON.parse(fs.readFileSync(file));
-  const plan = read(path.join(root, 'docs/releases/v2-candidate.json'));
+  const plan = read(releaseCandidatePlanPath(root));
   const npm = read(path.join(npmDirectory, 'receipt.json'));
   const sdk = read(path.join(sdkDirectory, 'sdk-consumer.json'));
   assertCompleteSealInputs(plan, npm, sdk);
@@ -60,6 +61,7 @@ export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output })
     fs.mkdirSync(path.dirname(path.join(output, file)), { recursive: true });
     fs.copyFileSync(path.join(sdkDirectory, file), path.join(output, file), fs.constants.COPYFILE_EXCL);
   }
+  fs.writeFileSync(path.join(output, 'candidate-plan.json'), JSON.stringify(plan, null, 2) + '\n', { flag: 'wx' });
   const receipt = { ...npm, rust: [], sdkProof: 'sdk-consumer.json', status: 'complete-seal', published: false };
   for (const row of npm.records) {
     assert.equal(path.basename(row.file), row.file);
@@ -78,7 +80,7 @@ export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output })
     const bytes = Buffer.from(JSON.stringify(row.metadata)); fs.writeFileSync(path.join(output, metadataFile), bytes, { flag: 'wx' });
     const record = { name: row.name, version: row.version, file, sha256: source.sha256, metadata: metadataFile, metadataSha256: sha256(bytes), dependencies: row.dependencies };
     const reused = plan.publication?.reuseRust?.find(item => item.name === row.name && item.version === row.version);
-    const evidence = reused ? 'docs/release-evidence/changesets-preparation.json' : compatibility[row.name];
+    const evidence = reused ? plan.preparation?.mode === 'incremental-release' ? 'release-work/release-plan.json' : 'docs/release-evidence/changesets-preparation.json' : compatibility[row.name];
     if (evidence) record.reuseEvidence = { archiveSha256: source.sha256, compatible: true, file: evidence, sha256: sha256(Buffer.from(JSON.stringify(read(path.join(root, evidence))))) };
     receipt.rust.push(record);
   }

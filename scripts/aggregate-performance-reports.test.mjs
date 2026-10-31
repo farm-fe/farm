@@ -1,9 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compactReport, unavailableReport, unavailableReason, platforms } from './aggregate-performance-reports.mjs';
+import { compactReport, unavailableReport, unavailableReason, platforms, measurementIdentity } from './aggregate-performance-reports.mjs';
 import fs from 'node:fs/promises';
 import { validateSummary, renderComment } from './performance-pr-reporter.mjs';
 const cell = value => ({ cacheMode: 'cold', samples: 3, validSamples: 3, medianMs: value, iqrMs: 1 });
+test('main measurements retain a real push identity and never invent a PR number',()=>{
+ const after='a'.repeat(40),before='b'.repeat(40);
+ const identity=measurementIdentity({after,before},{GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_SHA:after});
+ assert.deepEqual(identity,{event:'push',headSHA:after,baseSHA:before,prNumber:null});
+ assert.throws(()=>measurementIdentity({after,before},{GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/other',GITHUB_SHA:after}));
+ assert.throws(()=>measurementIdentity({after,before:'0'.repeat(40)},{GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_SHA:after}));
+});
 test('missing artifacts after skipped sampling produce explicit unavailable reports', async () => {
   const reason = unavailableReason(new Error('ENOENT'), { samplingResult: 'skipped', downloadOutcome: 'failure' });
   assert.match(reason, /Sampling job: skipped/);
@@ -16,7 +23,8 @@ test('missing artifacts after skipped sampling produce explicit unavailable repo
   }
   const workflow = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const summary = workflow.split('\n  performance-summary:')[1].split('\n  type-check:')[0];
-  assert.match(summary, /id: performance-inputs\r?\n\s+continue-on-error: true/);
+  assert.match(summary, /GITHUB_TOKEN: \$\{\{ github.token \}\}/);
+  assert.doesNotMatch(summary, /pattern: performance-/);
   assert.match(summary, /PERFORMANCE_SAMPLING_RESULT:/);
   assert.match(summary, /run: node scripts\/aggregate-performance-reports.mjs/);
 });
@@ -81,4 +89,10 @@ test('history compaction excludes invalid acceptance and incomplete historical s
   for (const status of ['invalid', 'partial']) assert.deepEqual(compactReport({ status, cells, history: { entries } }).history, []);
   const result = compactReport({ status: 'complete', cells, history: { entries } });
   assert.equal(result.history.length, 1); assert.equal(result.history[0].medianMs, 100);
+});
+
+
+test('validated manual PR measurements retain their actual dispatch event',()=>{
+ const identity=measurementIdentity({number:3,pull_request:{head:{sha:'a'.repeat(40)},base:{sha:'b'.repeat(40)}}},{GITHUB_EVENT_NAME:'workflow_dispatch'});
+ assert.equal(identity.event,'workflow_dispatch');assert.equal(identity.prNumber,3);
 });

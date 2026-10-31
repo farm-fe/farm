@@ -22,6 +22,7 @@ jobs:
         os: [windows-latest, ubuntu-24.04]
     env:
       CARGO_BUILD_JOBS: '2'
+      FARM_BUILD_PROFILE: ci
       CODEX_DOCS_EVIDENCE_PHASE: p10
       CODEX_DOCS_EVIDENCE_ATTEMPT: ci
     defaults:
@@ -65,13 +66,11 @@ jobs:
             pnpm --dir "packages/$package" run build
           done
       - name: Build current Core native binding
-        # Kept as a release-profile reference until real ci/release compatibility
-        # is exercised. Presence/hash checks alone cannot justify its removal.
-        run: pnpm --dir packages/core run build:rs
+        run: pnpm --dir packages/core run build:rs:ci
       - name: Build Docs native plugin closure
         run: |
           for plugin in replace-dirname react mdx ssr-css syntax-highlight sass tailwindcss docs docs-snapshot docs-seo docs-snippets; do
-            pnpm --dir "rust-plugins/$plugin" run build
+            pnpm --dir "rust-plugins/$plugin" exec farm-plugin-tools build --platform -p "farmfe_plugin_${plugin//-/_}" --profile ci
           done
       - name: Build public JS packages
         run: |
@@ -109,7 +108,7 @@ jobs:
           const directory=path.join(process.env.RUNNER_TEMP,'farm-docs-native');
           fs.mkdirSync(directory,{recursive:true});
           const baseline=path.join(directory,'baseline.json');
-          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,profile:'release',ciProfileCompatibility:'not-yet-validated',binaries},null,2),{flag:'wx'});
+          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false,binaries},null,2),{flag:'wx'});
           fs.appendFileSync(process.env.GITHUB_ENV,`CODEX_DOCS_NATIVE_BASELINE=${baseline}
           CODEX_DOCS_NATIVE_GUARD_DIR=${path.join(directory,'guards')}
           `);
@@ -162,6 +161,6 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
-          cell: "docs:release:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          cell: "docs:ci:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}

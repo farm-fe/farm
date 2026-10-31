@@ -19,7 +19,8 @@ import {
   startAndTest
 } from '../e2e/farm-runner.mjs';
 import { SpecRunner } from '../e2e/runner.mjs';
-import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
+import { logger, setLogFile, flushLogFiles } from '../e2e/utils.mjs';
+import { finishWorker } from '../e2e/worker-finish.mjs';
 
 const EXAMPLES_DIR = resolve(process.cwd(), 'examples');
 const EXCLUDE_FROM_DEFAULT = new Set(['issues1433', 'nestjs']);
@@ -225,28 +226,27 @@ async function runWorker(exampleNames) {
     }
   } finally {
     if (browser?.isConnected()) {
-      await browser.close().catch(() => {});
+      await browser.close();
     }
-    if (process.send) {
-      process.send({ type: 'done' });
-    }
-    process.disconnect?.();
   }
 }
 
+const completion={flushLogs:flushLogFiles,
+  send:(message,callback)=>process.send(message,callback),
+  disconnect:()=>{if(process.connected)process.disconnect();},exit:code=>process.exit(code)};
+let started=false;
 process.on('message', (msg) => {
   if (msg?.type === 'run') {
+    if(started) return;
+    started=true;
     if (msg.logFile) {
       setLogFile(msg.logFile);
     }
     runWorker(msg.examples)
-      .then(() => closeLogFiles())
-      .catch((err) => {
-        if (process.send) {
-          process.send({ type: 'fatal', error: err instanceof Error ? err.message : String(err) });
-        }
-        process.exitCode = 1;
-        closeLogFiles();
+      .then(() => finishWorker(completion))
+      .catch(async (err) => {
+        try { await finishWorker(completion,err); }
+        catch { process.exit(1); }
       });
   }
 });

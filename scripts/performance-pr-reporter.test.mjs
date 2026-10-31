@@ -20,6 +20,16 @@ test('strict valid envelope retains per-platform measurements and merge revision
   assert.equal(body.split(marker).length, 2);
   assert.match(body, /linux \/ x64/); assert.match(body, /100.0 ms/);
 });
+test('main measurement schema is separate from PR comment authority',async()=>{
+ const value={...fixture(),event:'push',prNumber:null};assert.equal(validateSummary(JSON.stringify(value)).prNumber,null);
+ assert.throws(()=>verifyIdentity(value,{...run,event:'push'},pr,1));
+ let requests=0;
+ const result=await report({token:'test',repository:'farm-fe/farm',event:{workflow_run:{id:2},repository:{id:1}},fetcher:async()=>{
+  requests++;return Response.json({...run,event:'push'});
+ }});
+ assert.match(result.skipped,/Only PR/);assert.equal(requests,1);
+ assert.throws(()=>validateSummary(JSON.stringify({...value,prNumber:3})));
+});
 test('rejects unknown fields, unsafe text, excess payload, invalid numbers and duplicate platforms', () => {
   const cases = [v => { v.extra = 1; }, v => { v.reports[0].metadata.os = '<script>'; }, v => { v.reports[0].cells[0] = { ...cell, medianMs: -1 }; }, v => { v.reports.push(v.reports[0]); }, v => { v.reports[0].comparison.mode = 'trusted'; }];
   for (const mutate of cases) { const v = fixture(); mutate(v); assert.throws(() => validateSummary(JSON.stringify(v))); }
@@ -73,6 +83,7 @@ test('same run new attempt replaces old partial; old attempts cannot overwrite i
   const writes = [];
   const fetcher = async (url, options = {}) => {
     if (options.method) { writes.push(options); return Response.json({ id: 4 }); }
+    if (url.includes('/attempts/')) { const attempt=Number(/attempts\/(\d+)/.exec(url)[1]); return Response.json(url.includes('/jobs?') ? {jobs:attempt===2 ? [{id:9,run_id:2,name:'Aggregate informational performance report',status:'completed',conclusion:'success',started_at:'2026-10-31T02:00:00Z',completed_at:'2026-10-31T02:20:00Z'}] : []} : {...run,run_attempt:attempt}); }
     if (url.endsWith('/zip')) return new Response(zip(JSON.stringify(value)));
     if (url.includes('/artifacts?')) return Response.json({ artifacts: [{ name: 'performance-pr-summary-2', id: 5, size_in_bytes: 5000 }] });
     if (url.includes('/comments?')) return Response.json([{ id: 4, user: { login: 'github-actions[bot]', type: 'Bot' }, body: `${marker}\n<!-- farm-performance-run:2:1 -->` }]);
@@ -163,4 +174,23 @@ test('direct rendering cannot qualify complete labels with incomplete samples', 
   const value = fixture(); value.reports[0].cells = [cell];
   assert.doesNotMatch(renderComment(value, 'farm-fe/farm'), /100.0 ms/);
   assert.match(renderComment(value, 'farm-fe/farm'), /Unavailable/);
+});
+
+
+test('aggregation and original measurement attempts remain distinct and fully typed', () => {
+  const value=fixture(); value.schemaVersion=3;value.runAttempt=2;
+  value.measurementSources=[{abi:'linux-x64-gnu',runId:2,runAttempt:1,jobId:10,artifactId:11,artifactDigest:'sha256:'+'a'.repeat(64),rawSummarySha256:'b'.repeat(64),producerSHA:'c'.repeat(40),testedTree:'d'.repeat(40),profile:'ci',workflowPath:'.github/workflows/ci.yaml',nativeAttempt:1,nativeJobId:12,nativeArtifactId:13,nativeArtifactDigest:'sha256:'+'e'.repeat(64),harnessSha256:'f'.repeat(64)}];
+  assert.equal(validateSummary(JSON.stringify(value)).measurementSources[0].runAttempt,1);
+  assert.match(renderComment(value,'farm-fe/farm'),/Measurement attempt 1; job 10; artifact 11/);
+  for(const change of [v=>{v.measurementSources=[];},v=>{v.measurementSources=[null];},v=>{v.measurementSources[0].runAttempt=3;},v=>{v.measurementSources[0].profile='release';},v=>{v.measurementSources[0].producerSHA='9'.repeat(40);},v=>{v.measurementSources[0].extra='untrusted';}]){
+    const copy=structuredClone(value);change(copy);assert.throws(()=>validateSummary(JSON.stringify(copy)));
+  }
+});
+
+
+test('explicit generic CI dispatch performance is valid evidence but has no PR comment authority',()=>{
+  const value=fixture();value.schemaVersion=3;value.event='workflow_dispatch';
+  value.measurementSources=[{abi:'linux-x64-gnu',runId:2,runAttempt:1,jobId:10,artifactId:11,artifactDigest:'sha256:'+'a'.repeat(64),rawSummarySha256:'b'.repeat(64),producerSHA:'c'.repeat(40),testedTree:'d'.repeat(40),profile:'ci',workflowPath:'.github/workflows/ci.yaml',nativeAttempt:1,nativeJobId:12,nativeArtifactId:13,nativeArtifactDigest:'sha256:'+'e'.repeat(64),harnessSha256:'f'.repeat(64)}];
+  assert.equal(validateSummary(JSON.stringify(value)).prNumber,3);
+  assert.throws(()=>verifyIdentity(value,{...run,event:'workflow_dispatch'},pr,1));
 });

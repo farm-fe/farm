@@ -21,9 +21,10 @@ export function assertSourceLicense(directory, manifest) {
   if (manifest.license === 'ISC') assert.ok(!text.includes('MIT License') && /permission to use, copy, modify, and\/or distribute/i.test(text), `ISC declaration differs from legal text: ${manifest.name}`);
 }
 export function assertNativeAssembly(plan, assembly, artifactIndex, sourceSHA) {
-  assert.equal(assembly.sourceCommit, sourceSHA); assert.equal(assembly.count, plan.npm.payloads.length);
+  const required = publicationNpm(plan).payloads;
+  assert.equal(assembly.sourceCommit, sourceSHA); assert.equal(assembly.count, required.length);
   assert.equal(new Set(assembly.records.map(row => row.name)).size, assembly.count);
-  for (const pkg of plan.npm.payloads) {
+  for (const pkg of required) {
     const row = assembly.records.find(item => item.name === pkg.name);
     assert.ok(row && row.version === pkg.version && row.platform === pkg.platform, `Missing exact native cohort: ${pkg.name}`);
     const artifacts = artifactIndex.filter(item => item.name === row.artifact && !item.expired);

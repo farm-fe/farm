@@ -16,6 +16,14 @@ case "$ABI" in
     ;;
 esac
 
+BUILD_CORE=true
+BUILD_CREATE=true
+if [ -n "${FARM_RELEASE_NATIVE_OWNERS:-}" ]; then
+  BUILD_CORE="$(node scripts/release-native-scope.mjs core "$PLUGINS")"
+  BUILD_CREATE="$(node scripts/release-native-scope.mjs create "$PLUGINS")"
+  PLUGINS="$(node scripts/release-native-scope.mjs plugins "$PLUGINS")"
+fi
+
 if [ -z "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR="$(pwd)/target"
 fi
@@ -45,6 +53,10 @@ case "$ABI" in
     unset CC_x86_64_unknown_linux_gnu || true
     unset CC || true
     export CARGO_INCREMENTAL=0
+    if [ "$PROFILE" = "ci" ]; then
+      # The live GNU reuse protocol requires a measured explicit linker.
+      export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+    fi
     ;;
   linux-x64-musl)
     if [ -f /etc/alpine-release ]; then
@@ -95,11 +107,13 @@ if [ "${FARM_NATIVE_PROOF_MODE:-off}" = "shadow" ]; then
     node scripts/ci-native-capture.mjs runtime || printf '%s\n' 'Shadow native context unavailable; reuse remains disabled'
 fi
 
-cd packages/core
-npm run "$CORE_BUILD_SCRIPT" -- $TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS
-cd ../..
+if [ "$BUILD_CORE" = true ]; then
+  cd packages/core
+  npm run "$CORE_BUILD_SCRIPT" -- $TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS
+  cd ../..
+fi
 
-build_create_farm
+if [ "$BUILD_CREATE" = true ]; then build_create_farm; fi
 
 cd rust-plugins
 for plugin in $PLUGINS; do

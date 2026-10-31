@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import test from 'node:test';
 import { evaluateNodeEngines } from './v2-node-engines.mjs';
+import {createReleaseIntent, independentPublicationPolicy, independentReleaseWorkflow, serializeReleaseIntent, validationDispatches} from './prepare-v2-release-intent.mjs';
 const workflow = fs.readFileSync(new URL('../.github/workflows/release.yaml', import.meta.url), 'utf8');
 test('all stable publication jobs use the supported pinned Node version', () => {
   const versions = [...workflow.matchAll(/node-version:\s*([0-9.]+)/g)].map(match => match[1]);
@@ -24,10 +26,13 @@ test('ordinary main changes use Changesets version PRs without publication crede
   assert.match(workflow, /title: 'chore: release packages'/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|CARGO_REGISTRY_TOKEN|run: pnpm run release/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
-  assert.match(stable, /types: \[closed\]/);
-  assert.match(stable, /pull_request.merged == true/);
-  assert.match(stable, /needs: \[evidence\]/); assert.match(stable, /needs: \[rust\]/);
-  assert.match(stable, /needs: \[npm\]/); assert.match(stable, /needs: \[public-consumers\]/);
+  assert.match(stable, /workflow_dispatch:/);
+  assert.doesNotMatch(stable, /pull_request:|secrets\.|v2-auto-release|contents: write/);
+  const independent = fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  assert.match(independent, /publish:[\s\S]*?type: boolean\n        default: false/);
+  assert.match(independent, /github.ref == 'refs\/heads\/main' && inputs.publish == true/);
+  assert.match(independent, /profile: release/);
+  assert.doesNotMatch(independent, /v2-auto-release\.mjs|uses: .*ci\.yaml/);
   assert.doesNotMatch(workflow, /uses: \.\/\.github\/workflows\/rust-build/);
   const release = fs.readFileSync(new URL('./release.mjs', import.meta.url), 'utf8');
   assert.match(release, /assertStableReleaseState\(root\)/);
@@ -53,5 +58,67 @@ test('Changesets filesystem and parsing errors cannot select publication', () =>
   assert.match(cargo, /path: .release-cargo-producer\/receipt.json/);
   assert.match(cargo, /--index-production/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
-  assert.match(stable, /group: farm-stable-release/);
+  assert.doesNotMatch(stable, /contents: write|secrets\./);
+  const independent = fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+  assert.match(independent, /group: farm-independent-release\n  cancel-in-progress: false/);
+});
+
+
+test('reviewed version intents select independent main release without authorizing publication', () => {
+  const policy = independentPublicationPolicy();
+  assert.equal(policy.workflowPath, independentReleaseWorkflow);
+  assert.equal(policy.profile, 'release'); assert.equal(policy.chain, 'release');
+  assert.equal(policy.publishDefault, false); assert.equal(policy.explicitAuthorizationRequired, true);
+  assert.equal(policy.ciBuildBytesAccepted, false);
+  const intent = {publication: policy, seal: {workflowPath: independentReleaseWorkflow}};
+  assert.deepEqual(JSON.parse(serializeReleaseIntent(intent)), intent);
+  assert.throws(() => serializeReleaseIntent({...intent, publication: {...policy, publishDefault: true}}), /cannot enable/);
+  assert.throws(() => serializeReleaseIntent({...intent, seal: {workflowPath: '.github/workflows/ci.yaml'}}), /independent release/);
+});
+
+test('version preparation dispatches independent read-only planning and never edits a publication workflow', () => {
+  const dispatches = validationDispatches(2330, 'a'.repeat(40));
+  assert.equal(dispatches.length, 4);
+  assert.ok(dispatches.every(row=>row.workflow!=='incremental-release.yaml'));
+  assert.deepEqual(dispatches[0],{workflow:'ci.yaml',inputs:['pr_number=2330','base_sha='+'a'.repeat(40)]});
+  assert.ok(dispatches.slice(1).every(row => row.inputs.includes('release_pr=2330') && row.inputs.includes('release_base=' + 'a'.repeat(40))));
+  const source = fs.readFileSync(new URL('./prepare-v2-release-intent.mjs', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /v2-stable-release\.yaml|FARM_RELEASE_INTENT_SHA256|--no-verify|publish=true/);
+  assert.match(source, /serializeReleaseIntent\(intent\)/);
+});
+
+
+test('generated intent binds the independent release producer and preserves reviewed version data', () => {
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const plan = {npm: {primary: [{name: '@farmfe/core', version: '2.0.0'}], payloads: []},
+    cargo: [{name: 'farmfe_core', version: '2.2.0'}], counts: {primary: 1, payloads: 0, total: 1}};
+  const metadata = {packages: [{name: 'farmfe_core', version: '2.2.0', dependencies: []}]};
+  const intent = createReleaseIntent(root, plan, metadata, 2330);
+  assert.equal(intent.pullRequest, 2330); assert.equal(intent.tag, 'v2.0.0');
+  assert.equal(intent.seal.workflowPath, independentReleaseWorkflow);
+  assert.deepEqual(intent.publication, independentPublicationPolicy());
+  assert.deepEqual(intent.requiredWorkflows, ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow]);
+  assert.equal(intent.performanceRequired, true);
+  assert.ok(intent.requiredReleaseJobs.includes('Independent release candidate consumer (windows-latest)'));
+  assert.ok(intent.requiredCiJobs.every(name=>!intent.requiredReleaseJobs.includes(name)));
+  assert.equal(JSON.parse(serializeReleaseIntent(intent)).publication.publishDefault, false);
+});
+
+
+test('independent workflow consumes actual release delta APIs and supports a native-free producer', () => {
+  const read = name => fs.readFileSync(new URL('../' + name, import.meta.url), 'utf8');
+  const release = read('.github/workflows/incremental-release.yaml');
+  for (const file of ['rust-build-user.yaml', 'rust-build-release.yaml']) {
+    const reusable = read('.github/workflows/' + file);
+    assert.match(reusable, /native_owners:/);
+    assert.match(reusable, /inputs.native_owners/);
+  }
+  assert.equal((release.match(/native_owners: \$\{\{ needs.plan.outputs.native_owners \}\}/g) || []).length, 2);
+  assert.ok(release.includes("needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'"));
+  assert.ok(release.includes('prepare release-work/release-plan.json release-native release-work/native-assembly.json release-work/candidate-plan.json'));
+  assert.ok(release.includes('pack release-work/native-assembly.json release-work/artifact-index.json release-work/npm release-work/candidate-plan.json'));
+  assert.equal((release.match(/FARM_RELEASE_CANDIDATE_PLAN: release-work\/candidate-plan.json/g) || []).length, 3);
+  assert.ok(release.includes("plan['planHash'] == os.environ['PLAN_HASH']"));
+  assert.ok(release.includes('Upload independent release candidate acceptance'));
+  assert.ok(release.includes('path: candidate-results/result.json'));
 });
