@@ -150,7 +150,7 @@ jobs:
           python scripts/incremental-release-publish.test.py
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
-          node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs
+          node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-pr-validation.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
           python scripts/ci-execution-ledger.test.py
           python scripts/ci-execution-evidence.test.py

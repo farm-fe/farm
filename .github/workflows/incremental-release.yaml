@@ -69,6 +69,38 @@ jobs:
           with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as stream:
               stream.write('producer_attempt=' + str(original) + '\nreuse=' + ('true' if original < attempt else 'false') + '\n')
 
+  pr-validation-scope:
+    name: Select non-publishable PR release-profile validation
+    needs: [source]
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Check isolated PR release validation contracts before native builds
+        run: node --test scripts/release-pr-validation.test.mjs
+      - name: Validate actual same-repository merge and release input scope
+        id: scope
+        env:
+          FARM_BUILD_PROFILE: release
+        run: node scripts/release-pr-validation.mjs scope
+  pr-release-reference:
+    name: Non-publishable PR release-profile reference
+    needs: [pr-validation-scope]
+    if: needs.pr-validation-scope.outputs.required == 'true'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/release-pr-validation.yaml
+
   quality:
     name: Release quality checks
     needs: [source, plan]
