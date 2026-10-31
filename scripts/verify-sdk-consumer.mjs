@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { inspectSdkMetadata } from './run-sdk-consumer.mjs';
+import { sdkConsumerManifest } from './v2-rust-registry-reuse.mjs';
 
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -25,7 +26,7 @@ export function verifySdkConsumer(plan, proofFile, fixtureFile) {
   assert.match(log.toString('utf8'), /test result: ok\. 3 passed; 0 failed/);
   const manifest = path.join(directory, 'consumer.Cargo.toml');
   const lockFile = path.join(directory, 'consumer.Cargo.lock');
-  assert.equal(normalized(manifest), normalized(fixtureFile), 'SDK fixture differs from reviewed consumer');
+  assert.equal(normalized(manifest), sdkConsumerManifest(plan, normalized(fixtureFile)), 'SDK fixture differs from reviewed consumer');
   assert.doesNotMatch(normalized(manifest), /^\s*\[patch|\bpath\s*=/m);
   const materialization = readJson(path.join(directory, 'materialization.json'));
   assert.equal(materialization.planSha256, sdk.planSha256);

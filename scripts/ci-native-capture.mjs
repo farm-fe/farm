@@ -19,15 +19,20 @@ export function captureRuntime({ env = process.env, run = spawnSync, cwd = root 
     return (result.stdout ?? '').trim();
   }
   const rustc = version('rustc', ['-vV']), cargo = version('cargo', ['-vV']);
+  const activeToolchain = version('rustup', ['show', 'active-toolchain']);
   const selected = Object.fromEntries(buildVariables.map(name => [name, env[name] ?? null]));
   // Values can contain build paths; expose only their digest, never arbitrary env.
   const flagsHash = hash(JSON.stringify(selected));
+  const permittedBuildVariables = new Set([...buildVariables, 'CARGO_HOME', 'CARGO_TARGET_DIR', 'RUSTUP_HOME',
+    'CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER']);
+  const unboundBuildVariables = Object.keys(env).filter(name => /^(CARGO_|RUST|CC(?:_|$)|CXX(?:_|$)|AR(?:_|$)|LD(?:_|$))/.test(name)
+    && !permittedBuildVariables.has(name)).sort();
   const target = env.FARM_BUILD_TARGET;
   const linkerKey = target ? `CARGO_TARGET_${target.toUpperCase().replaceAll('-', '_')}_LINKER` : null;
   const linker = linkerKey ? env[linkerKey] : null;
   const linkerVersion = linker && !/[\r\n]/.test(linker) ? version(linker, ['--version']) : null;
   return { schemaVersion: 1, phase: 'before-build', abi: env.FARM_BUILD_ABI ?? null, profile: env.FARM_BUILD_PROFILE ?? null, target: target ?? null,
-    runtime: { node: process.version, os: process.platform, arch: process.arch, release: os.release() }, rustc, cargo, flagsHash,
+    runtime: { node: process.version, os: process.platform, arch: process.arch, release: os.release() }, rustc, cargo, activeToolchain, flagsHash, unboundBuildVariables,
     linker: linkerVersion ? { executableHash: hash(linker), version: linkerVersion } : null, errors,
     measuredToolsComplete: Boolean(rustc && cargo && linkerVersion), completeMeasuredContext: false,
     reuseAuthorized: false, reason: linkerVersion ? 'Shadow tool capture only; final compiler feature resolution and authenticated producer proof remain mandatory' : 'Effective linker is not explicit and measured; do not guess a reusable environment' };

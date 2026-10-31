@@ -28,6 +28,22 @@ function hashFile(file) {
   finally { fs.closeSync(fd); }
   return hash.digest('hex');
 }
+
+export function bindCiAssemblyOrigins(records, bytes, expectedHash, sourceSHA) {
+  if(crypto.createHash('sha256').update(bytes).digest('hex')!==expectedHash)throw Error('CI consumer binding byte commitment differs');
+  const binding=JSON.parse(bytes);
+  if(binding.kind!=='ci-consumer-materialization-not-a-new-build'||binding.chain!=='ci'||binding.profile!=='ci'||binding.consumerSHA!==sourceSHA||binding.abi!=='linux-x64-gnu'||binding.acceptanceInherited!==false)throw Error('Foreign CI consumer provenance');
+  const cohort=records.filter(row=>row.platform==='linux-x64-gnu');
+  if(cohort.length!==binding.records.length||new Set(binding.records.map(row=>row.name)).size!==cohort.length)throw Error('Incomplete CI assembly origin inventory');
+  for(const row of cohort){
+    const original=binding.records.find(original=>original.name===row.name);
+    if(!original||original.sha256!==row.sha256)throw Error('Assembled bytes differ from original CI producer');
+    row.producer={kind:'verified-ci-byte-reuse',originBuildSHA:binding.originBuildSHA,originRunId:binding.originRunId,originArtifactId:binding.originArtifactId,originArtifactDigest:binding.originArtifactDigest,
+      consumerSHA:sourceSHA,profile:'ci',acceptanceInherited:false};
+    row.artifact='ci-consumer-materialization:'+binding.originArtifactId;
+  }
+  return records;
+}
 export function assembleNativeArtifacts(root, pool, sourceSHA, plan) {
   const routes = plan.npm.payloads.map(pkg => nativeArtifactRoute(root, pool, sourceSHA, pkg, plan));
   const realPool = fs.realpathSync(pool), realRoot = fs.realpathSync(root);
@@ -60,6 +76,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (!pool || !output) throw new Error('Expected artifact directory and assembly receipt');
   const plan = nativeArtifactInventory(root);
   const records = assembleNativeArtifacts(root, path.resolve(pool), sourceSHA, plan);
+  if (process.env.FARM_CI_CONSUMER_FILE) {
+    bindCiAssemblyOrigins(records,fs.readFileSync(process.env.FARM_CI_CONSUMER_FILE),process.env.FARM_CI_CONSUMER_HASH,sourceSHA);
+  }
   fs.writeFileSync(output, JSON.stringify({ schemaVersion: 1, sourceCommit: sourceSHA, records, count: records.length, published: false }, null, 2));
   console.log(JSON.stringify({ assembled: records.length, sourceCommit: sourceSHA, published: false }));
 }

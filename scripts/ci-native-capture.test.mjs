@@ -12,14 +12,14 @@ test('runtime capture measures only bounded tools and never publishes arbitrary 
     calls.push([executable, args]); assert.equal(options.shell, false); assert.equal(options.timeout, 15000);
     return { status: 0, stdout: 'measured tool version' };
   } });
-  assert.deepEqual(calls.map(row => row[0]), ['rustc', 'cargo']);
+  assert.deepEqual(calls.map(row => row[0]), ['rustc', 'cargo', 'rustup']);
   assert.equal(record.linker, null); assert.equal(record.completeMeasuredContext, false); assert.equal(record.reuseAuthorized, false);
   assert.ok(!JSON.stringify(record).includes('secret-fixture')); assert.match(record.flagsHash, /^[a-f0-9]{64}$/);
 });
 
 test('a failed context probe remains unavailable and never becomes reusable', () => {
   const record = captureRuntime({ env: {}, run: () => ({ status: 1, stdout: '', error: { code: 'ENOENT' } }) });
-  assert.equal(record.errors.length, 2); assert.equal(record.measuredToolsComplete, false); assert.equal(record.reuseAuthorized, false);
+  assert.equal(record.errors.length, 3); assert.equal(record.measuredToolsComplete, false); assert.equal(record.reuseAuthorized, false);
 });
 
 test('producer records require every exact native file and preserve its measured byte hash', () => {

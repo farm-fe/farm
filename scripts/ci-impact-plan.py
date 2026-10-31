@@ -380,7 +380,7 @@ def main():
     try:
         event = json.loads(Path(args.event).read_text(encoding="utf-8"))
         pr = event.get("pull_request", {})
-        base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base")
+        base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base") or event.get("before")
         head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA")
         candidate = release_candidate(event, os.environ)
         result = make_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate)

@@ -4,6 +4,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateSummary } from './performance-pr-reporter.mjs';
 import { validationEvent } from './v2-release-inventory.mjs';
+import assert from 'node:assert/strict';
+
+export function measurementIdentity(event,environment=process.env){
+  if(environment.GITHUB_EVENT_NAME==='push'){
+    assert.equal(environment.GITHUB_REF,'refs/heads/main');
+    assert.equal(event.after,environment.GITHUB_SHA);
+    assert.match(event.after,/^[a-f0-9]{40}$/);assert.match(event.before,/^[a-f0-9]{40}$/);
+    assert.notEqual(event.before,'0'.repeat(40));
+    return {event:'push',headSHA:event.after,baseSHA:event.before,prNumber:null};
+  }
+  assert.ok(event.pull_request&&Number.isSafeInteger(event.number)&&event.number>0,'Exact PR measurement identity required');
+  return {event:'pull_request',headSHA:event.pull_request.head.sha,baseSHA:event.pull_request.base.sha,prNumber:event.number};
+}
 
 export function compactReport(report) {
   const metadata = Object.fromEntries(['os', 'arch', 'revision', 'baseSHA', 'node', 'pnpm', 'fixtureSha256', 'lockSha256', 'runnerImage'].map(key => [key, report.metadata?.[key] ?? null]));
@@ -28,10 +41,10 @@ export function unavailableReason(error, { samplingResult, downloadOutcome } = {
   return [...context, `Missing or invalid platform evidence: ${error.message}`].join('; ');
 }
 async function main() {
-  const event = validationEvent();
+  const event = process.env.GITHUB_EVENT_NAME==='push' ? JSON.parse(await fs.readFile(process.env.GITHUB_EVENT_PATH,'utf8')) : validationEvent();
   const directory = path.resolve('.performance-reports');
-  const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT), event: 'pull_request',
-    headSHA: event.pull_request.head.sha, baseSHA: event.pull_request.base.sha, prNumber: event.number,
+  const summary = { schemaVersion: 2, repositoryId: event.repository.id, runId: Number(process.env.GITHUB_RUN_ID), runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+    ...measurementIdentity(event),
     protocol: 'commerce-business-2048-farm-supervised-v2', reports: [] };
   const failures = [];
   for (const [abi, os, arch] of platforms) {

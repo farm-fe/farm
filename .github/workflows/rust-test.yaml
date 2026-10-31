@@ -1,5 +1,7 @@
 name: Unit Tests
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       release_pr:
@@ -27,6 +29,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
         with:
           fetch-depth: 0
           persist-credentials: false

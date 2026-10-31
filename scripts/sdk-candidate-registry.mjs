@@ -1,5 +1,7 @@
 // cspell:words statfs bavail cksum vers
 import fs from 'node:fs';
+import { sdkConsumerManifest } from './v2-rust-registry-reuse.mjs';
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
@@ -81,6 +83,9 @@ export function materializeRegistry(cohortDirectory, output, cargoHome = process
   const consumer = path.join(output, 'consumer');
   const recipe = fileURLToPath(new URL('./release-fixtures/sdk-consumer', import.meta.url));
   fs.cpSync(recipe, consumer, { recursive: true });
+  const planRoot = fileURLToPath(new URL('../', import.meta.url));
+  const currentPlan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(planRoot)));
+  fs.writeFileSync(path.join(consumer, 'Cargo.toml'), sdkConsumerManifest(currentPlan, fs.readFileSync(path.join(consumer, 'Cargo.toml'), 'utf8')));
   fs.mkdirSync(path.join(consumer, '.cargo'));
   fs.writeFileSync(path.join(consumer, '.cargo/config.toml'), `[source.crates-io]\nreplace-with = "farm-candidate"\n[source.farm-candidate]\nlocal-registry = ${JSON.stringify(registry.replaceAll('\\', '/'))}\n[build]\njobs = 1\n`);
   const report = { schemaVersion: 1, sourceCommit: candidate.sourceCommit, planSha256: candidate.planSha256,

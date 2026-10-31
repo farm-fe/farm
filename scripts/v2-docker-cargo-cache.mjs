@@ -118,6 +118,10 @@ export function runDockerCargoBuild({ workspace = process.cwd(), env = process.e
       '--mount', `type=bind,source=${path.join(home, 'registry')},target=/cargo-cache-seed/registry,readonly`,
       '--mount', `type=bind,source=${root},target=/build`, '--workdir', '/build'];
     for (const key of ['FARM_BUILD_PROFILE', 'FARM_BUILD_ABI', 'FARM_BUILD_TARGET', 'FARM_BUILD_ZIG']) args.push('--env', `${key}=${env[key] ?? 'false'}`);
+    if (env.FARM_RELEASE_NATIVE_OWNERS) {
+      assert.equal(env.FARM_BUILD_PROFILE, 'release', 'CI cannot receive release-only native scope');
+      args.push('--env', `FARM_RELEASE_NATIVE_OWNERS=${env.FARM_RELEASE_NATIVE_OWNERS}`);
+    }
     if (env.FARM_NATIVE_PROOF_MODE === 'shadow') args.push('--env', 'FARM_NATIVE_PROOF_MODE=shadow');
     // Alpine installs rustup in root's default home without declaring HOME or
     // CARGO_HOME in image metadata. Set the reviewed path explicitly instead of

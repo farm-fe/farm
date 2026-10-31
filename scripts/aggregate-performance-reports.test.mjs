@@ -1,9 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compactReport, unavailableReport, unavailableReason, platforms } from './aggregate-performance-reports.mjs';
+import { compactReport, unavailableReport, unavailableReason, platforms, measurementIdentity } from './aggregate-performance-reports.mjs';
 import fs from 'node:fs/promises';
 import { validateSummary, renderComment } from './performance-pr-reporter.mjs';
 const cell = value => ({ cacheMode: 'cold', samples: 3, validSamples: 3, medianMs: value, iqrMs: 1 });
+test('main measurements retain a real push identity and never invent a PR number',()=>{
+ const after='a'.repeat(40),before='b'.repeat(40);
+ const identity=measurementIdentity({after,before},{GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_SHA:after});
+ assert.deepEqual(identity,{event:'push',headSHA:after,baseSHA:before,prNumber:null});
+ assert.throws(()=>measurementIdentity({after,before},{GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/other',GITHUB_SHA:after}));
+ assert.throws(()=>measurementIdentity({after,before:'0'.repeat(40)},{GITHUB_EVENT_NAME:'push',GITHUB_REF:'refs/heads/main',GITHUB_SHA:after}));
+});
 test('missing artifacts after skipped sampling produce explicit unavailable reports', async () => {
   const reason = unavailableReason(new Error('ENOENT'), { samplingResult: 'skipped', downloadOutcome: 'failure' });
   assert.match(reason, /Sampling job: skipped/);

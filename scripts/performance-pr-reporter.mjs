@@ -24,8 +24,8 @@ export function validateSummary(bytes) {
   assert(Buffer.byteLength(bytes) <= 65536, 'Summary exceeds 64 KiB');
   const value = JSON.parse(bytes);
   assert(exact(value, ['schemaVersion', 'repositoryId', 'runId', 'runAttempt', 'event', 'headSHA', 'baseSHA', 'prNumber', 'protocol', 'reports']), 'Invalid summary schema');
-  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-farm-supervised-v2' && value.event === 'pull_request', 'Invalid protocol');
-  assert(integer(value.repositoryId) && integer(value.runId) && integer(value.prNumber) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
+  assert(value.schemaVersion === 2 && integer(value.runAttempt) && value.protocol === 'commerce-business-2048-farm-supervised-v2' && ['pull_request','push'].includes(value.event), 'Invalid protocol');
+  assert(integer(value.repositoryId) && integer(value.runId) && (value.event==='pull_request' ? integer(value.prNumber) : value.prNumber===null) && sha(value.headSHA) && sha(value.baseSHA), 'Invalid identity');
   assert(Array.isArray(value.reports) && value.reports.length > 0 && value.reports.length <= 3, 'Invalid reports');
   const systems = new Set();
   for (const report of value.reports) {
@@ -106,7 +106,8 @@ export async function report({ token, repository, event, api = 'https://api.gith
   const runId = event.workflow_run.id;
   assert(integer(runId), 'Invalid triggering run');
   const run = await request(`/actions/runs/${runId}`);
-  assert(run.repository.id === event.repository.id && run.event === 'pull_request' && run.name === 'E2E Tests' && run.status === 'completed', 'Invalid triggering run');
+  assert(run.repository.id === event.repository.id && run.name === 'E2E Tests' && run.status === 'completed', 'Invalid triggering run');
+  if(run.event!=='pull_request')return {skipped:'Only PR runs may update a PR comment'};
   const matches = await findSummaryArtifacts(request, runId, run.run_attempt ?? 1);
   assert(matches.length === 1 && matches[0].size_in_bytes <= 131072, 'Missing or ambiguous summary artifact');
   const response = await fetcher(`${api}/repos/${repository}/actions/artifacts/${matches[0].id}/zip`, { headers: { Authorization: `Bearer ${token}` } });

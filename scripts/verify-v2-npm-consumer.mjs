@@ -1,4 +1,5 @@
 import { resolveNpmCli } from './v2-npm-cli.mjs';
+import { publicationManifestDigest } from './incremental-release-producer.mjs';
 // cspell:words statfs bavail userconfig USERCONFIG
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -14,14 +15,33 @@ const [sealArg, outputArg] = process.argv.slice(2);
 assert.ok(sealArg && outputArg, 'Specify seal directory and new consumer evidence directory');
 const seal = path.resolve(sealArg), output = path.resolve(outputArg);
 await fs.mkdir(output); // Never overwrite prior consumer evidence.
-const plan = JSON.parse(await fs.readFile(path.join(root, 'docs/releases/v2-candidate.json')));
+const sourcePlan = JSON.parse(await fs.readFile(path.join(root, 'docs/releases/v2-candidate.json')));
+let plan = sourcePlan;
+try {
+  plan = JSON.parse(await fs.readFile(path.join(seal, 'candidate-plan.json'), 'utf8'));
+  assert.deepEqual(plan.npm, sourcePlan.npm, 'Portable candidate npm family differs from source');
+  assert.deepEqual(plan.cargo, sourcePlan.cargo, 'Portable candidate Cargo family differs from source');
+  assert.equal(plan.abi, sourcePlan.abi);
+} catch (error) { if (error.code !== 'ENOENT') throw error; }
+
 const receipt = JSON.parse(await fs.readFile(path.join(seal, 'receipt.json')));
+let releaseBinding = null;
+try {
+  const manifest = JSON.parse(await fs.readFile(path.join(seal, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.chain, 'release'); assert.equal(manifest.profile, 'release'); assert.equal(manifest.namespace, 'farm-release-v1');
+  assert.equal(manifest.sourceSHA, receipt.testedCommit); assert.equal(manifest.sourceTree, receipt.testedTree);
+  assert.match(process.env.GITHUB_RUN_ID ?? '', /^[1-9][0-9]*$/); assert.match(process.env.GITHUB_RUN_ATTEMPT ?? '', /^[1-9][0-9]*$/);
+  releaseBinding = { manifestHash: publicationManifestDigest(manifest), sourceSHA: manifest.sourceSHA, sourceTree: manifest.sourceTree,
+    producerRunId: manifest.producerRunId, producerAttempt: manifest.producerAttempt,
+    consumerRunId: Number(process.env.GITHUB_RUN_ID), consumerAttempt: Number(process.env.GITHUB_RUN_ATTEMPT) };
+} catch (error) { if (error.code !== 'ENOENT') throw error; }
 if (process.env.GITHUB_SHA) assert.equal(receipt.testedCommit, process.env.GITHUB_SHA, 'Candidate producer SHA differs from this run');
 const scratch = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-npm-candidate-consumer-'));
 const result = { status: 'running', sourceCommit: receipt.sourceCommit, testedCommit: receipt.testedCommit, scratch,
+  releaseBinding,
   installation: 'real npm install from exact sealed loopback registry plus verified immutable registry reuse',
   externalRegistryCacheLinks: 0, workspacePackageLinks: 0, nativeOverrides: false, stages: [],
-  platform: { os: process.platform, arch: process.arch }, scope: 'All selected primary packages install; only host native ABI executes. Other targets have static sealed archive/hash evidence, not runtime proof.' };
+  platform: { os: process.platform, arch: process.arch, abi: consumerHostAbi() }, scope: 'All selected primary packages install; only host native ABI executes. Other targets have static sealed archive/hash evidence, not runtime proof.' };
 let registry;
 const env = { ...process.env, npm_config_cache: path.join(scratch, '.npm-cache') };
 for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN', 'NAPI_RS_NATIVE_LIBRARY_PATH', 'FARM_LIB_CORE_PATH', 'npm_config_registry', 'NPM_CONFIG_REGISTRY', 'NPM_CONFIG_USERCONFIG', 'npm_config_userconfig']) delete env[key];
@@ -35,7 +55,7 @@ async function run(stage, args, timeout = 120000) {
 try {
   const evidence = await candidateNpmEvidence(plan, receipt, seal);
   registry = await serveCandidateRegistry(evidence);
-  const manifest = publicConsumerManifest(plan);
+  const manifest = publicConsumerManifest({ ...plan, publication: undefined });
   await fs.writeFile(path.join(scratch, 'package.json'), JSON.stringify(manifest, null, 2));
   await fs.writeFile(path.join(scratch, 'empty-user.npmrc'), '');
   env.NPM_CONFIG_USERCONFIG = path.join(scratch, 'empty-user.npmrc');

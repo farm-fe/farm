@@ -11,10 +11,10 @@ export const suitePolicy = Object.freeze({
   vitestVersion: '2.0.4',
   inputs: Object.freeze({
     'vitest.config.ts': 'ee2ef1a2efbdefbe54e83a6196375d843dc975af46fbf19155c6aa3650aea2ff',
-    'scripts/build.mjs': 'a6d70ae72dc4beb58382145e62cd89992ea249f0c9b6f591a0dcb57ddf0d256f',
-    'scripts/test-examples.mjs': 'b7f630a19fb96762d60e5a8086bcd8544fe466dc43c426e7acaae5b50a5e880d',
-    'scripts/test-e2e.mjs': '8d8633626f881329ea8cd3ee991bb1b0dd0fdcf4185fdab4242094bba04e287a',
-    'scripts/test-e2e-worker.mjs': 'fbda6480e244ee079e9812a7409eee180c360845b6d7c1c3454b8a734a9908f8',
+    'scripts/build.mjs': '96cd0434cca092bbe8a7a832a9489dba14f3af552928b88f2e91e8ec250453b5',
+    'scripts/test-examples.mjs': '81a5fcd0823156989e5c0b7a5f5d5b280dfa959ea55fd4baba03d8ed1f3e62cc',
+    'scripts/test-e2e.mjs': '12bce9ecaaf83ffc14ec7ed324b2303f5ea3f3d921eaebe3468a757b2fb12fd4',
+    'scripts/test-e2e-worker.mjs': '46da91417ee525fd8d7ab34bcaec4f6a1e22c32dc7958306df24d6fb7be640d9',
     'scripts/check-e2e-specs.mjs': 'eda8df47273fdc6882dc271400e5b29f08efc1ca31655884f5b0649ab91c8ab2',
     'scripts/test-create-farm-candidates.mjs': '104791a813dde8e38cb3ed2a6b113a43513d5ee46d8bb075892c373ae92d8d0a'
   })

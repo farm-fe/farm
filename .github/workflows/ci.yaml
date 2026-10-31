@@ -1,5 +1,7 @@
 name: E2E Tests
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       release_pr:
@@ -126,6 +128,32 @@ jobs:
           node --test scripts/native-artifact-inventory.test.mjs
           node scripts/test-native-container-node.cjs
           node scripts/test-native-artifact-flow.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check independent CI and release selection contracts
+        run: |
+          python scripts/incremental-chain-plan.test.py
+          python scripts/ci-leaf-native.test.py
+          python -B scripts/ci-suite-baseline.test.py
+          node --test scripts/ci-leaf-assembly.test.mjs
+          python scripts/incremental-scheduling-model.test.py
+          python scripts/incremental-git-model.test.py
+          python scripts/incremental-real-repo.test.py
+          python scripts/incremental-chain-evidence.test.py
+          python scripts/incremental-registry-evidence.test.py
+          python scripts/incremental-publication-state.test.py
+          python scripts/incremental-release-entry.test.py
+          python -B scripts/incremental-release-baseline.test.py
+          python -B scripts/incremental-release-checkpoint.test.py
+          python -B scripts/incremental-release-materialize.test.py
+          python scripts/incremental-release-publish.test.py
+          python scripts/incremental-release-record.test.py
+          python scripts/incremental-release-functional.test.py
+          node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs
+          node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
+          python scripts/ci-execution-ledger.test.py
+          python scripts/ci-execution-evidence.test.py
       - name: Check release source and failure paths without publishing
         run: >-
           node --test scripts/v2-*.test.mjs scripts/release-archive.test.mjs
@@ -134,6 +162,7 @@ jobs:
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
           scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs scripts/ci-suite-inventory.test.mjs
+          scripts/ci-suite-execution.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-selection.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
       - name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
@@ -191,29 +220,34 @@ jobs:
 
   primary-linux:
     name: Primary Linux
-    needs: [release-contract-tests, performance-contract-tests]
+    needs: [release-contract-tests, performance-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
     with:
       os: ubuntu-24.04
       abi: linux-x64-gnu
+      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
+      native_mode: ${{ needs.type-check.outputs.linux_native_mode || 'build' }}
+      resolution_hash: ${{ needs.type-check.outputs.linux_resolution_hash }}
     secrets: inherit
 
   primary-macos:
     name: Primary macOS
-    needs: [release-contract-tests, performance-contract-tests]
+    needs: [release-contract-tests, performance-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
     with:
       os: macos-latest
       abi: darwin-arm64
+      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
     secrets: inherit
 
   primary-windows:
     name: Primary Windows
-    needs: [release-contract-tests, performance-contract-tests]
+    needs: [release-contract-tests, performance-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
     with:
       os: windows-latest
       abi: win32-x64-msvc
+      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
     secrets: inherit
 
   call-rust-build-user:
@@ -238,7 +272,7 @@ jobs:
 
   check-native-candidate-assembly:
     name: Check declared native inputs (not ABI execution)
-    needs: [call-rust-build-user, call-rust-build-release]
+    needs: [call-rust-build-user, call-rust-build-release, type-check]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -256,7 +290,24 @@ jobs:
         with:
           pattern: ${{ github.sha }}-*
           path: .native-artifacts
+      - uses: actions/setup-python@v5
+        if: needs.type-check.outputs.linux_native_mode == 'reuse'
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        if: needs.type-check.outputs.linux_native_mode == 'reuse'
+        with:
+          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-materialization
+      - name: Verify original GNU bytes into assembly staging with separate origin
+        if: needs.type-check.outputs.linux_native_mode == 'reuse'
+        env:
+          RESOLUTION_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py consume --input ci-materialization --hash "$RESOLUTION_HASH" --pool --destination .native-artifacts
       - name: Assemble the exact candidate manifest without rebuilding Rust
+        env:
+          FARM_CI_CONSUMER_FILE: ${{ needs.type-check.outputs.linux_native_mode == 'reuse' && 'ci-materialization/consumer.json' || '' }}
+          FARM_CI_CONSUMER_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
         run: node scripts/assemble-v2-native-artifacts.mjs .native-artifacts native-assembly.json
       - uses: actions/setup-python@v5
         continue-on-error: true
@@ -341,141 +392,174 @@ jobs:
           python-version: '3.12'
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        if: matrix.settings.abi == 'linux-x64-gnu' && needs.type-check.outputs.linux_native_mode == 'reuse'
+        with:
+          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-materialization
+      - name: Verify and consume unchanged CI GNU bytes before performance sampling
+        if: matrix.settings.abi == 'linux-x64-gnu' && needs.type-check.outputs.linux_native_mode == 'reuse'
+        env:
+          RESOLUTION_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
+        run: python -B scripts/ci-leaf-native.py consume --input ci-materialization --hash "$RESOLUTION_HASH"
       - name: Install Farm correctness browser (outside measured samples)
         run: node node_modules/playwright-chromium/cli.js install --with-deps chromium
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-sass
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-react
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-replace-dirname
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
           path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-vue
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
           path: ./rust-plugins/vue/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-vue-jsx
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
           path: ./rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-auto-import
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
           path: ./rust-plugins/auto-import/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-compress
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
           path: ./rust-plugins/compress/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-dsv
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
           path: ./rust-plugins/dsv/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-dts
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
           path: ./rust-plugins/dts/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-icons
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
           path: ./rust-plugins/icons/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-image
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
           path: ./rust-plugins/image/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-mdx
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
           path: ./rust-plugins/mdx/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-modular-import
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
           path: ./rust-plugins/modular-import/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-react-components
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
           path: ./rust-plugins/react-components/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-strip
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
           path: ./rust-plugins/strip/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-svgr
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
           path: ./rust-plugins/svgr/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-url
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
           path: ./rust-plugins/url/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-virtual
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
           path: ./rust-plugins/virtual/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-wasm
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
           path: ./rust-plugins/wasm/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-worker
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
           path: ./rust-plugins/worker/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-yaml
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
           path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4.1.3
+        if: matrix.settings.abi != 'linux-x64-gnu' || needs.type-check.outputs.linux_native_mode != 'reuse'
         id: download-plugin-tailwindcss
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
@@ -487,7 +571,7 @@ jobs:
       - name: Check out exact base separately
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.base.sha || inputs.release_base }}
+          ref: ${{ github.event.pull_request.base.sha || inputs.release_base || github.event.before }}
           path: .performance-base
           persist-credentials: false
       - name: Prepare compatible exact-base native consumer
@@ -495,7 +579,7 @@ jobs:
           FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
           FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base || github.event.before }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/prepare-performance-base.mjs
       - name: Sample isolated Commerce baseline
@@ -503,7 +587,7 @@ jobs:
           FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
           FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base || github.event.before }}
           FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/performance-report.mjs
       - name: Finalize incomplete performance evidence
@@ -528,8 +612,8 @@ jobs:
 
   performance-summary:
     name: Aggregate informational performance report
-    needs: [performance-report]
-    if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+    needs: [performance-report, type-check]
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -540,6 +624,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/download-artifact@v4
         id: performance-inputs
@@ -559,6 +644,41 @@ jobs:
           path: performance-pr-summary/summary.json
           if-no-files-found: warn
           retention-days: 14
+      - uses: actions/setup-node@v4
+        if: success()
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        if: success()
+        with:
+          python-version: '3.12'
+      - name: Download actual suite-count evidence from this exact run
+        if: success()
+        uses: actions/download-artifact@v4
+        with:
+          pattern: farm-ci-suite-*-${{ github.sha }}-*-${{ github.run_attempt }}
+          path: ci-baseline-inputs/suites
+      - uses: actions/download-artifact@v4
+        if: needs.type-check.outputs.suite_selection_hash != ''
+        with:
+          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-suite-selection
+      - name: Validate complete discovered and executed suite coverage
+        env:
+          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+        if: success()
+        run: node scripts/ci-suite-execution.mjs --collect ci-baseline-inputs/suites ci-execution-ledger/suite-coverage.json
+      - name: Record candidate CI execution baseline (no build-byte authority)
+        if: success()
+        run: python scripts/ci-execution-ledger.py --coverage ci-execution-ledger/suite-coverage.json --output ci-execution-ledger/ledger.json
+      - name: Upload trusted CI execution baseline
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-ci-execution-baseline-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-execution-ledger/ledger.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
@@ -570,6 +690,10 @@ jobs:
 
   type-check:
     name: Type Check & Changesets
+    outputs:
+      linux_native_mode: ${{ steps.ci-leaf.outputs.mode }}
+      linux_resolution_hash: ${{ steps.ci-leaf.outputs.resolution_hash }}
+      suite_selection_hash: ${{ steps.ci-suites.outputs.selection_hash }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -578,6 +702,53 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Query independently verified CI baselines without omitting execution
+        continue-on-error: true
+        run: python scripts/incremental-chain-runtime.py --output chain-plans/ci.json
+      - name: Resolve eligible GNU CI bytes or select an actual rebuild
+        id: ci-leaf
+        continue-on-error: true
+        run: python -B scripts/ci-leaf-native.py resolve --output ci-consumer-materialization
+      - name: Resolve independently accepted full CI suite baseline
+        id: ci-suites
+        continue-on-error: true
+        run: python -B scripts/ci-suite-baseline.py --output ci-suite-selection/selection.json
+      - name: Upload bound current suite selection
+        if: steps.ci-suites.outputs.selection_hash != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-suite-selection/selection.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve actual native execution plan separately from byte provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-native-execution-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-native-execution-plan.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload explicitly bound CI consumer materialization (not a new build)
+        if: steps.ci-leaf.outputs.mode == 'reuse'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-consumer-materialization/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve exact current-chain plan and baseline binding
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-ci-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: chain-plans/ci.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -632,7 +803,7 @@ jobs:
   required-examples-compatibility:
     name: ${{ matrix.context }}
     if: always()
-    needs: [examples-test]
+    needs: [examples-test, incremental-execution-gate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     strategy:
@@ -647,12 +818,13 @@ jobs:
         shell: bash
         env:
           UPSTREAM_RESULT: ${{ needs.examples-test.result }}
-        run: test "$UPSTREAM_RESULT" = success
+          EXECUTION_GATE: ${{ needs.incremental-execution-gate.result }}
+        run: test "$UPSTREAM_RESULT" = success && test "$EXECUTION_GATE" = success
 
   required-typescript-compatibility:
     name: ${{ matrix.context }}
     if: always()
-    needs: [ts-test]
+    needs: [ts-test, incremental-execution-gate]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     strategy:
@@ -667,4 +839,66 @@ jobs:
         shell: bash
         env:
           UPSTREAM_RESULT: ${{ needs.ts-test.result }}
-        run: test "$UPSTREAM_RESULT" = success
+          EXECUTION_GATE: ${{ needs.incremental-execution-gate.result }}
+        run: test "$UPSTREAM_RESULT" = success && test "$EXECUTION_GATE" = success
+
+  incremental-execution-gate:
+    name: Incremental CI execution gate
+    if: always()
+    needs: [type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Require every planned platform and current test chain to finish successfully
+        shell: python
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          MODE: ${{ needs.type-check.outputs.linux_native_mode || 'build' }}
+        run: |
+          import json, os
+          rows=json.loads(os.environ['RESULTS'])
+          expected={'type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
+          if set(rows)!=expected or any(row['result']!='success' for row in rows.values()):
+              raise ValueError('Missing, skipped, cancelled or failed actual CI execution')
+          if os.environ['MODE'] not in ['build','reuse']:
+              raise ValueError('Unknown native execution disposition')
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        if: needs.type-check.outputs.linux_native_mode == 'reuse'
+        with:
+          name: ci-consumer-native-linux-x64-gnu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-materialization
+      - name: Independently recheck the committed resolution and original byte inventory
+        if: needs.type-check.outputs.linux_native_mode == 'reuse'
+        env:
+          RESOLUTION_HASH: ${{ needs.type-check.outputs.linux_resolution_hash }}
+        run: |
+          mkdir gate-native-proof
+          python -B scripts/ci-leaf-native.py consume --input ci-materialization --hash "$RESOLUTION_HASH" --destination gate-native-proof
+      - uses: actions/download-artifact@v4
+        if: needs.type-check.outputs.suite_selection_hash != ''
+        with:
+          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ci-suite-selection
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: farm-ci-suite-*-${{ github.sha }}-*-${{ github.run_attempt }}
+          path: ci-gate-suites
+      - name: Validate actual selected suite files and case counts on every platform
+        env:
+          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+        run: node scripts/ci-suite-execution.mjs --collect ci-gate-suites ci-gate-coverage/coverage.json
+      - name: Verify executed/reused inventory using the tested policy function
+        env:
+          MODE: ${{ needs.type-check.outputs.linux_native_mode || 'build' }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: python -B scripts/ci-leaf-native.py gate --mode "$MODE" --outcomes "$RESULTS"

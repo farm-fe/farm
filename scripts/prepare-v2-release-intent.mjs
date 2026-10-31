@@ -2,11 +2,38 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { digest, requiredWorkflows, requiredCiJobs, performancePolicy } from './v2-auto-release.mjs';
+import { createHash } from 'node:crypto';
+const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 import { rustPublicationOrder } from './release-rust-metadata.mjs';
 import { execFileSync } from 'node:child_process';
 import { npmInventory, cargoInventory, changesetsPublication } from './v2-release-inventory.mjs';
 import { cargoChangesetId, validateCargoPreparation, readCargoArtifact } from './prepare-cargo-version-proposal.mjs';
+// Intent is reviewed version-preparation data. Only the main release workflow's
+// frozen source, verified release baseline and explicit switch authorize writes.
+export const independentReleaseWorkflow = '.github/workflows/incremental-release.yaml';
+export function independentPublicationPolicy() {
+  return {workflowPath: independentReleaseWorkflow, event: 'workflow_dispatch', ref: 'refs/heads/main',
+    publishDefault: false, explicitAuthorizationRequired: true, sourceBinding: 'fixed-main-dispatch-snapshot',
+    chain: 'release', profile: 'release', namespace: 'farm-release-v1',
+    baselineAuthority: 'completed-public-registry-and-tag-release-acceptance', ciBuildBytesAccepted: false};
+}
+const requiredWorkflows = ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow];
+const platforms = ['ubuntu-24.04', 'macos-latest', 'windows-latest'];
+const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
+  ...['Examples Test', 'Typescript Test', 'Commerce Performance'].flatMap(name => platforms.map(platform => `${name} (${platform})`)),
+  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Aggregate informational performance report',
+  'Build independent release candidates', ...platforms.map(platform => `Independent release candidate consumer (${platform})`)];
+export function serializeReleaseIntent(intent) {
+  assert.deepEqual(intent.publication, independentPublicationPolicy(), 'Intent cannot enable publication or select another build chain');
+  assert.equal(intent.seal?.workflowPath, independentReleaseWorkflow, 'Release seal must come from its independent release producer');
+  return JSON.stringify(intent, null, 2) + '\n';
+}
+export function validationDispatches(number, baseSHA) {
+  assert.ok(Number.isSafeInteger(number) && number > 0); assert.match(baseSHA, /^[a-f0-9]{40}$/);
+  return [...['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml'].map(workflow =>
+    ({workflow, inputs: [`release_pr=${number}`, `release_base=${baseSHA}`]})),
+    {workflow: 'incremental-release.yaml', inputs: ['publish=false']}];
+}
 export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   assert.ok(Number.isSafeInteger(pullRequest) && pullRequest > 0, 'Reviewed version PR number is required');
   const compatibility = { farmfe_macro_cache_item: 'published-macro-compat.json', farmfe_macro_plugin: 'published-plugin-macro-compat.json' };
@@ -30,7 +57,7 @@ export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   const abi = fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1];
   return { schemaVersion: 1, preparationMode: changesets ? 'changesets' : 'first-stable', pullRequest, baseBranch: 'main', tag: plan.publication?.releaseIdentity ?? `v${plan.npm.primary.find(pkg => pkg.name === '@farmfe/core').version}`,
     abi, rustCoreVersion: plan.cargo.find(row => row.name === 'farmfe_core').version, candidatePlanSha256: digest(JSON.stringify(plan)), counts: plan.publication?.counts ?? plan.counts,
-    requiredWorkflows: changesets ? requiredWorkflows.filter(file => !file.endsWith('lint-pr-title.yml')) : requiredWorkflows, requiredCiJobs, performanceRequired: performancePolicy.requiredForPublication, seal: { workflowPath: '.github/workflows/ci.yaml' }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
+    requiredWorkflows, requiredCiJobs, performanceRequired: true, publication: independentPublicationPolicy(), seal: { workflowPath: independentReleaseWorkflow }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
     rust, registryVerification: { script, sha256: digest(fs.readFileSync(path.join(root, script), 'utf8').replaceAll('\r\n', '\n')) }, websiteDeployment: false };
 }
 export async function refreshChangesetsVersionPr(root, number) {
@@ -63,7 +90,7 @@ export async function refreshChangesetsVersionPr(root, number) {
       changedFiles: (base, head) => git('diff', '--name-only', base, head).split(/\r?\n/).filter(Boolean),
       readCurrent: file => fs.readFileSync(path.join(root, file), 'utf8') });
   }
-  const allowedBeforeRefresh = new Set(['pnpm-lock.yaml', 'docs/release-evidence/changesets-version-plan.json', 'docs/release-evidence/changesets-preparation.json', 'docs/releases/v2-candidate.json', 'docs/releases/v2-release-intent.json', '.github/workflows/v2-stable-release.yaml', 'scripts/release-fixtures/sdk-consumer/Cargo.toml',
+  const allowedBeforeRefresh = new Set(['pnpm-lock.yaml', 'docs/release-evidence/changesets-version-plan.json', 'docs/release-evidence/changesets-preparation.json', 'docs/releases/v2-candidate.json', 'docs/releases/v2-release-intent.json', 'scripts/release-fixtures/sdk-consumer/Cargo.toml',
     ...baseline.npm.primary.flatMap(row => [row.manifestPath, `${path.dirname(row.manifestPath).replaceAll('\\', '/')}/CHANGELOG.md`]),
     ...baseline.npm.payloads.flatMap(row => [row.manifestPath, `${path.dirname(row.manifestPath).replaceAll('\\', '/')}/CHANGELOG.md`]), ...official.changesets.map(row => `.changeset/${row.id}.md`)]);
   if (cargoRecord) for (const file of [cargoRecordFile, ...cargoFiles]) allowedBeforeRefresh.add(file);
@@ -115,18 +142,16 @@ export async function refreshChangesetsVersionPr(root, number) {
     officialPlanSha256: digest(JSON.stringify(official)), planSha256: digest(JSON.stringify(plan)),
     consumed: official.changesets.map(change => ({ id: change.id, sha256: digest(change.id === cargoChangesetId && cargoRecord ? cargoRecord.changeset : execFileSync('git', ['show', `${pr.base.sha}:.changeset/${change.id}.md`], { cwd: root, encoding: 'utf8' }).replaceAll('\r\n', '\n')) })) };
   write('docs/release-evidence/changesets-preparation.json', record);
-  const intent = createReleaseIntent(root, plan, metadata, number); write('docs/releases/v2-release-intent.json', intent);
-  const workflow = path.join(root, '.github/workflows/v2-stable-release.yaml');
-  const hash = digest(fs.readFileSync(path.join(root, 'docs/releases/v2-release-intent.json'), 'utf8').replaceAll('\r\n', '\n'));
-  fs.writeFileSync(workflow, fs.readFileSync(workflow, 'utf8').replace(/(FARM_RELEASE_INTENT_SHA256: )[a-f0-9]{64}/, `$1${hash}`));
-  const files = ['docs/releases/v2-candidate.json', 'docs/releases/v2-release-intent.json', 'docs/release-evidence/changesets-preparation.json', '.github/workflows/v2-stable-release.yaml', sdkFixture, ...componentFiles];
+  const intent = createReleaseIntent(root, plan, metadata, number);
+  fs.writeFileSync(path.join(root, 'docs/releases/v2-release-intent.json'), serializeReleaseIntent(intent));
+  const files = ['docs/releases/v2-candidate.json', 'docs/releases/v2-release-intent.json', 'docs/release-evidence/changesets-preparation.json', sdkFixture, ...componentFiles];
   git('add', '--', ...files);
-  git('-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '--no-verify', '-m', 'chore: seal version preparation metadata');
+  git('-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '-m', 'chore: seal version preparation metadata');
   git('push', 'origin', 'HEAD:refs/heads/changeset-release/main');
   const head = git('rev-parse', 'HEAD');
   assert.equal(gh('api', `repos/${repository}/pulls/${number}`).head.sha, head, 'Version PR moved concurrently');
-  for (const file of ['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml']) {
-    try { execFileSync('gh', ['workflow', 'run', file, '--repo', repository, '--ref', pr.head.ref, '-f', `release_pr=${number}`, '-f', `release_base=${pr.base.sha}`], { cwd: root, stdio: 'inherit', timeout: 30000 }); }
+  for (const {workflow: file, inputs} of validationDispatches(number, pr.base.sha)) {
+    try { execFileSync('gh', ['workflow', 'run', file, '--repo', repository, '--ref', pr.head.ref, ...inputs.flatMap(value => ['-f', value])], { cwd: root, stdio: 'inherit', timeout: 30000 }); }
     catch (error) { throw new Error(`Explicit validation dispatch failed for ${file}. This version-preparation job requires existing GITHUB_TOKEN actions:write; no new credential is created. ${error.message}`); }
   }
   console.log(JSON.stringify({ sourceHeadSHA: pr.head.sha, validationHeadSHA: head, publication: plan.publication.counts, registryReused: plan.publication.reuseNpm.length }));
@@ -139,7 +164,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const root = fileURLToPath(new URL('../', import.meta.url));
   const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
   const intent = createReleaseIntent(root, plan, JSON.parse(fs.readFileSync(metadataFile)), Number(prNumber));
-  const text = JSON.stringify(intent, null, 2) + '\n';
+  const text = serializeReleaseIntent(intent);
   fs.writeFileSync(destination, text, { flag: 'wx' }); console.log(digest(text.replaceAll('\r\n', '\n')));
   }
 }

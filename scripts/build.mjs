@@ -79,7 +79,7 @@ export function docsExamplePrerequisites(pkg) {
   };
 }
 
-export const buildExamples = async ({ startFrom, example } = {}) => {
+export const buildExamples = async ({ startFrom, example, execute = execa } = {}) => {
   const examples = fs.readdirSync("./examples").sort((a, b) =>
     a.localeCompare(b),
   );
@@ -174,6 +174,7 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
   console.log("Building", examplesToBuild.length, "examples...");
 
   let docsPrepared = false;
+  const executedIds = [];
   for (const example of examplesToBuild) {
     const examplePath = join("./examples", example);
     const manifestPath = join(examplePath, "package.json");
@@ -207,7 +208,7 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
       }
       if (process.env.FARM_EXAMPLE_PREBUILT_ONLY === '1') throw new Error(`Missing current-platform prebuilt native input for ${rustPluginName}; source compilation is disabled in this lane`);
 
-      await execa("npm", ["run", "build"], {
+      await execute("npm", ["run", "build"], {
         cwd: rustPluginPath,
         stdio: isVerbose ? "inherit" : "ignore",
       });
@@ -220,18 +221,20 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
     }
     if (docsPrerequisites.public.length && !docsPrepared) {
       for (const name of docsPrerequisites.public) {
-        await execa("npm", ["run", "build"], { cwd: resolve(CWD, "packages", name) });
+        await execute("npm", ["run", "build"], { cwd: resolve(CWD, "packages", name) });
       }
       docsPrepared = true;
     }
     console.log("Building", examplePath);
 
     if (fs.statSync(examplePath).isDirectory()) {
-      await execa("npm", ["run", "build"], {
+      await execute("npm", ["run", "build"], {
         cwd: examplePath,
       });
+      executedIds.push('examples-build:examples/' + example);
     }
   }
+  return executedIds.sort();
 };
 
 export async function runTaskQueue() {

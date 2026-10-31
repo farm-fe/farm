@@ -81,7 +81,7 @@ def make_observation(cell, status, environment, event, actual_sha, actual_tree):
     """Record execution independently; only the final summary may bind a plan."""
     pr = event.get("pull_request", {})
     identity = {"headSHA": pr.get("head", {}).get("sha") or environment["GITHUB_SHA"],
-                "baseSHA": pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base"),
+                "baseSHA": pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base") or event.get("before"),
                 "testedSHA": actual_sha, "testedTree": actual_tree, "runId": environment["GITHUB_RUN_ID"],
                 "runAttempt": environment["GITHUB_RUN_ATTEMPT"], "repository": environment["GITHUB_REPOSITORY"], "policy": impact.POLICY}
     if actual_sha != environment["GITHUB_SHA"] or not cell or not all(isinstance(value, str) and value for value in identity.values()):

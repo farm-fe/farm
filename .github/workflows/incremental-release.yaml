@@ -1,0 +1,558 @@
+name: Independent incremental release planning and verification
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Authorize registry writes from this fixed main execution
+        type: boolean
+        default: false
+      functional_evidence:
+        description: Exact CI/Unit testedSHA and five workflow run/attempt bindings as JSON (required to publish)
+        type: string
+        default: ''
+      producer_run:
+        description: Completed producer for read-only verification; empty builds this fixed main snapshot
+        type: string
+        default: ''
+      producer_attempt:
+        description: Exact producer attempt
+        type: string
+        default: '1'
+      producer_source:
+        description: Exact 40-character producer source commit
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: farm-independent-release
+  cancel-in-progress: false
+jobs:
+  source:
+    name: Select fixed main source and original release attempt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      producer_attempt: ${{ steps.frozen.outputs.producer_attempt }}
+      reuse: ${{ steps.frozen.outputs.reuse }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Preserve the original archive producer on reruns
+        id: frozen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: python
+        run: |
+          import importlib.util, os
+          from pathlib import Path
+          assert os.environ['GITHUB_WORKFLOW_SHA'] == os.environ['GITHUB_SHA'], 'Workflow/source snapshot differs'
+          spec = importlib.util.spec_from_file_location('functional', 'scripts/incremental-release-functional.py')
+          module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+          attempt = int(os.environ['GITHUB_RUN_ATTEMPT'])
+          original = attempt
+          if os.environ['GITHUB_REF'] == 'refs/heads/main':
+              original = module.original_attempt(module.entry.actions_transport(), int(os.environ['GITHUB_RUN_ID']), os.environ['GITHUB_SHA'], attempt)
+          with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as stream:
+              stream.write('producer_attempt=' + str(original) + '\nreuse=' + ('true' if original < attempt else 'false') + '\n')
+
+  quality:
+    name: Release quality checks
+    needs: [source, plan]
+    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.publish_required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check release Rust formatting
+        run: cargo fmt --check
+      - name: Check release Rust lint
+        run: cargo clippy --locked
+      - name: Check release TS lint
+        run: pnpm exec biome check --no-errors-on-unmatched --files-ignore-unknown=true
+      - name: Check release spelling
+        run: pnpm exec cspell "**" --gitignore
+
+  main-evidence:
+    name: Verify actual fixed-main functional and performance evidence
+    needs: [source, plan, quality]
+    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.publish_required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 130
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Bind completed main CI and Unit and verify three actual performance reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_FUNCTIONAL_EVIDENCE: ${{ inputs.functional_evidence }}
+        run: python -B scripts/incremental-release-functional.py --source "$GITHUB_SHA" --output functional-evidence.json --wait
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: functional-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
+  plan:
+    needs: [source]
+    if: needs.source.outputs.reuse != 'true'
+    name: Calculate independent release build requirements
+    outputs:
+      native_required: ${{ steps.release-plan.outputs.native_required }}
+      native_owners: ${{ steps.release-plan.outputs.native_owners }}
+      publish_required: ${{ steps.release-plan.outputs.publish_required }}
+      plan_hash: ${{ steps.release-plan.outputs.plan_hash }}
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Calculate source-bound plan without publication credentials
+        id: release-plan
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python -B scripts/incremental-release-entry.py plan --source "$SOURCE_SHA" --output release-plan.json
+      - name: Require prepared versions before scheduling release producers
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          plan = json.loads(Path('release-plan.json').read_text(encoding='utf-8'))
+          assert plan['publicationBlocked'] is False and plan['versionRequired'] == [], 'Prepare required versions or retirement approval before release builds'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: independent-release-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-plan.json
+          if-no-files-found: error
+          retention-days: 14
+  no-publication:
+    name: No new release versions selected
+    needs: [source, plan]
+    if: github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.plan.outputs.publish_required == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: independent-release-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: no-publication-plan
+      - name: Verify empty publication scope without advancing a published baseline
+        shell: python
+        env:
+          PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
+        run: |
+          import hashlib, json, os
+          from pathlib import Path
+          plan = json.loads(Path('no-publication-plan/release-plan.json').read_text(encoding='utf-8'))
+          expected = hashlib.sha256(json.dumps({key:value for key,value in plan.items() if key!='planHash'}, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+          assert plan['sourceSHA'] == os.environ['GITHUB_SHA'] and plan['chain'] == 'release' and plan['profile'] == 'release'
+          assert plan['planHash'] == expected == os.environ['PLAN_HASH']
+          assert plan['publish'] == [] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
+          print(json.dumps({'status':'no-publication-required','sourceSHA':plan['sourceSHA'],'publicationExecuted':False,'baselineAdvanced':False}))
+
+  verify:
+    name: Verify existing independent release evidence without writing
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.producer_run != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Validate exact producer identity before downloading data
+        env:
+          PRODUCER_RUN: ${{ inputs.producer_run }}
+          PRODUCER_ATTEMPT: ${{ inputs.producer_attempt }}
+          PRODUCER_SOURCE: ${{ inputs.producer_source }}
+        shell: python
+        run: |
+          import os, re
+          for key in ['PRODUCER_RUN', 'PRODUCER_ATTEMPT']:
+              if not re.fullmatch(r'[1-9][0-9]*', os.environ[key]):
+                  raise ValueError('Exact numeric producer identity required')
+          if not re.fullmatch(r'[a-f0-9]{40}', os.environ['PRODUCER_SOURCE']):
+              raise ValueError('Exact producer commit required')
+      # Data is never executed. The verifier independently checks the producer
+      # workflow, run, attempt, job, original bytes and public acceptance.
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.producer_run }}
+          name: farm-release-candidates-${{ inputs.producer_source }}-${{ inputs.producer_attempt }}
+          path: release-input
+      - name: Verify complete release chain evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_PRODUCER_RUN: ${{ inputs.producer_run }}
+          EXPECTED_PRODUCER_ATTEMPT: ${{ inputs.producer_attempt }}
+          EXPECTED_PRODUCER_SOURCE: ${{ inputs.producer_source }}
+        run: python -B scripts/incremental-release-entry.py verify --manifest release-input/manifest.json --archives release-input/archives
+  release-native-primary:
+    needs: [source, plan]
+    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.publish_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && inputs.producer_run == ''
+    uses: ./.github/workflows/rust-build-user.yaml
+    with:
+      profile: release
+      native_owners: ${{ needs.plan.outputs.native_owners }}
+  release-native-extra:
+    needs: [source, plan]
+    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.publish_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && inputs.producer_run == ''
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      profile: release
+      native_owners: ${{ needs.plan.outputs.native_owners }}
+  producer:
+    name: Build independent release candidates
+    needs: [source, plan, main-evidence, release-native-primary, release-native-extra]
+    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.publish_required == 'true' && needs.source.outputs.reuse != 'true' && needs.main-evidence.result == 'success' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      actions: read
+    env:
+      FARM_BUILD_PROFILE: release
+      CARGO_BUILD_JOBS: '1'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        id: release-python
+        with:
+          python-version: '3.13'
+      - uses: pnpm/action-setup@v4
+        id: pnpm
+        with:
+          version: 9.4.0
+          run_install: false
+      - run: node scripts/audit-v2-source-licenses.mjs
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: independent-release-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-work
+      - name: Verify the exact source-bound selection received from plan
+        shell: python
+        env:
+          PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
+          NATIVE_OWNERS: ${{ needs.plan.outputs.native_owners }}
+        run: |
+          import json, os, re
+          from pathlib import Path
+          plan = json.loads(Path('release-work/release-plan.json').read_text(encoding='utf-8'))
+          assert plan['sourceSHA'] == os.environ['GITHUB_SHA'] and plan['planHash'] == os.environ['PLAN_HASH']
+          assert re.fullmatch('[a-f0-9]{64}', plan['planHash']) and plan['chain'] == 'release' and plan['profile'] == 'release'
+          assert plan['publish'] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
+          owners = json.loads(os.environ['NATIVE_OWNERS'])
+          assert isinstance(owners, list) and len(owners) == len(set(owners)) and all(isinstance(owner, str) for owner in owners)
+      - uses: actions/download-artifact@v4
+        if: needs.plan.outputs.native_required == 'true'
+        with:
+          pattern: ${{ github.sha }}-*
+          path: release-native
+      - name: Prepare only the release delta and restore published release prerequisites
+        env:
+          FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
+          FARM_RELEASE_PYTHON: ${{ steps.release-python.outputs.python-path }}
+        run: node scripts/incremental-release-producer.mjs prepare release-work/release-plan.json release-native release-work/native-assembly.json release-work/candidate-plan.json
+      - name: Read only this release run artifact index
+        run: gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" > release-work/artifact-index.json
+      - name: Pack independently built release npm candidates
+        env:
+          FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
+        run: node scripts/incremental-release-producer.mjs pack release-work/native-assembly.json release-work/artifact-index.json release-work/npm release-work/candidate-plan.json
+      - run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Fetch and package selected SDK changes with original release crate reuse
+        env:
+          FARM_RELEASE_CANDIDATE_PLAN: release-work/candidate-plan.json
+        run: |
+          cargo +nightly-2026-04-10 fetch --locked
+          node scripts/prepare-sdk-frozen-lock.mjs fetch-recipe release-work/public-fetch
+          cargo +nightly-2026-04-10 fetch --manifest-path release-work/public-fetch/Cargo.toml
+          node scripts/seal-v2-rust-packages.mjs release-work/rust
+          node scripts/sdk-candidate-registry.mjs release-work/rust release-work/sdk
+          node scripts/prepare-sdk-frozen-lock.mjs bind-candidate release-work/sdk
+      - name: Independently test the candidate SDK without publishing
+        env:
+          FARM_SDK_FROZEN_LOCK: '1'
+          FARM_RELEASE_CANDIDATE_PLAN: release-work/candidate-plan.json
+        run: |
+          export FARM_SDK_WINDOW_END="$(node -p 'new Date(Date.now()+90*60*1000).toISOString()')"
+          node scripts/run-sdk-consumer.mjs release-work/sdk
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-functional
+      - name: Load verified functional bindings as data
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          bindings = json.loads(Path('release-functional/functional-evidence.json').read_text(encoding='utf-8'))
+          with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as stream:
+              stream.write('FARM_FUNCTIONAL_EVIDENCE=' + json.dumps(bindings, separators=(',', ':')) + '\n')
+      - name: Seal the original release archives and exact source manifest
+        env:
+          FARM_RELEASE_CANDIDATE_PLAN: release-work/candidate-plan.json
+        run: |
+          node scripts/seal-sdk-consumer.mjs release-work/sdk/sdk-consumer.json release-work/sdk-portable
+          node scripts/compose-v2-release-seal.mjs release-work/npm release-work/sdk-portable release-candidate
+          node scripts/incremental-release-producer.mjs manifest release-candidate release-work/release-plan.json
+          python -B scripts/incremental-release-record.py build --candidate release-candidate --output release-build-proof/ledger.json
+      - name: Upload independent release seal
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-release-seal-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-build-proof/ledger.json
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: farm-release-candidates-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-candidate/
+          if-no-files-found: error
+          retention-days: 90
+  candidate-consumers:
+    name: Independent release candidate consumer (${{ matrix.os }})
+    needs: [source, producer]
+    if: always() && needs.source.result == 'success' && (needs.producer.result == 'success' || needs.source.outputs.reuse == 'true')
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          path: release-candidate
+      - run: node scripts/verify-v2-npm-consumer.mjs release-candidate candidate-results
+      - name: Upload independent release candidate acceptance
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-release-candidate-consumer-${{ github.sha }}-${{ matrix.os }}-${{ github.run_attempt }}
+          path: candidate-results/result.json
+          if-no-files-found: error
+          retention-days: 90
+  publisher:
+    name: Publish exact independent release archives under durable lock
+    needs: [source, producer, candidate-consumers]
+    if: always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == true && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && (needs.producer.result == 'success' || needs.source.outputs.reuse == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          path: release-candidate
+      - name: Acquire exact source lock, preflight all packages and upload originals
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          FARM_EXPLICIT_PUBLICATION: 'true'
+        run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
+  public-consumers:
+    name: Independent public registry consumer (${{ matrix.os }})
+    needs: [source, publisher]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          path: release-candidate
+      - run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Install public originals with no workspace or publish credentials
+        env:
+          FARM_RELEASE_CANDIDATE_DIRECTORY: ${{ github.workspace }}/release-candidate
+        run: node scripts/verify-published-v2-consumers.mjs
+      - name: Record actual consumer attempt
+        shell: python
+        env:
+          PUBLIC_PLATFORM: ${{ matrix.os }}
+        run: |
+          import hashlib, json, os
+          from pathlib import Path
+          manifest = json.loads(Path('release-candidate/manifest.json').read_text(encoding='utf-8'))
+          attempt = int(os.environ['GITHUB_RUN_ATTEMPT'])
+          report = Path('release-candidate/public-consumer/attempt-' + str(attempt) + '/result.json')
+          result = json.loads(report.read_text(encoding='utf-8'))
+          assert result.get('status') == 'passed' and result.get('cleanupConfirmed') is True
+          result['publicationBinding'] = {'manifestHash': hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
+            'sourceSHA': manifest['sourceSHA'], 'sourceTree': manifest['sourceTree'], 'producerRunId': manifest['producerRunId'],
+            'producerAttempt': manifest['producerAttempt'], 'consumerRunId': int(os.environ['GITHUB_RUN_ID']),
+            'consumerAttempt': attempt, 'platform': os.environ['PUBLIC_PLATFORM']}
+          report.write_text(json.dumps(result, sort_keys=True) + '\n', encoding='utf-8')
+      - name: Upload independent public consumer report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-public-${{ matrix.os }}-${{ github.run_attempt }}
+          path: release-candidate/public-consumer/attempt-${{ github.run_attempt }}/result.json
+          if-no-files-found: error
+          retention-days: 90
+  public-proof:
+    name: Verify independent release public consumers
+    needs: [source, public-consumers]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          path: release-candidate
+      - name: Select each successful OS report independently across attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -B scripts/incremental-release-publish.py collect-public --candidate release-candidate --reports release-public-results
+      - name: Read back every registry checksum and stable tag after real consumers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -B scripts/incremental-release-record.py public --candidate release-candidate --reports release-public-results --output release-public-proof/ledger.json
+          python -B scripts/incremental-release-publish.py bind-public-proof --candidate release-candidate --reports release-public-results --proof release-public-proof/ledger.json
+      - name: Upload independent release public acceptance
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-release-public-acceptance-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-public-proof/ledger.json
+          if-no-files-found: error
+          retention-days: 90
+  finalize:
+    name: Finalize exact independent release and durable baseline
+    needs: [source, public-proof]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        with:
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          path: release-candidate
+      - name: Claim explicit handoff, verify public proof, confirm Release then advance baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_EXPLICIT_PUBLICATION: 'true'
+        run: python -B scripts/incremental-release-publish.py finalize --candidate release-candidate
+# Publication never invokes the legacy CI-candidate publisher. Read-only plans
+# and dry runs cannot authorize writes. Later-baseline selection and original
+# recovery keeps the original producer archives; no rerun rebuild supplies recovery bytes.

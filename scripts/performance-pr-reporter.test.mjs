@@ -20,6 +20,16 @@ test('strict valid envelope retains per-platform measurements and merge revision
   assert.equal(body.split(marker).length, 2);
   assert.match(body, /linux \/ x64/); assert.match(body, /100.0 ms/);
 });
+test('main measurement schema is separate from PR comment authority',async()=>{
+ const value={...fixture(),event:'push',prNumber:null};assert.equal(validateSummary(JSON.stringify(value)).prNumber,null);
+ assert.throws(()=>verifyIdentity(value,{...run,event:'push'},pr,1));
+ let requests=0;
+ const result=await report({token:'test',repository:'farm-fe/farm',event:{workflow_run:{id:2},repository:{id:1}},fetcher:async()=>{
+  requests++;return Response.json({...run,event:'push'});
+ }});
+ assert.match(result.skipped,/Only PR/);assert.equal(requests,1);
+ assert.throws(()=>validateSummary(JSON.stringify({...value,prNumber:3})));
+});
 test('rejects unknown fields, unsafe text, excess payload, invalid numbers and duplicate platforms', () => {
   const cases = [v => { v.extra = 1; }, v => { v.reports[0].metadata.os = '<script>'; }, v => { v.reports[0].cells[0] = { ...cell, medianMs: -1 }; }, v => { v.reports.push(v.reports[0]); }, v => { v.reports[0].comparison.mode = 'trusted'; }];
   for (const mutate of cases) { const v = fixture(); mutate(v); assert.throws(() => validateSummary(JSON.stringify(v))); }

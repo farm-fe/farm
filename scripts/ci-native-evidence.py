@@ -176,10 +176,10 @@ class GitHubEvidenceAdapter:
 
 def capture_source(products_file, output):
     """Source ledger for the actual successful producer, not a reuse grant."""
-    products = json.loads(Path(products_file).read_text())
+    products = json.loads(Path(products_file).read_text(encoding="utf-8"))
     commit = os.environ["GITHUB_SHA"]
     owners = sorted({"npm:" + row["owner"] for row in products["records"]})
-    policy_files = sorted(set(impact.BUILD_POLICY + ["scripts/ci-native-capture.mjs", "scripts/ci-native-proof.py", "scripts/ci-native-evidence.py", ".github/workflows/ci.yaml", ".github/workflows/ci-primary-platform.yaml", ".github/workflows/rust-build-user.yaml", ".github/workflows/rust-build-release.yaml"]))
+    policy_files = sorted(set(impact.BUILD_POLICY + ["scripts/ci-native-capture.mjs", "scripts/ci-native-proof.py", "scripts/ci-native-evidence.py", "scripts/ci-leaf-native.py", ".github/workflows/ci.yaml", ".github/workflows/ci-primary-platform.yaml", ".github/workflows/rust-build-user.yaml", ".github/workflows/rust-build-release.yaml"]))
     expected = {"owners": owners, "policyFiles": policy_files, "workflowPath": ".github/workflows/ci.yaml"}
     source = committed_source(commit, expected)
     record = {"schemaVersion": 1, "kind": "native-source-shadow-ledger", "source": source, "owners": owners, "policyFiles": policy_files,
