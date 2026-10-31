@@ -21,40 +21,44 @@ def validate_cells(plan, receipts, *, trusted_inventory, expected_identity, requ
     A reusable workflow's coarse needs.result cannot provide this evidence.
     """
     if not isinstance(plan, dict) or not isinstance(receipts, list) or not isinstance(expected_identity, dict):
-        raise ValueError("Typed plan, receipts and external run identity required")
+        raise receipt.BindingError("plan-shape")
     if not all(isinstance(row, dict) and isinstance(row.get("cell"), str) and row["cell"] for row in receipts):
-        raise ValueError("Receipt cell identity missing")
+        raise receipt.BindingError("receipt-inventory-mismatch")
     payload = {key: value for key, value in plan.items() if key != "planHash"}
     actual_hash = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
     if actual_hash != plan.get("planHash"):
-        raise ValueError("Plan digest differs")
+        raise receipt.BindingError("plan-digest")
     if not isinstance(trusted_inventory, (list, tuple)) or not trusted_inventory or not all(isinstance(cell, str) and cell for cell in trusted_inventory) or len(trusted_inventory) != len(set(trusted_inventory)):
-        raise ValueError("Nonempty reviewed matrix inventory required")
+        raise receipt.BindingError("matrix-inventory-mismatch")
     identity = ["headSHA", "baseSHA", "testedSHA", "testedTree", "planHash", "runId", "runAttempt", "policy", "repository"]
     for key in identity:
         value = plan.get(key)
         if not isinstance(value, str) or not value:
-            raise ValueError("Required plan identity missing: " + key)
+            raise receipt.BindingError("invalid-identity", key)
         if key.endswith("SHA") or key == "testedTree":
             if not re.fullmatch(r"[a-f0-9]{40}", value):
-                raise ValueError("Invalid Git identity: " + key)
+                raise receipt.BindingError("invalid-identity", key)
         if key in ["runId", "runAttempt"] and not re.fullmatch(r"[1-9][0-9]*", value):
-            raise ValueError("Invalid run attempt identity")
+            raise receipt.BindingError("invalid-identity", key)
         if value != expected_identity.get(key):
-            raise ValueError("External run identity differs: " + key)
+            raise receipt.BindingError("external-identity-mismatch", key)
     wanted = plan.get("executionCells")
     if not isinstance(wanted, list) or not wanted or not all(isinstance(cell, str) and cell for cell in wanted) or len(wanted) != len(set(wanted)) or set(wanted) != set(trusted_inventory):
-        raise ValueError("Plan matrix differs from reviewed policy")
+        raise receipt.BindingError("matrix-inventory-mismatch")
     found = [row["cell"] for row in receipts]
     if len(found) != len(set(found)) or set(found) != set(wanted):
-        raise ValueError("Missing, duplicate or unexpected matrix cell")
-    for receipt in receipts:
+        error = receipt.BindingError("receipt-inventory-mismatch")
+        error.counts = {"missingCount": len(set(wanted) - set(found)), "unexpectedCount": len(set(found) - set(wanted)), "duplicateCount": len(found) - len(set(found))}
+        raise error
+    for row in receipts:
         for key in identity:
-            if key not in receipt or receipt[key] != plan[key]:
-                raise ValueError("Cell identity differs: " + key)
+            if key not in row or row[key] != plan[key]:
+                error = receipt.BindingError("cell-identity-mismatch", key); error.cell = row["cell"]
+                raise error
         allowed = ["executed-success"] if require_success else ["executed-success", "executed-failure", "executed-cancelled"]
-        if receipt.get("status") not in allowed or receipt.get("acceptanceInherited") is not False:
-            raise ValueError("Acceptance was skipped, cancelled, failed or inherited")
+        if row.get("status") not in allowed or row.get("acceptanceInherited") is not False:
+            error = receipt.BindingError("cell-outcome-rejected"); error.cell = row["cell"]
+            raise error
     return True
 
 

@@ -24,6 +24,16 @@ def fixture():
 
 
 class PlannerContracts(unittest.TestCase):
+    def test_shared_runtime_requests_all_examples_instead_of_a_partial_dependency_list(self):
+        for directory in ["core", "cli", "runtime", "runtime-plugin-hmr", "runtime-plugin-import-meta"]:
+            files = fixture()
+            files["packages/" + directory + "/package.json"] = json.dumps({"name": "@farmfe/" + directory}).encode()
+            changed = "packages/" + directory + "/src/index.ts"; files[changed] = b'export const shared = true'
+            plan = impact.plan_changes(files, files, [{"status": "M", "paths": [changed]}])
+            self.assertIn("examples", plan["proposedSuites"])
+            self.assertEqual(plan["proposedExampleSelection"], {"mode": "all", "directories": [], "executionEnabled": False})
+            self.assertEqual(plan["proposedExamples"], [])
+
     def test_real_example_name_collision_retains_verified_full_execution_identity(self):
         files = fixture()
         for directory in ["electron", "public-path", "react"]:

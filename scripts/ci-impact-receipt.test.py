@@ -17,6 +17,17 @@ summary = importlib.util.module_from_spec(summary_spec); summary_spec.loader.exe
 
 
 class ReceiptContracts(unittest.TestCase):
+    def test_matrix_missing_result_reports_counts_without_accepting_skipped_cells(self):
+        plan, _ = self.fixture()
+        with self.assertRaises(summary.receipt.BindingError) as failure:
+            summary.validate_cells(plan, [], trusted_inventory=plan["executionCells"], expected_identity=dict(plan), require_success=False)
+        self.assertEqual(failure.exception.code, "receipt-inventory-mismatch")
+        self.assertEqual(failure.exception.counts, {"missingCount": 1, "unexpectedCount": 0, "duplicateCount": 0})
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            detail = summary.receipt.report_error("validate-inventory", failure.exception)
+        self.assertEqual(detail["missingCount"], 1)
+
     def test_binding_diagnostic_is_a_finite_reason_and_field_without_values(self):
         plan, env = self.fixture()
         environment = {**env, "GITHUB_SHA": "c" * 40, "GITHUB_REPOSITORY": "farm-fe/farm", "GITHUB_WORKFLOW_REF": "farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge"}

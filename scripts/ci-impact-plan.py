@@ -268,14 +268,17 @@ def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_tes
             suites.add("examples")
         if "docs" in directory or directory == "website":
             suites.add("docs")
-        if directory in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr"]:
+        if directory in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr", "packages/runtime-plugin-import-meta"]:
             suites.update(["examples", "docs", "performance"])
     if any(nodes[name]["kind"] == "cargo" for name in product_closure):
         suites.add("native")
     if products:
         suites.update(["seal", "consumers"])
+    all_examples = full or any(nodes[name]["directory"] in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr", "packages/runtime-plugin-import-meta"] for name in product_closure + test_closure)
+    examples = [] if all_examples else sorted(nodes[name]["directory"] for name in test_closure if nodes[name]["directory"].startswith("examples/"))
+    example_selection = {"mode": "all" if all_examples else "selected" if "examples" in suites else "none", "directories": examples, "executionEnabled": False}
     return {"fullRequired": full, "reasons": reasons, "productNodes": product_closure, "testNodes": test_closure,
-            "proposedSuites": ALL if full else sorted(suites), "proposedExamples": sorted(nodes[name]["directory"] for name in test_closure if nodes[name]["directory"].startswith("examples/")),
+            "proposedSuites": ALL if full else sorted(suites), "proposedExamples": examples, "proposedExampleSelection": example_selection,
             "graph": {name: {key: sorted(value) if isinstance(value, set) else value for key, value in node.items() if key != "data"} for name, node in sorted(nodes.items())}}
 
 
@@ -332,6 +335,7 @@ def make_plan(base, head, tested, scope="e2e", release_candidate=True):
     tested_changes = changed_paths(head, tested)
     plan = plan_changes(base_files, head_files, changes + tested_changes, extra_snapshots=[base_tip_files, tested_files])
     plan["proposedDag"] = proposed_dag(plan["proposedSuites"], plan["proposedExamples"])
+    plan["proposedDag"]["exampleSelection"] = plan["proposedExampleSelection"]
     plan.update({"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False,
                  "baseSHA": base, "mergeBaseSHA": bases[0], "headSHA": head, "testedSHA": tested,
                  "testedTree": git("rev-parse", tested + "^{tree}").decode().strip(), "changes": changes, "testedMergeChanges": tested_changes,
@@ -364,7 +368,8 @@ def conservative_plan(base, head, tested, scope, candidate, error, environment, 
               "reasons": [{"reason": "planning-failed", "errorClass": type(error).__name__ if type(error).__name__ in classes else "unknown"}],
               "baseSHA": base, "headSHA": head, "testedSHA": tested, "testedTree": tree,
               "runId": environment["GITHUB_RUN_ID"], "runAttempt": environment["GITHUB_RUN_ATTEMPT"], "repository": environment["GITHUB_REPOSITORY"],
-              "executionScope": scope, "executionCells": execution_cells(scope, candidate), "proposedSuites": ALL, "executedSuites": ALL, "producerTrust": "not-enabled"}
+              "executionScope": scope, "executionCells": execution_cells(scope, candidate), "proposedSuites": ALL, "executedSuites": ALL, "producerTrust": "not-enabled",
+              "proposedExampleSelection": {"mode": "all", "directories": [], "executionEnabled": False}}
     result["planHash"] = digest(result)
     return result
 

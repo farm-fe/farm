@@ -148,3 +148,43 @@ and keeps the complete business-2048 workload. Those final barriers are delibera
 conservative; this change only starts platform functional tests sooner. It neither
 omits tests nor enables cross-run reuse. Actual check names, execution timing and
 unchanged final gate behavior must be confirmed in CI before claiming a speedup.
+
+## Suite inventory before selective execution
+
+`ci-suite-inventory.mjs` records version 1 file discovery from bounded committed
+Git blobs. It does not import Vitest configuration or execute project code. The
+reviewed Vitest 2.0.4 includes/default exclusions and runner recipes are fingerprinted;
+changes make discovery incomplete until reviewed. The shadow plan job uploads the
+inventory separately. Every existing TS, Examples and template command still runs
+in full.
+
+The inventory separates Vitest spec files and their directory-based owners,
+Examples builds, explicit/default browser E2E, and eight create-farm templates.
+Excluded entries retain reasons. Runtime prerequisites include import-meta as well
+as runtime and HMR; native directory-name inference and dynamic Docs dependencies
+are recorded without claiming a complete dependency proof. Duplicate npm names
+force full selection rather than merging owners.
+Examples directories come from the complete tree metadata, before relevant blobs
+are filtered, so README-only directories retain explicit exclusion records.
+Relevant symlinks/submodules, NFC spelling changes, file or directory case
+collisions and changing/inconsistent commit/tree identity are rejected.
+
+`fileEnumerationComplete` only describes file discovery under the reviewed
+configuration. `ownerMappingComplete` is false for ambiguous/missing owners or
+build mappings; `dependencyMappingComplete` remains false until dynamic closures
+are proved. Their combined `discoveryComplete` therefore remains false. Full-set
+coverage contracts may still examine discovered files, but this is not selective
+execution or a complete dependency proof.
+
+Planner proposals now distinguish all/selected/none Examples. All mode intentionally
+has no partial directory list; consumers must enumerate the complete inventory.
+Core, CLI and all runtime packages request all Examples, including import-meta.
+Unknown inputs and conservative planner fallback remain all mode.
+
+Coverage contracts require a nonempty discovered selection, exactly one terminal
+result per selected item, matching inventory/plan digests, no skipped/failing rows,
+and positive actual case counts for TS/browser/template tests. Existing
+`--passWithNoTests` and an empty browser discovery are not coverage evidence.
+These are data contracts only: actual runner reporters, authenticated result
+binding and impact authorization are not connected. `selectionReady` and
+`executionEnabled` remain false; no skip/reuse or publication permission is granted.

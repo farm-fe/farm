@@ -53,6 +53,18 @@ jobs:
           path: impact-plan/plan.json
           if-no-files-found: error
           retention-days: 14
+      - name: Discover suite files without selecting or executing them
+        continue-on-error: true
+        run: node scripts/ci-suite-inventory.mjs --output suite-inventory/inventory.json
+      - name: Preserve discovery-only suite inventory
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: suite-inventory-${{ github.sha }}-${{ github.run_attempt }}
+          path: suite-inventory/inventory.json
+          if-no-files-found: warn
+          retention-days: 14
 
   impact-summary:
     name: Incremental CI shadow summary
@@ -111,6 +123,7 @@ jobs:
         run: pnpm exec cspell "**" --gitignore
       - name: Check native routing and container entry contracts without compiling
         run: |
+          node --test scripts/native-artifact-inventory.test.mjs
           node scripts/test-native-container-node.cjs
           node scripts/test-native-artifact-flow.cjs
       - name: Check release source and failure paths without publishing
@@ -120,7 +133,7 @@ jobs:
           scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
-          scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs
+          scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs scripts/ci-suite-inventory.test.mjs
       - name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true

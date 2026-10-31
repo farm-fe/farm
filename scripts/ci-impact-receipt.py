@@ -13,7 +13,7 @@ spec = importlib.util.spec_from_file_location("impact", Path(__file__).with_name
 impact = importlib.util.module_from_spec(spec); spec.loader.exec_module(impact)
 
 IDENTITY_FIELDS = ["headSHA", "baseSHA", "testedSHA", "testedTree", "runId", "runAttempt", "policy", "repository"]
-BINDING_CODES = ["observation-shape", "observation-digest", "identity-mismatch", "observation-authority", "workflow-missing", "plan-digest", "plan-policy", "unexpected-cell", "checkout-mismatch", "attempt-mismatch", "status-unavailable"]
+BINDING_CODES = ["observation-shape", "observation-digest", "identity-mismatch", "observation-authority", "workflow-missing", "plan-digest", "plan-policy", "unexpected-cell", "checkout-mismatch", "attempt-mismatch", "status-unavailable", "plan-shape", "invalid-identity", "external-identity-mismatch", "matrix-inventory-mismatch", "receipt-inventory-mismatch", "cell-identity-mismatch", "cell-outcome-rejected"]
 
 
 class BindingError(ValueError):
@@ -21,6 +21,7 @@ class BindingError(ValueError):
         self.code = code if code in BINDING_CODES else "validation-failed"
         self.field = field if field in IDENTITY_FIELDS else None
         self.cell = None
+        self.counts = {}
         super().__init__(self.code)
 
 
@@ -42,7 +43,7 @@ def safe_error_fields(source):
     result = {key: source[key] if source.get(key) in values else "unknown" for key, values in allowed.items() if key in source}
     if source.get("identityField") in IDENTITY_FIELDS:
         result["identityField"] = source["identityField"]
-    for key in ["start", "end", "line", "column", "errno", "windowsError", "returnCode"]:
+    for key in ["start", "end", "line", "column", "errno", "windowsError", "returnCode", "missingCount", "unexpectedCount", "duplicateCount"]:
         value = source.get(key)
         if type(value) is int and abs(value) <= 2 ** 53:
             result[key] = value
@@ -55,7 +56,7 @@ def report_error(stage, error):
     """Log bounded failure metadata without event text, bytes or environment."""
     detail = {**safe_context(os.environ), "stage": stage, "class": type(error).__name__, "code": "operation-failed"}
     if isinstance(error, BindingError):
-        detail.update({"code": error.code, "identityField": error.field})
+        detail.update({"code": error.code, "identityField": error.field, **error.counts})
     elif isinstance(error, UnicodeDecodeError):
         reasons = ["invalid start byte", "invalid continuation byte", "unexpected end of data", "character maps to <undefined>"]
         detail.update({"code": "invalid-text-encoding", "encoding": error.encoding, "reason": error.reason if error.reason in reasons else "decode failed", "start": error.start, "end": error.end})

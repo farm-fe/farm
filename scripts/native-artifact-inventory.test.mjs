@@ -4,8 +4,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { nativeArtifactInventory, nativeBuildSupport } from './native-artifact-inventory.mjs';
+import { nativeArtifactInventory, nativeBuildSupport, nativeWorkflowPlatforms } from './native-artifact-inventory.mjs';
 import { assembleNativeArtifacts } from './assemble-v2-native-artifacts.mjs';
+
+test('native support follows all and individual JSON matrix branches without losing primary ABIs', () => {
+  const source = fs.readFileSync(new URL('../.github/workflows/rust-build-user.yaml', import.meta.url), 'utf8');
+  assert.deepEqual(nativeWorkflowPlatforms(source).sort(), ['darwin-arm64', 'linux-x64-gnu', 'win32-x64-msvc']);
+  assert.throws(() => nativeWorkflowPlatforms(source.replace("inputs.platform == 'linux-x64-gnu'", "inputs.platform == 'unknown'")), /individual branch/);
+  assert.throws(() => nativeWorkflowPlatforms(source.replace("inputs.platform == 'all'", "inputs.platform == 'unknown'")), /complete support/);
+  assert.throws(() => nativeWorkflowPlatforms(source.replace(" || '[]'", " || 'unexpected'")), /expression/);
+  const start = source.indexOf("inputs.platform == 'linux-x64-gnu'");
+  const changed = source.slice(0, start) + source.slice(start).replace('x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu');
+  assert.throws(() => nativeWorkflowPlatforms(changed), /differs from complete support/);
+  assert.deepEqual(nativeWorkflowPlatforms('settings:\n  - os: ubuntu-24.04\n    abi: linux-x64-musl\n'), ['linux-x64-musl']);
+});
 test('current manifests retain nine ABIs, Tailwind and declared Docs targets', () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
   const plan = nativeArtifactInventory(root), support = nativeBuildSupport(root);
