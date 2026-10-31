@@ -125,7 +125,12 @@ class Contracts(unittest.TestCase):
 
     def test_uploaded_later_baseline_is_not_trusted_as_success(self):
         self.manifest["baseline"] = "f" * 64
-        with self.assertRaisesRegex(PermissionError, "only in Actions"): self.verify()
+        original = self.transport.get.side_effect
+        self.transport.get.side_effect = lambda route: [] if route == "/git/matching-refs/heads/farm-release-state" else original(route)
+        with mock.patch.object(entry.evidence.registry_module, "RegistryReadOnly") as registry:
+            with self.assertRaisesRegex(ValueError, "Completed baseline record missing"):
+                self.verify()
+            registry.return_value.verify.assert_not_called()
 
     def test_frozen_main_policy_survives_descendant_policy_change_but_not_unrelated_history(self):
         original=self.transport.get.side_effect;later={**self.source,'sha':'c'*40,'policyHash':'later-approved-policy'}
