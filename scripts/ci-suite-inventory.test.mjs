@@ -1,9 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { discoverSuiteInventory, makeSuiteExecutionPlan, validateSuiteExecution, canonicalSuiteFile, runtimePrerequisites, suitePolicy, readGitSuiteFiles } from './ci-suite-inventory.mjs';
 
 const hash = text => crypto.createHash('sha256').update(text).digest('hex');
+
+test('explicit ArcGIS preview exclusion is pinned to actual source and carried in its plan', () => {
+  const {files, policy} = fixture(), file = 'examples/arcgis/e2e.spec.mjs';
+  files[file] = fs.readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+  files['examples/arcgis/package.json'] = '{"name":"arcgis","scripts":{"build":"farm build"}}';
+  const actual = discoverSuiteInventory(files, policy);
+  const plan = makeSuiteExecutionPlan(actual, 'examples-browser');
+  assert.deepEqual(plan.excludedCases, [{id: 'examples-browser:examples/arcgis', name: 'run preview',
+    reason: 'Existing explicit preview exclusion; run start remains required.', sourceDigest: suitePolicy.browserCaseExclusions[file].sourceDigest}]);
+  files[file] += '\n// changed declaration\n';
+  assert.throws(() => discoverSuiteInventory(files, policy), /exclusion source changed/);
+});
 
 test('committed discovery verifies bounded Git blobs and rejects wrong types or invalid UTF8', () => {
   const oid = 'e'.repeat(40), body = Buffer.from('{"title":"中文 🚀"}');

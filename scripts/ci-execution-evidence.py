@@ -115,6 +115,8 @@ def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, 
         upload_binding(job, step, meta)
         check(actual["run"] == expected_run and actual["sourceSHA"] == source["sha"] and actual["sourceTree"] == source["tree"], "Actual semantic receipt source differs")
         expected = discovered["plans"][cell["kind"]]
+        if cell['kind'] == 'examples-browser':
+            check(actual.get('excludedCases', []) == expected.get('excludedCases', []), 'Runner browser exclusions differ from independent source discovery')
         check(actual.get("inventoryHash") == discovered["inventoryHash"] and actual.get("planHash") == expected["planHash"], "Runner inventory or plan hash differs from independent source discovery")
         check(actual.get("selectedIds") == expected["ids"] and actual.get("executedIds") == expected["ids"], "Runner suite selection differs from independent source discovery")
         check(actual["selectedIds"] and set(actual["selectedIds"]) == set(actual["executedIds"])

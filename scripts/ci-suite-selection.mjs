@@ -4,7 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readGitSuiteFiles, discoverSuiteInventory, suitePolicy, makeSuiteExecutionPlan } from './ci-suite-inventory.mjs';
+import { readGitSuiteFiles, discoverSuiteInventory, suitePolicy, makeSuiteExecutionPlan, suiteCaseExclusions } from './ci-suite-inventory.mjs';
 import { suiteImpact } from './ci-suite-impact.mjs';
 
 const digest = value => crypto.createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(value)).digest('hex');
@@ -40,6 +40,7 @@ export function executionPlan(inventory, kind, directory = root, env = process.e
   const selected = value.decision.sets[kind]; assert.ok(selected, 'Unknown suite kind');
   const result = { schemaVersion: 1, protocol: inventory.protocol, inventoryHash: inventory.inventoryHash, kind,
     mode: selected.mode, ids: selected.ids, selectionHash: env.FARM_SUITE_SELECTION_HASH, executionEnabled: true };
+  if (kind === 'examples-browser') result.excludedCases = suiteCaseExclusions(inventory, kind, result.ids);
   return { ...result, planHash: digest(result) };
 }
 

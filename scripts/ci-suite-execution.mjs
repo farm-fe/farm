@@ -2,13 +2,63 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readGitSuiteFiles, discoverSuiteInventory, makeSuiteExecutionPlan, suitePolicy } from './ci-suite-inventory.mjs';
+import { readGitSuiteFiles, discoverSuiteInventory, makeSuiteExecutionPlan, suitePolicy, suiteCaseExclusions } from './ci-suite-inventory.mjs';
 import { resolveNpmCli } from './v2-npm-cli.mjs';
 import { command } from './performance-report.mjs';
+import { redactDiagnostic } from './v2-release-diagnostics.mjs';
 import { executionPlan } from './ci-suite-selection.mjs';
 export { executionPlan } from './ci-suite-selection.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+export function vitestFailureSummary(report, directory = root, env = process.env) {
+  const text = (value, limit) => redactDiagnostic(typeof value === 'string' ? value : '', env).slice(0, limit);
+  const rows = Array.isArray(report?.testResults) ? report.testResults : [];
+  const failures = [];
+  for (const row of rows) {
+    const failed = Array.isArray(row.assertionResults) ? row.assertionResults.filter(item => item.status === 'failed') : [];
+    if (row.status !== 'failed' && failed.length === 0) continue;
+    const relative = typeof row.name === 'string' ? path.relative(directory, path.resolve(directory, row.name)).replaceAll('\\', '/') : '';
+    const file = relative && !relative.startsWith('../') && !path.isAbsolute(relative) ? text(relative, 240) : '[outside-source]';
+    for (const item of failed.slice(0, 4)) failures.push({file, test: text(item.fullName ?? item.title, 240),
+      message: text(Array.isArray(item.failureMessages) ? item.failureMessages.slice(0, 2).join('\n') : '', 1800)});
+    if (failed.length === 0) failures.push({file, test: '[suite setup or collection]', message: text(row.message, 1800)});
+    if (failures.length >= 12) break;
+  }
+  const count = key => Number.isSafeInteger(report?.[key]) && report[key] >= 0 ? report[key] : null;
+  return {kind: 'vitest-failure-diagnostic-not-acceptance', totalTests: count('numTotalTests'), failedTests: count('numFailedTests'),
+    failedSuites: count('numFailedTestSuites'), failures: failures.slice(0, 12), truncated: failures.length > 12 || rows.length > 12};
+}
+
+export function readVitestFailureSummary(file, directory = root, env = process.env) {
+  try {
+    const info = fs.lstatSync(file);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024 ** 2) return {unavailable: 'invalid-report-file'};
+    const relative = path.relative(fs.realpathSync.native(directory), fs.realpathSync.native(file));
+    if (!relative || relative.startsWith(`..${path.sep}`) || relative === '..' || path.isAbsolute(relative)) return {unavailable: 'report-outside-source'};
+    return vitestFailureSummary(JSON.parse(fs.readFileSync(file, 'utf8')), directory, env);
+  } catch { return {unavailable: 'missing-or-invalid-report'}; }
+}
+
+export function typeScriptChildEnvironment(env) {
+  const child = {...env};
+  // Farm exposes FARM_* to application config. Harness-only receipt/selection
+  // controls stay in the parent and must not change product tests or snapshots.
+  for (const name of ['FARM_SUITE_ABI', 'FARM_SUITE_SELECTION_HASH', 'FARM_SUITE_RESULTS_FILE']) delete child[name];
+  return child;
+}
+
+export async function runVitestCommand({run, executable = process.execPath, npm, filters, raw, directory, env, log, emit = console.error}) {
+  try {
+    await run(executable, [npm, 'run', 'test', '--', ...filters, '--reporter=default', '--reporter=json', '--outputFile=' + raw],
+      {cwd: directory, env: typeScriptChildEnvironment(env), log, timeoutMs: 30 * 60 * 1000, phase: 'typescript-actual-suite-results'});
+  } catch (error) {
+    const diagnostic = readVitestFailureSummary(raw, directory, env);
+    emit('[typescript test failure] ' + JSON.stringify(diagnostic));
+    try { fs.writeFileSync(path.join(path.dirname(raw), 'ts-failure.json'), JSON.stringify(diagnostic, null, 2) + '\n', {flag: 'wx'}); }
+    catch { emit('[typescript diagnostic] write-failed'); }
+    throw error;
+  }
+}
 export function actualSuiteInventory(directory = root) {
   const { files, sourceIdentity, exampleDirectories } = readGitSuiteFiles(directory);
   const inventory = discoverSuiteInventory(files, suitePolicy, sourceIdentity, exampleDirectories);
@@ -56,18 +106,30 @@ export function checkBrowserExecution(inventory, allResults, selectedExamples, p
   const requested = selectedExamples.map(name => 'examples-browser:examples/' + name).sort();
   assert.deepEqual(requested, plan.ids, 'Browser discovery differs from committed suite inventory');
   assert.ok([...allResults.values()].flat().every(row => row.passed), 'Browser runner has a fatal or failed result');
+  const excludedExamples = new Set((inventory.excluded ?? []).filter(row => row.kind === 'examples-browser').map(row => row.directory?.slice('examples/'.length)));
+  for (const [name, rows] of allResults) if (!selectedExamples.includes(name)) {
+    assert.ok(excludedExamples.has(name) && Array.isArray(rows) && rows.length > 0 && rows.every(row => row.skipped === true), 'Unknown or undeclared excluded browser result');
+  }
   let executedCases = 0;
-  const executedIds = [], caseCounts = [];
+  const executedIds = [], caseCounts = [], excludedCases = [];
+  const expectedExclusions = suiteCaseExclusions(inventory, 'examples-browser', plan.ids);
+  assert.deepEqual(plan.excludedCases ?? [], expectedExclusions, 'Browser case exclusions differ from discovery');
   for (const name of selectedExamples) {
     const rows = allResults.get(name);
     assert.ok(Array.isArray(rows) && rows.length > 0, 'Missing browser terminal cases');
-    assert.ok(rows.every(row => row.passed === true && row.skipped !== true), 'Selected browser cases failed or skipped');
-    executedCases += rows.length; executedIds.push('examples-browser:examples/' + name);
-    caseCounts.push({ id: 'examples-browser:examples/' + name, executedCases: rows.length });
+    const id = 'examples-browser:examples/' + name;
+    assert.ok(rows.every(row => row.passed === true), 'Selected browser cases failed');
+    const expected = expectedExclusions.filter(row => row.id === id), skipped = rows.filter(row => row.skipped === true);
+    assert.deepEqual(skipped.map(row => row.fullName).sort(), expected.map(row => row.name).sort(), 'Selected browser cases failed or skipped without a reviewed exclusion');
+    const actual = rows.filter(row => row.skipped !== true);
+    assert.ok(actual.length > 0, 'No executed browser cases remain');
+    excludedCases.push(...expected);
+    executedCases += actual.length; executedIds.push(id);
+    caseCounts.push({ id, executedCases: actual.length });
   }
   assert.ok(executedCases > 0 || plan.mode === 'not-applicable' && plan.ids.length === 0, 'Empty browser execution cannot establish a baseline');
   return { inventoryHash: inventory.inventoryHash, planHash: plan.planHash, kind: 'examples-browser', disposition: plan.ids.length ? 'executed' : 'not-applicable', selectedIds: plan.ids,
-    executedIds: executedIds.sort(), caseCounts, executedCases, failed: 0, skipped: 0 };
+    executedIds: executedIds.sort(), caseCounts, executedCases, excludedCases, failed: 0, skipped: 0 };
 }
 
 export function saveSuiteReceipt(file, inventory, data, env = process.env, directory = root) {
@@ -105,8 +167,7 @@ export async function runTypeScriptEvidence({ directory = root, env = process.en
   fs.mkdirSync(path.dirname(raw), { recursive: true });
   assert.ok(!fs.existsSync(raw) && !fs.existsSync(path.join(directory, output)), 'Stale suite result exists');
   const filters = plan.mode === 'all' ? [] : plan.ids.map(id => id.slice(3));
-  await run(process.execPath, [resolveNpmCli(), 'run', 'test', '--', ...filters, '--reporter=json', '--outputFile=' + raw],
-    { cwd: directory, env, log, timeoutMs: 30 * 60 * 1000, phase: 'typescript-actual-suite-results' });
+  await runVitestCommand({run, npm: resolveNpmCli(), filters, raw, directory, env, log});
   assert.ok(fs.statSync(raw).size <= 16 * 1024 ** 2, 'Vitest report exceeds bound');
   const data = checkVitestExecution(inventory, JSON.parse(fs.readFileSync(raw, 'utf8')), directory, fs.realpathSync.native, plan);
   return saveSuiteReceipt(output, inventory, data, env, directory);
@@ -130,6 +191,7 @@ export function validateCollectedSuites(inventory, rows, env = process.env) {
     assert.equal(row.data.workflowRef, expected.workflowRef);
     assert.equal(row.artifactName, `farm-ci-suite-${label}-${expected.sourceSHA}-${row.data.abi}-${expected.run.runAttempt}`, 'Suite artifact namespace differs');
     const plan = executionPlan(inventory, row.data.kind, root, env);
+    if (row.data.kind === 'examples-browser') assert.deepEqual(row.data.excludedCases ?? [], plan.excludedCases ?? [], 'Browser case exclusion receipt differs from committed policy');
     assert.equal(row.data.inventoryHash, inventory.inventoryHash); assert.equal(row.data.planHash, plan.planHash);
     assert.deepEqual(row.data.selectedIds, plan.ids); assert.deepEqual(row.data.executedIds, plan.ids);
     if (env.FARM_SUITE_SELECTION_HASH && row.data.kind === 'examples-browser') {

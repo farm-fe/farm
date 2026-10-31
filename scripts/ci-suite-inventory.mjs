@@ -9,6 +9,12 @@ export const suitePolicy = Object.freeze({
   schemaVersion: 1,
   protocol: 'farm-suite-discovery-v1',
   vitestVersion: '2.0.4',
+  browserCaseExclusions: Object.freeze({
+    'examples/arcgis/e2e.spec.mjs': Object.freeze({
+      sourceDigest: '7f7e22d1aa10bb371ef38a694cec2d71ae1900a38b0e08065e2e3787dea83ed7',
+      cases: Object.freeze([{name: 'run preview', reason: 'Existing explicit preview exclusion; run start remains required.'}])
+    })
+  }),
   inputs: Object.freeze({
     'vitest.config.ts': 'ee2ef1a2efbdefbe54e83a6196375d843dc975af46fbf19155c6aa3650aea2ff',
     'scripts/build.mjs': '96cd0434cca092bbe8a7a832a9489dba14f3af552928b88f2e91e8ec250453b5',
@@ -91,7 +97,17 @@ export function discoverSuiteInventory(files, policy = suitePolicy, sourceIdenti
     if (browser) {
       if (!ownerFor(manifest)) fullOnlyReasons.push({ code: 'browser-owner-missing', file: spec in files ? spec : html });
       if (spec in files && !/\b(startAndTest|watchAndTest)\s*\(|from\s+['"]playwright-chromium['"]/.test(files[spec])) fullOnlyReasons.push({ code: 'browser-api-contract-missing', file: spec });
-      items.push({ id: 'examples-browser:' + directory, kind: 'examples-browser', directory, file: spec in files ? spec : html, owner: ownerFor(manifest), mode: browser, prerequisites, requiresActualCases: true });
+      const declaration = policy.browserCaseExclusions?.[spec];
+      const excludedCases = [];
+      if (declaration) {
+        assert.ok(typeof files[spec] === 'string' && digest(files[spec]) === declaration.sourceDigest, 'Reviewed browser case exclusion source changed');
+        assert.ok(Array.isArray(declaration.cases) && declaration.cases.length > 0 && new Set(declaration.cases.map(row => row.name)).size === declaration.cases.length);
+        for (const row of declaration.cases) {
+          assert.ok(typeof row.name === 'string' && row.name && typeof row.reason === 'string' && row.reason);
+          excludedCases.push({id: 'examples-browser:' + directory, name: row.name, reason: row.reason, sourceDigest: declaration.sourceDigest});
+        }
+      }
+      items.push({ id: 'examples-browser:' + directory, kind: 'examples-browser', directory, file: spec in files ? spec : html, owner: ownerFor(manifest), mode: browser, prerequisites, requiresActualCases: true, excludedCases });
     } else excluded.push({ kind: 'examples-browser', directory, reason: ['issues1433', 'nestjs'].includes(name) ? 'default-excluded-without-explicit-spec' : 'no-spec-or-html-entry' });
   }
   for (const template of templates) items.push({ id: 'create-farm:' + template, kind: 'create-farm', template, runner: 'scripts/test-create-farm-candidates.mjs', requiresActualCases: true });
@@ -165,6 +181,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   console.log(JSON.stringify({ protocol: inventory.protocol, fileEnumerationComplete: inventory.fileEnumerationComplete, ownerMappingComplete: inventory.ownerMappingComplete, dependencyMappingComplete: false, discoveryComplete: false, selectionReady: false, executionEnabled: false, items: inventory.items.length, fullOnlyReasons: inventory.fullOnlyReasons.map(row => row.code) }));
 }
 
+export function suiteCaseExclusions(inventory, kind, ids) {
+  return inventory.items.filter(row => row.kind === kind && ids.includes(row.id)).flatMap(row => row.excludedCases ?? [])
+    .sort((a, b) => (a.id + ':' + a.name).localeCompare(b.id + ':' + b.name));
+}
+
 export function makeSuiteExecutionPlan(inventory, kind, selection = { mode: 'all' }) {
   assert.ok(suiteKinds.includes(kind), 'Unknown suite kind');
   assert.equal(inventory.inventoryHash, digest(Object.fromEntries(Object.entries(inventory).filter(([key]) => key !== 'inventoryHash'))), 'Inventory digest differs');
@@ -178,6 +199,7 @@ export function makeSuiteExecutionPlan(inventory, kind, selection = { mode: 'all
   const ids = selection.mode === 'all' ? known : selection.ids;
   assert.ok(Array.isArray(ids) && ids.length > 0 && new Set(ids).size === ids.length && ids.every(id => known.includes(id)), 'Empty duplicate or unknown suite selection');
   const result = { schemaVersion: 1, protocol: inventory.protocol, inventoryHash: inventory.inventoryHash, kind, mode: selection.mode, ids: [...ids].sort(), executionEnabled: false };
+  if (kind === 'examples-browser') result.excludedCases = suiteCaseExclusions(inventory, kind, result.ids);
   return { ...result, planHash: digest(result) };
 }
 

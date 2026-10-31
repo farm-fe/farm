@@ -5,8 +5,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverSuiteInventory, suitePolicy } from './ci-suite-inventory.mjs';
 import { suiteImpact } from './ci-suite-impact.mjs';
+import { checkBrowserExecution } from './ci-suite-execution.mjs';
 
-test('real repository impact sets equal independent Examples and JS expectations', () => {
+function realFixture() {
   const root = fileURLToPath(new URL('../', import.meta.url)), files = {};
   for (const file of ['package.json', ...Object.keys(suitePolicy.inputs)]) files[file] = fs.readFileSync(path.join(root, file), 'utf8');
   function walk(folder) {
@@ -21,6 +22,11 @@ test('real repository impact sets equal independent Examples and JS expectations
   for (const scope of ['packages', 'js-plugins', 'rust-plugins', 'examples']) walk(scope);
   const directories = fs.readdirSync(path.join(root, 'examples'), { withFileTypes: true }).filter(row => row.isDirectory()).map(row => row.name);
   const inventory = discoverSuiteInventory(files, suitePolicy, null, directories);
+  return {files, inventory};
+}
+
+test('real repository impact sets equal independent Examples and JS expectations', () => {
+  const {files, inventory} = realFixture();
   const plan = file => suiteImpact({ before: files, after: files, changes: [{ path: file }], inventory });
   const react = plan('examples/react/src/main.tsx');
   assert.equal(react.full, false); assert.deepEqual(react.sets.ts.ids, []);
@@ -43,4 +49,23 @@ test('real repository impact sets equal independent Examples and JS expectations
       assert.deepEqual(full.sets[kind].ids, inventory.items.filter(row => row.kind === kind).map(row => row.id).sort());
     }
   }
+});
+
+test('actual repository discovery reproduces 147 passed and 21 excluded rows without accepting unknown skips', () => {
+  const {inventory} = realFixture();
+  const selected = inventory.items.filter(row => row.kind === 'examples-browser').map(row => row.directory.slice('examples/'.length));
+  const excluded = inventory.excluded.filter(row => row.kind === 'examples-browser');
+  assert.equal(selected.length, 72); assert.equal(excluded.length, 20);
+  const results = new Map(selected.map(name => [name, name === 'arcgis'
+    ? [{fullName: 'run start', passed: true, skipped: false}, {fullName: 'run preview', passed: true, skipped: true}]
+    : [{fullName: 'case one', passed: true, skipped: false}, {fullName: 'case two', passed: true, skipped: false}]]));
+  const ordinary = selected.find(name => name !== 'arcgis');
+  for (let i = 0; i < 4; i++) results.get(ordinary).push({fullName: 'extra case ' + i, passed: true, skipped: false});
+  for (const row of excluded) results.set(row.directory.slice('examples/'.length), [{fullName: row.reason, passed: true, skipped: true}]);
+  const rows = [...results.values()].flat();
+  assert.equal(rows.filter(row => !row.skipped).length, 147); assert.equal(rows.filter(row => row.skipped).length, 21);
+  const receipt = checkBrowserExecution(inventory, results, selected);
+  assert.equal(receipt.executedCases, 147); assert.equal(receipt.excludedCases.length, 1); assert.equal(receipt.skipped, 0);
+  results.get(ordinary)[0].skipped = true;
+  assert.throws(() => checkBrowserExecution(inventory, results, selected), /reviewed exclusion/);
 });

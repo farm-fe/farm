@@ -98,6 +98,20 @@ def verify(args, discovery):
 
 
 class SourceSuiteContracts(unittest.TestCase):
+    def test_browser_exclusions_require_independent_source_policy(self):
+        args, discovery = fixture()
+        declared = [{'id': 'examples-browser:first', 'name': 'run preview', 'sourceDigest': 'a' * 64, 'reason': 'Reviewed source exclusion'}]
+        discovery['plans']['examples-browser']['excludedCases'] = declared
+        for cell in args[3]['coverage']['cells']:
+            if cell['kind'] == 'examples-browser': cell['excludedCases'] = copy.deepcopy(declared)
+        args[0].pack()
+        self.assertFalse(verify(args, discovery)['buildBytesReused'])
+        for cell in args[3]['coverage']['cells']:
+            if cell['kind'] == 'examples-browser': cell['excludedCases'][0]['name'] = 'unexpected omission'
+        args[0].pack()
+        with self.assertRaisesRegex(ValueError, 'browser exclusions differ'):
+            verify(args, discovery)
+
     def test_real_zip_receipts_match_independent_complete_source_inventory(self):
         args, discovery = fixture()
         original, metadata = proof.fetch_json_artifact(args[0], args[1], args[4]["name"])

@@ -470,6 +470,15 @@ jobs:
           FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
           FARM_SUITE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/ci-suite-execution.mjs
+      - name: Preserve bounded TypeScript failure diagnostics without acceptance receipts
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-ci-diagnostics-ts-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          path: ci-suite-results/ts-failure.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Preserve actual TypeScript discovery and execution counts
         uses: actions/upload-artifact@v4
         with:

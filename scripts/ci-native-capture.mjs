@@ -41,8 +41,14 @@ export function captureRuntime({ env = process.env, run = spawnSync, cwd = root 
 export function captureProducts({ cwd = root, env = process.env, inventory = nativeArtifactInventory(cwd) } = {}) {
   const abi = env.FARM_BUILD_ABI;
   if (!/^(?:linux|darwin|win32)-[a-z0-9-]+$/.test(abi ?? '')) throw new Error('Exact native ABI required');
-  const expected = inventory.npm.payloads.filter(row => row.platform === abi);
-  if (!expected.length) throw new Error('Empty native producer cohort');
+  let owners = null;
+  if (env.FARM_BUILD_PROFILE === 'release' && env.FARM_RELEASE_NATIVE_OWNERS) {
+    owners = JSON.parse(env.FARM_RELEASE_NATIVE_OWNERS);
+    const known = new Set(inventory.npm.payloads.map(row => row.owner));
+    if (!Array.isArray(owners) || new Set(owners).size !== owners.length || owners.some(owner => typeof owner !== 'string' || !known.has(owner))) throw Error('Invalid native owner selection');
+  }
+  const expected = inventory.npm.payloads.filter(row => row.platform === abi && (!owners || owners.includes(row.owner)));
+  if (!expected.length && owners === null) throw new Error('Empty native producer cohort');
   const records = [];
   for (const row of expected) {
     const owner = inventory.npm.primary.find(item => item.name === row.owner);
@@ -61,22 +67,57 @@ export function captureProducts({ cwd = root, env = process.env, inventory = nat
     producerStatus: 'requires-authoritative-completed-job-result', records, reuseAuthorized: false, acceptanceInherited: false };
 }
 
+export function proofDirectory(cwd, abi, mode) {
+  if (!/^(?:linux|darwin|win32)-[a-z0-9-]+$/.test(abi ?? '') || !['runtime', 'products'].includes(mode)) throw Error('Exact native capture phase and ABI required');
+  return path.join(cwd, mode === 'runtime' ? '.ci-native-proof' : '.ci-native-host-proof', abi);
+}
+
+function prepareProofDirectory(cwd, abi, mode, io = fs) {
+  const directory = proofDirectory(cwd, abi, mode);
+  io.mkdirSync(directory, {recursive: true});
+  if (io.lstatSync(directory).isSymbolicLink() || io.realpathSync.native(directory) !== path.join(io.realpathSync.native(cwd), mode === 'runtime' ? '.ci-native-proof' : '.ci-native-host-proof', abi)) throw Error('Native proof directory redirects');
+  return directory;
+}
+
+function writeImmutableProof(file, body, io) {
+  if (io.existsSync(file)) {
+    const stat = io.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || !io.readFileSync(file).equals(Buffer.from(body))) throw Error('Existing native evidence differs');
+    return;
+  }
+  io.writeFileSync(file, body, {flag: 'wx'});
+}
+
+export function captureProductProof({cwd = root, env = process.env, inventory, io = fs} = {}) {
+  const abi = env.FARM_BUILD_ABI, directory = prepareProofDirectory(cwd, abi, 'products', io);
+  const record = captureProducts({cwd, env, ...(inventory ? {inventory} : {})});
+  const receipt = path.join(cwd, '.ci-native-cache', `${abi}.json`);
+  if (io.existsSync(receipt)) record.container = JSON.parse(io.readFileSync(receipt));
+  // Container-created runtime evidence is read only. Product/source evidence
+  // must never require writing into the container-owned bind-mount directory.
+  const runtime = path.join(proofDirectory(cwd, abi, 'runtime'), 'runtime.json');
+  const runtimeBytes = io.existsSync(runtime) ? io.readFileSync(runtime) : null;
+  record.runtimeCapture = runtimeBytes ? JSON.parse(runtimeBytes) : null;
+  if (runtimeBytes) writeImmutableProof(path.join(directory, 'runtime.json'), runtimeBytes, io);
+  writeImmutableProof(path.join(directory, 'products.json'), JSON.stringify(record, null, 2) + '\n', io);
+  return record;
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const mode = process.argv[2], abi = process.env.FARM_BUILD_ABI;
   if (!/^(?:linux|darwin|win32)-[a-z0-9-]+$/.test(abi ?? '')) throw new Error('Exact native ABI required');
-  const directory = path.join(root, '.ci-native-proof', abi); fs.mkdirSync(directory, { recursive: true });
   try {
-    const record = mode === 'runtime' ? captureRuntime() : mode === 'products' ? captureProducts() : null;
-    if (!record) throw new Error('Unknown native capture phase');
-    if (mode === 'products') {
-      const receipt = path.join(root, '.ci-native-cache', `${abi}.json`);
-      if (fs.existsSync(receipt)) record.container = JSON.parse(fs.readFileSync(receipt));
-      const runtime = path.join(directory, 'runtime.json');
-      record.runtimeCapture = fs.existsSync(runtime) ? JSON.parse(fs.readFileSync(runtime)) : null;
+    if (mode === 'products') captureProductProof();
+    else {
+      const directory = prepareProofDirectory(root, abi, mode);
+      fs.writeFileSync(path.join(directory, 'runtime.json'), JSON.stringify(captureRuntime(), null, 2) + '\n');
     }
-    fs.writeFileSync(path.join(directory, `${mode}.json`), JSON.stringify(record, null, 2) + '\n');
   } catch (error) {
-    fs.writeFileSync(path.join(directory, `${mode}-failure.json`), JSON.stringify({ schemaVersion: 1, reuseAuthorized: false, error: error.message.slice(0, 1000) }) + '\n');
+    try {
+      const directory = prepareProofDirectory(root, abi, mode);
+      fs.writeFileSync(path.join(directory, `${mode}-failure.json`), JSON.stringify({ schemaVersion: 1, reuseAuthorized: false, error: error.message.slice(0, 1000) }) + '\n');
+    } catch { /* Preserve the original failure even when a diagnostic cannot be written. */ }
+    console.error(JSON.stringify({phase: mode, code: ['EACCES', 'EPERM', 'ENOENT', 'EEXIST', 'EINVAL'].includes(error.code) ? error.code : 'capture-failed'}));
     process.exitCode = 1;
   }
 }

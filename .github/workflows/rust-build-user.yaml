@@ -182,7 +182,7 @@ jobs:
           FARM_BUILD_TARGET: ${{ matrix.settings.target }}
         run: |
           node scripts/ci-native-capture.mjs products
-          python -B scripts/ci-leaf-native.py produce --products .ci-native-proof/linux-x64-gnu/products.json --output ci-native-byte-bundle
+          python -B scripts/ci-leaf-native.py produce --products .ci-native-host-proof/linux-x64-gnu/products.json --output ci-native-byte-bundle
       - name: Upload trusted CI native byte bundle
         if: inputs.profile == 'ci' && matrix.settings.abi == 'linux-x64-gnu' && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.ci-byte-bundle.outcome == 'success'
         continue-on-error: true
@@ -406,23 +406,35 @@ jobs:
         continue-on-error: true
         with:
           python-version: '3.12'
-      - name: Capture successful producer bytes and committed input ledger (shadow only)
-        continue-on-error: true
+      - name: Capture exact native product bytes
+        continue-on-error: ${{ inputs.profile != 'release' }}
         env:
           FARM_BUILD_ABI: ${{ matrix.settings.abi }}
           FARM_BUILD_PROFILE: ${{ inputs.profile }}
           FARM_BUILD_TARGET: ${{ matrix.settings.target }}
         run: |
           node scripts/ci-native-capture.mjs products
-          python scripts/ci-native-evidence.py --products .ci-native-proof/${{ matrix.settings.abi }}/products.json --output .ci-native-proof/${{ matrix.settings.abi }}/source.json
+      - name: Capture committed source ledger (shadow only)
+        continue-on-error: true
+        run: |
+          python scripts/ci-native-evidence.py --products .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output .ci-native-host-proof/${{ matrix.settings.abi }}/source.json
+      - name: Preserve required release product proof
+        if: ${{ inputs.profile == 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-shadow-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .ci-native-host-proof/${{ matrix.settings.abi }}/products.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve bounded shadow producer context without duplicating native archives
-        if: always()
+        if: ${{ always() && inputs.profile != 'release' }}
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: native-shadow-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
           include-hidden-files: true
-          path: .ci-native-proof/${{ matrix.settings.abi }}/*.json
+          path: .ci-native-host-proof/${{ matrix.settings.abi }}/*.json
           if-no-files-found: warn
           retention-days: 14
       - name: Preserve actual cell receipt (shadow only)
