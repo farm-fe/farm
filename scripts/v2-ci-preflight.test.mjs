@@ -10,7 +10,7 @@ test('native matrices wait for cheap spelling, release/pack and three-platform p
   for (const command of ['test-native-container-node.cjs', 'test-native-artifact-flow.cjs', 'pack-v2-npm-candidates.test.mjs', 'verify-published-v2-consumers.test.mjs']) assert.ok(preflight.includes(command), command);
   for (const job of ['primary-linux', 'primary-macos', 'primary-windows', 'call-rust-build-release']) {
     const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
-    assert.match(block, /needs: \[release-contract-tests, performance-contract-tests\]/);
+    assert.match(block, job === 'call-rust-build-release' ? /needs: \[release-contract-tests, performance-contract-tests\]/ : /needs: \[release-contract-tests, performance-contract-tests, type-check\]/);
   }
 });
 
@@ -26,9 +26,17 @@ test('primary platform consumers wait only for their own successful producer', (
   assert.match(platform, /platform: \$\{\{ inputs.abi \}\}/);
   for (const job of ['examples-test', 'ts-test']) {
     const block = platform.split(`  ${job}:`)[1].split('\n\n')[0];
-    assert.match(block, /needs: \[native\]/);
+    assert.match(block, /needs: \[native, native-disposition\]/);
+    assert.match(block, /if: always\(\) && needs.native-disposition.result == 'success'/);
     assert.doesNotMatch(block, /call-rust-build-user|call-rust-build-release|primary-linux|primary-macos|primary-windows/);
   }
+  const disposition = platform.split('  native-disposition:')[1].split('  examples-test:')[0];
+  assert.match(disposition, /if: always\(\)/);
+  assert.match(disposition, /needs: \[native\]/);
+  assert.ok(disposition.includes('test "$ABI" = linux-x64-gnu && test "$NATIVE_RESULT" = skipped'));
+  assert.ok(disposition.includes('test "$MODE" = build && test "$NATIVE_RESULT" = success'));
+  assert.ok(disposition.includes('ci-leaf-native.py consume'));
+  assert.ok(disposition.includes("require('./packages/core/binding/farm.linux-x64-gnu.node')"));
   assert.match(native, /group: rust-build-user-.*inputs.platform/);
   assert.match(native, /inputs.platform == 'all'/);
   assert.ok(native.includes("|| '[]'"), 'Unknown platform cannot choose a successful empty execution');
@@ -80,7 +88,7 @@ test('cache writers are limited without replacing the Docs release reference or 
   const ci = read('ci.yaml');
   assert.match(ci.split('  docs-acceptance:')[1].split('  release-candidate-seal:')[0], /needs: \[release-contract-tests, performance-contract-tests\]/);
   const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
-  assert.match(assembly, /needs: \[call-rust-build-user, call-rust-build-release\]/);
+  assert.match(assembly, /needs: \[call-rust-build-user, call-rust-build-release, type-check\]/);
 });
 
 test('source archives and native target caches have disjoint ownership and stable compatible keys', () => {
