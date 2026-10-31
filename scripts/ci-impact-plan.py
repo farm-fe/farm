@@ -20,6 +20,10 @@ TARGETS = ["linux-x64-gnu", "linux-x64-musl", "linux-arm64-gnu", "linux-arm64-mu
 PRIMARY = ["linux-x64-gnu", "darwin-arm64", "win32-x64-msvc"]
 
 
+class WorkspaceIdentityError(ValueError):
+    pass
+
+
 def release_candidate(event, environment):
     pr = event.get("pull_request", {})
     repository = environment.get("GITHUB_REPOSITORY")
@@ -71,11 +75,21 @@ def git(*args):
     return result.stdout
 
 
-def revision(value):
+def revision(value, read_git=None):
     if not re.fullmatch(r"[a-f0-9]{40}", value or ""):
         raise ValueError("Exact forty-character Git identity required")
-    if git("rev-parse", value + "^{commit}").decode().strip() != value:
+    read_git = read_git or git
+    if read_git("rev-parse", value + "^{commit}").decode("ascii").strip() != value:
         raise ValueError("Commit identity differs")
+    return value
+
+
+def tree_revision(value, read_git=None):
+    if not re.fullmatch(r"[a-f0-9]{40}", value or ""):
+        raise ValueError("Exact forty-character Git tree identity required")
+    read_git = read_git or git
+    if read_git("cat-file", "-t", value).decode("ascii").strip() != "tree":
+        raise ValueError("Tree object type differs")
     return value
 
 
@@ -143,7 +157,7 @@ def graph(files):
             continue
         key = ("cargo:" if cargo else "npm:") + package["name"]
         if key in nodes:
-            raise ValueError("Duplicate workspace package identity")
+            raise WorkspaceIdentityError("Duplicate workspace package identity")
         nodes[key] = {"directory": directory, "manifest": file, "kind": "cargo" if cargo else "npm", "data": manifest, "productDeps": set(), "testDeps": set()}
         by_name[key] = key
     by_directory = {node["directory"]: key for key, node in nodes.items() if node["kind"] == "cargo"}
@@ -330,8 +344,34 @@ def make_plan(base, head, tested, scope="e2e", release_candidate=True):
     return plan
 
 
+def conservative_plan(base, head, tested, scope, candidate, error, environment, read_git=None):
+    """Full execution fallback retains only independently verified identity."""
+    read_git = read_git or git
+    revision(base, read_git); revision(head, read_git); revision(tested, read_git)
+    if read_git("rev-parse", "HEAD").decode("ascii").strip() != tested:
+        raise ValueError("Fallback checkout differs from tested commit")
+    tree = tree_revision(read_git("rev-parse", "HEAD^{tree}").decode("ascii").strip(), read_git)
+    if read_git("rev-parse", tested + "^{tree}").decode("ascii").strip() != tree:
+        raise ValueError("Fallback tree differs from tested commit tree")
+    for key in ["GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT"]:
+        if not re.fullmatch(r"[1-9][0-9]*", environment.get(key, "")):
+            raise ValueError("Fallback run identity unavailable")
+    if not re.fullmatch(r"[\w.-]+/[\w.-]+", environment.get("GITHUB_REPOSITORY", "")):
+        raise ValueError("Fallback repository identity unavailable")
+    classes = ["WorkspaceIdentityError", "ValueError", "KeyError", "TimeoutExpired", "CalledProcessError", "UnicodeDecodeError", "JSONDecodeError", "TOMLDecodeError"]
+    result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
+              "fullRequired": True, "planningFallback": True, "sourceInputProofComplete": False,
+              "reasons": [{"reason": "planning-failed", "errorClass": type(error).__name__ if type(error).__name__ in classes else "unknown"}],
+              "baseSHA": base, "headSHA": head, "testedSHA": tested, "testedTree": tree,
+              "runId": environment["GITHUB_RUN_ID"], "runAttempt": environment["GITHUB_RUN_ATTEMPT"], "repository": environment["GITHUB_REPOSITORY"],
+              "executionScope": scope, "executionCells": execution_cells(scope, candidate), "proposedSuites": ALL, "executedSuites": ALL, "producerTrust": "not-enabled"}
+    result["planHash"] = digest(result)
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--output", required=True); parser.add_argument("--event", default=os.environ.get("GITHUB_EVENT_PATH")); args = parser.parse_args()
+    base = head = None; candidate = False
     try:
         event = json.loads(Path(args.event).read_text(encoding="utf-8"))
         pr = event.get("pull_request", {})
@@ -340,9 +380,12 @@ def main():
         candidate = release_candidate(event, os.environ)
         result = make_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate)
     except Exception as error:
-        result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
-                  "fullRequired": True, "reasons": [{"reason": "planning-failed", "errorClass": type(error).__name__}], "proposedSuites": ALL, "executedSuites": ALL}
-        result["planHash"] = digest(result)
+        try:
+            result = conservative_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate, error, os.environ)
+        except Exception:
+            result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
+                      "fullRequired": True, "unavailable": "fallback identity could not be verified", "reasons": [{"reason": "planning-failed"}], "proposedSuites": ALL, "executedSuites": ALL}
+            result["planHash"] = digest(result)
     output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: result[key] for key in ["mode", "planHash", "fullRequired", "skipAuthorized", "proposedSuites"]}))
 

@@ -4,9 +4,46 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { verifyPreparedRelease, verifyChangesetsPreparation } from './check-pr-changesets.mjs';
+import { verifyPreparedRelease, verifyChangesetsPreparation, changesetBase, fetchChangesetBase } from './check-pr-changesets.mjs';
 import { changesetsPublication } from './v2-release-inventory.mjs';
 const digest = text => crypto.createHash('sha256').update(text).digest('hex');
+
+test('ordinary main and unified PRs fetch their exact verified event baseline', () => {
+  for (const ref of ['main', 'codex/v2-unified-release-20261025']) {
+    const sha = 'a'.repeat(40);
+    const event = { pull_request: { base: { ref, sha, repo: { full_name: 'farm-fe/farm' } } } };
+    const environment = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: 'farm-fe/farm', GITHUB_BASE_REF: ref };
+    assert.deepEqual(changesetBase(event, environment), { ref, sha });
+    const calls = [];
+    const actual = fetchChangesetBase(event, environment, args => { calls.push(args); return args[0] === 'rev-parse' ? sha + '\n' : ''; });
+    assert.equal(actual, sha);
+    assert.deepEqual(calls, [['fetch', '--no-tags', 'origin', sha], ['rev-parse', '--verify', `${sha}^{commit}`], ['merge-base', '--is-ancestor', sha, 'HEAD']]);
+  }
+});
+
+test('missing mismatched or unsafe PR baseline fails before any fetch', () => {
+  const base = { ref: 'main', sha: 'a'.repeat(40), repo: { full_name: 'farm-fe/farm' } };
+  const environment = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: 'farm-fe/farm', GITHUB_BASE_REF: 'main' };
+  for (const value of [null, {}, { ...base, sha: '' }, { ...base, ref: 'main; echo unsafe' }, { ...base, ref: 'other' }, { ...base, repo: { full_name: 'other/farm' } }]) {
+    assert.throws(() => fetchChangesetBase({ pull_request: { base: value } }, environment, () => assert.fail('Invalid baseline cannot fetch')));
+  }
+  const event = { pull_request: { base } };
+  assert.throws(() => fetchChangesetBase(event, environment, () => { throw new Error('Fetch failed'); }), /Fetch failed/);
+  assert.throws(() => fetchChangesetBase(event, environment, args => args[0] === 'rev-parse' ? 'b'.repeat(40) : ''), /differs/);
+});
+
+test('dispatch uses its verified release PR and push uses before SHA without a silent main fallback', () => {
+  const sha = 'a'.repeat(40), repository = 'farm-fe/farm';
+  const event = { inputs: { release_base: sha }, pull_request: { base: { ref: 'main', sha, repo: { full_name: repository } } } };
+  const environment = { GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REPOSITORY: repository };
+  assert.equal(changesetBase(event, environment).sha, sha);
+  assert.throws(() => changesetBase({ ...event, inputs: {} }, environment), /differs/);
+  const push = { GITHUB_EVENT_NAME: 'push', GITHUB_REPOSITORY: repository };
+  assert.deepEqual(changesetBase({ before: sha }, push), { sha, ref: null });
+  for (const before of [undefined, '', '0'.repeat(40)]) assert.throws(() => changesetBase({ before }, push));
+  assert.throws(() => changesetBase(null, environment));
+});
+
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-prepared-release-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));

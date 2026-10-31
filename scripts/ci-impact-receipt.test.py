@@ -17,6 +17,27 @@ summary = importlib.util.module_from_spec(summary_spec); summary_spec.loader.exe
 
 
 class ReceiptContracts(unittest.TestCase):
+    def test_binding_diagnostic_is_a_finite_reason_and_field_without_values(self):
+        plan, env = self.fixture()
+        environment = {**env, "GITHUB_SHA": "c" * 40, "GITHUB_REPOSITORY": "farm-fe/farm", "GITHUB_WORKFLOW_REF": "farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge"}
+        event = {"pull_request": {"head": {"sha": "a" * 40}, "base": {"sha": "b" * 40}}}
+        observed = receipt.make_observation("examples:linux-x64-gnu", "success", environment, event, "c" * 40, "d" * 40)
+        changed = {**observed, "testedTree": "e" * 40}
+        changed["observationHash"] = receipt.impact.digest({key: value for key, value in changed.items() if key != "observationHash"})
+        with self.assertRaises(receipt.BindingError) as failure:
+            receipt.bind_observation(plan, changed)
+        failure.exception.cell = observed["cell"]
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            detail = receipt.report_error("bind-observations", failure.exception)
+            injected = receipt.report_error("bind-observations", receipt.BindingError("secret-token", "secret-token"))
+        self.assertEqual(detail["code"], "identity-mismatch")
+        self.assertEqual(detail["identityField"], "testedTree")
+        self.assertEqual(detail["cell"], observed["cell"])
+        self.assertEqual(injected["code"], "validation-failed")
+        self.assertNotIn("secret-token", stderr.getvalue())
+        self.assertNotIn("e" * 40, stderr.getvalue())
+
     def test_untrusted_diagnostic_tokens_are_replaced_with_unknown(self):
         for field in ["stage", "class", "code", "encoding"]:
             with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:

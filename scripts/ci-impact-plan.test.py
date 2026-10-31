@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("impact", Path(__file__).with_name("ci-impact-plan.py"))
 impact = importlib.util.module_from_spec(spec); spec.loader.exec_module(impact)
@@ -23,6 +24,67 @@ def fixture():
 
 
 class PlannerContracts(unittest.TestCase):
+    def test_real_example_name_collision_retains_verified_full_execution_identity(self):
+        files = fixture()
+        for directory in ["electron", "public-path", "react"]:
+            files["examples/" + directory + "/package.json"] = b'{"name":"@farmfe-examples/react"}'
+        with self.assertRaises(impact.WorkspaceIdentityError) as collision:
+            impact.graph(files)
+        environment = {"GITHUB_RUN_ID": "10", "GITHUB_RUN_ATTEMPT": "2", "GITHUB_REPOSITORY": "farm-fe/farm", "GITHUB_SHA": "c" * 40, "GITHUB_JOB": "cargo-test", "GITHUB_WORKFLOW_REF": "farm-fe/farm/.github/workflows/rust-test.yaml@refs/pull/2330/merge"}
+        calls = []
+        def read_git(*args):
+            calls.append(args)
+            if args == ("rev-parse", "HEAD"):
+                return ("c" * 40).encode()
+            if args in [("rev-parse", "HEAD^{tree}"), ("rev-parse", "c" * 40 + "^{tree}")]:
+                return ("d" * 40).encode()
+            if args == ("cat-file", "-t", "d" * 40):
+                return b"tree\n"
+            if args[0] == "rev-parse" and args[1].endswith("^{commit}"):
+                value = args[1].removesuffix("^{commit}")
+                if value in ["a" * 40, "b" * 40, "c" * 40]:
+                    return value.encode()
+            raise AssertionError("Unexpected fixture Git operation")
+        with mock.patch.object(impact, "git", side_effect=AssertionError("Fixture must not access real Git")):
+            plan = impact.conservative_plan("b" * 40, "a" * 40, "c" * 40, "unit", False, collision.exception, environment, read_git)
+        self.assertIn(("cat-file", "-t", "d" * 40), calls)
+        self.assertNotIn(("rev-parse", "d" * 40 + "^{commit}"), calls)
+        self.assertTrue(plan["fullRequired"]); self.assertTrue(plan["planningFallback"])
+        self.assertFalse(plan["sourceInputProofComplete"]); self.assertFalse(plan["skipAuthorized"]); self.assertFalse(plan["reuseAuthorized"])
+        self.assertNotIn("fingerprints", plan)
+        self.assertEqual(plan["reasons"][0]["errorClass"], "WorkspaceIdentityError")
+        event = {"pull_request": {"head": {"sha": "a" * 40}, "base": {"sha": "b" * 40}}}
+        rows = []
+        for cell in impact.execution_cells("unit", False):
+            observed = summary.receipt.make_observation(cell, "success", environment, event, "c" * 40, "d" * 40)
+            rows.append(summary.receipt.bind_observation(plan, observed))
+        self.assertTrue(summary.validate_cells(plan, rows, trusted_inventory=impact.execution_cells("unit", False), expected_identity=dict(plan)))
+        with self.assertRaises(ValueError):
+            impact.conservative_plan("b" * 40, "a" * 40, "c" * 40, "unit", False, collision.exception, environment, lambda *args: ("e" * 40).encode())
+        with self.assertRaises(ValueError):
+            impact.conservative_plan(None, "a" * 40, "c" * 40, "unit", False, collision.exception, environment, read_git)
+        def wrong_commit_tree(*args):
+            return ("e" * 40).encode() if args == ("rev-parse", "c" * 40 + "^{tree}") else read_git(*args)
+        with self.assertRaisesRegex(ValueError, "tested commit tree"):
+            impact.conservative_plan("b" * 40, "a" * 40, "c" * 40, "unit", False, collision.exception, environment, wrong_commit_tree)
+
+    def test_commit_and_tree_types_are_distinct_and_use_the_injected_git(self):
+        def read_git(*args):
+            if args[0] == "cat-file":
+                return b"tree" if args[-1] == "d" * 40 else b"commit"
+            if args == ("rev-parse", "c" * 40 + "^{commit}"):
+                return ("c" * 40).encode()
+            raise ValueError("Fixture cannot peel a tree to commit")
+        with mock.patch.object(impact, "git", side_effect=AssertionError("No real Git allowed")):
+            self.assertEqual(impact.revision("c" * 40, read_git), "c" * 40)
+            self.assertEqual(impact.tree_revision("d" * 40, read_git), "d" * 40)
+            with self.assertRaises(ValueError):
+                impact.revision("d" * 40, read_git)
+            with self.assertRaises(ValueError):
+                impact.tree_revision("c" * 40, read_git)
+            with self.assertRaises(ValueError):
+                impact.tree_revision("not-an-object", read_git)
+
     def test_dual_cargo_and_npm_directory_keeps_both_owners_and_native_impact(self):
         files = fixture(); files["pnpm-workspace.yaml"] += b'  - crates/*\n'
         files["crates/base/package.json"] = b'{"name":"dual-base","version":"1.0.0"}'

@@ -9,6 +9,37 @@ import { cargoChangesetId, validateCargoPreparation, readCargoArtifact } from '.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const digest = text => crypto.createHash('sha256').update(text.replaceAll('\r\n', '\n')).digest('hex');
 
+export function changesetBase(event, environment) {
+  const kind = environment.GITHUB_EVENT_NAME;
+  assert.ok(['pull_request', 'workflow_dispatch', 'push'].includes(kind), 'Changesets event baseline unavailable');
+  assert.ok(event && typeof event === 'object', 'Changesets event baseline unavailable');
+  assert.match(environment.GITHUB_REPOSITORY ?? '', /^[\w.-]+\/[\w.-]+$/);
+  if (kind === 'push') {
+    assert.match(event.before ?? '', /^[a-f0-9]{40}$/, 'Push baseline SHA required');
+    assert.notEqual(event.before, '0'.repeat(40), 'New branch has no safe push baseline');
+    return { sha: event.before, ref: null };
+  }
+  const base = event.pull_request?.base;
+  assert.equal(base?.repo?.full_name, environment.GITHUB_REPOSITORY, 'PR base repository differs');
+  assert.match(base?.sha ?? '', /^[a-f0-9]{40}$/, 'PR base SHA required');
+  assert.match(base?.ref ?? '', /^[A-Za-z0-9][A-Za-z0-9._/-]{0,200}$/, 'PR base ref required');
+  assert.ok(!base.ref.includes('..') && !base.ref.includes('//') && !base.ref.endsWith('.lock') && !/[/.]$/.test(base.ref), 'Invalid PR base ref');
+  if (environment.GITHUB_BASE_REF) assert.equal(base.ref, environment.GITHUB_BASE_REF, 'PR base ref differs from runner');
+  if (kind === 'workflow_dispatch') {
+    assert.equal(base.ref, 'main', 'Dispatch requires the verified release PR base');
+    assert.equal(event.inputs?.release_base, base.sha, 'Dispatch release base differs');
+  }
+  return { sha: base.sha, ref: base.ref };
+}
+
+export function fetchChangesetBase(event, environment, git = (args => execFileSync('git', args, { cwd: root, encoding: 'utf8', timeout: 120000 }))) {
+  const base = changesetBase(event, environment);
+  git(['fetch', '--no-tags', 'origin', base.sha]);
+  assert.equal(git(['rev-parse', '--verify', `${base.sha}^{commit}`]).trim(), base.sha, 'Fetched Changesets baseline differs');
+  git(['merge-base', '--is-ancestor', base.sha, 'HEAD']);
+  return base.sha;
+}
+
 export function verifyPreparedRelease(directory, { readGitFile, readGitChangesets, isAncestor } = {}) {
   const candidate = JSON.parse(fs.readFileSync(path.join(directory, 'docs/releases/v2-candidate.json')));
   const record = JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/frozen-stable-versions.json')));
@@ -88,7 +119,7 @@ export function verifyChangesetsPreparation(directory, { readGitFile, isAncestor
   return { status: 'verified-changesets-preparation', packages: expected.counts.total };
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const event = process.env.GITHUB_EVENT_PATH ? validationEvent() : null;
+  const event = process.env.GITHUB_EVENT_PATH ? (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' ? validationEvent() : JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))) : null;
   const mode = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json'))).preparation?.mode ?? 'first-stable';
   assert.ok(['first-stable', 'changesets'].includes(mode), 'Unknown version preparation mode');
   const prepared = event?.pull_request?.base?.ref === 'main' && (event.number === 2329 || event.pull_request.head.ref === 'changeset-release/main');
@@ -118,6 +149,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     // All ordinary PRs keep the normal Changesets check and its failure semantics.
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@changesets/cli/package.json')));
     const bin = typeof pkg.bin === 'string' ? pkg.bin : Object.values(pkg.bin)[0];
-    execFileSync(process.execPath, [path.resolve(path.dirname(fs.realpathSync(path.join(root, 'node_modules/@changesets/cli/package.json'))), bin), 'status', '--since=origin/main'], { cwd: root, stdio: 'inherit' });
+    const base = fetchChangesetBase(event, process.env);
+    execFileSync(process.execPath, [path.resolve(path.dirname(fs.realpathSync(path.join(root, 'node_modules/@changesets/cli/package.json'))), bin), 'status', `--since=${base}`], { cwd: root, stdio: 'inherit' });
   }
 }

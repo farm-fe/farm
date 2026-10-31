@@ -12,6 +12,17 @@ import sys
 spec = importlib.util.spec_from_file_location("impact", Path(__file__).with_name("ci-impact-plan.py"))
 impact = importlib.util.module_from_spec(spec); spec.loader.exec_module(impact)
 
+IDENTITY_FIELDS = ["headSHA", "baseSHA", "testedSHA", "testedTree", "runId", "runAttempt", "policy", "repository"]
+BINDING_CODES = ["observation-shape", "observation-digest", "identity-mismatch", "observation-authority", "workflow-missing", "plan-digest", "plan-policy", "unexpected-cell", "checkout-mismatch", "attempt-mismatch", "status-unavailable"]
+
+
+class BindingError(ValueError):
+    def __init__(self, code, field=None):
+        self.code = code if code in BINDING_CODES else "validation-failed"
+        self.field = field if field in IDENTITY_FIELDS else None
+        self.cell = None
+        super().__init__(self.code)
+
 
 def safe_context(environment):
     result = {}
@@ -24,11 +35,13 @@ def safe_context(environment):
 def safe_error_fields(source):
     allowed = {
         "stage": ["read-event", "git-head", "git-tree", "validate-identity", "write-receipt", "read-plan", "read-observations", "bind-observations", "validate-inventory"],
-        "class": ["UnicodeDecodeError", "JSONDecodeError", "CalledProcessError", "TimeoutExpired", "FileNotFoundError", "PermissionError", "OSError", "ValueError", "KeyError", "TypeError"],
-        "code": ["operation-failed", "invalid-text-encoding", "invalid-json", "git-command-failed", "git-command-timeout", "file-operation-failed", "validation-failed"],
+        "class": ["UnicodeDecodeError", "JSONDecodeError", "CalledProcessError", "TimeoutExpired", "FileNotFoundError", "PermissionError", "OSError", "ValueError", "BindingError", "KeyError", "TypeError"],
+        "code": ["operation-failed", "invalid-text-encoding", "invalid-json", "git-command-failed", "git-command-timeout", "file-operation-failed", "validation-failed", *BINDING_CODES],
         "encoding": ["utf-8", "utf8", "ascii", "charmap", "cp1252", "cp936"],
     }
     result = {key: source[key] if source.get(key) in values else "unknown" for key, values in allowed.items() if key in source}
+    if source.get("identityField") in IDENTITY_FIELDS:
+        result["identityField"] = source["identityField"]
     for key in ["start", "end", "line", "column", "errno", "windowsError", "returnCode"]:
         value = source.get(key)
         if type(value) is int and abs(value) <= 2 ** 53:
@@ -41,7 +54,9 @@ def safe_error_fields(source):
 def report_error(stage, error):
     """Log bounded failure metadata without event text, bytes or environment."""
     detail = {**safe_context(os.environ), "stage": stage, "class": type(error).__name__, "code": "operation-failed"}
-    if isinstance(error, UnicodeDecodeError):
+    if isinstance(error, BindingError):
+        detail.update({"code": error.code, "identityField": error.field})
+    elif isinstance(error, UnicodeDecodeError):
         reasons = ["invalid start byte", "invalid continuation byte", "unexpected end of data", "character maps to <undefined>"]
         detail.update({"code": "invalid-text-encoding", "encoding": error.encoding, "reason": error.reason if error.reason in reasons else "decode failed", "start": error.start, "end": error.end})
     elif isinstance(error, json.JSONDecodeError):
@@ -55,6 +70,8 @@ def report_error(stage, error):
     elif isinstance(error, ValueError):
         detail["code"] = "validation-failed"
     detail = {**safe_context(os.environ), **safe_error_fields(detail)}
+    if isinstance(error, BindingError) and error.cell in impact.execution_cells("unit") + impact.execution_cells("e2e"):
+        detail["cell"] = error.cell
     sys.stderr.write("CI impact diagnostic: " + json.dumps(detail, ensure_ascii=True) + "\n")
     return detail
 
@@ -80,37 +97,39 @@ def make_observation(cell, status, environment, event, actual_sha, actual_tree):
 
 def bind_observation(plan, observation):
     """Bind after planning finishes; this hash is not a signature or trust grant."""
+    if not isinstance(observation, dict) or observation.get("schemaVersion") != 2 or observation.get("planBound") is not False:
+        raise BindingError("observation-shape")
     payload = {key: value for key, value in observation.items() if key != "observationHash"}
-    if observation.get("schemaVersion") != 2 or observation.get("planBound") is not False or observation.get("observationHash") != impact.digest(payload):
-        raise ValueError("Independent execution observation invalid")
-    for key in ["headSHA", "baseSHA", "testedSHA", "testedTree", "runId", "runAttempt", "policy", "repository"]:
+    if observation.get("observationHash") != impact.digest(payload):
+        raise BindingError("observation-digest")
+    for key in IDENTITY_FIELDS:
         if not isinstance(observation.get(key), str) or not observation[key] or observation[key] != plan.get(key):
-            raise ValueError("Observed execution differs from completed plan: " + key)
+            raise BindingError("identity-mismatch", key)
     state = {"executed-success": "success", "executed-failure": "failure", "executed-cancelled": "cancelled"}.get(observation.get("status"))
     if observation.get("acceptanceInherited") is not False or observation.get("authoritativeJobIdentityVerified") is not False:
-        raise ValueError("Observation cannot inherit acceptance or self-verify authority")
+        raise BindingError("observation-authority")
     environment = {"GITHUB_RUN_ID": observation["runId"], "GITHUB_RUN_ATTEMPT": observation["runAttempt"],
                    "GITHUB_JOB": observation.get("jobKey"), "GITHUB_WORKFLOW_REF": observation.get("workflowRef"), **observation.get("runner", {})}
     if not environment["GITHUB_JOB"] or not environment["GITHUB_WORKFLOW_REF"]:
-        raise ValueError("Observed workflow identity unavailable")
+        raise BindingError("workflow-missing")
     result = make_receipt(plan, observation["cell"], state, environment, observation["testedSHA"], observation["testedTree"])
     return {**result, "planBound": True, "observationHash": observation["observationHash"]}
 
 
 def make_receipt(plan, cell, status, environment, actual_sha, actual_tree):
     if plan.get("planHash") != impact.digest({key: value for key, value in plan.items() if key != "planHash"}):
-        raise ValueError("Plan digest differs")
+        raise BindingError("plan-digest")
     if plan.get("skipAuthorized") is not False or plan.get("reuseAuthorized") is not False:
-        raise ValueError("Receipt cannot authorize unreviewed incremental mode")
+        raise BindingError("plan-policy")
     if cell not in plan["executionCells"]:
-        raise ValueError("Job is not an expected current matrix cell")
+        raise BindingError("unexpected-cell")
     if plan["testedSHA"] != actual_sha or plan["testedTree"] != actual_tree:
-        raise ValueError("Actual checkout identity differs from plan")
+        raise BindingError("checkout-mismatch")
     if str(plan["runId"]) != environment["GITHUB_RUN_ID"] or str(plan["runAttempt"]) != environment["GITHUB_RUN_ATTEMPT"]:
-        raise ValueError("Receipt run attempt differs")
+        raise BindingError("attempt-mismatch")
     state = {"success": "executed-success", "failure": "executed-failure", "cancelled": "executed-cancelled"}.get(status)
     if not state:
-        raise ValueError("Actual job status is unavailable")
+        raise BindingError("status-unavailable")
     result = {key: plan[key] for key in ["headSHA", "baseSHA", "testedSHA", "testedTree", "planHash", "runId", "runAttempt", "policy", "repository"]}
     return {**result, "schemaVersion": 1, "cell": cell, "status": state, "jobKey": environment["GITHUB_JOB"],
             "workflowRef": environment.get("GITHUB_WORKFLOW_REF"), "runner": {key: environment.get(key) for key in ["RUNNER_OS", "RUNNER_ARCH", "ImageOS", "ImageVersion"]},

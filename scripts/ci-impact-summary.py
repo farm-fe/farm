@@ -117,6 +117,7 @@ def main():
     elif impact.release_candidate(event, os.environ):
         expected.append("release-candidate-seal")
     report = summarize(plan, needs, expected)
+    report["planningFallback"] = plan.get("planningFallback") is True
     report["planUnavailable"] = plan.get("unavailable")
     if report["planUnavailable"]:
         report["allExpectedJobsSuccessful"] = False
@@ -141,7 +142,13 @@ def main():
         if report["unavailableCells"]:
             raise ValueError("Current cells have unavailable execution identity")
         operation = "bind-observations"
-        rows = [receipt.bind_observation(plan, observed) for observed in observations]
+        rows = []
+        for observed in observations:
+            try:
+                rows.append(receipt.bind_observation(plan, observed))
+            except receipt.BindingError as error:
+                error.cell = observed.get("cell")
+                raise
         operation = "validate-inventory"
         validate_cells(plan, rows, trusted_inventory=inventory, expected_identity=identity, require_success=False)
         report["cellBindingsVerified"] = True
