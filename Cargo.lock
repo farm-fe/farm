@@ -1287,7 +1287,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "2.0.1"
+version = "2.1.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -2332,7 +2332,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_macro_cache_item"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2341,7 +2341,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_macro_plugin"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2997,7 +2997,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "glob",
  "heck 0.4.1",
