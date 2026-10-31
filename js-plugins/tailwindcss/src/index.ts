@@ -74,7 +74,7 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
   // List of all candidates that were being returned by the root scanner during
   // the lifetime of the root.
   // const candidatesMap: Map<string, Set<string>> = new Map();
-  const candidatesModuleList: Set<string> = new Set();
+  const candidatesModuleList = new Map<string, boolean>();
 
   return [
     {
@@ -85,6 +85,25 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
       async configResolved(_config) {
         config = _config;
         minify = config.compilation?.minify !== false;
+      },
+
+      pluginCacheLoaded: {
+        executor(cache) {
+          const sources: [string, boolean][] = JSON.parse(
+            Buffer.from(cache).toString('utf8')
+          );
+          for (const [source, physical] of sources) {
+            candidatesModuleList.set(source, physical);
+          }
+        }
+      },
+
+      writePluginCache: {
+        executor() {
+          // Source transforms are skipped on cache hits, so keep their watch edges
+          // available when an unchanged source and a changed stylesheet are rebuilt.
+          return [...Buffer.from(JSON.stringify([...candidatesModuleList]))];
+        }
       },
 
       transform: {
@@ -114,7 +133,11 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
             }
           );
 
-          candidatesModuleList.add(param.resolvedPath);
+          const physical = await fs.stat(param.resolvedPath.split('?')[0]).then(
+            (stat) => stat.isFile(),
+            () => false
+          );
+          candidatesModuleList.set(param.resolvedPath, physical);
 
           return {
             content: param.content
@@ -128,6 +151,64 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
       name: '@farmfe/js-plugin-tailwindcss:generate',
       priority: 101,
 
+      pluginCacheLoaded: {
+        executor(bytes) {
+          const state = JSON.parse(Buffer.from(bytes).toString('utf8'));
+          if (
+            state?.version !== 1 ||
+            !Array.isArray(state.roots) ||
+            !state.roots.every((id: unknown) => typeof id === 'string')
+          ) {
+            throw new Error('Invalid Tailwind plugin cache');
+          }
+          // Scan metadata and physical-source flags have their own cache.
+          roots.clear();
+          for (const id of state.roots) roots.get(id);
+        }
+      },
+      writePluginCache: {
+        executor() {
+          return Array.from(
+            Buffer.from(
+              JSON.stringify({
+                version: 1,
+                roots: [...roots.keys()].sort()
+              })
+            )
+          );
+        }
+      },
+      updateModules: {
+        executor(param) {
+          const rootPath = config?.root ?? process.cwd();
+          const normalize = (id: string) =>
+            path.resolve(rootPath, id).replaceAll('\\', '/');
+          const existing = new Map(
+            param.paths.map(([id, type]) => [normalize(id), type])
+          );
+          for (const id of roots.keys()) {
+            if (existing.get(normalize(id)) === 'removed') roots.delete(id);
+          }
+          const hasCandidateUpdate = param.paths.some(([id]) => {
+            const source = id.replaceAll('\\', '/');
+            return (
+              !source.includes('/node_modules/') &&
+              (source.includes('.farm_dynamic_import_virtual_module') ||
+                /\.(?:js|jsx|ts|tsx|vue|svelte|html|mdx|md|astro|php|twig|erb|hbs|liquid|pug|slim|haml)(?:\?|$)/.test(
+                  source
+                ))
+            );
+          });
+          if (!hasCandidateUpdate) return;
+          const next = [...param.paths];
+          for (const id of roots.keys()) {
+            if (!existing.has(normalize(id)))
+              next.push([path.resolve(rootPath, id), 'updated']);
+          }
+          return next;
+        }
+      },
+
       freezeModule: {
         filters: { resolvedPaths: ['\\.css'] },
         async executor(param, context) {
@@ -139,25 +220,42 @@ export default function tailwindcss(options: Options = {}): JsPlugin[] {
           let root = roots.get(param.moduleId);
 
           // add watch file for scanned files
-          for (const resolvedPath of candidatesModuleList) {
-            context?.addWatchFile(param.moduleId, resolvedPath);
-          }
-          const candidateList = (
-            context?.readMetadataByScope<string[]>(CANDIDATE_SCOPE) ?? []
-          ).flatMap((v) => v);
+          const candidateList: string[] = [];
+          for (const [resolvedPath, physical] of candidatesModuleList) {
+            if (physical) {
+              try {
+                await fs.stat(resolvedPath.split('?')[0]);
+              } catch {
+                candidatesModuleList.delete(resolvedPath);
+                continue;
+              }
+            }
 
+            candidateList.push(
+              ...(context?.readMetadata<string[]>(resolvedPath, {
+                refer: [resolvedPath],
+                scope: [CANDIDATE_SCOPE]
+              }) ?? [])
+            );
+          }
           let result = await root.generate(
             param.content,
             (file) => context?.addWatchFile?.(param.moduleId, file),
             I,
             new Set(candidateList)
           );
-
           if (!result) {
             roots.delete(param.moduleId);
             return {
               content: param.content
             };
+          }
+          // Ordinary CSS must not inherit every candidate's watch edge.
+          for (const [resolvedPath, physical] of candidatesModuleList) {
+            context?.addWatchFile(
+              param.moduleId,
+              physical ? resolvedPath.split('?')[0] : resolvedPath
+            );
           }
           DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Generate CSS');
 

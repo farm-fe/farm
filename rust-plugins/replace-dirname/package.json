@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-replace-dirname",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",
@@ -39,6 +39,18 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
-  ]
+    "scripts",
+    "LICENSE"
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-replace-dirname-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-replace-dirname-darwin-x64": "2.0.0",
+    "@farmfe/plugin-replace-dirname-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-replace-dirname-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-replace-dirname-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-replace-dirname-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-replace-dirname-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-replace-dirname-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-replace-dirname-win32-x64-msvc": "2.0.0"
+  }
 }

@@ -1,0 +1,4 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root { --primary: 300 50% 50%; --background: 240 10% 10%; }

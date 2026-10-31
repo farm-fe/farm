@@ -168,6 +168,13 @@ export interface OutputConfig {
    */
   format?: ModuleFormat | ModuleFormat[];
   /**
+   * Library output bundling strategy. Applies when targetEnv is 'library'.
+   * single-bundle requires one entry; multiple-bundle allows code splitting;
+   * bundle-less emits each module separately.
+   * @default 'single-bundle'
+   */
+  libraryBundleType?: 'single-bundle' | 'multiple-bundle' | 'bundle-less';
+  /**
    * clean output.path automatically or not
    */
   clean?: boolean;

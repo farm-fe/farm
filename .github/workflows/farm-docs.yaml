@@ -1,0 +1,167 @@
+name: Farm Docs
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: farm-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Docs / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-24.04]
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CODEX_DOCS_EVIDENCE_PHASE: p10
+      CODEX_DOCS_EVIDENCE_ATTEMPT: ci
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Restore dependency sources without native target/profile reuse
+        uses: ./.github/actions/cargo-source-cache
+      - name: Fetch locked dependency sources with bounded network retries
+        timeout-minutes: 10
+        env:
+          CARGO_NET_RETRY: '3'
+          CARGO_HTTP_TIMEOUT: '60'
+        run: cargo fetch --locked
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check local source prerequisites and registry-only consumer rejection paths
+        run: |
+          node scripts/farm-docs-suites.mjs audit
+          node scripts/farm-docs-suites.mjs source
+      - name: Check platform manifest preparation without native compilation
+        run: node scripts/farm-docs-suites.mjs platform
+      - name: Check distribution contracts and fixture chain without native compilation
+        run: node scripts/farm-docs-suites.mjs distribution
+      - name: Check npm archive extraction and provenance receipts without product builds
+        run: node scripts/farm-docs-suites.mjs archive-python
+      - name: Build shared JS prerequisites and plugin tools
+        run: |
+          for package in utils runtime runtime-plugin-hmr runtime-plugin-import-meta plugin-tools; do
+            pnpm --dir "packages/$package" run build
+          done
+      - name: Build current Core native binding
+        # Kept as a release-profile reference until real ci/release compatibility
+        # is exercised. Presence/hash checks alone cannot justify its removal.
+        run: pnpm --dir packages/core run build:rs
+      - name: Build Docs native plugin closure
+        run: |
+          for plugin in replace-dirname react mdx ssr-css syntax-highlight sass tailwindcss docs docs-snapshot docs-seo docs-snippets; do
+            pnpm --dir "rust-plugins/$plugin" run build
+          done
+      - name: Build public JS packages
+        run: |
+          for package in core cli docs docs-theme-default; do
+            pnpm --dir "packages/$package" run build
+          done
+      - name: Check compiled CLI, cache identity and alias contracts
+        run: node scripts/farm-docs-suites.mjs compiled
+      - name: Check native content, blog planning and development invalidation
+        run: |
+          cargo test -p farmfe_core -p farmfe_docs_content -p farmfe_docs_config -p farmfe_docs_plan -p farmfe_plugin_docs -p farmfe_docs_snapshot -p farmfe_plugin_docs_snapshot -p farmfe_plugin_docs_snippets --lib --tests -j 1 -- --test-threads=1
+      - name: Check real MDX and snippets highlighted SSR equivalence
+        env:
+          FARM_DOCS_HIGHLIGHT_FIXTURE_DIR: ${{ runner.temp }}/farm-docs-highlight
+        run: |
+          cargo test -p farmfe_plugin_docs_snippets react_runtime_fixture_uses_real_mdx_and_snippets_outputs -j 1
+          node rust-plugins/docs-snippets/tests/highlight-runtime.mjs "$FARM_DOCS_HIGHLIGHT_FIXTURE_DIR"
+      - name: Record actual native loader paths and guard subsequent checks
+        id: native_guard
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+          import {createRequire} from 'node:module';
+          import {pathToFileURL} from 'node:url';
+          const require=createRequire(path.join(process.cwd(),'package.json'));
+          const binaries=[];
+          const record=(name,file)=>({name,path:fs.realpathSync(file),sha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex').toUpperCase()});
+          binaries.push(record('core',require('./packages/core/binding/resolve-binding.cjs')));
+          for(const name of ['replace-dirname','react','mdx','ssr-css','syntax-highlight','sass','tailwindcss','docs','docs-snapshot','docs-seo','docs-snippets']){
+            const module=await import(pathToFileURL(path.resolve(`rust-plugins/${name}/scripts/index.js`)).href);
+            binaries.push(record(name,module.default));
+          }
+          const directory=path.join(process.env.RUNNER_TEMP,'farm-docs-native');
+          fs.mkdirSync(directory,{recursive:true});
+          const baseline=path.join(directory,'baseline.json');
+          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,profile:'release',ciProfileCompatibility:'not-yet-validated',binaries},null,2),{flag:'wx'});
+          fs.appendFileSync(process.env.GITHUB_ENV,`CODEX_DOCS_NATIVE_BASELINE=${baseline}
+          CODEX_DOCS_NATIVE_GUARD_DIR=${path.join(directory,'guards')}
+          `);
+          const nodeOptions=`${process.env.NODE_OPTIONS ?? ''} --import=${pathToFileURL(path.resolve('scripts/farm-docs-native-guard.mjs')).href}`;
+          if(/[\r\n]/.test(nodeOptions))throw Error('Native guard options must be a single line');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`node_options=${nodeOptions}\n`);
+          NODE
+      - name: Verify maintained static diagrams
+        run: node scripts/farm-docs-suites.mjs diagrams
+      - name: Build minimal and multilingual consumers
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
+        run: |
+          pnpm --dir examples/docs-minimal run build
+          pnpm --dir examples/docs-features run build
+      - name: Verify third-party notice sources before the website build
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
+        run: node scripts/farm-docs-suites.mjs notices-source
+      - name: Build the real website with its independent Farm configuration
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
+        run: pnpm --dir website run build:farm
+      - name: Verify published third-party notices
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
+        run: node scripts/farm-docs-suites.mjs notices-built
+      - name: Install Chromium
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Exercise public theme, runtime, and full blog build/dev behavior
+        env:
+          NODE_OPTIONS: ${{ steps.native_guard.outputs.node_options }}
+        run: node scripts/farm-docs-suites.mjs browser
+      - name: Preserve build output, reports and native provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-docs-${{ matrix.os }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          path: |
+            website/build-farm
+            examples/docs-minimal/build
+            examples/docs-features/build
+            docs/farm-docs/evidence/p10/ci
+            ${{ runner.temp }}/farm-docs-native
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "docs:release:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}

@@ -179,6 +179,11 @@ fn set_pending_used_exports(
     if let Some(dep_tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
       match used_stmt_idents {
         UsedExports::All => {
+          // Dynamic imports of self or cyclic dependencies can request all
+          // exports again after they were traced. Requeue only new work.
+          if matches!(dep_tree_shake_module.handled_used_exports, UsedExports::All) {
+            continue;
+          }
           dep_tree_shake_module.pending_used_exports.set_export_all();
         }
         UsedExports::Partial(used_stmt_idents) => {

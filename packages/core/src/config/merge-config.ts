@@ -61,6 +61,7 @@ export function mergeFarmCliConfig(
       'envPrefix',
       'watch',
       'plugins',
+      'workflow',
       'publicDir',
       'server',
       'vitePlugins'

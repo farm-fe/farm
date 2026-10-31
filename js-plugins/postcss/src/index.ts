@@ -138,8 +138,8 @@ export default function farmPostcssPlugin(
             }
           );
 
-          // record CSS dependencies from @imports
-          if (process.env.NODE_ENV === 'development') {
+          // Persistent caches also need these dependencies during production builds.
+          {
             for (const message of messages) {
               if (message.type === 'dependency') {
                 context.addWatchFile(param.moduleId, message.file as string);
@@ -156,7 +156,10 @@ export default function farmPostcssPlugin(
                     path.isAbsolute(file) ? file : path.join(dir, file)
                   );
                 }
-              } else if (message.type === 'warning') {
+              } else if (
+                message.type === 'warning' &&
+                process.env.NODE_ENV === 'development'
+              ) {
                 console.warn(`[${pluginName}] ${message.text}`);
               }
             }

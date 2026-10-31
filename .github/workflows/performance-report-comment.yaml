@@ -1,0 +1,30 @@
+name: Performance PR report
+on:
+  workflow_run:
+    workflows: [E2E Tests]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+concurrency:
+  group: performance-pr-reporter
+  cancel-in-progress: false
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # This workflow and reporter must first land on the default branch.
+      # Never check out the triggering run's head, merge ref, or artifact scripts.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/performance-pr-reporter.mjs
+          sparse-checkout-cone-mode: false
+      - name: Validate artifact and update the sticky PR comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/performance-pr-reporter.mjs

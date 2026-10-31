@@ -68,7 +68,7 @@ export default defineConfig({
 * **`@farmfe/plugin-sass`**：用于 scss 文件编译的 Farm rust 插件，底层使用 `grass`。
 
 :::tip
-要了解有关 rust 插件的更多信息，请参阅 [Rust 插件](/docs/plugins/official-plugins/overview#rust-插件)
+要了解有关 rust 插件的更多信息，请参阅 [Rust 插件](./plugins/official-plugins/overview.md#rust-plugins)
 :::
 
 ### 使用 Js 插件
@@ -143,7 +143,7 @@ Farm 中的 js 插件需要 `filters`。 因为Js Plugin实在是太慢了，我
 :::
 
 :::tip
-了解更多关于 Farm Js 插件的信息，请参考 [JS 插件](/docs/plugins/official-plugins/overview#js-插件)
+了解更多关于 Farm Js 插件的信息，请参考 [JS 插件](./plugins/official-plugins/overview.md#js-plugins)
 :::
 
 ## 使用 Vite/Rollup/Unplugin 插件

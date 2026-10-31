@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Svelte
 
@@ -10,7 +10,7 @@ Create a `Svelte` project based on `Farm`.
 
 ### Creating a Svelte Project
 
-<PackageManagerTabs command="npm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 Select `Svelte` template in `Select Framework`
 
@@ -37,14 +37,14 @@ export default {
 ```
 If you want to start DevServer
 
-<PackageManagerTabs command="pnpm dev" />
+<PackageManagerTabs commands={{"npm":"npm dev","pnpm":"pnpm dev","yarn":"yarn dev","bun":"bun dev"}} />
 
 If you need to run the build production environment product command
 
-<PackageManagerTabs command="pnpm build" />
+<PackageManagerTabs commands={{"npm":"npm build","pnpm":"pnpm build","yarn":"yarn build","bun":"bun build"}} />
 
 If you need to preview your build product
 
-<PackageManagerTabs command="pnpm preview" />
+<PackageManagerTabs commands={{"npm":"npm preview","pnpm":"pnpm preview","yarn":"yarn preview","bun":"bun preview"}} />
 
 For more example details: [Svelte Example](https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-svelte)

@@ -25,12 +25,12 @@
 
 
 //farm_internal_runtime_index.js:
- const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
-
+}}());
 
 //index.js:
  import "./farm_internal_runtime_index.js";import "./dep.js";(function(moduleSystem, modules) {
@@ -63,4 +63,4 @@ initModuleSystem(__farm_internal_module_system__);
         reexport_js_namespace_farm_internal_.isRef();
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");var __farm_entry_reexport2__=__farm_entry__.reexport2;export {__farm_entry_reexport2__ as reexport2};
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");var __farm_entry_reexport2__=__farm_entry__.reexport2;export {__farm_entry_reexport2__ as reexport2};

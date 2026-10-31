@@ -1,194 +1,75 @@
-name: Publish packages and crates
+name: Prepare Changesets version PR
 on:
-  push:
-    branches:
-      - main
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
-
+  workflow_run:
+    workflows: [Release-plz]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: farm-changesets-version-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  check-changeset-status:
-    name: Check changeset status and set env
-    runs-on: ubuntu-latest
+  check-release-request:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
     outputs:
-      SKIP_RUST_BUILD: ${{ env.SKIP_RUST_BUILD }}
+      changeset_state: ${{ steps.changesets.outputs.state }}
+      cargo_proposal: ${{ steps.changesets.outputs.proposal }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-
-      - name: Check changeset status and set env
-        run: |
-          if node scripts/check-changeset-status.mjs; then
-            echo "SKIP_RUST_BUILD=true" >> $GITHUB_ENV
-            echo "Changesets exist, skipping Rust build."
-          else
-            echo "Changesets don't exist, proceeding with Rust build."
-          fi
-        if: github.ref == 'refs/heads/main'
-  call-rust-build:
-    uses: ./.github/workflows/rust-build.yaml
-    secrets: inherit
-    needs: [check-changeset-status]
-    if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD != 'true'
-
+          node-version: 22.20.0
+      - name: Read Changesets state (errors fail closed)
+        id: changesets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/prepare-cargo-version-proposal.mjs --inspect
   changeset-version:
-    name: Call changeset version
-    runs-on: ubuntu-latest
-    needs: [check-changeset-status]
-    if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD == 'true'
+    name: Prepare reviewed version PR
+    needs: [check-release-request]
+    if: needs.check-release-request.outputs.changeset_state == 'pending'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
-
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20.x
-
-      - name: Install Dependencies
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_wait_seconds: 60
-          command: pnpm i --frozen-lockfile
-
-      - name: Create Release Pull Request
+          node-version: 22.20.0
+      - run: pnpm install --frozen-lockfile
+      - name: Install the pinned metadata toolchain
+        run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Mark a Cargo-only proposal for the official Changesets action
+        env:
+          FARM_CARGO_PROPOSAL: ${{ needs.check-release-request.outputs.cargo_proposal }}
+        run: node scripts/prepare-cargo-version-proposal.mjs --seed
+      # Publication credentials are never available to this versioning action.
+      # A reviewed version PR must also refresh its exact plan/intent and seal.
+      - uses: changesets/action@v1
         id: changesets
-        uses: changesets/action@v1
         with:
           version: pnpm run bump
           branch: main
+          title: 'chore: release packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  release:
-    name: Release
-    needs: [call-rust-build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.4.0
-          run_install: false
-
-      - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-
-      # batch download artifacts
-      - uses: actions/download-artifact@v4.1.3
-        with:
-          path: /tmp/artifacts
-      - name: Copy Farm Core Binary
-        run: cp /tmp/artifacts/${{ github.sha }}-linux-x64-gnu/* ./packages/core/binding
-      - name: Move Artifacts
-        run: |
-          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
-          do
-            mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-vue/* ./rust-plugins/vue/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-vue-jsx/* ./rust-plugins/vue-jsx/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-auto-import/* ./rust-plugins/auto-import/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-compress/* ./rust-plugins/compress/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dsv/* ./rust-plugins/dsv/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-dts/* ./rust-plugins/dts/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-icons/* ./rust-plugins/icons/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-image/* ./rust-plugins/image/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-mdx/* ./rust-plugins/mdx/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-modular-import/* ./rust-plugins/modular-import/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react-components/* ./rust-plugins/react-components/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-strip/* ./rust-plugins/strip/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-svgr/* ./rust-plugins/svgr/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-url/* ./rust-plugins/url/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-virtual/* ./rust-plugins/virtual/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-wasm/* ./rust-plugins/wasm/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-worker/* ./rust-plugins/worker/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-yaml/* ./rust-plugins/yaml/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
-
-            test -f ./packages/core/npm/${abi}/farm.${abi}.node
-            test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
-            test -f ./rust-plugins/react/npm/${abi}/index.farm
-            test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
-            test -f ./rust-plugins/sass/npm/${abi}/index.farm
-            test -f ./rust-plugins/vue/npm/${abi}/index.farm
-            test -f ./rust-plugins/vue-jsx/npm/${abi}/index.farm
-            test -f ./rust-plugins/auto-import/npm/${abi}/index.farm
-            test -f ./rust-plugins/compress/npm/${abi}/index.farm
-            test -f ./rust-plugins/dsv/npm/${abi}/index.farm
-            test -f ./rust-plugins/dts/npm/${abi}/index.farm
-            test -f ./rust-plugins/icons/npm/${abi}/index.farm
-            test -f ./rust-plugins/image/npm/${abi}/index.farm
-            test -f ./rust-plugins/mdx/npm/${abi}/index.farm
-            test -f ./rust-plugins/modular-import/npm/${abi}/index.farm
-            test -f ./rust-plugins/react-components/npm/${abi}/index.farm
-            test -f ./rust-plugins/strip/npm/${abi}/index.farm
-            test -f ./rust-plugins/svgr/npm/${abi}/index.farm
-            test -f ./rust-plugins/url/npm/${abi}/index.farm
-            test -f ./rust-plugins/virtual/npm/${abi}/index.farm
-            test -f ./rust-plugins/wasm/npm/${abi}/index.farm
-            test -f ./rust-plugins/worker/npm/${abi}/index.farm
-            test -f ./rust-plugins/yaml/npm/${abi}/index.farm
-          done
-
-      - name: Install Dependencies
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_wait_seconds: 60
-          command: pnpm i --frozen-lockfile
-
-      - name: Build Plugin Tools
-        run: pnpm --filter @farmfe/plugin-tools run build
-
-      - name: Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: pnpm run bump
-          publish: pnpm run release
-          branch: main
-          # version: ${{ github.ref_name == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
-          # publish: ${{ github.ref_name == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
-          # branch: ${{ github.ref_name == 'v2-dev' && 'v2-dev' || 'main' }}
+          GH_TOKEN: ${{ github.token }}
+          FARM_CARGO_PROPOSAL: ${{ needs.check-release-request.outputs.cargo_proposal }}
+      - name: Refresh exact version PR inputs and explicitly request validation
+        if: steps.changesets.outputs.pullRequestNumber != ''
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      # Test create farm and make sure it works after release
-      - name: Test Create Farm React
-        run: cd .. && pnpm create farm my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
-      - name: Test Create Farm Vue
-        run: cd .. && pnpm create farm my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
-      - name: Test Create Farm Solid
-        run: cd .. && pnpm create farm my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
-
-      - name: Test Create Farm Svelte
-        run: cd .. && pnpm create farm my-test-app-svelte --template svelte && cd my-test-app-svelte && pnpm i && pnpm build
-      - name: Test Create Farm Llit
-        run: cd .. && pnpm create farm my-test-app-lit --template lit && cd my-test-app-lit && pnpm i && pnpm build
-      - name: Test Create Farm Vanilla
-        run: cd .. && pnpm create farm my-test-app-vanilla --template vanilla && cd my-test-app-vanilla && pnpm i && pnpm build
-      - name: Test Create Farm Preact
-        run: cd .. && pnpm create farm my-test-app-preact --template preact && cd my-test-app-preact && pnpm i && pnpm build
+          GH_TOKEN: ${{ github.token }}
+          VERSION_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
+        run: node scripts/prepare-v2-release-intent.mjs --changesets-pr "$VERSION_PR"

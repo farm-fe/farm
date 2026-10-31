@@ -1,0 +1,20 @@
+[package]
+name = "farmfe_plugin_docs_seo"
+version = "0.0.1"
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_docs_seo = { path = "../../rust-ecosystem/docs-seo" }
+farmfe_docs_plan = { path = "../../rust-ecosystem/docs-plan" }
+farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "=2.0.0", path = "../../crates/macro_plugin" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+farmfe_docs_config = { path = "../../rust-ecosystem/docs-config" }
+tempfile = "3"

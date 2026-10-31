@@ -1,0 +1,24 @@
+flowchart LR
+  accTitle: D · Incremental update, independent from initial compile
+  accDescr: Watcher or explicit API starts update. Rebuild affected modules using B, patch the graph, optionally re-bundle affected groups, render affected pots using C, then finalize and notify. This is not an automatic successor of finish and does not re-run the complete initial generation lifecycle.
+  subgraph Update[WATCH / UPDATE ENTRY]
+    direction TB
+    Event([Watcher event / Compiler.update]) --> update_modules[update_modules]:::serial
+    update_modules --> Rebuild["Affected modules: reuse B<br/>resolve / load / transform / parse / freeze"]:::core
+    Rebuild --> Patch[Patch module and group graphs]:::core --> module_graph_updated[module_graph_updated]:::serial
+  end
+  subgraph Resource[AFFECTED RESOURCES · SYNC OR BACKGROUND TASK]
+    direction TB
+    Changed{Group / dependency changes<br/>require re-bundling?}:::gate
+    Changed -->|yes| UP[partial_bundling]:::first --> UPots[process_resource_pots]:::serial
+    Changed -->|no| UPots
+    UPots --> Classify["C: classify / restore pot cache"]:::core --> URender[render_start]:::serial --> Pot["C: render / generate cache misses<br/>only affected resource pots"]:::core
+    Pot --> Cache{Persistent cache enabled?}:::gate
+    Cache -->|yes| UW[write_plugin_cache]:::serial --> ResourceReady[Updated resource batch ready]:::core
+    Cache -->|no| ResourceReady
+  end
+  subgraph Completion[FINALIZE → NOTIFY]
+    direction TB
+    UE[handle_entry_resource]:::serial --> UF[finalize_resources]:::serial --> update_finished[update_finished]:::parallel --> Callback([Update callback / HMR result])
+  end
+  Update --> Resource --> Completion

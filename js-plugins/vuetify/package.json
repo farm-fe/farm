@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-vuetify",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Farm plugin for Vuetify",
   "main": "./build/cjs/index.cjs",
   "types": "./build/esm/index.d.ts",
@@ -46,7 +46,8 @@
   ],
   "dependencies": {
     "@vuetify/loader-shared": "^2.1.0",
-    "upath": "^2.0.1"
+    "upath": "^2.0.1",
+    "@babel/parser": "7.29.2"
   },
   "repository": {
     "type": "git",

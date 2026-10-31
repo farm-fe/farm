@@ -37,6 +37,18 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
-  ]
+    "options.d.ts",
+    "LICENSE"
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-vue-jsx-darwin-arm64": "0.0.1",
+    "@farmfe/plugin-vue-jsx-darwin-x64": "0.0.1",
+    "@farmfe/plugin-vue-jsx-linux-arm64-gnu": "0.0.1",
+    "@farmfe/plugin-vue-jsx-linux-arm64-musl": "0.0.1",
+    "@farmfe/plugin-vue-jsx-linux-x64-gnu": "0.0.1",
+    "@farmfe/plugin-vue-jsx-linux-x64-musl": "0.0.1",
+    "@farmfe/plugin-vue-jsx-win32-arm64-msvc": "0.0.1",
+    "@farmfe/plugin-vue-jsx-win32-ia32-msvc": "0.0.1",
+    "@farmfe/plugin-vue-jsx-win32-x64-msvc": "0.0.1"
+  }
 }

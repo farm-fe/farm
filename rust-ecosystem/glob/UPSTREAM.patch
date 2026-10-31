@@ -1,0 +1,65 @@
+diff --git a/src/compile.rs b/src/compile.rs
+index 70d03a2..1538687 100644
+--- a/src/compile.rs
++++ b/src/compile.rs
+@@ -651,7 +651,7 @@
+             }
+         }
+ 
+-        if ch == '[' && chars.get(index + 1) != Some(&':') {
++        if ch == '[' && (!options.posix || chars.get(index + 1) != Some(&':')) {
+             body.push_str("\\[");
+             index += 1;
+             continue;
+@@ -726,7 +726,9 @@
+     inner_options.literal_plus_quantifier = true;
+     let alternatives = split_top_level(inner, '|')
+         .into_iter()
+-        .map(|part| compile_body(&part, &inner_options))
++        // Picomatch ordinary groups preserve regex-group semantics: their
++        // first wildcard does not start a new filesystem segment.
++        .map(|part| compile_body_with_context(&part, &inner_options, false))
+         .collect::<Option<Vec<_>>>()?;
+ 
+     Some(format!("({})", alternatives.join("|")))
+@@ -982,6 +984,9 @@
+             }
+ 
+             let Some((inner, next_index)) = collect_bracket(&chars, index) else {
++                if options.strict_brackets {
++                    return None;
++                }
+                 let remaining = chars[index..].iter().collect::<String>();
+                 if remaining.starts_with("[[:") {
+                     output.push_str(&remaining);
+diff --git a/src/matcher.rs b/src/matcher.rs
+index 1a540d3..c7356e9 100644
+--- a/src/matcher.rs
++++ b/src/matcher.rs
+@@ -43,6 +43,9 @@
+     if pattern.is_empty() {
+         return Err(MatchError::EmptyPattern);
+     }
++    if pattern.encode_utf16().count() > options.max_length.unwrap_or(65536).min(65536) {
++        return Err(MatchError::UnsupportedPattern("pattern length exceeds limit".to_string()));
++    }
+ 
+     let descriptor = make_re(pattern, options, false)
+         .ok_or_else(|| MatchError::UnsupportedPattern(pattern.to_string()))?;
+diff --git a/src/scan.rs b/src/scan.rs
+index bb16c57..720ca8d 100644
+--- a/src/scan.rs
++++ b/src/scan.rs
+@@ -461,10 +461,8 @@
+         glob = str.clone();
+     }
+ 
+-    if !base.is_empty() && base != "/" && base != str {
+-        if base.chars().last().is_some_and(is_path_separator) {
+-            base.pop();
+-        }
++    if !base.is_empty() && base != "/" && base != str && base.chars().last().is_some_and(is_path_separator) {
++        base.pop();
+     }
+ 
+     if options.unescape {

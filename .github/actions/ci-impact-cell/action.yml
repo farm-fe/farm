@@ -1,0 +1,36 @@
+name: Record current CI cell (shadow only)
+description: Preserve actual job outcome and plan binding without skip authority
+inputs:
+  cell:
+    required: true
+    description: Exact reviewed matrix cell identity
+  status:
+    required: true
+    description: Actual caller job status before shadow reporting
+  artifact-suffix:
+    required: true
+    description: Distinguish matrix artifacts without changing source identity
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      if: always()
+      continue-on-error: true
+      with:
+        python-version: '3.12'
+    - name: Record actual current-cell outcome
+      if: always()
+      continue-on-error: true
+      shell: bash
+      env:
+        CI_IMPACT_CELL: ${{ inputs.cell }}
+        CI_IMPACT_JOB_STATUS: ${{ inputs.status }}
+      run: python scripts/ci-impact-receipt.py --output "${{ runner.temp }}/ci-impact-receipt/receipt.json"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      continue-on-error: true
+      with:
+        name: impact-cell-${{ github.sha }}-${{ github.job }}-${{ inputs.artifact-suffix }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/ci-impact-receipt/receipt.json
+        if-no-files-found: warn
+        retention-days: 14

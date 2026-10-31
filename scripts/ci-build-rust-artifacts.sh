@@ -1,11 +1,20 @@
 #!/usr/bin/env sh
 set -eu
 
+node ./scripts/check-native-build-node.mjs
+
 PLUGINS="react replace-dirname sass vue vue-jsx auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss"
 PROFILE="${FARM_BUILD_PROFILE:-ci}"
 ABI="${FARM_BUILD_ABI:?FARM_BUILD_ABI is required}"
 TARGET="${FARM_BUILD_TARGET:-}"
 ZIG="${FARM_BUILD_ZIG:-false}"
+
+# Docs plugins declare five native targets; do not fabricate unsupported payloads.
+case "$ABI" in
+  win32-x64-msvc|linux-x64-gnu|linux-arm64-gnu|darwin-x64|darwin-arm64)
+    PLUGINS="$PLUGINS ssr-css syntax-highlight docs docs-snapshot docs-seo docs-snippets"
+    ;;
+esac
 
 if [ -z "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR="$(pwd)/target"
@@ -76,6 +85,15 @@ case "$ABI" in
     fi
     ;;
 esac
+
+if [ "${FARM_NATIVE_PROOF_MODE:-off}" = "shadow" ]; then
+  FARM_CAPTURE_CORE_SCRIPT="$CORE_BUILD_SCRIPT" \
+  FARM_CAPTURE_CORE_ARGS="$TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS" \
+  FARM_CAPTURE_PLUGIN_ARGS="$TARGET_ARGS $ZIG_ARGS --abi $ABI $PLUGIN_PROFILE_ARGS" \
+  FARM_CAPTURE_CREATE_SCRIPT="$CREATE_FARM_BUILD_SCRIPT" \
+  FARM_CAPTURE_PLUGINS="$PLUGINS" \
+    node scripts/ci-native-capture.mjs runtime || printf '%s\n' 'Shadow native context unavailable; reuse remains disabled'
+fi
 
 cd packages/core
 npm run "$CORE_BUILD_SCRIPT" -- $TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS

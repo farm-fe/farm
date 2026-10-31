@@ -1,0 +1,25 @@
+{
+  "basePath":"/manual/",
+  "routeSet":"complete-content-routes; auxiliary 404 is separate",
+  "pages":[
+    {"route":"/manual/docs/","heading":"Orchard today","body":"Current English orchard instructions."},
+    {"route":"/manual/zh/docs/","heading":"当季果园","body":"当前中文果园说明。"},
+    {"route":"/manual/v1/docs/","heading":"Previous orchard","body":"Previous English orchard instructions."},
+    {"route":"/manual/zh/v1/docs/","heading":"往季果园","body":"往季中文果园说明。"},
+    {"route":"/manual/blog/","body":"Original harvest article body must appear on the full blog listing."},
+    {"route":"/manual/blog/harvest/","heading":"Harvest notes","body":"Original harvest article body must appear on the full blog listing."},
+    {"route":"/manual/blog/archive/"},
+    {"route":"/manual/blog/tags/"},
+    {"route":"/manual/blog/tags/harvest/"}
+  ],
+  "notFound":"/manual/unknown-consumer-page/",
+  "footer":"Orchard Field Notes · Orchard cooperative",
+  "marker":{
+    "color":"rgb(23, 87, 41)","fontWeight":"700",
+    "identityByRoute":{
+      "/manual/docs/":"/manual/docs/",
+      "/manual/blog/":"/manual/blog/harvest/",
+      "/manual/blog/harvest/":"/manual/blog/harvest/"
+    }
+  }
+}

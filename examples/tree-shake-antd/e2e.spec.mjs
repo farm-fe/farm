@@ -12,12 +12,13 @@ export default async function (ctx) {
     startAndTest(
       projectPath,
       async (page) => {
-        const promise = page.waitForEvent('console', {
-          predicate: (msg) => msg.text() === 'antd button clicked'
-        });
         const button = await page.waitForSelector('.test-antd-button');
-        await button.click();
-        await promise;
+        await Promise.all([
+          page.waitForEvent('console', {
+            predicate: (msg) => msg.text() === 'antd button clicked'
+          }),
+          button.click()
+        ]);
       },
       command
     );

@@ -2,7 +2,7 @@
 //! dedicated `compare-breakpoints.test.ts`; these cases mirror the
 //! examples in the source-level documentation comments.
 
-use farmfe_ecosystem_tailwindcss::utils::compare_breakpoints::{compare_breakpoints, Direction};
+use farmfe_ecosystem_tailwindcss::utils::compare_breakpoints::{Direction, compare_breakpoints};
 use std::cmp::Ordering;
 
 fn sign(o: Ordering) -> i32 {

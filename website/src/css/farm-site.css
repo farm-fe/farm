@@ -1,0 +1,104 @@
+/* Farm branding and homepage only; shared reading UI lives in the theme. */
+
+.farm-site-shell > .farm-docs-skip { z-index: 1004; }
+.farm-site-navbar .farm-docs-brand { font-size: 1.5rem; }
+.farm-site-navbar .farm-docs-brand img { width: 32px; height: 32px; object-fit: contain; }
+.farm-site-shell--home > .farm-docs-layout { display: block; max-width: none; margin: 0; padding: 0; }
+.farm-site-shell--home > .farm-docs-layout article { max-width: none; }
+.farm-site-shell--home > .farm-docs-layout > .farm-docs-toc { display: none; }
+.farm-site-shell--home .farm-docs-layout > main { padding: 0; }
+.farm-site-footer { position: relative; }
+
+.farm-site-shell { --farm-docs-font-family: var(--ifm-font-family-base); --farm-docs-font-monospace: var(--ifm-font-family-monospace);  }
+.farm-site-navbar .farm-docs-brand { color: var(--farm-docs-text); }
+
+/* Home keeps its benchmark alongside the introduction at desktop widths. */
+.farm-site-shell--home .farm-home-hero { grid-template-columns: minmax(0, 1fr); }
+.farm-site-shell--home .farm-home-heading { font-size: 36px; line-height: 1; }
+.farm-site-shell--home .farm-home-benchmark { min-width: 0; display: flex; align-items: center; }
+.farm-site-shell--home .farm-home-star {
+  color: #8f1a7f; background: linear-gradient(90deg, #8f1a7f, #c98b52, #8f1a7f);
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+@media (min-width: 997px) {
+  .farm-site-shell--home .farm-home-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+  .farm-site-shell--home .farm-home-heading { font-size: 60px; }
+}
+@media (max-width: 996px) {
+  .farm-site-shell--home .farm-home-hero { padding: 24px 0; }
+  .farm-site-shell--home .farm-home-benchmark { overflow: auto; }
+}
+
+[data-theme="dark"] .farm-site-shell--home .farm-home-star { background-image: linear-gradient(90deg, #fda7df, #f4c876, #fda7df); }
+
+/* Footer remains shared with the original homepage. */
+.farm-editorial-footer { display: block; padding: 36px max(24px, calc((100% - 1160px) / 2)); background: var(--farm-docs-panel); border-top: 1px solid var(--farm-docs-border); font-size: 12px; }
+.farm-editorial-footer-top { display: flex; justify-content: space-between; gap: 40px; }
+.farm-editorial-footer-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 700; color: var(--farm-docs-text); }
+.farm-editorial-footer-brand img { width: 30px; height: 30px; }
+.farm-editorial-footer-top p { color: var(--farm-docs-muted); font-size: 12px; }
+.farm-editorial-footer nav { display: flex; gap: 70px; }
+.farm-editorial-footer nav h2 { font-size: 12px; margin: 0 0 14px; font-weight: 600; }
+.farm-editorial-footer nav a { display: block; color: var(--farm-docs-muted); margin: 7px 0; }
+.farm-editorial-footer-bottom { margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--farm-docs-border); display: flex; justify-content: space-between; gap: 20px; font-size: 11px; color: var(--farm-docs-muted); }
+.farm-docs-theme .farm-editorial-footer-bottom > a { color: var(--farm-docs-link); }
+@media (max-width: 996px) {
+  .farm-editorial-footer-top { flex-direction: column; gap: 24px; }
+  .farm-editorial-footer nav { justify-content: space-between; gap: 20px; }
+  .farm-editorial-footer-bottom { flex-direction: column; gap: 10px; }
+}
+
+
+
+
+/* Bridge the original online homepage to the Farm Docs shell; no editorial homepage redesign. */
+.farm-site-shell--home { background: var(--ifm-background-color, #fff); }
+.farm-online-home { color: var(--ifm-f-re-white); font-family: var(--ifm-font-family-base); font-size: 16px; line-height: 1.65; }
+.farm-online-v2 { display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; padding: 12px 20px 0; font-size: 12px; }
+.farm-online-v2 strong { color: var(--ifm-f-re-white); }
+/* Original homepage Infima hr base contract, isolated from the docs theme. */
+:where(.farm-online-home) hr { background-color: var(--ifm-hr-background-color, rgba(0, 0, 0, .1)); border: 0; height: var(--ifm-hr-height, 1px); margin: var(--ifm-hr-margin-vertical, 24px) 0; }
+.farm-original-footer-logo { width: 145px; max-width: 100%; height: auto; }
+.farm-editorial-footer nav.farm-original-social { gap: 18px; justify-content: flex-start; margin-top: 26px; }
+.farm-original-social svg { width: 20px; height: 20px; }
+
+/* Farm brand belongs to the host; homepage presentation remains isolated. */
+.farm-site-shell:not(.farm-site-shell--home) .farm-site-navbar .farm-docs-brand { color: var(--farm-docs-link); }
+
+.farm-site-shell:not(.farm-site-shell--home) { --docsearch-primary-color: var(--farm-docs-search-primary); --docsearch-text-color: var(--farm-docs-text); --docsearch-searchbox-background: var(--farm-docs-panel); --docsearch-muted-color: var(--farm-docs-muted); }
+.farm-site-shell:not(.farm-site-shell--home) .DocSearch-Button { border: 1px solid var(--farm-docs-border); border-radius: 7px; font-size: 13px; height: 38px; margin-left: 10px; }
+
+/* The same header contract applies to homepage and documentation. */
+.farm-site-shell > .farm-site-navbar {
+  --farm-header-bg: #fbfbfd; --farm-header-text: #25232c; --farm-header-muted: #77727f;
+  --farm-header-line: #e9e7ed; --farm-header-brand: #8e32a7; --farm-header-hover: #f3edf8;
+  height: 76px; padding: 12px 28px; gap: 20px; background: var(--farm-header-bg);
+  color: var(--farm-header-text); border-bottom: 1px solid var(--farm-header-line); box-shadow: none;
+  font-family: var(--farm-docs-font-family, system-ui, sans-serif);
+}
+[data-theme="dark"] .farm-site-shell > .farm-site-navbar {
+  --farm-header-bg: #19181e; --farm-header-text: #eeecf2; --farm-header-muted: #b2acbd;
+  --farm-header-line: #35313e; --farm-header-brand: #d4a1e5; --farm-header-hover: #30263b;
+}
+.farm-site-shell > .farm-site-navbar .farm-docs-brand { color: var(--farm-header-brand); font-size: 24px; }
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links { gap: 8px; flex-wrap: nowrap; }
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links > a,
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links summary { font-size: 15px; font-weight: 560; padding: 9px 10px; border-radius: 6px; color: var(--farm-header-text); text-decoration: none; }
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links a:is(:hover, :focus-visible, [aria-current="page"]),
+.farm-site-shell > .farm-site-navbar .farm-docs-navbar-links summary:is(:hover, :focus-visible) { color: var(--farm-header-brand); background: var(--farm-header-hover); }
+.farm-site-shell > .farm-site-navbar .farm-site-controls { gap: 14px; font-size: 12px; }
+.farm-site-shell > .farm-site-navbar .farm-site-alternate > summary { padding: 8px 6px; border-radius: 6px; }
+.farm-site-shell > .farm-site-navbar .farm-site-alternate > summary:is(:hover, :focus-visible) { color: var(--farm-header-brand); background: var(--farm-header-hover); }
+.farm-site-shell > .farm-site-navbar .farm-site-alternate > nav { background: var(--farm-header-bg); border-color: var(--farm-header-line); min-width: 150px; }
+@media (min-width: 997px) and (max-width: 1400px) {
+  .farm-site-shell > .farm-site-navbar { gap: 12px; padding-inline: 20px; }
+  .farm-site-shell > .farm-site-navbar .farm-docs-navbar-links { gap: 4px; }
+  .farm-site-shell > .farm-site-navbar .farm-docs-navbar-links > a,
+  .farm-site-shell > .farm-site-navbar .farm-docs-navbar-links summary { font-size: 14px; padding: 8px 6px; }
+  .farm-site-shell > .farm-site-navbar .farm-site-controls { gap: 8px; }
+  .farm-site-shell > .farm-site-navbar .DocSearch-Button { width: 170px; min-width: 0; }
+}
+@media (max-width: 996px) {
+  .farm-site-shell > .farm-site-navbar { height: 64px; padding: 10px 20px; gap: 14px; }
+}

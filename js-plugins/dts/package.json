@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-dts",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0",
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
@@ -19,12 +19,12 @@
     "start": "farm watch",
     "dev": "farm watch",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/*.test.mjs",
     "type-check": "tsc -p ./tsconfig.json --noEmit"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "chalk": "^5.2.0",
     "fast-glob": "^3.2.12",
@@ -38,6 +38,10 @@
   },
   "files": [
     "dist",
-    "build"
+    "build",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "license-components.json"
   ]
 }

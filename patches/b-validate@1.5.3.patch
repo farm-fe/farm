@@ -1,0 +1,15 @@
+diff --git a/es/rules/custom.d.ts b/es/rules/custom.d.ts
+index d0e81b17c3b6a03bb00322c6147ce1ae67764126..18782dcb62acf41e8549b7736edca8dc78489c10 100644
+--- a/es/rules/custom.d.ts
++++ b/es/rules/custom.d.ts
+@@ -1,6 +1,9 @@
+ import { InnerValidateOptions, ValidatorError, CustomValidatorType } from './../interface';
+ import Base from './base';
+-declare class CustomValidator extends Base {
++interface CustomValidator extends Omit<Base, 'validate' | 'not' | 'isRequired'> {}
++declare class CustomValidator {
++    get not(): this;
++    get isRequired(): this;
+     constructor(obj: any, options: InnerValidateOptions);
+     get validate(): (validator: CustomValidatorType, callback?: (message?: ValidatorError | null) => void) => any[] | ValidatorError;
+ }

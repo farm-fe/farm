@@ -1,0 +1,478 @@
+{
+  "items": [
+    {
+      "type": "category",
+      "label": "生态",
+      "items": [
+        {
+          "type": "doc",
+          "id": "ecosystem/overview"
+        },
+        {
+          "type": "doc",
+          "id": "ecosystem/rust-crates"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "开始使用",
+      "items": [
+        {
+          "type": "doc",
+          "id": "why-farm"
+        },
+        {
+          "type": "doc",
+          "id": "quick-start"
+        },
+        {
+          "type": "doc",
+          "id": "using-plugins"
+        },
+        {
+          "type": "doc",
+          "id": "contribution"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "教程",
+      "items": [
+        {
+          "type": "doc",
+          "id": "tutorials/overview"
+        },
+        {
+          "type": "doc",
+          "id": "tutorials/create"
+        },
+        {
+          "type": "doc",
+          "id": "tutorials/start"
+        },
+        {
+          "type": "doc",
+          "id": "tutorials/build"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "功能",
+      "items": [
+        {
+          "type": "doc",
+          "id": "features/dev-server"
+        },
+        {
+          "type": "doc",
+          "id": "features/html"
+        },
+        {
+          "type": "doc",
+          "id": "features/css"
+        },
+        {
+          "type": "doc",
+          "id": "features/script"
+        },
+        {
+          "type": "doc",
+          "id": "features/static"
+        },
+        {
+          "type": "doc",
+          "id": "features/env"
+        },
+        {
+          "type": "doc",
+          "id": "features/lazy-compilation"
+        },
+        {
+          "type": "doc",
+          "id": "features/sourcemap"
+        },
+        {
+          "type": "doc",
+          "id": "features/library"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "框架",
+      "items": [
+        {
+          "type": "doc",
+          "id": "frameworks/electron"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/lit"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/nestjs"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/preact"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/react"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/solid"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/svelte"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/tauri"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/vanilla"
+        },
+        {
+          "type": "doc",
+          "id": "frameworks/vue"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "进阶",
+      "items": [
+        {
+          "type": "doc",
+          "id": "advanced/minification"
+        },
+        {
+          "type": "doc",
+          "id": "advanced/partial-bundling"
+        },
+        {
+          "type": "doc",
+          "id": "advanced/persistent-cache"
+        },
+        {
+          "type": "doc",
+          "id": "advanced/polyfill"
+        },
+        {
+          "type": "doc",
+          "id": "advanced/ssr"
+        },
+        {
+          "type": "doc",
+          "id": "advanced/tree-shake"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "迁移",
+      "items": [
+        {
+          "type": "doc",
+          "id": "migration/from-vite"
+        },
+        {
+          "type": "doc",
+          "id": "migration/v1-to-v2"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "配置",
+      "items": [
+        {
+          "type": "doc",
+          "id": "config/cli"
+        },
+        {
+          "type": "doc",
+          "id": "config/compilation-options"
+        },
+        {
+          "type": "doc",
+          "id": "config/configuring-farm"
+        },
+        {
+          "type": "doc",
+          "id": "config/dev-server"
+        },
+        {
+          "type": "doc",
+          "id": "config/shared"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "API",
+      "items": [
+        {
+          "type": "doc",
+          "id": "api/hmr-api"
+        },
+        {
+          "type": "doc",
+          "id": "api/javascript-api"
+        },
+        {
+          "type": "doc",
+          "id": "api/js-plugin-api"
+        },
+        {
+          "type": "doc",
+          "id": "api/runtime-plugin-api"
+        },
+        {
+          "type": "doc",
+          "id": "api/rust-api"
+        },
+        {
+          "type": "doc",
+          "id": "api/rust-plugin-api"
+        }
+      ]
+    },
+    {
+      "type": "category",
+      "label": "插件",
+      "items": [
+        {
+          "type": "category",
+          "label": "编写插件与开发",
+          "items": [
+            {
+              "type": "doc",
+              "id": "plugins/writing-plugins/overview"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/writing-plugins/rust-plugin"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/writing-plugins/js-plugin"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/writing-plugins/runtime-plugin"
+            }
+          ]
+        },
+        {
+          "type": "category",
+          "label": "插件文档与使用",
+          "items": [
+            {
+              "type": "category",
+              "label": "Farm Docs",
+              "items": [
+                {
+                  "type": "doc",
+                  "id": "farm-docs/overview"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/usage"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/configuration"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/theme-customization"
+                },
+                {
+                  "type": "doc",
+                  "id": "farm-docs/ai-exports"
+                }
+              ]
+            },
+            {
+              "type": "doc",
+              "id": "plugins/community-plugins"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/auto-import"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/compress"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/dsv"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/dts"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/icons"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/image"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-babel"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-copy"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-dts"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-electron"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-less"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-postcss"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-qiankun"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-react-compiler"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-sass"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-svgr"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-tailwindcss"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-visualizer"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/js-vuetify"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/mdx"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/modular-import"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/native-docs"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/overview"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/react"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/react-components"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/replace-dirname"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/sass"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/strip"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/svgr"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/tailwindcss"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/url"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/virtual"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/vue"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/vue-jsx"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/wasm"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/worker"
+            },
+            {
+              "type": "doc",
+              "id": "plugins/official-plugins/yaml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "doc",
+      "id": "benchmark"
+    },
+    {
+      "type": "doc",
+      "id": "cli/cli-api"
+    },
+    {
+      "type": "doc",
+      "id": "community"
+    },
+    {
+      "type": "doc",
+      "id": "comparisons"
+    }
+  ]
+}

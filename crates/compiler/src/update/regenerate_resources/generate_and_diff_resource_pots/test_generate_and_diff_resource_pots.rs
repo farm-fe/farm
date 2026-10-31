@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::{
-    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+    Config, config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig,
   },
   context::CompilationContext,
   module::{
+    Module, ModuleId, ModuleType,
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
   resource::resource_pot::ResourcePotId,
-  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{
@@ -31,6 +31,102 @@ use crate::{
     },
   },
 };
+
+#[test]
+fn newly_discovered_worker_keeps_its_resource_pot_with_shared_business_dependencies() {
+  let make_graph = || {
+    let mut graph = farmfe_core::module::module_graph::ModuleGraph::new();
+    for id in ["entry", "page", "shared"] {
+      let mut module = Module::new(id.into());
+      module.module_type = ModuleType::Js;
+      graph.add_module(module);
+    }
+    graph.entries.insert("entry".into(), "entry".into());
+    graph
+      .add_edge(&"entry".into(), &"page".into(), Default::default())
+      .unwrap();
+    graph
+      .add_edge(&"entry".into(), &"shared".into(), Default::default())
+      .unwrap();
+    graph.update_execution_order_for_modules();
+    graph
+  };
+  let mut graph = make_graph();
+  let groups = module_group_graph_from_entries(&["entry".into()], &mut graph);
+  let config = Config::default();
+  let plugins: Vec<Arc<dyn Plugin>> = vec![Arc::new(
+    farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config),
+  )];
+  let context = Arc::new(CompilationContext::new(config, plugins).unwrap());
+  *context.module_graph.write() = graph;
+  *context.module_group_graph.write() = groups;
+  let initial = generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
+  context.resource_pot_map.write().replace(initial);
+
+  let mut update = make_graph();
+  for id in ["factory", "worker"] {
+    let mut module = Module::new(id.into());
+    module.module_type = ModuleType::Js;
+    update.add_module(module);
+  }
+  update
+    .add_edge(&"page".into(), &"factory".into(), Default::default())
+    .unwrap();
+  update
+    .add_edge(
+      &"factory".into(),
+      &"worker".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "import".into(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  update
+    .add_edge(&"worker".into(), &"shared".into(), Default::default())
+    .unwrap();
+  update.update_execution_order_for_modules();
+  let updated = vec!["page".into()];
+  let (diff, removed, affected) = {
+    let mut graph = context.module_graph.write();
+    let mut groups = context.module_group_graph.write();
+    let diff = diff_module_graph(updated.clone(), &graph, &update);
+    let removed = patch_module_graph(updated.clone(), &diff, &mut graph, &mut update);
+    let affected =
+      patch_module_group_graph(updated.clone(), &diff, &removed, &mut graph, &mut groups);
+    (diff, removed, affected)
+  };
+  clear_resource_pot_of_modules_in_module_groups(&affected, &context);
+  let generated =
+    generate_and_diff_resource_pots(&affected, &diff, &updated, &removed, &context).unwrap();
+  let pots = context.resource_pot_map.read();
+  for id in generated {
+    assert!(
+      pots.has_resource_pot(&id),
+      "regenerated resource pot disappeared: {id}"
+    );
+  }
+  let worker_group_id = ModuleGroupId::new(&"worker".into(), &ModuleGroupType::DynamicEntry);
+  let groups = context.module_group_graph.read();
+  let worker_group = groups.module_group(&worker_group_id).unwrap();
+  assert!(!worker_group.resource_pots().is_empty());
+  for id in worker_group.resource_pots() {
+    let pot = pots
+      .resource_pot(id)
+      .expect("Worker group must refer to a live resource pot");
+    assert!(pot.is_dynamic_entry);
+    assert_eq!(pot.entry_module, Some("worker".into()));
+    assert!(
+      pot
+        .modules()
+        .into_iter()
+        .any(|id| id == &ModuleId::from("shared"))
+    );
+  }
+}
 
 #[test]
 fn test_generate_and_diff_resource_pots() {
@@ -500,4 +596,57 @@ fn test_generate_and_diff_resource_pots_remove_module() {
     &"D".into(),
     &ModuleGroupType::DynamicImport,
   )));
+}
+
+#[test]
+fn shared_groups_keep_all_new_and_enforced_pots_when_pruned_once() {
+  use farmfe_core::{
+    module::module_group::ModuleGroup,
+    resource::resource_pot::{ResourcePot, ResourcePotType},
+  };
+  let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+  let obsolete = ResourcePot::new("obsolete", "", ResourcePotType::Js);
+  let enforced = ResourcePot::new("enforced", "", ResourcePotType::Js);
+  let mut first = ModuleGroup::new("first".into(), ModuleGroupType::Entry);
+  let mut second = ModuleGroup::new("second".into(), ModuleGroupType::Entry);
+  for group in [&mut first, &mut second] {
+    group.add_resource_pot(obsolete.id.clone());
+    group.add_resource_pot(enforced.id.clone());
+  }
+  let first_id = first.id.clone();
+  let second_id = second.id.clone();
+  context.module_group_graph.write().add_module_group(first);
+  context.module_group_graph.write().add_module_group(second);
+  let obsolete_id = obsolete.id.clone();
+  let enforced_id = enforced.id.clone();
+  context.resource_pot_map.write().add_resource_pot(obsolete);
+  context.resource_pot_map.write().add_resource_pot(enforced);
+  let mut a = ResourcePot::new("new-a", "", ResourcePotType::Js);
+  let mut b = ResourcePot::new("new-b", "", ResourcePotType::Js);
+  let mut c = ResourcePot::new("new-c", "", ResourcePotType::Js);
+  a.module_groups.insert(first_id.clone());
+  b.module_groups.insert(first_id.clone());
+  b.module_groups.insert(second_id.clone());
+  c.module_groups.insert(second_id.clone());
+  let expected_first = HashSet::from_iter([a.id.clone(), b.id.clone(), enforced_id.clone()]);
+  let expected_second = HashSet::from_iter([b.id.clone(), c.id.clone(), enforced_id.clone()]);
+  let expected_new = HashSet::from_iter([a.id.clone(), b.id.clone(), c.id.clone()]);
+  let changed =
+    super::diff_and_patch_resource_pot_map(vec![a, b, c], &vec![enforced_id.clone()], &context);
+  assert_eq!(changed, expected_new);
+  let groups = context.module_group_graph.read();
+  assert_eq!(
+    groups.module_group(&first_id).unwrap().resource_pots(),
+    &expected_first
+  );
+  assert_eq!(
+    groups.module_group(&second_id).unwrap().resource_pots(),
+    &expected_second
+  );
+  let pots = context.resource_pot_map.read();
+  assert!(!pots.has_resource_pot(&obsolete_id));
+  assert!(pots.has_resource_pot(&enforced_id));
+  for id in changed {
+    assert!(pots.has_resource_pot(&id));
+  }
 }

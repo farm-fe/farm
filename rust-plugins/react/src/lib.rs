@@ -79,7 +79,7 @@ impl Plugin for FarmPluginReact {
         resolved_path: GLOBAL_INJECT_MODULE_ID.to_string(),
         ..Default::default()
       }));
-    } else if param.source == IS_REACT_REFRESH_BOUNDARY {
+    } else if param.source == IS_REACT_REFRESH_BOUNDARY || param.source == "farm:react-refresh" {
       return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
         resolved_path: IS_REACT_REFRESH_BOUNDARY.to_string(),
         ..Default::default()

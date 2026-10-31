@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap, HashSet,
   context::CompilationContext,
   module::{
+    Module, ModuleId, ModuleMetaData, ModuleSystem,
     meta_data::script::{
-      ModuleExportIdent, ModuleExportIdentType, EXPORT_NAMESPACE, FARM_RUNTIME_MODULE_HELPER_ID,
-      FARM_RUNTIME_MODULE_SYSTEM_ID,
+      EXPORT_NAMESPACE, FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID,
+      ModuleExportIdent, ModuleExportIdentType,
     },
     module_graph::ModuleGraph,
-    Module, ModuleId, ModuleMetaData, ModuleSystem,
   },
   plugin::ResolveKind,
-  HashMap, HashSet,
 };
 
 type CjsRequireMap = HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>;
@@ -20,7 +20,7 @@ use crate::script::{
   create_export_namespace_ident,
   swc_try_with::try_with,
   transform_to_esm::{
-    transform_cjs::{replace_cjs_require, transform_cjs_to_esm, ReplaceCjsRequireResult},
+    transform_cjs::{ReplaceCjsRequireResult, replace_cjs_require, transform_cjs_to_esm},
     transform_hybrid::transform_hybrid_to_cjs,
   },
 };
@@ -151,26 +151,26 @@ pub fn update_module_graph_edges_of_cjs_modules(
 
     if let Some(edge_info) = module_graph.edge_info(&module_id, &dep_id) {
       // find require edge item
-      if let Some(dep_module) = module_graph.module(&dep_id) {
-        if !dep_module.external && dep_module.module_type.is_script() {
-          let meta = dep_module.meta.as_script();
+      if let Some(dep_module) = module_graph.module(&dep_id)
+        && !dep_module.external
+        && dep_module.module_type.is_script()
+      {
+        let meta = dep_module.meta.as_script();
 
-          let cjs_require_map =
-            edge_info
-              .items()
-              .iter()
-              .fold(HashMap::default(), |mut acc, item| {
-                acc.insert(
-                  (module_id.clone(), item.source.clone()),
-                  (dep_id.clone(), meta.module_system.clone()),
-                );
-                acc
-              });
+        let cjs_require_map = edge_info
+          .items()
+          .iter()
+          .fold(HashMap::default(), |mut acc, item| {
+            acc.insert(
+              (module_id.clone(), item.source.clone()),
+              (dep_id.clone(), meta.module_system.clone()),
+            );
+            acc
+          });
 
-          cjs_require_map_res.extend(cjs_require_map);
+        cjs_require_map_res.extend(cjs_require_map);
 
-          should_update_edge_kind = true;
-        }
+        should_update_edge_kind = true;
       }
 
       if should_update_edge_kind {

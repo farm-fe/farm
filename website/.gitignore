@@ -1,1 +1,7 @@
 package-lock.json
+.farm-docs/
+.farm-docs-locks/
+build-farm/
+/team-runtime-fixture-*/
+/roadmap-runtime-fixture-*/
+/home-runtime-fixture-*/

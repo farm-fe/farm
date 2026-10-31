@@ -118,6 +118,11 @@ fn process_nodes(
         result.push(AstNode::AtRule(at_rule));
       }
 
+      AstNode::Context(mut ctx) => {
+        ctx.nodes = process_nodes(ctx.nodes, ds, inside_keyframes)?;
+        result.push(AstNode::Context(ctx));
+      }
+
       // Leaf nodes.
       other => result.push(other),
     }

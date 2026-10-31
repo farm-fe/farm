@@ -1,7 +1,7 @@
 use super::struct_config::IconifyLoaderOptions;
 use super::svg_builder::SvgBuilder;
 use super::{
-  icon_to_svg::{icon_to_svg, IconifyIconBuildResult},
+  icon_to_svg::{IconifyIconBuildResult, icon_to_svg},
   struct_config::IconifyIcon,
 };
 

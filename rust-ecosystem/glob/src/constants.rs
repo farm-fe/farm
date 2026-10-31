@@ -1,0 +1,15 @@
+pub const CHAR_ASTERISK: char = '*';
+pub const CHAR_AT: char = '@';
+pub const CHAR_BACKWARD_SLASH: char = '\\';
+pub const CHAR_COMMA: char = ',';
+pub const CHAR_DOT: char = '.';
+pub const CHAR_EXCLAMATION_MARK: char = '!';
+pub const CHAR_FORWARD_SLASH: char = '/';
+pub const CHAR_LEFT_CURLY_BRACE: char = '{';
+pub const CHAR_LEFT_PARENTHESES: char = '(';
+pub const CHAR_LEFT_SQUARE_BRACKET: char = '[';
+pub const CHAR_PLUS: char = '+';
+pub const CHAR_QUESTION_MARK: char = '?';
+pub const CHAR_RIGHT_CURLY_BRACE: char = '}';
+pub const CHAR_RIGHT_PARENTHESES: char = ')';
+pub const CHAR_RIGHT_SQUARE_BRACKET: char = ']';

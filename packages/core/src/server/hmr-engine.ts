@@ -11,6 +11,8 @@ import { Server as FarmDevServer } from './index.js';
 export class HmrEngine {
   private _updateQueue: CompilerUpdateItem[] = [];
 
+  private _recompileInProgress = false;
+
   private _onUpdates!: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
@@ -30,6 +32,7 @@ export class HmrEngine {
   }
 
   recompileAndSendResult = async (): Promise<JsUpdateResult | undefined> => {
+    if (this._recompileInProgress) return;
     const queue = [...this._updateQueue];
 
     if (queue.length === 0) {
@@ -37,50 +40,74 @@ export class HmrEngine {
     }
     const compiler = this.devServer.compiler;
     if (!compiler) return;
-    const compilerRoot = compiler.config.root ?? '';
-    const logger = this.devServer.logger;
-    let updatedFilesStr = queue
-      .map((item) => {
-        if (isAbsolute(item.path)) {
-          return relative(compilerRoot, item.path);
-        } else {
-          const resolvedPath = compiler.transformModulePath(
-            compilerRoot,
-            item.path
-          );
-          return relative(compilerRoot, resolvedPath);
-        }
-      })
-      .join(', ');
-    if (updatedFilesStr.length >= 100) {
-      updatedFilesStr =
-        updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
-    }
-
-    // we must add callback before update
-    compiler.onUpdateFinish(async () => {
-      // if there are more updates, recompile again
-      if (this._updateQueue.length > 0) {
-        await this.recompileAndSendResult();
-      }
-      if (this.devServer.config?.server?.writeToDisk) {
-        compiler.writeResourcesToDisk();
-      }
-    });
-
-    const start = performance.now();
-
-    const result = await compiler.update(queue);
-
-    logger.info(
-      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
-    );
-
-    // clear update queue after update finished
+    // Completion callbacks can run before update() resolves. Consume this batch
+    // first so those callbacks only see genuinely new filesystem events.
     this._updateQueue = this._updateQueue.filter(
       (item) => !queue.includes(item)
     );
+    this._recompileInProgress = true;
+    let result: JsUpdateResult;
+    try {
+      const compilerRoot = compiler.config.root ?? '';
+      const logger = this.devServer.logger;
+      let updatedFilesStr = queue
+        .map((item) => {
+          if (isAbsolute(item.path)) {
+            return relative(compilerRoot, item.path);
+          } else {
+            const resolvedPath = compiler.transformModulePath(
+              compilerRoot,
+              item.path
+            );
+            return relative(compilerRoot, resolvedPath);
+          }
+        })
+        .join(', ');
+      if (updatedFilesStr.length >= 100) {
+        updatedFilesStr =
+          updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
+      }
 
+      // we must add callback before update
+      compiler.onUpdateFinish(async () => {
+        // if there are more updates, recompile again
+        if (!this._recompileInProgress && this._updateQueue.length > 0) {
+          await this.recompileAndSendResult();
+        }
+        if (this.devServer.config?.server?.writeToDisk) {
+          compiler.writeResourcesToDisk();
+        }
+      });
+
+      const start = performance.now();
+
+      result = await compiler.update(queue);
+
+      logger.info(
+        `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
+      );
+
+      this.sendUpdate(result);
+    } catch (error) {
+      this._updateQueue = [
+        ...queue.filter(
+          (item) =>
+            !this._updateQueue.some((pending) => pending.path === item.path)
+        ),
+        ...this._updateQueue
+      ];
+      throw error;
+    } finally {
+      this._recompileInProgress = false;
+    }
+    if (!compiler.compiling && this._updateQueue.length > 0) {
+      await this.recompileAndSendResult();
+    }
+    return result;
+  };
+
+  /** Broadcast an already completed update after its resources are published. */
+  sendUpdate(result: JsUpdateResult): void {
     let dynamicResourcesMap: Record<string, Resource[]> | null = null;
 
     if (result.dynamicResourcesMap) {
@@ -124,7 +151,7 @@ export class HmrEngine {
         }
       `);
     });
-  };
+  }
 
   async hmrUpdate(
     absPath: CompilerUpdateItem | CompilerUpdateItem[],
@@ -132,11 +159,18 @@ export class HmrEngine {
   ) {
     const compiler = this.devServer.compiler;
     if (!compiler) return;
+    // Native compilation may hold the module graph while waiting for JS hooks.
+    // Yield until it finishes before making synchronous graph queries.
+    await compiler.waitForCompileFinish();
     const pathItems = Array.isArray(absPath) ? absPath : [absPath];
     for (const item of pathItems) {
+      const queuedIndex = this._updateQueue.findIndex(
+        (pending) => pending.path === item.path
+      );
       if (
-        compiler.hasModule(item.path) &&
-        !this._updateQueue.find((queueItem) => queueItem.path === item.path)
+        item.type === 'added' ||
+        compiler.hasModule(item.path) ||
+        queuedIndex >= 0
       ) {
         if (fse.existsSync(item.path)) {
           const lastModifiedTimestamp = this._lastModifiedTimestamp.get(
@@ -144,17 +178,34 @@ export class HmrEngine {
           );
           const currentTimestamp = (await stat(item.path)).mtime.toISOString();
           // only update the file if the timestamp changed since last update
-          if (!force && lastModifiedTimestamp === currentTimestamp) {
+          if (
+            item.type === 'updated' &&
+            !force &&
+            lastModifiedTimestamp === currentTimestamp
+          ) {
             continue;
           }
           this._lastModifiedTimestamp.set(item.path, currentTimestamp);
         }
         // push the path into the queue
-        this._updateQueue.push(item);
+        const currentQueuedIndex = this._updateQueue.findIndex(
+          (pending) => pending.path === item.path
+        );
+        if (currentQueuedIndex >= 0) {
+          // Membership events supersede earlier pending state for this path.
+          if (item.type !== 'updated')
+            this._updateQueue[currentQueuedIndex] = item;
+        } else {
+          this._updateQueue.push(item);
+        }
       }
     }
 
-    if (!compiler.compiling && this._updateQueue.length > 0) {
+    if (
+      !compiler.compiling &&
+      !this._recompileInProgress &&
+      this._updateQueue.length > 0
+    ) {
       try {
         await this.recompileAndSendResult();
       } catch (e: any) {

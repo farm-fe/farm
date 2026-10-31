@@ -12,26 +12,26 @@ use std::{
   sync::Arc,
 };
 
-use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
+use farmfe_compiler::{Compiler, trace_module_graph::TracedModuleGraph};
 
 pub mod plugin_adapters;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
 use farmfe_core::{
+  HashMap,
   cache::module_cache::MetadataOption,
   config::{Config, Mode},
   context::CompilationContext,
   module::ModuleId,
   plugin::ResolveKind,
-  HashMap,
 };
 
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use napi::{
+  Env, JsValue, Status, Unknown,
   bindgen_prelude::{Buffer, FromNapiValue, JsObjectValue, Object, ObjectRef, Undefined},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Env, JsValue, Status, Unknown,
 };
 
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
@@ -39,8 +39,10 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 #[macro_use]
 extern crate napi_derive;
 
+pub mod docs_host;
 #[cfg(feature = "file_watcher")]
 pub mod file_watcher;
+pub mod output_lock;
 pub mod plugin_toolkit;
 
 #[napi(object)]
@@ -106,6 +108,15 @@ pub struct JsCompiler {
 impl JsCompiler {
   #[napi(constructor)]
   pub fn new(env: Env, config: Object) -> napi::Result<Self> {
+    let shared_resources = if config.has_named_property("docsSnapshot")? {
+      let snapshot = config
+        .get_named_property::<napi::bindgen_prelude::ClassInstance<docs_host::DocsSnapshot>>(
+          "docsSnapshot",
+        )?;
+      Some(snapshot.provider()?)
+    } else {
+      None
+    };
     let js_plugins = unsafe {
       Vec::<Object>::from_napi_value(
         env.raw(),
@@ -151,18 +162,32 @@ impl JsCompiler {
       let rust_plugin_options = rust_plugin[1].clone();
 
       let rust_plugin = Arc::new(
-        RustPluginAdapter::new(&rust_plugin_path, &config, rust_plugin_options)
-          .unwrap_or_else(|e| panic!("load rust plugin error: {e:?}")),
+        RustPluginAdapter::new(&rust_plugin_path, &config, rust_plugin_options).map_err(|e| {
+          napi::Error::new(
+            Status::GenericFailure,
+            format!("load rust plugin error: {e}"),
+          )
+        })?,
       ) as _;
       plugins_adapters.push(rust_plugin);
     }
 
     Ok(Self {
       compiler: Arc::new(
-        Compiler::new(config, plugins_adapters)
+        Compiler::new_with_resources(config, plugins_adapters, shared_resources)
           .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))?,
       ),
     })
+  }
+
+  #[napi]
+  pub fn input_observations(&self) -> napi::Result<String> {
+    let ledger = &self.compiler.context().source_observations;
+    let records = ledger
+      .sealed_records()
+      .map_err(|error| napi::Error::new(Status::GenericFailure, error.to_string()))?;
+    farmfe_core::serde_json::to_string(&records)
+      .map_err(|error| napi::Error::new(Status::GenericFailure, error.to_string()))
   }
 
   #[napi]
@@ -232,6 +257,23 @@ impl JsCompiler {
       }
     });
 
+    result.create_ref()
+  }
+
+  /// Drain on a dedicated OS thread: cache writes themselves use the Rayon
+  /// pool, so blocking that pool here could starve the writes being joined.
+  #[napi]
+  pub fn flush_cache(&self, e: Env) -> napi::Result<ObjectRef> {
+    let (promise, result) =
+      e.create_deferred::<Undefined, Box<dyn FnOnce(Env) -> napi::Result<Undefined>>>()?;
+    let compiler = self.compiler.clone();
+    std::thread::Builder::new()
+      .name("farm-cache-drain".into())
+      .spawn(move || match compiler.flush_cache() {
+        Ok(()) => promise.resolve(Box::new(|_| Ok(()))),
+        Err(error) => promise.reject(napi::Error::new(Status::GenericFailure, error.to_string())),
+      })
+      .map_err(|error| napi::Error::new(Status::GenericFailure, error.to_string()))?;
     result.create_ref()
   }
 
@@ -382,29 +424,36 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn get_parent_files(&self, resolved_path: String) -> Vec<String> {
+  pub fn get_parent_files(&self, resolved_path: String) -> napi::Result<Vec<String>> {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
     let path = Path::new(&resolved_path);
     let module_id = if path.is_absolute() {
       ModuleId::from_resolved_path_with_query(&resolved_path, &context.config.root)
     } else {
-      resolved_path.into()
+      resolved_path.clone().into()
     };
     let current_exec_order = module_graph
       .module(&module_id)
-      .map(|m| m.execution_order)
-      .unwrap_or(usize::MAX);
+      .ok_or_else(|| {
+        napi::Error::new(
+          Status::InvalidArg,
+          format!("Module {resolved_path:?} is not present in the module graph"),
+        )
+      })?
+      .execution_order;
     let parents = module_graph.dependents_ids(&module_id);
 
-    parents
-      .into_iter()
-      .filter(|id| {
-        let module = module_graph.module(id).unwrap();
-        module.execution_order > current_exec_order
-      })
-      .map(|p| p.resolved_path_with_query(&context.config.root))
-      .collect()
+    Ok(
+      parents
+        .into_iter()
+        .filter(|id| {
+          let module = module_graph.module(id).unwrap();
+          module.execution_order > current_exec_order
+        })
+        .map(|p| p.resolved_path_with_query(&context.config.root))
+        .collect(),
+    )
   }
 
   #[napi]

@@ -1,4 +1,5 @@
 import { startAndTest } from '../../e2e/index.mjs';
+import assert from 'node:assert/strict';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -9,7 +10,19 @@ export default async function (ctx) {
     startAndTest(
       projectPath,
       async (page) => {
-        await page.waitForSelector('body > *', { timeout: 10_000 });
+        const value = command === 'preview' ? '2' : '1';
+        const file = command === 'preview' ? '.env.production' : '.env.development';
+        await page.waitForFunction(
+          (expected) => document.querySelector('.custom')?.textContent === expected,
+          value,
+          { timeout: 10_000 }
+        );
+        for (const selector of ['.custom', '.prefix', '.globalThis', '.global']) {
+          assert.equal(await page.locator(selector).textContent(), value);
+        }
+        assert.equal(await page.locator('.file').textContent(), file);
+        assert.equal(await page.locator('.bool').textContent(), 'true');
+        assert.equal(await page.evaluate(() => typeof process), 'undefined');
       },
       command
     );

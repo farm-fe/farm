@@ -1,0 +1,19 @@
+# Campaign launch checklist
+
+Import and review products before publishing them. Campaigns accept published products belonging to the selected merchant. Search the collection picker, select the intended products, then preview the discounted price before publishing.
+
+## Discount policy
+
+Supply a campaign name and an integer discount between 1 and 80 percent. Prices are stored in integer cents, and the preview rounds discounted prices to cents. Empty collections, draft products and products from another merchant are rejected.
+
+```yaml
+maxDiscount: 80
+channels:
+  - Store
+  - Social
+  - Marketplace
+```
+
+## Verify the result
+
+The published campaign lists its chosen product collection. Switching merchant shows that merchant's campaigns. Viewer users cannot publish campaigns.

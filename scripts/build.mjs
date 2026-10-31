@@ -2,6 +2,7 @@ import fs, { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { logger } from "./logger.mjs";
+import { exampleNativeInput } from './example-native-inputs.mjs';
 
 // Display verbose output
 const isVerbose =
@@ -66,6 +67,18 @@ export const executeStartProject = async () =>
     stdio: "inherit",
   });
 
+export function docsExamplePrerequisites(pkg) {
+  const dependencies = { ...pkg.dependencies, ...pkg.devDependencies };
+  if (!dependencies["@farmfe/docs"]) return { native: [], public: [] };
+  const docs = JSON.parse(fs.readFileSync(resolve(CWD, "packages/docs/package.json"), "utf8"));
+  return {
+    native: Object.keys(docs.dependencies)
+      .filter((name) => name.startsWith("@farmfe/plugin-"))
+      .map((name) => name.slice("@farmfe/plugin-".length)),
+    public: ["docs", "docs-theme-default"],
+  };
+}
+
 export const buildExamples = async ({ startFrom, example } = {}) => {
   const examples = fs.readdirSync("./examples").sort((a, b) =>
     a.localeCompare(b),
@@ -73,6 +86,10 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
   const builtRustPlugins = new Set();
   const hasPrebuiltRustPluginArtifact = (rustPluginPath) => {
     const npmPath = join(rustPluginPath, "npm");
+    const abi = process.env.FARM_EXAMPLE_ABI;
+    if (abi) {
+      return Boolean(exampleNativeInput(rustPluginPath, abi));
+    }
 
     if (!existsSync(npmPath)) {
       return false;
@@ -109,6 +126,8 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
         ...Object.keys(pkg.dependencies || {}),
         ...Object.keys(pkg.devDependencies || {}),
       ];
+
+      for (const name of docsExamplePrerequisites(pkg).native) result.add(name);
 
       for (const depName of depNames) {
         if (!depName.startsWith("@farmfe/plugin-")) {
@@ -154,8 +173,14 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
       : examples;
   console.log("Building", examplesToBuild.length, "examples...");
 
+  let docsPrepared = false;
   for (const example of examplesToBuild) {
     const examplePath = join("./examples", example);
+    const manifestPath = join(examplePath, "package.json");
+    const docsPrerequisites = existsSync(manifestPath)
+      ? docsExamplePrerequisites(JSON.parse(fs.readFileSync(manifestPath, "utf8")))
+      : { native: [], public: [] };
+    if (docsPrerequisites.public.length && !docsPrepared) await buildPluginTools();
     const rustPluginNames = resolveRustPluginsForExample(example, examplePath);
 
     for (const rustPluginName of rustPluginNames) {
@@ -180,6 +205,7 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
         builtRustPlugins.add(rustPluginName);
         continue;
       }
+      if (process.env.FARM_EXAMPLE_PREBUILT_ONLY === '1') throw new Error(`Missing current-platform prebuilt native input for ${rustPluginName}; source compilation is disabled in this lane`);
 
       await execa("npm", ["run", "build"], {
         cwd: rustPluginPath,
@@ -191,6 +217,12 @@ export const buildExamples = async ({ startFrom, example } = {}) => {
 
     if (!existsSync(join(examplePath, "package.json"))) {
       continue;
+    }
+    if (docsPrerequisites.public.length && !docsPrepared) {
+      for (const name of docsPrerequisites.public) {
+        await execa("npm", ["run", "build"], { cwd: resolve(CWD, "packages", name) });
+      }
+      docsPrepared = true;
     }
     console.log("Building", examplePath);
 

@@ -1,6 +1,6 @@
-import { ChevronRight, Github } from "lucide-react";
 import React, { ReactNode } from "react";
 import { cn } from "../../lib/utils";
+import { ChevronRight, Github } from "../../vendor/lucide-selected.mjs";
 
 export function AnimatedGradientText({
   children,
@@ -27,8 +27,7 @@ export function AnimatedGradientText({
 
 export default function AnimatedGradientStarWithGithub() {
   return (
-    <div
-      onClick={() => window.open("https://github.com/farm-fe/farm")}
+    <a href="https://github.com/farm-fe/farm" target="_blank" rel="noopener noreferrer"
       className="z-10 flex min-h-[2rem] items-center justify-center cursor-pointer"
     >
       <AnimatedGradientText>
@@ -43,6 +42,6 @@ export default function AnimatedGradientStarWithGithub() {
         <Github className="ml-2 size-4 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
         <ChevronRight className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
       </AnimatedGradientText>
-    </div>
+    </a>
   );
 }

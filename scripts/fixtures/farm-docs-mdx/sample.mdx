@@ -1,0 +1,37 @@
+---
+title: Rust Content Pipeline
+description: A real MDX compilation fixture
+tags:
+  - rust
+  - docs
+---
+
+import Badge from './Badge.jsx';
+
+export const answer = 42;
+
+# Hello, 世界!
+
+## Same
+
+## Same
+
+<Badge label={'value ' + answer}><strong>nested</strong></Badge>
+
+## Custom heading {#stable-id}
+
+:::warning Warning title
+
+Careful with **state**.
+
+:::
+
+| Name | Value |
+| ---- | ----- |
+| item | 42 |
+
+```ts title="demo.ts" {1}
+const value = 42;
+```
+
+export function mappedFailure() { throw new Error('DOCS_MAP_SENTINEL'); }

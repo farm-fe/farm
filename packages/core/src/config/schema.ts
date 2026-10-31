@@ -70,6 +70,9 @@ const outputSchema = z
     format: z
       .union([moduleFormatSchema, z.array(moduleFormatSchema)])
       .optional(),
+    libraryBundleType: z
+      .enum(['single-bundle', 'multiple-bundle', 'bundle-less'])
+      .optional(),
     showFileSize: z.boolean().optional(),
     asciiOnly: z.boolean().optional(),
     externalGlobals: z.record(z.string()).optional(),
@@ -119,7 +122,7 @@ const previewServerSchema = z
     headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
     host: z
       .union([
-        z.string().regex(/^\d{1,3}\.\d{1,3}$/),
+        z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
         z.literal('localhost'),
         z.boolean()
       ])
@@ -453,6 +456,13 @@ const FarmConfigSchema = z
     envDir: z.string().optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
+    workflow: z
+      .object({
+        module: z.string().trim().min(1),
+        options: z.record(z.unknown()).optional()
+      })
+      .strict()
+      .optional(),
     watch: z.union([z.boolean(), WatchOptionsSchema]).optional(),
     compilation: compilationConfigSchema.optional(),
     server: serverSchema.optional(),

@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-icons-win32-arm64-msvc",
-  "version": "0.0.0",
+  "version": "2.0.0",
   "os": [
     "win32"
   ],
@@ -9,7 +9,10 @@
   ],
   "main": "index.farm",
   "files": [
-    "index.farm"
+    "index.farm",
+    "LICENSE",
+    "licenses",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "license": "MIT",
   "engines": {

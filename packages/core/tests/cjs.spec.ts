@@ -67,21 +67,15 @@ describe('resolveUserConfig', () => {
 
         expect(config.compilation.persistentCache).toEqual({
           buildDependencies: [
-            path.join(
-              process.cwd(),
-              '@farmfe',
-              'runtime',
-              'src',
-              'modules',
-              'module-helper.ts.farm-runtime'
-            ),
+            // Runtime helpers are stable virtual specifiers, not cwd-relative files.
+            '@farmfe/runtime/src/modules/module-helper.ts.farm-runtime',
             path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
             path.join(filePath, 'fixtures', 'config', 'util.ts'),
             'module',
             'package-lock.json',
             'pnpm-lock.yaml',
             'yarn.lock'
-          ],
+          ].sort(),
           envs: {
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'true',

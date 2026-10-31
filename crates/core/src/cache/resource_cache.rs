@@ -35,6 +35,11 @@ impl ResourceCacheManager {
     self.resource_pot_store.get_cache(name)
   }
 
+  /// Invalidate both in-memory and persisted output for one resource pot.
+  pub fn invalidate_cache(&self, name: &str) {
+    self.resource_pot_store.invalidate_cache(name);
+  }
+
   /// Write the cache map to the disk.
   pub fn write_cache(&self) {
     self.resource_pot_store.write_cache();

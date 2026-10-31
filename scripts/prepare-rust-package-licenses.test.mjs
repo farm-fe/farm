@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { prepareRustPackageLicenses } from './prepare-rust-package-licenses.mjs';
+test('copies existing MIT text only and never replaces existing upstream material', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-rust-license-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  fs.writeFileSync(path.join(root, 'LICENSE'), 'Existing repository MIT text\n');
+  fs.mkdirSync(path.join(root, 'crate'));
+  fs.writeFileSync(path.join(root, 'crate/Cargo.toml'), '[package]\nlicense = "MIT"\n');
+  const plan = { cargo: [{ name: 'crate', manifestPath: 'crate/Cargo.toml' }] };
+  assert.deepEqual(prepareRustPackageLicenses(root, plan), ['crate']);
+  assert.equal(fs.readFileSync(path.join(root, 'crate/LICENSE'), 'utf8'), 'Existing repository MIT text\n');
+  fs.writeFileSync(path.join(root, 'crate/LICENSE'), 'Upstream license and copyright');
+  assert.deepEqual(prepareRustPackageLicenses(root, plan), []);
+  assert.equal(fs.readFileSync(path.join(root, 'crate/LICENSE'), 'utf8'), 'Upstream license and copyright');
+  fs.unlinkSync(path.join(root, 'crate/LICENSE'));
+  fs.writeFileSync(path.join(root, 'crate/Cargo.toml'), 'license = "ISC"');
+  assert.throws(() => prepareRustPackageLicenses(root, plan), /Unreviewed Rust license/);
+});

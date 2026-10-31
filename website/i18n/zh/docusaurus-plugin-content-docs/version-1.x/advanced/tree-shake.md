@@ -1,6 +1,6 @@
 # Tree Shake
 
-Farm 支持 Tree Shake，该功能在默认的生产环境中自动启用，可以通过[compilation.treeShaking](/zh/document/config/compcompation-option#treeshaking)选项打开或关闭。
+Farm 支持 Tree Shake，该功能在默认的生产环境中自动启用，可以通过[compilation.treeShaking](../config/compilation-options.md#treeshaking)选项打开或关闭。
 
 在 Tree Shake 期间，package.json 中的 sideEffects 字段将被自动读取，具有 sideEffects 的模块将不会执行 Tree Shake。
 

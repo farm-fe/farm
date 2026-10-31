@@ -1,20 +1,15 @@
+import { SiteText } from "../../site-text";
+
 "use client";
-import Translate from "@docusaurus/Translate";
-import Box from "@site/static/img/box.png";
-import Compatibility from "@site/static/img/compatible.png";
-import Consistency from "@site/static/img/consistency.png";
-import FeaturePng from "@site/static/img/feature.png";
-import Plug from "@site/static/img/plug.png";
-import Rocket from "@site/static/img/rocket.png";
-import {
-  IconBoxAlignRightFilled,
-  IconClipboardCopy,
-  IconFileBroken,
-  IconSignature,
-  IconTableColumn,
-} from "@tabler/icons-react";
+
 import { motion } from "framer-motion";
 import React from "react";
+import Box from "../../../static/img/box.png";
+import Compatibility from "../../../static/img/compatible.png";
+import Consistency from "../../../static/img/consistency.png";
+import FeaturePng from "../../../static/img/feature.png";
+import Plug from "../../../static/img/plug.png";
+import Rocket from "../../../static/img/rocket.png";
 import { cn } from "../../lib/utils";
 import { AnimatedBeamPig } from "../ui/beam";
 import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
@@ -29,7 +24,6 @@ export default function BentoGridCard() {
           description={item.description}
           header={item.header}
           className={cn("[&>p:text-lg]", item.className)}
-          icon={item.icon}
         />
       ))}
     </BentoGrid>
@@ -204,73 +198,54 @@ const SkeletonFive = () => {
 };
 const items = [
   {
-    title: <Translate>Extremely Fast</Translate>,
+    title: <SiteText id="features.fast.title" />,
     description: (
       <span className="text-sm">
-        <Translate>
-          Written in Rust, start a React / Vue project in milliseconds and perform an HMR update within 10ms for most situations.
-        </Translate>
+        <SiteText id="features.fast.description" />
       </span>
     ),
     header: <SkeletonOne />,
     className: "md:col-span-1",
-    icon: <IconClipboardCopy className="h-4 w-4 text-neutral-500" />,
   },
   {
-    title: <Translate>Incremental Building</Translate>,
+    title: <SiteText id="features.incremental.title" />,
     description: (
       <span className="text-sm">
-        <Translate>
-          Incremental Building: Support persistent cache, module level cache
-          enabled by default, any module won't be compiled twice until it's
-          changed!
-        </Translate>
+        <SiteText id="features.incremental.description" />
       </span>
     ),
     header: <SkeletonTwo />,
     className: "md:col-span-1",
-    icon: <IconFileBroken className="h-4 w-4 text-neutral-500" />,
   },
   {
-    title: <Translate>Partial Bundling</Translate>,
+    title: <SiteText id="features.bundling.title" />,
     description: (
       <span className="text-sm">
-        <Translate>
-          Partial Bundling: Bundle your project into a few reasonable bundles,
-          speeding up resource loading without losing caching granularity.
-        </Translate>
+        <SiteText id="features.bundling.description" />
       </span>
     ),
     header: <SkeletonThree />,
     className: "md:col-span-1",
-    icon: <IconSignature className="h-4 w-4 text-neutral-500" />,
   },
   {
-    title: <Translate>Rich Features and Fully Pluggable</Translate>,
+    title: <SiteText id="features.pluggable.title" />,
     description: (
       <span className="text-sm">
-        <Translate>
-          Farm supports compiling HTML, CSS, CSS Modules, Js/Jsx/Ts/Tsx, JSON, Static Assets out of the box, supports Sass, Less, PostCSS, Vue, React, Solid by way of official plugins, supports lazy compiling, partial bundling and more. Everything inside Farm is powered by plugins, Supports both Rust and JavaScript plugins. Support Vite plugins out of box.
-        </Translate>
+        <SiteText id="features.pluggable.description" />
       </span>
     ),
     header: <SkeletonFour />,
     className: "md:col-span-2",
-    icon: <IconTableColumn className="h-4 w-4 text-neutral-500" />,
   },
 
   {
-    title: <Translate>Consistency and Compatibility</Translate>,
+    title: <SiteText id="features.compatibility.title" />,
     description: (
       <span className="text-sm">
-        <Translate>
-          What you see in development will be the same as what you get in
-          production. Supports both legacy (ES5) and modern browsers.
-        </Translate>
+        <SiteText id="features.compatibility.description" />
       </span>
     ),
     header: <SkeletonFive />,
     className: "md:col-span-1",
-    icon: <IconBoxAlignRightFilled className="h-4 w-4 text-neutral-500" />,
   },
 ];

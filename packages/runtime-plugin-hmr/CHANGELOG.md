@@ -1,5 +1,29 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0
+
+### Minor Changes
+
+- ec5e740: Add reusable Farm Docs packages and Rust plugins for documentation planning, Markdown/MDX, static rendering, snippets, SEO and native styling. Migrate the official website to its independent Farm configuration with multilingual and versioned content.
+
+  Add the Core output ownership, cache completion and runtime/HMR support needed by documentation builds and development updates. Preserve readable compiler errors in the CLI and expose the corresponding public types.
+
+  Preserve license comments and their original source positions when combining ordinary or already hoisted module source maps.
+
+### Patch Changes
+
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- 5861c49: Prevent HMR socket recovery from reloading a departing page in Firefox, cancel pending recovery during navigation, and reconnect pages restored from the back-forward cache.
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+
+### Earlier 4.0.0 preparation
+
+### Patch Changes
+
+- Invalidate every boundary chain before evaluating a batch update, and preserve old accept/dispose callbacks until cleanup completes. This prevents stale dependency exports and incorrect resource disposal when a component and its dependency change together.
+- 61aae5b: Fix HMR panic on windows when there are syntax errors
+- 6fafa25: Fix(v2) #2262. HMR does not work with Qiankun framework
+
 ## 4.0.0-beta.2
 
 ### Patch Changes

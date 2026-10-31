@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "Published plugin macro 2.0.0 against an edition 2024 mock of the unchanged Farm plugin contract",
+  "registryPackage": {
+    "name": "farmfe_macro_plugin",
+    "version": "2.0.0",
+    "sha256": "59ac048afc3bfcba0cefe8bbb25e1cdb2e266945094975a95fd9998fd80ae9a2"
+  },
+  "registryIndex": "https://raw.githubusercontent.com/rust-lang/crates.io-index/master/fa/rm/farmfe_macro_plugin",
+  "toolchain": "nightly-2026-04-10",
+  "target": "x86_64-pc-windows-msvc",
+  "edition": "2024",
+  "workspacePatch": false,
+  "fixtureFiles": [
+    {
+      "file": "scripts/release-fixtures/plugin-macro-consumer/Cargo.toml",
+      "sha256": "42aa24d9d16af3c53908c1ee10471853970ca3f2f36bcd10174858134f1b5bdc"
+    },
+    {
+      "file": "scripts/release-fixtures/plugin-macro-consumer/Cargo.lock",
+      "sha256": "cb700c99a821534fd7eada619db3aae2ea1022a44da91587093b4fdc1b1ce630"
+    },
+    {
+      "file": "scripts/release-fixtures/plugin-macro-consumer/src/lib.rs",
+      "sha256": "c4d528149473e342489ef5a481a4c3c493a0c6eb67be5a782f0205cbc46d450e"
+    }
+  ],
+  "log": "docs/release-evidence/published-plugin-macro-compat.txt",
+  "logSha256": "bca5921eb75c15f927ef645e4ee18e229bd425790bb9ca4aac07e176c57a80d9",
+  "tests": 1,
+  "limitation": "One mock ABI contract probe is not full independent Core/Compiler/Toolkit consumption."
+}

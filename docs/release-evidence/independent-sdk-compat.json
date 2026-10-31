@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "completedAt": "2026-10-27T04:24:31.609Z",
+  "platform": "x86_64-pc-windows-msvc",
+  "toolchain": "nightly-2026-04-10",
+  "profile": "release",
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "scope": [
+      "actual Core cache round-trip",
+      "original registry plugin macro and ABI 0.5.4",
+      "Compiler/Toolkit/glob public surface"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "sourceMode": "sealed-local-registry",
+    "sourceCommit": "ffcb09091449d44847311ea26867572956eac385",
+    "packageCount": 28,
+    "planSha256": "81d11f5c0b868b1a90a1f705aba749975f9fda357fe2dc962e51c7fda31a5e75",
+    "logSha256": "f25744c840a82b1b25cccb1c69e3f5b3f0e552fba44acbba07cff462569ca807",
+    "manifestSha256": "7b65a7296cd9d7d9b0a248109c87a0470d0ff0e44876cf98b526dddf667ed5e5",
+    "lockSha256": "1a9bbae2570aaafff1cba97fb3351433ebfacfc84b46fb23d3e81d8ea360d2ae",
+    "metadataSha256": "1528f5240fca87ec2e0b21d22d5b97953f7bf5e0fb7d40042834dbc611da124f",
+    "publishedRegistryConsumer": false
+  },
+  "packages": [
+    {
+      "name": "farmfe_compiler",
+      "version": "2.2.0",
+      "sha256": "daee5a67baea3f44d9238f60557d34f10fee8bc07e7004451ca2daec7fc21062",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_core",
+      "version": "2.2.0",
+      "sha256": "da69bdc798e3b9ed42ef3cbba25cd6c69d1bcba59383be216c5b7c504fa82198",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_ecosystem_glob",
+      "version": "0.1.0",
+      "sha256": "711d07e435701ad3f7b9904130d573503e8f91293f0e05ed73b812f5a3f812b9",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_css",
+      "version": "2.2.0",
+      "sha256": "33bb7411274611f944f9157503c154632bc541b942968cb6737a440324376dbe",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_define",
+      "version": "2.2.0",
+      "sha256": "18868dc09d151c578c998bed6ff8657cda5c0b398b3422f07fdd6a6cfba30494",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_file_size",
+      "version": "2.2.0",
+      "sha256": "3992b7a0fa18e72c6724ddf0205df11311e8272b0134607859f8dc5aebb8d486",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_html",
+      "version": "2.2.0",
+      "sha256": "92ffc6f996d4af811a9ad6a9e7275e24c5343c77071b4a1c4b34e7317f6e78bb",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_json",
+      "version": "2.2.0",
+      "sha256": "0512ba2e63b09c08bf048b09eae5809bd192c26914867dc70d122c7d9accd81a",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_lazy_compilation",
+      "version": "2.2.0",
+      "sha256": "98489b2b92940847b358f3ceb31f681e69ce1451ede52ceff2469f410012463c",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_library",
+      "version": "2.2.0",
+      "sha256": "daaddcafadb5a9ef1c9fd920b4e4956d87bb69c11e519c653baffed5e0b27f36",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_mangle_exports",
+      "version": "2.2.0",
+      "sha256": "080ebd881a3c90d41fe783a04fc8aadfb75d397e246697649f99cba742efe5b0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_minify",
+      "version": "2.2.0",
+      "sha256": "bfdf39e1444f8422d12024649ad16f7d6669a1d94077e7d612a3b419291ad885",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_partial_bundling",
+      "version": "2.2.0",
+      "sha256": "672a8d5cd6635af1ae6f76db9f5dc197e53c00a7c9ec324cfcf9e6b1cbcdffd9",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_polyfill",
+      "version": "2.2.0",
+      "sha256": "d8907fe61ca2b21d0040e851ee00ff5e5fef4999823905d4b843530182cd95ed",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_progress",
+      "version": "2.2.0",
+      "sha256": "2df6035e966254079ba812a5892ecc38ea9beb02e521dbb01b38e722b67eaeda",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_resolve",
+      "version": "2.2.0",
+      "sha256": "e443c4da4964c9936fc6bfd972f73f96a2e7ec5b6cd7406da7d50a3a99fc725f",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_runtime",
+      "version": "2.2.0",
+      "sha256": "e04658711c5641b0bcf8aba5bafb06d80b583e58fb1548afd36c0602577688c0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_script",
+      "version": "2.2.0",
+      "sha256": "81c0d59e4a3f6557a562ba2ad7f61ba5f35b23e0824b893e44bd012fbda3453c",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_script_meta",
+      "version": "2.2.0",
+      "sha256": "c718d1332140b3123398c97f1063989b7eae3181e2639bb3078752406292b49c",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_static_assets",
+      "version": "2.2.0",
+      "sha256": "2c4a53d5e247c5446a800cf378aae32cf0156e2746f5c3ae84f7b3b016dade3c",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_plugin_tree_shake",
+      "version": "2.2.0",
+      "sha256": "9deaf80db199b4b3e490b9f805fd280fca29f3df2828eb79fb461cd727ab80c8",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_swc_transformer_import_glob",
+      "version": "2.2.0",
+      "sha256": "d94bdda93b200f143f28725e7d92b6358596609269e523b6873855fb4ee631b6",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_testing",
+      "version": "2.0.0",
+      "sha256": "d1c8eb9ee43a9ca0e0cf0a6c2e6bf4d4d3bb5c8d994bc5370cb424b2cfe90b22",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_testing_helpers",
+      "version": "2.2.0",
+      "sha256": "6b790328f4a232f549071dee20b57498f338846104967fcb981f74a7128d04a1",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_toolkit",
+      "version": "2.2.0",
+      "sha256": "bb426b78d743ce726f14034480b3fb71626edf3e4861555711e0f12a0f44515a",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_utils",
+      "version": "2.1.1",
+      "sha256": "d63fb114030e7a7b110e41606a0a6da670af338dad72eaf6dfec6be52d6be356",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "compatibilityTransitives": [
+        {
+          "name": "farmfe_utils",
+          "version": "0.1.6",
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "requiredBy": [
+            "enhanced-magic-string@0.1.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "farmfe_macro_cache_item",
+      "version": "2.1.0",
+      "sha256": "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    },
+    {
+      "name": "farmfe_macro_plugin",
+      "version": "2.0.0",
+      "sha256": "59ac048afc3bfcba0cefe8bbb25e1cdb2e266945094975a95fd9998fd80ae9a2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index"
+    }
+  ],
+  "archiveLegal": {
+    "ownArchivesWithLicenseText": 26,
+    "originalMacroArchivesWithLicenseText": 0,
+    "originalMacroLicenseSupplement": "docs/release-evidence/published-macro-license.json",
+    "sealedArchiveLockFilesWithWaxOrTardar": 0
+  },
+  "limitations": [
+    "Local sealed registry, not live public registry installation",
+    "Default Windows target/features only",
+    "Summary alone is not the portable raw evidence accepted by the gate",
+    "Not proof of all 297 npm archives or all transitive license closure"
+  ]
+}

@@ -1,4 +1,4 @@
-import type { Resource } from './modules/dynamic-import.js';
+import type { DynamicModuleResourcesSnapshot, DynamicResourceTransaction, Resource } from './modules/dynamic-import.js';
 import type { FarmRuntimePluginContainer } from './modules/plugin.js';
 
 // if statement will be removed during compile time when referencing following variables
@@ -68,6 +68,10 @@ export interface ModuleSystem {
     dynamicResources: Resource[],
     dynamicModuleResourcesMap: Record<string, number[]>
   ): void;
+  /** Detached dynamic resource mapping; does not snapshot loaded/in-flight resources. */
+  gd(): DynamicModuleResourcesSnapshot;
+  /** Coordinate resource completion/loaded state; module and plugin side effects are separate. */
+  beginResourceTransaction(): Promise<DynamicResourceTransaction>;
   /** setPublicPaths
    * The public paths are injected during compile time */
   sp(publicPaths: string[]): void;

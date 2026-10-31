@@ -272,92 +272,59 @@ function getRetryDelay(attempt, examplePath) {
  * @param {string} command
  * @returns {Promise<void>}
  */
-async function visitPage(url, examplePath, cb, command) {
+export async function visitPage(url, examplePath, cb, command) {
   const page = await requireBrowserContext().newPage();
   const cleanupRoutes = await installExampleRequestRoutes(page, examplePath);
   logger(`Opening page: ${url}  [${examplePath}]`);
-
-  page.on('requestfailed', (req) => {
-    // Request failures don't fail the test by themselves — keep them in the
-    // log file but suppress on the console in quiet mode to avoid noise.
-    logger(
-      `Request failed  ${examplePath}: ${req.url()} – ${req.failure()?.errorText ?? ''}`,
-      { level: 'info' }
-    );
-  });
-
+  let cbSucceeded = false;
+  let failure;
+  const fail = (error) => {
+    if (cbSucceeded || failure) return;
+    failure = error;
+    // Closing cancels Playwright waits. The callback must still settle so its
+    // finally blocks restore fixture edits before another attempt can start.
+    void page.close({ reason: 'test failed', runBeforeUnload: false }).catch(() => {});
+  };
+  const onRequestFailed = (req) => {
+    logger(`Request failed  ${examplePath}: ${req.url()} - ${req.failure()?.errorText ?? ''}`, { level: 'info' });
+  };
+  const onConsole = (msg) => {
+    if (page.isClosed()) return;
+    const text = msg.text();
+    const lower = text.toLocaleLowerCase();
+    const location = msg.location?.();
+    const locationText = location?.url
+      ? ` (${location.url}:${location.lineNumber ?? 0}:${location.columnNumber ?? 0})`
+      : '';
+    if (msg.type() === 'error' && !lower.includes('warn') &&
+        !lower.includes('warning') && !/Parse `.+` failed/.test(text)) {
+      logger(`[console:error] ${command} ${examplePath}: ${text}${locationText}`, { color: 'red' });
+      fail(new Error(`Browser console error: ${text}${locationText}`));
+    } else {
+      logger(`[console] ${command} ${examplePath}: ${text}${locationText}`);
+    }
+  };
+  const onPageError = (error) => {
+    if (page.isClosed()) return;
+    logger(`[pageerror] ${command} ${examplePath}: ${error?.stack ?? String(error)}`, { color: 'red' });
+    fail(error);
+  };
+  page.on('requestfailed', onRequestFailed);
+  page.on('console', onConsole);
+  page.on('pageerror', onPageError);
   try {
-    return await new Promise((resolve, reject) => {
-      let settled = false;
-      let cbSucceeded = false;
-      const settle = (fn) => {
-        if (!settled) {
-          settled = true;
-          fn();
-        }
-      };
-
-      page.on('console', (msg) => {
-        if (page.isClosed()) return;
-        const text = msg.text();
-        const lower = text.toLocaleLowerCase();
-        const location = msg.location?.();
-        const locationText = location?.url
-          ? ` (${location.url}:${location.lineNumber ?? 0}:${location.columnNumber ?? 0})`
-          : '';
-
-        if (
-          msg.type() === 'error' &&
-          !lower.includes('warn') &&
-          !lower.includes('warning') &&
-          !/Parse `.+` failed/.test(text)
-        ) {
-          logger(`[console:error] ${command} ${examplePath}: ${text}${locationText}`, {
-            color: 'red'
-          });
-          // Ignore console errors that arrive after the assertion callback
-          // already succeeded — they typically come from background work
-          // (e.g. workers) racing against page teardown when the dev server
-          // is being shut down, and should not invalidate a passing test.
-          if (cbSucceeded) return;
-          settle(() => reject(new Error(`Browser console error: ${text}${locationText}`)));
-        } else {
-          logger(`[console] ${command} ${examplePath}: ${text}${locationText}`);
-        }
-      });
-
-      page.on('pageerror', (error) => {
-        if (page.isClosed()) return;
-        const details =
-          error && typeof error === 'object' && 'stack' in error && error.stack
-            ? error.stack
-            : String(error);
-        logger(`[pageerror] ${command} ${examplePath}: ${details}`, { color: 'red' });
-        if (cbSucceeded) return;
-        settle(() => reject(error));
-      });
-
-      page
-        .goto(url)
-        .then(() => cb(page))
-        .then(() => {
-          // Mark the test as successful *before* we close the page so that
-          // any console.error / pageerror events that fire during teardown
-          // (for example workers losing their connection to a dev server
-          // that's about to be killed) cannot retroactively fail a test
-          // whose assertions have already passed.
-          cbSucceeded = true;
-          return page.close({ reason: 'test finished', runBeforeUnload: false }).catch(() => {});
-        })
-        .then(() => settle(() => resolve()))
-        .catch((e) => {
-          // Failure — close page first, then reject
-          return page.close({ reason: 'test failed', runBeforeUnload: false }).catch(() => {}).then(() => {
-            settle(() => reject(/** @type {Error} */ (e)));
-          });
-        });
-    });
+    await page.goto(url);
+    if (failure) throw failure;
+    await cb(page);
+    if (failure) throw failure;
+    cbSucceeded = true;
+  } catch (error) {
+    throw failure ?? error;
   } finally {
+    await page.close({ reason: cbSucceeded ? 'test finished' : 'test failed', runBeforeUnload: false }).catch(() => {});
+    page.off('requestfailed', onRequestFailed);
+    page.off('console', onConsole);
+    page.off('pageerror', onPageError);
     await cleanupRoutes();
   }
 }

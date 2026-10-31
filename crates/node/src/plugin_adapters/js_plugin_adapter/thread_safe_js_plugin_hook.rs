@@ -1,11 +1,11 @@
 #![allow(clippy::type_complexity)]
 use std::{
-  ffi::{c_void, CString},
+  ffi::{CString, c_void},
   fmt::Debug,
   ptr,
   sync::{
-    mpsc::{channel, Sender},
     Arc,
+    mpsc::{Sender, channel},
   },
 };
 
@@ -13,9 +13,10 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   plugin::PluginHookContext,
-  serde::{de::DeserializeOwned, Serialize},
+  serde::{Serialize, de::DeserializeOwned},
 };
 use napi::{
+  Env, JsValue, Unknown, ValueType,
   bindgen_prelude::{FromNapiValue, Function, JsObjectValue, Object},
   sys::{
     napi_call_function,
@@ -34,7 +35,6 @@ use napi::{
     // ThreadsafeFunctionReleaseMode,napi_release_threadsafe_function,
   },
   threadsafe_function::ThreadsafeFunctionCallMode,
-  Env, JsValue, Unknown, ValueType,
 };
 
 use super::context::create_js_context;
@@ -43,11 +43,34 @@ pub struct ThreadSafeJsPluginHook {
   raw_tsfn: napi_threadsafe_function,
 }
 
+pub(super) trait HookParamEncoder<P> {
+  fn encode<'env>(env: &'env Env, param: P) -> napi::Result<Unknown<'env>>;
+}
+
+struct SerdeParamEncoder;
+
+impl<P: Serialize> HookParamEncoder<P> for SerdeParamEncoder {
+  fn encode<'env>(env: &'env Env, param: P) -> napi::Result<Unknown<'env>> {
+    env.to_js_value(&param)
+  }
+}
+
 unsafe impl Send for ThreadSafeJsPluginHook {}
 unsafe impl Sync for ThreadSafeJsPluginHook {}
 
 impl ThreadSafeJsPluginHook {
   pub fn new<P: Serialize, T: DeserializeOwned + Debug + Send + 'static>(
+    env: &Env,
+    func: Function,
+  ) -> Self {
+    Self::new_with_encoder::<P, T, SerdeParamEncoder>(env, func)
+  }
+
+  pub(super) fn new_with_encoder<
+    P: Serialize,
+    T: DeserializeOwned + Debug + Send + 'static,
+    E: HookParamEncoder<P>,
+  >(
     env: &Env,
     func: Function,
   ) -> Self {
@@ -77,7 +100,7 @@ impl ThreadSafeJsPluginHook {
         ptr::null_mut(),
         Some(thread_finalize_cb),
         ptr::null_mut(),
-        Some(call_js_cb::<P, T>),
+        Some(call_js_cb::<P, T, E>),
         &mut raw_tsfn,
       );
       // exit as soon as possible the callback returned
@@ -126,7 +149,11 @@ unsafe extern "C" fn thread_finalize_cb(
 }
 
 /// Thread safe function callback, call the real hook function and return its result. Promise is also supported.
-unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send + 'static>(
+unsafe extern "C" fn call_js_cb<
+  P: Serialize,
+  T: DeserializeOwned + Debug + Send + 'static,
+  E: HookParamEncoder<P>,
+>(
   raw_env: napi_env,
   func: napi_value,
   _context: *mut c_void,
@@ -167,7 +194,26 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
     Env::from_raw(raw_env).to_js_value(&arg).unwrap().raw()
   }
 
-  let mut args: Vec<napi_value> = vec![to_napi_value(param, raw_env), js_context.raw()];
+  let env = Env::from_raw(raw_env);
+  let encoded_param = match E::encode(&env, param) {
+    Ok(value) => value,
+    Err(error) => {
+      // A failed encoder must release the waiting compiler even if an inherited
+      // JavaScript setter threw while an array element was being assigned.
+      let mut pending = false;
+      if napi::sys::napi_is_exception_pending(raw_env, &mut pending) == napi::sys::Status::napi_ok
+        && pending
+      {
+        let mut exception = ptr::null_mut();
+        napi::sys::napi_get_and_clear_last_exception(raw_env, &mut exception);
+      }
+      let _ = sender.send(Err(CompilationError::NAPIError(format!(
+        "Cannot encode hook parameters: {error}"
+      ))));
+      return;
+    }
+  };
+  let mut args: Vec<napi_value> = vec![encoded_param.raw(), js_context.raw()];
 
   if let Some(hook_context) = hook_context {
     args.push(to_napi_value(hook_context, raw_env));
@@ -216,8 +262,8 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
 macro_rules! new_js_plugin_hook {
   ($filter:ident, $js_filter:ident, $param:ident, $ret:ident) => {
     pub fn new(env: &napi::Env, obj: napi::bindgen_prelude::Object) -> Self {
-      use napi::bindgen_prelude::JsObjectValue;
       use napi::JsValue;
+      use napi::bindgen_prelude::JsObjectValue;
 
       let filters: $filter = unsafe {
         $js_filter::from_napi_value(

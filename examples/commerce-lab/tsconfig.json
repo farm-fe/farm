@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "declaration": false,
+    "allowJs": true,
+    "checkJs": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "types": ["react", "react-dom", "node"]
+  },
+  "include": ["apps", "packages", "configs", "farm*.config.ts", "farm.config.ts"],
+  "exclude": ["apps/vue-jsx-lab"]
+}

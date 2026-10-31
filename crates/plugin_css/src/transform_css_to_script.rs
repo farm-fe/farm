@@ -5,11 +5,11 @@ use farmfe_core::{
   context::CompilationContext,
   deserialize,
   module::{
-    meta_data::{
-      script::{CommentsMetaData, ScriptModuleMetaData},
-      ArchivedModuleMetaData,
-    },
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
+    meta_data::{
+      ArchivedModuleMetaData,
+      script::{CommentsMetaData, ScriptModuleMetaData},
+    },
   },
   plugin::{PluginFinalizeModuleHookParam, PluginProcessModuleHookParam, ResolveKind},
   rayon::prelude::*,
@@ -23,11 +23,10 @@ use farmfe_toolkit::{
   css::codegen_css_stylesheet,
   hash::base64_encode,
   script::{
-    parse_module,
+    ParseScriptModuleResult, parse_module,
     swc_try_with::{resolve_module_mark, try_with},
-    ParseScriptModuleResult,
   },
-  sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions, SourceMap},
+  sourcemap::{CollapseSourcemapOptions, SourceMap, collapse_sourcemap_chain},
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,
 };
@@ -50,19 +49,33 @@ pub fn transform_css_to_script_modules(
       let mut cache_store_key = None;
 
       if context.config.persistent_cache.enabled() {
-        let content_hash = {
+        let (content_hash, generated_css) = {
           let module_graph = context.module_graph.read();
           let m = module_graph.module(&module_id).unwrap();
-          m.content_hash.clone()
+          // freeze_module plugins can generate new CSS from watched inputs
+          // without changing the original stylesheet's content hash.
+          let (css, _) = codegen_css_stylesheet(&m.meta.as_css().ast, false, None, false);
+          (m.content_hash.clone(), css)
+        };
+        let watch_hash = if context.cache_manager.module_cache.has_cache(&module_id) {
+          context
+            .cache_manager
+            .module_cache
+            .get_cache_ref(&module_id)
+            .watch_dependencies_hash()
+        } else {
+          String::new()
         };
         // try read custom css transform cache
         let store_key = CacheStoreKey {
           name: module_id.to_string() + "-transform_css_to_script_modules",
           key: sha256(
             format!(
-              "transform_css_to_script_modules_{}_{}",
+              "transform_css_to_script_modules_{}_{}_{}_{}",
               content_hash,
-              module_id.to_string()
+              module_id.to_string(),
+              generated_css,
+              watch_hash
             )
             .as_bytes(),
             32,
@@ -355,4 +368,81 @@ if (module.meta.hot) {{
     id.replace('\\', "\\\\"),
     css_deps,
   )
+}
+
+#[cfg(test)]
+mod cache_tests {
+  use super::*;
+  use farmfe_core::{
+    config::{
+      Config,
+      persistent_cache::{PersistentCacheConfig, PersistentCacheConfigObj},
+    },
+    module::{Module, meta_data::css::CssModuleMetaData},
+  };
+  use farmfe_toolkit::css::parse_css_stylesheet;
+
+  #[test]
+  fn generated_css_change_invalidates_script_cache_with_unchanged_source_hash() {
+    let cache_dir = std::env::temp_dir().join(format!(
+      "farm-css-generated-{}-{}",
+      std::process::id(),
+      std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos()
+    ));
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+            cache_dir: Some(cache_dir.to_string_lossy().into_owned()),
+            ..Default::default()
+          })),
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap(),
+    );
+    let id = ModuleId::from("generated.css");
+    for color in ["red", "blue"] {
+      let content = Arc::new(format!(".generated {{ color: {color}; }}"));
+      let parsed = parse_css_stylesheet(&id.to_string(), content.clone()).unwrap();
+      context.meta.set_module_source_map(&id, parsed.source_map);
+      context.meta.set_globals(&id, Globals::new());
+      let mut module = Module::new(id.clone());
+      module.module_type = ModuleType::Css;
+      module.content = content;
+      module.content_hash = "same-input-directive".to_string();
+      module.meta = Box::new(ModuleMetaData::Css(Box::new(CssModuleMetaData {
+        ast: parsed.ast,
+        comments: Default::default(),
+        custom: Default::default(),
+      })));
+      {
+        let mut graph = context.module_graph.write();
+        if graph.has_module(&id) {
+          *graph.module_mut(&id).unwrap() = module;
+        } else {
+          graph.add_module(module);
+        }
+      }
+      transform_css_to_script_modules(vec![id.clone()], &context).unwrap();
+      let graph = context.module_graph.read();
+      let module = graph.module(&id).unwrap();
+      let code = farmfe_toolkit::script::codegen_module(
+        &module.meta.as_script().ast,
+        context.meta.get_module_source_map(&id),
+        None,
+        Default::default(),
+        None,
+      )
+      .unwrap();
+      assert!(
+        String::from_utf8(code).unwrap().contains(color),
+        "script cache retained previous generated CSS"
+      );
+    }
+  }
 }

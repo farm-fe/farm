@@ -51,7 +51,9 @@ fn sort_strings_with_numbers() {
   input.sort_by(|a, b| compare(a, b));
   assert_eq!(
     input,
-    vec!["p-0", "p-0.5", "p-1", "p-1.5", "p-2", "p-10", "p-12", "p-20", "p-21"]
+    vec![
+      "p-0", "p-0.5", "p-1", "p-1.5", "p-2", "p-10", "p-12", "p-20", "p-21"
+    ]
   );
 }
 

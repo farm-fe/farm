@@ -1,0 +1,68 @@
+{
+  "issue": 2266,
+  "baseline": "2000ef8a",
+  "firefox": "141.0",
+  "executedAt": "2026-10-12T01:41:00.839Z",
+  "success": true,
+  "cases": [
+    {
+      "version": "baseline",
+      "name": "delayed-location-assign",
+      "passed": true,
+      "targetReached": false,
+      "pings": 1,
+      "trace": [
+        "pageshow",
+        "beforeunload",
+        "next-task-socket-state:2",
+        "socket-close:1001",
+        "beforeunload",
+        "next-task-socket-state:3",
+        "pagehide",
+        "pageshow"
+      ]
+    },
+    {
+      "version": "baseline",
+      "name": "canceled-navigation-and-server-restart",
+      "passed": true,
+      "reloadsAfterServerDisconnect": 1
+    },
+    {
+      "version": "fixed",
+      "name": "delayed-location-assign",
+      "passed": true,
+      "targetReached": true,
+      "pings": 0,
+      "trace": [
+        "pageshow",
+        "beforeunload",
+        "next-task-socket-state:2",
+        "socket-close:1001",
+        "pagehide"
+      ]
+    },
+    {
+      "version": "fixed",
+      "name": "canceled-navigation-and-server-restart",
+      "passed": true,
+      "reloadsAfterServerDisconnect": 1
+    },
+    {
+      "version": "fixed",
+      "name": "closed-socket-canceled-navigation",
+      "passed": true,
+      "updateReceived": true,
+      "recoveryAfterTrustedInput": true
+    },
+    {
+      "version": "fixed",
+      "name": "closed-socket-delayed-navigation-replacement-fails",
+      "passed": true,
+      "targetReached": true,
+      "replacementCloses": 1,
+      "extraReloads": 0,
+      "extraPings": 0
+    }
+  ]
+}

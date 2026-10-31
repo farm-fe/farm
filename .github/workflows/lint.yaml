@@ -1,5 +1,14 @@
 name: Lint
-on: [pull_request]
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        required: true
+        type: string
+      release_base:
+        required: true
+        type: string
 
 jobs:
   rust-lint:
@@ -16,7 +25,7 @@ jobs:
         run: cargo clippy
   lint:
     name: TS Code Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Setup pnpm

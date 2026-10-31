@@ -2,48 +2,49 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use dynamic_import::DynamicImportVisitor;
 use farmfe_core::{
+  HashMap, HashSet,
   config::comments::CommentsConfig,
   context::CompilationContext,
   module::{
+    ModuleId, ModuleSystem,
     meta_data::script::{
-      statement::SwcId, CommentsMetaData, CommentsMetaDataItem, ModuleExportIdent,
-      ModuleReExportIdentType, ScriptModuleMetaData,
+      CommentsMetaData, CommentsMetaDataItem, ModuleExportIdent, ModuleReExportIdentType,
+      ScriptModuleMetaData, statement::SwcId,
     },
     module_graph::ModuleGraph,
-    ModuleId, ModuleSystem,
   },
   parking_lot::Mutex,
   plugin::ResolveKind,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   swc_common::{
+    DUMMY_SP, GLOBALS, Globals, Mark, SourceMap, Span,
     comments::{Comment, CommentKind},
-    Globals, Mark, SourceMap, Span, DUMMY_SP, GLOBALS,
   },
   swc_ecma_ast::{EmptyStmt, Module as SwcModule, ModuleItem, Stmt},
-  HashMap, HashSet,
 };
 
-use strip_module_decl::{strip_module_decl, PreservedImportDeclItem, StripModuleDeclResult};
+use strip_module_decl::{PreservedImportDeclItem, StripModuleDeclResult, strip_module_decl};
 use swc_ecma_visit::VisitMutWith;
-use unique_idents::TopLevelIdentsRenameHandler;
 pub use unique_idents::EXPORT_NAMESPACE;
+use unique_idents::TopLevelIdentsRenameHandler;
 use utils::{create_var_namespace_item, generate_export_decl_item};
 
 use crate::script::concatenate_modules::{
   strip_module_decl::{
-    handle_external_module_idents, is_ident_reexported_from_external_module,
-    StripModuleDeclStatementParams,
+    StripModuleDeclStatementParams, handle_external_module_idents,
+    is_ident_reexported_from_external_module,
   },
   utils::should_add_namespace_ident,
 };
 
 use super::{
-  merge_swc_globals::{merge_comments, merge_sourcemap},
+  merge_swc_globals::merge_sourcemap_and_comments,
   swc_try_with::{resolve_module_mark, try_with},
 };
 
 mod dynamic_import;
 mod handle_external_modules;
+mod require;
 mod strip_module_decl;
 mod unique_idents;
 pub(crate) mod utils;
@@ -159,8 +160,9 @@ pub fn concatenate_modules_ast(
     sorted_modules.push(module_id);
   }
 
-  let merged_source_map = merge_sourcemap(&mut module_asts, Default::default(), context);
-  let merged_comments = merge_comments(&mut comments, merged_source_map.clone()).into();
+  let (merged_source_map, merged_comments) =
+    merge_sourcemap_and_comments(&mut module_asts, &mut comments, Default::default(), context);
+  let merged_comments = merged_comments.into();
 
   // merge comments, module_asts and preserved_module_decls back to strip_module_results
   let stripped_results = comments
@@ -426,9 +428,27 @@ fn strip_modules_asts(
           DynamicImportVisitor::new(module_id, module_graph, module_ids, &rename_handler);
         result.ast.visit_mut_with(&mut dynamic_import_visitor);
 
+        let mut require_visitor = require::RequireVisitor {
+          module_id,
+          module_graph,
+          unresolved_mark: Mark::from_u32(
+            module_graph
+              .module(module_id)
+              .unwrap()
+              .meta
+              .as_script()
+              .unresolved_mark,
+          ),
+          external_modules: HashMap::default(),
+        };
+        result.ast.visit_mut_with(&mut require_visitor);
+
         dynamic_external_modules
           .lock()
           .extend(dynamic_import_visitor.external_modules);
+        dynamic_external_modules
+          .lock()
+          .extend(require_visitor.external_modules);
       })
       .unwrap();
     });
@@ -581,16 +601,21 @@ fn handle_external_reexport_idents(
   let mut external_module_idents_map = HashMap::default();
 
   for (export_str, reexport_type) in &module_meta.reexport_ident_map {
-    let source_module_id = match reexport_type {
-      ModuleReExportIdentType::FromExportAll(from_module_id) => from_module_id,
-      ModuleReExportIdentType::FromExportNamed { from_module_id, .. } => from_module_id,
+    let (source_module_id, source_export_str) = match reexport_type {
+      ModuleReExportIdentType::FromExportAll(from_module_id) => {
+        (from_module_id, export_str.as_str())
+      }
+      ModuleReExportIdentType::FromExportNamed {
+        from_module_id,
+        local,
+      } => (from_module_id, local.as_str()),
     };
 
     if let Some((closest_external_module_id, local_export_str)) =
       is_ident_reexported_from_external_module(
         module_ids,
         source_module_id,
-        export_str,
+        source_export_str,
         module_graph,
         rename_handler,
         &mut HashSet::default(),
@@ -647,4 +672,80 @@ fn handle_external_reexport_idents(
   statements_to_remove.into_iter().for_each(|stmt_id| {
     result.ast.body.remove(stmt_id);
   });
+}
+
+#[cfg(test)]
+mod reexport_tests {
+  use super::*;
+  use farmfe_core::module::{
+    Module, ModuleMetaData, ModuleType, meta_data::script::ModuleExportIdentType,
+  };
+
+  #[test]
+  fn default_reexport_alias_across_resource_boundary_gets_import_binding() {
+    let source_id: ModuleId = "Model.js".into();
+    let entry_id: ModuleId = "barrel.js".into();
+    let original = SwcId::new("Model_js_default".into(), 0);
+    let export = ModuleExportIdent::new(
+      source_id.clone(),
+      original.clone(),
+      ModuleExportIdentType::Declaration,
+    );
+    let mut source = Module::new(source_id.clone());
+    source.module_type = ModuleType::Js;
+    *source.meta = ModuleMetaData::Script(Default::default());
+    source.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+    source
+      .meta
+      .as_script_mut()
+      .export_ident_map
+      .insert("default".into(), export.clone());
+    let mut entry = Module::new(entry_id.clone());
+    entry.module_type = ModuleType::Js;
+    *entry.meta = ModuleMetaData::Script(Default::default());
+    let meta = entry.meta.as_script_mut();
+    meta.module_system = ModuleSystem::EsModule;
+    meta.export_ident_map.insert("ModelAlias".into(), export);
+    meta.reexport_ident_map.insert(
+      "ModelAlias".into(),
+      ModuleReExportIdentType::FromExportNamed {
+        local: "default".into(),
+        from_module_id: source_id.clone(),
+      },
+    );
+    let meta = entry.meta.as_script().clone();
+    let mut graph = ModuleGraph::new();
+    graph.add_module(source);
+    graph.add_module(entry);
+    let ids = HashSet::from_iter([entry_id.clone()]);
+    let mut result = StripModuleDeclResult {
+      ast: meta.ast.clone(),
+      comments: Default::default(),
+      items_to_prepend: vec![],
+      items_to_append: vec![],
+    };
+    let mut strip = StripModuleContext {
+      should_add_namespace_ident: HashSet::default(),
+      rename_handler: Rc::new(RefCell::new(TopLevelIdentsRenameHandler::default())),
+      preserved_import_decls: vec![],
+      preserved_export_decls: vec![],
+      extra_var_decls: vec![],
+      cyclic_idents: HashMap::default(),
+    };
+    let mut renames = TopLevelIdentsRenameHandler::default();
+    GLOBALS.set(&Globals::new(), || {
+      handle_external_reexport_idents(
+        &entry_id,
+        &entry_id,
+        &ids,
+        &meta,
+        &mut result,
+        &mut strip,
+        &graph,
+        &mut renames,
+      )
+    });
+    assert!(renames.get_renamed_ident(&source_id, &original).is_some());
+    assert!(!strip.preserved_import_decls.is_empty());
+  }
 }

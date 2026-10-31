@@ -1,0 +1,11 @@
+# Product import playbook
+
+Download the template from the import workspace. Every row needs a unique SKU, a product name, and a non-negative price with at most two decimal places.
+
+## Review before publishing
+
+Validation runs in a Web Worker. Correct every invalid row before importing. Imported products start as drafts so your team can review them before they appear in campaigns.
+
+## Merchant boundaries
+
+Products, orders, and campaigns belong to the selected merchant. Switching merchants starts a separate workspace view.

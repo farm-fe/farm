@@ -1,0 +1,728 @@
+{
+  "schemaVersion": 1,
+  "status": "DRAFT_NOT_A_RELEASE_SET",
+  "sourceAudit": "registry-consumer-audit-20261021.json",
+  "sourceHead": "3113d8ae19888e35a2253e40cb761f94558dc9e9",
+  "rustCandidateBaseline": "2.2.0 is coordinator proposal/application, not an npm version mapping",
+  "staleClosureWarning": "40 names reflect preview source inventory. Unified baseline MDX/docs-content changes require closure re-audit; new published Farm dependency outside this set must fail, not silently extend/fallback.",
+  "targetPlatforms": [
+    "win32-x64-msvc",
+    "linux-x64-gnu"
+  ],
+  "directFarmPackages": [
+    "@farmfe/docs",
+    "@farmfe/docs-theme-default",
+    "@farmfe/core",
+    "@farmfe/cli",
+    "@farmfe/plugin-sass",
+    "@farmfe/plugin-tailwindcss"
+  ],
+  "publicationPolicy": "Ordering proposal only; no publish/install/source build performed or authorized by this draft. Candidate versions are unpublished inventory, not approved release pins.",
+  "layers": [
+    {
+      "order": 0,
+      "name": "Precompiled platform payloads",
+      "requires": []
+    },
+    {
+      "order": 1,
+      "name": "JS foundations",
+      "requires": []
+    },
+    {
+      "order": 2,
+      "name": "Native-plugin JS wrappers",
+      "requires": [
+        0
+      ]
+    },
+    {
+      "order": 3,
+      "name": "Core public package",
+      "requires": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "order": 4,
+      "name": "CLI public package",
+      "requires": [
+        3
+      ]
+    },
+    {
+      "order": 5,
+      "name": "Docs and theme coherent cohort",
+      "requires": [
+        2,
+        3,
+        4
+      ],
+      "note": "Docs/theme peer cycle: stage together and activate release-set only after both are available; do not solve by downgrading."
+    }
+  ],
+  "packages": [
+    {
+      "name": "@farmfe/core-linux-x64-gnu",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/core",
+      "artifactPath": "farm.linux-x64-gnu.node",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".node",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.7.11"
+      }
+    },
+    {
+      "name": "@farmfe/core-win32-x64-msvc",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/core",
+      "artifactPath": "farm.win32-x64-msvc.node",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".node",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.7.11"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-linux-x64-gnu",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-docs",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-linux-x64-gnu",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-docs-seo",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-win32-x64-msvc",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-docs-seo",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-linux-x64-gnu",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-docs-snapshot",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-win32-x64-msvc",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-docs-snapshot",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-linux-x64-gnu",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-docs-snippets",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-win32-x64-msvc",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-docs-snippets",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-win32-x64-msvc",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-docs",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-linux-x64-gnu",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-react",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.2.6"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-win32-x64-msvc",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-react",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.2.6"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-linux-x64-gnu",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-replace-dirname",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.0.0-nightly-20241024075304"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-win32-x64-msvc",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-replace-dirname",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.0.0-nightly-20241024075304"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-linux-x64-gnu",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-sass",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.1.0"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-win32-x64-msvc",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-sass",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.1.0"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-linux-x64-gnu",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-ssr-css",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-win32-x64-msvc",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-ssr-css",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-linux-x64-gnu",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-syntax-highlight",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-win32-x64-msvc",
+      "candidateVersion": "0.0.1",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-syntax-highlight",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-linux-x64-gnu",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "linux-x64-gnu",
+      "owner": "@farmfe/plugin-tailwindcss",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "ELF shared object",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "2.0.0-beta.1"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-win32-x64-msvc",
+      "candidateVersion": "2.0.0",
+      "role": "native-platform",
+      "layer": 0,
+      "requiredOn": "win32-x64-msvc",
+      "owner": "@farmfe/plugin-tailwindcss",
+      "artifactPath": "index.farm",
+      "artifactContract": {
+        "format": "PE DLL",
+        "extension": ".farm",
+        "requiresPublisherSha256": true,
+        "abiMustEqualReleaseSet": true,
+        "sourceBuildAllowed": false
+      },
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "2.0.0-beta.1"
+      }
+    },
+    {
+      "name": "@farmfe/runtime",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 1,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "0.12.10"
+      }
+    },
+    {
+      "name": "@farmfe/runtime-plugin-hmr",
+      "candidateVersion": "4.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 1,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "3.5.10"
+      }
+    },
+    {
+      "name": "@farmfe/runtime-plugin-import-meta",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 1,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "0.2.3"
+      }
+    },
+    {
+      "name": "@farmfe/utils",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 1,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "0.0.1"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.2.6"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.0.0-nightly-20241024075304"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.1.0"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 2,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "2.0.0-beta.1"
+      }
+    },
+    {
+      "name": "@farmfe/core",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 3,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.7.11"
+      }
+    },
+    {
+      "name": "@farmfe/cli",
+      "candidateVersion": "2.0.0",
+      "role": "js-wrapper-or-runtime",
+      "layer": 4,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 200,
+        "latest": "1.0.5"
+      }
+    },
+    {
+      "name": "@farmfe/docs",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 5,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "candidateVersion": "0.0.1",
+      "role": "js-wrapper-or-runtime",
+      "layer": 5,
+      "registryObservation": {
+        "publicLocalVersionPublished": false,
+        "httpStatus": 404,
+        "latest": null
+      }
+    }
+  ]
+}

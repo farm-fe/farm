@@ -1,4 +1,6 @@
 [package]
+# Native implementation is distributed through npm platform packages.
+publish = false
 edition = "2024"
 name = "farmfe_plugin_vue"
 version = "0.0.1"
@@ -17,6 +19,7 @@ serde = { version = "1.0", features = ["derive"] }
 fxhash = "0.2.1"
 regex = "1"
 fervid = { version = "0.2.0", git = "https://github.com/phoenix-ru/fervid.git", rev = "4f26ab48f81eb9688fb84e9fa14541373d5bca7d" }
+fervid_parser = { version = "0.2.0", git = "https://github.com/phoenix-ru/fervid.git", rev = "4f26ab48f81eb9688fb84e9fa14541373d5bca7d" }
 
 [dev-dependencies]
 farmfe_testing_helpers = { path = "../../crates/testing_helpers" }

@@ -20,6 +20,15 @@ var node_module_createRequire = node_module_ambiguous_export_all_farm_internal_.
 ; // module_id: bar.ts
 console.log('bar existsSync', existsSync('bar'));
 var bar_ts_namespace_farm_internal_ = {
+    get existsSync () {
+        return existsSync;
+    },
+    get unresolved () {
+        return unresolved;
+    },
+    get unresolvedDeep () {
+        return unresolvedDeep;
+    },
     __esModule: true
 };
 defineExportStar(bar_ts_namespace_farm_internal_, node_module_ambiguous_export_all_farm_internal_);

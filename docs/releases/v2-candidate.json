@@ -1,0 +1,2348 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-not-publication-approval",
+  "sourceBaseline": "560c55fb984414f16675798912407c8e6afc6434",
+  "npm": {
+    "primary": [
+      {
+        "name": "@farmfe/cli",
+        "version": "2.0.0",
+        "manifestPath": "packages/cli/package.json",
+        "manifestSha256": "577db048a531558d71c5f5bb25aefe54b57d2c8fac1a6cee9c9acaa192f35d7a",
+        "sourceSha256": "b4cd1ba512ce01676a39e27e2bf344d54075c885918f71e4b6597d84f740f61b"
+      },
+      {
+        "name": "@farmfe/core",
+        "version": "2.0.0",
+        "manifestPath": "packages/core/package.json",
+        "manifestSha256": "8b4e029b6b3dfb23f2578f56dba21be1b1bde726fdba179d18728742c677e1fa",
+        "sourceSha256": "dead8f5e31fd7ef2eb61f1fe637fa6709d118050b4a416b7e717a1c8e618170a"
+      },
+      {
+        "name": "create-farm",
+        "version": "2.0.0",
+        "manifestPath": "packages/create-farm/package.json",
+        "manifestSha256": "1150ee8a1b6ac555f240ca5d3e370a7d1c41e55f237ba72621db51e278ee2886",
+        "sourceSha256": "cb43a65502b18b290dc338e7193d4d472c19f5d14c70fe14c8e07f12ed4856dd"
+      },
+      {
+        "name": "create-farm-plugin",
+        "version": "2.0.0",
+        "manifestPath": "packages/create-farm-plugin/package.json",
+        "manifestSha256": "b48b588c0b3ebf5d455e877f14a759de13649fbfac5a412b6a57267f4eacc417",
+        "sourceSha256": "2004fa051cd3f36976d7c17e008793c62c8d40aa4a337fa1b93093548da25b44"
+      },
+      {
+        "name": "@farmfe/docs",
+        "version": "0.0.1",
+        "manifestPath": "packages/docs/package.json",
+        "manifestSha256": "5406f8dd62267bd4d4cb172cb059f790989a4d3217fb83126a00016a18b58543",
+        "sourceSha256": "203f01108de2e1930cd78842c80d5352b688bac2d2b7c7ffae2887a3c4c77edf"
+      },
+      {
+        "name": "@farmfe/docs-theme-default",
+        "version": "0.0.1",
+        "manifestPath": "packages/docs-theme-default/package.json",
+        "manifestSha256": "3c317b50a60bfb0b65cf03d47f3a83ed8d1ada0e6906a0ea7904784d481d8d15",
+        "sourceSha256": "4e50af3bc13f98edc06b54af34d544bd694202f5dc63bf2ac064c18603a3260c"
+      },
+      {
+        "name": "@farmfe/plugin-tools",
+        "version": "2.0.0",
+        "manifestPath": "packages/plugin-tools/package.json",
+        "manifestSha256": "a72d347930346782b0c9f34171123aa8aca2122e4df74e1841bddadd05c6e739",
+        "sourceSha256": "65954906269b47207698d9f9f7322bec8ab96bffaaa1bc8634e9ce274b03cace"
+      },
+      {
+        "name": "@farmfe/runtime",
+        "version": "2.0.0",
+        "manifestPath": "packages/runtime/package.json",
+        "manifestSha256": "7dbeb7b65cbbed87599e50de17e28003665b36a648885b6d1538d132af56dc6e",
+        "sourceSha256": "f4f79528db0eeb3f1c7bb4cb6054f00bd40812ecb32251896efcd8f91b85aa12"
+      },
+      {
+        "name": "@farmfe/runtime-plugin-hmr",
+        "version": "4.0.0",
+        "manifestPath": "packages/runtime-plugin-hmr/package.json",
+        "manifestSha256": "6695579f7236ad312bbde4cafa1860e1c29ffa83414008feb13511a3bedd029c",
+        "sourceSha256": "10d5bf1bba716ea6d205caa16d2f76220696db4a3f574f1213570ca5641dc38a"
+      },
+      {
+        "name": "@farmfe/runtime-plugin-import-meta",
+        "version": "2.0.0",
+        "manifestPath": "packages/runtime-plugin-import-meta/package.json",
+        "manifestSha256": "fd56bdf472fc6ed9871933fa257b4c9d3c9244267505cc99382afb59d86d366d",
+        "sourceSha256": "e2f48c800d3a21849347bb68207d8ef3405f33bb1b3ea4509a87883c61db7c3c"
+      },
+      {
+        "name": "@farmfe/utils",
+        "version": "2.0.0",
+        "manifestPath": "packages/utils/package.json",
+        "manifestSha256": "475baa6530323f2bc0ce931101327c42c27b62d224662748a8ed20ceb543280e",
+        "sourceSha256": "c7f928766745ee9ded19f0545e4d96e30dd7f2fd0b2afec5156e9f07b40dd119"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/auto-import/package.json",
+        "manifestSha256": "8b61e12d1c077c69d49a0723083324af114b505c2c1bf2a1d42db37b787ff0c2",
+        "sourceSha256": "0b6677844b6abfca1b9edd8ed7faae8e8d235fd63cae4c8d8dc1666cb7d29a15"
+      },
+      {
+        "name": "@farmfe/plugin-compress",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/compress/package.json",
+        "manifestSha256": "9a033f49a27d1319ad7b14b50053860fd478819bae48aad5d6bfb161d09c85ec",
+        "sourceSha256": "3ed50201117214f9e61282a7029f23757d6198f715ec0a85ed103e9d852cc070"
+      },
+      {
+        "name": "@farmfe/plugin-docs",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/docs/package.json",
+        "manifestSha256": "63be2ffc07578f5f06dc39f5949910d0023a94981370d12d80443acda2d0c12c",
+        "sourceSha256": "9f9784c94fd07a98b06fa448a3a0617b7636fca1c23bda967906478627419757"
+      },
+      {
+        "name": "@farmfe/plugin-docs-seo",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/docs-seo/package.json",
+        "manifestSha256": "3bb9f72d3e362631749b378c350806889f47f524511cf4a0f754bbfd6ee42838",
+        "sourceSha256": "074da153fb884582ca0e2f96d09bd7066b2453b27e300c68405adab907f29f9d"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snapshot",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/docs-snapshot/package.json",
+        "manifestSha256": "f17cdc97934c700b555711fdd9cafe55bd66b81b7458c360b77c25e2d04a2ce1",
+        "sourceSha256": "0b0cb73a4d938b03d770f05484a6079063f66f95c4cd453f7d82f934f870938f"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snippets",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/docs-snippets/package.json",
+        "manifestSha256": "cf9c0d522d43edd7a33d3e287e4a4d7b38c242a8748beaaea8196a733003cb9e",
+        "sourceSha256": "5ae791129bd5603f0f957f79f1bcb775c136c4714835a9c83353756deb012f0a"
+      },
+      {
+        "name": "@farmfe/plugin-dsv",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/dsv/package.json",
+        "manifestSha256": "3d223e062461009f75e275326123a01a53d08a15bbdef663d42352f5ba6f6640",
+        "sourceSha256": "52ba3ce5cafb7a3e616f4c26c3605f933f5c24d3e487dc151d17054261c3a220"
+      },
+      {
+        "name": "@farmfe/plugin-dts",
+        "version": "1.0.0",
+        "manifestPath": "rust-plugins/dts/package.json",
+        "manifestSha256": "c7515ba68c409212fcf48cb929dfcdcc4424bdbea6a8bc41875d7930721a1aeb",
+        "sourceSha256": "905abbfb550f8850a77531513e052ab56c5c14acee5ea66e8912b40ca484aab1"
+      },
+      {
+        "name": "@farmfe/plugin-icons",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/icons/package.json",
+        "manifestSha256": "d5cc9ff303d9b6ed9c683de15a9a52104a33328708e94734b5a5635d5869cefd",
+        "sourceSha256": "a59db6aba0ed64e3b34a2ed6e25c4735bbcf9af10a2c9fcd271bc5a87fddedd2"
+      },
+      {
+        "name": "@farmfe/plugin-image",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/image/package.json",
+        "manifestSha256": "6916eed528e9335c1c44af6796fa93e758802c8c49ad7fa38cbdc80196a23d74",
+        "sourceSha256": "d131110e932ce1510e08482935574993f6b4691955e44b4d44930fe68470ed11"
+      },
+      {
+        "name": "@farmfe/plugin-mdx",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/mdx/package.json",
+        "manifestSha256": "e11cca0704b4b098b43d2993df5d70738b6b77c848f8abbec546abb3338210f3",
+        "sourceSha256": "88ed38e5a6d43a6e3f95100745e298df7222126458e213bbddf76f27fc3a57c9"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/modular-import/package.json",
+        "manifestSha256": "2791eb85d2321d7c9c7b8ea6166d5d6253d1b13693ddc9a36319bdd580471587",
+        "sourceSha256": "bc22c8faed16bbb8f9978c8c26407878c007dc0f5b03eea7b29784e9cdda0688"
+      },
+      {
+        "name": "@farmfe/plugin-react",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/react/package.json",
+        "manifestSha256": "d4c365f2d8f1f83b54e8ea7d445adaad5620d4fdb581cb0cb83fd1a6b9929536",
+        "sourceSha256": "6ce28d3fdeb5d754c8641b6a9ee250921d00f143209b2d0d6e473e9368ec1b92"
+      },
+      {
+        "name": "@farmfe/plugin-react-components",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/react-components/package.json",
+        "manifestSha256": "308384bed70648017f640e6cafd37c7f63b0829788aedb6c720ba1f81b4992f0",
+        "sourceSha256": "4db6bbd34f4a6e0b93e79b288a35a30101000a3e175c6a19d5fad73e3785da0e"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/replace-dirname/package.json",
+        "manifestSha256": "ead569bcd1f6241b63b0cc508591c66e23a4946d48ea5a79b4efab37f3c97ff8",
+        "sourceSha256": "59b3f23900b624b79aa1ac6b0d7d3da75a47976775b0a5ccc76aca0523e5a3b7"
+      },
+      {
+        "name": "@farmfe/plugin-sass",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/sass/package.json",
+        "manifestSha256": "250e06dcb33c852ba862e1524112cc5e193391f4f740496598093f77804d500c",
+        "sourceSha256": "e9d1aa631a9c4b7ffc588341653e7c969751a3fccdde0dfa442b2135fc00ec86"
+      },
+      {
+        "name": "@farmfe/plugin-ssr-css",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/ssr-css/package.json",
+        "manifestSha256": "e2ee3226839f59e02b5d12141f70593c187d54cf6629303e7c1c0fc8af82ec74",
+        "sourceSha256": "87e337743bf2778edfa77c335538eedbc0d095e72ed1ad9504606ffcb683e911"
+      },
+      {
+        "name": "@farmfe/plugin-strip",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/strip/package.json",
+        "manifestSha256": "dcec5f677d7c03ab1bbfb2ba13ee91ae0df5cf0c260d83d611fd32f5fc9672c0",
+        "sourceSha256": "711069cde600797aaae75803772bf9b46b939093f64027948f7605d001bff46f"
+      },
+      {
+        "name": "@farmfe/plugin-svgr",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/svgr/package.json",
+        "manifestSha256": "5b0f5851d6c8aa41e7907a7f99d146d664bb015dbd6492e24ed085383be18ccf",
+        "sourceSha256": "e36362c9714b2404d2a358a509c9fa62e46e805a2633b5adb6b246b40702dc93"
+      },
+      {
+        "name": "@farmfe/plugin-syntax-highlight",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/syntax-highlight/package.json",
+        "manifestSha256": "cfef46ebdbe790ab06c84b41ab2046d8e1a4983f348b587fdd77b3abb3399d5d",
+        "sourceSha256": "b4e39f289fd601d4f77e15adad7b26107691670a2742b7047f44a93328062064"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/tailwindcss/package.json",
+        "manifestSha256": "b08d5d976841ee18162837cb790dcbe49d85c1d63abae71a558aa390377d0a7a",
+        "sourceSha256": "f1bb53ee90d56dfa4dda110847b9168aaa582990e257a24d5c3bff32a0172d4b"
+      },
+      {
+        "name": "@farmfe/plugin-url",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/url/package.json",
+        "manifestSha256": "91af3b3f7c0b3563cd9411fe8033f8e356bfc50922120cec1ed966b3e6fddf2c",
+        "sourceSha256": "424e803e88160017c63676f9cacb6798bb7fecc8c361603c86e398792373b28d"
+      },
+      {
+        "name": "@farmfe/plugin-virtual",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/virtual/package.json",
+        "manifestSha256": "4ff4b7373cd8072aaae2d408f1c4c7a23282a1a182f37d846a4cd1ae9d7044c0",
+        "sourceSha256": "299511858cbfce2c1e3b9e0a1b034c78164b975adf06d623b03d535611794c05"
+      },
+      {
+        "name": "@farmfe/plugin-vue",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/vue/package.json",
+        "manifestSha256": "f7c4d06d9a3e8d62b89fb790ad98eb7884aa135a22466ca9abf3001794e86f63",
+        "sourceSha256": "e76c0686efb2f1ded051da35132e5193d2796125bda1d1e59ba422878c02f24b"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx",
+        "version": "0.0.1",
+        "manifestPath": "rust-plugins/vue-jsx/package.json",
+        "manifestSha256": "babd8bb4a4e17683480f66da91db51757ac2de2f0b5d8826b4877cc712b902d2",
+        "sourceSha256": "e1d5b38c0a11f69f70fd94a106f15018df19b6a021a403e3170d8534645a0544"
+      },
+      {
+        "name": "@farmfe/plugin-wasm",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/wasm/package.json",
+        "manifestSha256": "4f1c1513f22f5bb21ea382bb306841bdfec63994777c65994aba5cb34d7d9552",
+        "sourceSha256": "945a7363540f7c6453f0a674d9c222198affe599300fd7845a267cfee8f86d49"
+      },
+      {
+        "name": "@farmfe/plugin-worker",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/worker/package.json",
+        "manifestSha256": "4a5c5023ab7a5c6bd26ff9d35decb0935db16c1638cc565fb41462d0e0280456",
+        "sourceSha256": "23d201ea6871ad8811ce9b099cecd471206e8bef8f57a1ed6b6ae15bc2d9edbf"
+      },
+      {
+        "name": "@farmfe/plugin-yaml",
+        "version": "2.0.0",
+        "manifestPath": "rust-plugins/yaml/package.json",
+        "manifestSha256": "c5a48c4182ad176ff955559a23ce0231b62b73321b348410c44109ea0902d1f7",
+        "sourceSha256": "06ad5bbd59ca20ae6f1c18076d3ea475b9cd260e23193db50abdace3582df141"
+      },
+      {
+        "name": "@farmfe/js-plugin-babel",
+        "version": "0.0.4",
+        "manifestPath": "js-plugins/babel/package.json",
+        "manifestSha256": "d03528baa082472f895eff4607203bdc0dee2189e567d9e625d630df80c361eb",
+        "sourceSha256": "c03c9a0631bf16ebbd066b880ff9a29d023118a1ee8a041724af07f17f0fc234"
+      },
+      {
+        "name": "@farmfe/js-plugin-dts",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/dts/package.json",
+        "manifestSha256": "37986ec57550ffae5a1fa20091405dec98efd529469180d22818e071dedd90a0",
+        "sourceSha256": "2bb69eb6bd59d21052a019eaaba6428aaa86ab4182ddc7037003ccca01565f66"
+      },
+      {
+        "name": "@farmfe/js-plugin-electron",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/electron/package.json",
+        "manifestSha256": "15ea97d1f8a2994d21e86945220f93c7752f7b2709f75b1ef0df65a8b529832b",
+        "sourceSha256": "043151d3de432a32a5225ddf5248b388eeeeaa39710305f7ff130b9b750bbb81"
+      },
+      {
+        "name": "@farmfe/js-plugin-less",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/less/package.json",
+        "manifestSha256": "0f65843a92dcae5f4231e996ab4ba6240c3569fb1b6ea3b86a8d20080eed05b3",
+        "sourceSha256": "27314e709a7cc2f42dc3cee31f80f583c89ba3ae0a6c4222ce6e3adc95704ca9"
+      },
+      {
+        "name": "@farmfe/js-plugin-postcss",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/postcss/package.json",
+        "manifestSha256": "150cb793f88c78f7d9546a0f3c2cdc99d477a0a22fe25bd9ae491f456948dc03",
+        "sourceSha256": "ec8ddca34f2efa23cb92489d3f0478e988dc30769179c75f77e335a0901ab1c7"
+      },
+      {
+        "name": "@farmfe/js-plugin-qiankun",
+        "version": "1.0.0",
+        "manifestPath": "js-plugins/qiankun/package.json",
+        "manifestSha256": "276a1a4e8ce84a159fbb098817db9b30cc2889117002d5c143bf86a977a8dfb0",
+        "sourceSha256": "c23a540f2820364ec40fddea1ea28dd198daa79f26af75a463b10605d3c38924"
+      },
+      {
+        "name": "@farmfe/js-plugin-react-compiler",
+        "version": "0.0.4",
+        "manifestPath": "js-plugins/react-compiler/package.json",
+        "manifestSha256": "2bc545bb1bc17b59f0bb2c3f3c4695382625d1aa27b2393cffed85df1db80076",
+        "sourceSha256": "4cf451ee64364ee3ba5bf02d778d9334a4ca48e98d86f2e5bf1eda05c2e59c9c"
+      },
+      {
+        "name": "@farmfe/js-plugin-sass",
+        "version": "3.0.0",
+        "manifestPath": "js-plugins/sass/package.json",
+        "manifestSha256": "76031674b7359260e558bed4bb360dbd8fba51b4b292139dede9f5bc1815ce4c",
+        "sourceSha256": "ea1bc2c95848715904026046e3fe6337397cdceb272722c0553c75ca5fc07c62"
+      },
+      {
+        "name": "@farmfe/js-plugin-svgr",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/svgr/package.json",
+        "manifestSha256": "fce22bdaa7fafa592c4956772d8c405b1528188180d8218342e19d1752ba290e",
+        "sourceSha256": "2d5b25e4b47339252447dcf4ac84d359d6297f62b3cc80cd38661a348e36dcae"
+      },
+      {
+        "name": "@farmfe/js-plugin-tailwindcss",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/tailwindcss/package.json",
+        "manifestSha256": "b3734ad3c34feabdf4c4ec9c75c705941d12f5247ee20465e920ab7794645587",
+        "sourceSha256": "e4547978abb8a1a9177c14c0d5ddcff5700bfb6496d0df0ab3f2b21133b7f745"
+      },
+      {
+        "name": "@farmfe/js-plugin-visualizer",
+        "version": "2.0.0",
+        "manifestPath": "js-plugins/visualizer/package.json",
+        "manifestSha256": "59b32cc94ac675c9bde1aff01f6c6c30bce50b49c437ec5abc18271281ece76a",
+        "sourceSha256": "3e14287a2cc147b2c6b9e924f8aecef309870974bd20fa55db33d06969e50fa4"
+      },
+      {
+        "name": "@farmfe/js-plugin-vuetify",
+        "version": "0.0.2",
+        "manifestPath": "js-plugins/vuetify/package.json",
+        "manifestSha256": "a5b05cecd79858da764c2fffe762498d125ee6cbc5a115865134ecd1f8aa20d9",
+        "sourceSha256": "25d0d1db8b49dea6c1520497b4b91cac854c22bef10f74ba027825d4b5f92f71"
+      }
+    ],
+    "payloads": [
+      {
+        "name": "@farmfe/core-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "darwin-arm64",
+        "manifestPath": "packages/core/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/core-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "darwin-x64",
+        "manifestPath": "packages/core/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/core-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "packages/core/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/core-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "packages/core/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/core-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "packages/core/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/core-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "linux-x64-musl",
+        "manifestPath": "packages/core/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/core-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "packages/core/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/core-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "packages/core/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/core-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/core",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "packages/core/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "create-farm-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "darwin-arm64",
+        "manifestPath": "packages/create-farm/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "create-farm-darwin-x64",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "darwin-x64",
+        "manifestPath": "packages/create-farm/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "create-farm-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "packages/create-farm/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "create-farm-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "packages/create-farm/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "create-farm-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "packages/create-farm/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "create-farm-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "linux-x64-musl",
+        "manifestPath": "packages/create-farm/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "create-farm-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "packages/create-farm/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "create-farm-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "packages/create-farm/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "create-farm-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "create-farm",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "packages/create-farm/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/auto-import/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/auto-import/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/auto-import/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/auto-import/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/auto-import/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/auto-import/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/auto-import/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/auto-import/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-auto-import-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-auto-import",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/auto-import/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/compress/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/compress/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/compress/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/compress/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/compress/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/compress/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/compress/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/compress/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-compress-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-compress",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/compress/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/docs/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/docs/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/docs/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/docs/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/docs/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-seo-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-seo",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/docs-seo/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-seo-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-seo",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/docs-seo/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-seo-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-seo",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/docs-seo/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-seo-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-seo",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/docs-seo/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-seo-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-seo",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/docs-seo/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snapshot-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snapshot",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/docs-snapshot/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snapshot-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snapshot",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/docs-snapshot/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snapshot-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snapshot",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/docs-snapshot/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snapshot-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snapshot",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/docs-snapshot/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snapshot-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snapshot",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/docs-snapshot/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snippets-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snippets",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/docs-snippets/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snippets-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snippets",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/docs-snippets/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snippets-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snippets",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/docs-snippets/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snippets-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snippets",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/docs-snippets/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-docs-snippets-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-docs-snippets",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/docs-snippets/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/dsv/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/dsv/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/dsv/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/dsv/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/dsv/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/dsv/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/dsv/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/dsv/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dsv-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-dsv",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/dsv/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-darwin-arm64",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/dts/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-darwin-x64",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/dts/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-linux-arm64-gnu",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/dts/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-linux-arm64-musl",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/dts/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-linux-x64-gnu",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/dts/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-linux-x64-musl",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/dts/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-win32-arm64-msvc",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/dts/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-win32-ia32-msvc",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/dts/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-dts-win32-x64-msvc",
+        "version": "1.0.0",
+        "owner": "@farmfe/plugin-dts",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/dts/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/icons/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/icons/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/icons/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/icons/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/icons/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/icons/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/icons/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/icons/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-icons-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-icons",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/icons/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/image/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/image/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/image/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/image/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/image/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/image/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/image/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/image/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-image-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-image",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/image/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/mdx/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/mdx/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/mdx/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/mdx/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/mdx/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/mdx/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/mdx/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/mdx/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-mdx-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-mdx",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/mdx/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/modular-import/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/modular-import/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/modular-import/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/modular-import/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/modular-import/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/modular-import/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/modular-import/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/modular-import/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-modular-import-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-modular-import",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/modular-import/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/react/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/react/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/react/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/react/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/react/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/react/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/react/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/react/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/react/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/react-components/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/react-components/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/react-components/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/react-components/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/react-components/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/react-components/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/react-components/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/react-components/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-react-components-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-react-components",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/react-components/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/replace-dirname/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/replace-dirname/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/replace-dirname/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/replace-dirname/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/replace-dirname/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/replace-dirname/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/replace-dirname/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/replace-dirname/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-replace-dirname-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-replace-dirname",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/replace-dirname/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/sass/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/sass/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/sass/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/sass/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/sass/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/sass/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/sass/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/sass/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-sass-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-sass",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/sass/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-ssr-css-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-ssr-css",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/ssr-css/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-ssr-css-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-ssr-css",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/ssr-css/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-ssr-css-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-ssr-css",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/ssr-css/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-ssr-css-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-ssr-css",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/ssr-css/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-ssr-css-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-ssr-css",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/ssr-css/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/strip/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/strip/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/strip/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/strip/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/strip/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/strip/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/strip/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/strip/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-strip-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-strip",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/strip/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/svgr/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/svgr/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/svgr/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/svgr/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/svgr/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/svgr/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/svgr/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/svgr/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-svgr-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-svgr",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/svgr/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-syntax-highlight-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-syntax-highlight",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/syntax-highlight/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-syntax-highlight-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-syntax-highlight",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/syntax-highlight/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-syntax-highlight-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-syntax-highlight",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/syntax-highlight/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-syntax-highlight-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-syntax-highlight",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/syntax-highlight/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-syntax-highlight-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-syntax-highlight",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/syntax-highlight/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/tailwindcss/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/tailwindcss/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/tailwindcss/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/tailwindcss/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/tailwindcss/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/tailwindcss/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/tailwindcss/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/tailwindcss/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-tailwindcss-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-tailwindcss",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/tailwindcss/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/url/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/url/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/url/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/url/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/url/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/url/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/url/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/url/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-url-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-url",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/url/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/virtual/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/virtual/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/virtual/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/virtual/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/virtual/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/virtual/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/virtual/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/virtual/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-virtual-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-virtual",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/virtual/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/vue/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/vue/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/vue/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/vue/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/vue/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/vue/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/vue/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/vue/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-vue",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/vue/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-darwin-arm64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/vue-jsx/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-darwin-x64",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/vue-jsx/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-linux-arm64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/vue-jsx/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-linux-arm64-musl",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/vue-jsx/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-linux-x64-gnu",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/vue-jsx/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-linux-x64-musl",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/vue-jsx/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-win32-arm64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/vue-jsx/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-win32-ia32-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/vue-jsx/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-vue-jsx-win32-x64-msvc",
+        "version": "0.0.1",
+        "owner": "@farmfe/plugin-vue-jsx",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/vue-jsx/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/wasm/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/wasm/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/wasm/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/wasm/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/wasm/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/wasm/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/wasm/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/wasm/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-wasm-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-wasm",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/wasm/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/worker/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/worker/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/worker/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/worker/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/worker/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/worker/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/worker/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/worker/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-worker-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-worker",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/worker/npm/win32-x64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-darwin-arm64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "darwin-arm64",
+        "manifestPath": "rust-plugins/yaml/npm/darwin-arm64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-darwin-x64",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "darwin-x64",
+        "manifestPath": "rust-plugins/yaml/npm/darwin-x64/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-linux-arm64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "linux-arm64-gnu",
+        "manifestPath": "rust-plugins/yaml/npm/linux-arm64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-linux-arm64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "linux-arm64-musl",
+        "manifestPath": "rust-plugins/yaml/npm/linux-arm64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-linux-x64-gnu",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "linux-x64-gnu",
+        "manifestPath": "rust-plugins/yaml/npm/linux-x64-gnu/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-linux-x64-musl",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "linux-x64-musl",
+        "manifestPath": "rust-plugins/yaml/npm/linux-x64-musl/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-win32-arm64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "win32-arm64-msvc",
+        "manifestPath": "rust-plugins/yaml/npm/win32-arm64-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-win32-ia32-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "win32-ia32-msvc",
+        "manifestPath": "rust-plugins/yaml/npm/win32-ia32-msvc/package.json"
+      },
+      {
+        "name": "@farmfe/plugin-yaml-win32-x64-msvc",
+        "version": "2.0.0",
+        "owner": "@farmfe/plugin-yaml",
+        "platform": "win32-x64-msvc",
+        "manifestPath": "rust-plugins/yaml/npm/win32-x64-msvc/package.json"
+      }
+    ],
+    "excluded": [
+      {
+        "name": "@farmfe/js-plugin-copy",
+        "version": "0.0.4",
+        "reason": "Unmodified independent release; not selected for this V2 candidate."
+      }
+    ]
+  },
+  "cargo": [
+    {
+      "name": "farmfe_compiler",
+      "version": "2.2.0",
+      "manifestPath": "crates/compiler/Cargo.toml",
+      "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
+      "publish": null,
+      "sourceSha256": "1441ba59c7240de64b4cd92091b46e397b66119a9961ca8890ef8e9ba3fb3352"
+    },
+    {
+      "name": "farmfe_core",
+      "version": "2.2.0",
+      "manifestPath": "crates/core/Cargo.toml",
+      "manifestSha256": "b0728964f5fcdf61bd714c32cf0ebfc937cb3830bc9065dc8f345d71f9f94da2",
+      "publish": null,
+      "sourceSha256": "ee7c1338b416a7156ef639c559e7d6d14c211d728b32b50122850ec59b446db1"
+    },
+    {
+      "name": "farmfe_ecosystem_glob",
+      "version": "0.1.0",
+      "manifestPath": "rust-ecosystem/glob/Cargo.toml",
+      "manifestSha256": "dc931bf4252f67daa281b854986ae879dfa045f71b6e2d6ed92d1d522cac6f4c",
+      "publish": null,
+      "sourceSha256": "cd3b13fe13518132a3042d302b94e22e4d2777cc4252ffb7fa16af488d258869"
+    },
+    {
+      "name": "farmfe_macro_cache_item",
+      "version": "2.1.0",
+      "manifestPath": "crates/macro_cache_item/Cargo.toml",
+      "manifestSha256": "72b73f56f476c152a7dafada2b5c69c4b5aef0f3dde9e29085b129b5448afe4c",
+      "publish": null,
+      "sourceSha256": "84e1c5c1e56d4f345eb09e93a6f30c60c6fc497f2fdc9c1306f48ad4621a2baa"
+    },
+    {
+      "name": "farmfe_macro_plugin",
+      "version": "2.0.0",
+      "manifestPath": "crates/macro_plugin/Cargo.toml",
+      "manifestSha256": "3e1253c663acf1419f0ba669c6dc0c5123dc0d860e0412da78aa9387c8ed0b45",
+      "publish": null,
+      "sourceSha256": "326906018280121cd0fc328bc0abaafa76c6c9213e00f94cd66be67ceb074396"
+    },
+    {
+      "name": "farmfe_plugin_css",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_css/Cargo.toml",
+      "manifestSha256": "7ad72b220cf90d3901800827d8ec377ab67d2208bb73c7a7e1a97a507c123add",
+      "publish": null,
+      "sourceSha256": "161651a119c9e1f288d05968803063a1374f7d1befc4c7dcd2aa0a4ba9b9d598"
+    },
+    {
+      "name": "farmfe_plugin_define",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_define/Cargo.toml",
+      "manifestSha256": "ba5ddc106fba7a11b05636ffde1e69437117f5fb5137c2e9e8a4b9a600f1abe3",
+      "publish": null,
+      "sourceSha256": "d0ea5bdb9a1afe963e653678ac17de8debc0b6236b12c1ce4dd3059d05ca9625"
+    },
+    {
+      "name": "farmfe_plugin_file_size",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_file_size/Cargo.toml",
+      "manifestSha256": "dda59ce69de124a1a9e218e77a6ff39991eee2f0adcbf9aafd5966df39cc76eb",
+      "publish": null,
+      "sourceSha256": "4baaf9e0b96aaf9313d1b15c6061633fff4beb95d3acc7f7e14f41ba6828506f"
+    },
+    {
+      "name": "farmfe_plugin_html",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_html/Cargo.toml",
+      "manifestSha256": "177dd64dad12a74e6d1b1bfcc48a02b732c5807aae08c0788b33b4cf3510b7ca",
+      "publish": null,
+      "sourceSha256": "b116a905451592b704c09d4c278c0cc6fa03d4195fc475b066531c7a9ba0b71e"
+    },
+    {
+      "name": "farmfe_plugin_json",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_json/Cargo.toml",
+      "manifestSha256": "15f7b39df0fc2ad4138dcf735a213e6d319c854e04460fb10d40e239a46ccfb9",
+      "publish": null,
+      "sourceSha256": "45e6a2555263e14c0058aa04e3deecd941545b80f13f573c7cb7de72c6c4a908"
+    },
+    {
+      "name": "farmfe_plugin_lazy_compilation",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_lazy_compilation/Cargo.toml",
+      "manifestSha256": "c27b1cbb6653cf6957e4a905d60be0e2fab49297438e41080d63845fa20e5546",
+      "publish": null,
+      "sourceSha256": "16b62bf55cc090387d49fac6235b1208c75f56c2169d1b384746406e7439bd07"
+    },
+    {
+      "name": "farmfe_plugin_library",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_library/Cargo.toml",
+      "manifestSha256": "fac2d56945907d02655e3cac06f7ed5815e13548fa3d152ccffaec0bee2da286",
+      "publish": null,
+      "sourceSha256": "d672ed07b4b93c27c8f0415f141949976849dcaaad81b0ff9245219c79b70741"
+    },
+    {
+      "name": "farmfe_plugin_mangle_exports",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_mangle_exports/Cargo.toml",
+      "manifestSha256": "090b5fb93f6b49ad24345d19353fcf64ad6c0109eb3a4f0b6a5f193cd71c555f",
+      "publish": null,
+      "sourceSha256": "e5de728435557a8b31186336571d7ed10f8146a8fab873bb02a0f9b18a57266c"
+    },
+    {
+      "name": "farmfe_plugin_minify",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_minify/Cargo.toml",
+      "manifestSha256": "fef18bc12b845c6a3e9a55247ebf34674939818dbd6da9d9914f4d78b9d5a71c",
+      "publish": null,
+      "sourceSha256": "911a263a89d2b1e3692b6fe3d5bad304a98dc725fd75fbf07a07c3f57bd8896a"
+    },
+    {
+      "name": "farmfe_plugin_partial_bundling",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_partial_bundling/Cargo.toml",
+      "manifestSha256": "0d2d6bb3c0a6c94110bc1d37873fc3469b7fbfbe3d1e81f7cd4e235d2bdbb77a",
+      "publish": null,
+      "sourceSha256": "e945443c1fe60803f09232a96d023c45bd0c92ed036afe374557c4af70c48645"
+    },
+    {
+      "name": "farmfe_plugin_polyfill",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_polyfill/Cargo.toml",
+      "manifestSha256": "2d17a72c47d09bcfcb062977bd4ca0c73c50eb12e5b36cadc14cc3e2c9d5174c",
+      "publish": null,
+      "sourceSha256": "a25e8b6ee499fdc9ea4435d14c732904c1e476a555708738a347c34af7e7e201"
+    },
+    {
+      "name": "farmfe_plugin_progress",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_progress/Cargo.toml",
+      "manifestSha256": "28557685e96af0f12ff07271947fee09bddba32084feefb779e807c3fb63a2c7",
+      "publish": null,
+      "sourceSha256": "98b7dd01579992b3115d5a1fdf3e6d7bb3663b9dbd83a542639f37f6d18d1ce9"
+    },
+    {
+      "name": "farmfe_plugin_resolve",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_resolve/Cargo.toml",
+      "manifestSha256": "1b1fcf1477405f662bee42539be45b611d70956e3bbc382f17010e769d1ae291",
+      "publish": null,
+      "sourceSha256": "80bc0aaac3625d4bc858234f799314de7fd299347483ab4751472dd3e738cbca"
+    },
+    {
+      "name": "farmfe_plugin_runtime",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_runtime/Cargo.toml",
+      "manifestSha256": "531ded255cb4d8872f27dd30163b4d94bd0e9e9b497e9ecbfd489c2121b7aaf3",
+      "publish": null,
+      "sourceSha256": "57db27a987dcb78cd61d1882ce0d37b3eca7ec7db9da2fe1a7c133196ce0adc6"
+    },
+    {
+      "name": "farmfe_plugin_script",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_script/Cargo.toml",
+      "manifestSha256": "f7562fcd80b2171d42dd657e502183dac5b002a120a807744b85d07e29afa284",
+      "publish": null,
+      "sourceSha256": "21d52c5619929eead3cf473f5fdea420860e7cfd1acb581d03300bf5ed61c6f0"
+    },
+    {
+      "name": "farmfe_plugin_script_meta",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_script_meta/Cargo.toml",
+      "manifestSha256": "7d65e29a07006ca45c7d94798f1efa840055d0c49f764e61ec7dcda89e33721a",
+      "publish": null,
+      "sourceSha256": "297f3e1a889d0ce6825238466848f11306ee75311807843e0ece91b69f769159"
+    },
+    {
+      "name": "farmfe_plugin_static_assets",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_static_assets/Cargo.toml",
+      "manifestSha256": "edc87efdc6becbf5ea50295ba6cc5040672e669cb83df7ef5048881f973331f5",
+      "publish": null,
+      "sourceSha256": "4af28ed8ec994448276c7206f48ecfd0b38bb8823df8fa8bb613634366865b0c"
+    },
+    {
+      "name": "farmfe_plugin_tree_shake",
+      "version": "2.2.0",
+      "manifestPath": "crates/plugin_tree_shake/Cargo.toml",
+      "manifestSha256": "c5eddfabe9e968f9b6ffde52cf5728251a10b0b05d559b3be973ea48fac2c02c",
+      "publish": null,
+      "sourceSha256": "199bff5840c06e7b610cc89fa07a46caf11b669d095be413b406a5546a71216e"
+    },
+    {
+      "name": "farmfe_swc_transformer_import_glob",
+      "version": "2.2.0",
+      "manifestPath": "crates/swc_transformer_import_glob/Cargo.toml",
+      "manifestSha256": "775f6e9fdbdf46be7e61783fd387205b3969f228864e5c47526f6bc3af6c4583",
+      "publish": null,
+      "sourceSha256": "bcb1f787f4d331a339e7a207d069fda48b9f49a6da690b6225c74838561fdc0c"
+    },
+    {
+      "name": "farmfe_testing",
+      "version": "2.0.0",
+      "manifestPath": "crates/macro_testing/Cargo.toml",
+      "manifestSha256": "fbffa073f7b2ab38c98b9648525366628790c70359c270f06cb87c2379392994",
+      "publish": null,
+      "sourceSha256": "089948a1fb97d41488bf71f049a5cae10c3ba5d621e1c25de2d61a35a57db347"
+    },
+    {
+      "name": "farmfe_testing_helpers",
+      "version": "2.2.0",
+      "manifestPath": "crates/testing_helpers/Cargo.toml",
+      "manifestSha256": "cf726f9b9a16e0e0f21946c365efa5dbc008dc9076490958e1316784a5553d5d",
+      "publish": null,
+      "sourceSha256": "c5797e3e2cee3c1514b3e6341eadf5e56f396246fca2d6e9deb34d745761a17c"
+    },
+    {
+      "name": "farmfe_toolkit",
+      "version": "2.2.0",
+      "manifestPath": "crates/toolkit/Cargo.toml",
+      "manifestSha256": "d4584b3f2f4e63e5bf7d7f2289c07aa0284a82427746af0b673aada73d622a4d",
+      "publish": null,
+      "sourceSha256": "4802b80526deee460013752d7740fd37fc987a387407279e84cd136d226babf6"
+    },
+    {
+      "name": "farmfe_utils",
+      "version": "2.1.1",
+      "manifestPath": "crates/utils/Cargo.toml",
+      "manifestSha256": "7d4823607fa0652c60b5c6a9e186ee163b0e0e500c5237349a028b44431774cf",
+      "publish": null,
+      "sourceSha256": "35819a4bdc7474645cf9876fbcad91d6df30260a35458392d00b1a4cef6c3ce5"
+    }
+  ],
+  "counts": {
+    "primary": 51,
+    "payloads": 246,
+    "total": 297
+  },
+  "pending": [
+    "Final publication SHA and approved package scope",
+    "Exact-SHA archive hashes, native ABI/platform and license closure receipts",
+    "Published macro_cache_item 2.1.0 consumer compatibility receipt",
+    "Public registry installation and independent Docs consumer receipts",
+    "Protected main review and release decision",
+    "Verified website rollback deployment target"
+  ],
+  "publicationOrder": [
+    "Rust prerequisites and selected SDK crates; reuse existing versions only after compatibility verification",
+    "Native npm payloads",
+    "Runtime, Core, wrappers, CLI, JS plugins and generators",
+    "Docs and theme together, then independent registry consumer verification",
+    "Website and release tag only after a separate release decision"
+  ],
+  "preparation": {
+    "mode": "first-stable",
+    "receipt": "docs/release-evidence/frozen-stable-versions.json"
+  },
+  "abi": "0.5.4"
+}

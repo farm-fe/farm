@@ -4,11 +4,11 @@
 use std::cmp::Ordering;
 
 use farmfe_core::config::Config;
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupId, ModuleId, ModuleType},
+  module::{ModuleId, ModuleType, module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
 };
-use farmfe_core::{HashMap, HashSet};
 
 use crate::generate_module_pots::ModulePotSourceType;
 use crate::{module_pot::ModulePot, utils::hash_module_ids};
@@ -187,7 +187,10 @@ pub fn merge_module_pots(
   }
 
   if resource_pots.is_empty() && !module_group_module_pots.module_pots.is_empty() {
-    panic!("Generated resource pots is empty while module pots is not empty for group {:?}, this might be a internal bug, please file a issue.", module_group_module_pots.module_group_id);
+    panic!(
+      "Generated resource pots is empty while module pots is not empty for group {:?}, this might be a internal bug, please file a issue.",
+      module_group_module_pots.module_group_id
+    );
   }
 
   resource_pots
@@ -207,7 +210,7 @@ fn derive_resource_pot_name_from_generation(
     let module_pot = current_generation.module_pots[0];
     // module_pot.name is the module id string (e.g., "lib/utils.ts")
     // Strip the extension to get the base name (e.g., "lib/utils")
-    let path = std::path::PathBuf::from(module_pot.name.clone());
+    let path = std::path::PathBuf::from(crate::utils::normalize_resource_path(&module_pot.name));
     return path
       .file_stem()
       .map(|stem| {

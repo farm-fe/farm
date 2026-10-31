@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-url",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",
@@ -51,6 +51,18 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
-  ]
+    "options.d.ts",
+    "LICENSE"
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-url-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-url-darwin-x64": "2.0.0",
+    "@farmfe/plugin-url-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-url-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-url-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-url-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-url-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-url-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-url-win32-x64-msvc": "2.0.0"
+  }
 }

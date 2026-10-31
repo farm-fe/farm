@@ -1,0 +1,18 @@
+{
+  "name": "@farmfe/plugin-docs-seo-darwin-x64",
+  "version": "0.0.1",
+  "main": "index.farm",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "license": "MIT",
+  "files": [
+    "index.farm",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
+  ]
+}

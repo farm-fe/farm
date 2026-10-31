@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "declaration": "MIT",
+  "scope": "Direct source components only; not a complete transitive/binary distribution audit",
+  "components": [
+    {
+      "name": "Farm npm generator wrapper",
+      "spdx": "MIT",
+      "status": "verified",
+      "scope": [
+        "package.json"
+      ],
+      "sourceFiles": [
+        {
+          "file": "package.json",
+          "sha256": "19858b7c576ef68a0823c8bd2d1ccd84c40eba7d36235cb61233d86295500eb1"
+        }
+      ],
+      "licenseFile": "LICENSE",
+      "licenseSha256": "beeb6a9391ccb0d48b3934ed515ba887583a04c7edc79358462669ce9314970b",
+      "authorization": "User confirmed Farm-owned code is MIT and the prior ISC declaration was erroneous (2026-10-28). Third-party scope remains separately attributed.",
+      "licenseNormalization": "lf"
+    },
+    {
+      "name": "Tauri generator utility reference",
+      "spdx": "MIT OR Apache-2.0",
+      "status": "verified",
+      "licenseFiles": [
+        {
+          "file": "licenses/create-tauri-app-Apache-2.0.txt",
+          "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+        },
+        {
+          "file": "licenses/create-tauri-app-MIT.txt",
+          "sha256": "1c1020fa10a6bf318717e82c911bcc54ebdfb9bb280460ae332bcb2f82f57fbe"
+        },
+        {
+          "file": "licenses/create-tauri-app.LICENSE.spdx",
+          "sha256": "6df2bd918e4e905cec0555e9adb505c12f6f19e142c0ec3d5e4bf9b257d3809d"
+        }
+      ],
+      "source": "https://github.com/tauri-apps/create-tauri-app/tree/cab4bd552434c0e3c6eaed8cee14ed35600478b5",
+      "scope": [
+        "../../crates/create-farm-rs/src/utils/lte.rs",
+        "../../crates/create-farm-rs/src/utils/theme.rs"
+      ],
+      "limitation": "Reference matching revision, not proof of initial revision. Templates/remaining static Rust dependency distribution still require separate evidence.",
+      "sourceFiles": [
+        {
+          "file": "../../crates/create-farm-rs/src/utils/lte.rs",
+          "sha256": "b8af6047c1daa53d3065320b0c952b21db2bb5a93a1f0d8f62333781b774cef2"
+        },
+        {
+          "file": "../../crates/create-farm-rs/src/utils/theme.rs",
+          "sha256": "ede1dd3842a4eb813c9250dbf405bdb2974b37f09b3188074a216a7200494f33"
+        }
+      ]
+    }
+  ]
+}

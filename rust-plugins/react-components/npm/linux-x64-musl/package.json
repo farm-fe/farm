@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-react-components-linux-x64-musl",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "os": [
     "linux"
   ],
@@ -9,10 +9,14 @@
   ],
   "main": "index.farm",
   "files": [
-    "index.farm"
+    "index.farm",
+    "LICENSE"
   ],
   "license": "MIT",
   "engines": {
     "node": ">= 10"
-  }
+  },
+  "libc": [
+    "musl"
+  ]
 }

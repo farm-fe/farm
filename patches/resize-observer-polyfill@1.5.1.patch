@@ -1,0 +1,24 @@
+diff --git a/src/index.d.ts b/src/index.d.ts
+index 74aacc0526ff554e9248c3f6fb44c353b5465efc..caa825928ee59c3b4a5d808b46edb0c02594b551 100644
+--- a/src/index.d.ts
++++ b/src/index.d.ts
+@@ -1,13 +1,4 @@
+-interface DOMRectReadOnly {
+-    readonly x: number;
+-    readonly y: number;
+-    readonly width: number;
+-    readonly height: number;
+-    readonly top: number;
+-    readonly right: number;
+-    readonly bottom: number;
+-    readonly left: number;
+-}
++// Use the platform DOMRectReadOnly type to match lib.dom ResizeObserverEntry.
+ 
+ declare global {
+     interface ResizeObserverCallback {
+@@ -38,3 +29,4 @@ interface ResizeObserver {
+ }
+ 
+ export default ResizeObserver;
++

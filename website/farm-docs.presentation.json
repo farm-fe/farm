@@ -1,0 +1,126 @@
+{
+  "en": {
+    "expandedCategories": [
+      "Getting Started",
+      "Tutorial",
+      "Features"
+    ],
+    "homeLabel": "Home",
+    "tocLabel": "On this page"
+  },
+  "zh": {
+    "expandedCategories": [
+      "开始使用",
+      "教程",
+      "功能"
+    ],
+    "homeLabel": "首页",
+    "tocLabel": "本页目录"
+  },
+  "navigation": {
+    "primary": [
+      "Guides",
+      "Config",
+      "API",
+      "Plugins",
+      "Ecosystem"
+    ],
+    "community": {
+      "en": {
+        "label": "Community",
+        "items": [
+          {
+            "label": "Team",
+            "href": "/team"
+          },
+          {
+            "label": "Blog",
+            "href": "/blog/index"
+          },
+          {
+            "label": "Awesome Farm",
+            "href": "https://github.com/farm-fe/awesome-farm"
+          },
+          {
+            "label": "Discord",
+            "href": "https://discord.com/invite/mDErq9aFnF"
+          },
+          {
+            "label": "Twitter",
+            "href": "https://x.com/brightwwu46799"
+          },
+          {
+            "label": "WeChat Group",
+            "href": "https://github.com/farm-fe/farm?tab=readme-ov-file#chat-with-us"
+          }
+        ]
+      },
+      "zh": {
+        "label": "社区",
+        "items": [
+          {
+            "label": "团队",
+            "href": "/zh/team"
+          },
+          {
+            "label": "日志",
+            "href": "/zh/blog/index"
+          },
+          {
+            "label": "Awesome Farm",
+            "href": "https://github.com/farm-fe/awesome-farm"
+          },
+          {
+            "label": "Discord",
+            "href": "https://discord.com/invite/mDErq9aFnF"
+          },
+          {
+            "label": "Twitter",
+            "href": "https://x.com/brightwwu46799"
+          },
+          {
+            "label": "WeChat Group",
+            "href": "https://github.com/farm-fe/farm?tab=readme-ov-file#chat-with-us"
+          }
+        ]
+      }
+    },
+    "versionEntry": {
+      "zh": "/zh/docs/why-farm",
+      "en": "/docs/why-farm"
+    },
+    "sections": [
+      {
+        "id": "Guides",
+        "prefixes": []
+      },
+      {
+        "id": "Config",
+        "prefixes": [
+          "config",
+          "cli"
+        ]
+      },
+      {
+        "id": "API",
+        "prefixes": [
+          "api"
+        ]
+      },
+      {
+        "id": "Plugins",
+        "prefixes": [
+          "plugins"
+        ]
+      },
+      {
+        "id": "Ecosystem",
+        "prefixes": [
+          "ecosystem",
+          "farm-docs"
+        ]
+      }
+    ],
+    "defaultSection": "Guides"
+  }
+}

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{AliasItem, Config, ResolveConfig, StringOrRegex},
@@ -457,7 +457,7 @@ fn resolve_absolute_specifier() {
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
-      assert_eq!(resolved.resolved_path, file.to_string_lossy().to_string());
+      assert_eq!(PathBuf::from(resolved.resolved_path), file.to_path_buf());
 
       let resolved = resolver.resolve(
         cwd.join("lib").to_str().unwrap(),
@@ -501,7 +501,7 @@ fn resolve_package_dir() {
 
       let resolved = resolved.unwrap();
 
-      assert_eq!(resolved.resolved_path, file.to_string_lossy().to_string());
+      assert_eq!(PathBuf::from(resolved.resolved_path), file.to_path_buf());
     }
   );
 }

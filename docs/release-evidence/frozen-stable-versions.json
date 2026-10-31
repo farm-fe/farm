@@ -1,0 +1,703 @@
+{
+  "schemaVersion": 2,
+  "migration": "already-prepared-first-stable",
+  "changesets": [
+    "blue-jobs-lick",
+    "bright-tigers-config",
+    "brown-hounds-try",
+    "calm-bikes-cheat",
+    "clean-horses-fix",
+    "compatible-isolated-declarations",
+    "curly-lions-drive",
+    "farm-docs-rust-website",
+    "farm-plugin-vue",
+    "fifty-otters-hope",
+    "glob-membership-cache-invalidation",
+    "gorgeous-teachers-study",
+    "great-coats-grow",
+    "honest-books-cross",
+    "lazy-adults-bathe",
+    "little-mangos-joke",
+    "lovely-rivers-decide",
+    "lucky-panthers-divide",
+    "mean-carpets-occur",
+    "ninety-clocks-change",
+    "polite-donkeys-sass",
+    "postcss-production-watch-dependencies",
+    "quick-snakes-heal",
+    "quiet-hmr-navigation",
+    "quiet-llamas-love",
+    "refresh-watched-module-cache",
+    "rust-tailwind-cached-source-candidates",
+    "safe-virtual-entry-resources",
+    "selfish-crews-taste",
+    "sharp-beers-live",
+    "shy-peas-smell",
+    "slow-cycles-brake",
+    "small-bottles-warn",
+    "soft-wolves-config",
+    "sour-lamps-wave",
+    "tailwind-restored-source-watch-dependencies",
+    "tame-plugins-publish",
+    "thick-trees-collect",
+    "tough-pans-collect",
+    "unified-v2-native-abi",
+    "update-swc-crates",
+    "v2-library-output",
+    "v2-vue-refresh",
+    "vue-jsx-plugin",
+    "warm-pumas-build",
+    "weak-files-hide"
+  ],
+  "versions": [
+    {
+      "name": "@farmfe/cli",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "packages/cli/CHANGELOG.md",
+        "sha256": "1695369976a9f61d0ae0130f8f0996d1db9f10452b42da6545ee0c2c1adee3bb"
+      }
+    },
+    {
+      "name": "@farmfe/core",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0",
+      "changelog": {
+        "file": "packages/core/CHANGELOG.md",
+        "sha256": "aed1660e420f730418233c515003a604720788f9005ef14b55004118ef7a0d44"
+      }
+    },
+    {
+      "name": "create-farm",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0",
+      "changelog": {
+        "file": "packages/create-farm/CHANGELOG.md",
+        "sha256": "9be01fd828cf5c6fd44cc6bd0a7032e88140c98e3accefa27fc162b554c1b092"
+      }
+    },
+    {
+      "name": "create-farm-plugin",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "packages/create-farm-plugin/CHANGELOG.md",
+        "sha256": "c25246abc5a88cf16ae53cba65c082523b4f8f7de670a21fa6e950dcacd46abd"
+      }
+    },
+    {
+      "name": "@farmfe/docs",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "packages/docs/CHANGELOG.md",
+        "sha256": "61a459d9d5ac6998def9f975862cef105a30a08846954f84361f986f4dea84fa"
+      }
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "1.0.0",
+      "changelog": {
+        "file": "packages/docs-theme-default/CHANGELOG.md",
+        "sha256": "4c423a0f06852f9898cca357af7389f4398df65dd46aa172fa618b9e51e83b23"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tools",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "packages/plugin-tools/CHANGELOG.md",
+        "sha256": "bc628b97fe6d2623a2858c77eaea2257249e4649caa1072cc6d8de12bad9356e"
+      }
+    },
+    {
+      "name": "@farmfe/runtime",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "packages/runtime/CHANGELOG.md",
+        "sha256": "4801bb8154ef4a83a5eee59ad15dc7d78b6c2e849e3765dff61dcdd6e8c5c7a6"
+      }
+    },
+    {
+      "name": "@farmfe/runtime-plugin-hmr",
+      "stable": "4.0.0",
+      "ordinaryCalculated": "4.1.0",
+      "changelog": {
+        "file": "packages/runtime-plugin-hmr/CHANGELOG.md",
+        "sha256": "3a94f0762d02c49bb360ab525d5a61b992f4f2a7844bec538a7af99fce611b0d"
+      }
+    },
+    {
+      "name": "@farmfe/runtime-plugin-import-meta",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "packages/runtime-plugin-import-meta/CHANGELOG.md",
+        "sha256": "c2a005dd2fe9662589d1da3f43df2a4ca0248fa6555146a2f985cd76963c6562"
+      }
+    },
+    {
+      "name": "@farmfe/utils",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "packages/utils/CHANGELOG.md",
+        "sha256": "101e702e8ce19845c4b50182f738dbf73b7ce3c69b5fdf9cd41b9a7e2127f008"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-auto-import",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/auto-import/CHANGELOG.md",
+        "sha256": "71fa31fa60df5015a7d56f590aa63f91d140f8f02b04131a07b55c3954a68498"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-compress",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/compress/CHANGELOG.md",
+        "sha256": "31e10027de05e113062b7e4d0b25cb2f638fd2b8e4f368f6ea6cfccde11f3a81"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/docs/CHANGELOG.md",
+        "sha256": "3efbc94f82a1a7f37a7a026cd72ba1e26eba5fc0248cbc6f5bac40049b855d32"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/docs-seo/CHANGELOG.md",
+        "sha256": "dce2c409d786a4d3f7d225f95a2f4042f80d61f7ffde13c4b24494915116f9f5"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/docs-snapshot/CHANGELOG.md",
+        "sha256": "b8bcc488bc33891ab96b56ab5cda5a2853b9f1a448a3ef86602e57fa112dd4ca"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/docs-snippets/CHANGELOG.md",
+        "sha256": "325be60aedc4254d29170f514d3b18a0fe7e366441a4751b1b021ac9cf2e84b8"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-dsv",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/dsv/CHANGELOG.md",
+        "sha256": "9490955cbbf3f5ccd5f9124beac05477bff5939ca3757a58c63409e0165db2e4"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-dts",
+      "stable": "1.0.0",
+      "ordinaryCalculated": "1.0.1",
+      "changelog": {
+        "file": "rust-plugins/dts/CHANGELOG.md",
+        "sha256": "77a618e2f976266e2d8a9ed23ae7cc1041c33dc139309ee8a3b64623edd77fc8"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-icons",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/icons/CHANGELOG.md",
+        "sha256": "dc49e2ca187f07f144dfa4ec836d7f1eb1c797c635b83a5da65e1a0ced3cc2d1"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-image",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/image/CHANGELOG.md",
+        "sha256": "9dd304ac7ad82012b6122356982206d83f7cf9933b6c8d167f63b0839e475433"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-mdx",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0",
+      "changelog": {
+        "file": "rust-plugins/mdx/CHANGELOG.md",
+        "sha256": "47ab20ddb64f898be9fa003b9dfbcaca1ece6054c7bf3ec2a2eb03aa90350630"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-modular-import",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/modular-import/CHANGELOG.md",
+        "sha256": "a3d0a218e33bf43b601e59077b22a7a97e63b952d5298ba861d4f10fa1004c5c"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/react/CHANGELOG.md",
+        "sha256": "616e5314eff6ef6747625429fadccf50937d100981fe4331629df91e05cd68d4"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-components",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/react-components/CHANGELOG.md",
+        "sha256": "dedc18396b26019077f95c1b1393739c2764dd896545e29cc5fadfc8b05cd859"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/replace-dirname/CHANGELOG.md",
+        "sha256": "15de5082946f2ca79bc0b1fe2202dde57809e98243340568665c560fccc6cc77"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/sass/CHANGELOG.md",
+        "sha256": "f29f0d8b5f8758baff8ff6d132af4d7f66101673aedd0a1e63ccf82c6628688d"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/ssr-css/CHANGELOG.md",
+        "sha256": "f3f8f27091c0f1ef8f2eeb6e8cf01d2d3b00dee0df9b118944646ec1e1c34e0c"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-strip",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/strip/CHANGELOG.md",
+        "sha256": "7b1878980255e8e949a1546b6eb7d4714ea560145dd8bec5e7a17aac85f08507"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-svgr",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/svgr/CHANGELOG.md",
+        "sha256": "cc2938d991ea1ce4e4d1ce052520f38fc82cb594d63007d95645395d7aa8a024"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/syntax-highlight/CHANGELOG.md",
+        "sha256": "372176519ef5c77879886af974c2208df14ccd5b3838f36e6b4dbbd601e78143"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0",
+      "changelog": {
+        "file": "rust-plugins/tailwindcss/CHANGELOG.md",
+        "sha256": "18d94bb46df19ec966b324d1154381051979a32202a9d28a1b2475415ff132a9"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-url",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/url/CHANGELOG.md",
+        "sha256": "78e35f19809dbd1fd16435bafd3b5acd478b5b6c0378e10c9241ca3d7ea741b0"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-virtual",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/virtual/CHANGELOG.md",
+        "sha256": "ddc50c6bd5b198fc62728c5bc5051bbc3af932d82ff444aeaecc87f1cf6bc0c8"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-vue",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.1.0",
+      "changelog": {
+        "file": "rust-plugins/vue/CHANGELOG.md",
+        "sha256": "bdb5024ced994ad60ed4bb59cf02d23f2f38c0d6c993df1a4a51b2f1bae4cba2"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-vue-jsx",
+      "stable": "0.0.1",
+      "ordinaryCalculated": "0.1.0",
+      "changelog": {
+        "file": "rust-plugins/vue-jsx/CHANGELOG.md",
+        "sha256": "4864efd14febe4983096391b1d3d71df01edd333286fc8ae3ff8ee6b431a8ba7"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-wasm",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/wasm/CHANGELOG.md",
+        "sha256": "446bd6c2b189ce8c4e176b9073a6424964b65d859e2bd38c198b09bd2104a0cf"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-worker",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/worker/CHANGELOG.md",
+        "sha256": "c9a5d1f68359307b30e67cfc3fe36ecdb9e51d8f2cc941baebc61e89b55066e8"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-yaml",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "rust-plugins/yaml/CHANGELOG.md",
+        "sha256": "7bd9df291b599d770d43e0f31fb4c970839f80bb8ef976d315744896be632d16"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-babel",
+      "stable": "0.0.4",
+      "ordinaryCalculated": "1.0.0",
+      "changelog": {
+        "file": "js-plugins/babel/CHANGELOG.md",
+        "sha256": "d9e85f74e36b2047f934cfaa498bf9700c190fc6370606adc844c522c5dcab89"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-dts",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "js-plugins/dts/CHANGELOG.md",
+        "sha256": "0ba0dc9acd17fd03c9a62263bc1c518d6af78b4ec1051eb042c978d44c9704fe"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-electron",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.0",
+      "changelog": {
+        "file": "js-plugins/electron/CHANGELOG.md",
+        "sha256": "45e52bf45f80ba57c0c803a58277085d69b228f104f633031b5192030ef0044f"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-less",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0",
+      "changelog": {
+        "file": "js-plugins/less/CHANGELOG.md",
+        "sha256": "3366e75a3e00c387dab052bee6a605304ad6d1beca6ca08dbceeeabab86a25da"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-postcss",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0",
+      "changelog": {
+        "file": "js-plugins/postcss/CHANGELOG.md",
+        "sha256": "b927fd2878d550eb846616ff7c84528e3ac4ee9ff8a8cb21b742e2f2fb0bb336"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-qiankun",
+      "stable": "1.0.0",
+      "ordinaryCalculated": "2.0.0",
+      "changelog": {
+        "file": "js-plugins/qiankun/CHANGELOG.md",
+        "sha256": "ba83b65b6c9752178e0080ee54090bfe4a3a5d38e7d1fdbf314e9c4a4f60c9ef"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-react-compiler",
+      "stable": "0.0.4",
+      "ordinaryCalculated": "1.0.0",
+      "changelog": {
+        "file": "js-plugins/react-compiler/CHANGELOG.md",
+        "sha256": "200597d643423517b7df22e10ec49bbdca686d13baa3f84563d45e1b4a5b2d20"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-sass",
+      "stable": "3.0.0",
+      "ordinaryCalculated": "4.0.0",
+      "changelog": {
+        "file": "js-plugins/sass/CHANGELOG.md",
+        "sha256": "6f58e7c2d63098f3e270448755852247b32d35cc70f5f73efbce5877ada23f5e"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-svgr",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "3.0.0",
+      "changelog": {
+        "file": "js-plugins/svgr/CHANGELOG.md",
+        "sha256": "0032da20bcd60417b0013d0be807f689082fe086d290a6a30792cbe6cf765de8"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-tailwindcss",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "js-plugins/tailwindcss/CHANGELOG.md",
+        "sha256": "3533fca123e0c3114d3a54c41418823f245b6c4372e4e6909c0487812578760e"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-visualizer",
+      "stable": "2.0.0",
+      "ordinaryCalculated": "2.0.1",
+      "changelog": {
+        "file": "js-plugins/visualizer/CHANGELOG.md",
+        "sha256": "6f8890ffe25ce0f011d9c56f47449832043c05e19817d4d23759785326ba6cb7"
+      }
+    },
+    {
+      "name": "@farmfe/js-plugin-vuetify",
+      "stable": "0.0.2",
+      "ordinaryCalculated": "0.0.2",
+      "changelog": {
+        "file": "js-plugins/vuetify/CHANGELOG.md",
+        "sha256": "609bca00c257599eadc2d562147dc0b69785e0b42d34f6d36e3a03081f556134"
+      }
+    }
+  ],
+  "applied": true,
+  "sourceCommit": "a705d9bddb1220a8b36ac191f8bcdfb72c1f0b42",
+  "planSha256": "dfe28212d48fcfdd76c2b77d1e18c7816276b23692b8c3f2d52bed6b4c54a101",
+  "changesetSources": [
+    {
+      "id": "blue-jobs-lick",
+      "sha256": "d487269d2de0655a9ed127c83b0d1006d724e600385b32f4f4b39893c1e0164b"
+    },
+    {
+      "id": "bright-tigers-config",
+      "sha256": "bce2c1663545317e531716fd59407050c1385b99663d7c06bcd4a05c9a2dd506"
+    },
+    {
+      "id": "brown-hounds-try",
+      "sha256": "bc95d5b33ad586f1a4f8ad499f65ce28c82f5417d0f50a8e3bfb679745be48af"
+    },
+    {
+      "id": "calm-bikes-cheat",
+      "sha256": "d7696b011b5e95766cd0e17a1c466ac1ec893bc4b328623fece23d2bf8c99ccc"
+    },
+    {
+      "id": "clean-horses-fix",
+      "sha256": "64be445b218283d2acfc228792980a140cb73c9e3fb5f3610a581fe0416f1eb6"
+    },
+    {
+      "id": "compatible-isolated-declarations",
+      "sha256": "9beedde9abf356aac5675859a5b04ee3fb5c0f7bc96a3b10e19ca160b0e30b7a"
+    },
+    {
+      "id": "curly-lions-drive",
+      "sha256": "db010b8646741b66d3f6151057b6c9a2469a64b57abdae46de4e6de974067a44"
+    },
+    {
+      "id": "farm-docs-rust-website",
+      "sha256": "450c30c21f4a98da493beb8677a71cc6109672aa6c4d3272bcd1714890bac235"
+    },
+    {
+      "id": "farm-plugin-vue",
+      "sha256": "25a0a74c28d8880ed44e661e610bda90f506028bd681ec625ab38a09c0ed267d"
+    },
+    {
+      "id": "fifty-otters-hope",
+      "sha256": "d14d8adcca04cdcc7cde12ec498bf5764a8aa8619bb6e8fe0c9fa25bcaa68010"
+    },
+    {
+      "id": "glob-membership-cache-invalidation",
+      "sha256": "e76e047b81f250e08dd8f4ca6c504fa3eabcbbae8d8090bcbfcd6bfbab54869a"
+    },
+    {
+      "id": "gorgeous-teachers-study",
+      "sha256": "f42914ca9498b62a38afa6ee5b0683c9094b125e78b019f1b53897855531dd31"
+    },
+    {
+      "id": "great-coats-grow",
+      "sha256": "d1f37e3dfe21ce61ec04f0a35256051688b300443c175489fc4ec5e3472d200e"
+    },
+    {
+      "id": "honest-books-cross",
+      "sha256": "b7f4636db34889f92bc0230ef6270fd692c80a1a32fa9aa0a81d2e580bea02ef"
+    },
+    {
+      "id": "lazy-adults-bathe",
+      "sha256": "69102b41a0833440722116436fec0fbfc66ace89a115b3c5534d584f491cc468"
+    },
+    {
+      "id": "little-mangos-joke",
+      "sha256": "67f131d37cc271c068bcff500b344dced18734a8ef8d07ca874fa7b743b89319"
+    },
+    {
+      "id": "lovely-rivers-decide",
+      "sha256": "d487269d2de0655a9ed127c83b0d1006d724e600385b32f4f4b39893c1e0164b"
+    },
+    {
+      "id": "lucky-panthers-divide",
+      "sha256": "844ed1f867741bfc6c55cbc49c16dd2798bcc66fc25a21eff7de51fc8e0f3b51"
+    },
+    {
+      "id": "mean-carpets-occur",
+      "sha256": "474e6e05ead3b9785a6d9f6664078a126c45e3d427e7eb4e872569bcedb0628a"
+    },
+    {
+      "id": "ninety-clocks-change",
+      "sha256": "4023ac6d9d6a029beed79255301b87580be2a9af0969e89d50191f0c32f2b97c"
+    },
+    {
+      "id": "polite-donkeys-sass",
+      "sha256": "c4fafd8b3e8d6da32b4ba9e7dea75a8254b731524b17fffe233cf1acf13277b7"
+    },
+    {
+      "id": "postcss-production-watch-dependencies",
+      "sha256": "f4be2b3a94548334b620995000d6d2c81e3fc1f7f6c050eb882327700066689a"
+    },
+    {
+      "id": "quick-snakes-heal",
+      "sha256": "daeedef38a20effd4cb88ae12b4263f8fe95896cdedc7a312a56a6fb28017a0e"
+    },
+    {
+      "id": "quiet-hmr-navigation",
+      "sha256": "f1d03924ed0d4c906c49ed2ba6dce4c944b5a9b8b2092e0259d03c115070cd0d"
+    },
+    {
+      "id": "quiet-llamas-love",
+      "sha256": "52ffbc7481b4f2cc98daf9fdac8e6929aac08950f821cba15172bb899035589a"
+    },
+    {
+      "id": "refresh-watched-module-cache",
+      "sha256": "74fe0f324b9757aca0a78ba5c7e965cf5444783ccdf803d63f274cc14683030b"
+    },
+    {
+      "id": "rust-tailwind-cached-source-candidates",
+      "sha256": "ef7cdcec98e31b5f01f25f825795849c2e7675e5e806c720ba2871f38861a39e"
+    },
+    {
+      "id": "safe-virtual-entry-resources",
+      "sha256": "6e86ac6e7d5321a7ae06b91d0870f15108638877b0b899090d3d190774260911"
+    },
+    {
+      "id": "selfish-crews-taste",
+      "sha256": "c22c42c67286c6d3c7662272a02ae9b2d63a1fa8300a126945c55dc87a205854"
+    },
+    {
+      "id": "sharp-beers-live",
+      "sha256": "b4696af54fd39df59633e231dffa53d84856aa5614e8485fdde1869fe240cf25"
+    },
+    {
+      "id": "shy-peas-smell",
+      "sha256": "0f4fc192460ef15cf0ec3a5813867f45b9091edbbce3b66f6d5fe7013c97b70c"
+    },
+    {
+      "id": "slow-cycles-brake",
+      "sha256": "249e1b76eecb1bfafb72dfb29c6aeffdb69ee557d2eac715ae64efb3b861de68"
+    },
+    {
+      "id": "small-bottles-warn",
+      "sha256": "ff96dde92299d34746d8c9eb6f3f9fbf00ad6a17984f19576516c933517a9614"
+    },
+    {
+      "id": "soft-wolves-config",
+      "sha256": "05d96af0b0ef8a172c188ef5018be1836859ba617474ea80f61307fe83d22eaf"
+    },
+    {
+      "id": "sour-lamps-wave",
+      "sha256": "9819df257185cffa4cf712bfc79ee1f836f3d9dffabdc0fecfe98083d052822a"
+    },
+    {
+      "id": "tailwind-restored-source-watch-dependencies",
+      "sha256": "9d7d1cf2d08e37b05b7cf6f40f8dac983dbee71df060a64a6eb496f2dd19bcbd"
+    },
+    {
+      "id": "tame-plugins-publish",
+      "sha256": "295f7a11f306c6deccf34f5166081ed605d6e89d550d2b1b208416c530ea7fe9"
+    },
+    {
+      "id": "thick-trees-collect",
+      "sha256": "ac1b40bec344cd452eaa1f6070ce772d1188c7c053f8529e326acae83ae5982c"
+    },
+    {
+      "id": "tough-pans-collect",
+      "sha256": "7b8ffac0833f6c03e4320314b9ddff882d8bdd03e8ba51db25c49345c7a30c84"
+    },
+    {
+      "id": "unified-v2-native-abi",
+      "sha256": "5c53a1aad00cf0c642fe0620a7aadaedfafd1fa7aa4834667283b35a1bf997c1"
+    },
+    {
+      "id": "update-swc-crates",
+      "sha256": "1f1f4d00cb7d1c19f0ee2ffe329ce3b6cf3d5d4685314f703e4dcb059d52b380"
+    },
+    {
+      "id": "v2-library-output",
+      "sha256": "8e79987269a7ba30027747c83599ea57ef042585faa04d47c58ebfe4b3f99778"
+    },
+    {
+      "id": "v2-vue-refresh",
+      "sha256": "96fe9a9c722ca935a51b17d8a82de6bf13ddc7a9725a46b20eb830209a709f38"
+    },
+    {
+      "id": "vue-jsx-plugin",
+      "sha256": "5fd76850f5c7a60499b2d5bec77a58edac526198c2855de8a49232119061c8b3"
+    },
+    {
+      "id": "warm-pumas-build",
+      "sha256": "123525b11be54703a6c0c0fc1e4b423d85fee88a7692fc1b87cd8632b77036d3"
+    },
+    {
+      "id": "weak-files-hide",
+      "sha256": "a32fc019cf996f259b39c367c90dea6885d27dc6ba03ed4a7ad960fed7262433"
+    }
+  ],
+  "sourcePreSha256": "8e76d74bcd043b199e6345ffec7abea0aea73cf0dcf851a8634930f76ee544a3"
+}

@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 2.0.0
+
+### Patch Changes
+
+- 5861c49: Respect explicit allowJs settings and avoid enabling JavaScript declaration emission by default when isolatedDeclarations is enabled, including inherited tsconfig options.
+
 ## 2.0.0-beta.0
 
 ### Major Changes

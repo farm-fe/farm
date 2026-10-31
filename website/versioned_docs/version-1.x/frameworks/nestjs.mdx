@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # NestJs
 
@@ -10,7 +10,7 @@ Create a `NestJs` project based on `Farm`.
 
 ### Creating a NestJs Project
 
-<PackageManagerTabs command="npm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 Select `NestJs` template in `Select Framework`
 
@@ -18,7 +18,7 @@ The nestjs project uses [farmup](https://github.com/farm-fe/farmup) to start and
 
 After downloading the template, run pnpm dev to start the nestjs project
 
-<PackageManagerTabs command="npm run dev" />
+<PackageManagerTabs commands={{"npm":"npm run dev","pnpm":"pnpm run dev","yarn":"yarn run dev","bun":"bun run dev"}} />
 
 
 Start enjoying the development experience of millisecond builds

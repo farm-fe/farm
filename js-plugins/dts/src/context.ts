@@ -80,8 +80,7 @@ export default class Context {
         declaration: true,
         noEmit: false,
         emitDeclarationOnly: true,
-        composite: false,
-        allowJs: true
+        composite: false
       } as CompilerOptions),
       tsConfigFilePath: tsConfigPath,
       skipAddingFilesFromTsConfig: true,
@@ -89,6 +88,12 @@ export default class Context {
     };
 
     this.project = new Project(tsCompilerOptions);
+    const effectiveCompilerOptions = this.project.getCompilerOptions();
+    if (effectiveCompilerOptions.allowJs === undefined) {
+      this.project.compilerOptions.set({
+        allowJs: !effectiveCompilerOptions.isolatedDeclarations
+      });
+    }
     const tsConfigOptions = getTsConfig(
       tsConfigPath,
       this.project.getFileSystem().readFileSync
@@ -172,9 +177,9 @@ export default class Context {
               /\\/g,
               '/'
             );
-            const rootPath = this.options.root.replace(/\\/g, '/');
+            const rootPath = this.options.outputDirPath.replace(/\\/g, '/');
 
-            return outputPath.startsWith(rootPath);
+            return outputPath.startsWith(`${rootPath}/`);
           })
           .map((outputFile) => ({
             path: resolve(
@@ -206,7 +211,7 @@ export default class Context {
       );
       filePath = resolve(this.options.outputDir, relative(entryRoot, filePath));
 
-      writeFileWithCheck(filePath, content);
+      await writeFileWithCheck(filePath, content);
     });
 
     const elapsedTime = Math.floor(performance.now() - startTime);
@@ -235,6 +240,10 @@ export default class Context {
           this.options.sourceDtsFiles.add(
             this._project.addSourceFileAtPath(file)
           );
+        } else if (/\.tsx?$/.test(file)) {
+          // Cached runtime modules may not invoke transform; declarations still
+          // need the current project sources, including type-only dependencies.
+          this._project.addSourceFileAtPath(file).refreshFromFileSystemSync();
         }
       }
     }

@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "2.0.0-beta.4",
+  "version": "2.0.0",
   "description": "Rapidly create a new farm project.",
   "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
   "bugs": {
@@ -12,7 +12,7 @@
     "create-farm"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -43,5 +43,25 @@
   },
   "devDependencies": {
     "@napi-rs/cli": "3.0.4"
-  }
+  },
+  "optionalDependencies": {
+    "create-farm-darwin-arm64": "2.0.0",
+    "create-farm-darwin-x64": "2.0.0",
+    "create-farm-linux-arm64-gnu": "2.0.0",
+    "create-farm-linux-arm64-musl": "2.0.0",
+    "create-farm-linux-x64-gnu": "2.0.0",
+    "create-farm-linux-x64-musl": "2.0.0",
+    "create-farm-win32-arm64-msvc": "2.0.0",
+    "create-farm-win32-ia32-msvc": "2.0.0",
+    "create-farm-win32-x64-msvc": "2.0.0"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "create-farm.js",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "license-components.json"
+  ]
 }

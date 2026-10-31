@@ -1,5 +1,98 @@
 #![deny(clippy::all)]
 
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use farmfe_core::resource::Resource;
+
+  #[test]
+  fn finish_completes_without_relocking_resources() {
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+    context.resources_map.lock().insert(
+      "site.js".into(),
+      Resource {
+        name: "site.js".into(),
+        bytes: b"export default 1".to_vec(),
+        resource_type: ResourceType::Js,
+        ..Default::default()
+      },
+    );
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+      let plugin = FarmPluginFileSize::new(&context.config);
+      sender
+        .send(plugin.finish(&Stats::default(), &context))
+        .unwrap();
+    });
+    receiver
+      .recv_timeout(std::time::Duration::from_secs(3))
+      .expect("actual finish must complete without recursively taking its resource lock")
+      .unwrap();
+    worker.join().unwrap();
+  }
+
+  #[test]
+  fn compression_does_not_hold_shared_resource_lock() {
+    let context = CompilationContext::new(Config::default(), vec![]).unwrap();
+    context.resources_map.lock().insert(
+      "site.js".into(),
+      Resource {
+        name: "site.js".into(),
+        bytes: b"export default 1".to_vec(),
+        resource_type: ResourceType::Js,
+        ..Default::default()
+      },
+    );
+    let plugin = FarmPluginFileSize::new(&context.config);
+    let rows = plugin.resource_sizes(&context, |bytes| {
+      assert!(
+        context.resources_map.try_lock().is_some(),
+        "parallel compression must not hold the lock needed by other finish hooks"
+      );
+      plugin.calculate_gzip_size(bytes)
+    });
+    assert_eq!(rows.len(), 1);
+    assert_eq!(
+      rows[0],
+      (
+        "site.js".into(),
+        16,
+        plugin.calculate_gzip_size(b"export default 1")
+      )
+    );
+  }
+
+  #[test]
+  fn resource_measurements_keep_filtering_and_real_gzip_sizes() {
+    let context = CompilationContext::new(Config::default(), vec![]).unwrap();
+    for (name, kind, emitted) in [
+      ("a.js", ResourceType::Js, false),
+      ("b.css", ResourceType::Css, false),
+      ("a.js.map", ResourceType::SourceMap("a.js".into()), false),
+      ("done.js", ResourceType::Js, true),
+    ] {
+      context.resources_map.lock().insert(
+        name.into(),
+        Resource {
+          name: name.into(),
+          bytes: b"content".to_vec(),
+          resource_type: kind,
+          emitted,
+          ..Default::default()
+        },
+      );
+    }
+    let plugin = FarmPluginFileSize::new(&context.config);
+    let mut rows = plugin.resource_sizes(&context, |bytes| plugin.calculate_gzip_size(bytes));
+    rows.sort();
+    let gzip = plugin.calculate_gzip_size(b"content");
+    assert_eq!(
+      rows,
+      vec![("a.js".into(), 7, gzip), ("b.css".into(), 7, gzip)]
+    );
+  }
+}
+
 use colored::*;
 use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::resource::ResourceType;
@@ -8,8 +101,8 @@ use farmfe_core::{
   stats::Stats,
 };
 
-use flate2::write::GzEncoder;
 use flate2::Compression;
+use flate2::write::GzEncoder;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
@@ -24,6 +117,33 @@ impl FarmPluginFileSize {
 }
 
 impl FarmPluginFileSize {
+  fn resource_sizes(
+    &self,
+    context: &CompilationContext,
+    calculate_size: impl Fn(&[u8]) -> usize + Sync,
+  ) -> Vec<(String, usize, usize)> {
+    // Nested Rayon work may run another finish hook that needs this lock.
+    let files: Vec<_> = {
+      let resources_map = context.resources_map.lock();
+      resources_map
+        .iter()
+        .filter(|(_, resource)| {
+          !resource.emitted && !matches!(resource.resource_type, ResourceType::SourceMap(_))
+        })
+        .map(|(name, resource)| (name.to_string(), resource.bytes.to_vec()))
+        .collect()
+    };
+
+    files
+      .par_iter()
+      .map(|(name, bytes)| {
+        let size = bytes.len();
+        let gzip_size = calculate_size(bytes);
+        (name.clone(), size, gzip_size)
+      })
+      .collect()
+  }
+
   fn calculate_gzip_size(&self, content: &[u8]) -> usize {
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(content).unwrap();
@@ -113,7 +233,6 @@ impl Plugin for FarmPluginFileSize {
     _stat: &Stats,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>, CompilationError> {
-    let resources_map = context.resources_map.lock();
     // let output_config = context.config.output.clone();
     println!("\n{}", "Output files:".bold());
     println!();
@@ -123,24 +242,7 @@ impl Plugin for FarmPluginFileSize {
       format!("{:<45} {:<12} {:<12}", "File", " Size", "  Gzipped").bold()
     );
 
-    let files: Vec<_> = resources_map
-      .iter()
-      .filter(|(_, resource)| {
-        !resource.emitted && !matches!(resource.resource_type, ResourceType::SourceMap(_))
-      })
-      .map(|(name, resource)| (name.to_string(), resource.bytes.to_vec()))
-      .collect();
-
-    let files_with_size: Vec<_> = files
-      .par_iter()
-      .map(|(name, bytes)| {
-        let size = bytes.len();
-        let gzip_size = self.calculate_gzip_size(bytes);
-        (name.clone(), size, gzip_size)
-      })
-      .collect();
-
-    let mut files_with_size = files_with_size;
+    let mut files_with_size = self.resource_sizes(context, |bytes| self.calculate_gzip_size(bytes));
     files_with_size.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut total_size = 0;

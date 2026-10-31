@@ -55,6 +55,45 @@ fn is_module_graph_equals(g1: &ModuleGraph, g2: &ModuleGraph) -> bool {
 }
 
 #[test]
+fn removed_glob_member_start_point_is_not_replaced() {
+  let importer: ModuleId = "glob-importer.js".into();
+  let deleted: ModuleId = "files/deleted.js".into();
+  let mut module_graph = ModuleGraph::new();
+  module_graph.add_module(Module::new(importer.clone()));
+  module_graph.add_module(Module::new(deleted.clone()));
+  module_graph.entries.insert(importer.clone(), "index".into());
+  module_graph
+    .add_edge(&importer, &deleted, Default::default())
+    .unwrap();
+
+  let mut update_module_graph = ModuleGraph::new();
+  let mut updated_importer = Module::new(importer.clone());
+  updated_importer.module_type = ModuleType::Custom("updated-glob-importer".into());
+  update_module_graph.add_module(updated_importer);
+  // The deleted file and its glob importer can be part of the same HMR batch.
+  update_module_graph.add_module(Module::new(deleted.clone()));
+  let start_points = vec![deleted.clone(), importer.clone()];
+  let diff = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+  assert!(diff.removed_modules.contains(&deleted));
+
+  let removed = patch_module_graph(
+    start_points,
+    &diff,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  assert!(removed.contains_key(&deleted));
+  assert!(!module_graph.has_module(&deleted));
+  assert!(!module_graph.has_edge(&importer, &deleted));
+  assert_eq!(module_graph.modules().len(), 1);
+  assert_eq!(
+    module_graph.module(&importer).unwrap().module_type,
+    ModuleType::Custom("updated-glob-importer".into())
+  );
+}
+
+#[test]
 fn test_patch_module_graph_1() {
   let mut module_graph = create_basic_graph();
   let changed_module_id: ModuleId = "a".into();

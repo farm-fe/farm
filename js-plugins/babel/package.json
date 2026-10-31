@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-babel",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "scripts": {
     "build": "npm run build:cjs",
@@ -41,7 +41,7 @@
     "cross-env": "^7.0.3"
   },
   "peerDependencies": {
-    "@farmfe/core": "^1.6.0"
+    "@farmfe/core": "workspace:^"
   },
   "files": [
     "package.json",

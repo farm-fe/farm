@@ -5,11 +5,11 @@ use dashmap::mapref::one::{Ref, RefMut};
 use farmfe_macro_cache_item::cache_item;
 pub use module_metadata::ModuleMetadataStore;
 
+use crate::Cacheable;
 use crate::cache::scope::{CacheScopeStore, IdType};
 use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
-use crate::Cacheable;
 
 use immutable_modules::ImmutableModulesMemoryStore;
 use module_memory_store::ModuleMemoryStore;
@@ -62,6 +62,18 @@ pub struct CachedModule {
 }
 
 impl CachedModule {
+  /// Fingerprint inputs used by freeze hooks independently of the module source.
+  pub fn watch_dependencies_hash(&self) -> String {
+    let mut watches = self.watch_dependencies.iter().collect::<Vec<_>>();
+    watches.sort_by_key(|watch| watch.dependency.to_string());
+    let mut input = String::new();
+    for watch in watches {
+      let id = watch.dependency.to_string();
+      input.push_str(&format!("[watch:{}:{id}:{}]", id.len(), watch.hash));
+    }
+    farmfe_utils::hash::sha256(input.as_bytes(), 32)
+  }
+
   pub fn dep_sources(
     dependencies: Vec<CachedModuleDependency>,
   ) -> Vec<(PluginAnalyzeDepsHookResultEntry, Option<ModuleId>)> {
@@ -117,6 +129,15 @@ impl ModuleCacheManager {
   pub fn set_cache(&self, key: ModuleId, module: CachedModule) {
     if module.module.immutable {
       self.immutable_modules_store.set_cache(key, module);
+    } else {
+      self.mutable_modules_store.set_cache(key, module);
+    }
+  }
+
+  /// Replace metadata for an explicitly rebuilt root, including immutable packages.
+  pub fn set_updated_cache(&self, key: ModuleId, module: CachedModule) {
+    if module.module.immutable {
+      self.immutable_modules_store.set_updated_cache(key, module);
     } else {
       self.mutable_modules_store.set_cache(key, module);
     }

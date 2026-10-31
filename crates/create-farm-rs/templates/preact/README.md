@@ -4,6 +4,8 @@ This template should help you start developing using Preact and TypeScript in Fa
 
 ## Setup
 
+The included pnpm configuration keeps virtual-store directory names short enough for Node 20 ESM package resolution on Windows.
+
 Install the dependencies:
 
 ```bash

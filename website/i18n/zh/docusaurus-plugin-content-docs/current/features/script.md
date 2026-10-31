@@ -16,7 +16,7 @@ function ButtonGroup(props: ButtonProps) {
 }
 ```
 
-Farm 使用 SWC 来编译脚本，Farm 为脚本编译设置了合理的默认配置。 另外，您可以使用`compilation.script`来配置如何编译脚本文件。 有关详细信息，请参阅 [compilation.script](/docs/config/farm-config#compilation-options)。
+Farm 使用 SWC 来编译脚本，Farm 为脚本编译设置了合理的默认配置。 另外，您可以使用`compilation.script`来配置如何编译脚本文件。 有关详细信息，请参阅 [compilation.script](../config/compilation-options.md#script)。
 
 ## 配置 Swc 解析器
 
@@ -60,7 +60,7 @@ export default {
 };
 ```
 
-有关`presetEnv`的更多信息，请参阅 [Polyfill](/docs/features/polyfill)。
+有关`presetEnv`的更多信息，请参阅 [Polyfill](../advanced/polyfill.md)。
 
 ## 原生顶层 Await
 Farm 通过 [`compilation.script.nativeTopLevelAwait`](/zh/docs/config/compilation-options#scriptnativetoplevelawait) 支持原生顶层 `await`。启用后，Farm 会保留模块顶层的 `await` 而不是将其转换。
@@ -118,7 +118,7 @@ export default defineConfig({
 
 > Farm 提供了一个装饰器的示例，可以看 https://github.com/farm-fe/farm/tree/main/examples/decorators
 
-> 默认情况下, Farm 不会转译 `node_modules` 下的装饰器, 参考 [compilation.script.decorators.excludes](/docs/config/farm-config#scriptdecorators).
+> 默认情况下, Farm 不会转译 `node_modules` 下的装饰器, 参考 [compilation.script.decorators.excludes](../config/compilation-options.md#scriptdecorators).
 
 ## 使用 SWC 插件
 
@@ -156,7 +156,22 @@ export default {
 
 ## Vite 风格的 `import.meta.glob`
 
-Farm 完整支持 Vite 风格的 `import.meta.glob`, 参考 [glob import](https://vitejs.dev/guide/features.html#glob-import).
+Farm 支持字面量形式的 Vite 风格 `import.meta.glob`，参考 [glob import](https://vite.dev/guide/features#glob-import)。Rust 匹配器以 Vite 8.3.5 的 JavaScript glob 路径为对齐目标，不代表完整兼容所有 picomatch 或原生 Rolldown 行为。
+
+支持 `eager`、`import`、`query`、`exhaustive`、`caseSensitive`、`base`，并保留旧的 `as: 'raw' | 'url'`。模式和选项必须为静态字面量；不支持的选项和非法值会产生编译错误，不会静默切换匹配方言。
+
+负模式的排除不受数组中位置影响。默认不包含隐藏文件和 `node_modules`，`exhaustive: true` 可在发现文件时包含它们；extglob 关闭。对象键排序后输出，query 仅附加到导入路径，不污染对象键。相对 `base` 以 importer 目录为基准，绝对 `base` 以项目根目录为基准，返回键相对于该目录。
+
+```ts
+const modules = import.meta.glob('./*.js', {
+  base: './dir',
+  import: 'default',
+  query: '?raw',
+});
+// 键为 './foo.js'，导入路径为 './dir/foo.js?raw'
+```
+
+开发模式下，匹配文件的新增和删除会让 importer 重新编译，并通过 HMR 更新 glob 对象；文件事件仍遵循 watcher 的排除配置。源码、许可来源和兼容边界见 [`farmfe_ecosystem_glob`](https://github.com/farm-fe/farm/tree/main/rust-ecosystem/glob)。
 
 例如:
 

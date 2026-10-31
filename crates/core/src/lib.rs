@@ -18,6 +18,7 @@ pub mod module;
 pub mod plugin;
 pub mod resource;
 pub mod stats;
+pub mod sync;
 
 pub use cache::cacheable::*;
 pub use farmfe_macro_cache_item::cache_item;
@@ -26,10 +27,21 @@ pub use farmfe_macro_cache_item::cache_item;
 /// and the changes will affect the memory layout,
 /// like adding or removing a field, this version should be bumped.
 /// So plugin loader can recognize compatibility of the dynamic library plugins and the core.
-pub const VERSION: &str = "0.5.1";
+pub const VERSION: &str = "0.5.4";
 
 // re-export common external crates
 pub use dashmap;
+/// Scoped pure Rust glob matching and traversal. Replaces the former Wax export.
+///
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use farmfe_core::glob::Glob;
+/// let pattern = Glob::new("src/*.js")?;
+/// assert!(pattern.is_match("src/main.js")?);
+/// # Ok(())
+/// # }
+/// ```
+pub use farmfe_ecosystem_glob as glob;
 pub use heck;
 pub use lazy_static;
 pub use parking_lot;
@@ -47,7 +59,6 @@ pub use swc_css_ast;
 pub use swc_ecma_ast;
 pub use swc_ecma_parser;
 pub use swc_html_ast;
-pub use wax;
 
 // re-export common type alias
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;

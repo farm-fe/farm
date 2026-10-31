@@ -10,22 +10,22 @@ use crate::{
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 use farmfe_core::{
+  HashMap, HashSet,
   config::FARM_REQUIRE,
   context::CompilationContext,
   module::{
-    meta_data::script::{
-      ScriptModuleMetaData, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, FARM_RUNTIME_MODULE_HELPER_ID,
-      FARM_RUNTIME_MODULE_SYSTEM_ID,
-    },
     ModuleId, ModuleSystem,
+    meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, FARM_RUNTIME_MODULE_HELPER_ID,
+      FARM_RUNTIME_MODULE_SYSTEM_ID, ScriptModuleMetaData,
+    },
   },
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext},
   swc_ecma_ast::{
     CallExpr, Callee, Decl, EsVersion, ExportDecl, ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt,
     Ident, ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, Lit,
     Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, Stmt, VarDecl, VarDeclKind,
   },
-  HashMap, HashSet,
 };
 
 use super::handle_exports::{create_export_decl_items, update_module_export_ident_map};
@@ -314,52 +314,49 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
   }
 
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
-    if let Expr::Call(call_expr) = expr {
-      if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr)
-        && !call_expr.args.is_empty()
+    if let Expr::Call(call_expr) = expr
+      && is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr)
+      && !call_expr.args.is_empty()
+      && let ExprOrSpread {
+        expr: box Expr::Lit(Lit::Str(str)),
+        ..
+      } = &call_expr.args[0]
+    {
+      let source = str.value.to_string_lossy().into_owned();
+
+      if let Some((_, module_system)) = self
+        .cjs_require_map
+        .get(&(self.module_id.clone(), source.clone()))
       {
-        if let ExprOrSpread {
-          expr: box Expr::Lit(Lit::Str(str)),
-          ..
-        } = &call_expr.args[0]
-        {
-          let source = str.value.to_string_lossy().into_owned();
+        // require cjs
+        if *module_system != ModuleSystem::EsModule {
+          // import { require } from 'source';
+          let ident = if let Some(ident) = self.extra_import_require_sources.get(&source) {
+            ident.clone()
+          } else {
+            let ident = self.create_require_ident();
+            self
+              .extra_import_require_sources
+              .insert(source, ident.clone());
 
-          if let Some((_, module_system)) = self
-            .cjs_require_map
-            .get(&(self.module_id.clone(), source.clone()))
-          {
-            // require cjs
-            if *module_system != ModuleSystem::EsModule {
-              // import { require } from 'source';
-              let ident = if let Some(ident) = self.extra_import_require_sources.get(&source) {
-                ident.clone()
-              } else {
-                let ident = self.create_require_ident();
-                self
-                  .extra_import_require_sources
-                  .insert(source, ident.clone());
+            ident
+          };
 
-                ident
-              };
-
-              *expr = create_call_expr(Expr::Ident(ident.clone()), vec![]);
-            } else {
-              // require esm
-              let ident = self.create_export_namespace_ident();
-              // if the dep module is an es module
-              self
-                .extra_import_sources
-                .entry(source)
-                .or_insert_with(|| ident.clone());
-              // transform require expr to a local ident
-              *expr = Expr::Ident(ident)
-            }
-          }
-
-          // for external require, visit children and replace require to FARM_NODE_REQUIRE
+          *expr = create_call_expr(Expr::Ident(ident.clone()), vec![]);
+        } else {
+          // require esm
+          let ident = self.create_export_namespace_ident();
+          // if the dep module is an es module
+          self
+            .extra_import_sources
+            .entry(source)
+            .or_insert_with(|| ident.clone());
+          // transform require expr to a local ident
+          *expr = Expr::Ident(ident)
         }
       }
+
+      // for external require, visit children and replace require to FARM_NODE_REQUIRE
     }
 
     expr.visit_mut_children_with(self);

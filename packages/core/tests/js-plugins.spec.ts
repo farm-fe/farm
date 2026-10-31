@@ -1,11 +1,20 @@
 import path from 'path';
-import { expect, test } from 'vitest';
+import { afterEach, expect, test } from 'vitest';
+
 import { JsPlugin } from '../src/index.js';
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler,
   getOutputResult
 } from './common.js';
+
+// Fixtures are independent; generated runtimes intentionally retain their namespace.
+const runtimeNamespaces = new Set<string>();
+afterEach(() => {
+  for (const namespace of runtimeNamespaces)
+    Reflect.deleteProperty(globalThis, namespace);
+  runtimeNamespaces.clear();
+});
 
 function getJsPluginsFixturesDir() {
   return path.resolve(getFixturesDir(), 'js-plugins');
@@ -16,9 +25,14 @@ function getOutputFilePath(p: string) {
   return path.join(root, 'dist', p, 'index.mjs');
 }
 
-function getCompiler(p: string, plugins: JsPlugin[]) {
+async function getCompiler(p: string, plugins: JsPlugin[]) {
   const root = getJsPluginsFixturesDir();
-  return getInternalCompiler(root, p, plugins);
+  const compiler = await getInternalCompiler(root, p, plugins);
+  const namespace = compiler.config.compilation.runtime.namespace;
+  if (!namespace) throw new Error('Missing fixture runtime namespace');
+  runtimeNamespaces.add(namespace);
+  Reflect.deleteProperty(globalThis, namespace);
+  return compiler;
 }
 
 test('Js Plugin Execution - resolve', async () => {

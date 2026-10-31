@@ -1,0 +1,10 @@
+[package]
+name = "farm-published-plugin-macro-probe"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+farmfe_macro_plugin = "=2.0.0"

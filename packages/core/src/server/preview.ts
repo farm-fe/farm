@@ -14,6 +14,7 @@ import {
 } from '../config/types.js';
 import { bold, brandColor, green } from '../utils/color.js';
 import {
+  resolveHostname,
   resolveServerUrls,
   setupSIGTERMListener,
   teardownSIGTERMListener
@@ -33,9 +34,27 @@ import { type ProxyOptions, proxyMiddleware } from './middlewares/proxy.js';
 import { publicPathMiddleware } from './middlewares/publicPath.js';
 import { openBrowser } from './open.js';
 
+function appendAcceptEncodingVary(res: import('node:http').ServerResponse) {
+  const current = res.getHeader('Vary');
+  const fields = (
+    Array.isArray(current) ? current.join(',') : String(current ?? '')
+  )
+    .split(',')
+    .map((field) => field.trim())
+    .filter(Boolean);
+  if (
+    fields.some(
+      (field) => field === '*' || field.toLowerCase() === 'accept-encoding'
+    )
+  ) {
+    return;
+  }
+  res.setHeader('Vary', [...fields, 'Accept-Encoding'].join(', '));
+}
+
 export interface PreviewServerOptions extends CommonServerOptions {
   headers: OutgoingHttpHeaders;
-  host: string;
+  host: string | undefined;
   port: number;
   strictPort: boolean;
   https: SecureServerOptions;
@@ -77,16 +96,30 @@ export class PreviewServer extends httpServer {
    * @returns {Promise<void>} A promise that resolves when the server is ready.
    * @throws {Error} If the server cannot be started.
    */
-  async createPreviewServer(): Promise<void> {
-    this.config = await resolveConfig(
-      this.inlineConfig,
-      'preview',
-      'production'
-    );
+  async createPreviewServer(
+    resolvedConfig?: ResolvedUserConfig,
+    staticHandler?: RequestHandler
+  ): Promise<void> {
+    this.config =
+      resolvedConfig ??
+      (await resolveConfig(this.inlineConfig, 'preview', 'production'));
 
     this.logger = this.config.logger ?? this.logger;
 
     await this.#resolveOptions();
+    // Framework workflows may provide strict physical-file serving while
+    // retaining the ordinary preview HTTP lifecycle and transport options.
+    if (staticHandler) {
+      this.serve = (req, res, next) => {
+        for (const [name, value] of Object.entries(
+          this.previewServerOptions.headers
+        )) {
+          if (value !== undefined) res.setHeader(name, value);
+        }
+        appendAcceptEncodingVary(res);
+        staticHandler(req, res, next);
+      };
+    }
 
     this.middlewares = connect();
     this.httpServer = await this.resolveHttpServer(
@@ -132,7 +165,31 @@ export class PreviewServer extends httpServer {
       );
     }
 
-    this.middlewares.use(compression());
+    const compress = compression();
+    this.middlewares.use((req, res, next) => {
+      appendAcceptEncodingVary(res);
+      const acceptEncoding = req.headers['accept-encoding'];
+      const gzip = (
+        Array.isArray(acceptEncoding)
+          ? acceptEncoding.join(',')
+          : (acceptEncoding ?? '')
+      )
+        .split(',')
+        .find((coding) => coding.split(';')[0].trim().toLowerCase() === 'gzip');
+      const weight = gzip
+        ?.split(';')
+        .slice(1)
+        .find((parameter) => /^\s*q\s*=/i.test(parameter));
+      const quality =
+        weight === undefined ? 1 : Number(weight.split('=')[1].trim());
+      // The locked middleware ignores q values. Never encode a response with a
+      // coding explicitly refused by the client (RFC 9110, section 12.5.3).
+      if (!gzip || !(quality > 0 && quality <= 1)) {
+        next();
+        return;
+      }
+      compress(req, res, next);
+    });
 
     if (this.publicPath !== '/') {
       this.middlewares.use(publicPathMiddleware(this, false));
@@ -193,6 +250,8 @@ export class PreviewServer extends httpServer {
             );
           }
         }
+        // Configured headers can replace the middleware's initial Vary value.
+        appendAcceptEncodingVary(res);
       }
     });
 
@@ -202,7 +261,7 @@ export class PreviewServer extends httpServer {
 
     this.previewServerOptions = {
       headers,
-      host: typeof preview?.host === 'string' ? preview.host : 'localhost',
+      host: (await resolveHostname(preview?.host)).host,
       port: preview?.port ?? 1911,
       strictPort: preview?.strictPort ?? false,
       https: this.httpsOptions ?? ({} as Record<string, never>),

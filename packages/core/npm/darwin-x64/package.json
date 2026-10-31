@@ -1,10 +1,19 @@
 {
   "name": "@farmfe/core-darwin-x64",
-  "version": "0.0.0",
-  "os": ["darwin"],
-  "cpu": ["x64"],
+  "version": "2.0.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
   "main": "farm.darwin-x64.node",
-  "files": ["farm.darwin-x64.node"],
+  "files": [
+    "farm.darwin-x64.node",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">= 10"

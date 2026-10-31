@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "scope": "Original immutable registry archives are reused unchanged. Accompanying license bytes are from each archive VCS commit; no local crate-specific override exists in those commits.",
+  "packages": [
+    {
+      "name": "farmfe_macro_cache_item",
+      "version": "2.1.0",
+      "commit": "396a228c3c8c12712f3b8fbd85ea3634d8a8a58a",
+      "archiveSha256": "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502",
+      "licenseSource": "https://github.com/farm-fe/farm/blob/396a228c3c8c12712f3b8fbd85ea3634d8a8a58a/LICENSE",
+      "licenseSha256": "beeb6a9391ccb0d48b3934ed515ba887583a04c7edc79358462669ce9314970b",
+      "license": "MIT",
+      "licenseFile": "docs/release-evidence/licenses/published-macros.LICENSE",
+      "archiveContainsLicenseText": false
+    },
+    {
+      "name": "farmfe_macro_plugin",
+      "version": "2.0.0",
+      "commit": "c35db3fcefe5c284d60e5a1d2fb70d06b2f6af84",
+      "archiveSha256": "59ac048afc3bfcba0cefe8bbb25e1cdb2e266945094975a95fd9998fd80ae9a2",
+      "licenseSource": "https://github.com/farm-fe/farm/blob/c35db3fcefe5c284d60e5a1d2fb70d06b2f6af84/LICENSE",
+      "licenseSha256": "beeb6a9391ccb0d48b3934ed515ba887583a04c7edc79358462669ce9314970b",
+      "license": "MIT",
+      "licenseFile": "docs/release-evidence/licenses/published-macros.LICENSE",
+      "archiveContainsLicenseText": false
+    }
+  ]
+}

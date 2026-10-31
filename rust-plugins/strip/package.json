@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-strip",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "private": false,
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
@@ -52,6 +52,18 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
-  ]
+    "options.d.ts",
+    "LICENSE"
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-strip-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-strip-darwin-x64": "2.0.0",
+    "@farmfe/plugin-strip-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-strip-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-strip-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-strip-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-strip-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-strip-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-strip-win32-x64-msvc": "2.0.0"
+  }
 }

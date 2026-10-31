@@ -16,7 +16,7 @@ export default defineConfig({
     ['@farmfe/plugin-modular-import', {
       libraryName: 'element-ui',
       libDir: 'lib',
-      camel2Dash: false,
+      camel2Dash: true,
       styleLibDir: 'lib',
       styleLibraryName: 'theme-chalk',
       styleLibraryPath: '.css'

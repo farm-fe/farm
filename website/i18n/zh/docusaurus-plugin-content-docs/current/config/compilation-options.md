@@ -173,12 +173,13 @@ export default defineConfig({
 
 #### `output.libraryBundleType` {#output-librarybundletype}
 
-- **类型**: 编译器层面的 `"single-bundle" | "multiple-bundle" | "bundle-less"`
+- **类型**: `"single-bundle" | "multiple-bundle" | "bundle-less"`
+- **默认值**: `"single-bundle"`
 
 当 `output.targetEnv` 为 `"library"` 时，该编译器字段控制库模式的打包策略。
 
-:::caution
-当前 `@farmfe/core` 的 TypeScript `UserConfig` 和校验 schema 尚未向 `farm.config.ts` 暴露该字段。在 JavaScript 配置 API 暴露前，请将其视为编译器行为参考。
+:::note
+V2 候选版的 JavaScript API 已支持在 `targetEnv` 为 `library` 时设置 `compilation.output.libraryBundleType`。可选 `single-bundle`、`multiple-bundle` 或 `bundle-less`；省略时保留编译器默认的 `single-bundle`。正式 V2 发布前，请使用匹配的候选包。
 :::
 
 #### `output.externalGlobals` {#outputexternalglobals}

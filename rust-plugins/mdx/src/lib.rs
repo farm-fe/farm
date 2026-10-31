@@ -1,26 +1,31 @@
 #![deny(clippy::all)]
-use farmfe_core::module::ModuleType;
-use farmfe_core::serde_json;
-use mdxjs::compile;
-use mdxjs::JsxRuntime;
-use mdxjs::MdxParseOptions;
-use mdxjs::Options;
+use std::{fs, sync::Arc};
+
+use farmfe_core::{
+  config::Config,
+  context::CompilationContext,
+  error::{CompilationError, Result},
+  module::ModuleType,
+  plugin::{
+    Plugin, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginTransformHookParam,
+    PluginTransformHookResult,
+  },
+  serde_json,
+};
+use farmfe_macro_plugin::farm_plugin;
+use mdxjs::{JsxRuntime, MdxParseOptions, Options};
 use regex::Regex;
 use serde::Deserialize;
 
-use farmfe_core::{config::Config, plugin::Plugin};
-
-use farmfe_core::plugin::PluginLoadHookResult;
-use farmfe_macro_plugin::farm_plugin;
-use std::fs::read_to_string;
-
-#[farm_plugin]
-#[derive(Debug, Default)]
-pub struct FarmPluginMdx {
-  mdx_options: Options,
-  include: Option<String>,
-  exclude: Option<String>,
+#[derive(Debug)]
+struct Configuration {
+  mdx: Options,
+  include: Option<Regex>,
+  exclude: Option<Regex>,
+  docs: bool,
+  format: farmfe_docs_content::ContentFormat,
 }
+
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FarmPluginMdxOptions {
@@ -36,45 +41,73 @@ struct FarmPluginMdxOptions {
   jsx_import_source: Option<String>,
   filepath: Option<String>,
   parse: Option<MdxParseOptions>,
+  #[serde(default)]
+  docs: bool,
+  #[serde(default)]
+  format: farmfe_docs_content::ContentFormat,
 }
 
-fn is_mdx_file(file_name: &str) -> bool {
-  file_name.ends_with(".md") || file_name.ends_with(".mdx")
+impl Configuration {
+  fn parse(options: &str) -> std::result::Result<Self, String> {
+    let value: FarmPluginMdxOptions =
+      serde_json::from_str(options).map_err(|error| error.to_string())?;
+    let filter = |value: Option<String>| -> std::result::Result<Option<Regex>, String> {
+      value
+        .filter(|value| !value.is_empty())
+        .map(|value| Regex::new(&value).map_err(|error| error.to_string()))
+        .transpose()
+    };
+    Ok(Self {
+      include: filter(value.include)?,
+      exclude: filter(value.exclude)?,
+      docs: value.docs,
+      format: value.format,
+      mdx: Options {
+        development: value.development.unwrap_or(false),
+        provider_import_source: value.provider_import_source,
+        jsx: value.jsx.unwrap_or(false),
+        jsx_runtime: Some(value.jsx_runtime.unwrap_or(JsxRuntime::Automatic)),
+        pragma: Some(value.pragma.unwrap_or_else(|| "React.createElement".into())),
+        pragma_frag: Some(value.pragma_frag.unwrap_or_else(|| "React.Fragment".into())),
+        pragma_import_source: Some(value.pragma_import_source.unwrap_or_else(|| "react".into())),
+        parse: value.parse.unwrap_or_default(),
+        jsx_import_source: Some(value.jsx_import_source.unwrap_or_else(|| "react".into())),
+        filepath: value.filepath,
+      },
+    })
+  }
+
+  fn includes(&self, file: &str) -> bool {
+    (file.ends_with(".md") || file.ends_with(".mdx"))
+      && self
+        .include
+        .as_ref()
+        .is_none_or(|filter| filter.is_match(file))
+      && self
+        .exclude
+        .as_ref()
+        .is_none_or(|filter| !filter.is_match(file))
+  }
+}
+
+#[farm_plugin]
+#[derive(Debug)]
+pub struct FarmPluginMdx {
+  configuration: std::result::Result<Configuration, String>,
 }
 
 impl FarmPluginMdx {
-  fn new(_: &Config, options: String) -> Self {
-    let plugin_options: FarmPluginMdxOptions =
-      serde_json::from_str::<FarmPluginMdxOptions>(&options).unwrap();
-
+  fn new(_config: &Config, options: String) -> Self {
     Self {
-      mdx_options: Options {
-        development: plugin_options.development.unwrap_or(false),
-        provider_import_source: plugin_options.provider_import_source,
-        jsx: plugin_options.jsx.unwrap_or(false),
-        jsx_runtime: Some(plugin_options.jsx_runtime.unwrap_or(JsxRuntime::Automatic)),
-        pragma: Some(
-          plugin_options
-            .pragma
-            .unwrap_or("React.createElement".into()),
-        ),
-        pragma_frag: Some(
-          plugin_options
-            .pragma_frag
-            .unwrap_or("React.Fragment".into()),
-        ),
-        pragma_import_source: Some(
-          plugin_options
-            .pragma_import_source
-            .unwrap_or("react".into()),
-        ),
-        parse: plugin_options.parse.unwrap_or_default(),
-        jsx_import_source: Some(plugin_options.jsx_import_source.unwrap_or("react".into())),
-        filepath: plugin_options.filepath,
-      },
-      include: Some(plugin_options.include.unwrap_or("".into())),
-      exclude: Some(plugin_options.exclude.unwrap_or("".into())),
+      configuration: Configuration::parse(&options),
     }
+  }
+
+  fn configuration(&self) -> Result<&Configuration> {
+    self
+      .configuration
+      .as_ref()
+      .map_err(|error| CompilationError::GenericError(format!("[MDX_OPTIONS] {error}")))
   }
 }
 
@@ -83,56 +116,88 @@ impl Plugin for FarmPluginMdx {
     "FarmPluginMdx"
   }
 
+  fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    self.configuration()?;
+    Ok(None)
+  }
+
   fn load(
     &self,
-    param: &farmfe_core::plugin::PluginLoadHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    if is_mdx_file(&param.module_id) {
-      let content = read_to_string(param.resolved_path).unwrap();
-      return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
-        content,
-        source_map: None,
-        module_type: ModuleType::Custom("mdx".to_string()),
-      }));
+    param: &PluginLoadHookParam,
+    _context: &Arc<CompilationContext>,
+    _hook: &PluginHookContext,
+  ) -> Result<Option<PluginLoadHookResult>> {
+    if !self.configuration()?.includes(param.resolved_path) {
+      return Ok(None);
     }
-    Ok(None)
+    let content =
+      fs::read_to_string(param.resolved_path).map_err(|error| CompilationError::LoadError {
+        resolved_path: param.resolved_path.into(),
+        source: Some(Box::new(error)),
+      })?;
+    Ok(Some(PluginLoadHookResult {
+      content,
+      module_type: ModuleType::Custom("mdx".into()),
+      source_map: None,
+    }))
   }
 
   fn transform(
     &self,
-    param: &farmfe_core::plugin::PluginTransformHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if param.module_type != ModuleType::Custom("mdx".to_string()) {
+    param: &PluginTransformHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<PluginTransformHookResult>> {
+    if param.module_type != ModuleType::Custom("mdx".into()) {
       return Ok(None);
     }
-
-    if self.include != Some(String::from("")) {
-      let inc_reg = Regex::new(&self.include.as_ref().unwrap().to_string()).unwrap();
-      if let Some(_text) = inc_reg.find(param.resolved_path) {
-      } else {
-        return Ok(None);
-      }
+    let configuration = self.configuration()?;
+    if !configuration.includes(param.resolved_path) {
+      return Ok(None);
     }
-
-    if self.exclude != Some(String::from("")) {
-      let exc_reg = Regex::new(&self.exclude.as_ref().unwrap().to_string()).unwrap();
-      if let Some(_text) = exc_reg.find(param.resolved_path) {
-        return Ok(None);
-      }
+    let mut options = configuration.mdx.clone();
+    if options.filepath.is_none() {
+      options.filepath = Some(param.resolved_path.into());
     }
-    if param.module_id.ends_with(".mdx") || param.module_id.ends_with(".md") {
-      let code = compile(&param.content, &self.mdx_options);
-      let js_code = code.unwrap();
-      return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-        content: js_code.to_string(),
-        module_type: Some(ModuleType::Jsx),
-        source_map: None,
-        ignore_previous_source_map: true,
-      }));
+    let (code, source_map) = if configuration.docs {
+      let highlight: Option<farmfe_docs_content::HighlightOptions> = context
+        .config
+        .custom
+        .get("farm:syntax-highlight")
+        .map(|value| serde_json::from_str(value))
+        .transpose()
+        .map_err(|error| {
+          CompilationError::GenericError(format!("[DOCS_HIGHLIGHT_OPTIONS] {error}"))
+        })?;
+      farmfe_docs_content::compile_content_with_format(
+        &param.content,
+        &options,
+        context.config.sourcemap.enabled(false),
+        highlight.as_ref(),
+        configuration.format,
+      )
+      .map(|result| {
+        for diagnostic in result.diagnostics {
+          context
+            .log_store
+            .lock()
+            .add_warning(format!("{}: {diagnostic}", param.resolved_path));
+        }
+        (result.code, result.source_map)
+      })
+    } else {
+      mdxjs::compile(&param.content, &options)
+        .map(|code| (code, None))
+        .map_err(|error| error.to_string())
     }
-    Ok(None)
+    .map_err(|message| CompilationError::TransformError {
+      resolved_path: param.resolved_path.into(),
+      msg: format!("[MDX_COMPILE] {message}"),
+    })?;
+    Ok(Some(PluginTransformHookResult {
+      content: code,
+      module_type: Some(ModuleType::Jsx),
+      source_map,
+      ignore_previous_source_map: true,
+    }))
   }
 }

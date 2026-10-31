@@ -1,6 +1,6 @@
 //! Ported from upstream `packages/tailwindcss/src/selector-parser.test.ts`.
 
-use farmfe_ecosystem_tailwindcss::selector_parser::{parse, to_css, SelectorAstNode};
+use farmfe_ecosystem_tailwindcss::selector_parser::{SelectorAstNode, parse, to_css};
 
 fn sel(v: &str) -> SelectorAstNode {
   SelectorAstNode::selector(v)

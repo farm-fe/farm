@@ -107,6 +107,15 @@ export class WsServer {
     head: Buffer
   ) => void;
   private hmrOrigins!: string[];
+  private binding = false;
+  private bindPromise?: Promise<void>;
+  private closed = false;
+  private closing?: Promise<void>;
+  private independentUpgradeListener?: (
+    req: InstanceType<typeof IncomingMessage>,
+    socket: Duplex,
+    head: Buffer
+  ) => void;
 
   /**
    * Creates a new WebSocket server instance.
@@ -129,6 +138,8 @@ export class WsServer {
   ): Promise<string[]> {
     const { protocol, hostname, port } = config.server ?? {};
     const origins = [];
+    const urlHost = (name: string | undefined) =>
+      name?.includes(':') && !name.startsWith('[') ? `[${name}]` : name;
 
     // Add localhost with configured port
     const urls = await resolveServerUrls(this.httpServer, config);
@@ -139,7 +150,7 @@ export class WsServer {
     }
 
     // Add non-localhost origin
-    const configuredOrigin = `${protocol}://${hostname?.name}:${port}`;
+    const configuredOrigin = `${protocol}://${urlHost(hostname?.name)}:${port}`;
 
     if (
       hostname &&
@@ -152,17 +163,18 @@ export class WsServer {
     if (config.server?.host !== config.server?.hmr?.host) {
       const hmrHostname = await resolveHostname(config.server?.hmr?.host);
       origins.push(
-        `${config.server?.hmr?.protocol || protocol}://${hmrHostname.name}:${config.server?.hmr?.port || config.server?.port}`
+        `${config.server?.hmr?.protocol || protocol}://${urlHost(hmrHostname.name)}:${config.server?.hmr?.port || config.server?.port}`
       );
     }
 
-    return origins;
+    // Origin headers contain only scheme, host and port, never publicPath.
+    return [...new Set(origins.map((url) => new URL(url).origin))];
   }
 
   /**
    * Creates the WebSocket server.
    */
-  async createWebSocketServer() {
+  async createWebSocketServer(deferListen = false) {
     const hmr = isObject(this.serverConfig.hmr)
       ? this.serverConfig.hmr
       : undefined;
@@ -234,11 +246,16 @@ export class WsServer {
         this.wsHttpServer = createHttpServer(route);
       }
 
-      this.wsHttpServer.listen(this.port, this.host);
-
-      // vite dev server in middleware mode
-      // need to call ws listen manually
-      this.wss = new WebSocketServerRaw({ server: this.wsHttpServer });
+      // Own the upgrade listener separately: pausing the TCP listener must not
+      // close the WebSocketServer or discard existing peers needed for handoff.
+      this.wss = new WebSocketServerRaw({ noServer: true });
+      this.independentUpgradeListener = (req, socket, head) => {
+        this.wss.handleUpgrade(req, socket as Socket, head, (ws) => {
+          this.wss.emit('connection', ws, req);
+        });
+      };
+      this.wsHttpServer.on('upgrade', this.independentUpgradeListener);
+      this.wsHttpServer.on('error', (error) => this.wss.emit('error', error));
     }
 
     this.wss.on('connection', (socket) => {
@@ -271,7 +288,8 @@ export class WsServer {
       });
 
       socket.on('error', (err) => {
-        throw new Error(`WebSocket error: \n${err.stack}`);
+        this.logger.error(`WebSocket error: \n${err.stack || err.message}`);
+        socket.terminate();
       });
 
       socket.send(WS_CONNECTED_MESSAGE);
@@ -283,21 +301,58 @@ export class WsServer {
     });
 
     this.wss.on('error', (e: Error & { code: string }) => {
-      if (e.code === 'EADDRINUSE') {
-        throw new Error(
-          'WebSocket server error: Port is already in use. Please set a different port using the `server.hmr.port` option.'
-        );
-      } else {
-        throw new Error(`WebSocket server error ${e.stack || e.message}`);
-      }
+      // The bind promise owns startup failures. Later transport errors must
+      // remain diagnostics rather than escaping an EventEmitter callback.
+      if (this.binding) return;
+      this.logger.error(
+        e.code === 'EADDRINUSE'
+          ? 'WebSocket server error: Port is already in use. Please set a different port using the `server.hmr.port` option.'
+          : `WebSocket server error ${e.stack || e.message}`
+      );
     });
+    if (!deferListen) await this.listen();
   }
 
   /**
    * Starts listening for WebSocket connections.
    */
-  listen() {
-    this.wsHttpServer?.listen(this.port, this.host);
+  async listen(): Promise<void> {
+    if (this.closed) throw new Error('WebSocket runtime is closed');
+    const server = this.wsHttpServer;
+    if (!server || server.listening) return;
+    if (!this.bindPromise) {
+      this.binding = true;
+      this.bindPromise = new Promise<void>((resolve, reject) => {
+        const failed = (error: Error) => {
+          server.off('listening', listening);
+          reject(error);
+        };
+        const listening = () => {
+          server.off('error', failed);
+          resolve();
+        };
+        server.once('error', failed);
+        server.once('listening', listening);
+        server.listen(this.port, this.host);
+      });
+    }
+    try {
+      await this.bindPromise;
+      if (this.closed) throw new Error('WebSocket runtime is closed');
+    } finally {
+      this.binding = false;
+      this.bindPromise = undefined;
+    }
+  }
+
+  /** Stop accepting independent HMR connections without retiring existing peers. */
+  suspendListener(): boolean {
+    if (this.closed) throw new Error('WebSocket runtime is closed');
+    if (!this.wsHttpServer?.listening) return false;
+    this.wsHttpServer.close((error) => {
+      if (error) this.logger.error(error);
+    });
+    return true;
   }
 
   /**
@@ -305,7 +360,7 @@ export class WsServer {
    * @param {string} event - The name of the event.
    * @param {Function} fn - The listener function.
    */
-  on(event: string, fn: () => void) {
+  on(event: string, fn: WebSocketCustomListener<any>) {
     if (wsServerEvents.includes(event)) {
       this.wss.on(event, fn);
     } else {
@@ -321,7 +376,7 @@ export class WsServer {
    * @param {string} event - The name of the event.
    * @param {Function} fn - The listener function to remove.
    */
-  off(event: string, fn: () => void) {
+  off(event: string, fn: WebSocketCustomListener<any>) {
     if (wsServerEvents.includes(event)) {
       this.wss.off(event, fn);
     } else {
@@ -365,12 +420,37 @@ export class WsServer {
    * Closes the WebSocket server.
    * @returns {Promise<void>} A promise that resolves when the server is closed.
    */
-  async close() {
+  /** Finish queued reload writes before retiring the transport. Closed peers are harmless. */
+  async sendAndFlush(payload: HMRPayload): Promise<void> {
+    const bytes = JSON.stringify(payload);
+    await Promise.allSettled(
+      [...this.wss.clients]
+        .filter((client) => client.readyState === 1)
+        .map(
+          (client) =>
+            new Promise<void>((resolve, reject) =>
+              client.send(bytes, (error) => (error ? reject(error) : resolve()))
+            )
+        )
+    );
+  }
+
+  close(): Promise<void> {
+    if (this.closing) return this.closing;
+    this.closed = true;
+    this.closing = this.closeOwnedTransport();
+    return this.closing;
+  }
+
+  private async closeOwnedTransport() {
+    if (this.bindPromise) await Promise.allSettled([this.bindPromise]);
     // should remove listener if hmr.server is set
     // otherwise the old listener swallows all WebSocket connections
     if (this.hmrServerWsListener && this.httpServer) {
       this.httpServer.off('upgrade', this.hmrServerWsListener);
     }
+    if (this.independentUpgradeListener)
+      this.wsHttpServer?.off('upgrade', this.independentUpgradeListener);
     try {
       this.wss.clients.forEach((client: any) => {
         client.terminate();
@@ -378,7 +458,7 @@ export class WsServer {
       await new Promise<void>((resolve, reject) => {
         this.wss.close((err: any) => (err ? reject(err) : resolve()));
       });
-      if (this.wsHttpServer) {
+      if (this.wsHttpServer?.listening) {
         const server = this.wsHttpServer;
         await new Promise<void>((resolve, reject) => {
           server.close((err: any) => (err ? reject(err) : resolve()));

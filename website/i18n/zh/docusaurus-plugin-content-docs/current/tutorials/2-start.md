@@ -1,3 +1,7 @@
+---
+id: tutorials/start
+slug: tutorials/start
+---
 # 2. 使用 Farm 开发项目
 在本章中，我们将介绍**常用的配置和插件**来帮助您使用 Farm 构建复杂的生产就绪的 Web 项目。
 
@@ -258,7 +262,7 @@ export default defineConfig({
 
 
 ## 配置 Alias 以及 Externals
-Alias 和 externals 是最常用的配置之一, 在 Farm 中，可以使用 `compilation.resolve.alias` 和 `compilation.externals` 配置项:
+Alias 和 externals 是最常用的配置之一, 在 Farm 中，可以使用 `compilation.resolve.alias` 和 `compilation.external` 配置项:
 
 ```ts title="farm.config.ts"
 // ...
@@ -268,18 +272,16 @@ export default defineConfig({
     resolve: {
       alias: {
         '@/': path.join(process.cwd(), 'src')
-      },
-      externals: [
-        'node:fs'
-      ]
-    }
-  }
+      }
+    },
+    external: ['node:fs']
+  },
   // ...
 });
 ```
 
 ## 配置开发服务器
-您可以在[Farm Dev Server Config](/docs/config/farm-config#devserver-options---server)中找到服务器配置。
+您可以在[Farm Dev Server Config](../config/dev-server.md)中找到服务器配置。
 
 ### 常用配置
 配置示例：

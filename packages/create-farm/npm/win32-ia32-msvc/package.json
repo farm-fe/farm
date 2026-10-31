@@ -1,6 +1,6 @@
 {
   "name": "create-farm-win32-ia32-msvc",
-  "version": "0.0.12",
+  "version": "2.0.0",
   "os": [
     "win32"
   ],
@@ -9,7 +9,11 @@
   ],
   "main": "create-farm.win32-ia32-msvc.node",
   "files": [
-    "create-farm.win32-ia32-msvc.node"
+    "create-farm.win32-ia32-msvc.node",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "license-components.json"
   ],
   "description": "Rapidly create a new farm project.",
   "keywords": [
@@ -18,7 +22,7 @@
   ],
   "author": "",
   "homepage": "https://www.farmfe.org/docs/quick-start#create-a-farm-project",
-  "license": "ISC",
+  "license": "MIT",
   "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
   "bugs": {
     "url": "https://github.com/farm-fe/farm/issues"

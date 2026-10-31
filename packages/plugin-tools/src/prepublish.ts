@@ -1,11 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execSync } from 'child_process';
+import { preparePlatformPackages } from './prepare.js';
 
 /**
  * Farm plugin prepublish command, publish all packages under npm directory
  */
 export async function prepublish(): Promise<void> {
+  // Normalize every platform before the first irreversible publication.
+  await preparePlatformPackages(process.cwd(), true);
   const npmDir = path.join(process.cwd(), 'npm');
   const packages = await fs.readdir(npmDir);
   const currentPkgJson = JSON.parse(

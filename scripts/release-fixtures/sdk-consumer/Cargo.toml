@@ -1,0 +1,16 @@
+[package]
+name = "farm-v2-independent-sdk-probe"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+farmfe_core = "=2.2.0"
+farmfe_compiler = "=2.2.0"
+farmfe_toolkit = "=2.2.0"
+farmfe_ecosystem_glob = "=0.1.0"
+farmfe_macro_cache_item = "=2.1.0"
+farmfe_macro_plugin = "=2.0.0"
+rkyv = "=0.8.16"

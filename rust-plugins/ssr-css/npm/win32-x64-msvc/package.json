@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe/plugin-ssr-css-win32-x64-msvc",
+  "version": "0.0.1",
+  "main": "index.farm",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "license": "MIT",
+  "files": [
+    "index.farm",
+    "LICENSE"
+  ]
+}

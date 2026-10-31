@@ -11,13 +11,16 @@ use fxhash::FxHashMap;
 use indexmap::IndexSet;
 
 use farmfe_core::serde_json;
-use farmfe_core::swc_common::{comments::Comments, Globals, Mark, Span, Spanned, SyntaxContext, DUMMY_SP, GLOBALS};
+use farmfe_core::swc_common::{
+    comments::Comments, Globals, Mark, Span, Spanned, SyntaxContext, DUMMY_SP, GLOBALS,
+};
 use farmfe_core::swc_ecma_ast::*;
 use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::swc_ecma_utils::{private_ident, quote_ident, quote_str};
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
 pub mod directive;
+mod hmr;
 pub mod options;
 pub mod patch_flags;
 pub mod resolve_type;
@@ -67,7 +70,12 @@ impl<C> VueJsxTransformVisitor<C>
 where
     C: Comments,
 {
-    pub fn new(options: Options, unresolved_mark: Mark, comments: Option<C>, resolved_path: String) -> Self {
+    pub fn new(
+        options: Options,
+        unresolved_mark: Mark,
+        comments: Option<C>,
+        resolved_path: String,
+    ) -> Self {
         Self {
             options,
             vue_imports: Default::default(),
@@ -250,7 +258,6 @@ where
     }
 }
 
-
 impl<C> VueJsxTransformVisitor<C>
 where
     C: Comments,
@@ -412,7 +419,6 @@ where
     }
 }
 
-
 impl<C> VueJsxTransformVisitor<C>
 where
     C: Comments,
@@ -509,7 +515,6 @@ where
     }
 }
 
-
 impl<C> VueJsxTransformVisitor<C>
 where
     C: Comments,
@@ -578,11 +583,11 @@ where
                                                     PropName::Str(quote_str!("modelValue"))
                                                 }
                                                 Some(Expr::Lit(Lit::Str(Str {
-                                                    value,
-                                                    ..
+                                                    value, ..
                                                 }))) => {
-                                                    dynamic_props
-                                                        .insert(Cow::from(value.as_str().unwrap_or("").to_string()));
+                                                    dynamic_props.insert(Cow::from(
+                                                        value.as_str().unwrap_or("").to_string(),
+                                                    ));
                                                     PropName::Str(quote_str!(&**value))
                                                 }
                                                 Some(expr) => {
@@ -606,7 +611,8 @@ where
                                                         value,
                                                         ..
                                                     }))) => PropName::Str(quote_str!(format!(
-                                                        "{}Modifiers", value.as_str().unwrap_or("")
+                                                        "{}Modifiers",
+                                                        value.as_str().unwrap_or("")
                                                     ))),
                                                     Some(expr) => {
                                                         PropName::Computed(ComputedPropName {
@@ -645,7 +651,10 @@ where
                                                 PropName::Str(quote_str!("onUpdate:modelValue"))
                                             }
                                             Some(Expr::Lit(Lit::Str(Str { value, .. }))) => {
-                                                let name = format!("onUpdate:{}", value.as_str().unwrap_or(""));
+                                                let name = format!(
+                                                    "onUpdate:{}",
+                                                    value.as_str().unwrap_or("")
+                                                );
                                                 let prop_name = PropName::Str(quote_str!(&*name));
                                                 dynamic_props.insert(name.into());
                                                 prop_name
@@ -708,9 +717,11 @@ where
                             .value
                             .as_ref()
                             .map(|value| match value {
-                                JSXAttrValue::Str(str) => Box::new(Expr::Lit(Lit::Str(
-                                    quote_str!(util::transform_text(&format!("{}", str.value.as_str().unwrap_or("")))),
-                                ))),
+                                JSXAttrValue::Str(str) => {
+                                    Box::new(Expr::Lit(Lit::Str(quote_str!(util::transform_text(
+                                        &format!("{}", str.value.as_str().unwrap_or(""))
+                                    )))))
+                                }
                                 JSXAttrValue::JSXExprContainer(JSXExprContainer {
                                     expr: JSXExpr::Expr(expr),
                                     ..
@@ -886,7 +897,6 @@ where
         }
     }
 }
-
 
 impl<C> VueJsxTransformVisitor<C>
 where
@@ -1153,7 +1163,6 @@ where
         }
     }
 }
-
 
 impl<C> VisitMut for VueJsxTransformVisitor<C>
 where
@@ -1488,7 +1497,6 @@ where
     }
 }
 
-
 fn inject_define_component_option(call: &mut CallExpr, name: &'static str, value: Expr) {
     let options = call.args.get_mut(1);
     if options
@@ -1649,6 +1657,10 @@ impl Plugin for FarmPluginVueJsx {
 
             ast.visit_mut_with(&mut visitor);
 
+            if _context.config.mode.is_dev() {
+                hmr::inject(&mut ast, &param.module_id)?;
+            }
+
             let codegen_config = create_codegen_config(_context);
             let code_bytes = codegen_module(
                 &ast,
@@ -1665,12 +1677,11 @@ impl Plugin for FarmPluginVueJsx {
                 msg: format!("[vue-jsx] codegen error: {e}"),
             })?;
 
-            let content = String::from_utf8(code_bytes).map_err(|e| {
-                CompilationError::TransformError {
+            let content =
+                String::from_utf8(code_bytes).map_err(|e| CompilationError::TransformError {
                     resolved_path: param.resolved_path.to_string(),
                     msg: format!("[vue-jsx] invalid utf-8 output: {e}"),
-                }
-            })?;
+                })?;
 
             Ok(Some(PluginTransformHookResult {
                 content,

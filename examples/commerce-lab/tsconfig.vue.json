@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noImplicitAny": true
+  },
+  "include": ["apps/vue-lab/**/*.ts", "apps/vue-lab/**/*.vue", "packages/domain/**/*.mjs"],
+  "exclude": ["apps/vue-lab/env.d.ts"]
+}

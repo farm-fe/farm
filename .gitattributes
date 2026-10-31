@@ -1,1 +1,18 @@
 *.svg binary
+# Preserve the exact upstream license bytes across Windows/Linux checkouts.
+rust-plugins/sass/**/licenses/grass-MIT.txt -text
+rust-plugins/svgr/**/licenses/svgr-rs-MIT.txt -text
+rust-plugins/tailwindcss/**/licenses/tailwindcss-MIT.txt -text
+rust-plugins/vue/**/licenses/fervid-Apache-2.0.txt -text
+rust-plugins/icons/**/licenses/fervid-Apache-2.0.txt -text
+rust-plugins/icons/**/licenses/svgr-rs-MIT.txt -text
+docs/release-evidence/licenses/published-macros.LICENSE -text
+docs/releases/v2-release-intent.json text eol=lf
+# Diagram manifests hash exact source bytes on every platform.
+website/static/diagrams/*.mmd text eol=lf
+
+# Preserve original upstream license bytes, including SPDX and dual-license texts.
+crates/create-farm-rs/licenses/* -text
+packages/create-farm/licenses/* -text
+js-plugins/dts/licenses/* -text
+js-plugins/qiankun/licenses/* -text

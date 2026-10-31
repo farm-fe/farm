@@ -1,8 +1,21 @@
 name: E2E Tests
 on:
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        description: Exact same-repository Changesets version PR
+        required: true
+        type: string
+      release_base:
+        description: Reviewed version preparation base SHA
+        required: true
+        type: string
   pull_request:
     branches:
       - main
+
+env:
+  GH_TOKEN: ${{ github.token }}
 
 permissions:
   contents: read
@@ -12,23 +25,226 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  impact-plan:
+    name: Incremental CI plan (shadow only)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check conservative planning and producer proof contracts
+        run: |
+          python scripts/ci-impact-plan.test.py
+          python scripts/ci-native-proof.test.py
+          python scripts/ci-native-evidence.test.py
+          python scripts/ci-impact-receipt.test.py
+      - name: Compute committed base and head impact without changing execution
+        run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan/plan.json
+          if-no-files-found: error
+          retention-days: 14
+
+  impact-summary:
+    name: Incremental CI shadow summary
+    continue-on-error: true
+    if: always()
+    needs: [impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, release-candidate-seal, performance-report, performance-summary]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: impact-cell-${{ github.sha }}-*-${{ github.run_attempt }}
+          path: impact-cell-receipts
+      - name: Report actual results without inheriting old acceptance
+        if: always()
+        env:
+          CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
+        run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: impact-summary-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-summary/summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  release-contract-tests:
+    name: Release source contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check spelling before native builds
+        run: pnpm exec cspell "**" --gitignore
+      - name: Check native routing and container entry contracts without compiling
+        run: |
+          node scripts/test-native-container-node.cjs
+          node scripts/test-native-artifact-flow.cjs
+      - name: Check release source and failure paths without publishing
+        run: >-
+          node --test scripts/v2-*.test.mjs scripts/release-archive.test.mjs
+          scripts/check-pr-changesets.test.mjs
+          scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
+          scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
+          scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
+          scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "contracts"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+
+  docs-acceptance:
+    name: Docs release-profile reference and contracts
+    # Independent release compilation starts alongside native producers after cheap gates.
+    needs: [release-contract-tests, performance-contract-tests]
+    uses: ./.github/workflows/farm-docs.yaml
+    permissions:
+      contents: read
+
+  release-candidate-seal:
+    if: (github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || startsWith(github.head_ref, 'changeset-release/'))) || github.event_name == 'workflow_dispatch'
+    needs: [check-native-candidate-assembly, examples-test, type-check, ts-test]
+    uses: ./.github/workflows/v2-candidate-seal.yaml
+    permissions:
+      contents: read
+      actions: read
+
+  performance-contract-tests:
+    name: Performance report contract (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        id: contract-python
+        with:
+          python-version: '3.12'
+      - name: Validate report, trust, cleanup and comparison contracts
+        env:
+          FARM_PERFORMANCE_PYTHON: ${{ steps.contract-python.outputs.python-path }}
+        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "performance-contracts:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+
   call-rust-build-user:
+    needs: [release-contract-tests, performance-contract-tests]
     uses: ./.github/workflows/rust-build-user.yaml
     secrets: inherit
 
   call-rust-build-release:
+    needs: [release-contract-tests, performance-contract-tests]
     uses: ./.github/workflows/rust-build-release.yaml
     secrets: inherit
 
+  check-native-candidate-assembly:
+    name: Check declared native inputs (not ABI execution)
+    needs: [call-rust-build-user, call-rust-build-release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ github.sha }}-*
+          path: .native-artifacts
+      - name: Assemble the exact candidate manifest without rebuilding Rust
+        run: node scripts/assemble-v2-native-artifacts.mjs .native-artifacts native-assembly.json
+      - uses: actions/setup-python@v5
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+      - name: Bind shadow producer identities using existing read-only access (no ZIP download)
+        continue-on-error: true
+        run: python scripts/ci-native-evidence.py --audit-current-run --output native-shadow-identities.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: native-shadow-identities-${{ github.sha }}-${{ github.run_attempt }}
+          path: native-shadow-identities.json
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-assembly-${{ github.sha }}
+          path: native-assembly.json
+          if-no-files-found: error
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "native-assembly"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+
   examples-test:
-    name: Examples Test
+    name: Examples Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}
     needs: [call-rust-build-user]
     strategy:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-x64-gnu
           - os: macos-latest
             abi: darwin-arm64
@@ -52,6 +268,9 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 60
           command: pnpm i --frozen-lockfile
+
+      - name: Check real pnpm exec candidate entrypoints without lifecycle metadata
+        run: node --test scripts/v2-pnpm-cli.test.mjs
 
       # run headless chrome install
       - name: Install headless chrome
@@ -195,7 +414,35 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
           path: ./rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}
 
+      # Same ci-profile native cohort as Core; never source-build a missing Docs plugin.
+      - uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-ssr-css
+          path: ./rust-plugins/ssr-css/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-syntax-highlight
+          path: ./rust-plugins/syntax-highlight/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs
+          path: ./rust-plugins/docs/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snapshot
+          path: ./rust-plugins/docs-snapshot/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-seo
+          path: ./rust-plugins/docs-seo/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4.1.3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snippets
+          path: ./rust-plugins/docs-snippets/npm/${{ matrix.settings.abi }}
       - name: Build Examples - ${{ matrix.settings.abi }}
+        env:
+          FARM_EXAMPLE_ABI: ${{ matrix.settings.abi }}
+          FARM_EXAMPLE_PREBUILT_ONLY: '1'
         run: node scripts/test-examples.mjs
 
       - name: E2E Test Examples - ${{ matrix.settings.abi }}
@@ -212,26 +459,302 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm
-      - name: Test Create Farm React - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
-      - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
-      - name: Test Create Farm Solid - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
-      - name: Test Create Farm Svelte - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-svelte --template svelte && cd my-test-app-svelte && pnpm i && pnpm build
-      - name: Test Create Farm Lit - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-lit --template lit && cd my-test-app-lit && pnpm i && pnpm build
-      - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vanilla --template vanilla && cd my-test-app-vanilla && pnpm i && pnpm build
-      - name: Test Create Farm Preact - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-preact --template preact && cd my-test-app-preact && pnpm i && pnpm build
-      - name: Test Create Farm Vue2 - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
+      - name: Test Create Farm candidate packages - ${{ matrix.settings.abi }}
+        id: create-farm-candidates
+        run: pnpm run test:create-farm:candidates ${{ matrix.settings.abi }}
+      - name: Preserve failed candidate diagnostics - ${{ matrix.settings.abi }}
+        if: ${{ failure() && steps.create-farm-candidates.outputs.evidence != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-diagnostics-${{ github.sha }}-${{ matrix.settings.abi }}
+          retention-days: 7
+          path: |
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/*.log
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/producer.json
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/result.json
+            ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
+            !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "examples:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+
+  performance-report:
+    name: Commerce Performance (${{ matrix.settings.os }})
+    needs: [examples-test, docs-acceptance, ts-test, type-check, check-native-candidate-assembly]
+    continue-on-error: true
+    timeout-minutes: 90
+    runs-on: ${{ matrix.settings.os }}
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-24.04
+            abi: linux-x64-gnu
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: pnpm/action-setup@v4
+        id: performance-pnpm
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Initialize performance evidence
+        run: node scripts/performance-evidence.mjs init
+      - uses: actions/setup-python@v5
+        id: performance-python
+        with:
+          python-version: '3.12'
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Farm correctness browser (outside measured samples)
+        run: node node_modules/playwright-chromium/cli.js install --with-deps chromium
+      - uses: actions/download-artifact@v4.1.3
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-sass
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
+          path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-react
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
+          path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-replace-dirname
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-vue
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
+          path: ./rust-plugins/vue/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-vue-jsx
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
+          path: ./rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-auto-import
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
+          path: ./rust-plugins/auto-import/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-compress
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
+          path: ./rust-plugins/compress/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-dsv
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
+          path: ./rust-plugins/dsv/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-dts
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
+          path: ./rust-plugins/dts/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-icons
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
+          path: ./rust-plugins/icons/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-image
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
+          path: ./rust-plugins/image/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-mdx
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
+          path: ./rust-plugins/mdx/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-modular-import
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
+          path: ./rust-plugins/modular-import/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-react-components
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
+          path: ./rust-plugins/react-components/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-strip
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
+          path: ./rust-plugins/strip/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-svgr
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
+          path: ./rust-plugins/svgr/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-url
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
+          path: ./rust-plugins/url/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-virtual
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
+          path: ./rust-plugins/virtual/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-wasm
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
+          path: ./rust-plugins/wasm/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-worker
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
+          path: ./rust-plugins/worker/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-yaml
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
+          path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4.1.3
+        id: download-plugin-tailwindcss
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
+          path: ./rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}
+
+
+      - name: Prepare JavaScript consumers (no Rust rebuild)
+        run: node --input-type=module -e "const b = await import('./scripts/build.mjs'); await b.buildCli(); await b.buildRuntime(); await b.buildCoreCjs();"
+      - name: Check out exact base separately
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || inputs.release_base }}
+          path: .performance-base
+          persist-credentials: false
+      - name: Prepare compatible exact-base native consumer
+        env:
+          FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
+          FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
+          GITHUB_TOKEN: ${{ github.token }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
+          FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
+        run: node scripts/prepare-performance-base.mjs
+      - name: Sample isolated Commerce baseline
+        env:
+          FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
+          FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
+          GITHUB_TOKEN: ${{ github.token }}
+          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.release_base }}
+          FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
+        run: node scripts/performance-report.mjs
+      - name: Finalize incomplete performance evidence
+        if: always()
+        run: node scripts/performance-evidence.mjs finalize
+      - name: Preserve performance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-${{ github.sha }}-${{ matrix.settings.abi }}-attempt-${{ github.run_attempt }}
+          path: performance-results/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "performance:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+
+  performance-summary:
+    name: Aggregate informational performance report
+    needs: [performance-report]
+    if: always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        id: performance-inputs
+        continue-on-error: true
+        with:
+          pattern: performance-${{ github.sha }}-*-attempt-${{ github.run_attempt }}
+          path: .performance-reports
+      - name: Validate and compact measurements (no artifact code execution)
+        env:
+          PERFORMANCE_SAMPLING_RESULT: ${{ needs.performance-report.result }}
+          PERFORMANCE_DOWNLOAD_OUTCOME: ${{ steps.performance-inputs.outcome }}
+        run: node scripts/aggregate-performance-reports.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-pr-summary-${{ github.run_attempt }}
+          path: performance-pr-summary/summary.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "performance-summary"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   type-check:
     name: Type Check & Changesets
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v3
         with:
@@ -257,20 +780,33 @@ jobs:
         run: pnpm --filter @farmfe/runtime run build
       - name: Build Babel Plugin Types
         run: pnpm --filter @farmfe/js-plugin-babel exec tsc -p tsconfig.json --emitDeclarationOnly
+      - name: Build Docs Public Types
+        run: pnpm --filter @farmfe/docs run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
-        run: npx changeset status --since=origin/main
+        run: node scripts/check-pr-changesets.mjs
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "types"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   ts-test:
-    name: Typescript Test
+    # Vitest runs in node/forks; browser E2E jobs keep their downloads.
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    name: Typescript Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}
     needs: call-rust-build-user
     strategy:
       fail-fast: false
       matrix:
         settings:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             abi: linux-x64-gnu
           # - os: ubuntu-20.04
           #   abi: linux-x64-gnu
@@ -314,79 +850,59 @@ jobs:
           pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
+      - name: Build Plugin Tools test prerequisite
+        run: pnpm --filter @farmfe/plugin-tools run build
+      - name: Build Babel plugin test prerequisites
+        run: |
+          pnpm --filter @farmfe/js-plugin-dts run build
+          pnpm --filter @farmfe/js-plugin-babel run build
       - name: Test - ${{ matrix.settings.abi }}
         run: npm run test
-      # - name: Setup tmate session
-      #   if: ${{ failure() }}
-      #   uses: mxschmitt/action-tmate@v3
-
-  check-core-artifacts:
-    name: Check Core Artifacts
-    runs-on: ubuntu-latest
-    needs: [call-rust-build-user, call-rust-build-release]
-    steps:
-      - uses: actions/download-artifact@v4.1.3
+      - name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
         with:
-          path: /tmp/artifacts
-      - name: Check
-        run: |
-          for abi in linux-x64-gnu darwin-x64 darwin-arm64
-          do
-            test -f  /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node
-          done
+          cell: "ts-tests:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
-  check-create-farm-rust-artifacts:
-    name: Check Create Farm Rust Artifacts
-    runs-on: ubuntu-latest
-    needs: [call-rust-build-user, call-rust-build-release]
-    steps:
-      - uses: actions/download-artifact@v4.1.3
-        with:
-          path: /tmp/artifacts
-      - name: Check
-        run: |
-          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
-          do
-            ls /tmp/artifacts/
-            test -f  /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/create-farm.${abi}.node
-          done
-
-  check-plugin-artifacts:
-    name: Check ${{ matrix.settings.name }} Artifacts
-    runs-on: ubuntu-latest
-    needs: [call-rust-build-user, call-rust-build-release]
+  required-examples-compatibility:
+    name: ${{ matrix.context }}
+    if: always()
+    needs: [examples-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
-        settings:
-          - name: plugin-sass
-          - name: plugin-react
-          - name: plugin-replace-dirname
-          - name: plugin-vue
-          - name: plugin-vue-jsx
-          - name: plugin-auto-import
-          - name: plugin-compress
-          - name: plugin-dsv
-          - name: plugin-dts
-          - name: plugin-icons
-          - name: plugin-image
-          - name: plugin-mdx
-          - name: plugin-modular-import
-          - name: plugin-react-components
-          - name: plugin-strip
-          - name: plugin-svgr
-          - name: plugin-url
-          - name: plugin-virtual
-          - name: plugin-wasm
-          - name: plugin-worker
-          - name: plugin-yaml
+        include:
+          - context: Examples Test (ubuntu-latest, linux-x64-gnu)
+          - context: Examples Test (windows-latest, win32-x64-msvc)
+          - context: Examples Test (macos-latest, darwin-arm64)
     steps:
-      - uses: actions/download-artifact@v4.1.3
-        with:
-          path: /tmp/artifacts
-      - name: Check
-        run: |
-          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
-          do
-            test -f /tmp/artifacts/${{ github.sha }}-${abi}-${{ matrix.settings.name }}/index.farm
-          done
+      - name: Require the complete Examples matrix to succeed
+        shell: bash
+        env:
+          UPSTREAM_RESULT: ${{ needs.examples-test.result }}
+        run: test "$UPSTREAM_RESULT" = success
+
+  required-typescript-compatibility:
+    name: ${{ matrix.context }}
+    if: always()
+    needs: [ts-test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - context: Typescript Test (ubuntu-latest, linux-x64-gnu)
+          - context: Typescript Test (windows-latest, win32-x64-msvc)
+          - context: Typescript Test (macos-latest, darwin-arm64)
+    steps:
+      - name: Require the complete TypeScript matrix to succeed
+        shell: bash
+        env:
+          UPSTREAM_RESULT: ${{ needs.ts-test.result }}
+        run: test "$UPSTREAM_RESULT" = success

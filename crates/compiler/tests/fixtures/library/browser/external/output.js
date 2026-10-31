@@ -1,5 +1,5 @@
 //index.js:
- (function(){const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('dynamic-import.ts');
 }
@@ -12,7 +12,7 @@ function initModuleSystem$2() {
 initModuleSystem(__farm_internal_module_system__);
 initModuleSystem$1(__farm_internal_module_system__);
 initModuleSystem$2(__farm_internal_module_system__);
-}());window['__farm_default_namespace__'].m.se({
+}}());window['__farm_default_namespace__'].m.se({
     "node:fs": window['node:fs'] || {}
 });
 (function(moduleSystem, modules) {
@@ -24,8 +24,8 @@ initModuleSystem$2(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "index.ts": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_node_fs = farmRequire.i(farmRequire('node:fs'));
+        var _f_node_fs = farmRequire.i(farmRequire("node:fs"));
         console.log(farmRequire.f(_f_node_fs));
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

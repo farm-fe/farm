@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "renderer": "mermaid@12.2.0",
+  "authoringPackage": "@mermaid-js/mermaid-cli@12.0.0",
+  "driver": "playwright-core",
+  "diagrams": [
+    {
+      "source": "plugin-dispatch.mmd",
+      "sourceSha256": "4e91b9c312a7a4f7e635dd5bf0dfb58814c0b68810d07306a4381a87b933b694",
+      "outputs": {
+        "light": {
+          "file": "plugin-dispatch-light.svg",
+          "sha256": "df2bc937d0262068945e7fdbb98135e899ddcf80d07e4d88fa2870e8019bdf09",
+          "width": 676,
+          "height": 749
+        },
+        "dark": {
+          "file": "plugin-dispatch-dark.svg",
+          "sha256": "d0a37e31da72ea7fa75128bf2549535a519093cfcdc036271513f7ba32095700",
+          "width": 676,
+          "height": 749
+        }
+      }
+    },
+    {
+      "source": "runtime-hook-order.mmd",
+      "sourceSha256": "9cfe808d1310fa8c6cfcb7488782e2f45e7c24a070d72725f28af5d979a44e62",
+      "outputs": {
+        "light": {
+          "file": "runtime-hook-order-light.svg",
+          "sha256": "4ee035e85a587228913ab8b9116bdba82a4a76f6175f5f0eb9f23e809a27b647",
+          "width": 677,
+          "height": 1633
+        },
+        "dark": {
+          "file": "runtime-hook-order-dark.svg",
+          "sha256": "811ce75c408b403354c11a57bdbc47bb00b7a764f6c93f8e3a77077a38825001",
+          "width": 677,
+          "height": 1633
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-build.mmd",
+      "sourceSha256": "1ecad0a9131d101332fba450f945ea4954b2bc606223fde51d36bfb5d92d390a",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-build-light.svg",
+          "sha256": "71b8c7854f42fbd039f43860a5a7b5f2f6d6690c65528591d963cf41dbd3eebb",
+          "width": 920,
+          "height": 3775
+        },
+        "dark": {
+          "file": "rust-plugin-build-dark.svg",
+          "sha256": "0229c5b98e517ce12e65433badf56bdb094736a583658cf238adf0983c5172db",
+          "width": 920,
+          "height": 3775
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-generate.mmd",
+      "sourceSha256": "52e7fc95a69e3f56059254a5705e8624d691578dc0a777e2e5fbceffaf467e26",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-generate-light.svg",
+          "sha256": "de3af1e20920a7ff90dbb1b5cecc84cfbd5463f88ee992251f6545f435af28ed",
+          "width": 1472,
+          "height": 1439
+        },
+        "dark": {
+          "file": "rust-plugin-generate-dark.svg",
+          "sha256": "c6b575030d6b48038a2f3aae8dbcd10c22efc0dd5144d1656ed002bf3c363538",
+          "width": 1472,
+          "height": 1439
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-lifecycle.mmd",
+      "sourceSha256": "2a4fdb66337a20dcfcad9441620dc3b020d5b0b9e1dba5f857e65f531162ffde",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-lifecycle-light.svg",
+          "sha256": "ca52f3d0b5ac3de257b982d8d1dd6bc115baa649c8da1b1c09d42fc54f52f379",
+          "width": 489,
+          "height": 1718
+        },
+        "dark": {
+          "file": "rust-plugin-lifecycle-dark.svg",
+          "sha256": "88b7e32560dc6a071311f4b228ddf49784bc6fe47bf99e4db6376083574a8ebc",
+          "width": 489,
+          "height": 1718
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-overview.mmd",
+      "sourceSha256": "6fec15fd5e7a08582329ed71a22436e3fcf621d16e8fc4c506bf28b155075571",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-overview-light.svg",
+          "sha256": "e8780d239c434618434e79fff24661bd8f1d52476ef5414d86b032fc45ed72dd",
+          "width": 2938,
+          "height": 1073
+        },
+        "dark": {
+          "file": "rust-plugin-overview-dark.svg",
+          "sha256": "0dd5f185c69ad23b9f21562e8c6397bcfcddaa98bf9a2331109a8fae32fe7ba6",
+          "width": 2938,
+          "height": 1073
+        }
+      }
+    },
+    {
+      "source": "rust-plugin-update.mmd",
+      "sourceSha256": "81d068af2487bba5913b7ce3b3746ea96b8eef79006a383b63c2c65ffc3476b7",
+      "outputs": {
+        "light": {
+          "file": "rust-plugin-update-light.svg",
+          "sha256": "5d2bc67cca33f6b3f392dd3737ab1e955caef378b9fab2e46476f1740251375a",
+          "width": 1188,
+          "height": 1349
+        },
+        "dark": {
+          "file": "rust-plugin-update-dark.svg",
+          "sha256": "cde3ca3455ba87b5ccabae3e633cc8e29d1516b38af4619da9150abd11578752",
+          "width": 1188,
+          "height": 1349
+        }
+      }
+    }
+  ]
+}

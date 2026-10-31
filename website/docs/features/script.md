@@ -163,7 +163,22 @@ Refer to [Using Plugins](/docs/using-plugins#using-swc-plugins) for more details
 
 ## Vite-style `import.meta.glob`
 
-Farm fully support Vite-style `import.meta.glob`, see [glob import](https://vitejs.dev/guide/features.html#glob-import).
+Farm supports literal Vite-style `import.meta.glob`, see [glob import](https://vite.dev/guide/features#glob-import). Its Rust matcher targets the JavaScript glob profiles in Vite 8.3.5; this is not a claim of complete picomatch or native Rolldown compatibility.
+
+The supported options are `eager`, `import`, `query`, `exhaustive`, `caseSensitive`, and `base`, plus the legacy `as: 'raw' | 'url'` option. Patterns and options must be static literals; unsupported options and invalid values produce compilation errors.
+
+Negative patterns exclude matches regardless of their position in the pattern array. Dot files and `node_modules` are excluded by default; `exhaustive: true` includes them during discovery. Extglobs are disabled. File keys are sorted, and import queries are attached to import specifiers rather than object keys. A relative `base` resolves from the importer directory and changes the returned keys; an absolute base resolves from the project root.
+
+```ts
+const modules = import.meta.glob('./*.js', {
+  base: './dir',
+  import: 'default',
+  query: '?raw',
+});
+// keys: './foo.js'; import specifier: './dir/foo.js?raw'
+```
+
+Development file additions and removals invalidate matching importers and update their glob objects through HMR. Files still follow the configured watcher exclusions. Matcher, filesystem, and raw-read errors are reported without falling back to a different glob dialect. Source and compatibility boundaries are documented in [`farmfe_ecosystem_glob`](https://github.com/farm-fe/farm/tree/main/rust-ecosystem/glob).
 
 for example:
 

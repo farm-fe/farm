@@ -79,6 +79,7 @@ export interface PrunePayload {
 
 export interface FullReloadPayload {
   type: 'full-reload';
+  origin?: string;
   path?: string;
 }
 

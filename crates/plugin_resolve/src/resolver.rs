@@ -6,6 +6,7 @@ use std::{
 };
 
 use farmfe_core::regex;
+use farmfe_core::{HashMap, config::StringOrRegex};
 use farmfe_core::{
   common::PackageJsonInfo,
   context::CompilationContext,
@@ -13,9 +14,8 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
-  serde_json::{from_str, Map, Value},
+  serde_json::{Map, Value, from_str},
 };
-use farmfe_core::{config::StringOrRegex, HashMap};
 
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
@@ -24,8 +24,8 @@ use farmfe_utils::relative;
 use crate::resolver::browser::try_browser_map;
 use crate::resolver::exports::resolve_exports_or_imports;
 use crate::resolver::utils::{
-  get_field_value_from_package_json_info, is_double_source_dot, is_source_absolute, is_source_dot,
-  is_source_relative, ParsePackageSourceResult,
+  ParsePackageSourceResult, get_field_value_from_package_json_info, is_double_source_dot,
+  is_source_absolute, is_source_dot, is_source_relative,
 };
 
 use self::browser::{BrowserMapResult, BrowserMapType};
@@ -446,11 +446,11 @@ impl Resolver {
         }
         StringOrRegex::String(alias) => {
           if let Some(regex_str) = alias.strip_prefix(REGEX_PREFIX) {
-            if let Ok(regex) = regex::Regex::new(regex_str) {
-              if regex.is_match(source) {
-                let replaced = regex.replace(source, replacement.as_str()).to_string();
-                result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
-              }
+            if let Ok(regex) = regex::Regex::new(regex_str)
+              && regex.is_match(source)
+            {
+              let replaced = regex.replace(source, replacement.as_str()).to_string();
+              result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
             }
           } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
             result = self.resolve(replacement, base_dir.clone(), kind, options, context);
@@ -654,15 +654,15 @@ impl Resolver {
       .join("package.json")
       .to_logical_path(package_path.clone());
 
-    if abs_subpath.exists() {
-      if let Some(result) = self.try_package_entry(
+    if abs_subpath.exists()
+      && let Some(result) = self.try_package_entry(
         abs_subpath.parent().unwrap().to_path_buf(),
         kind,
         options,
         context,
-      ) {
-        return Some(result.clone());
-      }
+      )
+    {
+      return Some(result.clone());
     }
 
     let package_json_info = load_package_json(

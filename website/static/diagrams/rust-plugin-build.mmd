@@ -1,0 +1,25 @@
+flowchart TB
+  accTitle: B · Module graph build and cache paths
+  accDescr: Resolve each entry and discovered dependency. Timestamp hits bypass load and transform. Transformed-content hits bypass parsing. Both hits require watch validation and the plugin invalidation hook. Freeze is cache aware; the graph-end hooks are initial-build only.
+  Entry["Entries / discovered dependencies<br/>Core schedules independent modules"]:::core --> resolve[resolve]:::first
+  resolve --> External{External module?}:::gate
+  External -->|yes| Ext[Register external identity]:::core --> Ready[All graph modules ready]:::core
+  External -->|no| TS{Valid timestamp cache<br/>and watch dependencies?}:::gate
+  TS -->|yes| TG[handle_persistent_cached_module]:::first --> TI{Invalidate cached module?}:::gate
+  TI -->|yes| load[load]:::first
+  TI -->|no| Reuse["Restore cached metadata<br/>marks / statements / watch edges"]:::reuse
+  TS -->|no| load --> transform[transform]:::serial --> Hash{Valid transformed-content hash<br/>and watch dependencies?}:::gate
+  Hash -->|yes| HG[handle_persistent_cached_module]:::first --> HI{Invalidate cached module?}:::gate
+  HI -->|yes| parse[parse]:::first
+  HI -->|no| Reuse
+  Hash -->|no| parse --> process_module[process_module]:::serial --> analyze_deps[analyze_deps]:::serial --> finalize_module[finalize_module]:::serial
+  finalize_module -. each discovered dependency .-> resolve
+  Reuse -. cached dependency IDs .-> resolve
+  finalize_module --> Ready
+  Reuse --> Ready
+  Ready --> Freeze{For each module:<br/>changed or explicit update root?}:::gate
+  Freeze -->|yes| freeze_module[freeze_module]:::serial --> Frozen[All module metadata ready]:::core
+  Freeze -->|no: unchanged cache| Frozen
+  Frozen --> Initial{Initial compile?}:::gate
+  Initial -->|yes| module_graph_build_end[module_graph_build_end]:::serial --> build_end[build_end]:::parallel --> Next[Continue to C]:::core
+  Initial -->|update| Update["Return to D<br/>patch graph / module_graph_updated"]:::core

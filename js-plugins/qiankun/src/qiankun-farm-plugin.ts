@@ -1,4 +1,7 @@
-import type { JsPlugin } from '@farmfe/core';
+type JsPlugin = import('@farmfe/core', { with: {
+  'resolution-mode': 'import'
+}}).JsPlugin;
+
 import { load } from 'cheerio';
 import { injectSymbol } from './qiankun-farm-plugin-helper';
 

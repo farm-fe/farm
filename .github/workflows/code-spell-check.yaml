@@ -1,10 +1,19 @@
 name: Code Spell Check
-on: [pull_request]
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        required: true
+        type: string
+      release_base:
+        required: true
+        type: string
 
 jobs:
   code-spell-check:
     name: Spell
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - name: Setup pnpm

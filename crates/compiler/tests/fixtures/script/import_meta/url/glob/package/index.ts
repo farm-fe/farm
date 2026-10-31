@@ -1,3 +1,3 @@
 // @ts-nocheck
-console.log(import.meta.glob("bar", import.meta.url));
-console.log(import.meta.glob("@foo/core", import.meta.url));
+console.log(import.meta.glob("bar", { exhaustive: true }));
+console.log(import.meta.glob("@foo/core", { exhaustive: true }));

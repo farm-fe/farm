@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-react-components",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "private": false,
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
@@ -39,28 +39,7 @@
       "types": "./scripts/index.d.ts",
       "default": "./scripts/index.js"
     },
-    "./package.json": "./package.json",
-    "./types/preact": {
-      "types": "./types/preact.d.ts"
-    },
-    "./types/raw": {
-      "types": "./types/raw.d.ts"
-    },
-    "./types/react": {
-      "types": "./types/react.d.ts"
-    },
-    "./types/svelte": {
-      "types": "./types/svelte.d.ts"
-    },
-    "./types/svelte3": {
-      "types": "./types/svelte3.d.ts"
-    },
-    "./types/svelte4": {
-      "types": "./types/svelte4.d.ts"
-    },
-    "./types/vue": {
-      "types": "./types/vue3.d.ts"
-    }
+    "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
@@ -73,6 +52,18 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
-  ]
+    "options.d.ts",
+    "LICENSE"
+  ],
+  "optionalDependencies": {
+    "@farmfe/plugin-react-components-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-react-components-darwin-x64": "2.0.0",
+    "@farmfe/plugin-react-components-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-react-components-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-react-components-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-react-components-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-react-components-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-react-components-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-react-components-win32-x64-msvc": "2.0.0"
+  }
 }

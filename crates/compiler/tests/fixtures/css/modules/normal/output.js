@@ -1,10 +1,10 @@
 //farm_internal_runtime_index.js:
- const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
-
+}}());
 
 //index-2528a0d0.css:
   .foo  .farm-hello {
@@ -40,4 +40,4 @@ initModuleSystem(__farm_internal_module_system__);
         console.log(farmRequire.f(_f_index));
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

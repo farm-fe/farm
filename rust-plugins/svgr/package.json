@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-svgr",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",
@@ -37,7 +37,10 @@
   },
   "files": [
     "scripts",
-    "options.d.ts"
+    "options.d.ts",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",
@@ -46,5 +49,16 @@
   "homepage": "https://github.com/farm-fe/farm",
   "bugs": {
     "url": "https://github.com/farm-fe/farm/issues"
+  },
+  "optionalDependencies": {
+    "@farmfe/plugin-svgr-darwin-arm64": "2.0.0",
+    "@farmfe/plugin-svgr-darwin-x64": "2.0.0",
+    "@farmfe/plugin-svgr-linux-arm64-gnu": "2.0.0",
+    "@farmfe/plugin-svgr-linux-arm64-musl": "2.0.0",
+    "@farmfe/plugin-svgr-linux-x64-gnu": "2.0.0",
+    "@farmfe/plugin-svgr-linux-x64-musl": "2.0.0",
+    "@farmfe/plugin-svgr-win32-arm64-msvc": "2.0.0",
+    "@farmfe/plugin-svgr-win32-ia32-msvc": "2.0.0",
+    "@farmfe/plugin-svgr-win32-x64-msvc": "2.0.0"
   }
 }

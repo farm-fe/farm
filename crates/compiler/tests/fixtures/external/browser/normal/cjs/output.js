@@ -1,10 +1,10 @@
 //index.js:
- (function(){const __farm_internal_module_system__ = {};
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
 initModuleSystem(__farm_internal_module_system__);
-}());window['__farm_default_namespace__'].m.se({
+}}());window['__farm_default_namespace__'].m.se({
     "jquery": window['jquery'] || {}
 });
 (function(moduleSystem, modules) {
@@ -16,8 +16,8 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_jquery = farmRequire.i(farmRequire('jquery'));
+        var _f_jquery = farmRequire.i(farmRequire("jquery"));
         console.log(farmRequire.f(_f_jquery).find);
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");module.exports = __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");module.exports = __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

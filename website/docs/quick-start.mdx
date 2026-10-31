@@ -2,29 +2,22 @@
 sidebar_position: 1
 ---
 
-import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Quick Start
 
+:::note Farm v2 — Rust native compilation
+The compiler and official native compilation plugins run in Rust. Node.js still runs configuration, CLI and development-server orchestration; React SSR and website UI are JavaScript. Vite-compatible adapters remain available for migration.
 
-:::warning Nightly Warning
-If you are using version 2.0.0-nightly, please note the following:
-
-- The Farm team is working hard on version 2.0. We have refactored the entire Node backend and added many practical features. Please check our RoadMap for future updates.
-
-- This is a nightly build version that may contain new features and fixes that haven't been fully tested. As a result, unstable behavior or unexpected errors may occur.
-
-- Since this version is in the development phase, features and APIs may change in future versions. Please regularly check the changelog for the latest information.
-
-- We recommend against using this version in production environments unless you are prepared to handle potential issues.
-
-If you encounter any problems, please feel free to create an Issue to provide feedback to us. Your feedback is crucial for improving Farm's functionality and stability.
-and we will continue to update the documentation in the coming days. Thank you for your understanding and support.
+This is v2 candidate documentation: use a matching verified candidate until the required official packages are published. The generic creation commands below target the registry’s current release and do not pin or establish a v2 release. See the [official Rust plugin overview](/docs/plugins/official-plugins/overview) for feature scope.
 :::
 
 
+
+
+
 :::warning
-Farm needs **Node 16.18.0 and above**.
+Farm needs **Node 20.0.0 and above**.
 :::
 
 ## Online experience
@@ -33,20 +26,16 @@ Farm needs **Node 16.18.0 and above**.
 
 ## Create a Farm Project
 
-<PackageManagerTabs command="pnpm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
-:::warning
-If you are using the nightly version, you need to install all Farm dependencies as nightly versions. We have provided nightly versions for all core packages and plugins. e.g:
-:::
 
-<PackageManagerTabs command="pnpm add @farmfe/{cli,core}@nightly" />
 
 :::note{title="Then follow the prompts!"}
 
 You can also directly specify the project name and the template you want to use via additional command line options:
 :::
 
-<PackageManagerTabs command="pnpm create farm farm-app --template react" />
+<PackageManagerTabs commands={{"npm":"npm create farm farm-app --template react","pnpm":"pnpm create farm farm-app --template react","yarn":"yarn create farm farm-app --template react","bun":"bun create farm farm-app --template react"}} />
 
 | Template | Description | Optional Features |
 |:-------:|:--------:|:-------:|
@@ -69,7 +58,7 @@ You can also directly specify the project name and the template you want to use 
 Choose the package manager you like, install dependencies, then start the project.
 Then, start the project:
 
-<PackageManagerTabs command="cd farm-app && pnpm install && pnpm dev" />
+<PackageManagerTabs commands={{"npm":"cd farm-app && npm install && npm dev","pnpm":"cd farm-app && pnpm install && pnpm dev","yarn":"cd farm-app && yarn install && yarn dev","bun":"cd farm-app && bun install && bun dev"}} />
 
 > The project will start at `http://localhost:9000` by default.
 
@@ -95,7 +84,7 @@ See **[Configuring Farm](/docs/config/configuring-farm)** for details.
 
 Build the Farm project as production-ready static files:
 
-<PackageManagerTabs command="npm run build" />
+<PackageManagerTabs commands={{"npm":"npm run build","pnpm":"pnpm run build","yarn":"yarn run build","bun":"bun run build"}} />
 
 The built product is downgraded to `ES2017` by default, and the product will be compressed and Tree Shake. If you want to preview the build product locally, you can execute `npm run preview` or `npx farm preview`.
 
@@ -107,7 +96,7 @@ See **[Build For Production](/docs/tutorials/build)** for details.
 
 Start preview server
 
-<PackageManagerTabs command="npm run preview" />
+<PackageManagerTabs commands={{"npm":"npm run preview","pnpm":"pnpm run preview","yarn":"yarn run preview","bun":"bun run preview"}} />
 
 ## Next Steps
 
@@ -116,3 +105,5 @@ Start preview server
 - [Configuring Farm](/docs/config/configuring-farm)
 - [Plugins](/docs/plugins/official-plugins/overview)
 ---
+
+For packages consumed by other projects, see [Library bundling](/docs/features/library).

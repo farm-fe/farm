@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  context::{get_swc_sourcemap_filename, CompilationContext},
+  context::{CompilationContext, get_swc_sourcemap_filename},
   error::CompilationError,
   module::ModuleId,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
-  swc_common::{comments::SingleThreadedComments, input::SourceFileInput, BytePos, SourceMap},
+  swc_common::{BytePos, SourceMap, comments::SingleThreadedComments, input::SourceFileInput},
   swc_css_ast::Stylesheet,
 };
 use swc_css_codegen::{
-  writer::basic::{BasicCssWriter, BasicCssWriterConfig},
   CodeGenerator, CodegenConfig, Emit,
+  writer::basic::{BasicCssWriter, BasicCssWriterConfig},
 };
 use swc_css_parser::{
   lexer::Lexer,
@@ -19,7 +19,7 @@ use swc_css_parser::{
 use swc_css_visit::{VisitMut, VisitMutWith};
 use swc_error_reporters::handler::try_with_handler;
 
-use crate::sourcemap::{build_sourcemap, create_swc_source_map};
+use crate::sourcemap::{build_css_sourcemap, create_swc_source_map};
 
 pub struct ParseCssModuleResult {
   pub ast: Stylesheet,
@@ -103,7 +103,9 @@ pub fn codegen_css_stylesheet(
   codegen.emit(stylesheet).unwrap();
 
   let (css_code, src_map) = if let Some(cm) = cm {
-    let map = build_sourcemap(cm, &mappings);
+    // A minified bundle has many source files on one generated line. Line-only
+    // maps discard every source after the first one, including Sass Modules.
+    let map = build_css_sourcemap(cm, &mappings);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).unwrap();
 

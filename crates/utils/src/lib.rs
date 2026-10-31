@@ -83,16 +83,27 @@ pub fn stringify_query(query: &Vec<(String, String)>) -> String {
 }
 
 pub fn file_url_to_path(url: &str) -> String {
-  let url = url.replace("file://", "");
+  let file_path = url.strip_prefix("file://");
+  let path = file_path.unwrap_or(url);
 
   if cfg!(windows) {
-    if let Some(url) = url.strip_prefix('/') {
-      url.replace('/', "\\")
+    let is_drive =
+      |path: &str| matches!(path.as_bytes(), [drive, b':', ..] if drive.is_ascii_alphabetic());
+    // A file URL adds one slash before a drive letter. UNC and verbatim
+    // paths need both leading separators to retain their absolute prefix.
+    let path = match path.strip_prefix('/') {
+      Some(drive_path) if is_drive(drive_path) => drive_path,
+      _ => path,
+    };
+    let normalized = path.replace('/', "\\");
+    if file_path.is_some() && !path.starts_with(['/', '\\']) && !is_drive(path) {
+      // file://server/share names a UNC host rather than a relative path.
+      format!("\\\\{normalized}")
     } else {
-      url.replace("/", "\\")
+      normalized
     }
   } else {
-    url
+    path.to_string()
   }
 }
 
@@ -114,6 +125,12 @@ pub fn relative(from: &str, to: &str) -> String {
     panic!("failed to get relative path from {from} to {to}");
   });
 
+  // Different Windows volumes (or UNC shares) have no relative path. Keep
+  // pathdiff's absolute target so module IDs can resolve it without losing
+  // its volume identity. ModuleId::resolved_path already handles this form.
+  if rp.is_absolute() {
+    return rp.to_string_lossy().replace('\\', "/");
+  }
   // make sure the relative path is platform independent
   // this can ensure that the relative path and hash stable across platforms
   let mut result = String::new();
@@ -157,9 +174,87 @@ pub fn transform_string_to_static_str(s: String) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-  use crate::{relative, stringify_query, PARSE_QUERY_TRUE};
+  use crate::{PARSE_QUERY_TRUE, relative, stringify_query};
 
-  use super::parse_query;
+  use super::{file_url_to_path, parse_query};
+
+  #[cfg(windows)]
+  #[test]
+  fn file_url_preserves_windows_absolute_prefixes() {
+    for (input, expected) in [
+      (r"C:\farm\index.js", r"C:\farm\index.js"),
+      ("C:/farm/index.js", r"C:\farm\index.js"),
+      ("file:///C:/farm/index.js", r"C:\farm\index.js"),
+      ("file://C:/farm/index.js", r"C:\farm\index.js"),
+      ("//?/C:/farm/index.js", r"\\?\C:\farm\index.js"),
+      (r"\\?\C:\farm\index.js", r"\\?\C:\farm\index.js"),
+      ("//server/share/index.js", r"\\server\share\index.js"),
+      (r"\\server\share\index.js", r"\\server\share\index.js"),
+      ("file://server/share/index.js", r"\\server\share\index.js"),
+      (
+        "//?/UNC/server/share/index.js",
+        r"\\?\UNC\server\share\index.js",
+      ),
+    ] {
+      let actual = file_url_to_path(input);
+      assert_eq!(actual, expected, "{input}");
+      assert!(std::path::Path::new(&actual).is_absolute(), "{input}");
+    }
+    assert_eq!(
+      file_url_to_path("C:/farm/file://marker"),
+      r"C:\farm\file:\\marker"
+    );
+  }
+
+  #[cfg(windows)]
+  #[test]
+  fn relative_preserves_original_long_algolia_side_effects_path() {
+    let from = "//?/C:/Users/lj_bright/Documents/Codex/2026-10-20/task/farm-docs-presentation/node_modules/.pnpm/@algolia+autocomplete-plugin-algolia-insights@1.9.3_@algolia+client-search@4.27.0_algoliasear_n4ixl6ospdcyccrc27rssdkaga/node_modules/@algolia/autocomplete-plugin-algolia-insights";
+    let to = format!("{from}/dist/esm/createAlgoliaInsightsPlugin.js");
+    assert!(from.len() > 260);
+    assert_eq!(
+      relative(from, &to),
+      "dist/esm/createAlgoliaInsightsPlugin.js"
+    );
+    assert_eq!(
+      relative(&from.replace('/', "\\"), &to.replace('/', "\\")),
+      "dist/esm/createAlgoliaInsightsPlugin.js"
+    );
+  }
+
+  #[cfg(windows)]
+  #[test]
+  fn relative_windows_prefixes_preserve_volume_round_trip() {
+    for (from, to) in [
+      ("C:/consumer/site", "D:/farm/runtime.js"),
+      ("file:///C:/consumer/site", "file:///D:/farm/runtime.js"),
+      ("//?/C:/consumer/site", "//?/D:/farm/runtime.js"),
+      ("//server/first/site", "//server/second/runtime.js"),
+    ] {
+      let result = relative(from, to);
+      let restored = file_url_to_path(&result);
+      assert!(std::path::Path::new(&restored).is_absolute());
+      assert_eq!(restored, file_url_to_path(to));
+    }
+  }
+
+  #[cfg(not(windows))]
+  #[test]
+  fn file_url_preserves_posix_paths_and_embedded_scheme() {
+    assert_eq!(
+      file_url_to_path("file:///tmp/farm/index.js"),
+      "/tmp/farm/index.js"
+    );
+    assert_eq!(file_url_to_path("/tmp/file://marker"), "/tmp/file://marker");
+    assert_eq!(
+      file_url_to_path("//server/share/index.js"),
+      "//server/share/index.js"
+    );
+    assert_eq!(
+      relative("file:///tmp/farm", "file:///tmp/other/index.js"),
+      "../other/index.js"
+    );
+  }
 
   #[test]
   fn parse_query_t() {
@@ -193,6 +288,18 @@ mod tests {
     assert_eq!(str, "?a=b".to_string());
   }
 
+  #[cfg(windows)]
+  #[test]
+  fn test_relative_cross_volume_preserves_absolute_target() {
+    assert_eq!(
+      relative(r"C:\consumer\site", r"D:\farm\runtime.js.farm-runtime"),
+      "D:/farm/runtime.js.farm-runtime"
+    );
+    assert_eq!(
+      relative("file:///C:/consumer/site", "file:///D:/farm/runtime.js?raw"),
+      "D:/farm/runtime.js?raw"
+    );
+  }
   #[test]
   fn test_relative() {
     let from = if cfg!(windows) {

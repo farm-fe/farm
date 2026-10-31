@@ -1,4 +1,4 @@
-import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs";
+import { CommandTabs as PackageManagerTabs } from "@farmfe/docs/snippets";
 
 # Solid
 
@@ -10,7 +10,7 @@ import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs"
 
 ### 创建 Solid 项目
 
-<PackageManagerTabs command="npm create farm@latest" />
+<PackageManagerTabs commands={{"npm":"npm create farm@latest","pnpm":"pnpm create farm@latest","yarn":"yarn create farm@latest","bun":"bun create farm@latest"}} />
 
 在 `Select Framework` 中选择 `Solid` 模版
 
@@ -29,14 +29,14 @@ export default defineConfig({
 
 开发环境时运行
 
-<PackageManagerTabs command="npm run dev" />
+<PackageManagerTabs commands={{"npm":"npm run dev","pnpm":"pnpm run dev","yarn":"yarn run dev","bun":"bun run dev"}} />
 
 在生产环境下进行打包
 
-<PackageManagerTabs command="npm run build" />
+<PackageManagerTabs commands={{"npm":"npm run build","pnpm":"pnpm run build","yarn":"yarn run build","bun":"bun run build"}} />
 
 预览生产环境打包之后构建的产物
 
-<PackageManagerTabs command="npm run preview" />
+<PackageManagerTabs commands={{"npm":"npm run preview","pnpm":"pnpm run preview","yarn":"yarn run preview","bun":"bun run preview"}} />
 
 如若想查看示例详情: [Solid 示例](https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-solid)

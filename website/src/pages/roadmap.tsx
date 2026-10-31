@@ -1,10 +1,14 @@
-import Layout from '@theme/Layout';
+import type { PageMetadata } from '@farmfe/docs';
 import React from 'react';
 import { Timeline } from "../components/ui/timeline";
 
+export const metadata = {
+  title: 'Roadmap',
+  description: 'Farm Roadmap',
+} satisfies PageMetadata;
+
 export default function Roadmap() {
   return (
-    <Layout title="Roadmap" description="Farm Roadmap">
       <div className="container">
         <div className="max-w-7xl mx-auto py-20 px-4 md:px-8 lg:px-10">
           <h2 className="text-lg md:text-4xl mb-4 text-black dark:text-white max-w-4xl">
@@ -20,7 +24,6 @@ export default function Roadmap() {
         coming soon
         {/* <TimelineCpm /> */}
       </div>
-    </Layout>
   );
 }
 

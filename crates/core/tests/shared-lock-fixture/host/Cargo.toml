@@ -1,0 +1,9 @@
+[package]
+name = "farm-test-shared-lock-host"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+farmfe_core.workspace = true
+libloading.workspace = true

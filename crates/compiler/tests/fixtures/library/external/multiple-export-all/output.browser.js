@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
+ (function(){if(typeof window==='undefined'||!window['__farm_default_namespace__']||!window['__farm_default_namespace__'].m){; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 function setGlobalRequire(globalObj) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalObj !== 'undefined' ? globalObj : {};
@@ -100,15 +100,120 @@ const loadedResources = {};
 const loadingResources = {};
 // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
 const publicPaths = [];
+const pendingImports = new Set();
+let resourceTransaction;
+let resourceRevision = 0;
 let moduleSystem;
 function initModuleSystem(ms) {
     moduleSystem = ms;
     moduleSystem.pp = publicPaths;
-    moduleSystem.d = dynamicImport;
+    moduleSystem.d = (id)=>trackImport(dynamicImport(id));
     moduleSystem.sp = setPublicPaths;
     moduleSystem.si = setInitialLoadedResources;
     moduleSystem.sd = setDynamicModuleResourcesMap;
-    moduleSystem.l = loadDynamicResourcesOnly;
+    moduleSystem.gd = getDynamicModuleResourcesMap;
+    moduleSystem.l = (id, force)=>trackImport(loadDynamicResourcesOnly(id, force));
+    moduleSystem.beginResourceTransaction = beginResourceTransaction;
+}
+function trackImport(promise) {
+    resourceRevision++;
+    const owner = resourceTransaction;
+    pendingImports.add(promise);
+    void promise.then(()=>{
+        pendingImports.delete(promise);
+    }, (error)=>{
+        pendingImports.delete(promise);
+        if (owner && !owner.errors.includes(error)) owner.errors.push(error);
+    });
+    return promise;
+}
+async function drainImports() {
+    while(pendingImports.size)await Promise.allSettled([
+        ...pendingImports
+    ]);
+}
+async function beginResourceTransaction() {
+    if (resourceTransaction) throw new Error('Dynamic resource transaction already active');
+    do {
+        await drainImports();
+    }while (pendingImports.size);
+    if (resourceTransaction) throw new Error('Dynamic resource transaction already active');
+    const mapping = getDynamicModuleResourcesMap();
+    const previousLoaded = {
+        ...loadedResources
+    };
+    const previousPaths = [
+        ...publicPaths
+    ];
+    const transaction = {
+        errors: [],
+        elements: new Set()
+    };
+    resourceTransaction = transaction;
+    let closing = false;
+    let validatedRevision;
+    let settledRevision;
+    const assertOpen = ()=>{
+        if (closing || resourceTransaction !== transaction) throw new Error('Dynamic resource transaction closed');
+        closing = true;
+    };
+    const isSettled = ()=>!closing && resourceTransaction === transaction && settledRevision === resourceRevision && !pendingImports.size;
+    const settle = async ()=>{
+        assertOpen();
+        try {
+            do {
+                await drainImports();
+            }while (pendingImports.size);
+            settledRevision = resourceRevision;
+        } finally{
+            closing = false;
+        }
+    };
+    const validate = async ()=>{
+        validatedRevision = undefined;
+        do {
+            await settle();
+        }while (!isSettled());
+        if (transaction.errors.length) throw new AggregateError(transaction.errors, 'Dynamic resource transaction failed');
+        validatedRevision = settledRevision;
+    };
+    const restore = ()=>{
+        if (closing || resourceTransaction !== transaction) throw new Error('Dynamic resource transaction closed');
+        if (!isSettled()) throw new Error('Dynamic resource transaction must be settled before restoration');
+        for (const element of transaction.elements)element.remove();
+        for (const key of Object.keys(loadedResources))delete loadedResources[key];
+        Object.assign(loadedResources, previousLoaded);
+        setDynamicModuleResourcesMap(mapping.resources, mapping.moduleResources);
+        publicPaths.splice(0, publicPaths.length, ...previousPaths);
+        resourceTransaction = undefined;
+        return [
+            ...transaction.errors
+        ];
+    };
+    const finalize = ()=>{
+        if (closing || resourceTransaction !== transaction) throw new Error('Dynamic resource transaction closed');
+        if (validatedRevision !== resourceRevision || !isSettled() || transaction.errors.length) {
+            throw new Error('Dynamic resource transaction must be validated after its latest work');
+        }
+        resourceTransaction = undefined;
+    };
+    return {
+        settle,
+        isSettled,
+        restore,
+        validate,
+        finalize,
+        async commit () {
+            await validate();
+            finalize();
+        },
+        async rollback () {
+            do {
+                await settle();
+            }while (!isSettled());
+            return restore();
+        }
+    };
 }
 function requireDynamicModule(id) {
     const exports = moduleSystem.r(id);
@@ -159,6 +264,10 @@ function loadDynamicResourcesOnly(id, force = false) {
     }));
 }
 function load(resource, query) {
+    // Promise.all for a page can reject while another script or stylesheet is still loading.
+    return trackImport(loadUntracked(resource, query));
+}
+function loadUntracked(resource, query) {
     {
         if (loadedResources[resource.path] && !query) {
             // Skip inject Promise polyfill for runtime
@@ -181,8 +290,7 @@ function loadResource(resource, index, query) {
     } else if (resource.type === 1) {
         promise = loadLink(url);
     }
-    loadingResources[resource.path] = promise;
-    promise.then(()=>{
+    const loading = promise.then(()=>{
         loadedResources[resource.path] = true;
         loadingResources[resource.path] = null;
     }).catch((e)=>{
@@ -195,17 +303,23 @@ function loadResource(resource, index, query) {
             throw new Error(`[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". ${e}`);
         }
     });
-    return promise;
+    // Callers must await the retry/error chain itself. Returning the raw DOM
+    // promise both bypasses publicPath retries and leaves this rejection unowned.
+    loadingResources[resource.path] = loading;
+    return loading;
 }
 function loadScript(path) {
     return new Promise((resolve, reject)=>{
         const script = document.createElement('script');
+        resourceTransaction?.elements.add(script);
         script.src = path;
         document.body.appendChild(script);
         script.onload = ()=>{
             resolve();
         };
         script.onerror = (e)=>{
+            // A failed element is not a loaded resource and must not survive retry.
+            script.remove();
             reject(e);
         };
     });
@@ -213,6 +327,7 @@ function loadScript(path) {
 function loadLink(path) {
     return new Promise((resolve, reject)=>{
         const link = document.createElement('link');
+        resourceTransaction?.elements.add(link);
         link.rel = 'stylesheet';
         link.href = path;
         document.head.appendChild(link);
@@ -220,6 +335,9 @@ function loadLink(path) {
             resolve();
         };
         link.onerror = (e)=>{
+            // Chromium can expose an empty sheet even for a failed request. Leaving
+            // it behind makes consumers retain that stale sheet when deduplicating.
+            link.remove();
             reject(e);
         };
     });
@@ -232,11 +350,13 @@ function isResourceLoaded(path) {
 }
 // The public paths are injected during compile time
 function setPublicPaths(p) {
+    resourceRevision++;
     for(const key in p){
         publicPaths[key] = p[key];
     }
 }
 function setInitialLoadedResources(resources) {
+    resourceRevision++;
     resources.forEach((resource)=>{
         setLoadedResource(resource);
     });
@@ -244,8 +364,29 @@ function setInitialLoadedResources(resources) {
 // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
 // This method can also be called during runtime to add new dynamic modules
 function setDynamicModuleResourcesMap(dr, dmp) {
-    dynamicResources = dr;
-    dynamicModuleResourcesMap = dmp;
+    resourceRevision++;
+    dynamicResources = dr.map((resource)=>({
+            ...resource
+        }));
+    dynamicModuleResourcesMap = Object.fromEntries(Object.entries(dmp).map(([id, indices])=>[
+            id,
+            [
+                ...indices
+            ]
+        ]));
+}
+function getDynamicModuleResourcesMap() {
+    return {
+        resources: dynamicResources.map((resource)=>({
+                ...resource
+            })),
+        moduleResources: Object.fromEntries(Object.entries(dynamicModuleResourcesMap).map(([id, indices])=>[
+                id,
+                [
+                    ...indices
+                ]
+            ]))
+    };
 }
 ; // module_id: @farmfe/runtime/src/modules/module-system-helper.ts.farm-runtime
 let moduleSystem$1;
@@ -282,40 +423,24 @@ function clearCache(moduleId) {
 ; // module_id: @farmfe/runtime/src/modules/module-helper.ts.farm-runtime
 function initModuleSystem$2(ms) {
     const farmRequire = ms.r;
-    {
-        farmRequire.o = exportByDefineProperty;
-        // exports.xx = xx
-        farmRequire.d = defineExport;
-        // exports.__esModule
-        farmRequire._m = defineExportEsModule;
-    }
-    {
-        // `export * from` helper
-        farmRequire._e = defineExportStar;
-        // inject defineExportStar to module system
-        const id = '@farm-runtime/module-helper';
+    farmRequire.o = exportByDefineProperty;
+    farmRequire.d = defineExport;
+    farmRequire._m = defineExportEsModule;
+    farmRequire._e = defineExportStar;
+    farmRequire.i = interopRequireDefault;
+    farmRequire._g = getRequireWildcardCache;
+    farmRequire.w = interopRequireWildcard;
+    farmRequire._ = defineExportFrom;
+    farmRequire.f = importDefault;
+    const id = '@farm-runtime/module-helper';
+    // Preserve existing cached exports when initializing helpers on a shared host.
+    if (!ms.c()[id]) {
         ms.c()[id] = {
             id,
             exports: {
                 defineExportStar
             }
         };
-    }
-    {
-        // `import xxx from` helper
-        farmRequire.i = interopRequireDefault;
-    }
-    {
-        // `import * as xx` helper, copied from @swc/helper
-        farmRequire._g = getRequireWildcardCache;
-        // `import * as xx` helper, copied from @swc/helper
-        farmRequire.w = interopRequireWildcard;
-    }
-    {
-        farmRequire._ = defineExportFrom;
-    }
-    {
-        farmRequire.f = importDefault;
     }
 }
 function exportByDefineProperty(to, to_k, get) {
@@ -401,7 +526,7 @@ function importDefault(v) {
 initModuleSystem(__farm_internal_module_system__);
 initModuleSystem$1(__farm_internal_module_system__);
 initModuleSystem$2(__farm_internal_module_system__);
-}());window['__farm_default_namespace__'].m.se({
+}}());window['__farm_default_namespace__'].m.se({
     "/external/bar": window['/external/bar'] || {},
     "/external/zoo": window['/external/zoo'] || {}
 });
@@ -425,4 +550,4 @@ initModuleSystem$2(__farm_internal_module_system__);
         console.log(zoo_test, foo);
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
+var __farm_ms__ = window['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
