@@ -2157,7 +2157,7 @@
       "manifestPath": "crates/plugin_file_size/Cargo.toml",
       "manifestSha256": "dda59ce69de124a1a9e218e77a6ff39991eee2f0adcbf9aafd5966df39cc76eb",
       "publish": null,
-      "sourceSha256": "4baaf9e0b96aaf9313d1b15c6061633fff4beb95d3acc7f7e14f41ba6828506f"
+      "sourceSha256": "a7dbad7ae6f84ef640019823c5f8f51e37b0426f93eba7ae419393968fbdc7ca"
     },
     {
       "name": "farmfe_plugin_html",

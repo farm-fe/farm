@@ -1,98 +1,5 @@
 #![deny(clippy::all)]
 
-#[cfg(test)]
-mod tests {
-  use super::*;
-  use farmfe_core::resource::Resource;
-
-  #[test]
-  fn finish_completes_without_relocking_resources() {
-    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
-    context.resources_map.lock().insert(
-      "site.js".into(),
-      Resource {
-        name: "site.js".into(),
-        bytes: b"export default 1".to_vec(),
-        resource_type: ResourceType::Js,
-        ..Default::default()
-      },
-    );
-    let (sender, receiver) = std::sync::mpsc::channel();
-    let worker = std::thread::spawn(move || {
-      let plugin = FarmPluginFileSize::new(&context.config);
-      sender
-        .send(plugin.finish(&Stats::default(), &context))
-        .unwrap();
-    });
-    receiver
-      .recv_timeout(std::time::Duration::from_secs(3))
-      .expect("actual finish must complete without recursively taking its resource lock")
-      .unwrap();
-    worker.join().unwrap();
-  }
-
-  #[test]
-  fn compression_does_not_hold_shared_resource_lock() {
-    let context = CompilationContext::new(Config::default(), vec![]).unwrap();
-    context.resources_map.lock().insert(
-      "site.js".into(),
-      Resource {
-        name: "site.js".into(),
-        bytes: b"export default 1".to_vec(),
-        resource_type: ResourceType::Js,
-        ..Default::default()
-      },
-    );
-    let plugin = FarmPluginFileSize::new(&context.config);
-    let rows = plugin.resource_sizes(&context, |bytes| {
-      assert!(
-        context.resources_map.try_lock().is_some(),
-        "parallel compression must not hold the lock needed by other finish hooks"
-      );
-      plugin.calculate_gzip_size(bytes)
-    });
-    assert_eq!(rows.len(), 1);
-    assert_eq!(
-      rows[0],
-      (
-        "site.js".into(),
-        16,
-        plugin.calculate_gzip_size(b"export default 1")
-      )
-    );
-  }
-
-  #[test]
-  fn resource_measurements_keep_filtering_and_real_gzip_sizes() {
-    let context = CompilationContext::new(Config::default(), vec![]).unwrap();
-    for (name, kind, emitted) in [
-      ("a.js", ResourceType::Js, false),
-      ("b.css", ResourceType::Css, false),
-      ("a.js.map", ResourceType::SourceMap("a.js".into()), false),
-      ("done.js", ResourceType::Js, true),
-    ] {
-      context.resources_map.lock().insert(
-        name.into(),
-        Resource {
-          name: name.into(),
-          bytes: b"content".to_vec(),
-          resource_type: kind,
-          emitted,
-          ..Default::default()
-        },
-      );
-    }
-    let plugin = FarmPluginFileSize::new(&context.config);
-    let mut rows = plugin.resource_sizes(&context, |bytes| plugin.calculate_gzip_size(bytes));
-    rows.sort();
-    let gzip = plugin.calculate_gzip_size(b"content");
-    assert_eq!(
-      rows,
-      vec![("a.js".into(), 7, gzip), ("b.css".into(), 7, gzip)]
-    );
-  }
-}
-
 use colored::*;
 use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::resource::ResourceType;
@@ -270,5 +177,98 @@ impl Plugin for FarmPluginFileSize {
     println!();
 
     Ok(None)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use farmfe_core::resource::Resource;
+
+  #[test]
+  fn finish_completes_without_relocking_resources() {
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+    context.resources_map.lock().insert(
+      "site.js".into(),
+      Resource {
+        name: "site.js".into(),
+        bytes: b"export default 1".to_vec(),
+        resource_type: ResourceType::Js,
+        ..Default::default()
+      },
+    );
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let worker = std::thread::spawn(move || {
+      let plugin = FarmPluginFileSize::new(&context.config);
+      sender
+        .send(plugin.finish(&Stats::default(), &context))
+        .unwrap();
+    });
+    receiver
+      .recv_timeout(std::time::Duration::from_secs(3))
+      .expect("actual finish must complete without recursively taking its resource lock")
+      .unwrap();
+    worker.join().unwrap();
+  }
+
+  #[test]
+  fn compression_does_not_hold_shared_resource_lock() {
+    let context = CompilationContext::new(Config::default(), vec![]).unwrap();
+    context.resources_map.lock().insert(
+      "site.js".into(),
+      Resource {
+        name: "site.js".into(),
+        bytes: b"export default 1".to_vec(),
+        resource_type: ResourceType::Js,
+        ..Default::default()
+      },
+    );
+    let plugin = FarmPluginFileSize::new(&context.config);
+    let rows = plugin.resource_sizes(&context, |bytes| {
+      assert!(
+        context.resources_map.try_lock().is_some(),
+        "parallel compression must not hold the lock needed by other finish hooks"
+      );
+      plugin.calculate_gzip_size(bytes)
+    });
+    assert_eq!(rows.len(), 1);
+    assert_eq!(
+      rows[0],
+      (
+        "site.js".into(),
+        16,
+        plugin.calculate_gzip_size(b"export default 1")
+      )
+    );
+  }
+
+  #[test]
+  fn resource_measurements_keep_filtering_and_real_gzip_sizes() {
+    let context = CompilationContext::new(Config::default(), vec![]).unwrap();
+    for (name, kind, emitted) in [
+      ("a.js", ResourceType::Js, false),
+      ("b.css", ResourceType::Css, false),
+      ("a.js.map", ResourceType::SourceMap("a.js".into()), false),
+      ("done.js", ResourceType::Js, true),
+    ] {
+      context.resources_map.lock().insert(
+        name.into(),
+        Resource {
+          name: name.into(),
+          bytes: b"content".to_vec(),
+          resource_type: kind,
+          emitted,
+          ..Default::default()
+        },
+      );
+    }
+    let plugin = FarmPluginFileSize::new(&context.config);
+    let mut rows = plugin.resource_sizes(&context, |bytes| plugin.calculate_gzip_size(bytes));
+    rows.sort();
+    let gzip = plugin.calculate_gzip_size(b"content");
+    assert_eq!(
+      rows,
+      vec![("a.js".into(), 7, gzip), ("b.css".into(), 7, gzip)]
+    );
   }
 }
