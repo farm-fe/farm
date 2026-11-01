@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}

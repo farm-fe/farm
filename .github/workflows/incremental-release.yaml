@@ -262,6 +262,9 @@ jobs:
           EXPECTED_PRODUCER_SOURCE: ${{ inputs.producer_source }}
         run: python -B scripts/incremental-release-entry.py verify --manifest release-input/manifest.json --archives release-input/archives
   release-native-primary:
+    permissions:
+      contents: read
+      actions: read
     needs: [source, plan]
     if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
     uses: ./.github/workflows/rust-build-user.yaml
@@ -269,6 +272,9 @@ jobs:
       profile: release
       native_owners: ${{ needs.plan.outputs.native_owners }}
   release-native-extra:
+    permissions:
+      contents: read
+      actions: read
     needs: [source, plan]
     if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
     uses: ./.github/workflows/rust-build-release.yaml
