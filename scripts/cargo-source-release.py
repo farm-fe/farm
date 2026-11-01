@@ -152,9 +152,16 @@ def verify_frozen(directory,expected):
 
 def restore(directory,expected):
     name='cargo-source-'+str(expected['runId']);base='repos/'+expected['repository'];rows=api(base+'/actions/runs/'+str(expected['runId'])+'/artifacts?per_page=100')['artifacts']
+    check(len(rows)<100,'Cargo frozen artifact listing exceeds verification bound')
     matches=[row for row in rows if row['name']==name];check(len(matches)<=1,'Ambiguous Cargo frozen artifact')
     if not matches:
-        check(int(os.environ['GITHUB_RUN_ATTEMPT'])==1,'Original Cargo archive missing on retry; possible partial publication cannot be rebuilt')
+        attempt=int(os.environ['GITHUB_RUN_ATTEMPT'])
+        if attempt>1:
+            retry=load('cargo_retry_safety','release-retry-safety.py')
+            proof=retry.verify_unfrozen_retry(lambda route:api(base+route), run_id=expected['runId'], source_sha=expected['sourceSHA'],
+                current_attempt=attempt, workflow=WORKFLOW, producer='Prepare Cargo source archives',
+                freeze_step='Freeze verified Cargo source archives', publisher='Publish frozen Cargo source archives', events=['pull_request'])
+            print(json.dumps({'unfrozenRetryProof':proof}),flush=True)
         return False
     row=matches[0];check(not row['expired'],'Original Cargo archive expired; refusing to rebuild a possible partial publication')
     check(row['workflow_run']['id']==expected['runId'] and 0<row['size_in_bytes']<512*1024**2,'Cargo artifact origin or size differs')

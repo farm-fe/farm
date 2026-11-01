@@ -29,6 +29,7 @@ permissions:
 concurrency:
   group: farm-independent-release
   cancel-in-progress: false
+  queue: max
 jobs:
   source:
     name: Select fixed main source and original release attempt
@@ -392,7 +393,8 @@ jobs:
           path: release-build-proof/ledger.json
           if-no-files-found: error
           retention-days: 90
-      - uses: actions/upload-artifact@v4
+      - name: Freeze independent release candidates
+        uses: actions/upload-artifact@v4
         if: needs.plan.outputs.publish_required == 'true'
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ github.run_attempt }}

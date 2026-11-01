@@ -222,4 +222,28 @@ class MeasurementContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'archive bytes'):self.verify(data)
 
 
+class OriginalArchiveContracts(unittest.TestCase):
+    def test_first_attempt_without_archive_may_build(self):
+        transport=mock.Mock();transport.get.return_value={'artifacts':[]}
+        self.assertEqual(module.original_attempt(transport,123,'a'*40,1),1)
+    def test_missing_candidate_or_seal_only_retry_requires_strict_no_freeze_proof(self):
+        for rows in [[],[{'name':'farm-release-seal-'+'a'*40+'-1'}]]:
+            transport=mock.Mock();transport.get.return_value={'artifacts':rows}
+            with mock.patch.object(module.retry,'verify_unfrozen_retry',side_effect=ValueError('prior publisher unproven')) as verify:
+                with self.assertRaisesRegex(ValueError,'unproven'):module.original_attempt(transport,123,'a'*40,2)
+                verify.assert_called_once()
+    def test_proven_pre_freeze_failure_can_prepare_current_attempt(self):
+        transport=mock.Mock();transport.get.return_value={'artifacts':[]}
+        with mock.patch.object(module.retry,'verify_unfrozen_retry',return_value=[{'attempt':1}]) as verify:
+            self.assertEqual(module.original_attempt(transport,123,'a'*40,2),2)
+            self.assertEqual(verify.call_args.kwargs['freeze_step'],'Freeze independent release candidates')
+    def test_incomplete_listing_cannot_assert_no_prior_archives(self):
+        transport=mock.Mock();transport.get.return_value={'artifacts':[{'name':'other-'+str(i)} for i in range(100)]}
+        with self.assertRaisesRegex(ValueError,'verification bound'):module.original_attempt(transport,123,'a'*40,1)
+        self.assertEqual(transport.get.call_count,3)
+    def test_expired_candidates_are_never_rebuilt(self):
+        transport=mock.Mock();transport.get.return_value={'artifacts':[{'name':'farm-release-candidates-'+'a'*40+'-1','expired':True,'workflow_run':{'id':123}}]}
+        with self.assertRaisesRegex(ValueError,'do not rebuild recovery'):module.original_attempt(transport,123,'a'*40,2)
+
+
 if __name__=='__main__':unittest.main(verbosity=2)

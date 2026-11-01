@@ -73,7 +73,7 @@ class Contracts(unittest.TestCase):
     def test_missing_deleted_or_omitted_original_artifact_blocks_retry(self):
         root,identity,_=self.fixture()
         with mock.patch.object(m,'api',return_value={'artifacts':[]}),mock.patch.dict(m.os.environ,{'GITHUB_RUN_ATTEMPT':'2'}):
-            with self.assertRaisesRegex(ValueError,'missing on retry'):m.restore(root/'missing',identity)
+            with self.assertRaisesRegex(ValueError,'identity is unproven'):m.restore(root/'missing',identity)
             self.assertFalse((root/'missing').exists())
         with mock.patch.object(m,'api',return_value={'artifacts':[]}),mock.patch.dict(m.os.environ,{'GITHUB_RUN_ATTEMPT':'1'}):
             self.assertFalse(m.restore(root/'first',identity))
@@ -142,4 +142,23 @@ class Contracts(unittest.TestCase):
         with mock.patch.object(m,'identity',return_value={}),mock.patch.object(m.Path,'read_text',return_value=json.dumps(event)),mock.patch.dict(m.os.environ,{'GITHUB_EVENT_PATH':'fixture','CARGO_REGISTRY_TOKEN':''}),mock.patch.object(m.sys,'argv',['script','publish']),mock.patch.object(m,'restore') as restore:
             with self.assertRaisesRegex(ValueError,'secret required'):m.main()
             restore.assert_not_called()
+    def test_real_retry_helper_allows_only_proven_pre_freeze_source_failure(self):
+        root,identity,_=self.fixture();base='repos/'+identity['repository'];attempt=base+'/actions/runs/2/attempts/1'
+        run={'id':2,'run_attempt':1,'path':m.WORKFLOW,'head_sha':identity['sourceSHA'],'status':'completed','event':'pull_request','repository':{'id':1},'head_repository':{'id':1}}
+        jobs=[{'run_id':2,'name':'Prepare Cargo source archives','status':'completed','conclusion':'failure','steps':[{'name':'Freeze verified Cargo source archives','status':'completed','conclusion':'skipped'}]},
+              {'run_id':2,'name':'Publish frozen Cargo source archives','status':'completed','conclusion':'skipped','steps':[]}]
+        def api(route):
+            if route==base:return {'id':1}
+            if route==base+'/actions/runs/2/artifacts?per_page=100':return {'artifacts':[]}
+            if route==attempt:return run
+            if route==attempt+'/jobs?per_page=100':return {'total_count':2,'jobs':jobs}
+            raise AssertionError(route)
+        with mock.patch.object(m,'api',side_effect=api),mock.patch.dict(m.os.environ,{'GITHUB_RUN_ATTEMPT':'2'}):
+            self.assertFalse(m.restore(root/'missing',identity));self.assertFalse((root/'missing').exists())
+            jobs[1]['conclusion']='failure'
+            with self.assertRaisesRegex(ValueError,'publisher may have executed'):m.restore(root/'missing',identity)
+    def test_cargo_artifact_inventory_must_be_complete(self):
+        root,identity,_=self.fixture()
+        with mock.patch.object(m,'api',return_value={'artifacts':[{'name':'other'}]*100}),mock.patch.dict(m.os.environ,{'GITHUB_RUN_ATTEMPT':'1'}):
+            with self.assertRaisesRegex(ValueError,'verification bound'):m.restore(root/'missing',identity)
 if __name__=='__main__':unittest.main(verbosity=2)

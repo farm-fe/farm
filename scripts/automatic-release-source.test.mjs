@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import YAML from 'yaml';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -115,4 +116,13 @@ test('normal verified version merge also tolerates an unrelated intervening main
 test('real Git extra merge edits cannot borrow the reviewed head proof',t=>{
  const f=fixture(t,{advance:true});f.write('unreviewed.txt','unexpected');const source=f.commit('unreviewed merge edit');
  assert.throws(()=>verifyPreparedMigration({...f,source,pr:{...f.pr,merge_commit_sha:source},repository}),/does not preserve/);
+});
+
+test('publication queues retain pending runs without cancelling active transactions',()=>{
+ for(const name of ['incremental-release.yaml','cargo-source-release.yaml']) {
+  const workflow=YAML.parse(fs.readFileSync(new URL('../.github/workflows/'+name,import.meta.url),'utf8'));
+  assert.equal(workflow.concurrency.queue,'max',name);
+  assert.equal(workflow.concurrency['cancel-in-progress'],false,name);
+  assert.ok(workflow.concurrency.group.startsWith('farm-'));
+ }
 });

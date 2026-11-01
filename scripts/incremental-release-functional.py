@@ -18,6 +18,8 @@ import zipfile
 spec = importlib.util.spec_from_file_location("functional_release_entry", Path(__file__).with_name("incremental-release-entry.py"))
 entry = importlib.util.module_from_spec(spec); spec.loader.exec_module(entry)
 check = entry.check
+retry_spec = importlib.util.spec_from_file_location('release_retry_safety', Path(__file__).with_name('release-retry-safety.py'))
+retry = importlib.util.module_from_spec(retry_spec); retry_spec.loader.exec_module(retry)
 PLATFORMS = ["ubuntu-24.04", "macos-latest", "windows-latest"]
 FUNCTIONAL = ["Release source contracts", "Check declared native inputs (not ABI execution)", "Type Check & Changesets",
               *[name + " (" + platform + ")" for name in ["Examples Test", "Typescript Test", "Commerce Performance"] for platform in PLATFORMS],
@@ -276,13 +278,21 @@ def discover_main(transport, source, current_run):
 
 
 def original_attempt(transport, run_id, source_sha, current_attempt):
-    prefix = 'farm-release-candidates-' + source_sha + '-'; matches = []
+    check(type(current_attempt) is int and current_attempt > 0, 'Invalid current release attempt')
+    prefix = 'farm-release-candidates-' + source_sha + '-'; matches = []; exhausted = False
     for page in range(1, 4):
         rows = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=100&page=' + str(page))['artifacts']
         matches.extend(row for row in rows if row['name'].startswith(prefix) and row['name'][len(prefix):].isdigit())
         if len(rows) < 100:
+            exhausted = True
             break
+    check(exhausted, 'Frozen release artifact listing exceeds the verification bound')
     if not matches:
+        if current_attempt > 1:
+            proof = retry.verify_unfrozen_retry(transport.get, run_id=run_id, source_sha=source_sha, current_attempt=current_attempt,
+                workflow=entry.WORKFLOW, producer=entry.PRODUCER, freeze_step='Freeze independent release candidates',
+                publisher='Publish exact independent release archives under durable lock', events=['push','workflow_dispatch'])
+            print(json.dumps({'unfrozenRetryProof': proof}), flush=True)
         return current_attempt
     check(len(matches) == 1, 'Multiple frozen candidates cannot form one release transaction')
     artifact = matches[0]; attempt = int(artifact['name'][len(prefix):])

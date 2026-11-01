@@ -8,6 +8,7 @@ permissions:
 concurrency:
   group: farm-stable-release
   cancel-in-progress: false
+  queue: max
 jobs:
   source:
     name: Prepare Cargo source archives

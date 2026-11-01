@@ -41,6 +41,14 @@ native 复用，以及 release 通过恢复未变化包的历史二进制准备�
   同一事务重跑仍只恢复原冻结字节，冻结丢失不能以重建替代可能已部分上传的包。
 - CI/Unit/Docs/native 的 main 并发组包含 SHA，后一个 main 提交不取消前一个的发布功能证据。
   npm 与 Cargo 各自保留无取消的发布锁；不增加新凭据或扩大到 fork / 任意 PR 发布。
+- 两个发布组显式设置 `queue: max`，避免默认单 pending 被后续普通事件替换。
+  GitHub 当前最多保留 100 个 pending，满队后新 run 会取消；按开始等待时间 FIFO，不能
+  当作提交顺序保证。保留 registry latest 反降级保护及固定 SHA，不自动补写被取消的发布。
+- 缺少冻结候选时，首次 attempt 可准备；重试必须读取全部历史 attempt（最多 19 个）、完整
+  job 列表及精确 source/repo/workflow。只有 publisher 明确 skipped 且无 steps、producer
+  未成功且冻结步骤明确 skipped，才允许从尚未冻结的失败恢复。已冻结后丢档、可能上传、
+  取消/未知 publisher、缺字段、截断列表均拒绝；验证依据输出到当前源 job 日志。
+  这不是重建替代已部分发布的字节，两个边界必须分开。
 
 首次上线仍须配置现有 npm/crates token 的对应包发布权限，以及 GitHub workflow 的既有 artifact
 读取和 tag/Release 写权限。无凭据必须失败，不能以本地模拟作为真实 registry 发布成功证据。

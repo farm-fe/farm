@@ -167,6 +167,7 @@ jobs:
           python scripts/incremental-release-publish.test.py
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
+          python -B scripts/release-retry-safety.test.py
           node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-chain-boundaries.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
           python scripts/ci-execution-ledger.test.py
