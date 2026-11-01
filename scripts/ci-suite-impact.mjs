@@ -15,39 +15,7 @@ const matches = (file, rule) => rule.endsWith('/') ? file.startsWith(rule) : fil
 export function suiteImpact({ before, after, changes, inventory }) {
   assert.ok(before && after && Array.isArray(changes));
   assert.equal(inventory.fileEnumerationComplete, true);
-  const graph = new Map(), issues = [];
-  for (const files of [before, after]) {
-    const manifests = Object.entries(files).filter(([file]) => /^(packages|js-plugins|rust-plugins|examples)\/[^/]+\/package\.json$/.test(file));
-    const names = new Map();
-    for (const [file, text] of manifests) {
-      const pkg = JSON.parse(text), directory = file.slice(0, -13);
-      if (!pkg.name) { issues.push('missing-owner'); continue; }
-      names.set(pkg.name, [...(names.get(pkg.name) ?? []), directory]);
-      if (!graph.has(directory)) graph.set(directory, new Set());
-    }
-    for (const [file, text] of manifests) {
-      const pkg = JSON.parse(text), directory = file.slice(0, -13);
-      if (!graph.has(directory)) continue;
-      for (const [name, version] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies, ...pkg.optionalDependencies, ...pkg.peerDependencies })) {
-        if (typeof version !== 'string') { issues.push('invalid-dependency'); continue; }
-        let targets = names.get(name) ?? [];
-        const localPath = /^(?:file:|link:)(.*)$/.exec(version) ?? /^workspace:(\..*)$/.exec(version);
-        if (localPath) {
-          const target = path.posix.normalize(path.posix.join(directory, localPath[1]));
-          targets = graph.has(target) ? [target] : [];
-          if (!targets.length) issues.push('unresolved-local-dependency');
-        } else if (version.startsWith('workspace:') || version.startsWith('npm:')) {
-          const spec = version.slice(version.indexOf(':') + 1);
-          const alias = /^((?:@[^/]+\/)?[^@]+)@([^@]+)$/.exec(spec);
-          if (alias) targets = names.get(alias[1]) ?? [];
-          else if (!/^(\*|\^|~|[~^=]?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?)$/.test(spec)) targets = [];
-          if (targets.length !== 1) issues.push(version.startsWith('npm:') ? 'unresolved-package-alias' : 'unresolved-local-dependency');
-        }
-        if (targets.length > 1) issues.push('ambiguous-owner');
-        for (const target of targets) graph.get(directory).add(target);
-      }
-    }
-  }
+  const { graph, issues } = npmDirectoryGraph([before, after]);
   for (const rule of directoryImpactRules.dependencies) {
     for (const [consumer, dependencies] of graph) {
       if (matches(consumer + '/', rule.consumer.endsWith('/') ? rule.consumer : rule.consumer + '/')) {
@@ -118,4 +86,41 @@ export function suiteImpact({ before, after, changes, inventory }) {
     rulesVersion: directoryImpactRules.version, explanations,
     full, reasons: sorted(issues), changed, affectedOwners: sorted(affected), sets, executionAuthorized: false };
   return { ...result, decisionHash: hash(result) };
+}
+
+export function npmDirectoryGraph(snapshots) {
+  const graph = new Map(), issues = [];
+  for (const files of snapshots) {
+    const manifests = Object.entries(files).filter(([file]) => /^(packages|js-plugins|rust-plugins|examples)\/[^/]+\/package\.json$/.test(file));
+    const names = new Map();
+    for (const [file, text] of manifests) {
+      const pkg = JSON.parse(text), directory = file.slice(0, -13);
+      if (!pkg.name) { issues.push('missing-owner'); continue; }
+      names.set(pkg.name, [...(names.get(pkg.name) ?? []), directory]);
+      if (!graph.has(directory)) graph.set(directory, new Set());
+    }
+    for (const [file, text] of manifests) {
+      const pkg = JSON.parse(text), directory = file.slice(0, -13);
+      if (!graph.has(directory)) continue;
+      for (const [name, version] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies, ...pkg.optionalDependencies, ...pkg.peerDependencies })) {
+        if (typeof version !== 'string') { issues.push('invalid-dependency'); continue; }
+        let targets = names.get(name) ?? [];
+        const localPath = /^(?:file:|link:)(.*)$/.exec(version) ?? /^workspace:(\..*)$/.exec(version);
+        if (localPath) {
+          const target = path.posix.normalize(path.posix.join(directory, localPath[1]));
+          targets = graph.has(target) ? [target] : [];
+          if (!targets.length) issues.push('unresolved-local-dependency');
+        } else if (version.startsWith('workspace:') || version.startsWith('npm:')) {
+          const spec = version.slice(version.indexOf(':') + 1);
+          const alias = /^((?:@[^/]+\/)?[^@]+)@([^@]+)$/.exec(spec);
+          if (alias) targets = names.get(alias[1]) ?? [];
+          else if (!/^(\*|\^|~|[~^=]?\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?)$/.test(spec)) targets = [];
+          if (targets.length !== 1) issues.push(version.startsWith('npm:') ? 'unresolved-package-alias' : 'unresolved-local-dependency');
+        }
+        if (targets.length > 1) issues.push('ambiguous-owner');
+        for (const target of targets) graph.get(directory).add(target);
+      }
+    }
+  }
+  return { graph, issues };
 }

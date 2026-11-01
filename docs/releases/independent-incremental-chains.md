@@ -161,7 +161,7 @@ Old-run local diagnostics cannot stand in for new-HEAD GitHub checks or baseline
 
 ### Directory selection contract
 
-CI suite selection uses `scripts/ci-directory-impact-rules.mjs`: global paths
+CI and release share `scripts/directory-impact-rules.json`: global paths
 select all suites; other paths map to npm owner directories and propagate through
 production, development, optional and peer dependencies, plus the declared
 cross-directory validation edges. Both baseline and current manifests participate
@@ -173,10 +173,22 @@ This affects actual TS, Examples build and browser selection only after the
 independent same-chain baseline check; it does not authorize acceptance from a
 plan alone. Create-farm still validates all eight templates. Rust Unit, native
 production, Docs quality and performance remain full. Shared compiler/runtime
-inputs and unowned SSR helpers are explicit global inputs. General JS preparation
-is still the existing bootstrap recipe; selective prerequisite builds are a
-separate remaining step. The release graph already parses Cargo and npm manifests,
-but unifying its directory policy with this suite rule inventory remains pending.
+inputs and unowned SSR helpers are explicit global inputs. JS preparation follows the selected owners forward through npm dependencies,
+building ordinary private packages and JS plugins after the SDK bootstrap. Empty
+TS selection performs no preparation; empty Examples selection still prepares the
+SDK for create-farm. Unknown dependency mappings retain the full plugin recipe.
+The release graph parses Cargo workspace/path/build/dev edges and npm local aliases;
+shared explicit directory edges affect validation rather than publication versions.
+Global recipe changes rebuild all without automatically bumping or publishing all.
 New cross-directory reads require a declared dependency edge or a global rule;
 there is no AST analysis. PostCSS's standalone cache integration test is not part
 of the ordinary TS suite and is not claimed as executed by this selection.
+
+The additional `suiteGlobal` paths expand CI suites for shared native/runtime
+changes. Rust Unit receipts currently certify a whole workspace test command,
+native receipts certify complete owner/ABI artifacts, Docs quality certifies the
+whole documentation contract, and performance reports certify the fixed benchmark.
+There are no independently trusted per-crate/per-document/per-benchmark success
+baselines, so these gates remain full rather than inventing reusable acceptance.
+Cargo production edges do drive release owner build closure; Cargo dev-only edges
+drive validation closure and do not force dependent publication versions.

@@ -15,6 +15,8 @@ spec.loader.exec_module(impact)
 
 POLICY = "farm-independent-chains-v1"
 CHAINS = {"ci": "ci", "release": "release"}
+DIRECTORY_RULES = json.loads(Path(__file__).with_name("directory-impact-rules.json").read_text())
+
 SDK_ROOTS = ["farmfe_core", "farmfe_compiler", "farmfe_toolkit", "farmfe_ecosystem_glob"]
 
 
@@ -87,12 +89,17 @@ def repository_graph(files):
                         dependency_name = dep.get("package", alias)
                         if node["kind"] == "npm" and isinstance(declaration, str) and declaration.startswith("npm:"):
                             dependency_name = declaration[4:].rsplit("@", 1)[0]
-                            issues.append("alias-dependency-requires-review")
+                            if not names.get("npm:" + dependency_name):
+                                issues.append("alias-dependency-requires-review")
                         if node["kind"] == "npm" and isinstance(declaration, str) and declaration.startswith("workspace:"):
                             local = declaration[len("workspace:"):]
                             if local.startswith((".", "/")):
                                 target = "npm:" + posixpath.normpath(posixpath.join(origin, local))
                                 candidates = [target] if target in nodes else []
+                            elif re.fullmatch(r"(?:@[^/]+/)?[^@]+@[^@]+", local):
+                                candidates = names.get("npm:" + local.rsplit("@", 1)[0], [])
+                                if not candidates:
+                                    issues.append("workspace-alias-requires-review")
                             elif not re.fullmatch(r"[v0-9*^~<>=|. +\-]+", local):
                                 candidates = []
                                 issues.append("workspace-alias-requires-review")
@@ -128,6 +135,16 @@ def repository_graph(files):
             if node['data'].get('scripts',{}).get('build') and shared != required_shared:
                 issues.append('required-shared-test-root-missing')
             node["testDeps"].update(shared)
+    for rule in DIRECTORY_RULES["dependencies"]:
+        consumer = "npm:" + rule["consumer"]
+        if consumer not in nodes:
+            continue
+        for directory in rule["dependencies"]:
+            dependency = "npm:" + directory
+            if dependency not in nodes:
+                issues.append("declared-directory-dependency-missing")
+            else:
+                nodes[consumer]["testDeps"].add(dependency)
     return nodes, sorted(set(issues))
 
 
@@ -325,13 +342,15 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
                 reasons.append("validated-family-metadata-changed")
                 validation_required.add("family-metadata-contracts")
                 continue
-            if file in impact.GLOBAL or file.startswith((".github/", ".cargo/", "patches/", "scripts/")):
+            directory_global = any(file.startswith(rule) if rule.endswith("/") else file == rule
+                                   for rule in DIRECTORY_RULES["global"])
+            if directory_global or file in impact.GLOBAL:
                 full = True; reasons.append("global-or-execution-policy-changed")
             if file in impact.GLOBAL or file.startswith((".cargo/", "patches/")):
                 product_full = True
             names = set().union(impact.owners(old, file), impact.owners(head, file))
             roots.update(names)
-            if not names and file not in impact.GLOBAL:
+            if not names and file not in impact.GLOBAL and not directory_global:
                 full = True; reasons.append("unmapped-source-changed")
                 if not file.startswith((".github/", "scripts/")):
                     product_full = True

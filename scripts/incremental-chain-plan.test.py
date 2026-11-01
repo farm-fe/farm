@@ -278,5 +278,37 @@ class ChainContracts(unittest.TestCase):
         self.assertEqual(plan["validationRequired"], ["family-metadata-contracts"])
 
 
+class SharedDirectoryRulesTests(unittest.TestCase):
+    def test_global_recipe_rebuild_does_not_invent_version_or_publication(self):
+        files, family, source = fixture()
+        files["configs/build.json"] = b'{}'
+        ledger, anchor = baseline(files, family); previous = dict(files)
+        files["configs/build.json"] = b'{"changed": true}'
+        plan = calculate("release", source, files, family, [], ledger, previous, anchor)
+        self.assertTrue(plan["fullBuild"])
+        self.assertEqual(plan["versionRequired"], [])
+        self.assertEqual(plan["publish"], [])
+
+    def test_cargo_path_alias_and_dev_edges_are_distinct(self):
+        files, _, _ = fixture()
+        files["crates/compiler/Cargo.toml"] += b'\n[dependencies]\naliased={package="farmfe_core",path="../core"}\n'
+        files["crates/toolkit/Cargo.toml"] += b'\n[dev-dependencies]\ncompiler={package="farmfe_compiler",path="../compiler"}\n'
+        graph, issues = chain.repository_graph(files)
+        self.assertFalse(issues)
+        self.assertIn("cargo:crates/core", graph["cargo:crates/compiler"]["productDeps"])
+        self.assertIn("cargo:crates/compiler", graph["cargo:crates/toolkit"]["testDeps"])
+        self.assertNotIn("cargo:crates/compiler", graph["cargo:crates/toolkit"]["productDeps"])
+        affected = chain.impact.reverse_closure(graph, {"cargo:crates/core"}, "testDeps")
+        self.assertIn("cargo:crates/toolkit", affected)
+
+    def test_named_npm_aliases_resolve_directory_without_false_global(self):
+        for value in ["workspace:a@*", "npm:a@1.0.0", "file:../a", "link:../a"]:
+            files, _, _ = fixture()
+            files["packages/b/package.json"] = json.dumps({"name":"b", "dependencies":{"renamed":value}}).encode()
+            graph, issues = chain.repository_graph(files)
+            self.assertFalse(issues, value)
+            self.assertIn("npm:packages/a", graph["npm:packages/b"]["productDeps"])
+
+
 if __name__ == "__main__":
     unittest.main()

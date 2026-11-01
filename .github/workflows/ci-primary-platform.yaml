@@ -450,27 +450,17 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
-      - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
       - uses: actions/download-artifact@v4.1.3
         if: inputs.native_mode != 'reuse'
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
-      - name: Build Runtime
-        run: |
-          pnpm --filter "@farmfe/runtime" build
-          pnpm --filter "@farmfe/runtime-plugin-hmr" build
-          pnpm --filter "@farmfe/runtime-plugin-import-meta" build
-      - name: Build Core CJS
-        run: cd packages/core && pnpm run build:cjs
-      - name: Build Plugin Tools test prerequisite
-        run: pnpm --filter @farmfe/plugin-tools run build
-      - name: Build Babel plugin test prerequisites
-        run: |
-          pnpm --filter @farmfe/js-plugin-dts run build
-          pnpm --filter @farmfe/js-plugin-babel run build
+      - name: Prepare selected TypeScript suite dependencies
+        env:
+          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+          FARM_SUITE_ABI: ${{ matrix.settings.abi }}
+        run: node scripts/ci-suite-preparation.mjs
       - name: Test - ${{ matrix.settings.abi }}
         env:
           FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}

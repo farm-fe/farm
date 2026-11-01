@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "global": [
+    ".github/",
+    ".cargo/",
+    "configs/",
+    "scripts/",
+    "patches/",
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain",
+    "rust-toolchain.toml",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "tsconfig.json",
+    "vitest.config.ts",
+    "biome.json",
+    ".npmrc",
+    "tsconfig.base.json",
+    "e2e/",
+    "examples/ssr-utils/"
+  ],
+  "suiteGlobal": [
+    "crates/",
+    "rust-plugins/",
+    "packages/core/",
+    "packages/cli/",
+    "packages/runtime/",
+    "packages/runtime-plugin-hmr/",
+    "packages/runtime-plugin-import-meta/",
+    "packages/plugin-tools/",
+    "packages/utils/"
+  ],
+  "dependencies": [
+    {
+      "consumer": "js-plugins/postcss",
+      "dependencies": [
+        "examples/vite-adapter-vue",
+        "js-plugins/tailwindcss"
+      ]
+    },
+    {
+      "consumer": "packages/create-farm-plugin",
+      "dependencies": [
+        "js-plugins/dts"
+      ]
+    },
+    {
+      "consumer": "packages/docs",
+      "dependencies": [
+        "packages/docs-theme-default"
+      ]
+    },
+    {
+      "consumer": "packages/docs-theme-default",
+      "dependencies": [
+        "packages/docs"
+      ]
+    }
+  ]
+}

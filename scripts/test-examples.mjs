@@ -1,3 +1,4 @@
+import { prepareSuite } from './ci-suite-preparation.mjs';
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { actualSuiteInventory, executionPlan, saveSuiteReceipt } from './ci-suite-execution.mjs';
@@ -94,6 +95,10 @@ if (example) {
   }
 }
 
+if (suitePlan) {
+  if (skipBuildJsPlugins) throw new Error('Bound suite preparation cannot be overridden');
+  prepareSuite(suiteInventory, suitePlan);
+} else {
 console.log("Building CLI...");
 await buildCli();
 console.log("Building runtime...");
@@ -105,6 +110,8 @@ if (skipBuildJsPlugins) {
 } else {
   console.log("Building JS plugins...");
   await buildJsPlugins();
+}
+
 }
 
 if (startFrom) {
