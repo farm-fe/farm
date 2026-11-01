@@ -213,3 +213,21 @@ test('formal compatibility binds Apple deployment and C compiler flags',()=>{
  assert.deepEqual(capture({CFLAGS_aarch64_apple_darwin:'-O2'}).unboundBuildVariables,['CFLAGS_aarch64_apple_darwin']);
  assert.equal(base.errors.length,0);
 });
+
+
+test('Apple formal release strip setting is identical for PR and main and fingerprinted', () => {
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'farm-formal-strip-'));
+ try {
+  const bin=path.join(root,'bin');fs.mkdirSync(bin);fs.writeFileSync(path.join(bin,'node'),'#!/bin/sh\nexit 0\n',{mode:0o755});
+  const source=fs.readFileSync(new URL('./ci-build-rust-artifacts.sh',import.meta.url),'utf8');
+  const setup=source.slice(0,source.indexOf('if [ "${FARM_NATIVE_PROOF_MODE'));
+  for(const abi of ['darwin-arm64','darwin-x64','linux-x64-gnu'])for(const profile of ['ci','release']){
+   const env={...process.env,PATH:bin+path.delimiter+process.env.PATH,FARM_BUILD_ABI:abi,FARM_BUILD_PROFILE:profile,FARM_RELEASE_NATIVE_OWNERS:''};delete env.CARGO_PROFILE_RELEASE_STRIP;
+   const result=spawnSync('sh',['-c',setup+'\nprintf "%s" "${CARGO_PROFILE_RELEASE_STRIP-unset}"'],{cwd:root,env,encoding:'utf8'});
+   assert.equal(result.status,0,result.stderr);assert.equal(result.stdout,abi.startsWith('darwin')?'none':'unset');
+  }
+  const run=()=>({status:0,stdout:'measured'});
+  const before=captureRuntime({env:{},run}),after=captureRuntime({env:{CARGO_PROFILE_RELEASE_STRIP:'none'},run});
+  assert.notEqual(before.formalFlagsHash,after.formalFlagsHash);assert.notEqual(before.flagsHash,after.flagsHash);assert.deepEqual(after.unboundBuildVariables,[]);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});

@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# cspell:words LINKEDIT
 set -eu
 
 node ./scripts/check-native-build-node.mjs
@@ -46,6 +47,11 @@ if [ "$ZIG" = "true" ]; then
 fi
 
 case "$ABI" in
+  darwin-arm64|darwin-x64)
+    # Apple rejects the icons dylib when its stripped LINKEDIT pool is unaligned.
+    # Both PR and main formal release products use the same non-stripping recipe.
+    export CARGO_PROFILE_RELEASE_STRIP=none
+    ;;
   linux-x64-gnu)
     unset CC_x86_64_unknown_linux_gnu || true
     unset CC || true
