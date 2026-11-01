@@ -51,7 +51,7 @@
         "version": "2.0.0",
         "manifestPath": "packages/plugin-tools/package.json",
         "manifestSha256": "a72d347930346782b0c9f34171123aa8aca2122e4df74e1841bddadd05c6e739",
-        "sourceSha256": "65954906269b47207698d9f9f7322bec8ab96bffaaa1bc8634e9ce274b03cace"
+        "sourceSha256": "6d840093b9c12e568198acfb825b095984719f87031901be592d42cd8e71fb11"
       },
       {
         "name": "@farmfe/runtime",

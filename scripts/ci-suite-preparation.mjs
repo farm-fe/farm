@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { resolvePnpmCli } from './v2-pnpm-cli.mjs';
 import { npmDirectoryGraph } from './ci-suite-impact.mjs';
 import { readGitSuiteFiles } from './ci-suite-inventory.mjs';
 import { actualSuiteInventory, executionPlan } from './ci-suite-execution.mjs';
@@ -56,7 +57,7 @@ export function preparationCommands(files, inventory, plan) {
   return [...bootstrap, ...ordered].map(directory => ({directory,
     args: ['run', directory === 'packages/core' ? 'build:cjs' : 'build']}));
 }
-export function executePreparation(commands, files, root, execute = (command, args, options) => execFileSync(command, args, options)) {
+export function executePreparation(commands, files, root, execute = (_command, args, options) => execFileSync(process.execPath, [resolvePnpmCli(), ...args], options)) {
   for (const row of commands) {
     const manifest = row.directory + '/package.json';
     assert.equal(fs.readFileSync(path.join(root, manifest), 'utf8').replaceAll('\r\n', '\n'), files[manifest].replaceAll('\r\n', '\n'), 'Preparation manifest changed');

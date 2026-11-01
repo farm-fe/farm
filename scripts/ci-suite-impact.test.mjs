@@ -117,3 +117,14 @@ test('missing declared directory dependencies cannot silently reduce validation'
   assert.equal(result.full, true);
   assert.ok(result.reasons.includes('declared-directory-dependency-missing'));
 });
+
+test('validation preserves dependency edges across overlapping manifest sections', () => {
+  const snapshot = {...files,
+    'packages/c/package.json': JSON.stringify({name: 'c'}),
+    'js-plugins/b/package.json': JSON.stringify({name: 'b', dependencies: {alias: 'workspace:a@*'}, devDependencies: {alias: 'workspace:c@*'}})};
+  for (const owner of ['a', 'c']) {
+    const result = decide([{path: `packages/${owner}/src/index.ts`}], snapshot, snapshot);
+    assert.equal(result.full, false);
+    assert.ok(result.affectedOwners.includes('js-plugins/b'));
+  }
+});

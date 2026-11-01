@@ -324,6 +324,7 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
         issues += old_issues
     graph = union_graph(old, head)
     roots = set()
+    impact_trace = {}
     # Do not let an incomplete caller diff hide a changed baseline input. Renames
     # and deletions are represented by both old and new paths in this union.
     baseline_records = snapshot_records(baseline_files, baseline_modes) if baseline is not None else {}
@@ -350,6 +351,10 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
                 product_full = True
             names = set().union(impact.owners(old, file), impact.owners(head, file))
             roots.update(names)
+            impact_trace[file] = {"path": file, "owners": sorted(names),
+                                  "globalRules": [rule for rule in DIRECTORY_RULES["global"]
+                                                  if (file.startswith(rule) if rule.endswith("/") else file == rule)],
+                                  "unmapped": not names and not directory_global and file not in impact.GLOBAL}
             if not names and file not in impact.GLOBAL and not directory_global:
                 full = True; reasons.append("unmapped-source-changed")
                 if not file.startswith((".github/", "scripts/")):
@@ -392,6 +397,8 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
               "baselineSHA": baseline.get("sourceSHA") if baseline else None,
               "sourceSnapshotHash": digest(source_records),
               "fullBuild": full, "reasons": sorted(set(reasons)), "abiChanged": abi_changed,
+              "directoryRulesVersion": DIRECTORY_RULES["version"],
+              "impactTrace": [impact_trace[key] for key in sorted(impact_trace)], "directNodes": sorted(roots),
               "build": build, "versionRequired": bump if chain == "release" else [],
               "fullFamily": [records[key] for key in sorted(records)],
               "publish": publish if chain == "release" else [], "unchanged": unchanged,

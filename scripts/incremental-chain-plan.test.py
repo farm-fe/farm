@@ -288,6 +288,7 @@ class SharedDirectoryRulesTests(unittest.TestCase):
         self.assertTrue(plan["fullBuild"])
         self.assertEqual(plan["versionRequired"], [])
         self.assertEqual(plan["publish"], [])
+        self.assertEqual(plan["impactTrace"], [{"path": "configs/build.json", "owners": [], "globalRules": ["configs/"], "unmapped": False}])
 
     def test_cargo_path_alias_and_dev_edges_are_distinct(self):
         files, _, _ = fixture()

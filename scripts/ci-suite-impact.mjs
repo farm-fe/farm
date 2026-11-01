@@ -102,7 +102,7 @@ export function npmDirectoryGraph(snapshots) {
     for (const [file, text] of manifests) {
       const pkg = JSON.parse(text), directory = file.slice(0, -13);
       if (!graph.has(directory)) continue;
-      for (const [name, version] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies, ...pkg.optionalDependencies, ...pkg.peerDependencies })) {
+      for (const [name, version] of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'].flatMap(field => Object.entries(pkg[field] ?? {}))) {
         if (typeof version !== 'string') { issues.push('invalid-dependency'); continue; }
         let targets = names.get(name) ?? [];
         const localPath = /^(?:file:|link:)(.*)$/.exec(version) ?? /^workspace:(\..*)$/.exec(version);
