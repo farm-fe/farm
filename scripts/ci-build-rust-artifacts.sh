@@ -49,6 +49,14 @@ if [ "$ZIG" = "true" ]; then
 fi
 
 case "$ABI" in
+  darwin-x64|darwin-arm64)
+    if [ "$PROFILE" = "ci" ]; then
+      # Pinned LLVM's strip-debuginfo can misalign Mach-O string tables on
+      # macOS 27 (rust-lang/rust#157750). CI already disables debug info.
+      # Keep release publishing's independent optimization recipe unchanged.
+      export CARGO_PROFILE_CI_STRIP=none
+    fi
+    ;;
   linux-x64-gnu)
     unset CC_x86_64_unknown_linux_gnu || true
     unset CC || true

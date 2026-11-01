@@ -177,3 +177,27 @@ test('native shell stops failed toolchain setup before capture or compilation', 
     }
   } finally {fs.rmSync(root, {recursive: true, force: true});}
 });
+
+test('CI strip override is measured in the recipe fingerprint', () => {
+  const run = () => ({status: 0, stdout: 'tool'});
+  const before = captureRuntime({env: {FARM_BUILD_ABI: 'darwin-arm64', FARM_BUILD_PROFILE: 'ci'}, run});
+  const after = captureRuntime({env: {FARM_BUILD_ABI: 'darwin-arm64', FARM_BUILD_PROFILE: 'ci', CARGO_PROFILE_CI_STRIP: 'none'}, run});
+  assert.notEqual(before.flagsHash, after.flagsHash);
+});
+
+test('native recipe disables debug stripping only for Apple CI builds', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-native-strip-'));
+  try {
+    const source = fs.readFileSync(new URL('./ci-build-rust-artifacts.sh', import.meta.url), 'utf8');
+    const bin = path.join(root, 'bin'); fs.mkdirSync(bin);
+    fs.writeFileSync(path.join(bin, 'node'), '#!/bin/sh\nexit 0\n', {mode: 0o755});
+    // Execute the actual setup section; stop before tool probes or build commands.
+    const setup = source.slice(0, source.indexOf('if [ "${FARM_NATIVE_PROOF_MODE'));
+    for (const [abi, profile, expected] of [['darwin-arm64', 'ci', 'none'], ['darwin-x64', 'ci', 'none'], ['darwin-arm64', 'release', 'unset'], ['linux-x64-gnu', 'ci', 'unset']]) {
+      const env = {...process.env, PATH: bin + path.delimiter + process.env.PATH, FARM_BUILD_ABI: abi, FARM_BUILD_PROFILE: profile, FARM_RELEASE_NATIVE_OWNERS: ''};
+      delete env.CARGO_PROFILE_CI_STRIP;
+      const result = spawnSync('sh', ['-c', setup + '\nprintf "%s" "${CARGO_PROFILE_CI_STRIP-unset}"'], {cwd: root, env, encoding: 'utf8'});
+      assert.equal(result.status, 0, result.stderr); assert.equal(result.stdout, expected);
+    }
+  } finally {fs.rmSync(root, {recursive: true, force: true});}
+});

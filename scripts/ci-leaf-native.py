@@ -79,7 +79,7 @@ def products(source):
 def requested_flags():
     plugins='react replace-dirname sass vue vue-jsx auto-import compress dsv dts icons image mdx modular-import react-components strip svgr url virtual wasm worker yaml tailwindcss ssr-css syntax-highlight docs docs-snapshot docs-seo docs-snippets'
     values={'RUSTFLAGS':None,'CARGO_ENCODED_RUSTFLAGS':None,'CARGO_INCREMENTAL':'0','CARGO_BUILD_JOBS':None,
-            'CARGO_PROFILE_RELEASE_LTO':None,'CARGO_PROFILE_RELEASE_CODEGEN_UNITS':None,
+            'CARGO_PROFILE_RELEASE_LTO':None,'CARGO_PROFILE_RELEASE_CODEGEN_UNITS':None,'CARGO_PROFILE_CI_STRIP':None,
             'FARM_BUILD_PROFILE':'ci','FARM_BUILD_ABI':ABI,'FARM_BUILD_TARGET':'x86_64-unknown-linux-gnu','FARM_BUILD_ZIG':'false',
             'FARM_CAPTURE_CORE_SCRIPT':'build:rs:ci','FARM_CAPTURE_CORE_ARGS':'--target x86_64-unknown-linux-gnu  ',
             'FARM_CAPTURE_PLUGIN_ARGS':'--target x86_64-unknown-linux-gnu  --abi linux-x64-gnu --profile ci',

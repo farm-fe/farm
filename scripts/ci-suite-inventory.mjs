@@ -17,7 +17,7 @@ export const suitePolicy = Object.freeze({
   }),
   inputs: Object.freeze({
     'vitest.config.ts': 'ee2ef1a2efbdefbe54e83a6196375d843dc975af46fbf19155c6aa3650aea2ff',
-    'scripts/build.mjs': '96cd0434cca092bbe8a7a832a9489dba14f3af552928b88f2e91e8ec250453b5',
+    'scripts/build.mjs': '291b52999f1d53cc9a44f65d679d84b3fabfe961451a8648b37f899dcc01aeda',
     'scripts/test-examples.mjs': 'c6e2df0c6c088205167de0cb80841891bcf90155a5cf1827b86077b5b9235cd3',
     'scripts/test-e2e.mjs': '12bce9ecaaf83ffc14ec7ed324b2303f5ea3f3d921eaebe3468a757b2fb12fd4',
     'scripts/test-e2e-worker.mjs': '46da91417ee525fd8d7ab34bcaec4f6a1e22c32dc7958306df24d6fb7be640d9',

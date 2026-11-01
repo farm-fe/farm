@@ -228,6 +228,12 @@ export const buildExamples = async ({ startFrom, example, execute = execa } = {}
     console.log("Building", examplePath);
 
     if (fs.statSync(examplePath).isDirectory()) {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      // Install may intentionally disable lifecycle scripts. Regenerate declared
+      // example resources before each build, including a selected suite rerun.
+      if (manifest.scripts?.prepare) {
+        await execute("npm", ["run", "prepare"], { cwd: examplePath });
+      }
       await execute("npm", ["run", "build"], {
         cwd: examplePath,
       });
