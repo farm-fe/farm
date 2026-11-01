@@ -28,7 +28,9 @@ test('ordinary main changes use Changesets version PRs without publication crede
   assert.doesNotMatch(stable, /pull_request:|secrets\.|v2-auto-release|contents: write/);
   const independent = fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
   assert.match(independent, /publish:[\s\S]*?type: boolean\n        default: false/);
-  assert.match(independent, /github.ref == 'refs\/heads\/main' && inputs.publish == true/);
+  assert.ok(independent.includes("github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true'"));
+  assert.ok(independent.includes("github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)"));
+  assert.match(independent,/node scripts\/automatic-release-source\.mjs/);
   assert.match(independent, /profile: release/);
   assert.doesNotMatch(independent, /v2-auto-release\.mjs|uses: .*ci\.yaml/);
   assert.doesNotMatch(workflow, /uses: \.\/\.github\/workflows\/rust-build/);

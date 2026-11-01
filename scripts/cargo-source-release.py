@@ -10,6 +10,7 @@ import struct
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -30,12 +31,53 @@ def identity(event,env,git=run):
     pr=event['pull_request'];repo=env['GITHUB_REPOSITORY'];sha=pr['merge_commit_sha']
     check(env['GITHUB_EVENT_NAME']=='pull_request' and event['action']=='closed' and pr['merged'] is True,'Only a merged PR authorizes Cargo source release')
     check(pr['base']['ref']=='main' and pr['base']['repo']['full_name']==repo and pr['head']['repo']['full_name']==repo,'Wrong base or fork Cargo release')
-    check(event['number']==2329 or pr['head']['ref'].startswith('changeset-release/'),'Cargo trigger exceeds original release branches')
+    check(event['number'] in [2329,2330] or pr['head']['ref'].startswith('changeset-release/'),'Cargo trigger exceeds original release branches')
     check(re.fullmatch('[a-f0-9]{40}',sha) and git('git','rev-parse','HEAD')==sha,'Cargo source is not exact merge commit')
     tree=git('git','rev-parse','HEAD^{tree}')
-    check(tree==git('git','rev-parse',pr['head']['sha']+'^{tree}'),'Reviewed head and merge tree differ')
+    head_tree=git('git','rev-parse',pr['head']['sha']+'^{tree}')
+    if tree != head_tree:
+        parent=git('git','rev-parse',sha+'^1')
+        check(tree==git('git','merge-tree','--write-tree',parent,pr['head']['sha']).splitlines()[0],'Reviewed change differs from actual merge tree')
     return {'repository':repo,'repositoryId':int(env['GITHUB_REPOSITORY_ID']),'runId':int(env['GITHUB_RUN_ID']),
             'sourceSHA':sha,'sourceTree':tree,'pr':event['number'],'headSHA':pr['head']['sha'],'eventBaseSHA':pr['base']['sha'],'workflow':WORKFLOW}
+
+def select_prepared_packages(files, plan, retained, lookup):
+    """First prepared family: no base/head version delta and no registry writes.
+
+    Existing versions may only be retained by an explicitly reviewed archive
+    checksum. Every other member is packaged and must pass the normal complete
+    immutable-byte preflight before any upload, including race/retry cases.
+    """
+    import tomllib
+    declared = plan['cargo']
+    check(len({row['name'] for row in declared}) == len(declared), 'Duplicate prepared Cargo member')
+    allowed = {row['name']: row for row in declared}
+    check(len({row['name'] for row in retained}) == len(retained), 'Duplicate retained Cargo member')
+    for row in declared:
+        manifest = tomllib.loads(files[row['manifestPath']].decode('utf-8'))['package']
+        check(manifest['name'] == row['name'] and manifest['version'] == row['version'], 'Prepared Cargo source version differs')
+        check(re.fullmatch(r'\d+\.\d+\.\d+', row['version']), 'Prepared Cargo stable version required')
+        check(manifest.get('publish', True) is not False, 'Private Cargo package in prepared family')
+    kept = set()
+    for row in retained:
+        check(row['name'] in allowed and allowed[row['name']]['version'] == row['version'], 'Retained crate is outside prepared family')
+        check(re.fullmatch('[a-f0-9]{64}', row['sha256']), 'Invalid retained Cargo archive checksum')
+        check(lookup(row) == row['sha256'], 'Retained Cargo archive is missing, yanked or has different bytes')
+        kept.add(row['name'])
+    return [row for row in declared if row['name'] not in kept]
+
+def fetch_retained_sources(retained):
+    # Workspace path dependencies do not fetch their published registry twins.
+    # Seed only the reviewed versions before offline package verification.
+    if not retained:return
+    with tempfile.TemporaryDirectory(prefix='farm-retained-cargo-') as temporary:
+        root=Path(temporary);(root/'src').mkdir();(root/'src/lib.rs').write_text('')
+        lines=['[package]','name="farm-retained-source-validation"','version="0.0.0"','edition="2024"','publish=false','[workspace]','[dependencies]']
+        for row in retained:
+            check(re.fullmatch('[a-zA-Z0-9_-]+',row['name']) and re.fullmatch(r'\d+\.\d+\.\d+',row['version']), 'Invalid retained dependency identity')
+            lines.append(row['name']+'="='+row['version']+'"')
+        manifest=root/'Cargo.toml';manifest.write_text('\n'.join(lines)+'\n')
+        subprocess.run(['cargo','fetch','--manifest-path',str(manifest)],check=True)
 
 def select_packages(before,after):
     chain=load('cargo_source_chain','incremental-chain-plan.py')
@@ -85,6 +127,18 @@ def verify_frozen(directory,expected):
     check(receipt['selectionHash']==digest(encoded(receipt['selection'])),'Cargo selection hash differs')
     check(len(receipt['records'])==len(receipt['selection']),'Cargo inventory incomplete')
     selected={row['name']:row['version'] for row in receipt['selection']};seen=set()
+    retained=receipt.get('retained',[])
+    if receipt.get('preparedFamily') is not None:
+        family=receipt['preparedFamily']
+        check(receipt['preparedFamilyHash']==digest(encoded(family)), 'Prepared Cargo family hash differs')
+        check(len({row['name'] for row in family})==len(family), 'Duplicate prepared Cargo member')
+        check(len({row['name'] for row in retained})==len(retained), 'Duplicate retained Cargo member')
+        inventory={row['name']:row['version'] for row in family}
+        check(not (set(selected)&{row['name'] for row in retained}), 'Retained Cargo version cannot be republished')
+        check(inventory=={**selected,**{row['name']:row['version'] for row in retained}}, 'Prepared Cargo inventory incomplete')
+        check(receipt['retainedHash']==digest(encoded(retained)), 'Retained Cargo receipt hash differs')
+        for row in retained:check(re.fullmatch('[a-f0-9]{64}',row['sha256']), 'Invalid retained archive checksum')
+    else:check(not retained,'Retained Cargo versions require prepared family proof')
     for row in receipt['records']:
         check(row['name'] not in seen and selected.get(row['name'])==row['version'],'Extra or duplicate frozen Cargo package')
         check(set(row['dependencies'])<=seen,'Cargo dependency order differs');seen.add(row['name'])
@@ -130,10 +184,19 @@ def restore(directory,expected):
     return True
 
 def prepare(directory,expected):
-    proof=json.loads(Path('cargo-version-proof.json').read_text());check(proof['mode']=='verified-version-only' and proof['headSHA']==expected['headSHA'] and re.fullmatch('[a-f0-9]{40}',proof['baseSHA']) and re.fullmatch('[a-f0-9]{64}',proof['receiptHash']),'Cargo version provenance is incomplete')
+    proof=json.loads(Path('cargo-version-proof.json').read_text());check(proof['mode'] in ['verified-version-only','verified-prepared-migration'] and proof['headSHA']==expected['headSHA'] and re.fullmatch('[a-f0-9]{40}',proof['baseSHA']) and re.fullmatch('[a-f0-9]{64}',proof['receiptHash']),'Cargo version provenance is incomplete')
     evidence=load('cargo_source_evidence','incremental-chain-evidence.py')
     before=evidence.source_reader(proof['baseSHA']);source=evidence.source_reader(expected['sourceSHA'])
-    selected=select_packages(before['files'],source['files'])
+    retained=[];family=None
+    if proof['mode']=='verified-prepared-migration':
+        check(expected['pr']==2330 and proof['sourceSHA']==expected['sourceSHA'] and proof['sourceTree']==expected['sourceTree'], 'Prepared Cargo proof belongs to another source')
+        policy=json.loads(source['files']['docs/releases/prepared-release-2330.json'])
+        check(digest(json.dumps(policy,separators=(',',':'),ensure_ascii=False).encode())==proof['policyHash'], 'Prepared policy hash differs')
+        check(policy['retainedCrates']==proof['retainedCrates'], 'Retained Cargo proof differs from reviewed policy')
+        plan=json.loads(source['files'][policy['candidate']]);retained=policy['retainedCrates'];family=plan['cargo']
+        selected=select_prepared_packages(source['files'],plan,retained,Registry().lookup)
+        fetch_retained_sources(retained)
+    else:selected=select_packages(before['files'],source['files'])
     check(run('git','diff','--name-only','HEAD')=='','Cargo preparation requires a clean tracked source')
     directory.mkdir();(directory/'files').mkdir()
     metadata=json.loads(run('cargo','metadata','--locked','--offline','--format-version','1','--no-deps'))
@@ -155,6 +218,7 @@ def prepare(directory,expected):
         records.append({**row,'archive':filename,'archiveSha256':digest(body),'archiveBytes':len(body),'metadata':meta_name,'metadataSha256':digest(upload),'metadataBytes':len(upload)})
     check(run('git','diff','--name-only','HEAD')=='','Cargo package altered tracked source')
     receipt={'schemaVersion':1,'identity':expected,'producerAttempt':int(os.environ['GITHUB_RUN_ATTEMPT']),'toolchain':run('rustc','-vV'),'verified':True,'versionBaseSHA':proof['baseSHA'],'versionProofHash':proof['receiptHash'],'packageCommand':['cargo','package','--locked','--offline','--registry','crates-io',*sum((['-p',row['name']] for row in selected),[])],'selection':selected,'selectionHash':digest(encoded(selected)),'records':records}
+    if family is not None:receipt.update(preparedFamily=family,preparedFamilyHash=digest(encoded(family)),retained=retained,retainedHash=digest(encoded(retained)))
     (directory/'receipt.json').write_bytes(encoded(receipt));verify_frozen(directory,expected)
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -182,6 +246,8 @@ class Registry:
 def publish(directory,expected,registry=None,sleep=time.sleep):
     directory=Path(directory);receipt=verify_frozen(directory,expected);registry=registry or Registry()
     # Preflight the complete selection before the first side effect.
+    for row in receipt.get('retained',[]):
+        check(registry.lookup(row)==row['sha256'],'Retained Cargo archive changed or disappeared before publication')
     for row in receipt['records']:
         existing=registry.lookup(row);check(existing in [None,row['archiveSha256']],'Immutable Cargo version conflict')
     state={'identity':expected,'producerAttempt':receipt['producerAttempt'],'packages':[]}

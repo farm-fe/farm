@@ -127,7 +127,12 @@ export async function resolveMergedVersion({environment=process.env,readApi=api,
   const pr=readApi(`repos/${repository}/pulls/${matches[0].number}`);
   const result=await resolve({environment:{...environment,GITHUB_SHA:pr.head.sha,VERSION_PR:String(pr.number)},event:{pull_request:pr},readApi,runGit,allowMergedBase:true});
   if(result.mode!=='verified-version-only'||!result.receiptHash)return {...result,releaseReady:false,reason:'Merged version semantic/provenance proof incomplete'};
-  assert.equal(runGit(['rev-parse',source+'^{tree}']).trim(),result.headTree,'Main merge tree differs from verified version PR');
+  const sourceTree=runGit(['rev-parse',source+'^{tree}']).trim();
+  if(sourceTree!==result.headTree) {
+    const parent=runGit(['rev-parse',source+'^1']).trim();
+    const merged=runGit(['merge-tree','--write-tree',parent,pr.head.sha]).trim().split('\n')[0];
+    assert.equal(sourceTree,merged,'Main merge does not preserve verified version changes on its target parent');
+  }
   return {...result,releaseReady:true,versionPR:pr.number,sourceSHA:source};
 }
 

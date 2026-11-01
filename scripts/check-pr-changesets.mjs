@@ -123,7 +123,12 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const mode = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json'))).preparation?.mode ?? 'first-stable';
   assert.ok(['first-stable', 'changesets'].includes(mode), 'Unknown version preparation mode');
   const prepared = event?.pull_request?.base?.ref === 'main' && (event.number === 2329 || event.pull_request.head.ref === 'changeset-release/main');
-  if (prepared || process.argv.includes('--verify-prepared')) {
+  const mainProof = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main'
+    ? await (await import('./automatic-release-source.mjs')).resolveAutomaticRelease() : null;
+  if (mainProof?.releaseReady === true) {
+    assert.ok(['verified-prepared-migration','verified-version-only'].includes(mainProof.mode));
+    console.log(JSON.stringify({status:'verified-main-version-consumption',sourceSHA:mainProof.sourceSHA,receiptHash:mainProof.receiptHash}));
+  } else if (prepared || process.argv.includes('--verify-prepared')) {
     const result = (mode === 'changesets' ? verifyChangesetsPreparation : verifyPreparedRelease)(root, {
       readGitFile: (sha, file) => execFileSync('git', ['show', `${sha}:${file}`], { cwd: root, encoding: 'utf8' }),
       readGitChangesets: sha => execFileSync('git', ['ls-tree', '--name-only', `${sha}:.changeset`], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(name => name.endsWith('.md') && name !== 'README.md').map(name => name.slice(0, -3)),

@@ -27,7 +27,10 @@ test('one fixed-main Release contains npm candidate and consumer validation befo
   assert.match(release,/seal-npm/);
   assert.ok(release.includes('scripts/verify-v2-npm-consumer.mjs'));
   assert.ok(release.includes('scripts/verify-published-v2-consumers.mjs'));
-  assert.ok(release.includes("github.ref == 'refs/heads/main' && inputs.publish == true"));
+  assert.ok(release.includes("github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true'"));
+  assert.ok(release.includes("github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)"));
+  assert.ok(release.includes("needs.candidate-consumers.result == 'success'"));
+  assert.match(release,/node scripts\/automatic-release-source\.mjs/);
   assert.match(release,/group: farm-independent-release\n  cancel-in-progress: false/);
   assert.equal((release.match(/profile: release/g)||[]).length,2);
 });

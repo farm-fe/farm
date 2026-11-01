@@ -53,7 +53,7 @@ test('ordinary main commit does not release merely because there are no Changese
 });
 test('merged tree drift blocks release even with version PR provenance',async()=>{
  const f=fixture();await assert.rejects(resolveMergedVersion({environment:{...f.environment,GITHUB_REF:'refs/heads/main',GITHUB_SHA:f.main},readApi:f.options.readApi,
- runGit:args=>args.at(-1)==='HEAD'?f.main:'f'.repeat(40),resolve:async()=>({mode:'verified-version-only',receiptHash:'a'.repeat(64),headTree:f.tree})}),/tree differs/);
+ runGit:args=>args.at(-1)==='HEAD'?f.main:args[0]==='merge-tree'?f.tree:'f'.repeat(40),resolve:async()=>({mode:'verified-version-only',receiptHash:'a'.repeat(64),headTree:f.tree})}),/does not preserve/);
 });
 
 for(const strategy of ['merge','squash','rebase'])test(`merged ${strategy} uses immutable preparation base after main advances`,async()=>{

@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: farm-docs-${{ github.ref }}
+  group: farm-docs-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
   cancel-in-progress: true
 
 jobs:

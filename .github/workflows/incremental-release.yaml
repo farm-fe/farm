@@ -38,6 +38,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
     outputs:
       producer_attempt: ${{ steps.frozen.outputs.producer_attempt }}
       reuse: ${{ steps.frozen.outputs.reuse }}
@@ -79,12 +80,12 @@ jobs:
           node-version: 22.20.0
       - run: pnpm install --frozen-lockfile --ignore-scripts
         if: steps.frozen.outputs.reuse != 'true' && inputs.producer_run == ''
-      - name: Require an authenticated merged Changesets version commit
+      - name: Require an authenticated prepared version merge
         id: version
         if: steps.frozen.outputs.reuse != 'true' && inputs.producer_run == ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/changesets-version-runtime.mjs --release-source
+        run: node scripts/automatic-release-source.mjs
 
   quality:
     name: Release quality checks
@@ -431,7 +432,7 @@ jobs:
   publisher:
     name: Publish exact independent release archives under durable lock
     needs: [source, plan, producer, candidate-consumers]
-    if: always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == true && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
+    if: always() && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:

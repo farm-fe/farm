@@ -6,7 +6,7 @@
 本稿以 2026-11-01 的设计讨论为准。写稿时本地实现 HEAD 为
 `a752b6b09a09b3c37812bcf14961bb533186511b`，存在未提交的失败回归与测试证据。
 本次只增加设计文档，不表示既有本地实现、远端 CI 或实际发布已经满足本方案。
-本轮授权本地实现与真实验证，不创建真实版本 PR、不推送、不发布。
+后续用户已授权本地确认后普通推送现有 PR；不创建真实版本 PR，不执行真实合并或发布。
 
 本稿批准后，将取代以下旧设计约束：CI/release 永不共享构建字节、仅允许文档路径触发
 native 复用，以及 release 通过恢复未变化包的历史二进制准备本轮构建。
@@ -14,6 +14,36 @@ native 复用，以及 release 通过恢复未变化包的历史二进制准备�
 [旧独立链方案](independent-incremental-chains.md)、
 [旧 GNU 文档复用范围](ci-leaf-native.md)、
 [旧 suite 选择](ci-suite-selection.md)、[现有发布准备](v2-auto-release.md)。
+
+## 2026-11-01 本次已升版合并自动发布补充
+
+本节替代下文“仅显式 dispatch / publish=true 才上传”及“#2330 不触发 Cargo”的旧限制。
+用户已批准：#2330 合并 main 后发布当前已准备好的 npm / crates 版本，不再要求另一轮升版。
+这不是现在执行合并或发布的授权；本轮只做本地实现、无上传验证及普通 PR 推送。
+
+- npm：main push 固定事件 SHA → `automatic-release-source.mjs` 认证实际合并 PR →
+  统一图选集 → 正式源码构建 → 当前候选/功能验证 → 锁与冲突预检 → 上传、公共回读、checkpoint。
+  普通未升版 push 不授权发布。手动入口继续要求 `publish=true`，只读 producer 验证不上传。
+- #2330 的受限认证绑定仓库数值 ID、原升版消费 commit、已审查 anchor、完整版本族、
+  实际 merge/squash tree 与目标父提交。后续常规版本 PR 仍须 Changesets producer 和语义证明；
+  title、actor 或 branch 单独都不能放行。连续 main 合并各自使用事件 SHA，不重定向最新 main。
+- 两项后续修复明确计入当前未发布的 core / TailwindCSS / plugin-tools 2.0.0，
+  不额外升 patch。原始 Changeset 保存在 [消费档案](consumed-changesets/2330/css-cache-recovery.md)
+  和 [CLI 修复档案](consumed-changesets/2330/native-cli-paths.md)，归属与 hash 记录在
+  [首次发布策略](prepared-release-2330.json)。认证同时校验 anchor 原文、归档内容和实际消费。
+  用户只允许本次普通 PR Changesets 检查的已知失败；main 必须通过来源认证证明消费，
+  不得忽略类型、功能、来源、冲突等失败，也不修改分支保护。
+- Cargo 仍独立发布源码包。#2330 首发使用同一已审查版本族，**不以 main/head 版本差为选集**。
+  普通后续版本 PR 保留版本递增选集。已存在的 3 个版本必须匹配策略内 archive checksum，
+  不重新打包上传替代；其余 25 个执行默认 `cargo package` 验证、冻结、完整冲突预检和拓扑上传。
+  保留版本在准备和上传前分别回读，缺失/yank/异字节均阻断。npm 发布不等待 Cargo 发布完成。
+- 首次没有可信发布 baseline 时 npm 全选；不能把 PR 成品或未知历史归档当成成功 baseline。
+  同一事务重跑仍只恢复原冻结字节，冻结丢失不能以重建替代可能已部分上传的包。
+- CI/Unit/Docs/native 的 main 并发组包含 SHA，后一个 main 提交不取消前一个的发布功能证据。
+  npm 与 Cargo 各自保留无取消的发布锁；不增加新凭据或扩大到 fork / 任意 PR 发布。
+
+首次上线仍须配置现有 npm/crates token 的对应包发布权限，以及 GitHub workflow 的既有 artifact
+读取和 tag/Release 写权限。无凭据必须失败，不能以本地模拟作为真实 registry 发布成功证据。
 
 ## 2026-11-01 已批准的 Cargo 范围修订
 

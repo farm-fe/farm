@@ -10,11 +10,11 @@ import { execFileSync } from 'node:child_process';
 import { npmInventory, cargoInventory, changesetsPublication } from './v2-release-inventory.mjs';
 import { cargoChangesetId, validateCargoPreparation, readCargoArtifact } from './prepare-cargo-version-proposal.mjs';
 // Intent is reviewed version-preparation data. Only the main release workflow's
-// frozen source, verified release baseline and explicit switch authorize writes.
+// frozen source and authenticated version merge (or explicit manual switch) authorize writes.
 export const independentReleaseWorkflow = '.github/workflows/incremental-release.yaml';
 export function independentPublicationPolicy() {
-  return {workflowPath: independentReleaseWorkflow, event: 'workflow_dispatch', ref: 'refs/heads/main',
-    publishDefault: false, explicitAuthorizationRequired: true, sourceBinding: 'fixed-main-dispatch-snapshot',
+  return {workflowPath: independentReleaseWorkflow, event: 'authenticated-version-merge-or-explicit-dispatch', ref: 'refs/heads/main',
+    publishDefault: false, explicitAuthorizationRequired: true, sourceBinding: 'fixed-main-event-snapshot',
     chain: 'release', profile: 'release', namespace: 'farm-release-v1', publicationScope: 'npm',
     baselineAuthority: 'completed-public-registry-and-tag-release-acceptance', ciBuildBytesAccepted: false};
 }

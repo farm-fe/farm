@@ -18,7 +18,7 @@ on:
       - codex/v2-unified-release-20261025
 
 concurrency:
-  group: test-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.release_pr || github.ref }}
+  group: test-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.release_pr || (github.ref == 'refs/heads/main' && github.sha || github.ref) }}
   cancel-in-progress: true
 
 jobs:

@@ -119,4 +119,27 @@ class Contracts(unittest.TestCase):
         self.assertIn('types: [closed]',source);self.assertIn('group: farm-stable-release',source)
         self.assertNotIn('CARGO_REGISTRY_TOKEN',source.split('  publish:')[0]);self.assertNotIn('npm',publisher);self.assertNotIn('cargo package',publisher)
         code=Path(m.__file__).read_text();self.assertNotIn('--no-verify',code);self.assertIn("'cargo','package','--locked','--offline'",code)
+    def test_prepared_family_freezes_retained_versions_and_rechecks_before_writes(self):
+        root,identity,receipt=self.fixture()
+        retained={'name':'already-published','version':'2.0.0','sha256':'f'*64}
+        family=[*receipt['selection'],{'name':retained['name'],'version':retained['version']}]
+        receipt.update(preparedFamily=family,preparedFamilyHash=m.digest(m.encoded(family)),retained=[retained],retainedHash=m.digest(m.encoded([retained])))
+        (root/'receipt.json').write_bytes(m.encoded(receipt));m.verify_frozen(root,identity)
+        registry=mock.Mock();registry.lookup.return_value='bad'
+        with self.assertRaisesRegex(ValueError,'Retained Cargo'):m.publish(root,identity,registry)
+        registry.upload.assert_not_called()
+        receipt['retained'][0]['sha256']='a'*64
+        (root/'receipt.json').write_bytes(m.encoded(receipt))
+        with self.assertRaisesRegex(ValueError,'Retained Cargo receipt hash'):m.verify_frozen(root,identity)
+    def test_prepared_family_cannot_omit_or_republish_retained_member(self):
+        root,identity,receipt=self.fixture()
+        retained={'name':'leaf','version':'1.0.0','sha256':'f'*64}
+        receipt.update(preparedFamily=receipt['selection'],preparedFamilyHash=m.digest(m.encoded(receipt['selection'])),retained=[retained],retainedHash=m.digest(m.encoded([retained])))
+        (root/'receipt.json').write_bytes(m.encoded(receipt))
+        with self.assertRaisesRegex(ValueError,'cannot be republished'):m.verify_frozen(root,identity)
+    def test_missing_credentials_fail_before_restore_or_upload(self):
+        event={'pull_request':{}}
+        with mock.patch.object(m,'identity',return_value={}),mock.patch.object(m.Path,'read_text',return_value=json.dumps(event)),mock.patch.dict(m.os.environ,{'GITHUB_EVENT_PATH':'fixture','CARGO_REGISTRY_TOKEN':''}),mock.patch.object(m.sys,'argv',['script','publish']),mock.patch.object(m,'restore') as restore:
+            with self.assertRaisesRegex(ValueError,'secret required'):m.main()
+            restore.assert_not_called()
 if __name__=='__main__':unittest.main(verbosity=2)

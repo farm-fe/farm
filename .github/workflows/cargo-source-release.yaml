@@ -11,12 +11,13 @@ concurrency:
 jobs:
   source:
     name: Prepare Cargo source archives
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || startsWith(github.event.pull_request.head.ref, 'changeset-release/'))
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || github.event.number == 2330 || startsWith(github.event.pull_request.head.ref, 'changeset-release/'))
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
       actions: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,7 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          node --input-type=module -e 'import fs from "node:fs"; import {resolveVersionEvidence} from "./scripts/changesets-version-runtime.mjs"; const result=await resolveVersionEvidence({allowMergedBase:true}); if(result.mode!=="verified-version-only")throw Error("Cargo version provenance incomplete"); fs.writeFileSync("cargo-version-proof.json",JSON.stringify(result));'
+          node scripts/automatic-release-source.mjs --cargo
       - name: Prepare pinned source dependencies
         if: steps.frozen.outputs.restored != 'true'
         run: |
