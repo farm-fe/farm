@@ -1,7 +1,7 @@
 use super::*;
 use farmfe_core::{
   config::persistent_cache::PersistentCacheConfig,
-  module::{meta_data::script::ScriptModuleMetaData, ModuleId, ModuleType},
+  module::{ModuleId, ModuleType, meta_data::script::ScriptModuleMetaData},
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::{EsSyntax, Syntax},
 };
