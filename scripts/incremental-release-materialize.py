@@ -49,6 +49,7 @@ def write_generated(root,file,body,source_files):
     return True
 
 def restore(source,selection,baseline,root,fetch):
+    raise ValueError("Historical release product restore is disabled; build prerequisites from source")
     check(selection==entry.source_plan(source,baseline),'Restore plan differs from independently verified release selection')
     check(not selection['publicationBlocked'],'Release version preparation is incomplete')
     root=Path(root).resolve(strict=True)
@@ -89,6 +90,7 @@ def restore(source,selection,baseline,root,fetch):
             'sourceSHA':source['sha'],'sourceTree':source['tree'],'planHash':selection['planHash'],'baselineBinding':baseline['transaction'],'records':restored}
 
 def main():
+    raise ValueError("Historical release product restore is disabled; build prerequisites from source")
     parser=argparse.ArgumentParser();parser.add_argument('--selection',required=True);parser.add_argument('--output',required=True);args=parser.parse_args()
     transport=entry.actions_transport();source=entry.evidence.source_reader(entry.os.environ['GITHUB_SHA'])
     selection=json.loads(Path(args.selection).read_text(encoding='utf-8'))

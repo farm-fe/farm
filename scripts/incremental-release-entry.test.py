@@ -24,13 +24,14 @@ fixtures = load("release_entry_fixture", "incremental-chain-plan.test.py")
 class Contracts(unittest.TestCase):
     def setUp(self):
         files, family, source = fixtures.fixture()
+        files["packages/core/package.json"] = json.dumps({"name":"@farmfe/core", "version":"1.0.0", "private":True}).encode()
         files['crates/core/src/lib.rs']+=b'\npub const VERSION: &str = "0.5.4";\n'
         files["docs/releases/v2-candidate.json"] = json.dumps(family).encode()
         self.source = {**source, "files": files, "modes": {name: "100644" for name in files}, "policyHash": "pinned-policy"}
         self.plan = entry.source_plan(self.source)
         self.root = Path(tempfile.mkdtemp(prefix="farm-release-entry-contract-"))
         nodes, issues = entry.chain.repository_graph(files)
-        family = entry.chain.independent_family(files, nodes)
+        family = {key: row for key, row in entry.chain.independent_family(files, nodes).items() if row["kind"] == "npm"}
         rows = []
         for index, (identity, row) in enumerate(sorted(family.items())):
             body = identity.encode(); file = str(index) + ".archive"; (self.root / file).write_bytes(body)
@@ -38,7 +39,7 @@ class Contracts(unittest.TestCase):
                          "archiveBytes": len(body), "archiveSha256": hashlib.sha256(body).hexdigest()})
         self.manifest = {"chain": "release", "profile": "release", "namespace": "farm-release-v1", "sourceSHA": source["sha"],
                          "sourceTree": source["tree"], "producerRunId": 10, "producerAttempt": 2, "baseline": None,
-                         "planHash": self.plan["planHash"], "packages": rows}
+                         "planHash": self.plan["planHash"], "graphHash": self.plan["graphHash"], "publicationScope": "npm", "packages": rows}
         self.manifest.update({'family':self.plan['fullFamily'],'rebuild':self.plan['build'],'versionRequired':self.plan['versionRequired'],'publish':self.plan['publish']})
         self.run = {"id": 10, "run_attempt": 2, "repository": {"id": 5}, "head_repository": {"id": 5}, "path": entry.WORKFLOW,
                     "head_sha": source["sha"], "event": "workflow_dispatch", "head_branch": "main", "status": "completed", "conclusion": "success"}
@@ -74,6 +75,10 @@ class Contracts(unittest.TestCase):
         self.assertTrue(result["verified"]); self.assertFalse(result["publicationExecuted"])
         self.assertEqual(result["producerRunId"], 10)
 
+    def test_graph_hash_is_bound_to_recomputed_source(self):
+        self.manifest["graphHash"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "plan or graph differs"): self.verify()
+
     def test_ci_profile_and_namespace_are_rejected(self):
         for key, value in [("profile", "ci"), ("namespace", "farm-ci-v1"), ("chain", "ci")]:
             original = self.manifest[key]; self.manifest[key] = value
@@ -97,7 +102,7 @@ class Contracts(unittest.TestCase):
 
     def test_plan_tree_and_producer_job_binding_cannot_be_self_asserted(self):
         self.manifest["planHash"] = "f" * 64
-        with self.assertRaisesRegex(ValueError, "plan differs"): self.verify()
+        with self.assertRaisesRegex(ValueError, "plan or graph differs"): self.verify()
         self.manifest["planHash"] = self.plan["planHash"]
         self.seal["producerJobId"] = 99
         with self.assertRaisesRegex(ValueError, "seal binding"): self.verify()

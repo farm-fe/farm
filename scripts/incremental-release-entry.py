@@ -31,12 +31,33 @@ CONSUMER = "Verify independent release public consumers"
 
 def source_plan(source, baseline=None):
     family = json.loads(source["files"]["docs/releases/v2-candidate.json"])
+    check(baseline is None or baseline['ledger'].get('publicationScope') == 'npm', 'A mixed Cargo publication baseline cannot enter npm-only release planning')
     abi=re.search(r'^pub const VERSION: &str = "([0-9]+\.[0-9]+\.[0-9]+)";',source['files']['crates/core/src/lib.rs'].decode('utf-8'),re.M)
     check(abi is not None and family['abi']==abi[1],'Candidate Farm ABI differs from actual source declaration')
     prior=baseline['source'] if baseline else None
     result=chain.plan_chain("release", {"sha": source["sha"], "tree": source["tree"]}, source["files"], family, [],
                             baseline=baseline['ledger'] if baseline else None,baseline_files=prior['files'] if prior else None,
-                            anchor=baseline['anchor'] if baseline else None,source_modes=source["modes"],baseline_modes=prior['modes'] if prior else None)
+                            anchor=baseline['anchor'] if baseline else None,source_modes=source["modes"],publication_scope="npm",baseline_modes=prior['modes'] if prior else None)
+    nodes, issues = chain.repository_graph(source['files'])
+    check(not issues, 'Release source dependency graph is invalid')
+    # JS build recipes execute Farm. Their native compiler is a source-built
+    # preparation dependency, never a historical binary restore.
+    build_nodes = set(result['buildNodes'])
+    js_required = any(row['name'] in {key[4:] for key in result['build'] if key.startswith('npm:')}
+                      and not row.get('owner') and not row['manifestPath'].startswith('rust-plugins/')
+                      for row in result['fullFamily'] if row['kind'] == 'npm')
+    pending = ['npm:packages/core'] if js_required else []
+    while pending:
+        key = pending.pop()
+        if key in build_nodes: continue
+        check(key in nodes, 'Release preparation node missing')
+        build_nodes.add(key); pending.extend(nodes[key]['preparationDeps'])
+    result['buildNodes'] = sorted(build_nodes)
+    result['buildEdges'] = {key: sorted(nodes.get(key, {}).get('preparationDeps', set()) & build_nodes) for key in sorted(build_nodes)}
+    native_names = {row['owner'] for row in family['npm']['payloads']}
+    selected_names = {key[4:] for key in result['build'] if key.startswith('npm:')}
+    result['preparationNativeOwners'] = sorted({row['name'] for row in family['npm']['primary']
+        if row['name'] in native_names and ('npm:' + str(Path(row['manifestPath']).parent).replace('\\','/') in build_nodes or row['name'] in selected_names)})
     if baseline:
         result['baselineBinding']=baseline['transaction']
         # Registry URLs locate immutable bytes; they are not transaction or
@@ -44,7 +65,7 @@ def source_plan(source, baseline=None):
         # the frozen archive digest before use.
         result['baselinePackages']={key:{field:value for field,value in row.items() if field not in ['tarball','url','resolved']}
                                     for key,row in baseline['ledger']['packages'].items()}
-        result['planHash']=chain.digest({key:value for key,value in result.items() if key!='planHash'})
+    result['planHash']=chain.digest({key:value for key,value in result.items() if key!='planHash'})
     return result
 
 def published_baseline(transport,transaction=None,read_source=evidence.source_reader):
@@ -117,6 +138,7 @@ class ReleaseVerifier:
         check(current_run is None or phase != "complete", "Completed verification cannot borrow a running execution")
         check(manifest.get("chain") == "release" and manifest.get("profile") == "release"
               and manifest.get("namespace") == "farm-release-v1", "CI bytes cannot enter release verification")
+        check(manifest.get("publicationScope") == "npm" and all(row.get("kind") == "npm" for row in manifest.get("packages", [])), "New incremental publication is npm-only")
         chain.exact(manifest.get("sourceSHA"), 40)
         run, repository, source, jobs, route, policy_sha = self.run(manifest.get("producerRunId"), manifest.get("producerAttempt"), manifest["sourceSHA"], current_run)
         check(source["tree"] == manifest.get("sourceTree"), "Release source tree differs")
@@ -125,10 +147,10 @@ class ReleaseVerifier:
         # accepting an uploaded baseline JSON here would be circular trust.
         baseline=published_baseline(self.transport,manifest['baseline'],self.read_source) if manifest.get('baseline') is not None else None
         plan = source_plan(source,baseline)
-        check(plan["planHash"] == manifest.get("planHash"), "Release plan differs from committed source")
+        check(plan["planHash"] == manifest.get("planHash") and plan["graphHash"] == manifest.get("graphHash"), "Release plan or graph differs from committed source")
         nodes, issues = chain.repository_graph(source["files"])
         check(not issues, "Release graph contains unresolved inputs")
-        family = chain.independent_family(source["files"], nodes)
+        family = {key: row for key, row in chain.independent_family(source["files"], nodes).items() if row["kind"] == "npm"}
         declared=manifest.get('family')
         check(isinstance(declared,list) and len(declared)==len(family),'Manifest must bind the complete source family')
         declared_map={row['kind']+':'+row['name']:row for row in declared}
@@ -201,11 +223,10 @@ def main():
             records={row['kind']+':'+row['name']:row for row in result['fullFamily']}
             current_family=json.loads(source['files']['docs/releases/v2-candidate.json'])
             native_owners={row['owner'] for row in current_family['npm']['payloads']}
-            owners=sorted({records[key].get('owner') or records[key]['name'] for key in result['build']
-                           if records[key].get('owner') or records[key]['name'] in native_owners})
+            owners=result['preparationNativeOwners']
             with Path(os.environ['GITHUB_OUTPUT']).open('a',encoding='utf-8') as stream:
                 stream.write('native_required='+str(bool(owners)).lower()+'\npublish_required='+str(bool(result['publish'])).lower()
-                             +'\nbuild_required='+str(bool(result['build'])).lower()+'\nplan_hash='+result['planHash']+'\nnative_owners='+json.dumps(owners,separators=(',',':'))+'\n')
+                             +'\nbuild_required='+str(bool(result['build'])).lower()+'\ngraph_hash='+result['graphHash']+'\nplan_hash='+result['planHash']+'\nnative_owners='+json.dumps(owners,separators=(',',':'))+'\n')
         print(json.dumps({"chain": "release", "buildCount": len(result["build"]), "publicationExecuted": False}))
     else:
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))

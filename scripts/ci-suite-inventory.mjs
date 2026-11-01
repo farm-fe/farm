@@ -146,8 +146,8 @@ export function readGitSuiteFiles(root, readGit = (args, options = {}) => execFi
     }
   }
   const exampleDirectories = unique(entries.filter(row => row.file.startsWith('examples/') && row.file.split('/').length >= 3).map(row => row.file.split('/')[1]));
-  const records = entries.filter(row => row.file === 'package.json' || row.file in suitePolicy.inputs || row.file.endsWith('.spec.ts')
-    || /^(packages|js-plugins|examples|rust-plugins)\/[^/]+\/package\.json$/.test(row.file)
+  const records = entries.filter(row => row.file === 'Cargo.toml' || row.file === 'pnpm-workspace.yaml' || row.file.endsWith('/Cargo.toml') || row.file === 'package.json' || row.file in suitePolicy.inputs || row.file.endsWith('.spec.ts')
+    || row.file.endsWith('/package.json')
     || /^examples\/[^/]+\/(index\.html|e2e\.spec\.mjs)$/.test(row.file) || row.file.startsWith('e2e/') && /\.(mjs|cjs|js|ts|json)$/.test(row.file));
   assert.ok(records.length > 0 && records.length <= 5000, 'Discovery file count exceeds bound');
   for (const row of records) {

@@ -17,6 +17,36 @@ POLICY = "farm-independent-chains-v1"
 CHAINS = {"ci": "ci", "release": "release"}
 DIRECTORY_RULES = json.loads(Path(__file__).with_name("directory-impact-rules.json").read_text())
 
+def validate_directory_rules(rules):
+    if set(rules) != {"version", "global", "suiteGlobal", "dependencies"} or rules["version"] != 1:
+        raise ValueError("Invalid dependency rule schema")
+    for field in ["global", "suiteGlobal"]:
+        if not isinstance(rules[field], list) or len(set(rules[field])) != len(rules[field]):
+            raise ValueError("Duplicate or invalid global input rules")
+        for value in rules[field]:
+            if not isinstance(value, str) or not value or value.startswith("/") or ".." in value.split("/") or "\\" in value:
+                raise ValueError("Unsafe global input rule")
+    for row in rules["dependencies"]:
+        if set(row) - {"consumer", "dependencies", "edges"} or not row.get("consumer") or not row.get("dependencies"):
+            raise ValueError("Invalid custom dependency rule")
+        if not set(row.get("edges", ["validation"])).issubset({"product", "preparation", "validation"}):
+            raise ValueError("Invalid custom edge category")
+        for value in [row["consumer"], *row["dependencies"]]:
+            if not isinstance(value, str) or value.startswith("/") or any(part in ["", ".", ".."] for part in value.split("/")):
+                raise ValueError("Unsafe custom directory dependency")
+    return rules
+
+
+validate_directory_rules(DIRECTORY_RULES)
+
+
+def graph_contract(nodes, issues):
+    value = {"schemaVersion": 2, "issues": sorted(set(issues)), "nodes": {
+        key: {field: sorted(item) if isinstance(item, set) else item
+              for field, item in node.items() if field != "data"}
+        for key, node in nodes.items()}}
+    return {**value, "graphHash": digest(value)}
+
 SDK_ROOTS = ["farmfe_core", "farmfe_compiler", "farmfe_toolkit", "farmfe_ecosystem_glob"]
 
 
@@ -60,7 +90,7 @@ def repository_graph(files):
         kind = "cargo" if cargo else "npm"
         key = kind + ":" + directory
         nodes[key] = {"kind": kind, "directory": directory, "manifest": file, "name": package["name"],
-                      "version": package.get("version"), "data": manifest, "productDeps": set(), "testDeps": set()}
+                      "version": package.get("version"), "data": manifest, "productDeps": set(), "testDeps": set(), "preparationDeps": set()}
         names.setdefault(kind + ":" + package["name"], []).append(key)
     for key, node in nodes.items():
         manifest = node["data"]
@@ -144,7 +174,25 @@ def repository_graph(files):
             if dependency not in nodes:
                 issues.append("declared-directory-dependency-missing")
             else:
-                nodes[consumer]["testDeps"].add(dependency)
+                for edge in rule.get("edges", ["validation"]):
+                    field = {"product": "productDeps", "preparation": "preparationDeps", "validation": "testDeps"}[edge]
+                    nodes[consumer][field].add(dependency)
+    # The three dependency sources contribute to this one graph. Global inputs
+    # are explicit nodes, not a second selector that can disagree with consumers.
+    for node in nodes.values():
+        node["preparationDeps"].update(node["productDeps"])
+    for index, paths in enumerate([DIRECTORY_RULES["global"], DIRECTORY_RULES["suiteGlobal"]]):
+        for rule in paths:
+            key = "input:" + ("global:" if index == 0 else "validation:") + rule
+            nodes[key] = {"kind": "input", "directory": "@inputs/" + key, "manifest": None,
+                          "name": key, "version": None, "data": {}, "paths": [rule],
+                          "productDeps": set(), "preparationDeps": set(), "testDeps": set()}
+            for consumer in nodes.values():
+                if consumer["kind"] == "input":
+                    continue
+                consumer["testDeps"].add(key)
+                if index == 0:
+                    consumer["preparationDeps"].add(key)
     return nodes, sorted(set(issues))
 
 
@@ -203,7 +251,7 @@ def independent_family(files, nodes):
             continue
         seen.add(key)
         node = nodes[key]
-        if node["directory"].startswith("patches/"):
+        if node["kind"] != "cargo" or node["directory"].startswith("patches/"):
             # Vendored upstream inputs affect builds but are never Farm SDK releases.
             continue
         if node["data"]["package"].get("publish") is False:
@@ -219,7 +267,8 @@ def union_graph(*graphs):
         for key, node in graph.items():
             old = result.get(key, {})
             result[key] = {**node, "productDeps": old.get("productDeps", set()) | node["productDeps"],
-                           "testDeps": old.get("testDeps", set()) | node["testDeps"]}
+                           "testDeps": old.get("testDeps", set()) | node["testDeps"],
+                           "preparationDeps": old.get("preparationDeps", set()) | node["preparationDeps"]}
     return result
 
 
@@ -278,6 +327,7 @@ def validate_baseline(ledger, anchor, chain, source_files, source_modes):
         raise ValueError("Baseline package coverage missing")
     old_nodes, _ = repository_graph(source_files)
     expected = independent_family(source_files, old_nodes)
+    if ledger.get('publicationScope') == 'npm': expected = {key: row for key, row in expected.items() if row['kind'] == 'npm'}
     if set(records) != set(expected):
         raise ValueError("Baseline full family coverage differs")
     for key, row in records.items():
@@ -293,22 +343,27 @@ def validate_baseline(ledger, anchor, chain, source_files, source_modes):
     return ledger
 
 
-def plan_chain(chain, source, files, family, changes, baseline=None, baseline_files=None, anchor=None, *, source_modes, baseline_modes=None):
+def plan_chain(chain, source, files, family, changes, baseline=None, baseline_files=None, anchor=None, *, source_modes, baseline_modes=None, publication_scope="all"):
     """Executable selection calculation. It grants no upload or artifact trust by itself."""
     if chain not in CHAINS:
         raise ValueError("Unknown build chain")
     exact(source["sha"], 40); exact(source["tree"], 40)
+    if publication_scope not in ['all', 'npm']:
+        raise ValueError('Unknown publication scope')
     records = family_records(family)
+    if publication_scope == 'npm': records = {key: row for key, row in records.items() if row['kind'] == 'npm'}
     validate_family_sources(records, files)
     source_records = snapshot_records(files, source_modes)
     head, issues = repository_graph(files)
     independent = independent_family(files, head)
+    if publication_scope == 'npm': independent = {key: row for key, row in independent.items() if row['kind'] == 'npm'}
     if set(records) != set(independent) or any(any(row.get(key) != independent[name].get(key) for key in ["kind", "name", "version", "manifestPath", "owner", "platform"]) for name, row in records.items()):
         raise ValueError("Publication inventory does not cover the independently derived full family")
     metadata_file = "docs/releases/v2-candidate.json"
     if metadata_file in files:
         declared = json.loads(files[metadata_file])
         normalized = family_records(declared)
+        if publication_scope == 'npm': normalized = {key: row for key, row in normalized.items() if row['kind'] == 'npm'}
         fields = ["kind", "name", "version", "manifestPath", "owner", "platform"]
         if (declared.get("abi") != family.get("abi") or set(normalized) != set(records)
                 or any(any(row.get(field) != normalized[name].get(field) for field in fields) for name, row in records.items())):
@@ -319,6 +374,7 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
         full = True; reasons.append("no-successful-same-chain-baseline")
         old = {}
     else:
+        if baseline.get('publicationScope', 'all') != publication_scope: raise ValueError('Publication baseline scope differs')
         validate_baseline(baseline, anchor, chain, baseline_files or {}, baseline_modes)
         old, old_issues = repository_graph(baseline_files)
         issues += old_issues
@@ -350,6 +406,8 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
             if file in impact.GLOBAL or file.startswith((".cargo/", "patches/")):
                 product_full = True
             names = set().union(impact.owners(old, file), impact.owners(head, file))
+            names.update(key for key, node in graph.items() if node["kind"] == "input"
+                         and any(file.startswith(rule) if rule.endswith("/") else file == rule for rule in node["paths"]))
             roots.update(names)
             impact_trace[file] = {"path": file, "owners": sorted(names),
                                   "globalRules": [rule for rule in DIRECTORY_RULES["global"]
@@ -393,11 +451,11 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
         else:
             unchanged.append(identity)
     result = {"schemaVersion": 1, "policy": POLICY, "chain": chain, "profile": CHAINS[chain],
-              "namespace": "farm-" + chain + "-v1", "sourceSHA": source["sha"], "sourceTree": source["tree"],
+              "namespace": "farm-" + chain + "-v1", "publicationScope": publication_scope, "sourceSHA": source["sha"], "sourceTree": source["tree"],
               "baselineSHA": baseline.get("sourceSHA") if baseline else None,
               "sourceSnapshotHash": digest(source_records),
               "fullBuild": full, "reasons": sorted(set(reasons)), "abiChanged": abi_changed,
-              "directoryRulesVersion": DIRECTORY_RULES["version"],
+              "directoryRulesVersion": DIRECTORY_RULES["version"], "graphHash": graph_contract(graph, issues)["graphHash"],
               "impactTrace": [impact_trace[key] for key in sorted(impact_trace)], "directNodes": sorted(roots),
               "build": build, "versionRequired": bump if chain == "release" else [],
               "fullFamily": [records[key] for key in sorted(records)],
@@ -422,12 +480,12 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
         if key in build_nodes:
             continue
         build_nodes.add(key)
-        pending.extend(graph.get(key, {}).get("productDeps", set()))
+        pending.extend(graph.get(key, {}).get("preparationDeps", set()))
         if key in by_node:
             dependencies.add(by_node[key])
     result["buildDependencyClosure"] = sorted(dependencies)
     result["buildNodes"] = sorted(build_nodes)
-    result["buildEdges"] = {key: sorted(graph.get(key, {}).get("productDeps", set()) & build_nodes)
+    result["buildEdges"] = {key: sorted(graph.get(key, {}).get("preparationDeps", set()) & build_nodes)
                             for key in sorted(build_nodes)}
     result["sameVersionRebuildPolicy"] = "compare-original-archive-bytes-or-require-new-version"
     result["planHash"] = digest(result)

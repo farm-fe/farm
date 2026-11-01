@@ -23,12 +23,13 @@ entry_fixtures=load('completed_original_zip_fixture','incremental-release-entry.
 class Contracts(unittest.TestCase):
     def setUp(self):
         files,family,identity=fixtures.fixture()
+        files['packages/core/package.json']=json.dumps({'name':'@farmfe/core','version':'1.0.0','private':True}).encode()
         files['crates/core/src/lib.rs']+=b'\npub const VERSION: &str = "0.5.4";\n'
         files['docs/releases/v2-candidate.json']=json.dumps(family).encode()
         self.source={**identity,'files':files,'modes':fixtures.modes(files),'policyHash':'pinned'}
         self.family=family
-        rows=[{**row,'archiveSha256':'e'*64,'archiveBytes':1} for row in module.chain.family_records(family).values()]
-        self.manifest={'chain':'release','profile':'release','namespace':'farm-release-v1','sourceSHA':identity['sha'],'sourceTree':identity['tree'],
+        rows=[{**row,'archiveSha256':'e'*64,'archiveBytes':1} for row in module.chain.family_records(family).values() if row['kind']=='npm']
+        self.manifest={'publicationScope':'npm','chain':'release','profile':'release','namespace':'farm-release-v1','sourceSHA':identity['sha'],'sourceTree':identity['tree'],
                        'producerRunId':10,'producerAttempt':1,'baseline':None,'packages':rows,'tag':'v1.0.0','planHash':'f'*64}
         self.transaction=module.chain.digest(self.manifest)
         self.state={'baseline':self.transaction,'active':None,'completed':{self.transaction:{'manifest':self.manifest}}}

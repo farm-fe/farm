@@ -43,7 +43,7 @@ test('unresolved workspace aliases and duplicate owners never select partially',
   alias['js-plugins/b/package.json'] = JSON.stringify({ name: 'b', dependencies: { a: 'workspace:other@*' } });
   assert.equal(decide([{ path: 'examples/one/x.ts' }], files, alias).full, true);
   alias['js-plugins/b/package.json'] = JSON.stringify({ name: 'b', dependencies: { a: 'npm:other@1.0.0' } });
-  assert.ok(decide([{ path: 'examples/one/src/x.ts' }], files, alias).reasons.includes('unresolved-package-alias'));
+  assert.ok(decide([{ path: 'examples/one/src/x.ts' }], files, alias).reasons.includes('alias-dependency-requires-review'));
   const duplicate = { ...files, 'packages/duplicate/package.json': JSON.stringify({ name: 'a' }) };
   assert.equal(decide([{ path: 'examples/one/x.ts' }], duplicate, duplicate).full, true);
 });
@@ -51,7 +51,7 @@ test('shared runtime changes execute every related suite and report missing root
   const runtime = { ...files, 'packages/runtime/package.json': JSON.stringify({ name: '@farmfe/runtime' }) };
   const result = decide([{ path: 'packages/runtime/src/index.ts' }], runtime, runtime);
   assert.equal(result.full, true);
-  assert.ok(result.reasons.includes('required-shared-root-missing'));
+  assert.ok(result.reasons.includes('global-directory-input')); // explicit shared validation edges
   assert.equal(result.sets.ts.mode, 'all');
 });
 

@@ -26,9 +26,10 @@ def create(manifest,source,baseline,proof,repository_id):
         records[identity]={**row,'identity':identity,'originSourceSHA':source['sha'],'originRunId':manifest['producerRunId'],'originAttempt':manifest['producerAttempt']}
     nodes,issues=chain.repository_graph(source['files']);check(not issues,'Checkpoint source graph is ambiguous')
     expected=chain.independent_family(source['files'],nodes)
+    if manifest.get('publicationScope') == 'npm': expected={key:row for key,row in expected.items() if row['kind']=='npm'}
     check(set(records)==set(expected) and all(row['version']==expected[key]['version'] for key,row in records.items()),'Checkpoint complete family coverage differs')
     return {'schemaVersion':1,'kind':'repository-release-checkpoint-not-actions-attestation','chain':'release','profile':'release',
-            'namespace':'farm-release-v1','repositoryId':repository_id,'manifestHash':chain.digest(manifest),
+            'namespace':'farm-release-v1','publicationScope':manifest.get('publicationScope','all'),'repositoryId':repository_id,'manifestHash':chain.digest(manifest),
             'sourceSHA':source['sha'],'sourceTree':source['tree'],'planHash':manifest['planHash'],
             'sourceSnapshotHash':chain.digest(chain.snapshot_records(source['files'],source['modes'])),
             'producerRunId':manifest['producerRunId'],'producerAttempt':manifest['producerAttempt'],
@@ -60,6 +61,8 @@ def decode(release,manifest,source,repository_id):
     check('<!-- farm-release-manifest:'+expected['manifestHash']+' -->' in release['body'],'Release does not bind checkpoint manifest')
     nodes,issues=chain.repository_graph(source['files']);check(not issues,'Persistent checkpoint source graph is ambiguous')
     family=chain.independent_family(source['files'],nodes);records=value.get('packages',{})
+    check(value.get('publicationScope','all') == manifest.get('publicationScope','all'),'Checkpoint publication scope differs')
+    if manifest.get('publicationScope') == 'npm': family={key:row for key,row in family.items() if row['kind']=='npm'}
     check(set(records)==set(family) and all(row.get('version')==family[key]['version'] and row.get('identity')==key
           and re.fullmatch('[a-f0-9]{64}',row.get('archiveSha256','')) for key,row in records.items()),'Persistent checkpoint family differs')
     chain.exact(value.get('publicAcceptanceHash'),64)

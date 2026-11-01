@@ -110,6 +110,7 @@ async function main() {
     const html = [];
     async function scan(dir) { for (const item of await fs.readdir(dir, { withFileTypes: true })) { const file = path.join(dir, item.name); if (item.isDirectory()) await scan(file); else if (item.name.endsWith('.html')) html.push(await fs.readFile(file, 'utf8')); } }
     await scan(path.join(scratch, 'dist')); assert.ok(html.some(text => text.includes('Public registry verified')), 'Docs registry build lacks expected rendered content');
+    if(receipt.publicationScope !== 'npm') {
     const sdk = path.join(scratch, 'sdk'); await fs.cp(path.join(root, 'scripts/release-fixtures/sdk-consumer'), sdk, { recursive: true });
     await fs.rm(path.join(sdk, 'Cargo.lock'), { force: true });
     await fs.mkdir(env.CARGO_HOME);
@@ -118,6 +119,7 @@ async function main() {
     const cargoLock = (await fs.readFile(path.join(sdk, 'Cargo.lock'), 'utf8')).replaceAll('\r\n', '\n');
     assertPublicRustLock(receipt, cargoLock); await fs.writeFile(path.join(output, 'Cargo.lock'), cargoLock);
     assert.match(await fs.readFile(path.join(output, 'sdk.log'), 'utf8'), /test result: ok\. 3 passed; 0 failed/);
+    }
     report.status = 'passed';
   } catch (error) { report.status = 'failed'; report.error = error.message; report.cleanupConfirmed = error.cleanupConfirmed !== false; report.cleanupError = error.cleanupError ?? null; report.ownedPid = error.pid ?? null; process.exitCode = 1; }
   finally {

@@ -41,7 +41,8 @@ def public_record(manifest, reports, job, registry):
         check(report.get("status") == "passed" and report.get("publicRegistry") is True
               and report.get("workspacePatches") is False and report.get("cleanupConfirmed") is not False,
               "Public registry consumer or cleanup failed")
-        check({"npm-install", "esm-cjs", "types", "docs-build", "sdk"}.issubset(report.get("stages", [])), "Actual public consumer stages missing")
+        required={"npm-install", "esm-cjs", "types", "docs-build"} | (set() if manifest.get("publicationScope") == "npm" else {"sdk"})
+        check(required.issubset(report.get("stages", [])), "Actual public consumer stages missing")
     records = {row["kind"] + ":" + row["name"]: row for row in manifest["packages"]}
     actual = registry.verify(records)
     check(actual == {key: row["archiveSha256"] for key, row in records.items()}, "Independent public registry bytes differ")

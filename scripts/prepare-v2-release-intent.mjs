@@ -1,3 +1,4 @@
+import { writeVersionReceipt } from './changesets-version-runtime.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +15,7 @@ export const independentReleaseWorkflow = '.github/workflows/incremental-release
 export function independentPublicationPolicy() {
   return {workflowPath: independentReleaseWorkflow, event: 'workflow_dispatch', ref: 'refs/heads/main',
     publishDefault: false, explicitAuthorizationRequired: true, sourceBinding: 'fixed-main-dispatch-snapshot',
-    chain: 'release', profile: 'release', namespace: 'farm-release-v1',
+    chain: 'release', profile: 'release', namespace: 'farm-release-v1', publicationScope: 'npm',
     baselineAuthority: 'completed-public-registry-and-tag-release-acceptance', ciBuildBytesAccepted: false};
 }
 const requiredWorkflows = ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow];
@@ -37,7 +38,7 @@ export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   assert.ok(Number.isSafeInteger(pullRequest) && pullRequest > 0, 'Reviewed version PR number is required');
   const compatibility = { farmfe_macro_cache_item: 'published-macro-compat.json', farmfe_macro_plugin: 'published-plugin-macro-compat.json' };
   const changesets = plan.preparation?.mode === 'changesets';
-  const rust = rustPublicationOrder(plan, metadata, { includeUploadMetadata: false }).map(({ name, version }) => {
+  const rust = (plan.publicationScope === 'npm' ? [] : rustPublicationOrder(plan, metadata, { includeUploadMetadata: false })).map(({ name, version }) => {
     const record = { name, version, action: 'publish' };
     if (changesets && !plan.publication.cargo.some(row => row.name === name)) {
       const reused = plan.publication.reuseRust.find(row => row.name === name && row.version === version);
@@ -110,31 +111,12 @@ export async function refreshChangesetsVersionPr(root, number) {
   }
   const npm = npmInventory(), cargo = cargoInventory(metadata);
   const sdkFixture = 'scripts/release-fixtures/sdk-consumer/Cargo.toml';
-  let fixtureText = fs.readFileSync(path.join(root, sdkFixture), 'utf8');
-  for (const row of cargo) fixtureText = fixtureText.replace(new RegExp(`^(${row.name} = )"=[^"]+"`, 'm'), `$1"=${row.version}"`);
-  fs.writeFileSync(path.join(root, sdkFixture), fixtureText);
-  const plan = { ...baseline, npm, cargo, abi: fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1], preparation: { mode: 'changesets', receipt: 'docs/release-evidence/changesets-preparation.json' },
+  const plan = { ...baseline, publicationScope:'npm', npm, cargo, abi: fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1], preparation: { mode: 'changesets', receipt: 'docs/release-evidence/changesets-preparation.json' },
     counts: { primary: npm.primary.length, payloads: npm.payloads.length, total: npm.primary.length + npm.payloads.length } };
   plan.publication = changesetsPublication(plan, baseline, official.releases);
-  async function registry(url) {
-    const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
-    assert.ok(response.ok, `Immutable registry prerequisite absent: ${url} (${response.status})`);
-    return response.json();
-  }
-  const selected = new Set([...plan.publication.npm.primary, ...plan.publication.npm.payloads].map(row => row.name));
+  plan.publication.cargo = [];
   plan.publication.reuseNpm = [];
-  for (const row of [...npm.primary, ...npm.payloads].filter(row => !selected.has(row.name))) {
-    const value = await registry(`https://registry.npmjs.org/${encodeURIComponent(row.name)}/${row.version}`);
-    assert.equal(value.name, row.name); assert.equal(value.version, row.version);
-    assert.match(value.dist?.integrity ?? '', /^sha512-[A-Za-z0-9+/]+=*$/);
-    plan.publication.reuseNpm.push({ name: row.name, version: row.version, integrity: value.dist.integrity });
-  }
   plan.publication.reuseRust = [];
-  for (const row of cargo.filter(row => !plan.publication.cargo.some(item => item.name === row.name))) {
-    const value = (await registry(`https://crates.io/api/v1/crates/${encodeURIComponent(row.name)}/${row.version}`)).version;
-    assert.equal(value.num, row.version); assert.equal(value.yanked, false); assert.match(value.checksum, /^[a-f0-9]{64}$/);
-    plan.publication.reuseRust.push({ name: row.name, version: row.version, sha256: value.checksum });
-  }
   const write = (file, value) => fs.writeFileSync(path.join(root, file), JSON.stringify(value, null, 2) + '\n');
   write('docs/releases/v2-candidate.json', plan);
   const record = { schemaVersion: 1, mode: 'changesets', baseSHA: pr.base.sha, sourceHeadSHA: pr.head.sha,
@@ -149,10 +131,8 @@ export async function refreshChangesetsVersionPr(root, number) {
   git('push', 'origin', 'HEAD:refs/heads/changeset-release/main');
   const head = git('rev-parse', 'HEAD');
   assert.equal(gh('api', `repos/${repository}/pulls/${number}`).head.sha, head, 'Version PR moved concurrently');
-  for (const {workflow: file, inputs} of validationDispatches(number, pr.base.sha)) {
-    try { execFileSync('gh', ['workflow', 'run', file, '--repo', repository, '--ref', pr.head.ref, ...inputs.flatMap(value => ['-f', value])], { cwd: root, stdio: 'inherit', timeout: 30000 }); }
-    catch (error) { throw new Error(`Explicit validation dispatch failed for ${file}. This version-preparation job requires existing GITHUB_TOKEN actions:write; no new credential is created. ${error.message}`); }
-  }
+  writeVersionReceipt({...pr, head: {...pr.head, sha: head}});
+  // The workflow uploads this receipt before the separate dispatch step.
   console.log(JSON.stringify({ sourceHeadSHA: pr.head.sha, validationHeadSHA: head, publication: plan.publication.counts, registryReused: plan.publication.reuseNpm.length }));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

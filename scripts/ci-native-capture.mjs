@@ -1,3 +1,4 @@
+// cspell:words xcrun
 // cspell:words RUSTFLAGS
 import fs from 'node:fs';
 import path from 'node:path';
@@ -5,13 +6,14 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { formalFlagsHash } from './formal-native-environment.mjs';
 import { nativeArtifactInventory } from './native-artifact-inventory.mjs';
 
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const root = fileURLToPath(new URL('../', import.meta.url));
-const buildVariables = ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'CARGO_INCREMENTAL', 'CARGO_BUILD_JOBS', 'CARGO_PROFILE_RELEASE_LTO', 'CARGO_PROFILE_RELEASE_CODEGEN_UNITS', 'CARGO_PROFILE_CI_STRIP', 'FARM_BUILD_PROFILE', 'FARM_BUILD_ABI', 'FARM_BUILD_TARGET', 'FARM_BUILD_ZIG', 'FARM_CAPTURE_CORE_SCRIPT', 'FARM_CAPTURE_CORE_ARGS', 'FARM_CAPTURE_PLUGIN_ARGS', 'FARM_CAPTURE_CREATE_SCRIPT', 'FARM_CAPTURE_PLUGINS'];
+const buildVariables = ['RUST_LOG', 'RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'CARGO_INCREMENTAL', 'CARGO_BUILD_JOBS', 'CARGO_PROFILE_RELEASE_LTO', 'CARGO_PROFILE_RELEASE_CODEGEN_UNITS', 'CARGO_PROFILE_CI_STRIP', 'FARM_BUILD_PROFILE', 'FARM_BUILD_ABI', 'FARM_BUILD_TARGET', 'FARM_BUILD_ZIG', 'FARM_CAPTURE_CORE_SCRIPT', 'FARM_CAPTURE_CORE_ARGS', 'FARM_CAPTURE_PLUGIN_ARGS', 'FARM_CAPTURE_CREATE_SCRIPT', 'FARM_CAPTURE_PLUGINS'];
 
-export function captureRuntime({ env = process.env, run = spawnSync, cwd = root } = {}) {
+export function captureRuntime({ env = process.env, run = spawnSync, cwd = root, platform = process.platform } = {}) {
   const errors = [];
   // Version probes have a short diagnostic timeout. Never let a rustup proxy
   // auto-install the pinned toolchain here: interruption can leave a partial
@@ -34,9 +36,11 @@ export function captureRuntime({ env = process.env, run = spawnSync, cwd = root 
     && !permittedBuildVariables.has(name)).sort();
   const target = env.FARM_BUILD_TARGET;
   const linkerKey = target ? `CARGO_TARGET_${target.toUpperCase().replaceAll('-', '_')}_LINKER` : null;
-  const linker = linkerKey ? env[linkerKey] : null;
+  const linker = (linkerKey ? env[linkerKey] : null) || (platform === 'darwin' ? 'clang' : null);
   const linkerVersion = linker && !/[\r\n]/.test(linker) ? version(linker, ['--version']) : null;
-  return { schemaVersion: 1, phase: 'before-build', abi: env.FARM_BUILD_ABI ?? null, profile: env.FARM_BUILD_PROFILE ?? null, target: target ?? null,
+  const platformSdk = platform === 'darwin' ? version('xcrun', ['--show-sdk-version']) : platform === 'win32' ? env.VCToolsVersion ?? null : null;
+  const formalHash = formalFlagsHash(env);
+  return { platformSdk, formalFlagsHash: formalHash, schemaVersion: 1, phase: 'before-build', abi: env.FARM_BUILD_ABI ?? null, profile: env.FARM_BUILD_PROFILE ?? null, target: target ?? null,
     runtime: { node: process.version, os: process.platform, arch: process.arch, release: os.release() }, rustc, cargo, activeToolchain, flagsHash, unboundBuildVariables,
     linker: linkerVersion ? { executableHash: hash(linker), version: linkerVersion } : null, errors,
     measuredToolsComplete: Boolean(rustc && cargo && linkerVersion), completeMeasuredContext: false,

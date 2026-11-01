@@ -70,22 +70,25 @@ test('mixed delta cannot silently discard a different-byte same-version rebuild'
  value.selection.baselinePackages={};assert.throws(()=>makePublicationManifest(value),/independently verified original/);
 });
 
-test('JS-only delta restores release prerequisites and packages no native or SDK rebuild',()=>{
+test('JS-only delta builds source prerequisites and seals only selected archives',()=>{
  const root=fileURLToPath(new URL('../',import.meta.url));
  const primary=['packages/core','js-plugins/dts','js-plugins/babel'].map(directory=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(root,directory,'package.json')));return {name:pkg.name,version:pkg.version,manifestPath:directory+'/package.json'};
  });
  const family={abi:'0.5.4',cargo:[{name:'farmfe_core',version:'2.2.0',manifestPath:'crates/core/Cargo.toml'}],npm:{primary,payloads:[]}};
- const selection={chain:'release',profile:'release',sourceSHA:sha,sourceTree:tree,planHash:'d'.repeat(64),baselineBinding:'e'.repeat(64),
+ const selection={publicationScope:'npm',chain:'release',profile:'release',sourceSHA:sha,sourceTree:tree,planHash:'d'.repeat(64),baselineBinding:'e'.repeat(64),
   build:['npm:@farmfe/js-plugin-babel'],publish:['npm:@farmfe/js-plugin-babel'],versionRequired:[],baselinePackages:{}};
  for(const row of primary)selection.baselinePackages['npm:'+row.name]={version:row.version,archiveSha256:'a'.repeat(64),integrity:'sha512-'+Buffer.alloc(64).toString('base64')};
  selection.baselinePackages['cargo:farmfe_core']={version:'2.2.0',archiveSha256:'b'.repeat(64)};
  const candidate=candidatePlanForSelection(family,selection);
  assert.deepEqual(candidate.publication.npm.primary.map(row=>row.name),['@farmfe/js-plugin-babel']);
  assert.deepEqual(candidate.publication.npm.payloads,[]);
- assert.deepEqual(candidate.publication.reuseNpm.map(row=>row.name),['@farmfe/core','@farmfe/js-plugin-dts']);
+ assert.deepEqual(candidate.validationDependencies.npm.map(row=>row.name),['@farmfe/core','@farmfe/js-plugin-dts']);
  assert.deepEqual(releaseBuildDirectories(family,selection,root),['js-plugins/babel']);
- assert.deepEqual(rustRegistryReuse(candidate),[{name:'farmfe_core',version:'2.2.0',sha256:'b'.repeat(64)}]);
+ assert.deepEqual(candidate.publication.cargo,[]);
+ assert.equal(candidate.publication.reuseNpm,undefined);assert.equal(candidate.publication.reuseRust,undefined);
+ assert.equal(candidate.preparation.mode,'incremental-npm-source-release');
+ assert.deepEqual(candidate.validationDependencies.cargo,[]);
  delete selection.baselinePackages['npm:@farmfe/core'];assert.throws(()=>candidatePlanForSelection(family,selection));
 });
 

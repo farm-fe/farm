@@ -28,15 +28,12 @@ if [ -z "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR="$(pwd)/target"
 fi
 
-if [ "$PROFILE" = "ci" ]; then
-  CORE_BUILD_SCRIPT="build:rs:ci"
-  CREATE_FARM_BUILD_SCRIPT="build:ci"
-  PLUGIN_PROFILE_ARGS="--profile ci"
-else
-  CORE_BUILD_SCRIPT="build:rs:publish"
-  CREATE_FARM_BUILD_SCRIPT="build"
-  PLUGIN_PROFILE_ARGS=""
-fi
+# Execution role never changes the product recipe. PR and main use the same
+# formal product commands; ci-test remains exclusive to unit-test binaries.
+case "$PROFILE" in ci|release) ;; *) echo "Unsupported execution role" >&2; exit 1 ;; esac
+CORE_BUILD_SCRIPT="build:rs:publish"
+CREATE_FARM_BUILD_SCRIPT="build"
+PLUGIN_PROFILE_ARGS=""
 
 TARGET_ARGS=""
 if [ -n "$TARGET" ]; then
@@ -49,22 +46,12 @@ if [ "$ZIG" = "true" ]; then
 fi
 
 case "$ABI" in
-  darwin-x64|darwin-arm64)
-    if [ "$PROFILE" = "ci" ]; then
-      # Pinned LLVM's strip-debuginfo can break Mach-O string table alignment on
-      # macOS 27 (rust-lang/rust#157750). CI already disables debug info.
-      # Keep release publishing's independent optimization recipe unchanged.
-      export CARGO_PROFILE_CI_STRIP=none
-    fi
-    ;;
   linux-x64-gnu)
     unset CC_x86_64_unknown_linux_gnu || true
     unset CC || true
     export CARGO_INCREMENTAL=0
-    if [ "$PROFILE" = "ci" ]; then
-      # The live GNU reuse protocol requires a measured explicit linker.
-      export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
-    fi
+    # Both execution roles bind the same explicit measured linker.
+    export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
     ;;
   linux-x64-musl)
     if [ -f /etc/alpine-release ]; then
@@ -75,17 +62,13 @@ case "$ABI" in
       apk add --upgrade clang-static llvm-dev
     fi
     export CARGO_INCREMENTAL=0
-    if [ "$PROFILE" != "ci" ]; then
-      export CARGO_PROFILE_RELEASE_LTO=false
-    fi
+    export CARGO_PROFILE_RELEASE_LTO=false
     ;;
   win32-ia32-msvc|win32-arm64-msvc)
     cargo install cargo-xwin@0.18.6 --locked
-    if [ "$PROFILE" != "ci" ]; then
-      export CARGO_PROFILE_RELEASE_LTO=false
-      if [ "$ABI" = "win32-arm64-msvc" ]; then
-        export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
-      fi
+    export CARGO_PROFILE_RELEASE_LTO=false
+    if [ "$ABI" = "win32-arm64-msvc" ]; then
+      export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
     fi
     ;;
 esac
@@ -100,9 +83,7 @@ CORE_EXTRA_ARGS=""
 case "$ABI" in
   win32-ia32-msvc|win32-arm64-msvc)
     CORE_EXTRA_ARGS="--no-default-features"
-    if [ "$PROFILE" != "ci" ]; then
-      CORE_BUILD_SCRIPT="build:rs"
-    fi
+    CORE_BUILD_SCRIPT="build:rs"
     ;;
 esac
 
@@ -117,6 +98,13 @@ if [ "${FARM_NATIVE_PROOF_MODE:-off}" = "shadow" ]; then
   FARM_CAPTURE_CREATE_SCRIPT="$CREATE_FARM_BUILD_SCRIPT" \
   FARM_CAPTURE_PLUGINS="$PLUGINS" \
     node scripts/ci-native-capture.mjs runtime || printf '%s\n' 'Shadow native context unavailable; reuse remains disabled'
+fi
+
+if [ "${FARM_NATIVE_PREPARE_ONLY:-false}" = true ]; then exit 0; fi
+if [ "$PROFILE" = ci ] && [ -n "${FARM_FORMAL_RESOLUTION_HASH:-}" ]; then
+  BUILD_CORE="$(node scripts/formal-native-scope.mjs '@farmfe/core')"
+  BUILD_CREATE="$(node scripts/formal-native-scope.mjs create-farm)"
+  PLUGINS="$(node scripts/formal-native-scope.mjs --plugins "$PLUGINS")"
 fi
 
 if [ "$BUILD_CORE" = true ]; then

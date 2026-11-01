@@ -66,11 +66,11 @@ jobs:
             pnpm --dir "packages/$package" run build
           done
       - name: Build current Core native binding
-        run: pnpm --dir packages/core run build:rs:ci
+        run: pnpm --dir packages/core run build:rs:publish
       - name: Build Docs native plugin closure
         run: |
           for plugin in replace-dirname react mdx ssr-css syntax-highlight sass tailwindcss docs docs-snapshot docs-seo docs-snippets; do
-            pnpm --dir "rust-plugins/$plugin" exec farm-plugin-tools build --platform -p "farmfe_plugin_${plugin//-/_}" --profile ci
+            pnpm --dir "rust-plugins/$plugin" exec farm-plugin-tools build --platform -p "farmfe_plugin_${plugin//-/_}" --profile release
           done
       - name: Build public JS packages
         run: |

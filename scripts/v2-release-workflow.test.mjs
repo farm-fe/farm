@@ -17,12 +17,10 @@ test('all stable publication jobs use the supported pinned Node version', () => 
 test('ordinary main changes use Changesets version PRs without publication credentials', () => {
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /github.ref == 'refs\/heads\/main'/);
-  assert.match(workflow, /^  workflow_run:/m);
-  assert.match(workflow, /workflows: \[Release-plz\]/);
-  assert.match(workflow, /workflow_run.conclusion == 'success'/);
+  assert.match(workflow, /^  push:/m);
+  assert.match(workflow, /branches: \[main\]/);
   assert.match(workflow, /uses: changesets\/action@v1/);
-  assert.match(workflow, /FARM_CARGO_PROPOSAL:/);
-  assert.ok(workflow.indexOf('prepare-cargo-version-proposal.mjs --seed') < workflow.indexOf('uses: changesets/action@v1'), 'Cargo-only input must be visible before Changesets decides whether to version');
+  assert.doesNotMatch(workflow, /workflow_run:|FARM_CARGO_PROPOSAL|prepare-cargo-version-proposal/);
   assert.match(workflow, /title: 'chore: release packages'/);
   assert.doesNotMatch(workflow, /NPM_TOKEN|CARGO_REGISTRY_TOKEN|run: pnpm run release/);
   const stable = fs.readFileSync(new URL('../.github/workflows/v2-stable-release.yaml', import.meta.url), 'utf8');
@@ -41,7 +39,7 @@ test('ordinary main changes use Changesets version PRs without publication crede
 });
 test('Changesets filesystem and parsing errors cannot select publication', () => {
   assert.match(workflow, /id: changesets/);
-  assert.match(workflow, /run: node scripts\/prepare-cargo-version-proposal\.mjs --inspect/);
+  assert.match(workflow, /run: node scripts\/check-changeset-status\.mjs/);
   assert.match(workflow, /changeset_state == 'pending'/);
   assert.doesNotMatch(workflow, /changeset_state == 'empty'/);
   assert.doesNotMatch(workflow, /if node .*check-changeset-status/);
@@ -117,7 +115,8 @@ test('independent workflow consumes actual release delta APIs and supports a nat
   assert.ok(release.includes("needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'"));
   assert.ok(release.includes('prepare release-work/release-plan.json release-native release-work/native-assembly.json release-work/candidate-plan.json'));
   assert.ok(release.includes('pack release-work/native-assembly.json release-work/artifact-index.json release-work/npm release-work/candidate-plan.json'));
-  assert.equal((release.match(/FARM_RELEASE_CANDIDATE_PLAN: release-work\/candidate-plan.json/g) || []).length, 3);
+  assert.doesNotMatch(release,/FARM_RELEASE_CANDIDATE_PLAN|sdk-consumer|seal-v2-rust/);
+  assert.match(release,/seal-npm/);
   assert.ok(release.includes("plan['planHash'] == os.environ['PLAN_HASH']"));
   assert.ok(release.includes('Upload independent release candidate acceptance'));
   assert.ok(release.includes('path: candidate-results/result.json'));

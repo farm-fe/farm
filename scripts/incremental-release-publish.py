@@ -120,6 +120,7 @@ class RegistryWriter:
         return actual['sha256']
 
     def publish(self, row, body):
+        check(row.get("kind") == "npm", "Cargo publication remains outside the new npm incremental publisher")
         check(hashlib.sha256(body).hexdigest() == row["archiveSha256"], "Upload bytes differ from frozen archive")
         if row["kind"] == "cargo":
             token = self.environment.get("CARGO_REGISTRY_TOKEN")

@@ -184,7 +184,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/replace-dirname/package.json",
         "manifestSha256": "ead569bcd1f6241b63b0cc508591c66e23a4946d48ea5a79b4efab37f3c97ff8",
-        "sourceSha256": "59b3f23900b624b79aa1ac6b0d7d3da75a47976775b0a5ccc76aca0523e5a3b7"
+        "sourceSha256": "dd7351ca4b0826fa76e900db4df32f5c734aa28a8e87e912c8fe822bac3753c8"
       },
       {
         "name": "@farmfe/plugin-sass",
@@ -2109,7 +2109,7 @@
       "manifestPath": "crates/core/Cargo.toml",
       "manifestSha256": "b0728964f5fcdf61bd714c32cf0ebfc937cb3830bc9065dc8f345d71f9f94da2",
       "publish": null,
-      "sourceSha256": "ee7c1338b416a7156ef639c559e7d6d14c211d728b32b50122850ec59b446db1"
+      "sourceSha256": "44f1ad46e56491042d3eaabad602b4e27a2b9838a0f500fdd4ead9d9f7d9eba5"
     },
     {
       "name": "farmfe_ecosystem_glob",
@@ -2165,7 +2165,7 @@
       "manifestPath": "crates/plugin_html/Cargo.toml",
       "manifestSha256": "177dd64dad12a74e6d1b1bfcc48a02b732c5807aae08c0788b33b4cf3510b7ca",
       "publish": null,
-      "sourceSha256": "b116a905451592b704c09d4c278c0cc6fa03d4195fc475b066531c7a9ba0b71e"
+      "sourceSha256": "225e1d78037a713482cebe0f4e5594b78833794af1e5ce4f6e9f9a5274e8b2e0"
     },
     {
       "name": "farmfe_plugin_json",

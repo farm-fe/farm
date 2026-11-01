@@ -1,8 +1,6 @@
 name: Prepare Changesets version PR
 on:
-  workflow_run:
-    workflows: [Release-plz]
-    types: [completed]
+  push:
     branches: [main]
   workflow_dispatch:
 permissions:
@@ -12,14 +10,13 @@ concurrency:
   cancel-in-progress: false
 jobs:
   check-release-request:
-    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       actions: read
     outputs:
       changeset_state: ${{ steps.changesets.outputs.state }}
-      cargo_proposal: ${{ steps.changesets.outputs.proposal }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,7 +26,7 @@ jobs:
         id: changesets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/prepare-cargo-version-proposal.mjs --inspect
+        run: node scripts/check-changeset-status.mjs
   changeset-version:
     name: Prepare reviewed version PR
     needs: [check-release-request]
@@ -51,10 +48,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install the pinned metadata toolchain
         run: rustup toolchain install nightly-2026-04-10 --profile minimal
-      - name: Mark a Cargo-only proposal for the official Changesets action
-        env:
-          FARM_CARGO_PROPOSAL: ${{ needs.check-release-request.outputs.cargo_proposal }}
-        run: node scripts/prepare-cargo-version-proposal.mjs --seed
       # Publication credentials are never available to this versioning action.
       # A reviewed version PR must also refresh its exact plan/intent and seal.
       - uses: changesets/action@v1
@@ -66,10 +59,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ github.token }}
-          FARM_CARGO_PROPOSAL: ${{ needs.check-release-request.outputs.cargo_proposal }}
-      - name: Refresh exact version PR inputs and explicitly request validation
+      - name: Refresh exact version PR inputs and record provenance
         if: steps.changesets.outputs.pullRequestNumber != ''
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
         run: node scripts/prepare-v2-release-intent.mjs --changesets-pr "$VERSION_PR"
+      - name: Upload version-only provenance
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-provenance-${{ steps.changesets.outputs.pullRequestNumber }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: version-provenance/ledger.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Request validation after provenance upload
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_PR: ${{ steps.changesets.outputs.pullRequestNumber }}
+        shell: bash
+        run: |
+          BASE=$(python3 -c 'import json; print(json.load(open("version-provenance/ledger.json"))["baseSHA"])')
+          HEAD=$(python3 -c 'import json; print(json.load(open("version-provenance/ledger.json"))["headSHA"])')
+          test "$(gh api "repos/$GITHUB_REPOSITORY/pulls/$VERSION_PR" --jq .head.sha)" = "$HEAD"
+          gh workflow run ci.yaml --repo "$GITHUB_REPOSITORY" --ref changeset-release/main -f "pr_number=$VERSION_PR" -f "base_sha=$BASE"
+          for WORKFLOW in rust-test.yaml lint.yaml code-spell-check.yaml; do
+            gh workflow run "$WORKFLOW" --repo "$GITHUB_REPOSITORY" --ref changeset-release/main -f "release_pr=$VERSION_PR" -f "release_base=$BASE"
+          done

@@ -84,7 +84,11 @@ class RealRepositoryOracle(unittest.TestCase):
             files = dict(self.files); files[candidates[0]] += b'\n// simulated source mutation\n'
             root = {"npm:" + directory}
             products = reverse_oracle(self.graph, root, "productDeps")
-            expected_tests = reverse_oracle(self.graph, root, "testDeps") | self.examples
+            input_node = "input:validation:" + directory + "/"
+            self.assertIn(directory + "/", chain.DIRECTORY_RULES["suiteGlobal"])
+            self.assertIn(input_node, self.graph)
+            expected_tests = reverse_oracle(self.graph, root | {input_node}, "testDeps") | self.examples
+            self.assertEqual({key for key in expected_tests if not key.startswith("input:")}, {key for key,node in self.graph.items() if node["kind"] != "input"})
             if "npm:website" in self.graph:
                 expected_tests.add("npm:website")
             plan = self.select(files)

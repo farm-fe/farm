@@ -10,7 +10,7 @@ import { captureRuntime, captureProducts, captureProductProof, proofDirectory } 
 
 test('runtime capture measures only bounded tools and never publishes arbitrary environment', () => {
   const calls = [];
-  const record = captureRuntime({ env: { FARM_BUILD_ABI: 'linux-x64-gnu', FARM_BUILD_TARGET: 'x86_64-unknown-linux-gnu', FARM_BUILD_PROFILE: 'ci', RUSTFLAGS: '-Copt-level=3', GH_TOKEN: 'secret-fixture' }, run(executable, args, options) {
+  const record = captureRuntime({ platform: 'linux', env: { FARM_BUILD_ABI: 'linux-x64-gnu', FARM_BUILD_TARGET: 'x86_64-unknown-linux-gnu', FARM_BUILD_PROFILE: 'ci', RUSTFLAGS: '-Copt-level=3', GH_TOKEN: 'secret-fixture' }, run(executable, args, options) {
     calls.push([executable, args]); assert.equal(options.shell, false); assert.equal(options.timeout, 15000);
     return { status: 0, stdout: 'measured tool version' };
   } });
@@ -20,7 +20,7 @@ test('runtime capture measures only bounded tools and never publishes arbitrary 
 });
 
 test('a failed context probe remains unavailable and never becomes reusable', () => {
-  const record = captureRuntime({ env: {}, run: () => ({ status: 1, stdout: '', error: { code: 'ENOENT' } }) });
+  const record = captureRuntime({ platform: 'linux', env: {}, run: () => ({ status: 1, stdout: '', error: { code: 'ENOENT' } }) });
   assert.equal(record.errors.length, 3); assert.equal(record.measuredToolsComplete, false); assert.equal(record.reuseAuthorized, false);
 });
 
@@ -122,7 +122,7 @@ test('bounded tool probes cannot auto-install or mutate the real build environme
     const env = { FARM_BUILD_TARGET: 'x86_64-unknown-linux-gnu', CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: 'gcc' };
     if (inherited !== undefined) env.RUSTUP_AUTO_INSTALL = inherited;
     const original = {...env}, calls = [];
-    const record = captureRuntime({ env, run(executable, args, options) {
+    const record = captureRuntime({ platform: 'linux', env, run(executable, args, options) {
       calls.push(executable);
       assert.notEqual(options.env, env);
       assert.equal(options.env.RUSTUP_AUTO_INSTALL, '0');
@@ -185,7 +185,7 @@ test('CI strip override is measured in the recipe fingerprint', () => {
   assert.notEqual(before.flagsHash, after.flagsHash);
 });
 
-test('native recipe disables debug stripping only for Apple CI builds', () => {
+test('native recipe leaves CI-only strip overrides unset for both formal roles', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-native-strip-'));
   try {
     const source = fs.readFileSync(new URL('./ci-build-rust-artifacts.sh', import.meta.url), 'utf8');
@@ -193,7 +193,7 @@ test('native recipe disables debug stripping only for Apple CI builds', () => {
     fs.writeFileSync(path.join(bin, 'node'), '#!/bin/sh\nexit 0\n', {mode: 0o755});
     // Execute the actual setup section; stop before tool probes or build commands.
     const setup = source.slice(0, source.indexOf('if [ "${FARM_NATIVE_PROOF_MODE'));
-    for (const [abi, profile, expected] of [['darwin-arm64', 'ci', 'none'], ['darwin-x64', 'ci', 'none'], ['darwin-arm64', 'release', 'unset'], ['linux-x64-gnu', 'ci', 'unset']]) {
+    for (const [abi, profile, expected] of [['darwin-arm64', 'ci', 'unset'], ['darwin-x64', 'ci', 'unset'], ['darwin-arm64', 'release', 'unset'], ['linux-x64-gnu', 'ci', 'unset']]) {
       const env = {...process.env, PATH: bin + path.delimiter + process.env.PATH, FARM_BUILD_ABI: abi, FARM_BUILD_PROFILE: profile, FARM_RELEASE_NATIVE_OWNERS: ''};
       delete env.CARGO_PROFILE_CI_STRIP;
       const result = spawnSync('sh', ['-c', setup + '\nprintf "%s" "${CARGO_PROFILE_CI_STRIP-unset}"'], {cwd: root, env, encoding: 'utf8'});

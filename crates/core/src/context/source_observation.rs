@@ -10,7 +10,9 @@ use std::{
   sync::atomic::{AtomicU64, Ordering},
 };
 
-use parking_lot::Mutex;
+// This ledger is accessed by both the host and independently loaded plugins.
+// Use the shared-address platform lock, not a library-local parking queue.
+use crate::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 

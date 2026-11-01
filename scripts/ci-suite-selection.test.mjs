@@ -23,6 +23,9 @@ function model() {
   git('init', '--quiet');
   assert.equal(fs.realpathSync.native(git('rev-parse', '--show-toplevel').trim()), directory);
   const write = (file, body) => { const target = path.join(directory, file); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, body); };
+  write('Cargo.toml', '[workspace]\nmembers=[]\n');
+  write('pnpm-workspace.yaml', 'packages:\n  - packages/*\n  - examples/*\n');
+  for (const name of ['core','cli','runtime','runtime-plugin-hmr','runtime-plugin-import-meta']) write(`packages/${name}/package.json`, JSON.stringify({name:'@farmfe/'+name}));
   write('package.json', JSON.stringify({ devDependencies: { vitest: '2.0.4' } }));
   for (const file of Object.keys(suitePolicy.inputs)) write(file, fs.readFileSync(path.join(root, file)));
   for (const name of ['react', 'two']) {

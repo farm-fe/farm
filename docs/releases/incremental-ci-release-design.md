@@ -1,12 +1,12 @@
 <!-- cspell:words codegen debuginfo rustflags rustup cdylib rlib napi libloading plz serde lto sse crt -->
 # 统一依赖图、PR 产物复用与升版后增量发布设计
 
-状态：**待用户 review 和确认，尚未批准实施。**
+状态：**用户已批准本方案及下述 Changesets 补充，正在本地实施与验证，尚未远端启用。**
 
 本稿以 2026-11-01 的设计讨论为准。写稿时本地实现 HEAD 为
 `a752b6b09a09b3c37812bcf14961bb533186511b`，存在未提交的失败回归与测试证据。
 本次只增加设计文档，不表示既有本地实现、远端 CI 或实际发布已经满足本方案。
-在用户确认前，不继续实现、不创建版本 PR、不修改工作流、不推送、不发布。
+本轮授权本地实现与真实验证，不创建真实版本 PR、不推送、不发布。
 
 本稿批准后，将取代以下旧设计约束：CI/release 永不共享构建字节、仅允许文档路径触发
 native 复用，以及 release 通过恢复未变化包的历史二进制准备本轮构建。
@@ -14,6 +14,36 @@ native 复用，以及 release 通过恢复未变化包的历史二进制准备�
 [旧独立链方案](independent-incremental-chains.md)、
 [旧 GNU 文档复用范围](ci-leaf-native.md)、
 [旧 suite 选择](ci-suite-selection.md)、[现有发布准备](v2-auto-release.md)。
+
+## 2026-11-01 已批准的 Cargo 范围修订
+
+本节覆盖下文较早版本中把 crates.io 纳入统一增量发布的描述。
+
+- 本方案的增量构建、成品复用、Changesets 后发布只覆盖 **npm 包及其 native payload**。
+- Cargo workspace/path/target/features/build/dev 依赖图继续完整参与 Core、Rust plugin、
+  create-farm 二进制的输入闭包、ABI 兼容性与当前测试选择；不删除 Cargo 图。
+- crates.io 上传不进入新 npm 增量 publisher，不等待 npm 二进制候选，也不增加多平台
+  Cargo 成品构建/复用要求。Cargo 原有源码包流程及校验独立保留；不因本次范围缩减增加
+  `--no-verify`、新的发布凭据或自动发布触发。
+- npm Changesets Action 从 main push/显式 dispatch 准备版本，不等待 Release-plz 工作流
+  完成。不再读取 crates.io 已发布状态作为 npm 升版前提；Rust 源码版本与 ABI 检查仍保留。
+- npm 发布计划、归档、publisher、发布 baseline 均显式限定 `publicationScope: npm`；
+  不得把混合 Cargo/npm 的旧 baseline 当作 npm-only 的已完成发布证据。
+- 本地读取的 `origin/main` 为 `1d1039e7`：其 `release-plz.yaml` 只有 `release-pr`；
+  当时 crates.io 上传位于 `v2-stable-release.yaml` 的 `rust` job，调用
+  `v2-auto-release.mjs rust`，此前已在本 PR 的 `0a2f3e08` 退役。
+  更早的 `5db8ecce^` 才有自动 `release-plz release`。这两者不是同一个入口。
+  本次不擅自恢复更早的自动 release；`release-plz.yaml` 与 `release-plz.toml` 保持不变。
+  源码上传职责现由 [cargo-source-release.yaml](../../.github/workflows/cargo-source-release.yaml)
+  承接：保留原 main 上同仓已合并 Changesets 分支事件和并发组，现有 Cargo secret
+  仅给 publisher。单独验证版本 PR 来源与语义、固定 merge tree，默认 Cargo package
+  验证后冻结源码归档；无 npm/native 候选依赖，不创建 tag 或 Release。
+  必要行为差异：不再使用旧全量 npm/SDK seal；改用 Cargo 自身 package 验证和原档证明。
+  当前入口仅选择该受验证版本 PR 中确实提升版本的 Cargo 包；没有 Cargo 版本差异则为空。
+  不扩展触发到任意 release-plz PR，不恢复早期 release-plz 自动发布。独立合并的 Cargo
+  版本提案不因此自动上传，需在上线审查中明确其与原版本 PR 的衔接。
+  重跑缺失/过期原 artifact 一律阻断；允许原成功 producer attempt 恢复，不能重新打包
+  替换部分上传事务的字节。真实双 crate 默认验证和 API/ZIP 恢复测试不代表真实 registry 发布。
 
 ## 1. 目标与明确决策
 
@@ -23,7 +53,7 @@ native 复用，以及 release 通过恢复未变化包的历史二进制准备�
    相同的正式 recipe；只有输入与证据完整匹配才复用。复用的是构建字节，不是当前 PR 的测试结论。
 3. artifact 被删除、过期、不存在、下载失败、损坏或证据缺失，均回退当前 PR 构建。
    不能把缺失当作“不适用”，不能因此跳过 required gate。
-4. **先 Changesets 升版，再 main 增量构建和发布**。基于升版后的固定 main SHA 与成功发布
+4. **先 Changesets 升版，再 main 对 npm/native 增量构建和发布**。基于升版后的固定 main SHA 与成功发布
    baseline 计算选中集合；选中产品和必要构建依赖从当前源码走正式构建，不恢复历史成品。
 5. main 本轮未选中产品不构建、不重新上传，沿用它们已发布的状态；这不叫本轮构建复用。
 6. main 成功构建并验证的正式产物可供后续 PR 只读使用。PR 构建的产物绝不晋升 main 发布候选。
@@ -204,11 +234,22 @@ flowchart TD
 
 有效性来自独立来源校验，不来自 JSON 字段。manifest 不授予发布权限。
 
+### Changesets 版本 PR 的轻量通道（批准补充）
+
+版本准备先运行官方 Changesets Action。由可信 Action 创建的纯升版 PR 可以跳过重型 CI，
+但轻量分类与稳定名称的 required gate 始终执行，成功原因明确记录为经过验证的纯版本更新。
+不能只凭标题、分支、actor 名称或文件路径判定。必须绑定正确仓库/base、真实 bot 身份、
+可信工作流的成功 run/attempt 与精确 head，并对实际 diff 进行语义验证：包版本前进、内部
+依赖版本同步、对应 lock 更新、changelog 与 Changesets 消费；Cargo 联动同样验证版本语义。
+源码、scripts/workflow/config/toolchain 变化、第三方依赖新增/删除/升级、重复版本、fork、
+伪造 bot 或缺少来源证据一律走正常 CI。版本 PR 合并后才进入正式增量 release。
+不得修改分支保护或权限来消除 pending；required gate 必须明确校验 heavy jobs 跳过理由。
+
 ## 6. main release 入口：Changesets 在前，选中产品实际增量构建
 
 ```mermaid
 flowchart TD
-  I[收集 Changesets 与 Cargo 版本提案] --> VP[统一版本准备与审查]
+  I[收集 npm Changesets] --> VP[Changesets Action 版本准备与审查]
   VP --> VC[版本更新合并后的明确 main commit]
   VC --> F[固定 source SHA/tree 与成功发布 baseline]
   F --> G[统一图 + 版本计划]
@@ -358,6 +399,6 @@ PR 固定 head、比较基线及目录解析视图。多个 PR 可以只读消�
 - [ ] 三种依赖来源共同组成统一图，product/preparation/validation 含义与 fallback 可接受。
 - [ ] 同 owner/target 的 PR/main 正式参数一致；保留实际正式产品策略而非盲目统一所有 owner。
 - [ ] PR artifact 缺失必须重建，main release 自身不恢复历史成品。
-- [ ] Changesets 与 Cargo 版本准备先完成，固定升版后的 main SHA 再规划/构建/发布。
+- [ ] npm Changesets 版本准备先完成，固定升版后的 main SHA 再规划/构建/发布；crates.io 独立。
 - [ ] 两种 baseline、显式 publish、同事务恢复与跨运行复用的边界清楚。
 - [ ] 接受上述验收和集中实施顺序；**勾选/批准前只做文档 review，不开始实现。**

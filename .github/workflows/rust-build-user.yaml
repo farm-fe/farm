@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: rust-build-user-${{ github.workflow }}-${{ github.ref }}-${{ inputs.platform }}
@@ -35,6 +36,11 @@ jobs:
         settings: ${{ fromJSON(inputs.platform == 'all' && '[{"os":"ubuntu-24.04","docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian","abi":"linux-x64-gnu","target":"x86_64-unknown-linux-gnu"},{"os":"macos-latest","abi":"darwin-arm64","target":"aarch64-apple-darwin"},{"os":"windows-latest","abi":"win32-x64-msvc","target":"x86_64-pc-windows-msvc"}]' || inputs.platform == 'linux-x64-gnu' && '[{"os":"ubuntu-24.04","docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian","abi":"linux-x64-gnu","target":"x86_64-unknown-linux-gnu"}]' || inputs.platform == 'darwin-arm64' && '[{"os":"macos-latest","abi":"darwin-arm64","target":"aarch64-apple-darwin"}]' || inputs.platform == 'win32-x64-msvc' && '[{"os":"windows-latest","abi":"win32-x64-msvc","target":"x86_64-pc-windows-msvc"}]' || '[]') }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       - name: Resolve the host Cargo cache for Docker mounts
         shell: bash
         run: |
@@ -139,9 +145,10 @@ jobs:
           swap-storage: true
       - name: Build in Docker with host-owned Cargo cache export
         if: ${{ matrix.settings.docker }}
-        run: node scripts/v2-docker-cargo-cache.mjs
+        run: node scripts/formal-native-build.mjs
         env:
           FARM_BUILD_IMAGE: ${{ matrix.settings.docker }}
+          GH_TOKEN: ${{ github.token }}
           FARM_BUILD_PROFILE: ${{ inputs.profile }}
           FARM_BUILD_ABI: ${{ matrix.settings.abi }}
           FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
@@ -157,9 +164,10 @@ jobs:
           retention-days: 14
       - name: Build
         if: ${{ !matrix.settings.docker }}
-        run: ./scripts/ci-build-rust-artifacts.sh
+        run: node scripts/formal-native-build.mjs
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           FARM_BUILD_PROFILE: ${{ inputs.profile }}
           FARM_BUILD_ABI: ${{ matrix.settings.abi }}
           FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
@@ -168,30 +176,15 @@ jobs:
         env:
           FARM_CARGO_METADATA: ${{ runner.temp }}/farm-cargo-metadata.json
         run: node scripts/cargo-cache-command.cjs --verify-snapshot
-      - uses: actions/setup-python@v5
-        if: inputs.profile == 'ci' && matrix.settings.abi == 'linux-x64-gnu' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        with:
-          python-version: '3.13'
-      - name: Seal actual main CI native bytes with measured GNU context
-        id: ci-byte-bundle
-        continue-on-error: true
-        if: inputs.profile == 'ci' && matrix.settings.abi == 'linux-x64-gnu' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
-          FARM_BUILD_PROFILE: ${{ inputs.profile }}
-          FARM_BUILD_TARGET: ${{ matrix.settings.target }}
-        run: |
-          node scripts/ci-native-capture.mjs products
-          python -B scripts/ci-leaf-native.py produce --products .ci-native-host-proof/linux-x64-gnu/products.json --output ci-native-byte-bundle
-      - name: Upload trusted CI native byte bundle
-        if: inputs.profile == 'ci' && matrix.settings.abi == 'linux-x64-gnu' && github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.ci-byte-bundle.outcome == 'success'
-        continue-on-error: true
+      - name: Preserve current consumer binding and original main provenance
+        if: inputs.profile == 'ci'
         uses: actions/upload-artifact@v4
         with:
-          name: farm-ci-byte-bundle-${{ github.sha }}-linux-x64-gnu-${{ github.run_attempt }}
-          path: ci-native-byte-bundle/
+          name: formal-resolution-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .formal-native/${{ matrix.settings.abi }}/resolution.json
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 14
       - name: Upload Core
         if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/core') }}
         uses: actions/upload-artifact@v4
@@ -410,6 +403,7 @@ jobs:
         continue-on-error: ${{ inputs.profile != 'release' }}
         env:
           FARM_BUILD_ABI: ${{ matrix.settings.abi }}
+          GH_TOKEN: ${{ github.token }}
           FARM_BUILD_PROFILE: ${{ inputs.profile }}
           FARM_BUILD_TARGET: ${{ matrix.settings.target }}
         run: |
@@ -427,6 +421,20 @@ jobs:
           path: .ci-native-host-proof/${{ matrix.settings.abi }}/products.json
           if-no-files-found: error
           retention-days: 14
+      - name: Seal formal native product catalog
+        id: formal-catalog
+        if: inputs.profile == 'release'
+        env:
+          FARM_BUILD_PROFILE: release
+        run: python -B scripts/formal-native-products.py produce --abi ${{ matrix.settings.abi }} --capture .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output formal-native-catalog
+      - name: Upload formal native product catalog
+        if: inputs.profile == 'release' && steps.formal-catalog.outputs.catalog_available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formal-native-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          path: formal-native-catalog/
+          if-no-files-found: error
+          retention-days: 30
       - name: Preserve bounded shadow producer context without duplicating native archives
         if: ${{ always() && inputs.profile != 'release' }}
         continue-on-error: true

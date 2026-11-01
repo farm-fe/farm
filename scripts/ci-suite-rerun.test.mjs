@@ -38,13 +38,13 @@ test('both CI consumers resolve original receipts before count verification; no 
 });
 
 
-test('all six native restore sites have complete checkout history before source-reader parent proof',()=>{
+test('both formal native executors have complete history before per-product resolution',()=>{
   let restores=0;
-  for(const file of ['ci.yaml','ci-primary-platform.yaml']){
+  for(const file of ['rust-build-user.yaml','rust-build-release.yaml']){
     const yaml=fs.readFileSync(new URL('../.github/workflows/'+file,import.meta.url),'utf8').split('\njobs:\n')[1];
     const jobs=yaml.split(/\n(?=  [a-z][a-z0-9-]*:)/);
     for(const block of jobs){
-      const matches=[...block.matchAll(/scripts\/ci-leaf-native.py restore/g)];
+      const matches=[...block.matchAll(/scripts\/formal-native-build.mjs/g)];
       for(const found of matches){
         restores++;
         const before=block.slice(0,found.index),checkout=before.lastIndexOf('      - uses: actions/checkout@');
@@ -53,6 +53,6 @@ test('all six native restore sites have complete checkout history before source-
       }
     }
   }
-  assert.equal(restores,6);
+  assert.equal(restores,4);
   assert.ok(fs.readFileSync(new URL('../.github/workflows/ci.yaml',import.meta.url),'utf8').includes('python scripts/ci-restore-depth.test.py'));
 });

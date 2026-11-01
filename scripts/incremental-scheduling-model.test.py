@@ -59,7 +59,9 @@ class SchedulingOracle(unittest.TestCase):
         self.assertEqual(plan["build"], ["npm:b"])
         self.assertEqual(set(plan["testNodes"]), {"npm:packages/b", "npm:examples/one"})
         self.assertEqual(set(plan["buildDependencyClosure"]), AB)
-        self.assertEqual(set(plan["buildNodes"]), {"npm:packages/a", "npm:packages/x", "npm:packages/b"})
+        self.assertEqual({key for key in plan["buildNodes"] if not key.startswith("input:")}, {"npm:packages/a", "npm:packages/x", "npm:packages/b"})
+        self.assertEqual({key for key in plan["buildNodes"] if key.startswith("input:")}, {"input:global:" + path for path in chain.DIRECTORY_RULES["global"]})
+        self.assertEqual(len(plan["buildNodes"]), 3 + len(chain.DIRECTORY_RULES["global"]))
 
     def test_private_x_changes_publish_only_b_after_version_preparation(self):
         plan = select("packages/x/src/index.ts")
@@ -150,7 +152,10 @@ class SchedulingOracle(unittest.TestCase):
             files[directory + "/src/index.ts"] = b'export const value = 2;'
             plan = fixtures.calculate("ci", source, files, family, [], ledger, previous, anchor)
             self.assertEqual(plan["build"], ["npm:" + identity])
-            self.assertEqual(set(plan["testNodes"]), {"npm:" + directory, "npm:examples/one", "npm:examples/two"})
+            self.assertIn(directory + "/", chain.DIRECTORY_RULES["suiteGlobal"])
+            expected_packages = {"cargo:crates/core", "cargo:crates/compiler", "cargo:crates/toolkit", "cargo:rust-ecosystem/glob", "npm:packages/a", "npm:packages/b", "npm:packages/d", "npm:packages/x", "npm:examples/one", "npm:examples/two", "npm:" + directory}
+            self.assertEqual(set(plan["testNodes"]), expected_packages | {"input:validation:" + directory + "/"})
+            self.assertEqual(plan["build"], ["npm:" + identity])
             self.assertFalse(plan["fullBuild"])
 
     def test_first_build_stays_inside_its_chain_and_ci_never_publishes(self):

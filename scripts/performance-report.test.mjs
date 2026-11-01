@@ -132,7 +132,7 @@ test('performance job is non-blocking, follows Examples and pins artifact names 
   const source = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const job = source.split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
   const dependencies = job.match(/needs:\s*\[([^\]]+)\]/)?.[1].split(',').map(name => name.trim());
-  assert.deepEqual(new Set(dependencies), new Set(['examples-test', 'docs-acceptance', 'ts-test', 'type-check', 'check-native-candidate-assembly']));
+  assert.deepEqual(new Set(dependencies), new Set(['version-classification', 'examples-test', 'docs-acceptance', 'ts-test', 'type-check', 'check-native-candidate-assembly']));
   assert.match(job, /continue-on-error: true/);
   assert.match(job, /timeout-minutes: 90/);
   assert.deepEqual([...job.matchAll(/os: (ubuntu-24\.04|macos-latest|windows-latest)/g)].map(match => match[1]), ['ubuntu-24.04', 'macos-latest', 'windows-latest']);

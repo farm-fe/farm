@@ -18,11 +18,21 @@ on:
       - codex/v2-unified-release-20261025
 
 concurrency:
-  group: test-${{ github.workflow }}-${{ github.ref }}
+  group: test-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.release_pr || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  version-classification:
+    uses: ./.github/workflows/classify-version-pr.yaml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      pr_number: ${{ inputs.release_pr || '' }}
+
   impact-plan:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
     name: Incremental Unit CI plan (shadow only)
     continue-on-error: true
     runs-on: ubuntu-24.04
@@ -50,8 +60,8 @@ jobs:
   impact-summary:
     name: Incremental Unit CI shadow summary
     continue-on-error: true
-    if: always()
-    needs: [impact-plan, cargo-check, cargo-test]
+    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification, impact-plan, cargo-check, cargo-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -86,6 +96,8 @@ jobs:
           retention-days: 14
 
   cargo-check:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
     name: Check
     runs-on: ubuntu-24.04
     steps:
@@ -113,6 +125,8 @@ jobs:
           artifact-suffix: ${{ matrix.os || 'single' }}
 
   cargo-test:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
     name: Test - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -169,7 +183,7 @@ jobs:
   required-linux-test-compatibility:
     name: Test - ubuntu-latest
     if: always()
-    needs: [cargo-test]
+    needs: [version-classification, cargo-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -177,4 +191,13 @@ jobs:
         shell: bash
         env:
           UPSTREAM_RESULT: ${{ needs.cargo-test.result }}
-        run: test "$UPSTREAM_RESULT" = success
+          CLASSIFICATION_RESULT: ${{ needs.version-classification.result }}
+          VERSION_MODE: ${{ needs.version-classification.outputs.mode }}
+          VERSION_PROOF: ${{ needs.version-classification.outputs.proof_hash }}
+        run: |
+          test "$CLASSIFICATION_RESULT" = success
+          if [ "$VERSION_MODE" = verified-version-only ]; then
+            test "${#VERSION_PROOF}" = 64 && test "$UPSTREAM_RESULT" = skipped
+          else
+            test "$UPSTREAM_RESULT" = success
+          fi

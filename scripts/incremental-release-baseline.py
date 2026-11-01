@@ -159,6 +159,7 @@ class ReleaseBaselineReader:
             cursor=manifest.get('baseline')
         nodes,issues=chain.repository_graph(latest_source['files']);check(not issues,'Published baseline graph is ambiguous')
         expected=chain.independent_family(latest_source['files'],nodes)
+        if latest_manifest.get('publicationScope') == 'npm': expected={key:row for key,row in expected.items() if row['kind']=='npm'}
         check(set(records)==set(expected) and all(row['version']==expected[key]['version'] for key,row in records.items()),'Completed baseline family or version coverage differs')
         checksums=self.registry.verify(records)
         check(checksums=={key:row['archiveSha256'] for key,row in records.items()},'Completed registry byte checksums differ')
@@ -169,7 +170,7 @@ class ReleaseBaselineReader:
                 if row['kind']=='npm':row['integrity']='sha512-'+observed[key]['sha512']
             for field in ['manifestPath','owner','platform']:
                 if field in expected[key]:row[field]=expected[key][field]
-        ledger={'schemaVersion':1,'chain':'release','profile':'release','policy':chain.POLICY,'status':'success','registryVerified':True,
+        ledger={'schemaVersion':1,'publicationScope':latest_manifest.get('publicationScope','all'),'chain':'release','profile':'release','policy':chain.POLICY,'status':'success','registryVerified':True,
                 'repositoryId':repository['id'],'runId':latest_manifest['producerRunId'],'runAttempt':latest_manifest['producerAttempt'],
                 'sourceSHA':latest_source['sha'],'sourceTree':latest_source['tree'],'sourceSnapshotHash':chain.digest(chain.snapshot_records(latest_source['files'],latest_source['modes'])),
                 'abi':json.loads(latest_source['files']['docs/releases/v2-candidate.json'])['abi'],'packages':records}

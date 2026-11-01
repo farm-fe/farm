@@ -17,6 +17,7 @@ export function calculateSelection(identity, directory = root, read = (args, opt
   const current = readGitSuiteFiles(directory, read);
   assert.equal(current.sourceIdentity.commit, identity.sourceSHA); assert.equal(current.sourceIdentity.tree, identity.sourceTree);
   assert.equal(read(['rev-parse', identity.baselineSHA + '^{tree}'], { encoding: 'utf8' }).trim(), identity.baselineTree);
+  assert.ok(current.files['Cargo.toml'] && current.files['pnpm-workspace.yaml'], 'Complete workspace graph inputs required');
   const previous = readGitSuiteFiles(directory, (args, options) => read(args.map(value => value === 'HEAD' ? identity.baselineSHA : value === 'HEAD^{tree}' ? identity.baselineSHA + '^{tree}' : value), options));
   const inventory = discoverSuiteInventory(current.files, suitePolicy, current.sourceIdentity, current.exampleDirectories);
   const names = new TextDecoder('utf-8', { fatal: true }).decode(read(['diff', '--name-only', '-z', '--no-renames', identity.baselineSHA, identity.sourceSHA])).split('\0').filter(Boolean);
@@ -25,7 +26,7 @@ export function calculateSelection(identity, directory = root, read = (args, opt
   const changes = names.map(file => ({ path: file, beforeEntry: beforeEntries.get(file) ?? null, afterEntry: afterEntries.get(file) ?? null }));
   const decision = suiteImpact({ before: previous.files, after: current.files, changes, inventory });
   return { schemaVersion: 1, kind: 'ci-suite-execution-selection', ...identity, inventoryHash: inventory.inventoryHash,
-    decision, decisionHash: decision.decisionHash, acceptanceInherited: false };
+    decision, graphHash: decision.graphHash, decisionHash: decision.decisionHash, acceptanceInherited: false };
 }
 
 export function executionPlan(inventory, kind, directory = root, env = process.env) {
@@ -43,7 +44,7 @@ export function executionPlan(inventory, kind, directory = root, env = process.e
   assert.equal(value.inventoryHash, inventory.inventoryHash);
   const selected = value.decision.sets[kind]; assert.ok(selected, 'Unknown suite kind');
   const result = { schemaVersion: 1, protocol: inventory.protocol, inventoryHash: inventory.inventoryHash, kind,
-    mode: selected.mode, ids: selected.ids, selectionHash: env.FARM_SUITE_SELECTION_HASH, executionEnabled: true };
+    mode: selected.mode, ids: selected.ids, graphHash: value.graphHash, selectionHash: env.FARM_SUITE_SELECTION_HASH, executionEnabled: true };
   if (kind === 'examples-browser') result.excludedCases = suiteCaseExclusions(inventory, kind, result.ids);
   return { ...result, planHash: digest(result) };
 }

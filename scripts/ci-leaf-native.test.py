@@ -252,15 +252,19 @@ class Contracts(unittest.TestCase):
         workflow=(root/'.github/workflows/ci.yaml').read_text(encoding='utf-8')
         primary=(root/'.github/workflows/ci-primary-platform.yaml').read_text(encoding='utf-8')
         producer=(root/'.github/workflows/rust-build-user.yaml').read_text(encoding='utf-8')
-        self.assertIn('native_mode: ${{ needs.type-check.outputs.linux_native_mode',workflow)
-        self.assertIn('if: inputs.native_mode != \'reuse\'',primary)
+        self.assertIn('node scripts/formal-native-build.mjs',producer)
+        self.assertIn('run: test "$NATIVE_RESULT" = success',primary)
         self.assertEqual(primary.count('if: always() && needs.native-disposition.result == \'success\''),2)
-        self.assertIn('actually load the GNU native binding',primary)
-        self.assertIn("inputs.profile == 'ci'",producer);self.assertIn("github.event_name == 'push'",producer)
-        self.assertIn('Upload trusted CI native byte bundle',producer)
-        self.assertIn('needs: [examples-test, incremental-execution-gate]',workflow)
-        self.assertIn('needs: [ts-test, incremental-execution-gate]',workflow)
-        self.assertIn('ci-leaf-native.py gate --mode',workflow)
+        self.assertIn('Require successful per-product build or verified main artifact consumption',primary)
+        self.assertIn('scripts/formal-native-products.py produce',producer)
+        self.assertIn("steps.formal-catalog.outputs.catalog_available == 'true'",producer)
+        self.assertIn('needs: [version-classification, examples-test, incremental-execution-gate]',workflow)
+        self.assertIn('needs: [version-classification, ts-test, incremental-execution-gate]',workflow)
+        # Execute current owner byte/identity/environment and failure/cancel/skip
+        # gates, rather than interpreting old whole-job GNU restore strings.
+        result=__import__('subprocess').run(['node','--test','scripts/formal-native-scope.test.mjs','scripts/ci-required-dag.test.mjs'],cwd=root,capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+        self.assertIn('# fail 0',result.stdout);self.assertIn('# skipped 0',result.stdout)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

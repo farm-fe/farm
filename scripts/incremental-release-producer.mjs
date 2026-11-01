@@ -11,6 +11,7 @@ import {command} from './performance-report.mjs';
 import {packNpmCandidates} from './pack-v2-npm-candidates.mjs';
 import {resolvePnpmCli} from './v2-pnpm-cli.mjs';
 import {sha256} from './release-archive.mjs';
+import {verifyCandidateSeal} from './verify-v2-candidate-seal.mjs';
 
 export function publicationManifestDigest(value) {
   const ordered = input => {
@@ -25,26 +26,30 @@ export function publicationManifestDigest(value) {
 export function candidatePlanForSelection(family, selection) {
   assert.equal(selection.chain,'release');assert.equal(selection.profile,'release');assert.notEqual(selection.publicationBlocked,true);
   assert.equal((selection.versionRequired??[]).length,0);
-  if(!selection.baselineBinding)return family;
   const required=new Set(selection.build),prior=selection.baselinePackages??{};
-  const reuseNpm=[...family.npm.primary,...family.npm.payloads].filter(row=>!required.has('npm:'+row.name)).map(row=>{
-    const original=prior['npm:'+row.name];assert.ok(original&&original.version===row.version,'Unchanged npm package lacks original release bytes');
-    assert.match(original.integrity??'',/^sha512-[A-Za-z0-9+/]+={0,2}$/);assert.match(original.archiveSha256,/^[a-f0-9]{64}$/);
-    return {name:row.name,version:row.version,integrity:original.integrity,sha256:original.archiveSha256};
+  const dependencies = (rows,kind) => rows.filter(row=>!required.has(kind+':'+row.name)).map(row=>{
+    const original=prior[kind+':'+row.name];
+    assert.ok(original&&original.version===row.version,'Unchanged validation dependency lacks a published baseline');
+    assert.match(original.archiveSha256,/^[a-f0-9]{64}$/);
+    if(kind==='npm')assert.match(original.integrity??'',/^sha512-[A-Za-z0-9+/]+={0,2}$/);
+    return {name:row.name,version:row.version,sha256:original.archiveSha256,...(kind==='npm'?{integrity:original.integrity}:{})};
   });
-  const reuseRust=family.cargo.filter(row=>!required.has('cargo:'+row.name)).map(row=>{
-    const original=prior['cargo:'+row.name];assert.ok(original&&original.version===row.version,'Unchanged Rust package lacks original release bytes');
-    assert.match(original.archiveSha256,/^[a-f0-9]{64}$/);return {name:row.name,version:row.version,sha256:original.archiveSha256};
-  });
-  return {...family,preparation:{...family.preparation,mode:'incremental-release'},publication:{
+  return {...family,preparation:{...family.preparation,mode:selection.publicationScope==='npm'?'incremental-npm-source-release':'incremental-source-release'},publication:{
     npm:{primary:family.npm.primary.filter(row=>required.has('npm:'+row.name)),payloads:family.npm.payloads.filter(row=>required.has('npm:'+row.name))},
-    reuseNpm,reuseRust},incremental:{sourceSHA:selection.sourceSHA,sourceTree:selection.sourceTree,planHash:selection.planHash,baselineBinding:selection.baselineBinding}};
+    cargo:selection.publicationScope==='npm'?[]:family.cargo.filter(row=>required.has('cargo:'+row.name))},
+    // These immutable public dependencies are for isolated consumer validation
+    // only. No producer may restore them into a source build or seal them as a
+    // newly built candidate. Cargo dependency sources are compiled by consumers.
+    validationDependencies:{npm:dependencies([...family.npm.primary,...family.npm.payloads],'npm'),cargo:selection.publicationScope==='npm'?[]:dependencies(family.cargo,'cargo')},
+    incremental:{sourceSHA:selection.sourceSHA,sourceTree:selection.sourceTree,planHash:selection.planHash,graphHash:selection.graphHash,
+      publicationScope:selection.publicationScope??'all',build:[...selection.build],publish:[...selection.publish],preparationNodes:selection.buildNodes??[],
+      preparationNativeOwners:selection.preparationNativeOwners??[],baselineBinding:selection.baselineBinding??null}};
 }
 
 export function releaseBuildDirectories(family, selection, root) {
   const wanted = new Set(selection.build);
   const publicDirectories = new Map(family.npm.primary.map(row => [path.dirname(row.manifestPath).replaceAll('\\', '/'), row]));
-  const selected = candidateJsBuilds(family, {root}).filter(directory => publicDirectories.has(directory) && wanted.has('npm:' + publicDirectories.get(directory).name));
+  const selected = candidateJsBuilds(family, {root}).filter(directory => publicDirectories.has(directory) && (wanted.has('npm:' + publicDirectories.get(directory).name) || selection.buildNodes?.includes('npm:' + directory)));
   const privateDirectories = new Set();
   for (const node of selection.buildNodes ?? []) {
     if (!node.startsWith('npm:')) continue;
@@ -137,7 +142,7 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
   assert.notEqual(selection.publicationBlocked, true, 'Version or retirement requirements block publication');
   assert.equal((selection.versionRequired ?? []).length, 0, 'Required version changes are not prepared');
   assert.equal((selection.removedPackages ?? []).length, 0, 'Retirement needs an explicit reviewed contract');
-  const fullFamily = [...(plan.cargo ?? []).map(row => ({...row, kind:'cargo'})),
+  const fullFamily = [...(selection.publicationScope==='npm'?[]:plan.cargo ?? []).map(row => ({...row, kind:'cargo'})),
     ...(plan.npm?.primary ?? []).map(row => ({...row,kind:'npm'})), ...(plan.npm?.payloads ?? []).map(row => ({...row,kind:'npm'}))]
     .map(({kind,name,version,manifestPath,owner,platform})=>({kind,name,version,manifestPath,...(owner?{owner}:{}),...(platform?{platform}:{})}))
     .sort((a,b)=>(a.kind+':'+a.name).localeCompare(b.kind+':'+b.name));
@@ -163,7 +168,7 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
     assert.deepEqual(selection.publish, [], 'Rebuild verification cannot publish a delta');
     assert.ok(selection.baselineBinding && selection.build?.length, 'Rebuild verification needs original release bytes and a nonempty build');
     return {schemaVersion: 1, kind: 'release-rebuild-verification', chain: 'release', profile: 'release',
-      sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, baseline: selection.baselineBinding,
+      sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, graphHash: selection.graphHash, baseline: selection.baselineBinding,
       rebuilt: [...selection.build], producerRunId: runId, producerAttempt: attempt, originalBytesEqual: true,
       publicationExecuted: false, baselineAdvanced: false};
   }
@@ -190,8 +195,8 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
   });
   assert.deepEqual(packages.map(row => `${row.kind}:${row.name}`).sort(), [...selection.publish].sort(), 'Sealed publication delta differs from independent plan');
   assert.equal(new Set(packages.map(row => `${row.kind}:${row.name}`)).size, packages.length);
-  return {schemaVersion: 1, chain: 'release', profile: 'release', namespace: 'farm-release-v1',
-    sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, baseline: selection.baselineBinding ?? null,
+  return {schemaVersion: 1, chain: 'release', profile: 'release', namespace: 'farm-release-v1', publicationScope:selection.publicationScope??'all',
+    sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, graphHash: selection.graphHash, baseline: selection.baselineBinding ?? null,
     producerRunId: runId, producerAttempt: attempt, abi: plan.abi,
     tag: packages.some(row => row.kind === 'npm' && row.name === '@farmfe/core')
       ? `v${packages.find(row => row.kind === 'npm' && row.name === '@farmfe/core').version}` : `packages-${selection.planHash.slice(0,16)}`,
@@ -213,16 +218,20 @@ async function main() {
     const selection = verifyReleaseSelection(JSON.parse(fs.readFileSync(selectionFile)), source, process.env.FARM_RELEASE_PLAN_HASH);
     const candidate=candidatePlanForSelection(plan,selection);fs.mkdirSync(path.dirname(path.resolve(candidateFile)),{recursive:true});
     fs.writeFileSync(candidateFile,JSON.stringify(candidate,null,2)+'\n',{flag:'wx'});
-    if(selection.baselineBinding) execFileSync(process.env.FARM_RELEASE_PYTHON??'python',['-B','scripts/incremental-release-materialize.py','--selection',selectionFile,'--output','release-work/prerequisites.json'],{cwd:root,stdio:'inherit',timeout:20*60*1000});
     fs.mkdirSync(pool,{recursive:true});
-    const nativePlan={...plan,npm:{...plan.npm,payloads:(candidate.publication?.npm??candidate.npm).payloads}};
+    const selectedNative=(candidate.publication?.npm??candidate.npm).payloads;
+    const preparationNative=plan.npm.payloads.filter(row=>(selection.preparationNativeOwners??[]).includes(row.owner));
+    const nativePlan={...plan,npm:{...plan.npm,payloads:[...new Map([...selectedNative,...preparationNative].map(row=>[row.name,row])).values()]}};
     const records=assembleNativeArtifacts(root,path.resolve(pool),source.sha,nativePlan);
-    fs.writeFileSync(assemblyFile,JSON.stringify({schemaVersion:1,sourceCommit:source.sha,count:records.length,records,published:false},null,2)+'\n',{flag:'wx'});
+    fs.writeFileSync(assemblyFile,JSON.stringify({schemaVersion:1,sourceCommit:source.sha,count:selectedNative.length,records:records.filter(row=>selectedNative.some(pkg=>pkg.name===row.name)),preparationRecords:records.filter(row=>!selectedNative.some(pkg=>pkg.name===row.name)),published:false},null,2)+'\n',{flag:'wx'});
     const core=records.find(row=>row.owner==='@farmfe/core'&&row.platform==='linux-x64-gnu');
     if(core)fs.copyFileSync(path.join(root,core.file),path.join(root,'packages/core/binding',path.basename(core.file)),fs.constants.COPYFILE_EXCL);
     assert.equal(process.platform,'linux');assert.equal(process.arch,'x64');
-    const native=createRequire(import.meta.url)(path.join(root,'packages/core/binding/farm.linux-x64-gnu.node'));
-    assert.ok(native&&Object.keys(native).length>0,'Independent release prerequisite native load failed');
+    if(releaseBuildDirectories(plan,selection,root).length) {
+      assert.ok(core,'Source-built GNU Core prerequisite missing');
+      const native=createRequire(import.meta.url)(path.join(root,'packages/core/binding/farm.linux-x64-gnu.node'));
+      assert.ok(native&&Object.keys(native).length>0,'Independent release prerequisite native load failed');
+    }
     const rebuiltJs = await runReleaseJsBuilds(plan, selection, {root, pnpm: resolvePnpmCli()});
     return {rebuiltNative: records.length, rebuiltJs, profile: 'release'};
   }
@@ -235,6 +244,27 @@ async function main() {
     assert.ok(artifacts.every(row => row.workflow_run?.id === identity.runId), 'Cross-run artifacts cannot enter a release build');
     return packNpmCandidates({root, plan:candidate, assembly: JSON.parse(fs.readFileSync(assembly)), artifactIndex: artifacts,
       ...identity, output: path.resolve(output), pnpm: resolvePnpmCli()});
+  }
+  if(stage==='seal-npm') {
+    const [npmDirectory,output,candidateFile]=args;assert.ok(npmDirectory&&output&&candidateFile);
+    const candidate=JSON.parse(fs.readFileSync(candidateFile));
+    assert.equal(candidate.preparation.mode,'incremental-npm-source-release');
+    assert.equal(candidate.incremental.publicationScope,'npm');
+    assert.deepEqual(candidate.publication.cargo,[]);
+    const receipt=JSON.parse(fs.readFileSync(path.join(npmDirectory,'receipt.json')));
+    assert.equal(receipt.status,'sealed');assert.equal(receipt.testedCommit,source.sha);assert.equal(receipt.testedTree,source.tree);
+    assert.equal(receipt.planSha256,sha256(Buffer.from(JSON.stringify(candidate))));
+    assert.equal(verifyCandidateSeal(candidate,receipt,npmDirectory,root).candidateArchivesVerified,true);
+    assert.ok(!fs.existsSync(path.join(root,'.changeset/pre.json')),'Npm version preparation is incomplete');
+    assert.equal(fs.readdirSync(path.join(root,'.changeset')).filter(file=>file.endsWith('.md')&&file!=='README.md').length,0);
+    fs.mkdirSync(output);
+    for(const row of receipt.records) {
+      assert.equal(path.basename(row.file),row.file);
+      fs.copyFileSync(path.join(npmDirectory,row.file),path.join(output,row.file),fs.constants.COPYFILE_EXCL);
+    }
+    fs.writeFileSync(path.join(output,'candidate-plan.json'),JSON.stringify(candidate,null,2)+'\n',{flag:'wx'});
+    fs.writeFileSync(path.join(output,'receipt.json'),JSON.stringify({...receipt,rust:[],status:'complete-seal',publicationScope:'npm'},null,2)+'\n',{flag:'wx'});
+    return {npm:receipt.records.length,publicationScope:'npm',publicationExecuted:false};
   }
   if (stage === 'manifest' || stage === 'verify-rebuild') {
     const [directory, selectionFile] = args; assert.ok(directory && selectionFile);

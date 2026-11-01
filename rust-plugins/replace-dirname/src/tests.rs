@@ -1,7 +1,7 @@
 use super::*;
 use farmfe_core::{
   config::persistent_cache::PersistentCacheConfig,
-  module::{ModuleId, ModuleType, meta_data::script::ScriptModuleMetaData},
+  module::{meta_data::script::ScriptModuleMetaData, ModuleId, ModuleType},
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::{EsSyntax, Syntax},
 };
@@ -11,8 +11,10 @@ use farmfe_toolkit::{
 };
 
 fn check_paths(root: &Path, file: &Path) {
-  let mut config = Config::default();
-  config.root = root.to_str().unwrap().to_owned();
+  let mut config = Config {
+    root: root.to_str().unwrap().to_owned(),
+    ..Default::default()
+  };
   *config.persistent_cache = PersistentCacheConfig::Bool(false);
   let plugin = FarmPluginReplaceDirname::new(&config, "{}".into());
   let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
