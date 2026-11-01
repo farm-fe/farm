@@ -12,7 +12,7 @@ spec.loader.exec_module(chain)
 def project(snapshots):
     graphs, issues = [], []
     for snapshot in snapshots:
-        files = {name: value.encode() for name, value in snapshot.items()}
+        files = {name: value.encode("utf-8") for name, value in snapshot.items()}
         # Small unit fixtures can model npm-only workspaces. Production callers
         # supply both committed workspace manifests and every Cargo manifest.
         if 'Cargo.toml' not in files:
@@ -38,4 +38,7 @@ if __name__ == '__main__':
         print(json.dumps({'sourceSHA': commit, 'graphHash': chain.graph_contract(graph, issues)['graphHash'],
                           'issues': issues, 'nodes': len(graph)}))
     else:
-        print(json.dumps(project(json.load(sys.stdin)['snapshots']), sort_keys=True))
+        # JS sends UTF-8 JSON bytes. Windows stdin may use a legacy code page;
+        # decode the wire format explicitly and reject invalid bytes, never drop them.
+        payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
+        print(json.dumps(project(payload['snapshots']), sort_keys=True))

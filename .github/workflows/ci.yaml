@@ -220,7 +220,7 @@ jobs:
       - name: Validate report, trust, cleanup and comparison contracts
         env:
           FARM_PERFORMANCE_PYTHON: ${{ steps.contract-python.outputs.python-path }}
-        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs
+        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/unified-impact-graph.test.mjs
       - name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
