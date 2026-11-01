@@ -16,3 +16,6 @@ crates/create-farm-rs/licenses/* -text
 packages/create-farm/licenses/* -text
 js-plugins/dts/licenses/* -text
 js-plugins/qiankun/licenses/* -text
+
+# Shell recipes must execute unchanged under Git Bash on Windows.
+scripts/*.sh text eol=lf

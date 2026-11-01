@@ -98,8 +98,9 @@ try {
   for (const name of ['rust-build-user.yaml', 'rust-build-release.yaml']) {
     const workflow = fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8').replaceAll('\r\n', '\n');
     const steps = workflow.split(/\n(?=      - (?:name:|uses:|run:))/);
-    const docker = steps.filter(step => /^        run: node scripts\/v2-docker-cargo-cache\.mjs$/m.test(step));
-    assert.equal(docker.length, 1, 'Exactly one reviewed Docker wrapper step must exist');
+    const docker = steps.filter(step => /^        run: node scripts\/formal-native-build\.mjs$/m.test(step) && /if: \$\{\{ matrix\.settings\.docker \}\}/.test(step));
+    assert.equal(docker.length, 1, 'Exactly one reviewed formal Docker routing step must exist');
+    assert.doesNotMatch(workflow, /run: node scripts\/v2-docker-cargo-cache\.mjs/, 'Workflow must not bypass formal preparation and resolution');
     assert.match(docker[0], /if: \$\{\{ matrix\.settings\.docker \}\}/);
     for (const [key, expression] of Object.entries({
       FARM_BUILD_IMAGE: 'matrix.settings.docker', FARM_BUILD_PROFILE: 'inputs.profile',

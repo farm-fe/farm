@@ -146,7 +146,7 @@ jobs:
           python-version: '3.12'
       - name: Check independent CI and release selection contracts
         run: |
-          node --test scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs
+          node --test scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs scripts/native-checkout-contract.test.mjs scripts/formal-native-scope.test.mjs
           python scripts/incremental-chain-plan.test.py
           python scripts/ci-leaf-native.test.py
           python -B scripts/ci-suite-baseline.test.py

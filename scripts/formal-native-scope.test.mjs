@@ -39,3 +39,27 @@ test('release executor has one source-build invocation and no resolver',t=>{
 });
 
 test('bound resolution rejects an independently altered plan hash',t=>{const f=fixture(t);f.resolution.planHash='0'.repeat(64);const bytes=JSON.stringify(f.resolution);f.write('.formal-native/darwin-arm64/resolution.json',bytes);f.env.FARM_FORMAL_RESOLUTION_HASH=sha(bytes);assert.throws(()=>shouldBuild(f.owner,f),/plan binding/);});
+
+for (const abi of ['linux-x64-gnu', 'linux-x64-musl']) {
+ for (const profile of ['ci', 'release']) {
+  test(`formal ${profile} ${abi} routes every build through reviewed Docker wrapper`, t => {
+   const f=fixture(t),calls=[];
+   const env={...f.env,FARM_BUILD_ABI:abi,FARM_BUILD_PROFILE:profile,FARM_BUILD_IMAGE:'reviewed-image',FARM_BUILD_TARGET:'reviewed-target',FARM_BUILD_ZIG:'false'};
+   f.write(`.formal-native/${abi}/resolution.json`,JSON.stringify({reused:{}}));
+   runFormalNativeBuild({root:f.root,env,run:(command,args,options)=>{calls.push({command,args,options});return {status:0};}});
+   const builds=calls.filter(call=>!call.args.includes('resolve'));
+   assert.equal(builds.length,profile==='ci'?2:1);
+   for(const call of builds) {
+    assert.equal(call.command,process.execPath);
+    assert.deepEqual(call.args,['scripts/v2-docker-cargo-cache.mjs']);
+    assert.equal(call.options.cwd,f.root);
+    for(const key of ['FARM_BUILD_ABI','FARM_BUILD_PROFILE','FARM_BUILD_IMAGE','FARM_BUILD_TARGET','FARM_BUILD_ZIG'])assert.equal(call.options.env[key],env[key]);
+   }
+   if(profile==='ci') {
+    assert.equal(calls[0].options.env.FARM_NATIVE_PREPARE_ONLY,'true');
+    assert.ok(calls[1].args.includes('resolve'));
+    assert.match(calls[2].options.env.FARM_FORMAL_RESOLUTION_HASH,/^[a-f0-9]{64}$/);
+   } else assert.equal(calls.length,1);
+  });
+ }
+}
