@@ -205,7 +205,7 @@ def main():
                            if records[key].get('owner') or records[key]['name'] in native_owners})
             with Path(os.environ['GITHUB_OUTPUT']).open('a',encoding='utf-8') as stream:
                 stream.write('native_required='+str(bool(owners)).lower()+'\npublish_required='+str(bool(result['publish'])).lower()
-                             +'\nplan_hash='+result['planHash']+'\nnative_owners='+json.dumps(owners,separators=(',',':'))+'\n')
+                             +'\nbuild_required='+str(bool(result['build'])).lower()+'\nplan_hash='+result['planHash']+'\nnative_owners='+json.dumps(owners,separators=(',',':'))+'\n')
         print(json.dumps({"chain": "release", "buildCount": len(result["build"]), "publicationExecuted": False}))
     else:
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))

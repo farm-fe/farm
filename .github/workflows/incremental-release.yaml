@@ -71,7 +71,7 @@ jobs:
   quality:
     name: Release quality checks
     needs: [source, plan]
-    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.publish_required == 'true'
+    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.build_required == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -99,7 +99,7 @@ jobs:
   main-evidence:
     name: Verify actual fixed-main functional and performance evidence
     needs: [source, plan, quality]
-    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.publish_required == 'true'
+    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.build_required == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 130
     permissions:
@@ -134,6 +134,7 @@ jobs:
       native_required: ${{ steps.release-plan.outputs.native_required }}
       native_owners: ${{ steps.release-plan.outputs.native_owners }}
       publish_required: ${{ steps.release-plan.outputs.publish_required }}
+      build_required: ${{ steps.release-plan.outputs.build_required }}
       plan_hash: ${{ steps.release-plan.outputs.plan_hash }}
     permissions:
       contents: read
@@ -170,7 +171,7 @@ jobs:
   no-publication:
     name: No new release versions selected
     needs: [source, plan]
-    if: github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.plan.outputs.publish_required == 'false'
+    if: github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.plan.outputs.publish_required == 'false' && needs.plan.outputs.build_required == 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -194,7 +195,7 @@ jobs:
           expected = hashlib.sha256(json.dumps({key:value for key,value in plan.items() if key!='planHash'}, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
           assert plan['sourceSHA'] == os.environ['GITHUB_SHA'] and plan['chain'] == 'release' and plan['profile'] == 'release'
           assert plan['planHash'] == expected == os.environ['PLAN_HASH']
-          assert plan['publish'] == [] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
+          assert plan['publish'] == [] and plan['build'] == [] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
           print(json.dumps({'status':'no-publication-required','sourceSHA':plan['sourceSHA'],'publicationExecuted':False,'baselineAdvanced':False}))
 
   verify:
@@ -243,14 +244,14 @@ jobs:
         run: python -B scripts/incremental-release-entry.py verify --manifest release-input/manifest.json --archives release-input/archives
   release-native-primary:
     needs: [source, plan]
-    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.publish_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
+    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
     uses: ./.github/workflows/rust-build-user.yaml
     with:
       profile: release
       native_owners: ${{ needs.plan.outputs.native_owners }}
   release-native-extra:
     needs: [source, plan]
-    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.publish_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
+    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
     uses: ./.github/workflows/rust-build-release.yaml
     with:
       profile: release
@@ -258,7 +259,7 @@ jobs:
   producer:
     name: Build independent release candidates
     needs: [source, plan, main-evidence, release-native-primary, release-native-extra]
-    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.publish_required == 'true' && needs.source.outputs.reuse != 'true' && needs.main-evidence.result == 'success' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
+    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && needs.main-evidence.result == 'success' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     permissions:
@@ -303,7 +304,7 @@ jobs:
           plan = json.loads(Path('release-work/release-plan.json').read_text(encoding='utf-8'))
           assert plan['sourceSHA'] == os.environ['GITHUB_SHA'] and plan['planHash'] == os.environ['PLAN_HASH']
           assert re.fullmatch('[a-f0-9]{64}', plan['planHash']) and plan['chain'] == 'release' and plan['profile'] == 'release'
-          assert plan['publish'] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
+          assert plan['build'] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
           owners = json.loads(os.environ['NATIVE_OWNERS'])
           assert isinstance(owners, list) and len(owners) == len(set(owners)) and all(isinstance(owner, str) for owner in owners)
       - uses: actions/download-artifact@v4
@@ -313,6 +314,7 @@ jobs:
           path: release-native
       - name: Prepare only the release delta and restore published release prerequisites
         env:
+          FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
           FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
           FARM_RELEASE_PYTHON: ${{ steps.release-python.outputs.python-path }}
         run: node scripts/incremental-release-producer.mjs prepare release-work/release-plan.json release-native release-work/native-assembly.json release-work/candidate-plan.json
@@ -358,9 +360,28 @@ jobs:
         run: |
           node scripts/seal-sdk-consumer.mjs release-work/sdk/sdk-consumer.json release-work/sdk-portable
           node scripts/compose-v2-release-seal.mjs release-work/npm release-work/sdk-portable release-candidate
+      - name: Verify recipe-only rebuild against original release archive bytes
+        if: needs.plan.outputs.publish_required == 'false'
+        env:
+          FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
+        run: node scripts/incremental-release-producer.mjs verify-rebuild release-candidate release-work/release-plan.json
+      - name: Bind actual publication delta to the original archives
+        if: needs.plan.outputs.publish_required == 'true'
+        env:
+          FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
+        run: |
           node scripts/incremental-release-producer.mjs manifest release-candidate release-work/release-plan.json
           python -B scripts/incremental-release-record.py build --candidate release-candidate --output release-build-proof/ledger.json
+      - name: Preserve nonpublishing rebuild verification
+        if: needs.plan.outputs.publish_required == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-release-rebuild-check-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-candidate/rebuild-verification.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Upload independent release seal
+        if: needs.plan.outputs.publish_required == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: farm-release-seal-${{ github.sha }}-${{ github.run_attempt }}
@@ -368,6 +389,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
       - uses: actions/upload-artifact@v4
+        if: needs.plan.outputs.publish_required == 'true'
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ github.run_attempt }}
           path: release-candidate/
@@ -375,8 +397,8 @@ jobs:
           retention-days: 90
   candidate-consumers:
     name: Independent release candidate consumer (${{ matrix.os }})
-    needs: [source, producer]
-    if: always() && needs.source.result == 'success' && (needs.producer.result == 'success' || needs.source.outputs.reuse == 'true')
+    needs: [source, plan, producer]
+    if: always() && needs.source.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     strategy:
@@ -405,8 +427,8 @@ jobs:
           retention-days: 90
   publisher:
     name: Publish exact independent release archives under durable lock
-    needs: [source, producer, candidate-consumers]
-    if: always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == true && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && (needs.producer.result == 'success' || needs.source.outputs.reuse == 'true')
+    needs: [source, plan, producer, candidate-consumers]
+    if: always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == true && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:

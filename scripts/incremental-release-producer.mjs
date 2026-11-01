@@ -42,8 +42,78 @@ export function candidatePlanForSelection(family, selection) {
 }
 
 export function releaseBuildDirectories(family, selection, root) {
-  const wanted=new Set(selection.build);
-  return candidateJsBuilds(family,{root}).filter(directory=>family.npm.primary.some(row=>path.dirname(row.manifestPath).replaceAll('\\','/')===directory&&wanted.has('npm:'+row.name)));
+  const wanted = new Set(selection.build);
+  const publicDirectories = new Map(family.npm.primary.map(row => [path.dirname(row.manifestPath).replaceAll('\\', '/'), row]));
+  const selected = candidateJsBuilds(family, {root}).filter(directory => publicDirectories.has(directory) && wanted.has('npm:' + publicDirectories.get(directory).name));
+  const privateDirectories = new Set();
+  for (const node of selection.buildNodes ?? []) {
+    if (!node.startsWith('npm:')) continue;
+    const directory = node.slice(4);
+    assert.match(directory, /^(?:packages|js-plugins|rust-plugins|examples)\/[a-zA-Z0-9_.-]+(?:\/npm\/[a-zA-Z0-9_.-]+)?$/, 'Invalid release build node');
+    if (publicDirectories.has(directory) || directory.startsWith('rust-plugins/') || directory.includes('/npm/')) continue;
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, directory, 'package.json')));
+    assert.equal(manifest.private, true, 'Non-public prerequisite must be explicitly private');
+    assert.ok(manifest.scripts?.build, 'Private prerequisite has no reviewed build command');
+    privateDirectories.add(directory);
+  }
+  const directories = [...selected, ...privateDirectories];
+  const manifests = new Map(directories.map(directory => [directory, JSON.parse(fs.readFileSync(path.join(root, directory, 'package.json')))]));
+  const byName = new Map(directories.map(directory => [manifests.get(directory).name, directory]));
+  assert.equal(byName.size, directories.length, 'Ambiguous build prerequisite name');
+  // These existing joint bootstrap recipes resolve their own project-reference
+  // or peer cycles. External prerequisites of ANY cohort member run before the
+  // entire cohort; all other resolved public/private edges are ordered normally.
+  const bootstrap = new Set(['packages/cli', 'packages/core', 'packages/runtime', 'packages/runtime-plugin-hmr', 'packages/runtime-plugin-import-meta', 'packages/plugin-tools', 'packages/utils']);
+  const docs = new Set(['packages/docs', 'packages/docs-theme-default']);
+  const groupFor = directory => bootstrap.has(directory) ? 'bootstrap' : docs.has(directory) ? 'docs' : directory;
+  const groups = new Map();
+  for (const directory of directories) {
+    const group = groupFor(directory); groups.set(group, [...(groups.get(group) ?? []), directory]);
+  }
+  const active = new Set(), done = new Set(), ordered = [];
+  function visit(group) {
+    if (done.has(group)) return;
+    assert.ok(!active.has(group), 'Cyclic release build prerequisite'); active.add(group);
+    for (const directory of groups.get(group)) if (selection.buildNodes) {
+      const node = 'npm:' + directory;
+      assert.ok(selection.buildEdges && Array.isArray(selection.buildEdges[node]), 'Resolved release build edges are missing');
+      for (const dependencyNode of selection.buildEdges[node]) {
+        assert.ok(selection.buildNodes.includes(dependencyNode), 'Release dependency is outside the bound build closure');
+        const dependency = dependencyNode.startsWith('npm:') ? dependencyNode.slice(4) : null;
+        if (dependency && manifests.has(dependency) && groupFor(dependency) !== group) visit(groupFor(dependency));
+      }
+    }
+    active.delete(group); done.add(group); ordered.push(...groups.get(group));
+  }
+  for (const group of groups.keys()) visit(group);
+  return ordered;
+}
+
+export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = process.env, execute = command, verifyManifest} = {}) {
+  const directories = releaseBuildDirectories(family, selection, root), deadline = Date.now() + 30 * 60 * 1000;
+  for (const directory of directories) {
+    const file = directory + '/package.json', bytes = fs.readFileSync(path.join(root, file));
+    const committed = verifyManifest ? verifyManifest(file) : execFileSync('git', ['show', 'HEAD:' + file], {cwd: root});
+    assert.ok(bytes.equals(Buffer.from(committed)), 'Release build manifest differs from committed source');
+    const manifest = JSON.parse(bytes);
+    assert.ok(manifest.scripts?.build && !/\bcargo\b|\bnapi\b|farm-plugin-tools build/.test(manifest.scripts.build), 'Unexpected native command in JS release recipe');
+    assert.ok(Date.now() < deadline, 'Release JS build deadline exceeded');
+    await execute(process.execPath, [pnpm, 'run', 'build'], {cwd: path.join(root, directory), env,
+      log: path.join(root, 'release-work', directory.replaceAll('/', '-') + '.log'), phase: 'release-js/' + manifest.name,
+      timeoutMs: Math.min(300000, deadline - Date.now())});
+  }
+  return directories;
+}
+
+export function verifyReleaseSelection(selection, source, expectedPlanHash) {
+  assert.match(expectedPlanHash ?? '', /^[a-f0-9]{64}$/, 'Trusted release plan hash is required');
+  const {planHash, ...unsigned} = selection;
+  assert.equal(publicationManifestDigest(unsigned), planHash, 'Release selection digest differs');
+  assert.equal(planHash, expectedPlanHash, 'Release selection differs from trusted job output');
+  assert.equal(selection.chain, 'release'); assert.equal(selection.profile, 'release');
+  assert.equal(selection.sourceSHA, source.sha); assert.equal(selection.sourceTree, source.tree);
+  assert.equal(selection.publicationBlocked, false); assert.deepEqual(selection.versionRequired, []);
+  return selection;
 }
 
 export function releaseProducerIdentity(env, checkout) {
@@ -59,7 +129,7 @@ export function releaseProducerIdentity(env, checkout) {
   return {sourceCommit: checkout.sha, testedCommit: checkout.sha, testedTree: checkout.tree, runId: Number(env.GITHUB_RUN_ID)};
 }
 
-export function makePublicationManifest({plan, selection, receipt, source, runId, attempt, readArchive, readPackage=()=>({})}) {
+export function makePublicationManifest({plan, selection, receipt, source, runId, attempt, readArchive, readPackage=()=>({}), verificationOnly=false}) {
   assert.equal(selection.chain, 'release'); assert.equal(selection.profile, 'release');
   assert.equal(selection.sourceSHA, source.sha); assert.equal(selection.sourceTree, source.tree);
   assert.equal(receipt.status, 'complete-seal');
@@ -88,6 +158,14 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
     const actual=readArchive(row.file);
     assert.equal(sha256(actual),row.sha256,'Rebuilt archive bytes differ from their seal');
     assert.equal(sha256(actual),original.archiveSha256,'Same-version rebuild changed bytes; prepare a new version before publication');
+  }
+  if (verificationOnly) {
+    assert.deepEqual(selection.publish, [], 'Rebuild verification cannot publish a delta');
+    assert.ok(selection.baselineBinding && selection.build?.length, 'Rebuild verification needs original release bytes and a nonempty build');
+    return {schemaVersion: 1, kind: 'release-rebuild-verification', chain: 'release', profile: 'release',
+      sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, baseline: selection.baselineBinding,
+      rebuilt: [...selection.build], producerRunId: runId, producerAttempt: attempt, originalBytesEqual: true,
+      publicationExecuted: false, baselineAdvanced: false};
   }
   assert.ok(selection.publish.length>0,'No publication delta; no publisher transaction is needed');
   const rows = completeRows
@@ -132,8 +210,7 @@ async function main() {
   if(stage==='prepare') {
     const [selectionFile,pool,assemblyFile,candidateFile]=args;assert.ok(selectionFile&&pool&&assemblyFile&&candidateFile);
     assert.equal(path.resolve(candidateFile),path.join(root,'release-work/candidate-plan.json'));
-    const selection=JSON.parse(fs.readFileSync(selectionFile));assert.equal(selection.sourceSHA,source.sha);assert.equal(selection.sourceTree,source.tree);
-    const {planHash,...unsigned}=selection;assert.equal(publicationManifestDigest(unsigned),planHash,'Release selection digest differs');
+    const selection = verifyReleaseSelection(JSON.parse(fs.readFileSync(selectionFile)), source, process.env.FARM_RELEASE_PLAN_HASH);
     const candidate=candidatePlanForSelection(plan,selection);fs.mkdirSync(path.dirname(path.resolve(candidateFile)),{recursive:true});
     fs.writeFileSync(candidateFile,JSON.stringify(candidate,null,2)+'\n',{flag:'wx'});
     if(selection.baselineBinding) execFileSync(process.env.FARM_RELEASE_PYTHON??'python',['-B','scripts/incremental-release-materialize.py','--selection',selectionFile,'--output','release-work/prerequisites.json'],{cwd:root,stdio:'inherit',timeout:20*60*1000});
@@ -146,15 +223,8 @@ async function main() {
     assert.equal(process.platform,'linux');assert.equal(process.arch,'x64');
     const native=createRequire(import.meta.url)(path.join(root,'packages/core/binding/farm.linux-x64-gnu.node'));
     assert.ok(native&&Object.keys(native).length>0,'Independent release prerequisite native load failed');
-    const pnpm=resolvePnpmCli(),deadline=Date.now()+30*60*1000;
-    for(const directory of releaseBuildDirectories(plan,selection,root)) {
-      const manifest=JSON.parse(fs.readFileSync(path.join(root,directory,'package.json')));
-      assert.ok(manifest.scripts?.build&&!/\bcargo\b|\bnapi\b|farm-plugin-tools build/.test(manifest.scripts.build),'Unexpected native command in JS release recipe');
-      assert.ok(Date.now()<deadline,'Release JS build deadline exceeded');
-      await command(process.execPath,[pnpm,'run','build'],{cwd:path.join(root,directory),env:process.env,
-        log:path.join(root,'release-work',directory.replaceAll('/','-')+'.log'),phase:'release-js/'+manifest.name,timeoutMs:Math.min(300000,deadline-Date.now())});
-    }
-    return {rebuiltNative:records.length,rebuiltJs:releaseBuildDirectories(plan,selection,root),profile:'release'};
+    const rebuiltJs = await runReleaseJsBuilds(plan, selection, {root, pnpm: resolvePnpmCli()});
+    return {rebuiltNative: records.length, rebuiltJs, profile: 'release'};
   }
   if (stage === 'pack') {
     const [assembly, index, output,candidateFile] = args; assert.ok(assembly && index && output);
@@ -166,16 +236,20 @@ async function main() {
     return packNpmCandidates({root, plan:candidate, assembly: JSON.parse(fs.readFileSync(assembly)), artifactIndex: artifacts,
       ...identity, output: path.resolve(output), pnpm: resolvePnpmCli()});
   }
-  if (stage === 'manifest') {
+  if (stage === 'manifest' || stage === 'verify-rebuild') {
     const [directory, selectionFile] = args; assert.ok(directory && selectionFile);
     const candidate = path.resolve(directory), receipt = JSON.parse(fs.readFileSync(path.join(candidate,'receipt.json')));
-    const selection = JSON.parse(fs.readFileSync(selectionFile));
-    const manifest = makePublicationManifest({plan, selection, receipt, source, runId: identity.runId,
+    const selection = verifyReleaseSelection(JSON.parse(fs.readFileSync(selectionFile)), source, process.env.FARM_RELEASE_PLAN_HASH);
+    const manifest = makePublicationManifest({verificationOnly: stage === 'verify-rebuild', plan, selection, receipt, source, runId: identity.runId,
       attempt: Number(process.env.GITHUB_RUN_ATTEMPT), readArchive: file => fs.readFileSync(path.join(candidate,file)),
       readPackage: row=>{
         const pkg=[...plan.npm.primary,...plan.npm.payloads].find(pkg=>pkg.name===row.name);assert.ok(pkg,'Unknown publication manifest');
         return JSON.parse(fs.readFileSync(path.join(root,pkg.manifestPath)));
       }});
+    if (stage === 'verify-rebuild') {
+      fs.writeFileSync(path.join(candidate, 'rebuild-verification.json'), JSON.stringify(manifest, null, 2) + '\n', {flag: 'wx'});
+      return manifest;
+    }
     if(process.env.FARM_FUNCTIONAL_EVIDENCE) manifest.functionalEvidence=JSON.parse(process.env.FARM_FUNCTIONAL_EVIDENCE);
     fs.writeFileSync(path.join(candidate,'manifest.json'), JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
     const archiveDirectory = path.join(candidate,'archives'); fs.mkdirSync(archiveDirectory);

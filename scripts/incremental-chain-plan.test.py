@@ -231,6 +231,7 @@ class ChainContracts(unittest.TestCase):
         self.assertEqual(plan["build"], ["npm:b"])
         self.assertEqual(plan["buildDependencyClosure"], ["npm:a", "npm:b"])
         self.assertIn("npm:packages/bridge", plan["buildNodes"])
+        self.assertIn("npm:packages/bridge", {dep for deps in plan["buildEdges"].values() for dep in deps})
 
     def test_workspace_alias_does_not_silently_resolve_to_its_key(self):
         files, family, source = fixture()

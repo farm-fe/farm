@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {makePublicationManifest,releaseProducerIdentity,candidatePlanForSelection,releaseBuildDirectories,publicationManifestDigest} from './incremental-release-producer.mjs';
+import {makePublicationManifest,releaseProducerIdentity,candidatePlanForSelection,releaseBuildDirectories,publicationManifestDigest,runReleaseJsBuilds,verifyReleaseSelection} from './incremental-release-producer.mjs';
 import {sha256} from './release-archive.mjs';
 import fs from 'node:fs';
+import os from 'node:os';
+import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {rustRegistryReuse,sdkConsumerManifest} from './v2-rust-registry-reuse.mjs';
@@ -92,4 +94,83 @@ test('portable candidate digest matches Python canonical manifest encoding inclu
  assert.throws(()=>publicationManifestDigest({bad:1.5}));
  assert.equal(sdkConsumerManifest({cargo:[{name:'farmfe_core',version:'2.2.1'}]},'[dependencies]\nfarmfe_core = "=2.2.0"\n'), '[dependencies]\nfarmfe_core = "=2.2.1"\n');
  assert.throws(()=>sdkConsumerManifest({cargo:[]},'[patch.crates-io]\n'));
+});
+
+
+test('terminal selection verification rejects changed membership, foreign digest and source after builds', () => {
+  const selection = {...fixture().selection, build:['npm:@farmfe/core'], versionRequired:[], publicationBlocked:false};
+  selection.planHash = publicationManifestDigest(Object.fromEntries(Object.entries(selection).filter(([key]) => key !== 'planHash')));
+  const expected = selection.planHash;
+  assert.equal(verifyReleaseSelection(selection, {sha,tree}, expected), selection);
+  const changed = {...selection, build:[]};
+  assert.throws(() => verifyReleaseSelection(changed, {sha,tree}, expected), /digest differs/);
+  changed.planHash = publicationManifestDigest(Object.fromEntries(Object.entries(changed).filter(([key]) => key !== 'planHash')));
+  assert.throws(() => verifyReleaseSelection(changed, {sha,tree}, expected), /trusted job output/);
+  assert.throws(() => verifyReleaseSelection(selection, {sha:'f'.repeat(40),tree}, expected));
+  assert.throws(() => verifyReleaseSelection(selection, {sha,tree:'f'.repeat(40)}, expected));
+  assert.throws(() => verifyReleaseSelection(selection, {sha,tree}, undefined), /Trusted release plan hash/);
+});
+
+test('recipe-only rebuilt bytes are compared without a publisher transaction or baseline advance', () => {
+  const value = fixture(); value.verificationOnly = true;
+  value.selection = {...value.selection, publish:[], build:['npm:@farmfe/core'], baselineBinding:'e'.repeat(64),
+    baselinePackages:{'npm:@farmfe/core':{version:'2.0.0',archiveSha256:value.receipt.records[0].sha256}}};
+  const report = makePublicationManifest(value);
+  assert.equal(report.kind, 'release-rebuild-verification'); assert.equal(report.originalBytesEqual, true);
+  assert.equal(report.publicationExecuted, false); assert.equal(report.baselineAdvanced, false);
+  assert.equal(report.packages, undefined); assert.equal(report.tag, undefined);
+  const altered = Buffer.from('new same-version bytes');
+  value.readArchive = () => altered; value.receipt.records[0].sha256 = sha256(altered);
+  assert.throws(() => makePublicationManifest(value), /prepare a new version/);
+  value.selection.build=[]; assert.throws(() => makePublicationManifest(value), /nonempty build/);
+});
+
+for (const protocol of ['file:', 'link:', 'workspace:']) for (const transitive of [false, true]) test(`real executor follows resolved ${protocol} private alias, transitive=${transitive}`, async () => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'farm-private-build-')));
+  const files = {'Cargo.toml':'[workspace]\nmembers=[]\n', 'pnpm-workspace.yaml':'packages:\n  - packages/*\n'};
+  try {
+    const family = {npm:{primary:[{name:'consumer',version:'1.0.0',manifestPath:'packages/consumer/package.json'}],payloads:[]},cargo:[]};
+    files['packages/consumer/package.json'] = JSON.stringify({name:'consumer',version:'1.0.0',scripts:{build:'node build.mjs'},dependencies:{bridgeAlias:protocol+'../bridge'}});
+    files['packages/bridge/package.json'] = JSON.stringify({name:'bridge',private:true,scripts:{build:'node build.mjs'}});
+    if (transitive) {
+      family.npm.primary.push({name:'dependency',version:'1.0.0',manifestPath:'packages/dependency/package.json'});
+      files['packages/dependency/package.json'] = JSON.stringify({name:'dependency',version:'1.0.0',scripts:{build:'node build.mjs'},dependencies:{bridgeAlias:protocol+'../bridge'}});
+      files['packages/consumer/package.json'] = JSON.stringify({name:'consumer',version:'1.0.0',scripts:{build:'node build.mjs'},dependencies:{dependencyAlias:protocol+'../dependency'}});
+    }
+    for (const [file, body] of Object.entries(files)) {fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});fs.writeFileSync(path.join(root,file),body);}
+    fs.writeFileSync(path.join(root,'packages/bridge/build.mjs'), "import fs from 'node:fs'; fs.writeFileSync('ready','private built');");
+    fs.writeFileSync(path.join(root,'packages/consumer/build.mjs'), "import fs from 'node:fs'; if(fs.readFileSync('../bridge/ready','utf8')!=='private built') throw Error('missing prerequisite'); fs.writeFileSync('ready','consumer built');");
+    if (transitive) {
+      fs.writeFileSync(path.join(root,'packages/dependency/build.mjs'), "import fs from 'node:fs'; fs.readFileSync('../bridge/ready'); fs.writeFileSync('ready','dependency built');");
+      fs.writeFileSync(path.join(root,'packages/consumer/build.mjs'), "import fs from 'node:fs'; fs.readFileSync('../dependency/ready'); fs.writeFileSync('ready','consumer built');");
+    }
+    const planner = fileURLToPath(new URL('./incremental-chain-plan.py', import.meta.url));
+    const python = 'import importlib.util,json,sys\ns=importlib.util.spec_from_file_location("planner",sys.argv[1]);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)\ng,issues=m.repository_graph({k:v.encode() for k,v in json.load(sys.stdin).items()});assert not issues,issues\nprint(json.dumps({k:sorted(v["productDeps"]) for k,v in g.items()}))';
+    const buildEdges = JSON.parse(execFileSync('python3',['-B','-c',python,planner],{input:JSON.stringify(files),encoding:'utf8'}));
+    const selection = {build:['npm:consumer',...(transitive ? ['npm:dependency'] : [])],buildNodes:Object.keys(buildEdges),buildEdges};
+    assert.deepEqual(buildEdges['npm:packages/consumer'], [transitive ? 'npm:packages/dependency' : 'npm:packages/bridge']);
+    const calls = [], options = {root,pnpm:'pinned-fixture-cli',verifyManifest:file=>files[file], execute:async(executable,args,options)=>{
+      calls.push(path.basename(options.cwd)); assert.deepEqual(args,['pinned-fixture-cli','run','build']);
+      execFileSync(executable,['build.mjs'],{cwd:options.cwd,encoding:'utf8',timeout:10000});
+    }};
+    const expected = ['bridge',...(transitive ? ['dependency'] : []),'consumer'];
+    assert.deepEqual(await runReleaseJsBuilds(family,selection,options),expected.map(name=>'packages/'+name));
+    assert.deepEqual(calls,expected); assert.equal(fs.readFileSync(path.join(root,'packages/consumer/ready'),'utf8'),'consumer built');
+    fs.writeFileSync(path.join(root,'packages/bridge/package.json'), files['packages/bridge/package.json']+' ');
+    await assert.rejects(runReleaseJsBuilds(family,selection,options),/differs from committed source/);
+    fs.writeFileSync(path.join(root,'packages/bridge/package.json'), files['packages/bridge/package.json']);
+    selection.buildEdges['npm:packages/bridge']=['npm:packages/consumer'];
+    assert.throws(()=>releaseBuildDirectories(family,selection,root),/Cyclic/);
+  } finally {fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('workflow routes rebuilds separately and terminal steps bind the trusted plan hash', () => {
+  const workflow = fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml',import.meta.url),'utf8');
+  for(const name of ['Verify recipe-only rebuild against original release archive bytes','Bind actual publication delta to the original archives']) {
+    const step=workflow.split('- name: '+name)[1].split('\n      - ')[0];
+    assert.ok(step.includes('FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}'));
+  }
+  assert.ok(workflow.includes("needs.plan.outputs.publish_required == 'false' && needs.plan.outputs.build_required == 'false'"));
+  const consumers=workflow.split('  candidate-consumers:')[1].split('  publisher:')[0];
+  assert.ok(consumers.includes("needs.plan.outputs.publish_required == 'true'"));
 });

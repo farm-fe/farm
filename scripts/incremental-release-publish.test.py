@@ -461,7 +461,10 @@ class Contracts(unittest.TestCase):
         self.assertIn("plan['publish'] == []",noop);self.assertIn("'baselineAdvanced':False",noop)
         self.assertNotIn('secrets.',noop);self.assertNotIn('contents: write',noop)
         producer=workflow.split('  producer:',1)[1].split('  candidate-consumers:',1)[0]
-        self.assertIn("needs.plan.outputs.publish_required == 'true'",producer)
+        self.assertIn("needs.plan.outputs.build_required == 'true'",producer)
+        self.assertIn("plan['build'] == []",noop)
+        self.assertIn("verify-rebuild release-candidate",producer)
+        self.assertIn("farm-release-rebuild-check-",producer)
 
     def test_candidate_success_in_intermediate_attempt_survives_a_third_attempt(self):
         fixture,verifier,original,current=self.recovery_fixture(1,3,{'ubuntu-24.04':2,'macos-latest':1,'windows-latest':3})

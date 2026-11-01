@@ -111,8 +111,16 @@ Registry transport URLs do not enter the semantic plan hash. Original source,
 versions, archive digests, producer identity and baseline transaction do. The
 publisher re-reads and recomputes the plan while owning the publication fence.
 A moved baseline rejects the frozen candidate; a partly uploaded transaction
-keeps its original archives. A successful no-change plan is an explicit workflow
-no-op, not an empty publisher transaction. Same-version rebuilt archive bytes
+keeps its original archives. A successful plan with both `build=[]` and `publish=[]` is an explicit workflow
+no-op, not an empty publisher transaction. Recipe-only rebuilds have an independent
+`build_required` output: they execute release producers and compare every rebuilt
+archive with its independently verified original bytes. Their verification report
+uses a separate artifact namespace, creates no publisher manifest and never advances
+the published baseline. Terminal verification rechecks the selection digest, fixed
+source/tree and trusted planner job hash after package build scripts have run.
+Private build prerequisites execute through the planner's resolved `buildEdges`,
+including file/link/workspace aliases; public prerequisites not selected for rebuild
+remain materialized original release archives. Same-version rebuilt archive bytes
 must equal the independently verified original, including mixed publication
 batches. Removed packages require an explicit retirement contract and currently
 block publication.

@@ -68,7 +68,7 @@ test('Cargo restores cover all nine targets while only the three primary produce
 test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
   const source = read('incremental-release.yaml').split('  candidate-consumers:')[1].split('  publisher:')[0];
   assert.ok(source);
-  assert.match(source, /needs: \[source, producer\]/);
+  assert.match(source, /needs: \[source, plan, producer\]/);
   assert.match(source, /os: \[ubuntu-24.04, macos-latest, windows-latest\]/);
   assert.ok(source.includes('name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}'));
   assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-results/);

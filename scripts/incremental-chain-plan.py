@@ -401,6 +401,8 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
             dependencies.add(by_node[key])
     result["buildDependencyClosure"] = sorted(dependencies)
     result["buildNodes"] = sorted(build_nodes)
+    result["buildEdges"] = {key: sorted(graph.get(key, {}).get("productDeps", set()) & build_nodes)
+                            for key in sorted(build_nodes)}
     result["sameVersionRebuildPolicy"] = "compare-original-archive-bytes-or-require-new-version"
     result["planHash"] = digest(result)
     return result
