@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { canonicalSuiteFile } from './ci-suite-inventory.mjs';
 
 const hash = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const sorted = values => [...new Set(values)].sort();
 const roots = ['packages/core', 'packages/cli', 'packages/runtime', 'packages/runtime-plugin-hmr', 'packages/runtime-plugin-import-meta'];
 const local = value => /^(workspace:|file:|link:)/.test(value);
 // Deliberately narrow audited source boundaries. Manifests, config, runner and
-// every other owner remain full execution until their implicit inputs are proved.
+// every other product owner remain full execution until their implicit inputs are proved.
 export const auditedSuiteLeaves = ['examples/react', 'js-plugins/babel'];
 
 // This decision is separate from execution authority. A caller must verify a
@@ -44,7 +45,21 @@ export function suiteImpact({ before, after, changes, inventory, auditedOwners =
   const changed = sorted(changes.flatMap(row => [row.oldPath, row.path]).filter(Boolean));
   let full = issues.length > 0;
   const affected = new Set();
+  // Only committed ordinary engineering Markdown is outside these suite inputs.
+  // Missing metadata is not evidence; inspect both sides of deletions/renames and
+  // mode changes. Docs quality, Unit and performance remain independent gates.
+  const documentationOnly = file => {
+    canonicalSuiteFile(file);
+    if (!file.startsWith('docs/experiences/') || !file.endsWith('.md')) return false;
+    const rows = changes.filter(row => row.path === file || row.oldPath === file);
+    return rows.length > 0 && rows.every(row => {
+      if (!Object.hasOwn(row, 'beforeEntry') || !Object.hasOwn(row, 'afterEntry')) return false;
+      const entries = [row.beforeEntry, row.afterEntry].filter(Boolean);
+      return entries.length > 0 && entries.every(entry => entry.file === file && entry.type === 'blob' && entry.mode === '100644');
+    });
+  };
   for (const file of changed) {
+    if (documentationOnly(file)) continue;
     const directory = file.split('/').slice(0, 2).join('/');
     if (!graph.has(directory) || file.startsWith('rust-plugins/')) { full = true; continue; }
     affected.add(directory);

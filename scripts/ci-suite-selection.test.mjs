@@ -75,3 +75,48 @@ test('actual workflow binds selection to all platforms and stable suite-count ga
   assert.ok(primary.includes('scripts/ci-suite-attempts.py --selection-only'));
   assert.ok(primary.includes('FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}'));
 });
+
+// Exercise the actual Git -> selection boundary, including mode-only changes.
+for (const scenario of ['noop', 'add', 'edit', 'delete', 'rename', 'executable', 'symlink',
+  'rename-to-product', 'rename-from-product', 'lockfile', 'cargo-lock', 'workflow', 'public-docs', 'mdx', 'config', 'runtime', 'hmr', 'import-meta', 'mixed-react']) {
+  test(`committed engineering Markdown selection: ${scenario}`, () => {
+    const fixture = model();
+    const note = 'docs/experiences/notes.md';
+    const commit = message => { fixture.git('add', '-A'); fixture.git('commit', '--quiet', '-m', message); };
+    try {
+      fixture.write(note, 'baseline notes\n');
+      fixture.write('examples/react/src/main.ts', 'baseline source\n');
+      commit('seed');
+      const baselineSHA = fixture.git('rev-parse', 'HEAD').trim();
+      const baselineTree = fixture.git('rev-parse', 'HEAD^{tree}').trim();
+      if (scenario === 'add') fixture.write('docs/experiences/new.md', 'new notes\n');
+      else if (scenario === 'edit') fixture.write(note, 'updated notes\n');
+      else if (scenario === 'delete') fixture.git('rm', note);
+      else if (scenario === 'rename') fixture.git('mv', note, 'docs/experiences/renamed.md');
+      else if (scenario === 'executable') { fixture.git('update-index', '--chmod=+x', note); }
+      else if (scenario === 'symlink') { fs.unlinkSync(path.join(fixture.directory, note)); fs.symlinkSync('../../package.json', path.join(fixture.directory, note)); }
+      else if (scenario === 'rename-to-product') fixture.git('mv', note, 'new-source.ts');
+      else if (scenario === 'rename-from-product') fixture.git('mv', 'examples/react/src/main.ts', 'docs/experiences/source.md');
+      else if (scenario === 'mixed-react') { fixture.write(note, 'updated notes\n'); fixture.write('examples/react/src/main.ts', 'updated source\n'); }
+      else if (scenario !== 'noop') fixture.write({lockfile: 'pnpm-lock.yaml', 'cargo-lock': 'Cargo.lock', workflow: '.github/workflows/ci.yaml', 'public-docs': 'website/docs/guide.md', mdx: 'docs/experiences/component.mdx', config: 'examples/react/farm.config.ts', runtime: 'packages/runtime/src/index.ts',
+        hmr: 'packages/runtime-plugin-hmr/src/index.ts', 'import-meta': 'packages/runtime-plugin-import-meta/src/index.ts'}[scenario], 'changed\n');
+      if (scenario === 'executable') fixture.git('commit', '--quiet', '-m', scenario);
+      else if (scenario !== 'noop') commit(scenario);
+      const identity = { kind: 'independently-verified-ci-suite-baseline', sourceSHA: fixture.git('rev-parse', 'HEAD').trim(),
+        sourceTree: fixture.git('rev-parse', 'HEAD^{tree}').trim(), baselineSHA, baselineTree, repositoryId: 1, runId: 2, attempt: 1 };
+      const selection = calculateSelection(identity, fixture.directory);
+      const reduced = ['noop', 'add', 'edit', 'delete', 'rename', 'mixed-react', 'rename-from-product'].includes(scenario);
+      assert.equal(selection.decision.full, !reduced);
+      if (reduced) {
+        assert.deepEqual(selection.decision.sets.ts.ids, []);
+        const react = ['mixed-react', 'rename-from-product'].includes(scenario);
+        for (const kind of ['examples-build', 'examples-browser']) assert.deepEqual(selection.decision.sets[kind].ids, react ? [`${kind}:examples/react`] : []);
+      } else for (const kind of ['ts', 'examples-build', 'examples-browser']) assert.equal(selection.decision.sets[kind].mode, 'all');
+      assert.equal(selection.acceptanceInherited, false);
+      // A selection file never grants execution without its trusted job hash.
+      const data = readGitSuiteFiles(fixture.directory);
+      const inventory = discoverSuiteInventory(data.files, suitePolicy, data.sourceIdentity, data.exampleDirectories);
+      assert.equal(executionPlan(inventory, 'ts', fixture.directory, {}).mode, 'all');
+    } finally { fixture.close(); }
+  });
+}

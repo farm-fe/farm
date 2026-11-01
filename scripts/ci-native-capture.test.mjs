@@ -1,9 +1,11 @@
-// cspell:words RUSTFLAGS
+// cspell:words RUSTFLAGS esac
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { captureRuntime, captureProducts, captureProductProof, proofDirectory } from './ci-native-capture.mjs';
 
 test('runtime capture measures only bounded tools and never publishes arbitrary environment', () => {
@@ -112,4 +114,66 @@ test('release capture and exact product upload fail closed while CI remains shad
     assert.ok(shadow.includes('continue-on-error: true'));
     assert.ok(source.includes('FARM_RELEASE_NATIVE_OWNERS: ${{ inputs.native_owners }}'));
   }
+});
+
+
+test('bounded tool probes cannot auto-install or mutate the real build environment', () => {
+  for (const inherited of [undefined, '0', '1']) {
+    const env = { FARM_BUILD_TARGET: 'x86_64-unknown-linux-gnu', CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: 'gcc' };
+    if (inherited !== undefined) env.RUSTUP_AUTO_INSTALL = inherited;
+    const original = {...env}, calls = [];
+    const record = captureRuntime({ env, run(executable, args, options) {
+      calls.push(executable);
+      assert.notEqual(options.env, env);
+      assert.equal(options.env.RUSTUP_AUTO_INSTALL, '0');
+      assert.equal(options.timeout, 15000);
+      // An absent compiler is unavailable evidence, not permission to install.
+      return executable === 'gcc' ? {status: 0, stdout: 'gcc fixture'} : {status: 1, stdout: ''};
+    } });
+    assert.deepEqual(calls, ['rustc', 'cargo', 'rustup', 'gcc']);
+    assert.deepEqual(env, original);
+    assert.equal(record.rustc, null); assert.equal(record.cargo, null);
+    assert.equal(record.errors.length, 3);
+    assert.equal(record.measuredToolsComplete, false); assert.equal(record.reuseAuthorized, false);
+  }
+});
+
+
+test('real native build resolves its toolchain before bounded shadow probes', () => {
+  const source = fs.readFileSync(new URL('./ci-build-rust-artifacts.sh', import.meta.url), 'utf8');
+  const phase = source.slice(source.indexOf('if [ "${FARM_NATIVE_PROOF_MODE:-off}"'));
+  const setup = phase.indexOf('cargo --version');
+  const probe = phase.indexOf('node scripts/ci-native-capture.mjs runtime');
+  assert.ok(setup >= 0 && probe > setup);
+  assert.ok(source.startsWith('#!/usr/bin/env sh\nset -eu'));
+  assert.doesNotMatch(phase.slice(setup, probe), /cargo --version[^\n]*(?:\|\||&)/);
+  assert.doesNotMatch(source, /RUSTUP_AUTO_INSTALL=/);
+});
+
+
+test('native shell stops failed toolchain setup before capture or compilation', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-native-setup-'));
+  try {
+    const bin = path.join(root, 'bin'), log = path.join(root, 'events'); fs.mkdirSync(bin);
+    for (const [name, body] of Object.entries({
+      cargo: 'echo setup >> "$PROBE_EVENTS"; exit "$SETUP_EXIT"',
+      node: 'case "$1" in *ci-native-capture.mjs) echo probe >> "$PROBE_EVENTS" ;; esac',
+      npm: 'echo build >> "$PROBE_EVENTS"'
+    })) fs.writeFileSync(path.join(bin, name), '#!/bin/sh\n' + body + '\n', {mode: 0o755});
+    const source = fileURLToPath(new URL('./ci-build-rust-artifacts.sh', import.meta.url));
+    const shell = fs.readFileSync(source, 'utf8');
+    const plugins = shell.match(/PLUGINS="([a-z -]+)"/)[1].split(' ');
+    plugins.push('ssr-css', 'syntax-highlight', 'docs', 'docs-snapshot', 'docs-seo', 'docs-snippets');
+    for (const folder of ['packages/core', 'packages/create-farm', ...plugins.map(name => 'rust-plugins/' + name)]) fs.mkdirSync(path.join(root, folder), {recursive: true});
+    for (const status of [17, 0]) {
+      fs.writeFileSync(log, '');
+      const result = spawnSync('sh', [source], {cwd: root, encoding: 'utf8', timeout: 10000,
+        env: {...process.env, PATH: bin + path.delimiter + process.env.PATH, PROBE_EVENTS: log, SETUP_EXIT: String(status),
+          FARM_BUILD_ABI: 'darwin-arm64', FARM_BUILD_PROFILE: 'ci', FARM_NATIVE_PROOF_MODE: 'shadow', FARM_RELEASE_NATIVE_OWNERS: ''}});
+      assert.equal(result.status, status, result.stderr);
+      const events = fs.readFileSync(log, 'utf8').trim().split('\n');
+      if (status) assert.deepEqual(events, ['setup']);
+      else { assert.deepEqual(events.slice(0, 3), ['setup', 'probe', 'build']); assert.equal(events.filter(x => x === 'build').length, plugins.length + 2); }
+    }
+  } finally {fs.rmSync(root, {recursive: true, force: true});}
 });

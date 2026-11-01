@@ -7,7 +7,7 @@ import test from 'node:test';
 import { runDockerCargoBuild, readableCache, containerBuild, containerCargoHome, nativeBuildBudget } from './v2-docker-cargo-cache.mjs';
 
 function fixture(mode = {}) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-docker-cache-contract-'));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'farm-docker-cache-contract-')));
   const home = path.join(root, 'cargo'); fs.mkdirSync(home);
   const env = { FARM_CARGO_HOME: home, FARM_BUILD_IMAGE: 'ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine',
     FARM_BUILD_ABI: 'linux-x64-musl', FARM_BUILD_TARGET: 'x86_64-unknown-linux-musl', FARM_BUILD_PROFILE: 'ci', FARM_BUILD_ZIG: 'false' };

@@ -99,6 +99,10 @@ case "$ABI" in
 esac
 
 if [ "${FARM_NATIVE_PROOF_MODE:-off}" = "shadow" ]; then
+  # Resolve the repository-pinned toolchain under the actual build budget, before
+  # the 15-second read-only version probes. A first installation is build setup,
+  # not optional diagnostics, and its failure must stop this producer.
+  cargo --version
   FARM_CAPTURE_CORE_SCRIPT="$CORE_BUILD_SCRIPT" \
   FARM_CAPTURE_CORE_ARGS="$TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS" \
   FARM_CAPTURE_PLUGIN_ARGS="$TARGET_ARGS $ZIG_ARGS --abi $ABI $PLUGIN_PROFILE_ARGS" \

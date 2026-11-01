@@ -53,3 +53,14 @@ test('shared runtime changes execute every related suite and report missing root
   assert.ok(result.reasons.includes('required-shared-root-missing'));
   assert.equal(result.sets.ts.mode, 'all');
 });
+
+
+test('documentation exemption requires complete ordinary Git metadata for both sides', () => {
+  const file = 'docs/experiences/notes.md';
+  const entry = {file, mode: '100644', type: 'blob'};
+  for (const row of [{path: file}, {path: file, beforeEntry: null, afterEntry: null},
+    {path: file, beforeEntry: entry, afterEntry: {...entry, mode: '100755'}},
+    {path: file, beforeEntry: {...entry, mode: '120000'}, afterEntry: null},
+    {path: file, beforeEntry: null, afterEntry: {...entry, file: 'other.md'}}]) assert.equal(decide([row]).full, true);
+  assert.equal(decide([{path: file, beforeEntry: entry, afterEntry: entry}]).full, false);
+});

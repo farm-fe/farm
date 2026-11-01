@@ -20,7 +20,10 @@ export function calculateSelection(identity, directory = root, read = (args, opt
   const previous = readGitSuiteFiles(directory, (args, options) => read(args.map(value => value === 'HEAD' ? identity.baselineSHA : value === 'HEAD^{tree}' ? identity.baselineSHA + '^{tree}' : value), options));
   const inventory = discoverSuiteInventory(current.files, suitePolicy, current.sourceIdentity, current.exampleDirectories);
   const names = new TextDecoder('utf-8', { fatal: true }).decode(read(['diff', '--name-only', '-z', '--no-renames', identity.baselineSHA, identity.sourceSHA])).split('\0').filter(Boolean);
-  const decision = suiteImpact({ before: previous.files, after: current.files, changes: names.map(file => ({ path: file })), inventory });
+  const beforeEntries = new Map(previous.entries.map(row => [row.file, row]));
+  const afterEntries = new Map(current.entries.map(row => [row.file, row]));
+  const changes = names.map(file => ({ path: file, beforeEntry: beforeEntries.get(file) ?? null, afterEntry: afterEntries.get(file) ?? null }));
+  const decision = suiteImpact({ before: previous.files, after: current.files, changes, inventory });
   return { schemaVersion: 1, kind: 'ci-suite-execution-selection', ...identity, inventoryHash: inventory.inventoryHash,
     decision, decisionHash: decision.decisionHash, acceptanceInherited: false };
 }

@@ -13,8 +13,13 @@ const buildVariables = ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'CARGO_INCREMENT
 
 export function captureRuntime({ env = process.env, run = spawnSync, cwd = root } = {}) {
   const errors = [];
+  // Version probes have a short diagnostic timeout. Never let a rustup proxy
+  // auto-install the pinned toolchain here: interruption can leave a partial
+  // component transaction before the real build starts. Only child probes opt
+  // out; the actual build keeps its original installation policy.
+  const probeEnv = { ...env, RUSTUP_AUTO_INSTALL: '0' };
   function version(executable, args) {
-    const result = run(executable, args, { cwd, env, encoding: 'utf8', timeout: 15000, maxBuffer: 1024 * 1024, windowsHide: true, shell: false });
+    const result = run(executable, args, { cwd, env: probeEnv, encoding: 'utf8', timeout: 15000, maxBuffer: 1024 * 1024, windowsHide: true, shell: false });
     if (result.status !== 0 || result.error) { errors.push({ tool: executable, status: result.status, code: result.error?.code ?? null }); return null; }
     return (result.stdout ?? '').trim();
   }

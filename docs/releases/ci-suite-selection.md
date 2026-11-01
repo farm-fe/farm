@@ -6,8 +6,14 @@ selection file is bound by a raw-byte hash in job outputs to the current source,
 Git tree, repository, run and attempt. Consumers independently reconstruct the
 selection from committed old/new inputs before executing it.
 
-Only source leaves under `examples/react/src` and `js-plugins/babel/src` may
-select a smaller set. Source/config/manifest changes outside those audited
+Source leaves under `examples/react/src` and `js-plugins/babel/src`, plus
+ordinary committed `docs/experiences/*.md` engineering notes, may select a smaller
+set. Engineering notes require Git blob mode `100644` on every present side of
+an addition, edit, deletion or rename. Missing metadata, executable files and
+symlinks cannot receive this exemption. A mixed change still includes every
+product path; renames are compared as deletion plus addition. No-op and notes-only
+changes select no TS/Examples cases, with explicit `not-applicable` receipts;
+create-farm, Unit, Docs quality and performance gates remain unchanged. Source/config/manifest changes outside those audited
 boundaries, unresolved workspace or npm aliases, ambiguous relevant dependencies,
 policy changes, missing or inaccessible baselines and forks execute all suites.
 The PostCSS test's dependency on the vite-adapter-vue Example manifest is explicit.

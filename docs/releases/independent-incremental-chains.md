@@ -50,7 +50,8 @@ The contracts are connected to the blocking source-contract job and have local
 lightweight model, mock, archive and isolated-Git coverage. The generic selection
 object is not publication authority. The live CI entrypoints now support GNU
 same-chain byte reuse for engineering-documentation leaves and selected suites
-for the audited React/Babel source leaves. Unknown inputs run all current tests.
+for the audited React/Babel source leaves and ordinary committed engineering
+Markdown under `docs/experiences` (Git blob mode `100644` on both present sides). Unknown inputs run all current tests.
 The independent release workflow consumes the source-bound rebuild/version/publish
 plan, builds its own release-profile bytes and requires explicit main publication
 authority. None of this documents a completed hosted release or benchmark run.

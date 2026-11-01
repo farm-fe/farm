@@ -167,7 +167,7 @@ export function readGitSuiteFiles(root, readGit = (args, options = {}) => execFi
   }
   assert.equal(cursor, data.length, 'Unexpected discovery bytes');
   assert.equal(readGit(['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), commit, 'Discovery HEAD moved during capture');
-  return { files, exampleDirectories, sourceIdentity: { commit, tree, trackedInputsOnly: true } };
+  return { files, entries, exampleDirectories, sourceIdentity: { commit, tree, trackedInputsOnly: true } };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

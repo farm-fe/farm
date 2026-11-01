@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { npmInventory, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { root } from './v2-release-inventory.mjs';
 
 test('candidate scope includes SDK generator and approved Vuetify patch', () => {
@@ -53,7 +54,7 @@ test('Core/native versions and source changes without version bumps fail closed'
   assert.throws(() => changesetsPublication(family, old, []), /official Changesets/);
 });
 test('source consistency cannot be mistaken for publication approval', () => {
-  const run = (...args) => spawnSync(process.execPath, [new URL('./v2-release-preflight.mjs', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'), ...args], { encoding: 'utf8' });
+  const run = (...args) => spawnSync(process.execPath, [fileURLToPath(new URL('./v2-release-preflight.mjs', import.meta.url)), ...args], { encoding: 'utf8' });
   assert.equal(run().status, 0);
   const publication = run('--publication');
   assert.equal(publication.status, 1);
