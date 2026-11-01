@@ -50,7 +50,7 @@ The contracts are connected to the blocking source-contract job and have local
 lightweight model, mock, archive and isolated-Git coverage. The generic selection
 object is not publication authority. The live CI entrypoints now support GNU
 same-chain byte reuse for engineering-documentation leaves and selected suites
-for the audited React/Babel source leaves and ordinary committed engineering
+from npm owner-directory reverse dependency closure and ordinary committed engineering
 Markdown under `docs/experiences` (Git blob mode `100644` on both present sides). Unknown inputs run all current tests.
 The independent release workflow consumes the source-bound rebuild/version/publish
 plan, builds its own release-profile bytes and requires explicit main publication
@@ -158,3 +158,25 @@ fixed-HEAD execution, rerun only the failed leaf performance job or the relevant
 gate/summary: those subgraphs do not rerun upstream native producers. Do not use
 a Type Check or primary native producer as an aggregation retry shortcut.
 Old-run local diagnostics cannot stand in for new-HEAD GitHub checks or baselines.
+
+### Directory selection contract
+
+CI suite selection uses `scripts/ci-directory-impact-rules.mjs`: global paths
+select all suites; other paths map to npm owner directories and propagate through
+production, development, optional and peer dependencies, plus the declared
+cross-directory validation edges. Both baseline and current manifests participate
+so removals and renames retain old consumers. Local file/link/workspace aliases
+resolve to directory identities. Unknown paths or unresolved dependencies select
+all suites. Decisions include path/owner/dependency explanations.
+
+This affects actual TS, Examples build and browser selection only after the
+independent same-chain baseline check; it does not authorize acceptance from a
+plan alone. Create-farm still validates all eight templates. Rust Unit, native
+production, Docs quality and performance remain full. Shared compiler/runtime
+inputs and unowned SSR helpers are explicit global inputs. General JS preparation
+is still the existing bootstrap recipe; selective prerequisite builds are a
+separate remaining step. The release graph already parses Cargo and npm manifests,
+but unifying its directory policy with this suite rule inventory remains pending.
+New cross-directory reads require a declared dependency edge or a global rule;
+there is no AST analysis. PostCSS's standalone cache integration test is not part
+of the ordinary TS suite and is not claimed as executed by this selection.

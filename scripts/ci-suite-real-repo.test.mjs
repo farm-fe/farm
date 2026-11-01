@@ -37,10 +37,10 @@ test('real repository impact sets equal independent Examples and JS expectations
   assert.deepEqual(babel.sets.ts.ids, ['ts:js-plugins/react-compiler/tests/compiler.spec.ts']);
   assert.deepEqual(babel.sets['examples-build'].ids, []); assert.deepEqual(babel.sets['examples-browser'].ids, []);
   const hidden = plan('examples/vite-adapter-vue/package.json');
-  assert.equal(hidden.full, true); assert.ok(hidden.affectedOwners.includes('js-plugins/postcss'));
+  assert.equal(hidden.full, false); assert.ok(hidden.affectedOwners.includes('js-plugins/postcss'));
   assert.ok(hidden.sets.ts.ids.some(id => id.includes('js-plugins/postcss/')));
   for (const file of ['examples/react/package.json', 'examples/react/farm.config.ts', 'js-plugins/postcss/src/index.ts']) {
-    assert.equal(plan(file).full, true);
+    assert.equal(plan(file).full, false);
   }
   for (const file of ['packages/core/src/index.ts', 'packages/cli/src/index.ts', 'packages/runtime/src/index.ts',
     'packages/runtime-plugin-hmr/src/index.ts', 'packages/runtime-plugin-import-meta/src/index.ts', 'unknown-source.ts']) {

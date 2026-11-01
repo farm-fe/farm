@@ -105,11 +105,11 @@ for (const scenario of ['noop', 'add', 'edit', 'delete', 'rename', 'executable',
       const identity = { kind: 'independently-verified-ci-suite-baseline', sourceSHA: fixture.git('rev-parse', 'HEAD').trim(),
         sourceTree: fixture.git('rev-parse', 'HEAD^{tree}').trim(), baselineSHA, baselineTree, repositoryId: 1, runId: 2, attempt: 1 };
       const selection = calculateSelection(identity, fixture.directory);
-      const reduced = ['noop', 'add', 'edit', 'delete', 'rename', 'mixed-react', 'rename-from-product'].includes(scenario);
+      const reduced = ['noop', 'add', 'edit', 'delete', 'rename', 'mixed-react', 'rename-from-product', 'config'].includes(scenario);
       assert.equal(selection.decision.full, !reduced);
       if (reduced) {
         assert.deepEqual(selection.decision.sets.ts.ids, []);
-        const react = ['mixed-react', 'rename-from-product'].includes(scenario);
+        const react = ['mixed-react', 'rename-from-product', 'config'].includes(scenario);
         for (const kind of ['examples-build', 'examples-browser']) assert.deepEqual(selection.decision.sets[kind].ids, react ? [`${kind}:examples/react`] : []);
       } else for (const kind of ['ts', 'examples-build', 'examples-browser']) assert.equal(selection.decision.sets[kind].mode, 'all');
       assert.equal(selection.acceptanceInherited, false);

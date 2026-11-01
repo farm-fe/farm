@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { directoryImpactRules } from './ci-directory-impact-rules.mjs';
 import { suiteImpact } from './ci-suite-impact.mjs';
 
 const files = {
@@ -63,4 +64,56 @@ test('documentation exemption requires complete ordinary Git metadata for both s
     {path: file, beforeEntry: {...entry, mode: '120000'}, afterEntry: null},
     {path: file, beforeEntry: null, afterEntry: {...entry, file: 'other.md'}}]) assert.equal(decide([row]).full, true);
   assert.equal(decide([{path: file, beforeEntry: entry, afterEntry: entry}]).full, false);
+});
+
+for (const input of ['package.json', 'farm.config.ts', 'public/icon.svg', '.env', 'tests/fixtures/input.js', 'src/removed.ts']) {
+  test(`directory ownership includes manifest, config and resources: ${input}`, () => {
+    const result = decide([{path: 'js-plugins/b/' + input}]);
+    assert.equal(result.full, false);
+    assert.deepEqual(result.affectedOwners, ['examples/one', 'js-plugins/b']);
+    assert.deepEqual(result.sets['examples-build'].ids, ['examples-build:examples/one']);
+    assert.ok(result.explanations.some(row => row.owner === 'js-plugins/b' && row.reason === 'directory-owner'));
+    assert.ok(result.explanations.some(row => row.owner === 'examples/one' && row.reason === 'dependent'));
+  });
+}
+for (const version of ['file:../../packages/a', 'link:../../packages/a', 'workspace:../../packages/a', 'workspace:a@*', 'npm:a@1.0.0']) {
+  for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+    test(`validation follows ${field} ${version} aliases`, () => {
+      const snapshot = {...files, 'js-plugins/b/package.json': JSON.stringify({name: 'b', [field]: {alias: version}})};
+      const result = decide([{path: 'packages/a/src/input.ts'}], snapshot, snapshot);
+      assert.equal(result.full, false);
+      assert.deepEqual(result.affectedOwners, ['examples/one', 'js-plugins/b', 'packages/a']);
+    });
+  }
+}
+test('global rules and unknown directory inputs report explicit full-execution reasons', () => {
+  for (const file of ['scripts/new-recipe.mjs', '.github/workflows/new.yaml', 'Cargo.lock', 'crates/compiler/src/lib.rs']) {
+    const result = decide([{path: file}]);
+    assert.equal(result.full, true);
+    assert.ok(result.explanations.some(row => row.path === file && row.reason === 'global'));
+  }
+  const result = decide([{path: 'unclassified/generated.txt'}]);
+  assert.equal(result.full, true);
+  assert.ok(result.explanations.some(row => row.reason === 'unknown-full'));
+});
+
+test('directory rule inventory is canonical, unique and records implicit edges', () => {
+  const valid = value => /^[a-zA-Z0-9._/-]+$/.test(value) && !value.startsWith('/') && !value.split('/').includes('..');
+  assert.equal(new Set(directoryImpactRules.global).size, directoryImpactRules.global.length);
+  assert.ok(directoryImpactRules.global.every(valid));
+  for (const rule of directoryImpactRules.dependencies) {
+    assert.ok(valid(rule.consumer));
+    assert.ok(rule.dependencies.length > 0 && rule.dependencies.every(valid));
+    assert.equal(new Set(rule.dependencies).size, rule.dependencies.length);
+  }
+  assert.ok(directoryImpactRules.global.includes('examples/ssr-utils/'));
+  const postcss = directoryImpactRules.dependencies.find(row => row.consumer === 'js-plugins/postcss');
+  assert.ok(postcss.dependencies.includes('examples/vite-adapter-vue'));
+});
+
+test('missing declared directory dependencies cannot silently reduce validation', () => {
+  const incomplete = {...files, 'js-plugins/postcss/package.json': JSON.stringify({name: 'postcss'})};
+  const result = decide([{path: 'examples/one/src/main.ts'}], incomplete, incomplete);
+  assert.equal(result.full, true);
+  assert.ok(result.reasons.includes('declared-directory-dependency-missing'));
 });
