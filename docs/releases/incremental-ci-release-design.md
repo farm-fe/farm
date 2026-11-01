@@ -41,7 +41,9 @@ native 复用，以及 release 通过恢复未变化包的历史二进制准备�
   必要行为差异：不再使用旧全量 npm/SDK seal；改用 Cargo 自身 package 验证和原档证明。
   当前入口仅选择该受验证版本 PR 中确实提升版本的 Cargo 包；没有 Cargo 版本差异则为空。
   不扩展触发到任意 release-plz PR，不恢复早期 release-plz 自动发布。独立合并的 Cargo
-  版本提案不因此自动上传，需在上线审查中明确其与原版本 PR 的衔接。
+  版本提案应被上传入口拒绝；这是已确认的原触发边界，不是等待新增自动发布入口的阻塞。
+  提案纳入 Changesets 版本 PR 时仍须经过既有来源、版本语义与源码包校验；没有纳入的
+  Cargo 版本不因 npm 发版自动获得上传授权。
   重跑缺失/过期原 artifact 一律阻断；允许原成功 producer attempt 恢复，不能重新打包
   替换部分上传事务的字节。真实双 crate 默认验证和 API/ZIP 恢复测试不代表真实 registry 发布。
 
@@ -347,7 +349,7 @@ PR 固定 head、比较基线及目录解析视图。多个 PR 可以只读消�
 
 ## 8. 实施落点与迁移
 
-以下均为待批准后的修改清单，不是本次文档已经执行的更改：
+以下为已批准的实施清单；是否完成以对应源码和验证记录为准：
 
 | 落点 | 计划职责 |
 |---|---|
@@ -394,11 +396,11 @@ PR 固定 head、比较基线及目录解析视图。多个 PR 可以只读消�
 本稿非目标：AST/任意源码动态读取推导、跳过当前 PR 验证、PR 产物晋升发布、重新发布未变化版本、
 把编译缓存当发布产物、增加第三条重复发布链、自动修改凭据/权限、为提高命中率降低来源或 ABI 校验。
 
-## 10. Review 检查项
+## 10. 设计批准记录（不代表验收通过）
 
-- [ ] 三种依赖来源共同组成统一图，product/preparation/validation 含义与 fallback 可接受。
-- [ ] 同 owner/target 的 PR/main 正式参数一致；保留实际正式产品策略而非盲目统一所有 owner。
-- [ ] PR artifact 缺失必须重建，main release 自身不恢复历史成品。
-- [ ] npm Changesets 版本准备先完成，固定升版后的 main SHA 再规划/构建/发布；crates.io 独立。
-- [ ] 两种 baseline、显式 publish、同事务恢复与跨运行复用的边界清楚。
-- [ ] 接受上述验收和集中实施顺序；**勾选/批准前只做文档 review，不开始实现。**
+- [x] 三种依赖来源共同组成统一图，product/preparation/validation 含义与 fallback 可接受。
+- [x] 同 owner/target 的 PR/main 正式参数一致；保留实际正式产品策略而非盲目统一所有 owner。
+- [x] PR artifact 缺失必须重建，main release 自身不恢复历史成品。
+- [x] npm Changesets 版本准备先完成，固定升版后的 main SHA 再规划/构建/发布；crates.io 独立。
+- [x] 两种 baseline、显式 publish、同事务恢复与跨运行复用的边界清楚。
+- [x] 接受上述验收和集中实施顺序；**用户已批准本地实施与真实验证；本记录不代表验收通过或发布授权。**

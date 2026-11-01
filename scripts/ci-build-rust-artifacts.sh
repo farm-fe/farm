@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# cspell:words LINKEDIT
 set -eu
+# cspell:words LINKEDIT
 
 node ./scripts/check-native-build-node.mjs
 
