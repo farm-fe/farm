@@ -35,7 +35,7 @@ def identity(event,env,git=run):
     tree=git('git','rev-parse','HEAD^{tree}')
     check(tree==git('git','rev-parse',pr['head']['sha']+'^{tree}'),'Reviewed head and merge tree differ')
     return {'repository':repo,'repositoryId':int(env['GITHUB_REPOSITORY_ID']),'runId':int(env['GITHUB_RUN_ID']),
-            'sourceSHA':sha,'sourceTree':tree,'pr':event['number'],'headSHA':pr['head']['sha'],'baseSHA':pr['base']['sha'],'workflow':WORKFLOW}
+            'sourceSHA':sha,'sourceTree':tree,'pr':event['number'],'headSHA':pr['head']['sha'],'eventBaseSHA':pr['base']['sha'],'workflow':WORKFLOW}
 
 def select_packages(before,after):
     chain=load('cargo_source_chain','incremental-chain-plan.py')
@@ -130,9 +130,9 @@ def restore(directory,expected):
     return True
 
 def prepare(directory,expected):
-    proof=json.loads(Path('cargo-version-proof.json').read_text());check(proof['mode']=='verified-version-only' and proof['headSHA']==expected['headSHA'] and proof['baseSHA']==expected['baseSHA'],'Cargo version provenance is incomplete')
+    proof=json.loads(Path('cargo-version-proof.json').read_text());check(proof['mode']=='verified-version-only' and proof['headSHA']==expected['headSHA'] and re.fullmatch('[a-f0-9]{40}',proof['baseSHA']) and re.fullmatch('[a-f0-9]{64}',proof['receiptHash']),'Cargo version provenance is incomplete')
     evidence=load('cargo_source_evidence','incremental-chain-evidence.py')
-    before=evidence.source_reader(expected['baseSHA']);source=evidence.source_reader(expected['sourceSHA'])
+    before=evidence.source_reader(proof['baseSHA']);source=evidence.source_reader(expected['sourceSHA'])
     selected=select_packages(before['files'],source['files'])
     check(run('git','diff','--name-only','HEAD')=='','Cargo preparation requires a clean tracked source')
     directory.mkdir();(directory/'files').mkdir()
@@ -154,7 +154,7 @@ def prepare(directory,expected):
         (directory/'files'/filename).write_bytes(body);meta_name=name+'-'+version+'.json';(directory/'files'/meta_name).write_bytes(upload)
         records.append({**row,'archive':filename,'archiveSha256':digest(body),'archiveBytes':len(body),'metadata':meta_name,'metadataSha256':digest(upload),'metadataBytes':len(upload)})
     check(run('git','diff','--name-only','HEAD')=='','Cargo package altered tracked source')
-    receipt={'schemaVersion':1,'identity':expected,'producerAttempt':int(os.environ['GITHUB_RUN_ATTEMPT']),'toolchain':run('rustc','-vV'),'verified':True,'selection':selected,'selectionHash':digest(encoded(selected)),'records':records}
+    receipt={'schemaVersion':1,'identity':expected,'producerAttempt':int(os.environ['GITHUB_RUN_ATTEMPT']),'toolchain':run('rustc','-vV'),'verified':True,'versionBaseSHA':proof['baseSHA'],'versionProofHash':proof['receiptHash'],'packageCommand':['cargo','package','--locked','--offline','--registry','crates-io',*sum((['-p',row['name']] for row in selected),[])],'selection':selected,'selectionHash':digest(encoded(selected)),'records':records}
     (directory/'receipt.json').write_bytes(encoded(receipt));verify_frozen(directory,expected)
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):

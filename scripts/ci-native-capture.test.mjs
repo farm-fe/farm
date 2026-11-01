@@ -1,3 +1,4 @@
+// cspell:words SDKROOT
 // cspell:words RUSTFLAGS esac
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -200,4 +201,15 @@ test('native recipe leaves CI-only strip overrides unset for both formal roles',
       assert.equal(result.status, 0, result.stderr); assert.equal(result.stdout, expected);
     }
   } finally {fs.rmSync(root, {recursive: true, force: true});}
+});
+
+test('formal compatibility binds Apple deployment and C compiler flags',()=>{
+ const capture=extra=>captureRuntime({platform:'darwin',env:{FARM_BUILD_ABI:'darwin-arm64',FARM_BUILD_TARGET:'aarch64-apple-darwin',...extra},run:()=>({status:0,stdout:'measured'})});
+ const base=capture({});
+ for(const [key,a,b]of [['MACOSX_DEPLOYMENT_TARGET','11.0','14.0'],['SDKROOT','/sdk/one','/sdk/two'],['CFLAGS','-O1','-O2'],['CARGO_BUILD_JOBS','2','4']]) {
+  assert.notEqual(capture({[key]:a}).formalFlagsHash,capture({[key]:b}).formalFlagsHash,key);
+  assert.deepEqual(capture({[key]:a}).unboundBuildVariables,[]);
+ }
+ assert.deepEqual(capture({CFLAGS_aarch64_apple_darwin:'-O2'}).unboundBuildVariables,['CFLAGS_aarch64_apple_darwin']);
+ assert.equal(base.errors.length,0);
 });

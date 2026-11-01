@@ -472,20 +472,24 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
     pending, build_nodes = [], set()
     for identity in build:
         row = records[identity]
-        pending.append(row["kind"] + ":" + posixpath.dirname(row["manifestPath"]))
         if row.get("owner"):
+            # Platform package wrappers are packed products, not independent
+            # compiler prerequisites. Their current source owner builds bytes.
             pending.append("npm:" + posixpath.dirname(records["npm:" + row["owner"]]["manifestPath"]))
+        else:
+            pending.append(row["kind"] + ":" + posixpath.dirname(row["manifestPath"]))
     while pending:
         key = pending.pop()
         if key in build_nodes:
             continue
         build_nodes.add(key)
-        pending.extend(graph.get(key, {}).get("preparationDeps", set()))
+        if key not in head: raise ValueError("Current build prerequisite is missing")
+        pending.extend(head[key]["preparationDeps"])
         if key in by_node:
             dependencies.add(by_node[key])
     result["buildDependencyClosure"] = sorted(dependencies)
     result["buildNodes"] = sorted(build_nodes)
-    result["buildEdges"] = {key: sorted(graph.get(key, {}).get("preparationDeps", set()) & build_nodes)
+    result["buildEdges"] = {key: sorted(head[key]["preparationDeps"] & build_nodes)
                             for key in sorted(build_nodes)}
     result["sameVersionRebuildPolicy"] = "compare-original-archive-bytes-or-require-new-version"
     result["planHash"] = digest(result)

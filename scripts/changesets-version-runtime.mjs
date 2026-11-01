@@ -56,7 +56,7 @@ with zipfile.ZipFile(io.BytesIO(b)) as z:
 }
 
 export async function resolveVersionEvidence({environment=process.env,event=JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH)),readApi=api,runGit=git,readSnapshots=readVersionSnapshots,
-  download=(route)=>execFileSync('gh',['api',route],{timeout:30000,maxBuffer:1024**2}),extractReceipt=extractVersionReceipt,
+  allowMergedBase=false,download=(route)=>execFileSync('gh',['api',route],{timeout:30000,maxBuffer:1024**2}),extractReceipt=extractVersionReceipt,
   wait=()=>new Promise(resolve=>setTimeout(resolve,5000))}={}) {
   const api=readApi,git=runGit;
   const repository=environment.GITHUB_REPOSITORY;
@@ -69,6 +69,8 @@ export async function resolveVersionEvidence({environment=process.env,event=JSON
   const requestedBase=event.inputs?.base_sha??event.inputs?.release_base;
   if(requestedBase)assert.equal(requestedBase,pr.base.sha);
   assert.equal(eventHead,pr.head.sha,'PR moved after event');
+  if(allowMergedBase)assert.ok(pr.merged_at&&pr.merge_commit_sha===event.pull_request?.merge_commit_sha,'Merged source identity missing');
+  const blockedBases=new Set();
   const runs=api(`repos/${repository}/actions/workflows/release.yaml/runs?per_page=20`).workflow_runs;
   for(const summary of runs) {
     // Only completed success can grant a fastlane. A running producer is a miss;
@@ -81,6 +83,7 @@ export async function resolveVersionEvidence({environment=process.env,event=JSON
       run=api(`repos/${repository}/actions/runs/${summary.id}`);
     }
     if(run.status!=='completed'||run.conclusion!=='success') {
+      blockedBases.add(run.head_sha);
       if(run.head_sha===pr.base.sha)return {mode:'full',reason:'Latest version producer for this base has not succeeded'};
       continue;
     }
@@ -93,16 +96,20 @@ export async function resolveVersionEvidence({environment=process.env,event=JSON
     assert.equal(archiveBytes.length,artifact.size_in_bytes);
     const receiptBytes=extractReceipt(archiveBytes);
     const receipt=JSON.parse(receiptBytes);
-    if(receipt.headSHA!==pr.head.sha||receipt.baseSHA!==pr.base.sha)continue;
+    if(receipt.headSHA!==pr.head.sha||(!allowMergedBase&&receipt.baseSHA!==pr.base.sha))continue;
+    assert.match(receipt.baseSHA,/^[a-f0-9]{40}$/);
+    if(blockedBases.has(receipt.baseSHA))return {mode:'full',reason:'Newer producer for immutable preparation base did not succeed'};
+    const proofPr=allowMergedBase?{...pr,base:{...pr.base,sha:receipt.baseSHA}}:pr;
     const jobs=api(`repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs?per_page=100`).jobs;
     const matching=jobs.filter(row=>row.name==='Prepare reviewed version PR');assert.equal(matching.length,1);
     const job={...matching[0],run_attempt:run.run_attempt};
-    verifyVersionProducer({pr,repository:repo,run,job,artifact,receipt,receiptBytes,archiveBytes});
+    verifyVersionProducer({pr:proofPr,repository:repo,run,job,artifact,receipt,receiptBytes,archiveBytes});
     const step=job.steps.find(row=>row.name==='Upload version-only provenance');
     assert.ok(step.started_at<=artifact.created_at&&artifact.created_at<=step.completed_at,'Upload attempt binding differs');
-    git(['fetch','--no-tags','origin',pr.base.sha,pr.head.sha]);
+    git(['fetch','--no-tags','origin',receipt.baseSHA,pr.head.sha]);
+    assert.equal(git(['merge-base',receipt.baseSHA,pr.head.sha]).trim(),receipt.baseSHA,'Version preparation base is not an ancestor of reviewed head');
     assert.equal(git(['rev-parse',pr.head.sha+'^{tree}']).trim(),receipt.headTree);
-    return {...classifyVersionDiff({...readSnapshots(pr.base.sha,pr.head.sha),receipt}),receiptHash:digest(receiptBytes),headTree:receipt.headTree,baseSHA:receipt.baseSHA,headSHA:receipt.headSHA};
+    return {...classifyVersionDiff({...readSnapshots(receipt.baseSHA,pr.head.sha),receipt}),receiptHash:digest(receiptBytes),headTree:receipt.headTree,baseSHA:receipt.baseSHA,headSHA:receipt.headSHA};
   }
   return {mode:'full',reason:'No complete successful producer evidence for this exact version PR'};
 }
@@ -118,7 +125,7 @@ export async function resolveMergedVersion({environment=process.env,readApi=api,
   const matches=prs.filter(pr=>pr.merged_at&&pr.merge_commit_sha===source&&pr.base.ref==='main'&&pr.user?.id===41898282);
   if(matches.length!==1)return {releaseReady:false,mode:'full',reason:'Fixed main source is not one authenticated merged Changesets version PR'};
   const pr=readApi(`repos/${repository}/pulls/${matches[0].number}`);
-  const result=await resolve({environment:{...environment,GITHUB_SHA:pr.head.sha,VERSION_PR:String(pr.number)},event:{pull_request:pr},readApi,runGit});
+  const result=await resolve({environment:{...environment,GITHUB_SHA:pr.head.sha,VERSION_PR:String(pr.number)},event:{pull_request:pr},readApi,runGit,allowMergedBase:true});
   if(result.mode!=='verified-version-only'||!result.receiptHash)return {...result,releaseReady:false,reason:'Merged version semantic/provenance proof incomplete'};
   assert.equal(runGit(['rev-parse',source+'^{tree}']).trim(),result.headTree,'Main merge tree differs from verified version PR');
   return {...result,releaseReady:true,versionPR:pr.number,sourceSHA:source};

@@ -47,7 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          node --input-type=module -e 'import fs from "node:fs"; import {resolveVersionEvidence} from "./scripts/changesets-version-runtime.mjs"; const result=await resolveVersionEvidence(); if(result.mode!=="verified-version-only")throw Error("Cargo version provenance incomplete"); fs.writeFileSync("cargo-version-proof.json",JSON.stringify(result));'
+          node --input-type=module -e 'import fs from "node:fs"; import {resolveVersionEvidence} from "./scripts/changesets-version-runtime.mjs"; const result=await resolveVersionEvidence({allowMergedBase:true}); if(result.mode!=="verified-version-only")throw Error("Cargo version provenance incomplete"); fs.writeFileSync("cargo-version-proof.json",JSON.stringify(result));'
       - name: Prepare pinned source dependencies
         if: steps.frozen.outputs.restored != 'true'
         run: |

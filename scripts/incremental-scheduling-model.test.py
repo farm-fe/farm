@@ -63,6 +63,23 @@ class SchedulingOracle(unittest.TestCase):
         self.assertEqual({key for key in plan["buildNodes"] if key.startswith("input:")}, {"input:global:" + path for path in chain.DIRECTORY_RULES["global"]})
         self.assertEqual(len(plan["buildNodes"]), 3 + len(chain.DIRECTORY_RULES["global"]))
 
+    def test_deleted_private_build_helper_is_not_a_current_preparation_node(self):
+        files,family,source=model();previous=dict(files);ledger,anchor=fixtures.baseline(previous,family)
+        del files['packages/x/package.json'];del files['packages/x/src/index.ts']
+        files['packages/new-helper/package.json']=json.dumps({'name':'new-helper','version':'1.0.0','private':True,'dependencies':{'a':'workspace:*'}}).encode()
+        files['packages/new-helper/src/index.ts']=b'export const bridge = 2;'
+        manifest=json.loads(files['packages/b/package.json']);manifest['version']='1.0.1';manifest['dependencies']={'new-helper':'workspace:*'}
+        files['packages/b/package.json']=json.dumps(manifest).encode()
+        family=json.loads(json.dumps(family))
+        next(row for row in family['npm']['primary'] if row['name']=='b')['version']='1.0.1'
+        files['docs/releases/v2-candidate.json']=json.dumps(family).encode()
+        plan=fixtures.calculate('release',source,files,family,[],ledger,previous,anchor)
+        self.assertIn('npm:packages/x',plan['affectedNodes'])
+        self.assertNotIn('npm:packages/x',plan['buildNodes'])
+        self.assertIn('npm:packages/new-helper',plan['buildNodes']);self.assertIn('npm:packages/a',plan['buildNodes'])
+        self.assertEqual(plan['build'],['npm:b']);self.assertEqual(plan['publish'],['npm:b'])
+        self.assertFalse(plan['publicationBlocked'])
+
     def test_private_x_changes_publish_only_b_after_version_preparation(self):
         plan = select("packages/x/src/index.ts")
         self.assertEqual(plan["build"], ["npm:b"])

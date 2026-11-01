@@ -26,7 +26,7 @@ function fixture(){
   throw Error('Unexpected API request '+route);
  };
  const environment={GITHUB_REPOSITORY:'farm/farm',GITHUB_SHA:head,VERSION_PR:'5'};
- const options={environment,event:{pull_request:structuredClone(pr)},readApi,runGit:args=>args[0]==='fetch'?'':tree,
+ const options={environment,event:{pull_request:structuredClone(pr)},readApi,runGit:args=>args[0]==='fetch'?'':args[0]==='merge-base'?base:tree,
   readSnapshots:()=>({before,after,modesBefore:Object.fromEntries(Object.keys(before).map(k=>[k,'100644'])),modesAfter:Object.fromEntries(Object.keys(after).map(k=>[k,'100644']))}),
   download:()=>archive,extractReceipt:()=>bytes,wait:async()=>{}};
  return {options,pr,run,artifact,job,calls,tree,main,environment};
@@ -55,3 +55,13 @@ test('merged tree drift blocks release even with version PR provenance',async()=
  const f=fixture();await assert.rejects(resolveMergedVersion({environment:{...f.environment,GITHUB_REF:'refs/heads/main',GITHUB_SHA:f.main},readApi:f.options.readApi,
  runGit:args=>args.at(-1)==='HEAD'?f.main:'f'.repeat(40),resolve:async()=>({mode:'verified-version-only',receiptHash:'a'.repeat(64),headTree:f.tree})}),/tree differs/);
 });
+
+for(const strategy of ['merge','squash','rebase'])test(`merged ${strategy} uses immutable preparation base after main advances`,async()=>{
+ const f=fixture();f.pr.base.sha='e'.repeat(40);const snapshots=f.options.readSnapshots;
+ f.options.readSnapshots=(base,head)=>{assert.equal(base,'b'.repeat(40));assert.equal(head,'a'.repeat(40));return snapshots();};
+ const result=await resolveMergedVersion({environment:{...f.environment,GITHUB_REF:'refs/heads/main',GITHUB_SHA:f.main},readApi:f.options.readApi,
+ runGit:args=>args.at(-1)==='HEAD'?f.main:f.tree,resolve:options=>resolveVersionEvidence({...f.options,...options,runGit:f.options.runGit})});
+ assert.equal(result.releaseReady,true);assert.equal(result.baseSHA,'b'.repeat(40));assert.notEqual(result.sourceSHA,result.headSHA);
+});
+test('ordinary PR cannot borrow an immutable-base exception',async()=>{const f=fixture();f.pr.base.sha='e'.repeat(40);assert.equal((await resolveVersionEvidence(f.options)).mode,'full');});
+test('merged preparation base must be an ancestor of the reviewed head',async()=>{const f=fixture();f.options.allowMergedBase=true;f.options.runGit=args=>args[0]==='fetch'?'':args[0]==='merge-base'?'f'.repeat(40):f.tree;await assert.rejects(resolveVersionEvidence(f.options),/not an ancestor/);});
