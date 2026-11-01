@@ -675,26 +675,6 @@ impl Compiler {
   }
 }
 
-#[cfg(test)]
-mod entry_registration_tests {
-  use super::*;
-
-  #[test]
-  fn restored_worker_dependency_registers_its_dynamic_entry() {
-    let context = CompilationContext::new(Default::default(), vec![]).unwrap();
-    let id: ModuleId = "cached-worker.js".into();
-    Compiler::add_module(Module::new(id.clone()), &context);
-    Compiler::add_edge(&PluginResolveHookParam {
-      source: "cached-worker.js".to_string(),
-      importer: None,
-      kind: ResolveKind::DynamicEntry { name: "worker".to_string(), output_filename: None },
-    }, id.clone(), 0, &context);
-    let graph = context.module_graph.read();
-    assert_eq!(graph.dynamic_entries.get(&id), Some(&"worker".to_string()));
-    assert!(graph.module(&id).unwrap().is_dynamic_entry);
-  }
-}
-
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
   cached_dependency: Option<ModuleId>,
@@ -754,4 +734,24 @@ fn resolve_module(
   };
 
   Ok(res)
+}
+
+#[cfg(test)]
+mod entry_registration_tests {
+  use super::*;
+
+  #[test]
+  fn restored_worker_dependency_registers_its_dynamic_entry() {
+    let context = CompilationContext::new(Default::default(), vec![]).unwrap();
+    let id: ModuleId = "cached-worker.js".into();
+    Compiler::add_module(Module::new(id.clone()), &context);
+    Compiler::add_edge(&PluginResolveHookParam {
+      source: "cached-worker.js".to_string(),
+      importer: None,
+      kind: ResolveKind::DynamicEntry { name: "worker".to_string(), output_filename: None },
+    }, id.clone(), 0, &context);
+    let graph = context.module_graph.read();
+    assert_eq!(graph.dynamic_entries.get(&id), Some(&"worker".to_string()));
+    assert!(graph.module(&id).unwrap().is_dynamic_entry);
+  }
 }

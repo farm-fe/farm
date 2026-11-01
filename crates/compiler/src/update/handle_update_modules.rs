@@ -7,8 +7,10 @@ mod watch_query_tests {
 
   #[test]
   fn query_only_source_without_watch_dependents_does_not_create_bare_module() {
-    let mut config = Config::default();
-    config.root = std::env::temp_dir().to_string_lossy().into_owned();
+    let config = Config {
+      root: std::env::temp_dir().to_string_lossy().into_owned(),
+      ..Default::default()
+    };
     let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
     let path = std::path::Path::new(&context.config.root)
       .join("product.svg")
@@ -41,8 +43,10 @@ mod watch_query_tests {
 
   #[test]
   fn watched_source_keeps_its_query_modules_in_the_update_paths() {
-    let mut config = Config::default();
-    config.root = std::env::temp_dir().to_string_lossy().into_owned();
+    let config = Config {
+      root: std::env::temp_dir().to_string_lossy().into_owned(),
+      ..Default::default()
+    };
     let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
     let path = std::path::Path::new(&context.config.root)
       .join("product.svg")

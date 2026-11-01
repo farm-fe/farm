@@ -2101,7 +2101,7 @@
       "manifestPath": "crates/compiler/Cargo.toml",
       "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
       "publish": null,
-      "sourceSha256": "1441ba59c7240de64b4cd92091b46e397b66119a9961ca8890ef8e9ba3fb3352"
+      "sourceSha256": "8799408c8ecf32d091e957681a502b4a5c3ffe7e0ff73dac78d8689edaa5af78"
     },
     {
       "name": "farmfe_core",
