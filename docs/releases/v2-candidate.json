@@ -226,7 +226,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/tailwindcss/package.json",
         "manifestSha256": "b08d5d976841ee18162837cb790dcbe49d85c1d63abae71a558aa390377d0a7a",
-        "sourceSha256": "f1bb53ee90d56dfa4dda110847b9168aaa582990e257a24d5c3bff32a0172d4b"
+        "sourceSha256": "363b0d5400206562f77ce54a54653d2487ce44fad51e95cb1e09b35a78194c13"
       },
       {
         "name": "@farmfe/plugin-url",
@@ -2141,7 +2141,7 @@
       "manifestPath": "crates/plugin_css/Cargo.toml",
       "manifestSha256": "7ad72b220cf90d3901800827d8ec377ab67d2208bb73c7a7e1a97a507c123add",
       "publish": null,
-      "sourceSha256": "161651a119c9e1f288d05968803063a1374f7d1befc4c7dcd2aa0a4ba9b9d598"
+      "sourceSha256": "e12eaa04098107bf2dd7e180889575a9872fa4f4a2c5a65b9581e811170417fa"
     },
     {
       "name": "farmfe_plugin_define",

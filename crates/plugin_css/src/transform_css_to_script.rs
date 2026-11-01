@@ -83,10 +83,14 @@ pub fn transform_css_to_script_modules(
         };
         let cache_manager = &context.cache_manager;
 
-        if cache_manager.custom.has_cache(&store_key.name)
-          && !cache_manager.custom.is_cache_changed(&store_key)
-        {
-          let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
+        // A persisted manifest can outlive a missing or damaged payload.
+        // Lazy restoration then returns None: rebuild from the stylesheet.
+        let cached = if cache_manager.custom.is_cache_changed(&store_key) {
+          None
+        } else {
+          cache_manager.custom.read_cache(&store_key.name)
+        };
+        if let Some(cache) = cached {
           let mut meta = Box::new(deserialize!(&cache, ModuleMetaData, ArchivedModuleMetaData));
           let script_meta = meta.as_script_mut();
 
@@ -415,11 +419,11 @@ mod cache_tests {
       module.module_type = ModuleType::Css;
       module.content = content;
       module.content_hash = "same-input-directive".to_string();
-      module.meta = Box::new(ModuleMetaData::Css(Box::new(CssModuleMetaData {
+      *module.meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
         ast: parsed.ast,
         comments: Default::default(),
         custom: Default::default(),
-      })));
+      }));
       {
         let mut graph = context.module_graph.write();
         if graph.has_module(&id) {
@@ -443,6 +447,93 @@ mod cache_tests {
         String::from_utf8(code).unwrap().contains(color),
         "script cache retained previous generated CSS"
       );
+    }
+  }
+
+  #[test]
+  fn missing_or_corrupt_css_cache_payload_rebuilds_from_stylesheet() {
+    for damage in ["missing", "corrupt"] {
+      let cache_dir = std::env::temp_dir().join(format!(
+        "farm-css-payload-{}-{}-{damage}",
+        std::process::id(),
+        std::time::SystemTime::now()
+          .duration_since(std::time::UNIX_EPOCH)
+          .unwrap()
+          .as_nanos()
+      ));
+      let config = Config {
+        persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+          cache_dir: Some(cache_dir.to_string_lossy().into_owned()),
+          ..Default::default()
+        })),
+        ..Default::default()
+      };
+      let id = ModuleId::from("recover.css");
+      let install = |context: &Arc<CompilationContext>| {
+        let content = Arc::new(".recover { color: red; }".to_string());
+        let parsed = parse_css_stylesheet(&id.to_string(), content.clone()).unwrap();
+        context.meta.set_module_source_map(&id, parsed.source_map);
+        context.meta.set_globals(&id, Globals::new());
+        let mut module = Module::new(id.clone());
+        module.module_type = ModuleType::Css;
+        module.content = content;
+        module.content_hash = "same-css-source".to_string();
+        *module.meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
+          ast: parsed.ast,
+          comments: Default::default(),
+          custom: Default::default(),
+        }));
+        context.module_graph.write().add_module(module);
+      };
+      let first = Arc::new(CompilationContext::new(config.clone(), vec![]).unwrap());
+      install(&first);
+      transform_css_to_script_modules(vec![id.clone()], &first).unwrap();
+      first.cache_manager.custom.shutdown();
+      let disk = first.cache_manager.disk_cache_directory().unwrap();
+      let shards = std::fs::read_dir(&disk)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|file| {
+          file
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with("cache-")
+        })
+        .collect::<Vec<_>>();
+      assert!(!shards.is_empty());
+      drop(first);
+      for file in shards {
+        if damage == "missing" {
+          std::fs::remove_file(file).unwrap();
+        } else {
+          std::fs::write(file, b"interrupted cache payload").unwrap();
+        }
+      }
+      let restored = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+      let name = id.to_string() + "-transform_css_to_script_modules";
+      assert!(restored.cache_manager.custom.has_cache(&name));
+      install(&restored);
+      transform_css_to_script_modules(vec![id.clone()], &restored).unwrap();
+      let graph = restored.module_graph.read();
+      let module = graph.module(&id).unwrap();
+      let code = farmfe_toolkit::script::codegen_module(
+        &module.meta.as_script().ast,
+        restored.meta.get_module_source_map(&id),
+        None,
+        Default::default(),
+        None,
+      )
+      .unwrap();
+      let code = String::from_utf8(code).unwrap();
+      assert!(
+        code.contains(".recover") && code.replace(' ', "").contains("color:red"),
+        "{code}"
+      );
+      assert!(restored.cache_manager.custom.read_cache(&name).is_some());
+      drop(graph);
+      drop(restored);
+      std::fs::remove_dir_all(disk).unwrap();
     }
   }
 }
