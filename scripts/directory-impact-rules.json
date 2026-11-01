@@ -1,6 +1,7 @@
 {
   "version": 1,
   "global": [
+    ".changeset/",
     ".github/",
     ".cargo/",
     "configs/",
