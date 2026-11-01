@@ -184,7 +184,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/replace-dirname/package.json",
         "manifestSha256": "ead569bcd1f6241b63b0cc508591c66e23a4946d48ea5a79b4efab37f3c97ff8",
-        "sourceSha256": "dd7351ca4b0826fa76e900db4df32f5c734aa28a8e87e912c8fe822bac3753c8"
+        "sourceSha256": "a3b8dcf44b39a027b2e11e2ccafc73c46b8de6969ca0c41fafdd448a06fab7c4"
       },
       {
         "name": "@farmfe/plugin-sass",
