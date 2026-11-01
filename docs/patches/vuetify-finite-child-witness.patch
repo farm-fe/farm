@@ -1,0 +1,254 @@
+--- a/packages/vuetify/src/components/VDataTable/types.ts
++++ b/packages/vuetify/src/components/VDataTable/types.ts
+@@ -13,8 +13,8 @@
+   | string
+   | { side?: DataTableLoadingSide, color?: string }
+ 
+-export type DataTableHeader<T = Record<string, any>> = {
+-  key?: 'data-table-group' | 'data-table-select' | 'data-table-expand' | (string & {})
++export type DataTableHeader<T = Record<string, any>, K extends string = string> = {
++  key?: 'data-table-group' | 'data-table-select' | 'data-table-expand' | K | Extract<keyof T, string>
+   value?: SelectItemKey<T>
+   title?: string
+ 
+@@ -35,7 +35,7 @@
+   sortRaw?: DataTableCompareFunction
+   filter?: FilterFunction
+ 
+-  children?: DataTableHeader<T>[]
++  children?: DataTableHeader<T, K>[]
+ }
+ 
+ export type InternalDataTableHeader = Omit<DataTableHeader, 'key' | 'value' | 'children'> & {
+--- a/packages/vuetify/src/components/VDataTable/VDataTableRow.tsx
++++ b/packages/vuetify/src/components/VDataTable/VDataTableRow.tsx
+@@ -19,7 +19,7 @@
+ import { EventProp, genericComponent, getObjectValueByPath, isFunction, propsFactory, useRender } from '@/util'
+ 
+ // Types
+-import type { PropType } from 'vue'
++import type { PropType, VNodeChild } from 'vue'
+ import type { CellProps, DataTableItem, ItemKeySlot } from './types'
+ import type { VDataTableHeaderCellColumnSlotProps } from './VDataTableHeaders'
+ import type { FilterMatchArrayMultiple } from '@/composables/filter'
+@@ -29,13 +29,37 @@
+   props: Record<string, unknown>
+ }
+ 
+-export type VDataTableRowSlots<T> = {
++type FiniteColumnKey<K extends string> = string extends K ? never : K
++type ItemColumnKey<T, K extends string> = Exclude<
++  FiniteColumnKey<K> | FiniteColumnKey<Extract<keyof T, string>>,
++  'data-table-select' | 'data-table-expand'
++>
++
++// Public slots retain distinct payloads. The implementation receives erased
++// keys from useHeaders and only calls this view after both special branches.
++type RuntimeItemSlots = Partial<Record<`item.${string}`, (props: ItemKeySlot<unknown>) => VNodeChild>>
++
++export type VDataTableItemSlotKey<S extends string> = S extends `item.${infer K}` ? K : never
++
++// Capture the provided slot names without adding a second callback signature.
++// GenericProps / SlotsToProps remain the only authority for each payload.
++export type VDataTableItemSlotInference<S extends string> = {
++  'v-slots'?: {
++    [P in S]?: unknown
++  }
++  $children?: VNodeChild | {
++    [P in S]?: unknown
++  }
++}
++
++export type VDataTableRowSlots<T, K extends string = Extract<keyof T, string>> = {
+   'item.data-table-select': VDataTableItemCellColumnSlotProps<T>
+   'item.data-table-expand': VDataTableItemCellColumnSlotProps<T>
+   'header.data-table-select': VDataTableHeaderCellColumnSlotProps
+   'header.data-table-expand': VDataTableHeaderCellColumnSlotProps
+ } & {
+-  [key: `item.${string}`]: ItemKeySlot<T>
++  [key in `item.${ItemColumnKey<T, K>}`]: ItemKeySlot<T>
++} & {
+   [key: `header.${string}`]: VDataTableHeaderCellColumnSlotProps
+ }
+ 
+@@ -66,12 +90,12 @@
+   ...makeDisplayProps(),
+ }, 'VDataTableRow')
+ 
+-export const VDataTableRow = genericComponent<new <T>(
++export const VDataTableRow = genericComponent<new <T, K extends string = Extract<keyof T, string>, S extends string = never>(
+   props: {
+     item?: DataTableItem<T>
+     cellProps?: CellProps<T>
+-  },
+-  slots: VDataTableRowSlots<T>,
++  } & VDataTableItemSlotInference<S>,
++  slots: VDataTableRowSlots<T, (string extends K ? never : K) | VDataTableItemSlotKey<S>>,
+ ) => GenericProps<typeof props, typeof slots>>()({
+   name: 'VDataTableRow',
+ 
+@@ -213,7 +237,7 @@
+                     )
+                   }
+ 
+-                  if (slots[slotName] && !mobile.value) return slots[slotName](slotProps)
++                  if ((slots as unknown as RuntimeItemSlots)[slotName] && !mobile.value) return (slots as unknown as RuntimeItemSlots)[slotName]!(slotProps)
+ 
+                   const text = toDisplayString(slotProps.value)
+                   const matches = props.getMatches?.(item)?.[column.key!]
+@@ -228,7 +252,7 @@
+                       </div>
+ 
+                       <div class="v-data-table__td-value">
+-                        { slots[slotName]?.(slotProps) ?? displayValue }
++                        { (slots as unknown as RuntimeItemSlots)[slotName]?.(slotProps) ?? displayValue }
+                       </div>
+                     </>
+                   )
+--- a/packages/vuetify/src/components/VDataTable/VDataTableRows.tsx
++++ b/packages/vuetify/src/components/VDataTable/VDataTableRows.tsx
+@@ -21,10 +21,10 @@
+ import type { Group, GroupSummary } from './composables/group'
+ import type { CellProps, DataTableItem, DataTableLoading, GroupHeaderSlot, GroupSummarySlot, ItemSlot, RowProps } from './types'
+ import type { VDataTableGroupHeaderRowSlots } from './VDataTableGroupHeaderRow'
+-import type { VDataTableRowSlots } from './VDataTableRow'
++import type { VDataTableRowSlots, VDataTableItemSlotInference, VDataTableItemSlotKey } from './VDataTableRow'
+ import type { GenericProps } from '@/util'
+ 
+-export type VDataTableRowsSlots<T> = VDataTableGroupHeaderRowSlots & VDataTableRowSlots<T> & {
++export type VDataTableRowsSlots<T, K extends string = Extract<keyof T, string>> = VDataTableGroupHeaderRowSlots & VDataTableRowSlots<T, K> & {
+   item: ItemSlot<T> & { props: Record<string, any> }
+   loading: never
+   'group-header': GroupHeaderSlot
+@@ -63,11 +63,11 @@
+   ...makeDisplayProps(),
+ }, 'VDataTableRows')
+ 
+-export const VDataTableRows = genericComponent<new <T>(
++export const VDataTableRows = genericComponent<new <T, K extends string = Extract<keyof T, string>, S extends string = never>(
+   props: {
+     items?: readonly (DataTableItem<T> | Group<T> | GroupSummary<T>)[]
+-  },
+-  slots: VDataTableRowsSlots<T>,
++  } & VDataTableItemSlotInference<S>,
++  slots: VDataTableRowsSlots<T, (string extends K ? never : K) | VDataTableItemSlotKey<S>>,
+ ) => GenericProps<typeof props, typeof slots>>()({
+   name: 'VDataTableRows',
+ 
+--- a/packages/vuetify/src/components/VDataTable/VDataTable.tsx
++++ b/packages/vuetify/src/components/VDataTable/VDataTable.tsx
+@@ -33,6 +33,7 @@
+ import { genericComponent, omit, propsFactory, useRender } from '@/util'
+ 
+ // Types
++import type { VDataTableItemSlotInference, VDataTableItemSlotKey } from './VDataTableRow'
+ import type { DeepReadonly, UnwrapRef } from 'vue'
+ import type { Group, GroupSummary } from './composables/group'
+ import type { CellProps, DataTableHeader, DataTableItem, InternalDataTableHeader, RowProps } from './types'
+@@ -68,7 +69,7 @@
+   headers: InternalDataTableHeader[][]
+ }
+ 
+-export type VDataTableSlots<T> = VDataTableRowsSlots<T> & VDataTableHeadersSlots & {
++export type VDataTableSlots<T, K extends string = Extract<keyof T, string>> = VDataTableRowsSlots<T, K> & VDataTableHeadersSlots & {
+   default: VDataTableSlotProps<T>
+   caption: never
+   colgroup: VDataTableSlotProps<T>
+@@ -111,18 +112,18 @@
+ 
+ type ItemType<T> = T extends readonly (infer U)[] ? U : never
+ 
+-export const VDataTable = genericComponent<new <T extends readonly any[], V>(
++export const VDataTable = genericComponent<new <T extends readonly any[], V, K extends string = string, S extends string = never>(
+   props: {
+     items?: T
+     itemValue?: SelectItemKey<ItemType<T>>
+     rowProps?: RowProps<ItemType<T>>
+     cellProps?: CellProps<ItemType<T>>
+     itemSelectable?: SelectItemKey<ItemType<T>>
+-    headers?: DeepReadonly<DataTableHeader<ItemType<T>>[]>
++    headers?: DeepReadonly<DataTableHeader<ItemType<T>, K>[]>
+     modelValue?: V
+     'onUpdate:modelValue'?: (value: V) => void
+-  },
+-  slots: VDataTableSlots<ItemType<T>>,
++  } & VDataTableItemSlotInference<S>,
++  slots: VDataTableSlots<ItemType<T>, (string extends K ? never : K) | VDataTableItemSlotKey<S>>,
+ ) => GenericProps<typeof props, typeof slots>>()({
+   name: 'VDataTable',
+ 
+--- a/packages/vuetify/src/components/VDataTable/VDataTableServer.tsx
++++ b/packages/vuetify/src/components/VDataTable/VDataTableServer.tsx
+@@ -22,6 +22,7 @@
+ import { genericComponent, omit, propsFactory, useRender } from '@/util'
+ 
+ // Types
++import type { VDataTableItemSlotInference, VDataTableItemSlotKey } from './VDataTableRow'
+ import type { DeepReadonly } from 'vue'
+ import type { VDataTableSlotProps, VDataTableSlots } from './VDataTable'
+ import type { CellProps, DataTableHeader, RowProps } from '@/components/VDataTable/types'
+@@ -40,18 +41,18 @@
+ 
+ type ItemType<T> = T extends readonly (infer U)[] ? U : never
+ 
+-export const VDataTableServer = genericComponent<new <T extends readonly any[], V>(
++export const VDataTableServer = genericComponent<new <T extends readonly any[], V, K extends string = string, S extends string = never>(
+   props: {
+     items?: T
+     itemValue?: SelectItemKey<ItemType<T>>
+     rowProps?: RowProps<ItemType<T>>
+     cellProps?: CellProps<ItemType<T>>
+     itemSelectable?: SelectItemKey<ItemType<T>>
+-    headers?: DeepReadonly<DataTableHeader<ItemType<T>>[]>
++    headers?: DeepReadonly<DataTableHeader<ItemType<T>, K>[]>
+     modelValue?: V
+     'onUpdate:modelValue'?: (value: V) => void
+-  },
+-  slots: VDataTableSlots<ItemType<T>>,
++  } & VDataTableItemSlotInference<S>,
++  slots: VDataTableSlots<ItemType<T>, (string extends K ? never : K) | VDataTableItemSlotKey<S>>,
+ ) => GenericProps<typeof props, typeof slots>>()({
+   name: 'VDataTableServer',
+ 
+--- a/packages/vuetify/src/components/VDataTable/VDataTableVirtual.tsx
++++ b/packages/vuetify/src/components/VDataTable/VDataTableVirtual.tsx
+@@ -24,6 +24,7 @@
+ import { convertToUnit, genericComponent, omit, pickWithRest, propsFactory, useRender } from '@/util'
+ 
+ // Types
++import type { VDataTableItemSlotInference, VDataTableItemSlotKey } from './VDataTableRow'
+ import type { DeepReadonly, VNode, VNodeArrayChildren } from 'vue'
+ import type { VDataTableSlotProps } from './VDataTable'
+ import type { VDataTableHeadersSlots } from './VDataTableHeaders'
+@@ -42,7 +43,7 @@
+   | 'setPage'
+ >
+ 
+-export type VDataTableVirtualSlots<T> = VDataTableRowsSlots<T> & VDataTableHeadersSlots & {
++export type VDataTableVirtualSlots<T, K extends string = Extract<keyof T, string>> = VDataTableRowsSlots<T, K> & VDataTableHeadersSlots & {
+   caption: never
+   colgroup: VDataTableVirtualSlotProps<T>
+   top: VDataTableVirtualSlotProps<T>
+@@ -77,18 +78,18 @@
+   )
+ }
+ 
+-export const VDataTableVirtual = genericComponent<new <T extends readonly any[], V>(
++export const VDataTableVirtual = genericComponent<new <T extends readonly any[], V, K extends string = string, S extends string = never>(
+   props: {
+     items?: T
+     itemValue?: SelectItemKey<ItemType<T>>
+     rowProps?: RowProps<ItemType<T>>
+     cellProps?: CellProps<ItemType<T>>
+     itemSelectable?: SelectItemKey<ItemType<T>>
+-    headers?: DeepReadonly<DataTableHeader<ItemType<T>>[]>
++    headers?: DeepReadonly<DataTableHeader<ItemType<T>, K>[]>
+     modelValue?: V
+     'onUpdate:modelValue'?: (value: V) => void
+-  },
+-  slots: VDataTableVirtualSlots<ItemType<T>>,
++  } & VDataTableItemSlotInference<S>,
++  slots: VDataTableVirtualSlots<ItemType<T>, (string extends K ? never : K) | VDataTableItemSlotKey<S>>,
+ ) => GenericProps<typeof props, typeof slots>>()({
+   name: 'VDataTableVirtual',
+ 
