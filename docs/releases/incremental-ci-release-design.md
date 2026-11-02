@@ -454,16 +454,17 @@ still prevents those pipelines from starting.
 
 `Changesets Check` retains the existing policy command and failure semantics.
 The legacy `Type Check & Changesets` context remains an always-running strict
-aggregate, and the final execution gate still includes Changesets policy. This
-preserves ordinary PR constraints without changing repository protection rules.
+aggregate. The final product execution gate excludes Changesets policy so it
+always reaches actual suite evidence validation when product dependencies pass.
+Policy results remain explicit without changing repository protection rules.
 Only a verified pure version PR may use its existing explicit metadata-only
 skip; no general error waiver or title/branch exception is introduced.
 
 For the explicitly approved consumption in #2330, the standalone Changesets
 check and strict aggregate may remain failed while product checks actually run.
 That known policy exception is reported separately, never as a green workflow.
-If the repository requires the legacy aggregate or final execution gate for
-merge, the exception still needs the repository owner's normal review process;
+If the repository requires the legacy policy aggregate for merge, the exception
+still needs the repository owner's normal review process;
 this implementation does not edit or bypass branch protection.
 
 Selection and materialization evidence resolve the actual `Type Check` producer,
@@ -500,3 +501,10 @@ remain mandatory. Cargo unit/integration tests still compile their own test
 binaries; native payload reuse does not replace those tests or reuse results.
 The delivery bundle duplicates twelve already-uploaded payloads for bounded,
 atomic verification; it does not add another native compilation.
+
+Changesets policy is also independent of the final product execution gate. A
+policy failure must not prevent collection and validation of the six current
+TS/browser receipts, selected files, per-file case counts, or build coverage.
+The six legacy TS/Examples contexts depend on this real product evidence gate.
+Changesets Check and the legacy combined policy context still report policy
+failure explicitly; no branch protection or policy result is rewritten.

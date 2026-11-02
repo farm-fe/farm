@@ -892,7 +892,7 @@ jobs:
       actions: read
     name: Incremental CI execution gate
     if: always()
-    needs: [version-classification, type-check, changesets-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
+    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -903,7 +903,7 @@ jobs:
         run: |
           import json, os
           rows=json.loads(os.environ['RESULTS'])
-          expected={'version-classification','type-check','changesets-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
+          expected={'version-classification','type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
           assert set(rows)==expected, 'Missing or unexpected DAG dependency'
           version=rows['version-classification']
           if version['result']=='success' and version['outputs'].get('mode')=='verified-version-only':

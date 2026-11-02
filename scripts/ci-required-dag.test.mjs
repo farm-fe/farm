@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
+import {receiptIdentity,validateCollectedSuites} from './ci-suite-execution.mjs';
+import {makeSuiteExecutionPlan} from './ci-suite-inventory.mjs';
 import {spawnSync} from 'node:child_process';
 import YAML from 'yaml';
 import {fileURLToPath} from 'node:url';
@@ -31,7 +34,7 @@ test('type and Changesets policy are independent jobs with the old strict requir
   assert.ok(!types['continue-on-error']&&!changesets['continue-on-error']);
   assert.ok(!types.steps.find(step=>step.name==='Type Check With Tsc')['continue-on-error']);
   assert.ok(!changesets.steps.find(step=>step.run==='node scripts/check-pr-changesets.mjs')['continue-on-error']);
-  assert.ok(gate.needs.includes('changesets-check'),'Ordinary PR policy failure remains a required gate failure');
+  assert.ok(!gate.needs.includes('changesets-check'),'Policy must not suppress actual suite evidence validation');
 });
 for(const [label,typeResult,changesetResult,expected]of [
   ['both successful','success','success',3],
@@ -40,7 +43,7 @@ for(const [label,typeResult,changesetResult,expected]of [
   ['ordinary missing Changeset policy failure','success','failure',3]
 ])test(`actual workflow schedules product plans for ${label}`,()=>{
   const rows={...full(),'release-contract-tests':{result:'success'},'performance-contract-tests':{result:'success'}};
-  rows['type-check'].result=typeResult;rows['changesets-check'].result=changesetResult;
+  rows['type-check'].result=typeResult;rows['changesets-check']={result:changesetResult};
   const scheduled=['primary-linux','primary-macos','primary-windows'].filter(key=>{
     const job=workflow.jobs[key];
     assert.equal(job.if,"needs.version-classification.outputs.mode != 'verified-version-only'");
@@ -59,8 +62,8 @@ for(const [label,typeResult,changesetResult,expected]of [
   const combined=compatibilityRun(Object.fromEntries(compatibility.needs.map(key=>[key,rows[key]])));
   assert.equal(combined.status===0,typeResult==='success'&&changesetResult==='success');
   if(changesetResult==='failure'){
-    const outcomes=full();outcomes['changesets-check'].result='failure';
-    assert.notEqual(run(outcomes).status,0,'Running product tests must not erase Changesets policy failure');
+    assert.equal(run(full()).status,0,'Independent policy failure must not suppress suite collection');
+    assert.notEqual(combined.status,0,'Policy failure remains explicitly reported');
   }
 });
 test('old required context rejects incomplete or cancelled checks and accepts only proven metadata skips',()=>{
@@ -68,7 +71,54 @@ test('old required context rejects incomplete or cancelled checks and accepts on
     const rows=Object.fromEntries(compatibility.needs.map(name=>[name,{result:'success',outputs:{mode:'full'}}]));rows[key].result=result;
     assert.notEqual(compatibilityRun(rows).status,0);
   }
-  const rows=Object.fromEntries(compatibility.needs.map(key=>[key,version()[key]]));
+  const rows=Object.fromEntries(compatibility.needs.map(key=>[key,key==='changesets-check'?{result:'skipped'}:version()[key]]));
   assert.equal(compatibilityRun(rows).status,0);delete rows['version-classification'].outputs.proof_hash;
   assert.notEqual(compatibilityRun(rows).status,0);
+});
+
+test('every product summary and legacy alias is independent of policy while evidence validation remains mandatory',()=>{
+  for(const key of ['incremental-execution-gate','required-examples-compatibility','required-typescript-compatibility','examples-test','ts-test','docs-acceptance','performance-report','performance-summary']) {
+    const seen=new Set();const visit=name=>{if(seen.has(name))return;seen.add(name);for(const dependency of workflow.jobs[name].needs??[])visit(dependency);};visit(key);
+    assert.ok(!seen.has('changesets-check'),key);assert.ok(!seen.has('type-changesets-compatibility'),key);
+  }
+  for(const name of ['Resolve original successful suite attempts without rebuilding','Validate actual selected suite files and case counts on every platform']) {
+    const step=gate.steps.find(step=>step.name===name);assert.ok(step);assert.equal(step.if,"needs.version-classification.outputs.mode != 'verified-version-only'");assert.ok(!step['continue-on-error']);
+  }
+});
+for(const key of ['required-examples-compatibility','required-typescript-compatibility'])test(`${key} all three original contexts require real suite acceptance`,()=>{
+  const job=workflow.jobs[key];assert.equal(job.if,'always()');assert.equal(job.strategy.matrix.include.length,3);
+  for(const row of job.strategy.matrix.include)for(const [gateResult,upstream,expected]of [['success','success',0],['failure','success',1],['success','failure',1],['skipped','success',1],['success','cancelled',1]]) {
+    const result=spawnSync('bash',['-e','-c',job.steps[0].run],{env:{...process.env,VERSION_MODE:'full',VERSION_PROOF:'',UPSTREAM_RESULT:upstream,EXECUTION_GATE:gateResult},encoding:'utf8'});
+    assert.equal(result.status===0,expected===0,row.context);
+  }
+});
+
+for(const scenario of ['policy-failure','suite-failure','missing-evidence','missing-file','wrong-case-count','type-failure'])test(`actual product gate and collection propagate ${scenario} correctly to legacy contexts`,()=>{
+  const raw={schemaVersion:1,protocol:'farm-suite-discovery-v1',fileEnumerationComplete:true,selectionReady:false,fullOnlyReasons:[],sourceIdentity:{commit:'a'.repeat(40),tree:'b'.repeat(40)},
+    items:[{id:'ts:packages/a/a.spec.ts',kind:'ts',requiresActualCases:true},{id:'examples-browser:examples/react',kind:'examples-browser',requiresActualCases:true}]};
+  const inventory={...raw,inventoryHash:crypto.createHash('sha256').update(JSON.stringify(raw)).digest('hex')};
+  const env={GITHUB_ACTIONS:'true',GITHUB_RUN_ID:'1',GITHUB_RUN_ATTEMPT:'2',GITHUB_REPOSITORY_ID:'3',GITHUB_SHA:'a'.repeat(40),GITHUB_JOB:'incremental-execution-gate',
+    GITHUB_WORKFLOW_REF:'farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge',GITHUB_EVENT_NAME:'pull_request'};
+  const receipts=['linux-x64-gnu','darwin-arm64','win32-x64-msvc'].flatMap(abi=>['ts','examples-browser'].map(kind=>{
+    const plan=makeSuiteExecutionPlan(inventory,kind);
+    return {artifactName:`farm-ci-suite-${kind==='ts'?'ts':'browser'}-${env.GITHUB_SHA}-${abi}-2`,data:{...receiptIdentity(inventory,{...env,FARM_SUITE_ABI:abi,GITHUB_JOB:kind==='ts'?'ts-test':'examples-test'}),
+      schemaVersion:1,receiptKind:'actual-suite-execution-not-byte-reuse',kind,inventoryHash:inventory.inventoryHash,planHash:plan.planHash,selectedIds:plan.ids,executedIds:plan.ids,
+      executedCases:1,caseCounts:plan.ids.map(id=>({id,executedCases:1})),failed:0,skipped:0}};
+  }));
+  const rows=full();if(scenario==='type-failure')rows['type-check'].result='failure';
+  if(scenario==='suite-failure')receipts[0].data.failed=1;
+  if(scenario==='missing-evidence')receipts.pop();
+  if(scenario==='missing-file')receipts[0].data.executedIds=[];
+  if(scenario==='wrong-case-count')receipts[0].data.executedCases=2;
+  let collected=false,accepted=false;
+  if(run(rows).status===0){collected=true;try{accepted=validateCollectedSuites(inventory,receipts,env).cells.length===6;}catch{accepted=false;}}
+  assert.equal(collected,scenario!=='type-failure');assert.equal(accepted,scenario==='policy-failure');
+  for(const key of ['required-examples-compatibility','required-typescript-compatibility']) {
+    const alias=spawnSync('bash',['-e','-c',workflow.jobs[key].steps[0].run],{env:{...process.env,VERSION_MODE:'full',VERSION_PROOF:'',UPSTREAM_RESULT:'success',EXECUTION_GATE:accepted?'success':'failure'},encoding:'utf8'});
+    assert.equal(alias.status===0,accepted);
+  }
+  // Independent policy context stays failed in every scenario; success here is
+  // strictly actual suite evidence acceptance, never a fabricated policy pass.
+  const policy=Object.fromEntries(compatibility.needs.map(key=>[key,{result:key==='changesets-check'?'failure':'success',outputs:{mode:'full'}}]));
+  assert.notEqual(compatibilityRun(policy).status,0);
 });
