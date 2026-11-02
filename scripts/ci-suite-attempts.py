@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location('rerun_suite_execution', Path(__file__).with_name('ci-execution-evidence.py'))
@@ -30,13 +31,13 @@ def restore_selection(transport, run, source, selection_hash, output):
     return attempt
 
 
-def collect(transport, run, source, output, selection_hash='', selection_output=None):
+def collect(transport, run, source, output, selection_hash='', selection_output=None, upload_outputs=None):
     check(run['path'] == '.github/workflows/ci.yaml' and run['event'] in ['push', 'pull_request', 'workflow_dispatch'], 'Only CI receipts may be resolved')
     root = Path(output); check(not root.exists(), 'Refuse stale rerun receipt directory')
     rows = []; attempts = {}
     for abi in execution.PLATFORMS:
         for kind in ['ts', 'examples-browser']:
-            data, artifact, binding = execution.suite_receipt(transport, run, source, kind, abi, cache=attempts)
+            data, artifact, binding = execution.suite_receipt(transport, run, source, kind, abi, cache=attempts, trusted_output=None if upload_outputs is None else upload_outputs[abi][kind])
             rows.append((data, artifact, binding))
     selection_attempt = None
     selection = None
@@ -57,6 +58,22 @@ def collect(transport, run, source, output, selection_hash='', selection_output=
     return proofs
 
 
+
+def current_upload_outputs(environment):
+    """Read only fixed workflow needs outputs, never an artifact-supplied binding."""
+    result = {}
+    fields = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
+    for abi, platform in [('linux-x64-gnu','LINUX'), ('darwin-arm64','MACOS'), ('win32-x64-msvc','WINDOWS')]:
+        row = json.loads(environment['FARM_SUITE_UPLOADS_' + platform])
+        check(isinstance(row, dict) and set(row) == {kind + '_' + field for kind in ['ts','browser'] for field in fields}, 'Missing or unexpected suite upload outputs')
+        result[abi] = {}
+        for label, kind in [('ts','ts'), ('browser','examples-browser')]:
+            output = {field: row[label + '_' + field] for field in fields}
+            check(all(isinstance(output[field], str) and re.fullmatch(pattern, output[field]) for field, pattern in fields.items()), 'Malformed suite upload outputs')
+            result[abi][kind] = output
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--output'); parser.add_argument('--selection-only', action='store_true'); parser.add_argument('--selection-output', default='ci-suite-selection/selection.json'); args = parser.parse_args()
     env = os.environ
@@ -72,6 +89,6 @@ def main():
         with Path(env['GITHUB_ENV']).open('a', encoding='utf-8') as stream: stream.write('CI_SUITE_SELECTION_PRODUCER_ATTEMPT=' + str(attempt) + '\n')
         print(json.dumps({'selectionProducerAttempt':attempt, 'currentConsumerAttempt':run['run_attempt']})); return
     check(args.output is not None and env.get('GITHUB_JOB') in ['performance-summary','incremental-execution-gate'], 'Suite collection role or output missing')
-    print(json.dumps({'cells':len(collect(transport, run, source, args.output, env.get('FARM_SUITE_SELECTION_HASH', ''), args.selection_output)), 'buildExecuted':False}))
+    print(json.dumps({'cells':len(collect(transport, run, source, args.output, env.get('FARM_SUITE_SELECTION_HASH', ''), args.selection_output, current_upload_outputs(env))), 'buildExecuted':False}))
 
 if __name__ == '__main__': main()

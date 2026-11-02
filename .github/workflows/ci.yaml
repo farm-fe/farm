@@ -173,6 +173,7 @@ jobs:
           python scripts/ci-execution-ledger.test.py
           python scripts/ci-execution-evidence.test.py
           python scripts/ci-suite-attempts.test.py
+          python scripts/ci-suite-upload-outputs.test.py
           python scripts/ci-rerun-dag.test.py
           python scripts/ci-restore-depth.test.py
       - name: Check release source and failure paths without publishing
@@ -599,7 +600,7 @@ jobs:
 
   performance-summary:
     name: Aggregate informational performance report
-    needs: [version-classification, performance-report, type-check]
+    needs: [version-classification, performance-report, type-check, primary-linux, primary-macos, primary-windows]
     if: (always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')) && needs.version-classification.outputs.mode != 'verified-version-only'
     continue-on-error: true
     runs-on: ubuntu-24.04
@@ -639,6 +640,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+          FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
+          FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
+          FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
         run: python -B scripts/ci-suite-attempts.py --output ci-baseline-inputs/suites
       - name: Validate complete discovered and executed suite coverage
         env:
@@ -851,6 +855,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+          FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
+          FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
+          FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
         run: python -B scripts/ci-suite-attempts.py --output ci-gate-suites
       - name: Validate actual selected suite files and case counts on every platform
         if: needs.version-classification.outputs.mode != 'verified-version-only'

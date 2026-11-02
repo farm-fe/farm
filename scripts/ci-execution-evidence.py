@@ -64,10 +64,21 @@ def fetch_json_artifact(transport, run, name, member="ledger.json"):
     return data, artifact
 
 
-def upload_binding(job, step_name, artifact):
+def upload_binding(job, step_name, artifact, trusted_output=None):
     steps = [step for step in job.get("steps", []) if step.get("name") == step_name]
     check(len(steps) == 1 and steps[0]["status"] == "completed" and steps[0]["conclusion"] == "success", "Actual producer upload did not succeed")
-    check(steps[0]["started_at"] <= artifact["created_at"] <= steps[0]["completed_at"], "Artifact is outside its fixed upload step")
+    if trusted_output is not None:
+        # Only the current Actions consumer supplies these from fixed upload step
+        # outputs via needs; receipt contents or historical ledgers cannot supply them.
+        check(trusted_output['artifact_id'] == str(artifact['id'])
+              and 'sha256:' + trusted_output['artifact_digest'] == artifact['digest'],
+              'Artifact differs from fixed upload action outputs')
+        return
+    check(steps[0]["started_at"] <= artifact["created_at"] <= steps[0]["completed_at"],
+          "Artifact is outside its fixed upload step: " + json.dumps({
+              'jobId':job.get('id'), 'artifactId':artifact.get('id'), 'step':step_name,
+              'startedAt':steps[0]['started_at'], 'completedAt':steps[0]['completed_at'],
+              'createdAt':artifact['created_at']}, sort_keys=True))
 
 
 def actual_producer(transport, run, name, current_jobs=None, cache=None):
@@ -101,13 +112,15 @@ def actual_producer(transport, run, name, current_jobs=None, cache=None):
     raise ValueError('Actual suite producer missing')
 
 
-def suite_receipt(transport, run, source, kind, abi, current_jobs=None, cache=None):
+def suite_receipt(transport, run, source, kind, abi, current_jobs=None, cache=None, trusted_output=None):
     label, filename, job_label, step = ('ts', 'ts.json', 'Typescript Test', 'Preserve actual TypeScript discovery and execution counts') if kind == 'ts' else ('browser', 'browser.json', 'Examples Test', 'Preserve actual browser discovery and execution counts')
     prefix = {'linux-x64-gnu':'Primary Linux', 'darwin-arm64':'Primary macOS', 'win32-x64-msvc':'Primary Windows'}[abi]
     execution, job = actual_producer(transport, run, prefix + ' / ' + job_label + ' (' + PLATFORMS[abi] + ')', current_jobs, cache)
     name = 'farm-ci-suite-' + label + '-' + source['sha'] + '-' + abi + '-' + str(execution['run_attempt'])
     actual, meta = fetch_json_artifact(transport, execution, name, filename)
-    upload_binding(job, step, meta)
+    if trusted_output is not None:
+        check(trusted_output['run_attempt'] == str(execution['run_attempt']), 'Upload output differs from original producer attempt')
+    upload_binding(job, step, meta, trusted_output)
     expected = {'repositoryId':run['repository']['id'], 'runId':run['id'], 'runAttempt':execution['run_attempt'], 'event':run['event']}
     check(actual.get('run') == expected and actual.get('sourceSHA') == source['sha'] and actual.get('sourceTree') == source['tree'], 'Original suite source or attempt differs')
     check(actual.get('chain') == 'ci' and actual.get('acceptanceInherited') is False

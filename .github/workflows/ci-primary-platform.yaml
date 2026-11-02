@@ -11,6 +11,19 @@ on:
       suite_selection_hash:
         type: string
         default: ''
+    outputs:
+      ts_artifact_id:
+        value: ${{ jobs.ts-test.outputs.artifact_id }}
+      ts_artifact_digest:
+        value: ${{ jobs.ts-test.outputs.artifact_digest }}
+      ts_run_attempt:
+        value: ${{ jobs.ts-test.outputs.run_attempt }}
+      browser_artifact_id:
+        value: ${{ jobs.examples-test.outputs.artifact_id }}
+      browser_artifact_digest:
+        value: ${{ jobs.examples-test.outputs.artifact_digest }}
+      browser_run_attempt:
+        value: ${{ jobs.examples-test.outputs.run_attempt }}
 permissions:
   contents: read
   actions: read
@@ -46,6 +59,10 @@ jobs:
 
 
   examples-test:
+    outputs:
+      artifact_id: ${{ steps.suite-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.suite-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.suite-upload-origin.outputs.attempt }}
     name: Examples Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}
     if: always() && needs.native-disposition.result == 'success'
@@ -278,7 +295,12 @@ jobs:
           retry_wait_seconds: 10
           command: npm run test-e2e
 
+      - name: Bind actual suite upload attempt
+        id: suite-upload-origin
+        shell: bash
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - name: Preserve actual browser discovery and execution counts
+        id: suite-upload
         uses: actions/upload-artifact@v4
         with:
           name: farm-ci-suite-browser-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
@@ -317,6 +339,10 @@ jobs:
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   ts-test:
+    outputs:
+      artifact_id: ${{ steps.suite-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.suite-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.suite-upload-origin.outputs.attempt }}
     # Vitest runs in node/forks; browser E2E jobs keep their downloads.
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -389,7 +415,12 @@ jobs:
           path: ci-suite-results/ts-failure.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Bind actual suite upload attempt
+        id: suite-upload-origin
+        shell: bash
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - name: Preserve actual TypeScript discovery and execution counts
+        id: suite-upload
         uses: actions/upload-artifact@v4
         with:
           name: farm-ci-suite-ts-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
