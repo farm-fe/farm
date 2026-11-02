@@ -1,11 +1,11 @@
 use farmfe_core::{
+  HashMap,
   config::AliasItem,
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{ModuleId, module_graph::ModuleGraph},
   plugin::ResolveKind,
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
-  HashMap,
 };
 use farmfe_toolkit::{
   resolve::path_start_with_alias::is_start_with_alias,

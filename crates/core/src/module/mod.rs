@@ -2,13 +2,13 @@ use std::{hash::Hash, path::Path, sync::Arc};
 
 use crate::HashSet;
 use blake2::{
-  digest::{Update, VariableOutput},
   Blake2bVar,
+  digest::{Update, VariableOutput},
 };
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::{bytes_str::FarmBytesStr, relative};
 use heck::AsLowerCamelCase;
-pub use meta_data::{custom::CustomMetaDataMap, script::ModuleSystem, ModuleMetaData};
+pub use meta_data::{ModuleMetaData, custom::CustomMetaDataMap, script::ModuleSystem};
 use relative_path::RelativePath;
 
 use crate::{config::Mode, resource::resource_pot::ResourcePotId};
@@ -187,9 +187,7 @@ impl ModuleType {
   pub fn is_css(&self) -> bool {
     let mut m = matches!(self, ModuleType::Css);
 
-    if !m
-      && let ModuleType::Custom(s) = self
-    {
+    if !m && let ModuleType::Custom(s) = self {
       m = s.starts_with("farm_css:");
     }
 
@@ -202,9 +200,7 @@ impl ModuleType {
       ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx
     );
 
-    if !m
-      && let ModuleType::Custom(s) = self
-    {
+    if !m && let ModuleType::Custom(s) = self {
       m = s.starts_with("farm_script:");
     }
 
@@ -402,12 +398,12 @@ impl serde::Serialize for ModuleId {
 #[cfg(test)]
 mod tests {
   use crate::{
+    Cacheable,
     config::Mode,
     module::{
       meta_data::{custom::CustomMetaDataMap, script::ModuleSystem},
       module_group::{ModuleGroupId, ModuleGroupType},
     },
-    Cacheable,
   };
   use farmfe_macro_cache_item::cache_item;
 
@@ -594,12 +590,16 @@ mod tests {
       vec![String::from("./index")]
     );
 
-    assert!(deserialized_module
-      .module_groups
-      .contains(&ModuleGroupId::new(&"1".into(), &ModuleGroupType::Entry)));
-    assert!(deserialized_module
-      .module_groups
-      .contains(&ModuleGroupId::new(&"2".into(), &ModuleGroupType::Entry)));
+    assert!(
+      deserialized_module
+        .module_groups
+        .contains(&ModuleGroupId::new(&"1".into(), &ModuleGroupType::Entry))
+    );
+    assert!(
+      deserialized_module
+        .module_groups
+        .contains(&ModuleGroupId::new(&"2".into(), &ModuleGroupType::Entry))
+    );
   }
 
   #[test]

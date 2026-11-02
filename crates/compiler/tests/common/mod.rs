@@ -8,14 +8,14 @@ use std::{
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
+  HashMap,
   config::{
-    bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
-    preset_env::PresetEnvConfig, Config, CssConfig, Mode, OutputConfig, RuntimeConfig,
-    SourcemapConfig,
+    Config, CssConfig, Mode, OutputConfig, RuntimeConfig, SourcemapConfig, bool_or_obj::BoolOrObj,
+    config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
+    preset_env::PresetEnvConfig,
   },
   plugin::Plugin,
   serde_json::{self, Value},
-  HashMap,
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;

@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::FARM_MODULE,
   context::CompilationContext,
   module::ModuleId,
   plugin::{PluginResolveHookParam, ResolveKind},
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprOrSpread, Ident, IdentName, Lit, MemberExpr, MemberProp,
     MetaPropKind, Str,
   },
-  HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::stringify_query;

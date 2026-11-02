@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use farmfe_core::{
   module::{
-    meta_data::script::{statement::SwcId, ScriptModuleMetaData},
     Module, ModuleMetaData,
+    meta_data::script::{ScriptModuleMetaData, statement::SwcId},
   },
-  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
+  swc_common::{GLOBALS, Globals, Mark, SourceMap, comments::SingleThreadedComments},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  script::{analyze_statement::analyze_statements as create_statements, ParseScriptModuleResult},
+  script::{ParseScriptModuleResult, analyze_statement::analyze_statements as create_statements},
   sourcemap::create_swc_source_map,
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,

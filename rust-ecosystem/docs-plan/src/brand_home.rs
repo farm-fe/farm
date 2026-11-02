@@ -1,4 +1,4 @@
-use crate::{links, routes, DocPlan, PublicPage, PublicSidebarItem, RenderRoute};
+use crate::{DocPlan, PublicPage, PublicSidebarItem, RenderRoute, links, routes};
 use farmfe_docs_content::{ContentReference, ReferenceKind};
 
 fn sidebar_page<'a>(

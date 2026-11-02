@@ -1,12 +1,12 @@
 use crate::Compiler;
+use farmfe_core::HashMap;
 use farmfe_core::error::Result;
 use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::relative_path::RelativePath;
 use farmfe_core::resource::Resource;
-use farmfe_core::HashMap;
 
 use std::collections::HashSet;
-use std::fs::{copy, create_dir_all, read_dir, File};
+use std::fs::{File, copy, create_dir_all, read_dir};
 use std::io::{BufWriter, Write};
 use std::path::Path;
 

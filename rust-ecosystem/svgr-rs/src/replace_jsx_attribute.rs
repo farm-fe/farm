@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use swc_common::{SyntaxContext, DUMMY_SP};
+use swc_common::{DUMMY_SP, SyntaxContext};
 use swc_ecma_ast::*;
 use swc_ecma_visit::VisitMut;
 
@@ -62,10 +62,10 @@ fn get_attr_value(new: &str) -> JSXAttrValue {
 
 #[cfg(test)]
 mod tests {
-  use swc_common::{sync::Lrc, FileName, SourceMap};
+  use swc_common::{FileName, SourceMap, sync::Lrc};
   use swc_ecma_ast::*;
-  use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
-  use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
+  use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
+  use swc_ecma_parser::{EsSyntax, Parser, StringInput, Syntax, lexer::Lexer};
   use swc_ecma_visit::VisitMutWith;
 
   use super::*;

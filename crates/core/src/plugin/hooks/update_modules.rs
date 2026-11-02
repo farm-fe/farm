@@ -1,4 +1,4 @@
-use crate::{module::ModuleId, resource::ResourceType, HashMap};
+use crate::{HashMap, module::ModuleId, resource::ResourceType};
 
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct WatchDiffResult {

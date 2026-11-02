@@ -5,8 +5,8 @@ use farmfe_macro_cache_item::cache_item;
 use serde::ser::SerializeStruct;
 
 use crate::{
-  module::{module_group::ModuleGroupId, ModuleId, ModuleType},
   HashSet,
+  module::{ModuleId, ModuleType, module_group::ModuleGroupId},
 };
 
 use super::meta_data::ResourcePotMetaData;

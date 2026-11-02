@@ -130,11 +130,15 @@ mod tests {
     "#;
 
     let script_config: ScriptConfig = serde_json::from_str(script_config).unwrap();
-    assert!(script_config
-      .import_not_used_as_values
-      .is_preserved(&ModuleId::from("node_modules/test")));
-    assert!(!script_config
-      .import_not_used_as_values
-      .is_preserved(&ModuleId::from("node_modules/test1")));
+    assert!(
+      script_config
+        .import_not_used_as_values
+        .is_preserved(&ModuleId::from("node_modules/test"))
+    );
+    assert!(
+      !script_config
+        .import_not_used_as_values
+        .is_preserved(&ModuleId::from("node_modules/test1"))
+    );
   }
 }

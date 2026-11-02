@@ -2,10 +2,10 @@
 mod syndication;
 use chrono::Datelike;
 use farmfe_docs_config::CollectionKind;
-use farmfe_docs_plan::{seo_url, validate_resource_names, DocPlan, PublicBlogPost, PublicSeoHead};
+use farmfe_docs_plan::{DocPlan, PublicBlogPost, PublicSeoHead, seo_url, validate_resource_names};
 use quick_xml::{
-  events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event},
   Writer,
+  events::{BytesDecl, BytesEnd, BytesStart, BytesText, Event},
 };
 use std::collections::{BTreeMap, BTreeSet};
 

@@ -22,7 +22,9 @@ pub enum CompilationError {
   },
   // TODO, give the specific recommended plugin of this kind of module
   // TODO add potential causes
-  #[error("Can not load `{resolved_path}`. Original error: \n{source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n")]
+  #[error(
+    "Can not load `{resolved_path}`. Original error: \n{source:?}.\n\nPotential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n"
+  )]
   LoadError {
     resolved_path: String,
     #[source]
@@ -43,7 +45,9 @@ pub enum CompilationError {
     .unwrap_or_else(|e| e))]
   ParseError { resolved_path: String, msg: String },
 
-  #[error("Hook `process_module` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}.")]
+  #[error(
+    "Hook `process_module` execute failed for module `{resolved_path}`.\nOriginal error: {source:?}."
+  )]
   ProcessModuleError {
     resolved_path: String,
     #[source]
@@ -75,10 +79,14 @@ pub enum CompilationError {
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("No plugins return valid result for hook {hook_name}. You may need plugins if you are using module types which are not native supported.")]
+  #[error(
+    "No plugins return valid result for hook {hook_name}. You may need plugins if you are using module types which are not native supported."
+  )]
   PluginHookResultCheckError { hook_name: String },
 
-  #[error("Generate resources for {name}(type: {ty:?}) failed. Original error: {source:?}. This error usually caused by problematic plugin that implement `generate_resources` hook but does not return a valid result")]
+  #[error(
+    "Generate resources for {name}(type: {ty:?}) failed. Original error: {source:?}. This error usually caused by problematic plugin that implement `generate_resources` hook but does not return a valid result"
+  )]
   GenerateResourcesError {
     name: String,
     ty: ResourcePotType,
@@ -87,7 +95,9 @@ pub enum CompilationError {
     source: Option<Box<dyn Error + Send + Sync>>,
   },
 
-  #[error("Render Html Resource Pot {name} failed, A html resource pot should only contains one html module, current containing html modules: {modules:?}")]
+  #[error(
+    "Render Html Resource Pot {name} failed, A html resource pot should only contains one html module, current containing html modules: {modules:?}"
+  )]
   RenderHtmlResourcePotError { name: String, modules: Vec<String> },
 
   #[error("Load package.json from `{package_json_path}` failed: {err_message}")]
@@ -123,7 +133,7 @@ fn serialize_resolve_error(
   }
 
   let cause = format!(
-      "Potential Causes:\n\
+    "Potential Causes:\n\
        1. The file that `{src}` points to does not exist.\n\
        2. Install it first if `{src}` is a dependency from node_modules. If you are using pnpm, refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n\
        3. If `{src}` is an alias, make sure your alias config is correct.",

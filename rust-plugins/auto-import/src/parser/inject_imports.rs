@@ -1,4 +1,4 @@
-use crate::parser::parse::{parse_esm_imports, ESMImport};
+use crate::parser::parse::{ESMImport, parse_esm_imports};
 use farmfe_core::regex::Regex;
 use regress::Regex as JsRegex;
 

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   module::ModuleType,
   plugin::Plugin,
-  swc_common::{comments::NoopComments, Mark},
+  swc_common::{Mark, comments::NoopComments},
   swc_ecma_ast::Program,
-  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
@@ -13,7 +13,7 @@ use farmfe_toolkit::{
   sourcemap::create_swc_source_map,
   swc_ecma_transforms::{
     helpers::inject_helpers,
-    react::{react, Options},
+    react::{Options, react},
     typescript::tsx,
   },
 };

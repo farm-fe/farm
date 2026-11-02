@@ -12,9 +12,9 @@ use farmfe_core::{
 };
 use farmfe_toolkit::fs::read_file_utf8;
 
-pub use create_filter::{create_filter, Filter};
+pub use create_filter::{Filter, create_filter};
 use farmfe_macro_plugin::farm_plugin;
-pub use react_compiler::{react_compiler, CompilerParams};
+pub use react_compiler::{CompilerParams, react_compiler};
 pub use svg_builder::SvgBuilder;
 #[farm_plugin]
 pub struct FarmPluginSvgr {

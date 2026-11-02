@@ -107,7 +107,5 @@ macro_rules! deserialize {
     deserialized
   }};
 
-  ($bytes:expr, $ty:ty) => {{
-    deserialize!($bytes, $ty, rkyv::Archived::<$ty>)
-  }};
+  ($bytes:expr, $ty:ty) => {{ deserialize!($bytes, $ty, rkyv::Archived::<$ty>) }};
 }

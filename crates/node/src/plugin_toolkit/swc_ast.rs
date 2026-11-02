@@ -8,7 +8,7 @@ use farmfe_core::{
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
 };
-use farmfe_toolkit::script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult};
+use farmfe_toolkit::script::{ParseScriptModuleResult, parse_module, swc_try_with::try_with};
 
 #[unsafe(no_mangle)]
 pub fn farm_swc_parse_module(

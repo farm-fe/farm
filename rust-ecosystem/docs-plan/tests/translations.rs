@@ -97,7 +97,11 @@ fn missing_translation_fails_and_recovers_when_the_real_translation_is_added() {
 fn exact_collection_exclusion_omits_only_the_declared_orphan_translation() {
   let root = fixture();
   content(root.path(), "zh-current", "orphan.md", "orphan");
-  assert!(plan(root.path(), &config()).unwrap_err().contains("DOCS_TRANSLATION_MISSING"));
+  assert!(
+    plan(root.path(), &config())
+      .unwrap_err()
+      .contains("DOCS_TRANSLATION_MISSING")
+  );
   let mut raw = config();
   raw["docs"]["collections"][1]["exclude"] = json!(["orphan.md"]);
   let prepared = plan(root.path(), &raw).unwrap();
@@ -108,22 +112,45 @@ fn exact_collection_exclusion_omits_only_the_declared_orphan_translation() {
   for collection in ["en-old", "zh-old"] {
     content(root.path(), collection, "orphan.md", "orphan");
   }
-  assert_eq!(plan(root.path(), &raw).unwrap()["routes"].as_array().unwrap().len(), 6);
-  let prepared: farmfe_docs_plan::DocPlan = serde_json::from_value(plan(root.path(), &raw).unwrap()).unwrap();
+  assert_eq!(
+    plan(root.path(), &raw).unwrap()["routes"]
+      .as_array()
+      .unwrap()
+      .len(),
+    6
+  );
+  let prepared: farmfe_docs_plan::DocPlan =
+    serde_json::from_value(plan(root.path(), &raw).unwrap()).unwrap();
   farmfe_docs_plan::verify(&prepared).unwrap();
   fs::remove_file(root.path().join("zh-current/orphan.md")).unwrap();
-  assert!(farmfe_docs_plan::verify(&prepared).unwrap_err().contains("DOCS_SOURCE_SNAPSHOT"));
-  assert!(plan(root.path(), &raw).unwrap_err().contains("DOCS_CONFIG_COLLECTION_EXCLUDE"));
+  assert!(
+    farmfe_docs_plan::verify(&prepared)
+      .unwrap_err()
+      .contains("DOCS_SOURCE_SNAPSHOT")
+  );
+  assert!(
+    plan(root.path(), &raw)
+      .unwrap_err()
+      .contains("DOCS_CONFIG_COLLECTION_EXCLUDE")
+  );
 }
 
 #[test]
 fn links_to_an_excluded_translation_are_still_rejected() {
   let root = fixture();
   content(root.path(), "zh-current", "orphan.md", "orphan");
-  fs::write(root.path().join("zh-current/index.md"), "---\nid: intro\n---\n# Intro\n\n[Orphan](./orphan.md)\n").unwrap();
+  fs::write(
+    root.path().join("zh-current/index.md"),
+    "---\nid: intro\n---\n# Intro\n\n[Orphan](./orphan.md)\n",
+  )
+  .unwrap();
   let mut raw = config();
   raw["docs"]["collections"][1]["exclude"] = json!(["orphan.md"]);
-  assert!(plan(root.path(), &raw).unwrap_err().contains("DOCS_LINK_MISSING"));
+  assert!(
+    plan(root.path(), &raw)
+      .unwrap_err()
+      .contains("DOCS_LINK_MISSING")
+  );
 }
 
 #[cfg(unix)]
@@ -131,10 +158,18 @@ fn links_to_an_excluded_translation_are_still_rejected() {
 fn exclusions_cannot_hide_symlinked_inputs_or_directories() {
   use std::os::unix::fs::symlink;
   let root = fixture();
-  symlink(root.path().join("en-current/index.md"), root.path().join("zh-current/alias.md")).unwrap();
+  symlink(
+    root.path().join("en-current/index.md"),
+    root.path().join("zh-current/alias.md"),
+  )
+  .unwrap();
   let mut raw = config();
   raw["docs"]["collections"][1]["exclude"] = json!(["alias.md"]);
-  assert!(plan(root.path(), &raw).unwrap_err().contains("DOCS_CONFIG_COLLECTION_EXCLUDE"));
+  assert!(
+    plan(root.path(), &raw)
+      .unwrap_err()
+      .contains("DOCS_CONFIG_COLLECTION_EXCLUDE")
+  );
 }
 
 #[test]

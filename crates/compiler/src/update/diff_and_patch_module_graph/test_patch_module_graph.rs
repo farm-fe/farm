@@ -1,15 +1,15 @@
 use farmfe_core::{
+  HashMap,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module, ModuleId, ModuleType,
+    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
   },
   plugin::ResolveKind,
-  HashMap,
 };
 use farmfe_testing_helpers::construct_test_module_graph;
 
 use crate::update::diff_and_patch_module_graph::{
-  test_diff_module_deps::create_basic_graph, ModuleDepsDiffResult,
+  ModuleDepsDiffResult, test_diff_module_deps::create_basic_graph,
 };
 
 use super::{diff_module_graph, patch_module_graph};
@@ -61,7 +61,9 @@ fn removed_glob_member_start_point_is_not_replaced() {
   let mut module_graph = ModuleGraph::new();
   module_graph.add_module(Module::new(importer.clone()));
   module_graph.add_module(Module::new(deleted.clone()));
-  module_graph.entries.insert(importer.clone(), "index".into());
+  module_graph
+    .entries
+    .insert(importer.clone(), "index".into());
   module_graph
     .add_edge(&importer, &deleted, Default::default())
     .unwrap();

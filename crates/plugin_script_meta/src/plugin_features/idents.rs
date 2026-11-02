@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   context::CompilationContext,
   module::{
-    meta_data::script::{statement::SwcId, ScriptModuleMetaData},
     ModuleId,
+    meta_data::script::{ScriptModuleMetaData, statement::SwcId},
   },
   swc_common::Mark,
-  HashSet,
 };
 use farmfe_toolkit::{
   script::{

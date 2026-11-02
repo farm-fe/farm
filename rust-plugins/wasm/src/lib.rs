@@ -12,7 +12,7 @@ use std::{fs, path::Path};
 use utils::generate_glue_code;
 
 use farmfe_macro_plugin::farm_plugin;
-use farmfe_toolkit::fs::{transform_output_filename, TransformOutputFileNameParams};
+use farmfe_toolkit::fs::{TransformOutputFileNameParams, transform_output_filename};
 
 const WASM_HELPER_ID_FARM: &str = "farm/wasm-helper.js";
 

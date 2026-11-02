@@ -6,11 +6,12 @@ use farmfe_utils::{hash, nanoid::nanoid};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
 use crate::{
+  Cacheable, DashMap,
   cache::{
-    store::{constant::CacheStoreTrait, CacheStoreKey},
     CacheContext,
+    store::{CacheStoreKey, constant::CacheStoreTrait},
   },
-  serialize, Cacheable, DashMap,
+  serialize,
 };
 
 use std::collections::{HashMap, HashSet};
@@ -313,9 +314,9 @@ mod tests {
   use farmfe_macro_cache_item::cache_item;
 
   use crate::{
+    Cacheable,
     cache::scope::{CacheScopeStore, IdType},
     module::{Module, ModuleId},
-    Cacheable,
   };
 
   #[test]

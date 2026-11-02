@@ -1,4 +1,4 @@
-use crate::{routes, DocPlan, PageAlternate, PageSource};
+use crate::{DocPlan, PageAlternate, PageSource, routes};
 use farmfe_docs_config::{ResolvedCollection, ValidatedConfig};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 

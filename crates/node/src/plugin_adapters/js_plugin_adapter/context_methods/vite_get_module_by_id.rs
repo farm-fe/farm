@@ -2,13 +2,13 @@ use std::path::Path;
 
 use farmfe_core::module::ModuleId;
 use napi::{
+  Env, JsValue, Unknown,
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
-  Env, JsValue, Unknown,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::context::{
-  get_argv_and_context_from_cb_info, ArgvAndContext,
+  ArgvAndContext, get_argv_and_context_from_cb_info,
 };
 
 use super::vite_get_modules_by_file::create_vite_module;

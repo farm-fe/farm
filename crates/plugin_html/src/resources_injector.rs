@@ -13,8 +13,8 @@ use farmfe_toolkit::{
 };
 
 use crate::utils::{
-  create_farm_runtime_output_resource, is_link_css_or_code, is_script_resource,
-  is_script_src_or_type_module_code, FARM_RESOURCE,
+  FARM_RESOURCE, create_farm_runtime_output_resource, is_link_css_or_code, is_script_resource,
+  is_script_src_or_type_module_code,
 };
 
 pub struct ResourcesInjectorOptions {

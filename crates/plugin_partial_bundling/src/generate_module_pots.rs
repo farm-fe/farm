@@ -1,7 +1,7 @@
 use farmfe_core::{
-  config::{partial_bundling::PartialBundlingConfig, Config},
-  module::{module_graph::ModuleGraph, Module, ModuleId},
   HashMap, HashSet,
+  config::{Config, partial_bundling::PartialBundlingConfig},
+  module::{Module, ModuleId, module_graph::ModuleGraph},
 };
 
 use crate::{generate_module_buckets::ResourceType, module_pot::ModulePot};
@@ -157,16 +157,16 @@ fn generate_module_pot_meta(
 #[cfg(test)]
 mod tests {
   use farmfe_core::{
+    HashSet,
     config::{
+      Config,
       config_regex::ConfigRegex,
       partial_bundling::{
         PartialBundlingConfig, PartialBundlingGroupConfig, PartialBundlingGroupConfigGroupType,
         PartialBundlingGroupConfigResourceType,
       },
-      Config,
     },
-    module::{module_graph::ModuleGraph, Module, ModuleType},
-    HashSet,
+    module::{Module, ModuleType, module_graph::ModuleGraph},
   };
   use farmfe_testing_helpers::{assert_debug_snapshot, fixture};
   use std::mem;

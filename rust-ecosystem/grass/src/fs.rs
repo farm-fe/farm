@@ -1,6 +1,6 @@
 use std::{
-    io::{self, Error, ErrorKind},
-    path::{Path, PathBuf},
+  io::{self, Error, ErrorKind},
+  path::{Path, PathBuf},
 };
 
 /// A trait to allow replacing the file system lookup mechanisms.
@@ -12,17 +12,17 @@ use std::{
 /// desirable, so we live with it as it is—which is also acceptable, because the motivating example
 /// use case is mostly using this as an optimisation over the real platform underneath.
 pub trait Fs: std::fmt::Debug {
-    /// Returns `true` if the path exists on disk and is pointing at a directory.
-    fn is_dir(&self, path: &Path) -> bool;
-    /// Returns `true` if the path exists on disk and is pointing at a regular file.
-    fn is_file(&self, path: &Path) -> bool;
-    /// Read the entire contents of a file into a bytes vector.
-    fn read(&self, path: &Path) -> io::Result<Vec<u8>>;
+  /// Returns `true` if the path exists on disk and is pointing at a directory.
+  fn is_dir(&self, path: &Path) -> bool;
+  /// Returns `true` if the path exists on disk and is pointing at a regular file.
+  fn is_file(&self, path: &Path) -> bool;
+  /// Read the entire contents of a file into a bytes vector.
+  fn read(&self, path: &Path) -> io::Result<Vec<u8>>;
 
-    /// Canonicalize a file path
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        Ok(path.to_path_buf())
-    }
+  /// Canonicalize a file path
+  fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+    Ok(path.to_path_buf())
+  }
 }
 
 /// Use [`std::fs`] to read any files from disk.
@@ -32,25 +32,25 @@ pub trait Fs: std::fmt::Debug {
 pub struct StdFs;
 
 impl Fs for StdFs {
-    #[inline]
-    fn is_file(&self, path: &Path) -> bool {
-        path.is_file()
-    }
+  #[inline]
+  fn is_file(&self, path: &Path) -> bool {
+    path.is_file()
+  }
 
-    #[inline]
-    fn is_dir(&self, path: &Path) -> bool {
-        path.is_dir()
-    }
+  #[inline]
+  fn is_dir(&self, path: &Path) -> bool {
+    path.is_dir()
+  }
 
-    #[inline]
-    fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
-        std::fs::read(path)
-    }
+  #[inline]
+  fn read(&self, path: &Path) -> io::Result<Vec<u8>> {
+    std::fs::read(path)
+  }
 
-    #[inline]
-    fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
-        std::fs::canonicalize(path)
-    }
+  #[inline]
+  fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
+    std::fs::canonicalize(path)
+  }
 }
 
 /// A file system implementation that acts like it’s completely empty.
@@ -62,21 +62,21 @@ impl Fs for StdFs {
 pub struct NullFs;
 
 impl Fs for NullFs {
-    #[inline]
-    fn is_file(&self, _path: &Path) -> bool {
-        false
-    }
+  #[inline]
+  fn is_file(&self, _path: &Path) -> bool {
+    false
+  }
 
-    #[inline]
-    fn is_dir(&self, _path: &Path) -> bool {
-        false
-    }
+  #[inline]
+  fn is_dir(&self, _path: &Path) -> bool {
+    false
+  }
 
-    #[inline]
-    fn read(&self, _path: &Path) -> io::Result<Vec<u8>> {
-        Err(Error::new(
-            ErrorKind::NotFound,
-            "NullFs, there is no file system",
-        ))
-    }
+  #[inline]
+  fn read(&self, _path: &Path) -> io::Result<Vec<u8>> {
+    Err(Error::new(
+      ErrorKind::NotFound,
+      "NullFs, there is no file system",
+    ))
+  }
 }

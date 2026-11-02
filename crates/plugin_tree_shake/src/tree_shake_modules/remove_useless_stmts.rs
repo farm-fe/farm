@@ -1,13 +1,13 @@
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::{
   module::{
-    meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+    ModuleId, ModuleSystem, meta_data::script::statement::SwcId, module_graph::ModuleGraph,
   },
   plugin::ResolveKind,
   swc_ecma_ast::{
     self, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
 };
-use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::{
   script::{analyze_statement::analyze_statements, idents_collector::DefinedIdentsCollector},
   swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith},

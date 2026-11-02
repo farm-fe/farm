@@ -6,7 +6,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   plugin_utils::{normalize_path::normalize_path, path_filter::PathFilter},
-  script::{parse_module, ParseScriptModuleResult},
+  script::{ParseScriptModuleResult, parse_module},
   swc_ecma_visit::{Visit, VisitWith},
 };
 use glob::Pattern;

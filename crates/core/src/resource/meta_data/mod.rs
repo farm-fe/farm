@@ -3,7 +3,7 @@ use farmfe_macro_cache_item::cache_item;
 use html::HtmlResourcePotMetaData;
 use js::JsResourcePotMetaData;
 
-use crate::{module::CustomMetaDataMap, Cacheable};
+use crate::{Cacheable, module::CustomMetaDataMap};
 
 pub mod css;
 pub mod html;

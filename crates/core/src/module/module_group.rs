@@ -7,7 +7,7 @@ use petgraph::{
 use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
 use crate::{HashMap, HashSet};
 
-use super::{module_graph::ModuleGraph, ModuleId};
+use super::{ModuleId, module_graph::ModuleGraph};
 
 /// A `entry_module_id -> ModuleGroup` map
 #[derive(Debug)]

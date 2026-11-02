@@ -11,9 +11,9 @@ mod validate;
 pub use sidebar::*;
 pub use syndication::validate as validate_syndication;
 pub use types::*;
-pub use typescript::{typescript, typescript_with_schemas, TypeGenerationError};
+pub use typescript::{TypeGenerationError, typescript, typescript_with_schemas};
 pub use validate::{
-  public_link, ConfigError, ResolvedCollection, ResolvedStaticDir, ValidatedConfig,
+  ConfigError, ResolvedCollection, ResolvedStaticDir, ValidatedConfig, public_link,
 };
 
 pub const SCHEMA_VERSION: u32 = 1;

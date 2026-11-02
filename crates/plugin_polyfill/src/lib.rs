@@ -1,22 +1,21 @@
 use farmfe_core::{
   config::{
+    AliasItem, Config, Mode as FarmMode, StringOrRegex,
     config_regex::ConfigRegex,
     preset_env::{PresetEnvConfig, PresetEnvConfigObj},
-    AliasItem, Config, Mode as FarmMode, StringOrRegex,
   },
   plugin::Plugin,
   serde_json,
-  swc_common::{comments::SingleThreadedComments, Mark},
+  swc_common::{Mark, comments::SingleThreadedComments},
   swc_ecma_ast::{EsVersion, Module, ModuleItem, Program, Script},
 };
 use farmfe_toolkit::{
   constant::RUNTIME_SUFFIX,
   script::swc_try_with::{resolve_module_mark, try_with_custom_helper},
-  swc_ecma_preset_env::{self, transform_from_env, transform_from_es_version, EnvConfig, Mode},
+  swc_ecma_preset_env::{self, EnvConfig, Mode, transform_from_env, transform_from_es_version},
   swc_ecma_transforms::{
-    fixer,
-    hygiene::{hygiene_with_config, Config as HygieneConfig},
-    Assumptions,
+    Assumptions, fixer,
+    hygiene::{Config as HygieneConfig, hygiene_with_config},
   },
   swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,

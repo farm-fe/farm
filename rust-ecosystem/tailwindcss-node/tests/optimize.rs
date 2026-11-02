@@ -60,11 +60,13 @@ mod optimize {
 
     #[test]
     fn optimize_metadata_and_identity_cases() {
-      assert!(optimize("", OptimizeOptions::default())
-        .unwrap()
-        .code
-        .trim()
-        .is_empty());
+      assert!(
+        optimize("", OptimizeOptions::default())
+          .unwrap()
+          .code
+          .trim()
+          .is_empty()
+      );
       assert_eq!(OptimizeOptions::default().file, "input.css");
       assert!(!OptimizeOptions::default().minify);
       assert_eq!(

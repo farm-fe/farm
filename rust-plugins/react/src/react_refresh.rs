@@ -8,7 +8,7 @@ use farmfe_core::{
 
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
-  swc_ast::{farm_swc_parse_module, ParseScriptModuleResult},
+  swc_ast::{ParseScriptModuleResult, farm_swc_parse_module},
 };
 use lazy_static::lazy_static;
 

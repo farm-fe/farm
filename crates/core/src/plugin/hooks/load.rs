@@ -1,4 +1,4 @@
-use crate::{module::ModuleType, HashMap};
+use crate::{HashMap, module::ModuleType};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]

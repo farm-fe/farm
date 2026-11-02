@@ -1,11 +1,11 @@
 use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
+  HashMap,
   config::Config,
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginHookContext, PluginLoadHookParam, PluginTransformHookParam},
-  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 

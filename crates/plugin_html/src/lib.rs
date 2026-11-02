@@ -3,15 +3,15 @@
 use std::{mem, sync::Arc};
 
 use absolute_path_handler::AbsolutePathHandler;
-use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
+use deps_analyzer::{DepsAnalyzer, HTML_INLINE_ID_PREFIX, HtmlInlineModule};
 use farmfe_core::cache::module_cache::MetadataOption;
 use farmfe_core::module::meta_data::html::HtmlModuleMetaData;
 
 use farmfe_core::plugin::GeneratedResource;
-use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
+use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::swc_common::Globals;
-use farmfe_core::{cache_item, HashMap};
+use farmfe_core::{HashMap, cache_item};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
@@ -25,8 +25,8 @@ use farmfe_core::{
   },
   relative_path::RelativePath,
   resource::{
-    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
+    resource_pot::{ResourcePot, ResourcePotType},
   },
 };
 use farmfe_toolkit::minify::minify_html_module;
@@ -457,7 +457,10 @@ impl Plugin for FarmPluginMinifyHtml {
                 resource.name, err
               );
             } else {
-              println!("Can not minify html {} due to html syntax error. Try {farm_debug_html_minify}=1 to see error details", resource.name);
+              println!(
+                "Can not minify html {} due to html syntax error. Try {farm_debug_html_minify}=1 to see error details",
+                resource.name
+              );
             }
             resource.bytes = Arc::try_unwrap(html_code).unwrap().into_bytes();
             return Ok(Some(()));

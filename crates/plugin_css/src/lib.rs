@@ -3,21 +3,21 @@
 use std::sync::Arc;
 
 use dep_analyzer::DepAnalyzer;
+use farmfe_core::HashMap;
 use farmfe_core::cache::module_cache::MetadataOption;
-use farmfe_core::config::css::NameConversion;
 use farmfe_core::config::AliasItem;
+use farmfe_core::config::css::NameConversion;
 use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
 use farmfe_core::plugin::GeneratedResource;
-use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
-use farmfe_core::swc_common::{Globals, DUMMY_SP};
-use farmfe_core::HashMap;
+use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
+use farmfe_core::swc_common::{DUMMY_SP, Globals};
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleType},
+  module::{ModuleId, ModuleMetaData, ModuleType, module_graph::ModuleGraph},
   parking_lot::Mutex,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
@@ -26,20 +26,20 @@ use farmfe_core::{
   },
   rayon::prelude::*,
   resource::{
-    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
+    resource_pot::{ResourcePot, ResourcePotType},
   },
   serde_json,
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_toolkit::css::{merge_css_sourcemap, ParseCssModuleResult};
+use farmfe_toolkit::css::{ParseCssModuleResult, merge_css_sourcemap};
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_toolkit::script::merge_swc_globals::merge_comments;
 use farmfe_toolkit::script::swc_try_with::try_with;
 use farmfe_toolkit::sourcemap::load_source_original_sourcemap;
-use farmfe_toolkit::sourcemap::{trace_module_sourcemap, SourceMap};
+use farmfe_toolkit::sourcemap::{SourceMap, trace_module_sourcemap};
 use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
@@ -48,8 +48,8 @@ use farmfe_toolkit::{
   regex::Regex,
   script::module_type_from_id,
   sourcemap::SourceMap as JsonSourceMap,
-  sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
-  swc_css_modules::{compile, CssClassName, TransformConfig},
+  sourcemap::{CollapseSourcemapOptions, collapse_sourcemap_chain},
+  swc_css_modules::{CssClassName, TransformConfig, compile},
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };

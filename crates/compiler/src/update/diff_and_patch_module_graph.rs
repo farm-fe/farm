@@ -3,13 +3,13 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
     Module, ModuleId,
+    module_graph::{ModuleGraph, ModuleGraphEdge},
   },
   plugin::ResolveKind,
   serde::Serialize,
-  HashMap, HashSet,
 };
 
 pub use farmfe_core::module::module_graph::ModuleDepsDiffResult;
@@ -420,7 +420,9 @@ fn diff_module_deps(
     let mut children_added = vec![];
 
     if module_graph.has_module(&dep) {
-      panic!("The module({dep:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues");
+      panic!(
+        "The module({dep:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues"
+      );
     }
 
     for child in children {

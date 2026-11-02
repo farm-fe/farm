@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   context::CompilationContext,
   module::{Module, ModuleId},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  HashMap,
 };
 use farmfe_plugin_html::FarmPluginHtml;
 use farmfe_testing_helpers::fixture;

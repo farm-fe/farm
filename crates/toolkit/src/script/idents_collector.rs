@@ -1,6 +1,6 @@
 use crate::swc_ecma_visit::{Visit, VisitWith};
-use farmfe_core::swc_common::Mark;
 use farmfe_core::HashSet;
+use farmfe_core::swc_common::Mark;
 use farmfe_core::{
   module::meta_data::script::statement::SwcId,
   swc_ecma_ast::{ObjectPatProp, Pat},

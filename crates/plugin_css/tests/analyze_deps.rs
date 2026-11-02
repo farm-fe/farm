@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   config::{AliasItem, Config, ResolveConfig, StringOrRegex},
   context::CompilationContext,
   module::{ModuleId, ModuleType},
@@ -8,7 +9,6 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  HashMap,
 };
 use farmfe_plugin_css::FarmPluginCss;
 use farmfe_testing_helpers::fixture;

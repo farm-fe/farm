@@ -140,9 +140,11 @@ fn rust_heads_and_public_missing_pages_share_localized_discovery_links() {
       ("application/opensearchdescription+xml", "opensearch.xml"),
     ] {
       let expected = format!("https://example.com{prefix}{suffix}");
-      assert!(links
-        .iter()
-        .any(|link| link["type"] == kind && link["href"] == expected));
+      assert!(
+        links
+          .iter()
+          .any(|link| link["type"] == kind && link["href"] == expected)
+      );
       assert!(head["html"].as_str().unwrap().contains(&expected));
     }
     let missing = plan
@@ -162,11 +164,13 @@ fn rust_heads_and_public_missing_pages_share_localized_discovery_links() {
     .unwrap();
   let missing: serde_json::Value =
     serde_json::from_str(encoded.strip_suffix(';').unwrap()).unwrap();
-  assert!(missing
-    .as_array()
-    .unwrap()
-    .iter()
-    .all(|page| page["discoveryLinks"].as_array().unwrap().len() == 3));
+  assert!(
+    missing
+      .as_array()
+      .unwrap()
+      .iter()
+      .all(|page| page["discoveryLinks"].as_array().unwrap().len() == 3)
+  );
 }
 
 #[test]

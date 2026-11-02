@@ -1,15 +1,15 @@
 use std::path::PathBuf;
 
 use farmfe_core::{
+  HashMap,
   glob::{Glob, WalkOptions},
   module::{
+    Module, ModuleMetaData, ModuleType,
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupId, ModuleGroupType},
-    Module, ModuleMetaData, ModuleType,
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
-  HashMap,
 };
 
 pub mod assert;

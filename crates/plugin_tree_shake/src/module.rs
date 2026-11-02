@@ -1,14 +1,14 @@
 use std::{fmt, mem};
 
 use farmfe_core::{
+  HashMap, HashSet,
   module::{Module, ModuleId, ModuleSystem},
   swc_common::comments::SingleThreadedComments,
-  HashMap, HashSet,
 };
 
 use crate::statement_graph::{
-  traced_used_import::TracedUsedImportStatement, ExportInfo, ExportSpecifierInfo, ImportInfo,
-  StatementGraph, StatementId, UsedStatementIdent,
+  ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId, UsedStatementIdent,
+  traced_used_import::TracedUsedImportStatement,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

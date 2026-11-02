@@ -1,9 +1,8 @@
 use farmfe_core::{
-  cache_item,
+  HashMap, cache_item,
   module::{ModuleId, ModuleType},
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_html_ast::{Child, Document, Element},
-  HashMap,
 };
 use farmfe_toolkit::swc_html_visit::{Visit, VisitWith};
 

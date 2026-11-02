@@ -1,7 +1,7 @@
 use crate::{
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
-  resource::{resource_pot_map::ResourcePotMap, Resource, ResourceType},
   HashMap,
+  module::{ModuleId, module_graph::ModuleGraph, module_group::ModuleGroupGraph},
+  resource::{Resource, ResourceType, resource_pot_map::ResourcePotMap},
 };
 
 pub struct PluginHandleEntryResourceHookParam<'a> {

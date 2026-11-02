@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Mode,
   error::Result,
-  swc_common::{comments::SingleThreadedComments, Globals, SourceMap},
+  swc_common::{Globals, SourceMap, comments::SingleThreadedComments},
   swc_ecma_ast,
 };
 

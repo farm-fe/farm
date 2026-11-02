@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext},
   swc_ecma_ast::{
     Expr, ExprOrSpread, Ident, IdentName, ImportNamedSpecifier, ImportSpecifier, MemberExpr,
     MetaPropExpr, MetaPropKind, ModuleItem, VarDeclarator,
@@ -14,7 +14,7 @@ use farmfe_toolkit::{
   script::{
     create_call_expr, create_var_decl_item,
     swc_try_with::try_with,
-    transform_to_esm::transform_cjs::{create_import_decl_item, FARM_NODE_REQUIRE},
+    transform_to_esm::transform_cjs::{FARM_NODE_REQUIRE, create_import_decl_item},
   },
   swc_ecma_utils::StmtLikeInjector,
 };

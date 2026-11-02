@@ -5,7 +5,7 @@ use std::{
 
 use farmfe_toolkit::plugin_utils::normalize_path::normalize_path;
 
-use super::parse::{parse_esm_exports, DeclarationType, ESMExport, ExportType};
+use super::parse::{DeclarationType, ESMExport, ExportType, parse_esm_exports};
 
 const FILE_EXTENSION_LOOKUP: [&str; 8] =
   [".mts", ".cts", ".ts", ".mjs", ".cjs", ".js", ".jsx", ".tsx"];

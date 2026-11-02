@@ -1,6 +1,6 @@
 use crate::HashMap;
 
-use super::{error::CacheError, CacheStoreKey};
+use super::{CacheStoreKey, error::CacheError};
 
 pub type CacheStoreItemRef<'a> = dashmap::mapref::one::MappedRef<'a, String, Vec<u8>, Vec<u8>>;
 

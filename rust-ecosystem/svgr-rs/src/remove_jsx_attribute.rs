@@ -52,10 +52,10 @@ impl VisitMut for Visitor {
 mod tests {
   use std::default::Default;
 
-  use swc_common::{sync::Lrc, FileName, SourceMap};
+  use swc_common::{FileName, SourceMap, sync::Lrc};
   use swc_ecma_ast::*;
-  use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
-  use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
+  use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
+  use swc_ecma_parser::{EsSyntax, Parser, StringInput, Syntax, lexer::Lexer};
   use swc_ecma_visit::VisitMutWith;
 
   use super::*;

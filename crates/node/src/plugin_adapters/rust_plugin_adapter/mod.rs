@@ -4,7 +4,7 @@ use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
+  module::{ModuleId, ModuleMetaData, module_graph::ModuleGraph},
   plugin::{
     Plugin, PluginFinalizeResourcesHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,

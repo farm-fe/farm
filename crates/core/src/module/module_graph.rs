@@ -4,10 +4,10 @@ use crate::{HashMap, HashSet};
 use farmfe_macro_cache_item::cache_item;
 
 use petgraph::{
+  EdgeDirection,
   graph::{DefaultIx, NodeIndex},
   stable_graph::StableDiGraph,
   visit::{Bfs, Dfs},
-  EdgeDirection,
 };
 
 use crate::{

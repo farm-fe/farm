@@ -2,11 +2,11 @@ use farmfe_core::HashMap;
 use farmfe_core::{error::Result, plugin::PluginHookContext};
 
 use crate::{
+  Compiler,
   generate::{
     finalize_resources::finalize_resources, partial_bundling::partial_bundling,
     render_resource_pots::render_resource_pots_and_generate_resources,
   },
-  Compiler,
 };
 
 pub(crate) mod finalize_resources;

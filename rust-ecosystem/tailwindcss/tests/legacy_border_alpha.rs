@@ -1,4 +1,4 @@
-use farmfe_ecosystem_tailwindcss::{compile, CompilerOptions, TailwindConfig};
+use farmfe_ecosystem_tailwindcss::{CompilerOptions, TailwindConfig, compile};
 fn build(config: Option<serde_json::Value>, source: &str, classes: &[&str]) -> String {
   let mut compiler = compile(
     source,

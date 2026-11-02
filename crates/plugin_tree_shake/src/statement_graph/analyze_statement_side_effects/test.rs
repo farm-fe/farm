@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  swc_common::{comments::SingleThreadedComments, Globals, Mark, GLOBALS},
+  swc_common::{GLOBALS, Globals, Mark, comments::SingleThreadedComments},
   swc_ecma_ast::{EsVersion, Module},
   swc_ecma_parser::Syntax,
 };

@@ -1,9 +1,9 @@
 use crate::swc_ecma_visit::VisitWith;
+use farmfe_core::HashSet;
 use farmfe_core::module::meta_data::script::statement::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, Statement, StatementId, SwcId,
 };
 use farmfe_core::swc_ecma_ast::{self, Module, ModuleExportName, ModuleItem, VarDeclOrExpr};
-use farmfe_core::HashSet;
 use swc_ecma_utils::contains_top_level_await;
 
 use crate::script::idents_collector::DefinedIdentsCollector;
@@ -120,7 +120,9 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
           });
         }
         _ => {
-          unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration");
+          unreachable!(
+            "export_decl.decl should not be anything other than a class, function, or variable declaration"
+          );
         }
       },
       swc_ecma_ast::ModuleDecl::ExportDefaultDecl(export_default_decl) => {

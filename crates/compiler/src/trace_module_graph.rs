@@ -1,5 +1,5 @@
-use farmfe_core::serde::{Deserialize, Serialize};
 use farmfe_core::HashMap;
+use farmfe_core::serde::{Deserialize, Serialize};
 
 use crate::Compiler;
 

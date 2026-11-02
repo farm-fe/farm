@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use super::scan_exports::{scan_exports, Import};
+use super::scan_exports::{Import, scan_exports};
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_toolkit::plugin_utils::{normalize_path::normalize_path, path_filter::PathFilter};
 use glob::Pattern;

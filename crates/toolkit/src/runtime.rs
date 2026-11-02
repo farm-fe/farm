@@ -4,16 +4,16 @@ use farmfe_core::lazy_static::lazy_static;
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::swc_ecma_ast::{BlockStmt, EmptyStmt};
 use farmfe_core::{
+  HashMap, HashSet,
   config::{Mode, TargetEnv},
   context::CompilationContext,
   module::meta_data::script::feature_flag::{
-    FeatureFlag, FARM_ENABLE_EXPORT_ALL_HELPER, FARM_ENABLE_EXPORT_HELPER,
-    FARM_ENABLE_IMPORT_ALL_HELPER, FARM_ENABLE_IMPORT_DEFAULT_HELPER, FARM_ENABLE_TOP_LEVEL_AWAIT,
-    FARM_IMPORT_EXPORT_FROM_HELPER,
+    FARM_ENABLE_EXPORT_ALL_HELPER, FARM_ENABLE_EXPORT_HELPER, FARM_ENABLE_IMPORT_ALL_HELPER,
+    FARM_ENABLE_IMPORT_DEFAULT_HELPER, FARM_ENABLE_TOP_LEVEL_AWAIT, FARM_IMPORT_EXPORT_FROM_HELPER,
+    FeatureFlag,
   },
   swc_common::util::take::Take,
   swc_ecma_ast::{BinaryOp, Expr, Ident, Lit, Stmt, Str},
-  HashMap, HashSet,
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 

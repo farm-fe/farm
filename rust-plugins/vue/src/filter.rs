@@ -72,7 +72,7 @@ impl CustomElementFilter {
         CustomElementFilter::Patterns(compile_patterns(list.into_sources()))
       }
       None => CustomElementFilter::Patterns(compile_patterns(vec![
-        DEFAULT_CUSTOM_ELEMENT_PATTERN.to_string()
+        DEFAULT_CUSTOM_ELEMENT_PATTERN.to_string(),
       ])),
     }
   }

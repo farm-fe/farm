@@ -1,5 +1,5 @@
 use farmfe_core::{
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprOrSpread, Ident, IdentName, Lit, MemberExpr, MemberProp,
   },

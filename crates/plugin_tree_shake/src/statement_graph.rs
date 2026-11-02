@@ -1,21 +1,21 @@
 use std::collections::VecDeque;
 use std::fmt;
 
+use farmfe_core::module::Module;
 pub use farmfe_core::module::meta_data::script::statement::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId,
   StatementSideEffects,
 };
 use farmfe_core::module::meta_data::script::statement::{Statement, SwcId, WriteTopLevelVar};
-use farmfe_core::module::Module;
 use farmfe_core::petgraph::Direction;
-use farmfe_core::swc_common::comments::SingleThreadedComments;
 use farmfe_core::swc_common::Mark;
+use farmfe_core::swc_common::comments::SingleThreadedComments;
 use farmfe_core::swc_ecma_ast::ModuleDecl;
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
 };
-use farmfe_core::{HashMap, HashSet};
 
 pub(crate) mod analyze_deps_by_used_idents;
 pub(crate) mod analyze_statement_side_effects;
@@ -23,7 +23,7 @@ pub(crate) mod analyze_used_import_all_fields;
 pub(crate) mod analyze_written_imported_idents;
 pub(crate) mod traced_used_import;
 
-use analyze_used_import_all_fields::{update_used_import_all_fields_of_edges, UsedImportAllFields};
+use analyze_used_import_all_fields::{UsedImportAllFields, update_used_import_all_fields_of_edges};
 
 use self::analyze_deps_by_used_idents::AnalyzeUsedIdentsParams;
 use self::traced_used_import::TracedUsedImportStatement;

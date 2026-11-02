@@ -1,8 +1,8 @@
-use dashmap::{mapref::one::MappedRefMut, DashMap};
+use dashmap::{DashMap, mapref::one::MappedRefMut};
 
 use crate::{
-  module::{CustomMetaDataMap, ModuleId},
   Cacheable, HashMap,
+  module::{CustomMetaDataMap, ModuleId},
 };
 
 #[derive(Default)]

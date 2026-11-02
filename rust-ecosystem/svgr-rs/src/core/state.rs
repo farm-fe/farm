@@ -94,11 +94,7 @@ fn get_component_name(file_path: &str) -> String {
 
   let file_name = VALID_CHAR_REGEX_REGEX
     .replace_all(
-      Path::new(file_path)
-        .file_stem()
-        .unwrap()
-        .to_str()
-        .unwrap(),
+      Path::new(file_path).file_stem().unwrap().to_str().unwrap(),
       "",
     )
     .to_string();

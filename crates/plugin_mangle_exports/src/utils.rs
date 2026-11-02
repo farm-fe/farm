@@ -1,16 +1,16 @@
 use farmfe_core::{
+  HashMap,
   module::{
-    meta_data::script::{ModuleReExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT},
-    module_graph::ModuleGraph,
     ModuleId,
+    meta_data::script::{AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleReExportIdentType},
+    module_graph::ModuleGraph,
   },
   plugin::ResolveKind,
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::{
     ExportNamedSpecifier, ExportSpecifier, Ident, ModuleDecl, ModuleExportName, ModuleItem,
     NamedExport,
   },
-  HashMap,
 };
 
 pub fn is_reexport_all(

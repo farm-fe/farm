@@ -43,18 +43,24 @@ fn actual_generated_views_have_bodies_and_verified_virtual_sources() {
     .position(|route| route.page.route_path == "/guide/blog/")
     .unwrap();
   assert!(prepared.modules[index].code.contains("/guide/blog/index/"));
-  assert!(prepared.modules[index]
-    .code
-    .contains("\"A [title] <unsafe>\""));
+  assert!(
+    prepared.modules[index]
+      .code
+      .contains("\"A [title] <unsafe>\"")
+  );
   verify(&prepared).unwrap();
-  assert!(!prepared
-    .diagnostics
-    .iter()
-    .any(|value| value.contains("VIEWS_PENDING")));
+  assert!(
+    !prepared
+      .diagnostics
+      .iter()
+      .any(|value| value.contains("VIEWS_PENDING"))
+  );
   fs::write(root.path().join("blog/index.md"), "# Changed\n").unwrap();
-  assert!(verify(&prepared)
-    .unwrap_err()
-    .contains("DOCS_SNAPSHOT_CHANGED"));
+  assert!(
+    verify(&prepared)
+      .unwrap_err()
+      .contains("DOCS_SNAPSHOT_CHANGED")
+  );
 }
 #[test]
 fn an_empty_blog_has_real_listing_and_archive_without_empty_tag_routes() {

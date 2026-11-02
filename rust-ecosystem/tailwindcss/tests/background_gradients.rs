@@ -1,5 +1,5 @@
 use farmfe_ecosystem_tailwindcss::scanner::extract_candidates;
-use farmfe_ecosystem_tailwindcss::{compile, parse_candidate, CompilerOptions};
+use farmfe_ecosystem_tailwindcss::{CompilerOptions, compile, parse_candidate};
 
 #[test]
 fn original_homepage_gradient_survives_scanning_parsing_and_generation() {

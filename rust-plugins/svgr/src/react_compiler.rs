@@ -1,4 +1,4 @@
-pub use farmfe_svgr_rs::{transform as _react_compiler, Config, JSXRuntime};
+pub use farmfe_svgr_rs::{Config, JSXRuntime, transform as _react_compiler};
 
 pub struct CompilerParams {
   pub svg: String,

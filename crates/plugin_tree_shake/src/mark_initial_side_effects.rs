@@ -1,5 +1,5 @@
-use farmfe_core::module::{module_graph::ModuleGraph, ModuleId, ModuleSystem};
 use farmfe_core::HashMap;
+use farmfe_core::module::{ModuleId, ModuleSystem, module_graph::ModuleGraph};
 
 use crate::module::{TreeShakeModule, UsedExports};
 

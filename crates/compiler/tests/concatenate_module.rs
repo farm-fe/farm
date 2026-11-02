@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-use farmfe_core::config::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex, Mode, TargetEnv};
 use farmfe_core::HashMap;
+use farmfe_core::config::{Mode, TargetEnv, bool_or_obj::BoolOrObj, config_regex::ConfigRegex};
 
 mod common;
 use crate::common::{
-  assert_compiler_result_with_config, create_compiler_with_args, generate_runtime,
-  AssertCompilerResultConfig,
+  AssertCompilerResultConfig, assert_compiler_result_with_config, create_compiler_with_args,
+  generate_runtime,
 };
 
 #[allow(dead_code)]

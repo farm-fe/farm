@@ -9,8 +9,8 @@ use napi::bindgen_prelude::FromNapiValue;
 use crate::{
   new_js_plugin_hook,
   plugin_adapters::js_plugin_adapter::module_hook_common::{
-    convert_code_to_metadata, format_module_metadata_to_code, module_matches_filters,
     JsModuleHookFilters, ModuleHookFilters, ModuleHookParams, ModuleHookResult,
+    convert_code_to_metadata, format_module_metadata_to_code, module_matches_filters,
   },
   plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
 };

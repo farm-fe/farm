@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   config::Mode,
   context::CompilationContext,
   module::{
-    module_group::{ModuleGroupId, ModuleGroupType},
     ModuleId,
+    module_group::{ModuleGroupId, ModuleGroupType},
   },
   plugin::{PluginFinalizeResourcesHookParam, PluginHandleEntryResourceHookParam},
   resource::{Resource, ResourceType},
-  HashMap,
 };
 use farmfe_toolkit::resources::{
-  get_dynamic_resources_code, get_dynamic_resources_map, get_initial_resources, InitialResources,
+  InitialResources, get_dynamic_resources_code, get_dynamic_resources_map, get_initial_resources,
 };
 
 pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::error::Result<()> {

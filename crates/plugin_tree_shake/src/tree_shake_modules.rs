@@ -1,19 +1,19 @@
 use std::collections::VecDeque;
 
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
-    meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+    ModuleId, ModuleSystem, meta_data::script::statement::SwcId, module_graph::ModuleGraph,
   },
   plugin::ResolveKind,
-  HashMap, HashSet,
 };
 
 use crate::{
   module::{TreeShakeModule, UsedExports, UsedExportsIdent},
   statement_graph::{
+    StatementId, StatementSideEffects, UsedStatementIdent,
     analyze_used_import_all_fields::UsedImportAllFields,
-    traced_used_import::TracedUsedImportStatement, StatementId, StatementSideEffects,
-    UsedStatementIdent,
+    traced_used_import::TracedUsedImportStatement,
   },
 };
 

@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{ModuleId, module_graph::ModuleGraph},
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePot},
   swc_common::{Mark, SourceMap},
-  HashMap,
 };
 
 use render_module::RenderModuleOptions;

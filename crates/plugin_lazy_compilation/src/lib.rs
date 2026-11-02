@@ -1,8 +1,8 @@
 use farmfe_core::{
-  config::{external::ExternalConfig, Config, FARM_MODULE_SYSTEM},
+  HashMap,
+  config::{Config, FARM_MODULE_SYSTEM, external::ExternalConfig},
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
-  HashMap,
 };
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_utils::{relative, stringify_query};

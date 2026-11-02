@@ -1,6 +1,6 @@
 use farmfe_core::{
   config::TargetEnv,
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::*,
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -12,9 +12,9 @@ use std::{
 };
 
 use crate::{
+  ImportMode,
   find_local_components::{ComponentInfo, ExportType},
   resolvers::ImportStyle,
-  ImportMode,
 };
 pub struct ImportModifier {
   components: Arc<Mutex<HashSet<ComponentInfo>>>,

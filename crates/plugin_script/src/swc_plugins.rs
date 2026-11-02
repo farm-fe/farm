@@ -13,7 +13,7 @@ use farmfe_core::swc_common::{self, FileName, Mark};
 use farmfe_core::{parking_lot, swc_ecma_ast::*};
 use farmfe_toolkit::anyhow::{self, Context, Result};
 use farmfe_toolkit::swc_atoms::Atom;
-use farmfe_toolkit::swc_ecma_visit::{noop_fold_type, Fold, FoldWith};
+use farmfe_toolkit::swc_ecma_visit::{Fold, FoldWith, noop_fold_type};
 use once_cell::sync::Lazy;
 use swc_ecma_loader::{
   resolve::Resolve,

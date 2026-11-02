@@ -1,4 +1,4 @@
-use crate::{module::ModuleType, HashMap};
+use crate::{HashMap, module::ModuleType};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

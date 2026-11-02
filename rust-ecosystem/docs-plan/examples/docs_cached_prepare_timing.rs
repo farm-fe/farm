@@ -1,5 +1,5 @@
 //! Diagnostic only: compare full fresh/cold/warm plans, never write site output.
-use farmfe_docs_plan::{prepare, prepare_with_cache, ContentCache};
+use farmfe_docs_plan::{ContentCache, prepare, prepare_with_cache};
 use std::{env, fs, path::PathBuf, time::Instant};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

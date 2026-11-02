@@ -12,9 +12,9 @@ use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
   load_core_lib,
-  swc_transforms::{swc_transform_react, FarmSwcTransformReactOptions},
+  swc_transforms::{FarmSwcTransformReactOptions, swc_transform_react},
 };
-use react_refresh::{inject_react_refresh, IS_REACT_REFRESH_BOUNDARY};
+use react_refresh::{IS_REACT_REFRESH_BOUNDARY, inject_react_refresh};
 
 mod react_refresh;
 

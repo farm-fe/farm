@@ -1,10 +1,10 @@
 use std::{hash::Hash, sync::Arc};
 
-use farmfe_macro_cache_item::cache_item;
 use crate::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use farmfe_macro_cache_item::cache_item;
 use swc_atoms::Atom;
 
-use crate::module::{meta_data::script::statement::SwcId, ModuleId};
+use crate::module::{ModuleId, meta_data::script::statement::SwcId};
 
 /// How the module export ident is defined.
 /// Where resolving this type, [Declaration] will be resolved first when expand exports.

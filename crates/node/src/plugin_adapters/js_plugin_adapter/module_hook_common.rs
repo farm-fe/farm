@@ -5,23 +5,23 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{
-    meta_data::script::CommentsMetaData, module_graph::ModuleGraphEdge, ModuleId, ModuleMetaData,
-    ModuleType,
+    ModuleId, ModuleMetaData, ModuleType, meta_data::script::CommentsMetaData,
+    module_graph::ModuleGraphEdge,
   },
   serde::{Deserialize, Serialize},
   swc_common::{
-    comments::SingleThreadedComments, source_map::DefaultSourceMapGenConfig, Globals, SourceMap,
+    Globals, SourceMap, comments::SingleThreadedComments, source_map::DefaultSourceMapGenConfig,
   },
   swc_css_ast::Stylesheet,
   swc_ecma_ast::Module as SwcModule,
   swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
-  css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
+  css::{ParseCssModuleResult, codegen_css_stylesheet, parse_css_stylesheet},
   html::{codegen_html_document, parse_html_document},
   script::{
-    codegen_module, create_codegen_config, parse_module, swc_try_with::resolve_module_mark,
-    CodeGenCommentsConfig, ParseScriptModuleResult,
+    CodeGenCommentsConfig, ParseScriptModuleResult, codegen_module, create_codegen_config,
+    parse_module, swc_try_with::resolve_module_mark,
   },
 };
 

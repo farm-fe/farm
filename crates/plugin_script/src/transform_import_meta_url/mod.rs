@@ -1,8 +1,8 @@
 use farmfe_core::{
   swc_common::{
+    DUMMY_SP, Spanned, SyntaxContext,
     comments::{Comments, SingleThreadedComments},
     util::take::Take,
-    Spanned, SyntaxContext, DUMMY_SP,
   },
   swc_ecma_ast::{
     CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, IdentName, KeyValueProp, Lit,

@@ -1,8 +1,8 @@
-use farmfe_core::{module::meta_data::script::statement::SwcId, HashMap, HashSet};
+use farmfe_core::{HashMap, HashSet, module::meta_data::script::statement::SwcId};
 
 use super::{
-  analyze_used_import_all_fields::UsedImportAllFields, StatementGraph, StatementSideEffects,
-  WriteTopLevelVar,
+  StatementGraph, StatementSideEffects, WriteTopLevelVar,
+  analyze_used_import_all_fields::UsedImportAllFields,
 };
 
 pub fn analyze_written_imported_idents(graph: &StatementGraph) -> HashSet<WriteTopLevelVar> {

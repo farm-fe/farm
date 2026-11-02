@@ -7,7 +7,7 @@
 //! convenience methods for emitting CSS source-map comments and inline
 //! data-URIs.
 
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 
 /// A processed source map with convenience helpers.
 pub struct SourceMap {

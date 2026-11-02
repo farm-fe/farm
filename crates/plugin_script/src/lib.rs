@@ -19,8 +19,7 @@ use farmfe_core::{
   plugin::{
     GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult,
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam,
-    PluginProcessModuleHookParam, PluginResolveHookParam,
-    ResolveKind,
+    PluginProcessModuleHookParam, PluginResolveHookParam, ResolveKind,
   },
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   resource::{
@@ -33,8 +32,7 @@ use farmfe_core::{
 };
 use farmfe_swc_transformer_import_glob::{
   GlobWatch, ImportGlobVisitor, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
-  ImportMetaGlobSnapshot,
-  transform_import_meta_glob_with_snapshot,
+  ImportMetaGlobSnapshot, transform_import_meta_glob_with_snapshot,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -378,7 +376,10 @@ impl Plugin for FarmPluginScript {
     // Ordinary expansions can reuse the membership snapshot. Advanced options
     // remain conservative until the snapshot records their complete profile.
     let requires_matcher_refresh = glob_watches.as_ref().is_none_or(|groups| {
-      groups.iter().flatten().any(|watch| watch.requires_snapshot_refresh)
+      groups
+        .iter()
+        .flatten()
+        .any(|watch| watch.requires_snapshot_refresh)
     });
     let cur_dir = import_meta_glob_cur_dir(&module.id, &context.config.root);
     let mut custom = module.meta.as_script().custom.clone();

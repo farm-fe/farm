@@ -1,7 +1,7 @@
 use farmfe_macro_cache_item::cache_item;
 
-use crate::module::ModuleId;
 use crate::HashMap;
+use crate::module::ModuleId;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]

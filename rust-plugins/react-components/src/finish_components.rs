@@ -3,10 +3,10 @@ use std::sync::{Arc, Mutex};
 
 use farmfe_core::config::config_regex::ConfigRegex;
 
-use crate::find_local_components::{find_local_components, ComponentInfo};
-use crate::generate_dts::{generate_dts, GenerateDtsOption};
-use crate::resolvers::{get_resolvers_result, ResolverOption};
 use crate::Dts;
+use crate::find_local_components::{ComponentInfo, find_local_components};
+use crate::generate_dts::{GenerateDtsOption, generate_dts};
+use crate::resolvers::{ResolverOption, get_resolvers_result};
 pub struct FinishComponentsParams<'a> {
   pub root_path: String,
   pub resolvers: Vec<ResolverOption>,

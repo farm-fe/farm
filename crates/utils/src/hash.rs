@@ -1,4 +1,4 @@
-use base64::{engine::general_purpose, Engine};
+use base64::{Engine, engine::general_purpose};
 use sha2::{Digest, Sha256};
 
 pub fn sha256(bytes: &[u8], len: usize) -> String {

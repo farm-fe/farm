@@ -12,12 +12,12 @@ use std::{
 };
 
 use serde::{
-  de::{self, Visitor},
   Deserialize, Deserializer, Serialize, Serializer,
+  de::{self, Visitor},
 };
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::{Config, config_regex::ConfigRegex},
   context::create_swc_source_map,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookResult},
@@ -30,13 +30,13 @@ use farmfe_macro_plugin::farm_plugin;
 
 use farmfe_toolkit::{
   plugin_utils::{normalize_path::normalize_path, path_filter::PathFilter},
-  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
+  script::{CodeGenCommentsConfig, ParseScriptModuleResult, codegen_module, parse_module},
   swc_ecma_codegen,
   swc_ecma_visit::VisitMutWith,
 };
 
 use find_local_components::ComponentInfo;
-use finish_components::{finish_components, FinishComponentsParams};
+use finish_components::{FinishComponentsParams, finish_components};
 use insert_import::{ImportModifier, InsertImportModifier};
 use resolvers::ResolverOption;
 

@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 use common::generate_runtime;
 use farmfe_compiler::{Compiler, DYNAMIC_VIRTUAL_SUFFIX};
+use farmfe_core::HashMap;
+use farmfe_core::config::TargetEnv;
 use farmfe_core::config::bool_or_obj::BoolOrObj;
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::config::persistent_cache::PersistentCacheConfig;
-use farmfe_core::config::TargetEnv;
-use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
+use farmfe_core::config::{Config, Mode, SourcemapConfig, preset_env::PresetEnvConfig};
 use farmfe_core::plugin::UpdateType;
-use farmfe_core::HashMap;
 use farmfe_testing_helpers::{fixture, is_update_snapshot_from_env};
 
 mod common;
@@ -236,9 +236,11 @@ fn update_with_dependencies_change_css_modules() {
         .unwrap();
       assert_eq!(result.added_module_ids.len(), 2,);
       assert!(result.added_module_ids.contains(&"index.module.css".into()));
-      assert!(result
-        .added_module_ids
-        .contains(&"index.module.css?farm_css_modules".into()));
+      assert!(
+        result
+          .added_module_ids
+          .contains(&"index.module.css?farm_css_modules".into())
+      );
       assert_eq!(result.updated_module_ids, vec!["index.ts".into()]);
       assert_eq!(result.removed_module_ids.len(), 0);
 
@@ -287,12 +289,16 @@ fn update_with_dependencies_change_css_modules() {
       assert_eq!(result.added_module_ids.len(), 0);
       assert_eq!(result.updated_module_ids, vec!["index.ts".into()]);
       assert_eq!(result.removed_module_ids.len(), 2);
-      assert!(result
-        .removed_module_ids
-        .contains(&"index.module.css".into()));
-      assert!(result
-        .removed_module_ids
-        .contains(&"index.module.css?farm_css_modules".into()));
+      assert!(
+        result
+          .removed_module_ids
+          .contains(&"index.module.css".into())
+      );
+      assert!(
+        result
+          .removed_module_ids
+          .contains(&"index.module.css?farm_css_modules".into())
+      );
       asset_update_result_code(cwd, &result, Some("update2"));
     }
   );

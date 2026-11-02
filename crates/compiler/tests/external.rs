@@ -2,9 +2,9 @@ mod common;
 use crate::common::{assert_compiler_result, create_compiler_with_args};
 use std::path::PathBuf;
 
-use farmfe_core::config::ModuleFormatConfig;
-use farmfe_core::config::{config_regex::ConfigRegex, ModuleFormat, TargetEnv};
 use farmfe_core::HashMap;
+use farmfe_core::config::ModuleFormatConfig;
+use farmfe_core::config::{ModuleFormat, TargetEnv, config_regex::ConfigRegex};
 
 fn test(file: String, crate_path: String) {
   let file_path_buf = PathBuf::from(file.clone());

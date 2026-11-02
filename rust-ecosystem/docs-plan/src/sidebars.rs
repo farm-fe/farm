@@ -1,6 +1,6 @@
 use crate::{
-  hash, prepare::farm_path, routes::logical_id, DocPlan, PageNavigation, PlanInput, PublicPage,
-  PublicSidebar, PublicSidebarItem,
+  DocPlan, PageNavigation, PlanInput, PublicPage, PublicSidebar, PublicSidebarItem, hash,
+  prepare::farm_path, routes::logical_id,
 };
 use farmfe_docs_config::{ResolvedCollection, SidebarConfig, SidebarConfigItem, ValidatedConfig};
 use std::{

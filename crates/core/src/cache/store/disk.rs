@@ -4,24 +4,24 @@ use std::{
   io::Write,
   path::{Path, PathBuf},
   sync::{
-    atomic::{AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicU64, Ordering},
   },
 };
 
 use dashmap::{DashMap, DashSet};
 use farmfe_utils::hash::sha256;
 use itertools::Itertools;
-use parking_lot::{lock_api::ArcMutexGuard, Mutex};
+use parking_lot::{Mutex, lock_api::ArcMutexGuard};
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 use super::{
+  CacheStoreKey,
   constant::{CacheStoreFactory, CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
   error::CacheError,
   namespace::NamespaceStore,
-  CacheStoreKey,
 };
-use crate::{cache::store::constant::CacheStoreItemRef, config::Mode, serialize, HashMap};
+use crate::{HashMap, cache::store::constant::CacheStoreItemRef, config::Mode, serialize};
 
 #[derive(Debug, Default)]
 pub struct ResourceLock<T: Debug + Eq + Hash + PartialEq> {
@@ -464,8 +464,8 @@ mod profile {
   use std::sync::Arc;
 
   use crate::cache::{
-    store::{constant::CacheStoreItemRef, error::CacheError, CacheStoreKey},
     CacheStoreTrait,
+    store::{CacheStoreKey, constant::CacheStoreItemRef, error::CacheError},
   };
 
   pub struct TimeCacheFactory {

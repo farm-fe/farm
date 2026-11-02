@@ -2,16 +2,16 @@ use std::{fs, io::Write, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
+  HashMap,
   config::{
+    AliasItem, Config, ResolveConfig, RuntimeConfig, SourcemapConfig, StringOrRegex,
     bool_or_obj::BoolOrObj,
     persistent_cache::{PersistentCacheConfig, PersistentCacheConfigObj},
     preset_env::PresetEnvConfig,
-    AliasItem, Config, ResolveConfig, RuntimeConfig, SourcemapConfig, StringOrRegex,
   },
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam},
-  HashMap,
 };
 use farmfe_plugin_sass::FarmPluginSass;
 use farmfe_testing_helpers::{fixture, is_update_snapshot_from_env};

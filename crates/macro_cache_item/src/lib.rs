@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{parse_macro_input, parse_quote, Item};
+use syn::{Item, parse_macro_input, parse_quote};
 
 #[proc_macro_attribute]
 pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {

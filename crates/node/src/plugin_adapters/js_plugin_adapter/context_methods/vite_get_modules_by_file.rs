@@ -2,13 +2,13 @@ use farmfe_core::module::{Module, ModuleId, ModuleType};
 use farmfe_core::{HashMap, HashSet};
 use napi::JsValue;
 use napi::{
+  Env, Unknown,
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
-  Env, Unknown,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::context::{
-  get_argv_and_context_from_cb_info, ArgvAndContext,
+  ArgvAndContext, get_argv_and_context_from_cb_info,
 };
 
 pub const VITE_GET_MODULES_BY_FILE: &str = "viteGetModulesByFile";

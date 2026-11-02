@@ -34,10 +34,12 @@ fn explicit_mdx_format_preserves_legacy_md_expressions() {
     farmfe_docs_content::ContentFormat::Mdx,
   )
   .unwrap();
-  assert!(result
-    .code
-    .lines()
-    .any(|line| line.starts_with("export const answer = 42")));
+  assert!(
+    result
+      .code
+      .lines()
+      .any(|line| line.starts_with("export const answer = 42"))
+  );
 }
 
 #[test]
@@ -157,13 +159,17 @@ fn malformed_frontmatter_and_unclosed_directives_are_errors() {
     "---\ntitle: [invalid\n---\n# Heading\n",
     &Default::default(),
   );
-  assert!(yaml
-    .err()
-    .is_some_and(|error| error.contains("DOCS_FRONTMATTER")));
+  assert!(
+    yaml
+      .err()
+      .is_some_and(|error| error.contains("DOCS_FRONTMATTER"))
+  );
   let directive = compile_content(":::note\nBody\n", &Default::default());
-  assert!(directive
-    .err()
-    .is_some_and(|error| error.contains("DOCS_ADMONITION")));
+  assert!(
+    directive
+      .err()
+      .is_some_and(|error| error.contains("DOCS_ADMONITION"))
+  );
 }
 
 #[test]
@@ -196,9 +202,11 @@ fn explicit_ids_are_reserved_and_removed_from_visible_titles() {
   assert_eq!(result.toc[2].id, "custom");
   assert!(!result.code.contains("{#stable}"));
   let duplicate = compile_content("# One {#same}\n\n## Two {#same}\n", &Default::default());
-  assert!(duplicate
-    .err()
-    .is_some_and(|error| error.contains("duplicate explicit ID")));
+  assert!(
+    duplicate
+      .err()
+      .is_some_and(|error| error.contains("duplicate explicit ID"))
+  );
 }
 
 #[test]
@@ -268,9 +276,11 @@ fn highlighted_code_compiles_with_metadata_and_unknown_language_diagnostics() {
   assert!(result.code.contains("demo.ts"));
   assert!(result.code.contains("data-line-numbers"));
   assert!(result.code.contains("data-highlighted"));
-  assert!(result
-    .diagnostics
-    .iter()
-    .any(|d| d.contains("DOCS_UNKNOWN_LANGUAGE")));
+  assert!(
+    result
+      .diagnostics
+      .iter()
+      .any(|d| d.contains("DOCS_UNKNOWN_LANGUAGE"))
+  );
   assert!(result.code.contains("<literal>&text"));
 }

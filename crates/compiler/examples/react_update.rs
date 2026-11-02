@@ -1,6 +1,6 @@
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{bool_or_obj::BoolOrObj, Config, RuntimeConfig},
+  config::{Config, RuntimeConfig, bool_or_obj::BoolOrObj},
   plugin::UpdateType,
   relative_path::RelativePath,
 };

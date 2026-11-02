@@ -4,13 +4,13 @@ use regex::Regex;
 use std::{error::Error, sync::Arc};
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
-  context::{create_swc_source_map, CompilationContext},
+  config::{Config, config_regex::ConfigRegex},
+  context::{CompilationContext, create_swc_source_map},
   error::Result as HookResult,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam, PluginTransformHookResult},
   serde_json,
-  swc_common::{source_map::DefaultSourceMapGenConfig, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext, source_map::DefaultSourceMapGenConfig},
   swc_ecma_ast::*,
   swc_ecma_parser::{Syntax, TsSyntax},
 };
@@ -18,7 +18,7 @@ use farmfe_macro_plugin::farm_plugin;
 
 use farmfe_toolkit::{
   plugin_utils::path_filter::PathFilter,
-  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
+  script::{CodeGenCommentsConfig, ParseScriptModuleResult, codegen_module, parse_module},
   swc_ecma_codegen,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };

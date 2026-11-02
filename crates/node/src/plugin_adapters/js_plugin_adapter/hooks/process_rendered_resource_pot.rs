@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::Result,
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   serde::{Deserialize, Serialize},
-  HashMap,
 };
 use farmfe_toolkit::html::codegen_html_document;
 use napi::bindgen_prelude::FromNapiValue;
