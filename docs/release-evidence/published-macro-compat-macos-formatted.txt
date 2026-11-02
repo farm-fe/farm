@@ -1,28 +1,4 @@
- Downloading crates ...
-  Downloaded tinyvec v1.13.3
-  Downloaded bytes v1.12.1
-  Downloaded uuid v1.26.1
-  Downloaded indexmap v2.14.2
-   Compiling proc-macro2 v1.0.107
-   Compiling unicode-ident v1.0.27
-   Compiling quote v1.0.47
-   Compiling simdutf8 v0.1.5
-   Compiling hashbrown v0.17.1
-   Compiling downcast-rs v2.0.2
-   Compiling syn v2.0.119
-   Compiling ptr_meta_derive v0.3.1
-   Compiling bytecheck_derive v0.8.2
-   Compiling munge_macro v0.4.7
-   Compiling rkyv_derive v0.8.16
-   Compiling ptr_meta v0.3.1
-   Compiling munge v0.4.7
-   Compiling farmfe_macro_cache_item v2.1.0
-   Compiling rancor v0.1.1
-   Compiling bytecheck v0.8.2
-   Compiling rend v0.5.3
-   Compiling rkyv v0.8.16
-   Compiling farm-release-macro-compat v0.0.0 ([repository]/scripts/release-fixtures/macro-consumer)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.57s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
      Running unittests src/lib.rs ([cows-instance]/.cows-cache/target/f92865fbae1b5eafa155f44b/debug/deps/farm_release_macro_compat-0f4f7bdd74d4a9d8)
 
 running 2 tests

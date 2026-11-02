@@ -12,7 +12,7 @@
   "rkyv": "0.8.16",
   "downcastRs": "2.0.2",
   "workspacePatch": false,
-  "sourceCommit": "54882a576a28161c14313780af547c053fc02b0e",
+  "sourceCommit": "dd6c3af27d4a6de097036faab8d54a16ec306876",
   "traitSource": "crates/core/src/cache/cacheable.rs",
   "traitSourceSha256": "69ef34d09a2cc6b0c282c5418f5787c780313086db8886defbaf61f0f6c658fc",
   "fixtureFiles": [
@@ -30,14 +30,14 @@
     }
   ],
   "log": "docs/release-evidence/published-macro-compat-macos-formatted.txt",
-  "logSha256": "2c893adf8154cfabe045eb91e50f85bf1c0ed277b1ffb1d86dccfa31b9f9f9ed",
+  "logSha256": "3b8d3acb450ba00cab3babdafa887844d6fca7344ec60e1f7f3adec9c846808b",
   "tests": {
     "passed": 2,
     "failed": 0,
     "structRoundTrip": true,
     "enumRoundTrip": true
   },
-  "finishedUtc": "2026-11-02T00:54:22.620109+00:00",
+  "finishedUtc": "2026-11-02T00:57:05.529206+00:00",
   "hashEncoding": "UTF-8 text with LF line endings",
   "logRedaction": "Local consumer and target paths replaced; compiler/test output otherwise retained",
   "previousEvidence": {
@@ -48,5 +48,6 @@
     "logSha256": "7ec518bba0691ec7fd22a93e0d3adf478c212c486a4ca6c9c3c6eb254d91b04e",
     "finishedUtc": "2026-10-27T00:43:58.777Z"
   },
-  "contractComparison": "Current Cacheable trait and impl_downcast block exactly match the tested fixture"
+  "contractComparison": "Current Cacheable trait and impl_downcast block exactly match the tested fixture",
+  "command": "cargo test --locked --offline --manifest-path scripts/release-fixtures/macro-consumer/Cargo.toml"
 }
