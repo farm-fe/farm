@@ -2,7 +2,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fsp from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { fingerprintNativeFile } from '../examples/commerce-lab/benchmark/native-provenance.mjs';
 import { measurementResolver, measurementPlatforms } from './performance-attempts.mjs';
+import { performanceSummary } from './performance-report.mjs';
 import { nativePlugins } from './performance-cohorts.mjs';
 
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -23,7 +28,7 @@ function fixture() {
   const end = attempt => `2026-10-31T0${attempt}:20:00Z`;
   const jobs = {1:[], 2:[]}, bodies = new Map(), artifacts = [], raw = new Map();
   function add(name, value, job, attempt) {
-    const id = 100 + artifacts.length, bytes = zip(name.startsWith('performance-') ? 'summary.json' : 'products.json', value);
+    const id = 100 + artifacts.length, bytes = zip(name.startsWith('performance-') ? 'summary.json' : 'products.json', name.startsWith('performance-') ? performanceSummary(value) : value);
     bodies.set(id, bytes); artifacts.push({id, name, expired:false, created_at:`2026-10-31T0${attempt}:10:00Z`, size_in_bytes:bytes.length,
       digest:'sha256:' + hash(bytes), workflow_run:{id:10,repository_id:5,head_sha:head}});
     jobs[attempt].push(job); return id;
@@ -162,4 +167,43 @@ test('workflow_run publisher sparse checkout includes the real schema validator 
   const yaml=fs.readFileSync(new URL('../.github/workflows/performance-report-comment.yaml',import.meta.url),'utf8');
   assert.ok(yaml.includes('scripts/performance-pr-reporter.mjs') && yaml.includes('scripts/performance-metrics.mjs'));
   assert.ok(yaml.includes('ref: ${{ github.workflow_sha }}'));
+});
+
+test('writer output retains measured bytes and missing or altered bytes still reject', async () => {
+  for (const mutate of [value => { delete value.native; }, value => { value.native.artifacts['@farmfe/core'].sha256 = '0'.repeat(64); }]) {
+    const f = fixture(), value = performanceSummary(f.raw.get('linux-x64-gnu'));
+    mutate(value);
+    const artifact = f.artifacts[0], bytes = zip('summary.json', value);
+    f.bodies.set(artifact.id, bytes); artifact.digest = 'sha256:' + hash(bytes); artifact.size_in_bytes = bytes.length;
+    const resolve = await measurementResolver(f);
+    await assert.rejects(() => resolve(measurementPlatforms[0]), /Measured native bytes absent|Measured native bytes differ/);
+  }
+});
+
+test('on-disk measured bytes survive writer/archive/resolver and reject a different producer', async t => {
+  const folder = await fsp.mkdtemp(path.join(os.tmpdir(), 'farm-measured-proof-'));
+  t.after(() => fsp.rm(folder, { recursive: true, force: true }));
+  const filename = path.join(folder, 'native.node');
+  await fsp.writeFile(filename, Buffer.from([0, 255, 128, 13, 10, 42]));
+  const measured = await fingerprintNativeFile(filename);
+  const f = fixture(), raw = f.raw.get('linux-x64-gnu');
+  raw.native.artifacts['@farmfe/core'] = measured;
+  function replaceArtifact(artifact, name, value) {
+    const bytes = zip(name, value);
+    f.bodies.set(artifact.id, bytes); artifact.digest = 'sha256:' + hash(bytes); artifact.size_in_bytes = bytes.length;
+  }
+  replaceArtifact(f.artifacts[0], 'summary.json', performanceSummary(raw));
+  const artifact = f.artifacts[1], name = 'products.json';
+  const products = JSON.parse(f.bodies.get(artifact.id).subarray(30 + name.length, -22 - 46 - name.length));
+  const producer = products.records.find(row => row.owner === '@farmfe/core');
+  Object.assign(producer, { sha256: measured.sha256, bytes: measured.bytes });
+  replaceArtifact(artifact, name, products);
+  const result = await (await measurementResolver(f))(measurementPlatforms[0]);
+  assert.deepEqual(result.raw.native.artifacts['@farmfe/core'], measured);
+  assert.equal(result.source.rawSummarySha256, hash(Buffer.from(JSON.stringify(performanceSummary(raw)))));
+  await fsp.writeFile(filename, Buffer.from([0, 255, 128, 13, 10, 43]));
+  const changed = await fingerprintNativeFile(filename);
+  Object.assign(producer, { sha256: changed.sha256, bytes: changed.bytes });
+  replaceArtifact(artifact, name, products);
+  await assert.rejects(async () => (await measurementResolver(f))(measurementPlatforms[0]), /Measured native bytes differ/);
 });

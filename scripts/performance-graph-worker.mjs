@@ -12,23 +12,37 @@ const generatedRoot = await fs.realpath(generatedInputRoot);
 const aliases = [{ from: inputRoot, to: lab }, { from: generatedInputRoot, to: generatedRoot }]
   .filter(row => row.from !== row.to);
 const observed = new Set();
+const startedAt = performance.now();
+const stage = name => process.stderr.write(`${JSON.stringify({ kind: 'unscored-graph-stage', stage: name, elapsedMs: Math.round(performance.now() - startedAt) })}\n`);
+stage('resolve-config');
 const resolved = await resolveConfig({ root: lab, configFile: path.join(lab, 'farm.rust.config.ts'), plugins: [{ name: 'commerce-farm-source-coverage',
   processModule: { filters: { resolvedPaths: ['.*'] }, executor(param) {
     observed.add(param.moduleId);
     return null;
   } } }] }, 'build', 'production');
+stage('create-compiler');
 const compiler = createCompiler(resolved);
 for (const hook of getSortedPluginHooksBindThis(resolved.jsPlugins ?? [], 'configureCompiler')) await hook?.(compiler);
-await compiler.compile(); compiler.writeResourcesToDisk();
+stage('compile');
+await compiler.compile();
+stage('write-resources');
+compiler.writeResourcesToDisk();
+stage('trace-module-graph');
 const graph = await compiler.traceModuleGraph();
+stage('summarize-graph');
 const summary = summarizeGraph(graph, { projectRoot: lab, aliases });
 const generated = [];
 async function walk(directory) { for (const entry of await fs.readdir(directory, { withFileTypes: true })) { const file = path.join(directory, entry.name); if (entry.isDirectory()) await walk(file); else generated.push(path.relative(generatedRoot, file).replaceAll('\\', '/')); } }
+stage('enumerate-generated-inputs');
 await walk(generatedRoot);
+stage('generated-coverage');
 const coverage = generatedCoverage(generated,
   { processed: [...observed], retained: graph.modules.map(module => module.id) }, generatedRoot, lab, { aliases });
+stage('write-evidence');
 await fs.writeFile(output, JSON.stringify({ status: generated.length === 28673 && !coverage.missing.length ? 'complete' : 'invalid', scale: 'business-2048', measured: false, summary,
   reason: generated.length !== 28673 ? `Unexpected generated input count: ${generated.length}` : coverage.reason,
   coverage: { ...coverage,
     processedSources: [...observed].sort(), retainedModules: graph.modules.map(module => ({ id: module.id, type: module.moduleType })),
     semantics: 'Actual processing hooks plus retained identities; generated files are not relabeled as modules. Worker/query/virtual nodes remain distinct identities. Nested native worker compiler graphs are not exposed by this parent trace.' } }));
+
+stage('complete');
