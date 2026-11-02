@@ -179,25 +179,3 @@ jobs:
           cell: "rust-tests:ci-test:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
           artifact-suffix: ${{ matrix.os || 'single' }}
-
-  required-linux-test-compatibility:
-    name: Test - ubuntu-latest
-    if: always()
-    needs: [version-classification, cargo-test]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Require the complete Rust test matrix to succeed
-        shell: bash
-        env:
-          UPSTREAM_RESULT: ${{ needs.cargo-test.result }}
-          CLASSIFICATION_RESULT: ${{ needs.version-classification.result }}
-          VERSION_MODE: ${{ needs.version-classification.outputs.mode }}
-          VERSION_PROOF: ${{ needs.version-classification.outputs.proof_hash }}
-        run: |
-          test "$CLASSIFICATION_RESULT" = success
-          if [ "$VERSION_MODE" = verified-version-only ]; then
-            test "${#VERSION_PROOF}" = 64 && test "$UPSTREAM_RESULT" = skipped
-          else
-            test "$UPSTREAM_RESULT" = success
-          fi

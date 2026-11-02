@@ -178,3 +178,10 @@ test('publication entry module graph has no installed workspace dependency requi
   }
   visit(fileURLToPath(new URL('./v2-auto-release.mjs', import.meta.url)));
 });
+
+test('retired combined context cannot replace the actual type-check producer', () => {
+  const jobs=requiredCiJobs.map(name=>({name,status:'completed',conclusion:'success'}));
+  assert.ok(requiredCiJobs.includes('Type Check'));assert.ok(!requiredCiJobs.includes('Type Check & Changesets'));
+  jobs.find(job=>job.name==='Type Check').name='Type Check & Changesets';
+  assert.throws(()=>validateRequiredCiJobs(jobs),/Missing or ambiguous required CI job: Type Check/);
+});

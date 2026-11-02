@@ -247,7 +247,7 @@ class Contracts(unittest.TestCase):
         decision,receipt,_=self.schedule()
         self.assertEqual(decision['nativeMode'],'build');self.assertIsNone(receipt)
 
-    def test_actual_workflow_wiring_binds_native_choice_consumers_and_existing_required_contexts(self):
+    def test_actual_workflow_wiring_binds_native_choice_consumers_and_actual_execution_gate(self):
         root=Path(__file__).parent.parent
         workflow=(root/'.github/workflows/ci.yaml').read_text(encoding='utf-8')
         primary=(root/'.github/workflows/ci-primary-platform.yaml').read_text(encoding='utf-8')
@@ -260,8 +260,12 @@ class Contracts(unittest.TestCase):
         self.assertIn('Require successful per-product build or verified main artifact consumption',primary)
         self.assertIn('scripts/formal-native-products.py produce',producer)
         self.assertIn("steps.formal-catalog.outputs.catalog_available == 'true'",producer)
-        self.assertIn('needs: [version-classification, examples-test, incremental-execution-gate]',workflow)
-        self.assertIn('needs: [version-classification, ts-test, incremental-execution-gate]',workflow)
+        gate=workflow.split('  incremental-execution-gate:',1)[1]
+        self.assertIn('needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]',gate)
+        self.assertIn('scripts/ci-suite-attempts.py --output ci-gate-suites',gate)
+        self.assertIn('scripts/ci-suite-execution.mjs --collect ci-gate-suites',gate)
+        self.assertNotIn('required-examples-compatibility:',workflow)
+        self.assertNotIn('required-typescript-compatibility:',workflow)
         # Execute current owner byte/identity/environment and failure/cancel/skip
         # gates, rather than interpreting old whole-job GNU restore strings.
         result=__import__('subprocess').run(['node','--test','scripts/formal-native-scope.test.mjs','scripts/ci-required-dag.test.mjs'],cwd=root,capture_output=True,text=True)

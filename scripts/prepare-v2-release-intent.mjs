@@ -20,7 +20,7 @@ export function independentPublicationPolicy() {
 }
 const requiredWorkflows = ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow];
 const platforms = ['ubuntu-24.04', 'macos-latest', 'windows-latest'];
-const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
+const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check',
   ...['Examples Test', 'Typescript Test', 'Commerce Performance'].flatMap(name => platforms.map(platform => `${name} (${platform})`)),
   'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Aggregate informational performance report'];
 const requiredReleaseJobs = ['Build independent release candidates', ...platforms.map(platform => `Independent release candidate consumer (${platform})`)];

@@ -21,12 +21,9 @@ test('verified version PR has explicit lightweight success and planned skips',()
 for(const mutation of ['missing','extra','proof','type-failed','unexpected-heavy'])test(`version gate rejects ${mutation}`,()=>{const rows=version();if(mutation==='missing')delete rows['primary-linux'];if(mutation==='extra')rows.unexpected={result:'skipped'};if(mutation==='proof')rows['version-classification'].outputs.proof_hash='z'.repeat(64);if(mutation==='type-failed')rows['type-check'].result='failure';if(mutation==='unexpected-heavy')rows['primary-linux'].result='success';assert.notEqual(run(rows).status,0);});
 test('each primary platform advances its own native and suites without other platform dependencies',()=>{for(const key of ['primary-linux','primary-macos','primary-windows'])assert.ok(!workflow.jobs[key].needs.some(name=>name.startsWith('primary-')));const primary=YAML.parse(fs.readFileSync(new URL('../.github/workflows/ci-primary-platform.yaml',import.meta.url),'utf8'));assert.ok(Object.values(primary.jobs).some(job=>job.uses?.includes('rust-build-user')));assert.ok(Object.values(primary.jobs).filter(job=>job.uses?.includes('test')).every(job=>!JSON.stringify(job.needs).includes('primary-linux')));});
 
-const compatibility=workflow.jobs['type-changesets-compatibility'];
-const compatibilityRun=rows=>spawnSync('python3',['-c',compatibility.steps[0].run],{encoding:'utf8',env:{...process.env,RESULTS:JSON.stringify(rows)}});
-test('type and Changesets policy are independent jobs with the old strict required context preserved',()=>{
+test('type and Changesets policy remain independent actual checks',()=>{
   const types=workflow.jobs['type-check'],changesets=workflow.jobs['changesets-check'];
   assert.equal(types.name,'Type Check');assert.equal(changesets.name,'Changesets Check');
-  assert.equal(compatibility.name,'Type Check & Changesets');assert.equal(compatibility.if,'always()');
   assert.deepEqual(changesets.needs,['version-classification']);
   assert.ok(!JSON.stringify(types).includes('check-pr-changesets.mjs'));
   assert.ok(changesets.steps.some(step=>step.run==='node scripts/check-pr-changesets.mjs'));
@@ -59,25 +56,11 @@ for(const [label,typeResult,changesetResult,expected]of [
     assert.ok(plan.ids.length>0);assert.equal(plan.mode,'all');
     assert.equal(scheduled.length*plan.ids.length,expected*plan.ids.length);
   }
-  const combined=compatibilityRun(Object.fromEntries(compatibility.needs.map(key=>[key,rows[key]])));
-  assert.equal(combined.status===0,typeResult==='success'&&changesetResult==='success');
-  if(changesetResult==='failure'){
-    assert.equal(run(full()).status,0,'Independent policy failure must not suppress suite collection');
-    assert.notEqual(combined.status,0,'Policy failure remains explicitly reported');
-  }
-});
-test('old required context rejects incomplete or cancelled checks and accepts only proven metadata skips',()=>{
-  for(const key of ['version-classification','type-check','changesets-check'])for(const result of ['failure','skipped','cancelled']){
-    const rows=Object.fromEntries(compatibility.needs.map(name=>[name,{result:'success',outputs:{mode:'full'}}]));rows[key].result=result;
-    assert.notEqual(compatibilityRun(rows).status,0);
-  }
-  const rows=Object.fromEntries(compatibility.needs.map(key=>[key,key==='changesets-check'?{result:'skipped'}:version()[key]]));
-  assert.equal(compatibilityRun(rows).status,0);delete rows['version-classification'].outputs.proof_hash;
-  assert.notEqual(compatibilityRun(rows).status,0);
+  if(changesetResult==='failure')assert.equal(run(full()).status,0,'Independent policy failure must not suppress suite collection');
 });
 
-test('every product summary and legacy alias is independent of policy while evidence validation remains mandatory',()=>{
-  for(const key of ['incremental-execution-gate','required-examples-compatibility','required-typescript-compatibility','examples-test','ts-test','docs-acceptance','performance-report','performance-summary']) {
+test('every real product summary is independent of policy while evidence validation remains mandatory',()=>{
+  for(const key of ['incremental-execution-gate','examples-test','ts-test','docs-acceptance','performance-report','performance-summary']) {
     const seen=new Set();const visit=name=>{if(seen.has(name))return;seen.add(name);for(const dependency of workflow.jobs[name].needs??[])visit(dependency);};visit(key);
     assert.ok(!seen.has('changesets-check'),key);assert.ok(!seen.has('type-changesets-compatibility'),key);
   }
@@ -85,15 +68,7 @@ test('every product summary and legacy alias is independent of policy while evid
     const step=gate.steps.find(step=>step.name===name);assert.ok(step);assert.equal(step.if,"needs.version-classification.outputs.mode != 'verified-version-only'");assert.ok(!step['continue-on-error']);
   }
 });
-for(const key of ['required-examples-compatibility','required-typescript-compatibility'])test(`${key} all three original contexts require real suite acceptance`,()=>{
-  const job=workflow.jobs[key];assert.equal(job.if,'always()');assert.equal(job.strategy.matrix.include.length,3);
-  for(const row of job.strategy.matrix.include)for(const [gateResult,upstream,expected]of [['success','success',0],['failure','success',1],['success','failure',1],['skipped','success',1],['success','cancelled',1]]) {
-    const result=spawnSync('bash',['-e','-c',job.steps[0].run],{env:{...process.env,VERSION_MODE:'full',VERSION_PROOF:'',UPSTREAM_RESULT:upstream,EXECUTION_GATE:gateResult},encoding:'utf8'});
-    assert.equal(result.status===0,expected===0,row.context);
-  }
-});
-
-for(const scenario of ['policy-failure','suite-failure','missing-evidence','missing-file','wrong-case-count','type-failure'])test(`actual product gate and collection propagate ${scenario} correctly to legacy contexts`,()=>{
+for(const scenario of ['policy-failure','suite-failure','missing-evidence','missing-file','wrong-case-count','type-failure'])test(`actual product gate and collection propagate ${scenario} correctly without legacy contexts`,()=>{
   const raw={schemaVersion:1,protocol:'farm-suite-discovery-v1',fileEnumerationComplete:true,selectionReady:false,fullOnlyReasons:[],sourceIdentity:{commit:'a'.repeat(40),tree:'b'.repeat(40)},
     items:[{id:'ts:packages/a/a.spec.ts',kind:'ts',requiresActualCases:true},{id:'examples-browser:examples/react',kind:'examples-browser',requiresActualCases:true}]};
   const inventory={...raw,inventoryHash:crypto.createHash('sha256').update(JSON.stringify(raw)).digest('hex')};
@@ -113,12 +88,17 @@ for(const scenario of ['policy-failure','suite-failure','missing-evidence','miss
   let collected=false,accepted=false;
   if(run(rows).status===0){collected=true;try{accepted=validateCollectedSuites(inventory,receipts,env).cells.length===6;}catch{accepted=false;}}
   assert.equal(collected,scenario!=='type-failure');assert.equal(accepted,scenario==='policy-failure');
-  for(const key of ['required-examples-compatibility','required-typescript-compatibility']) {
-    const alias=spawnSync('bash',['-e','-c',workflow.jobs[key].steps[0].run],{env:{...process.env,VERSION_MODE:'full',VERSION_PROOF:'',UPSTREAM_RESULT:'success',EXECUTION_GATE:accepted?'success':'failure'},encoding:'utf8'});
-    assert.equal(alias.status===0,accepted);
+});
+
+test('obsolete compatibility jobs are absent and all workflow dependencies still resolve',()=>{
+  const unit=YAML.parse(fs.readFileSync(new URL('../.github/workflows/rust-test.yaml',import.meta.url),'utf8'));
+  for(const key of ['type-changesets-compatibility','required-examples-compatibility','required-typescript-compatibility'])assert.ok(!workflow.jobs[key]);
+  assert.ok(!unit.jobs['required-linux-test-compatibility']);
+  for(const value of [workflow,unit])for(const job of Object.values(value.jobs)) {
+    const needs=typeof job.needs==='string'?[job.needs]:job.needs??[];
+    for(const dependency of needs)assert.ok(value.jobs[dependency],dependency);
   }
-  // Independent policy context stays failed in every scenario; success here is
-  // strictly actual suite evidence acceptance, never a fabricated policy pass.
-  const policy=Object.fromEntries(compatibility.needs.map(key=>[key,{result:key==='changesets-check'?'failure':'success',outputs:{mode:'full'}}]));
-  assert.notEqual(compatibilityRun(policy).status,0);
+  for(const key of ['type-check','changesets-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test','docs-acceptance','performance-report','performance-summary','incremental-execution-gate'])assert.ok(workflow.jobs[key],key);
+  assert.ok(unit.jobs['cargo-check'].steps.some(step=>step.run?.includes('cargo check')));
+  assert.ok(unit.jobs['cargo-test'].steps.some(step=>step.run?.includes('cargo test')));
 });

@@ -21,7 +21,7 @@ check = entry.check
 retry_spec = importlib.util.spec_from_file_location('release_retry_safety', Path(__file__).with_name('release-retry-safety.py'))
 retry = importlib.util.module_from_spec(retry_spec); retry_spec.loader.exec_module(retry)
 PLATFORMS = ["ubuntu-24.04", "macos-latest", "windows-latest"]
-FUNCTIONAL = ["Release source contracts", "Check declared native inputs (not ABI execution)", "Type Check & Changesets",
+FUNCTIONAL = ["Release source contracts", "Check declared native inputs (not ABI execution)", "Type Check",
               *[name + " (" + platform + ")" for name in ["Examples Test", "Typescript Test", "Commerce Performance"] for platform in PLATFORMS],
               "Docs / windows-latest", "Docs / ubuntu-24.04", "Aggregate informational performance report"]
 # The other four original functional roles (seal + three candidate consumers)

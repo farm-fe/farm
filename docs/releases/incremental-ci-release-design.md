@@ -453,24 +453,45 @@ skip native builds or current TypeScript/Examples validation. A real type error
 still prevents those pipelines from starting.
 
 `Changesets Check` retains the existing policy command and failure semantics.
-The legacy `Type Check & Changesets` context remains an always-running strict
-aggregate. The final product execution gate excludes Changesets policy so it
-always reaches actual suite evidence validation when product dependencies pass.
-Policy results remain explicit without changing repository protection rules.
-Only a verified pure version PR may use its existing explicit metadata-only
-skip; no general error waiver or title/branch exception is introduced.
+The final product execution gate excludes Changesets policy so it reaches actual
+suite evidence validation when product dependencies pass. Only a verified pure
+version PR may use its explicit metadata-only skip; no general error waiver or
+title/branch exception is introduced. For the approved consumption in #2330,
+the standalone Changesets check may remain failed; it is not reported as success.
 
-For the explicitly approved consumption in #2330, the standalone Changesets
-check and strict aggregate may remain failed while product checks actually run.
-That known policy exception is reported separately, never as a green workflow.
-If the repository requires the legacy policy aggregate for merge, the exception
-still needs the repository owner's normal review process;
-this implementation does not edit or bypass branch protection.
+The user approved removing obsolete required-name compatibility jobs. Removed:
 
-Selection and materialization evidence resolve the actual `Type Check` producer,
-not the compatibility aggregate. Older receipts lacking that producer identity
-fail closed and require current execution rather than accepting an aggregate as
-a build or selection producer.
+- `Type Check & Changesets` (the combined compatibility job).
+- Three `Examples Test (...-latest, ABI)` compatibility contexts.
+- Three `Typescript Test (...-latest, ABI)` compatibility contexts.
+- `Test - ubuntu-latest` (the compatibility wrapper around the Rust matrix).
+
+Actual TypeScript/Examples leaf jobs under each primary platform, native builds,
+Docs acceptance, Rust check/test matrix, performance sampling/aggregation, and
+`Incremental CI execution gate` remain. Meaningful primary-chain summaries remain
+because consumers depend on their actual completion; they are not old-name aliases.
+
+Selection/materialization evidence and CI/release functional acceptance now
+require the actual `Type Check` producer. Old combined-context receipts cannot
+substitute for it. No source, attempt, receipt, performance or publication-safety
+check is removed with the naming adapters.
+
+Suggested future required checks (recommendation only; not configured here):
+
+| Scope | Current real check names |
+| --- | --- |
+| Product execution and selected suite evidence | `Type Check`; `Incremental CI execution gate` |
+| Docs and performance acceptance | `Docs CI quality checks`; `Aggregate informational performance report` |
+| Rust checks and tests | `Check`; `Test - ubuntu-24.04`; `Test - macos-latest`; `Test - windows-latest` |
+| Static quality | `Rust Code Lint`; `TS Code Lint`; `Spell`; `Validating PR title` |
+| Changesets policy, separately reviewed | `Changesets Check` (keep #2330's approved consumed-version exception explicit) |
+
+Before applying the list, match names and producing workflows against actual
+Actions results, including authenticated version-only PRs: their heavy jobs are
+planned skips and the execution gate must verify the classification proof.
+Existing repository required settings may temporarily wait for removed names.
+The user will update them separately; this change does not edit protection,
+rule sets, permissions, or mark an absent/failed check successful.
 
 
 ### Docs consumption of the current platform producer

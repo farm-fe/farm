@@ -67,6 +67,17 @@ class Contracts(unittest.TestCase):
         self.assertEqual(len(module.FUNCTIONAL)+4,19)
         result=self.verify(self.fixture());self.assertTrue(result['functionalAcceptanceVerified']);self.assertFalse(result['buildBytesReused'])
 
+    def test_real_type_check_is_required_instead_of_retired_combined_context(self):
+        self.assertIn('Type Check',module.FUNCTIONAL)
+        self.assertNotIn('Type Check & Changesets',module.FUNCTIONAL)
+        for mutation in ['old-name','failure','missing']:
+            data=self.fixture(); rows=data[3][10]
+            actual=next(row for row in rows if row['name']=='Type Check')
+            if mutation=='old-name':actual['name']='Type Check & Changesets'
+            elif mutation=='failure':actual['conclusion']='failure'
+            else:rows.remove(actual)
+            with self.assertRaises(ValueError):self.verify(data)
+
     def test_skipped_docs_or_missing_performance_is_not_success(self):
         data=self.fixture();data[3][10]=[row for row in data[3][10] if row['name']!='Commerce Performance (macos-latest)']
         with self.assertRaises(ValueError):self.verify(data)

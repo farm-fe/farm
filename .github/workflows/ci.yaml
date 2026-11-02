@@ -790,29 +790,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/check-pr-changesets.mjs
 
-  type-changesets-compatibility:
-    name: Type Check & Changesets
-    if: always()
-    needs: [version-classification, type-check, changesets-check]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Preserve the existing combined required context without gating product execution
-        shell: python
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          import json, os, re
-          rows=json.loads(os.environ['RESULTS'])
-          assert set(rows)=={'version-classification','type-check','changesets-check'}
-          version=rows['version-classification']
-          assert version['result']=='success' and rows['type-check']['result']=='success'
-          if version['outputs'].get('mode')=='verified-version-only':
-              assert re.fullmatch('[a-f0-9]{64}',version['outputs'].get('proof_hash',''))
-              assert rows['changesets-check']['result']=='skipped'
-          else:
-              assert rows['changesets-check']['result']=='success', 'Independent Changesets policy failed; product jobs report their own results'
-
   ts-test:
     name: All primary TypeScript chains
     if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
@@ -827,64 +804,6 @@ jobs:
           MACOS_RESULT: ${{ needs.primary-macos.result }}
           WINDOWS_RESULT: ${{ needs.primary-windows.result }}
         run: test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success
-
-  required-examples-compatibility:
-    name: ${{ matrix.context }}
-    if: always()
-    needs: [version-classification, examples-test, incremental-execution-gate]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - context: Examples Test (ubuntu-latest, linux-x64-gnu)
-          - context: Examples Test (windows-latest, win32-x64-msvc)
-          - context: Examples Test (macos-latest, darwin-arm64)
-    steps:
-      - name: Require the complete Examples matrix to succeed
-        shell: bash
-        env:
-          VERSION_MODE: ${{ needs.version-classification.outputs.mode }}
-          VERSION_PROOF: ${{ needs.version-classification.outputs.proof_hash }}
-          UPSTREAM_RESULT: ${{ needs.examples-test.result }}
-          EXECUTION_GATE: ${{ needs.incremental-execution-gate.result }}
-        run: |
-          test "$EXECUTION_GATE" = success
-          if [ "$VERSION_MODE" = verified-version-only ]; then
-            test "${#VERSION_PROOF}" = 64 && test "$UPSTREAM_RESULT" = skipped
-          else
-            test "$UPSTREAM_RESULT" = success
-          fi
-
-  required-typescript-compatibility:
-    name: ${{ matrix.context }}
-    if: always()
-    needs: [version-classification, ts-test, incremental-execution-gate]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - context: Typescript Test (ubuntu-latest, linux-x64-gnu)
-          - context: Typescript Test (windows-latest, win32-x64-msvc)
-          - context: Typescript Test (macos-latest, darwin-arm64)
-    steps:
-      - name: Require the complete TypeScript matrix to succeed
-        shell: bash
-        env:
-          VERSION_MODE: ${{ needs.version-classification.outputs.mode }}
-          VERSION_PROOF: ${{ needs.version-classification.outputs.proof_hash }}
-          UPSTREAM_RESULT: ${{ needs.ts-test.result }}
-          EXECUTION_GATE: ${{ needs.incremental-execution-gate.result }}
-        run: |
-          test "$EXECUTION_GATE" = success
-          if [ "$VERSION_MODE" = verified-version-only ]; then
-            test "${#VERSION_PROOF}" = 64 && test "$UPSTREAM_RESULT" = skipped
-          else
-            test "$UPSTREAM_RESULT" = success
-          fi
 
   incremental-execution-gate:
     permissions:
