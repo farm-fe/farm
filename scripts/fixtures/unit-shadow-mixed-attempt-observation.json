@@ -1,0 +1,35 @@
+{
+  "runId": 41449476925,
+  "consumerAttempt": 2,
+  "headSHA": "23c2539376a326372c81390db0c1dd3b69aa3361",
+  "testedSHA": "ef92dbc0f77330fe7336c29f7085fea3095dd3c6",
+  "planner": {
+    "originalJobId": 125290966219,
+    "latestListedJobId": 125325946356,
+    "artifactId": 13143797031,
+    "artifactName": "impact-plan-ef92dbc0f77330fe7336c29f7085fea3095dd3c6-1",
+    "logFinalizedAt": "2026-11-02T13:02:25.3088248Z"
+  },
+  "linux": {
+    "jobId": 125325944456,
+    "artifactId": 13148903613,
+    "artifactName": "impact-cell-ef92dbc0f77330fe7336c29f7085fea3095dd3c6-cargo-test-ubuntu-24.04-2",
+    "digest": "e2a183aea2de36a02ae3e4b105fb079944eb72b0c0991ed7e536033f7ff5f8b9"
+  },
+  "check": {
+    "latestListedJobId": 125325947499,
+    "artifactId": 13144765076,
+    "artifactName": "impact-cell-ef92dbc0f77330fe7336c29f7085fea3095dd3c6-cargo-check-single-1"
+  },
+  "summary": {
+    "jobId": 125335693099,
+    "requestedPlan": "impact-plan-ef92dbc0f77330fe7336c29f7085fea3095dd3c6-2",
+    "downloadedReceiptCount": 1,
+    "planError": "FileNotFoundError",
+    "secondaryError": "identity-mismatch:headSHA"
+  },
+  "limitations": [
+    "Evidence is permitted direct job logs and latest job list, not downloaded ZIP contents.",
+    "Original and latest API started_at/completed_at fields unavailable; no exact API timeline replay or release carried-ID authorization is claimed."
+  ]
+}

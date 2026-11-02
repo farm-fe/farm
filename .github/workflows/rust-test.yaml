@@ -60,6 +60,9 @@ jobs:
   impact-summary:
     name: Incremental Unit CI shadow summary
     continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
     if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification, impact-plan, cargo-check, cargo-test]
     runs-on: ubuntu-24.04
@@ -71,19 +74,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
-          path: impact-plan
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          pattern: impact-cell-${{ github.sha }}-*-${{ github.run_attempt }}
-          path: impact-cell-receipts
       - name: Report current Unit scope outcomes without publication authority
         if: always()
         env:
+          CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
+          GH_TOKEN: ${{ github.token }}
           CI_IMPACT_SCOPE: unit
           CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
         run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json

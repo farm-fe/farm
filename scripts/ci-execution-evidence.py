@@ -53,7 +53,7 @@ def fetch_json_artifact(transport, run, name, member="ledger.json"):
         import io
         import stat
         import zipfile
-        check(member in ["ts.json", "browser.json", "result.json", "selection.json"], "Unexpected execution receipt member")
+        check(member in ["ts.json", "browser.json", "result.json", "selection.json", "plan.json", "receipt.json"], "Unexpected execution receipt member")
         check(len(body) == artifact["size_in_bytes"] and artifact["digest"] == "sha256:" + hashlib.sha256(body).hexdigest(), "Execution artifact bytes differ")
         with zipfile.ZipFile(io.BytesIO(body)) as archive:
             entries = archive.infolist()

@@ -104,10 +104,22 @@ def read_observations(directory):
 
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--plan", required=True); parser.add_argument("--receipts"); parser.add_argument("--output", required=True); args = parser.parse_args()
+    resolved = None
+    resolution_error = None
     try:
-        plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
-    except (OSError, ValueError) as error:
-        plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False, "planHash": None, "unavailable": receipt.report_error("read-plan", error)}
+        if os.environ.get('CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS') == 'true':
+            resolver_spec = importlib.util.spec_from_file_location('unit_shadow_inputs', Path(__file__).with_name('ci-unit-shadow-inputs.py'))
+            resolver = importlib.util.module_from_spec(resolver_spec); resolver_spec.loader.exec_module(resolver)
+            resolved = resolver.current(os.environ)
+            plan = resolved[0]
+        else:
+            plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
+    except (OSError, ValueError, KeyError) as error:
+        if hasattr(error, 'shadow_plan'):
+            plan = error.shadow_plan
+            resolution_error = receipt.report_error('read-observations', error)
+        else:
+            plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False, "planHash": None, "unavailable": receipt.report_error("read-plan", error)}
     needs = json.loads(os.environ["CI_IMPACT_NEEDS"])
     try:
         event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
@@ -124,7 +136,30 @@ def main():
         report["allExpectedJobsSuccessful"] = False
     report["cellBindingsVerified"] = False; report["cellOutcomes"] = []
     report["requiredCellFailures"] = []; report["allRequiredCellsSuccessful"] = False
+    report['inputResolutionUnavailable'] = resolution_error
     operation = "read-event"
+    try:
+        if report['planUnavailable'] or resolution_error:
+            # Preserve the original missing-plan reason; do not compare a receipt
+            # against an identity-free placeholder and mislabel its source.
+            raise receipt.BindingError('plan-unavailable')
+        if resolved is not None:
+            _, observations, bindings = resolved
+            report['originalProducerBindings'] = bindings
+            report['cellBindingsVerified'] = True
+            report['cellOutcomes'], report['requiredCellFailures'] = cell_outcomes(observations)
+            report['allRequiredCellsSuccessful'] = not report['requiredCellFailures']
+        else:
+            validate_local_observations(plan, report, args)
+    except Exception as error:
+        if not report['planUnavailable'] and not resolution_error:
+            report['cellBindingsError'] = receipt.report_error(operation, error)
+    report["allExpectedJobsSuccessful"] = report["allExpectedJobsSuccessful"] and report["cellBindingsVerified"] and report["allRequiredCellsSuccessful"]
+    write_report(report, args.output)
+
+
+def validate_local_observations(plan, report, args):
+    operation = 'read-event'
     try:
         event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
         operation = "git-tree"
@@ -158,7 +193,10 @@ def main():
     except Exception as error:
         report["cellBindingsError"] = receipt.report_error(operation, error)
     report["allExpectedJobsSuccessful"] = report["allExpectedJobsSuccessful"] and report["cellBindingsVerified"] and report["allRequiredCellsSuccessful"]
-    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+
+def write_report(report, destination):
+    output = Path(destination); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as stream:
