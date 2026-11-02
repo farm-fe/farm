@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { gnuCompilerEnvironmentFields } from './formal-native-environment.mjs';
 import { captureRuntime, captureProducts, captureProductProof, proofDirectory } from './ci-native-capture.mjs';
 
 test('runtime capture measures only bounded tools and never publishes arbitrary environment', () => {
@@ -230,4 +231,34 @@ test('Apple formal release strip setting is identical for PR and main and finger
   const before=captureRuntime({env:{},run}),after=captureRuntime({env:{CARGO_PROFILE_RELEASE_STRIP:'none'},run});
   assert.notEqual(before.formalFlagsHash,after.formalFlagsHash);assert.notEqual(before.flagsHash,after.flagsHash);assert.deepEqual(after.unboundBuildVariables,[]);
  }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('exact GNU image environment is measured after the real shell normalization', () => {
+  const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/docs-gnu-image-environment.json',import.meta.url),'utf8'));
+  const imageEnv=Object.fromEntries(fixture.environment.map(value=>{const i=value.indexOf('=');return [value.slice(0,i),value.slice(i+1)];}));
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'farm-image-env-'));
+  try {
+    const bin=path.join(root,'bin');fs.mkdirSync(bin);fs.writeFileSync(path.join(bin,'node'),'#!/bin/sh\nexit 0\n',{mode:0o755});
+    const source=fs.readFileSync(new URL('./ci-build-rust-artifacts.sh',import.meta.url),'utf8');
+    const setup=source.slice(0,source.indexOf('if [ "${FARM_NATIVE_PROOF_MODE'));
+    const env={...imageEnv,PATH:bin+path.delimiter+process.env.PATH,FARM_BUILD_ABI:'linux-x64-gnu',FARM_BUILD_TARGET:'x86_64-unknown-linux-gnu',FARM_BUILD_PROFILE:'ci'};
+    const result=spawnSync('sh',['-c',setup+'\nenv'],{cwd:root,env,encoding:'utf8'});assert.equal(result.status,0,result.stderr);
+    const actual=Object.fromEntries(result.stdout.trim().split('\n').map(value=>{const i=value.indexOf('=');return [value.slice(0,i),value.slice(i+1)];}));
+    assert.equal(actual.CC,undefined);assert.equal(actual.CC_x86_64_unknown_linux_gnu,undefined);
+    assert.equal(actual.CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER,'gcc');
+    const capture=extra=>captureRuntime({platform:'linux',env:{...actual,...extra},run:()=>({status:0,stdout:'measured'})});
+    assert.deepEqual(capture({}).unboundBuildVariables,[]);assert.deepEqual(capture({}).errors,[]);
+    for(const key of gnuCompilerEnvironmentFields) {
+      assert.notEqual(capture({}).formalFlagsHash,capture({[key]:'changed'}).formalFlagsHash,key);
+    }
+    assert.deepEqual(capture({CARGO_UNREVIEWED:'1'}).unboundBuildVariables,['CARGO_UNREVIEWED']);
+    assert.deepEqual(capture({TARGET_UNREVIEWED:'1'}).unboundBuildVariables,['TARGET_UNREVIEWED']);
+  } finally { fs.rmSync(root,{recursive:true,force:true}); }
+});
+
+test('Windows capture still binds compiler selection and rejects unknown compiler flags', () => {
+  const capture=env=>captureRuntime({platform:'win32',env:{FARM_BUILD_ABI:'win32-x64-msvc',FARM_BUILD_TARGET:'x86_64-pc-windows-msvc',FARM_BUILD_PROFILE:'ci',...env},run:()=>({status:0,stdout:'measured'})});
+  assert.deepEqual(capture({}).unboundBuildVariables,[]);
+  assert.notEqual(capture({CXX:'cl'}).formalFlagsHash,capture({CXX:'clang-cl'}).formalFlagsHash);
+  assert.deepEqual(capture({CXX_UNREVIEWED:'x'}).unboundBuildVariables,['CXX_UNREVIEWED']);
 });

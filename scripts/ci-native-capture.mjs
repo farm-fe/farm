@@ -33,7 +33,7 @@ export function captureRuntime({ env = process.env, run = spawnSync, cwd = root,
   const flagsHash = hash(JSON.stringify(selected));
   const permittedBuildVariables = new Set([...compilerEnvironmentFields,...buildVariables, 'CARGO_HOME', 'CARGO_TARGET_DIR', 'RUSTUP_HOME',
     'CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER']);
-  const unboundBuildVariables = Object.keys(env).filter(name => /^(CARGO_|RUST|CC(?:_|$)|CXX(?:_|$)|AR(?:_|$)|LD(?:_|$)|CFLAGS(?:_|$)|CXXFLAGS(?:_|$)|CPPFLAGS(?:_|$)|LDFLAGS(?:_|$))/.test(name)
+  const unboundBuildVariables = Object.keys(env).filter(name => /^(CARGO_|RUST|CC(?:_|$)|CXX(?:_|$)|AR(?:_|$)|LD(?:_|$)|CFLAGS(?:_|$)|CXXFLAGS(?:_|$)|CPPFLAGS(?:_|$)|LDFLAGS(?:_|$)|TARGET_|C_INCLUDE_PATH|X86_64_UNKNOWN_LINUX_GNU_)/.test(name)
     && !permittedBuildVariables.has(name)).sort();
   const target = env.FARM_BUILD_TARGET;
   const linkerKey = target ? `CARGO_TARGET_${target.toUpperCase().replaceAll('-', '_')}_LINKER` : null;

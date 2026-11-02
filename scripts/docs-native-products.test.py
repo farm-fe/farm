@@ -20,20 +20,26 @@ class DocsProducts(unittest.TestCase):
         cls.source = docs.formal.evidence.source_reader(docs.formal.chain.impact.git('rev-parse', 'HEAD').decode().strip())
         cls.wanted = docs.inputs(cls.source, 'darwin-arm64')
 
-    def fixture(self, mutate=None):
-        self.abi = 'darwin-arm64'
+    def fixture(self, mutate=None, abi='darwin-arm64'):
+        self.abi = abi
+        wanted = docs.inputs(self.source, abi)
         self.run = {'id': 10, 'run_attempt': 2, 'path': '.github/workflows/ci.yaml', 'event': 'push',
                     'head_sha': self.source['sha'], 'repository': {'id': 1}, 'head_repository': {'id': 1}}
         self.job = {'steps': [{'name': docs.UPLOAD, 'status': 'completed', 'conclusion': 'success', 'started_at': '1', 'completed_at': '3'}]}
         with tempfile.TemporaryDirectory() as root:
             records=[]
-            for row in self.wanted.values():
-                body=b'\xcf\xfa\xed\xfe\x0c\x00\x00\x01'+row['owner'].encode()
+            for row in wanted.values():
+                if abi.startswith('linux'):
+                    body=b'\x7fELF\x02\x01'+bytes(12)+(62).to_bytes(2,'little')
+                elif abi.startswith('win32'):
+                    body=b'MZ'+bytes(58)+(64).to_bytes(4,'little')+b'PE\0\0'+(0x8664).to_bytes(2,'little')
+                else: body=b'\xcf\xfa\xed\xfe\x0c\x00\x00\x01'
+                body += row['owner'].encode()
                 file=Path(root,row['file']);file.parent.mkdir(parents=True,exist_ok=True);file.write_bytes(body)
                 records.append({**row,'bytes':len(body),'sha256':hashlib.sha256(body).hexdigest()})
             capture={'originBuildSHA':self.source['sha'],'runId':'10','runAttempt':'2','abi':self.abi,'profile':'ci','records':records,
                      'runtimeCapture':{'abi':self.abi,'target':docs.formal.paths.TARGETS[self.abi],'profile':'ci','rustc':'pinned','cargo':'pinned',
-                                       'runtime':{'node':'v22.20.0'},'activeToolchain':self.wanted['@farmfe/core']['recipe']['toolchain']+'-aarch64-apple-darwin','errors':[],'unboundBuildVariables':[],'formalFlagsHash':'a'*64}}
+                                       'runtime':{'node':'v22.20.0'},'activeToolchain':wanted['@farmfe/core']['recipe']['toolchain']+'-'+docs.formal.paths.TARGETS[abi],'errors':[],'unboundBuildVariables':[],'formalFlagsHash':'a'*64}}
             manifest,bodies=docs.produce(self.source,self.abi,capture,Path(root),10,2)
         if mutate:mutate(manifest,bodies)
         stream=io.BytesIO()
@@ -107,6 +113,19 @@ class DocsProducts(unittest.TestCase):
         self.assertEqual(result,({},docs.OWNERS,'fork-source-build'))
         self.run['head_sha']='f'*40
         with self.assertRaisesRegex(ValueError,'source differs'):docs.resolve(None,self.run,self.source,'linux-x64-gnu')
+
+    def test_linux_windows_seal_and_consume_keep_complete_compiler_evidence(self):
+        for abi in ['linux-x64-gnu','win32-x64-msvc']:
+            with self.subTest(abi=abi):
+                body=self.fixture(abi=abi)
+                reused,missing=self.inspect(body)
+                self.assertEqual(len(reused),12); self.assertEqual(missing,[])
+                for field,value in [('errors',None),('errors',[{'tool':'rustc','status':1}]),
+                                    ('unboundBuildVariables',None),('unboundBuildVariables',['CXX_UNKNOWN']),
+                                    ('activeToolchain','stable'),('formalFlagsHash','')]:
+                    def mutate(manifest,bodies):manifest['capture']['runtimeCapture'][field]=value
+                    body=self.fixture(mutate,abi=abi)
+                    with self.assertRaises(ValueError):self.inspect(body)
 
     def test_supported_platform_closure_is_exact(self):
         for abi in docs.PLATFORMS:self.assertEqual(set(docs.inputs(self.source,abi)),set(docs.OWNERS))

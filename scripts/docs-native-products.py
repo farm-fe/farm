@@ -40,8 +40,9 @@ def capture_identity(capture, source, abi, run_id, attempt):
     check(runtime.get('rustc') and runtime.get('cargo') and runtime.get('runtime', {}).get('node') == 'v22.20.0', 'Docs measured tools missing')
     check(re.fullmatch('[a-f0-9]{64}', runtime.get('formalFlagsHash') or ''), 'Docs formal flags missing')
     channel = tomllib.loads(source['files']['rust-toolchain.toml'].decode())['toolchain']['channel']
-    check(runtime.get('activeToolchain', '').startswith(channel + '-') and runtime.get('errors') == []
-          and runtime.get('unboundBuildVariables') == [], 'Docs compiler policy or measured flags incomplete')
+    check(runtime.get('activeToolchain', '').startswith(channel + '-'), 'Docs pinned compiler policy differs')
+    check(runtime.get('errors') == [], 'Docs compiler measurement errors or missing evidence')
+    check(runtime.get('unboundBuildVariables') == [], 'Docs unbound build variables or missing evidence')
     # This is delivery of the exact current producer, not compatibility with a
     # different compiler host. The consumer does not compile reused products.
     # Cross-run decisions remain exclusively inside the formal producer resolver.
