@@ -37,12 +37,12 @@ test('all retained Docs tests belong to explicit source/distribution/compiled/br
 test('E2E calls Docs CI quality checks and keeps both OS lanes within the CI profile', async () => {
   const ci = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const docs = await fs.readFile(new URL('../.github/workflows/farm-docs.yaml', import.meta.url), 'utf8');
-  assert.match(ci, /uses: \.\/\.github\/workflows\/farm-docs.yaml/);
+  assert.match(ci, /needs: \[version-classification, primary-linux, primary-windows\]/);
   assert.match(docs, /workflow_call:/); assert.doesNotMatch(docs, /^  pull_request:/m);
-  assert.match(docs, /os: \[windows-latest, ubuntu-24.04\]/);
-  assert.match(docs, /run: pnpm --dir packages\/core run build:rs:publish/);
+  assert.match(docs, /windows-latest/); assert.match(docs, /ubuntu-24.04/); assert.match(docs, /fromJSON\(inputs.platforms/);
+  assert.match(docs, /node scripts\/docs-native-build.mjs/);
   assert.match(docs, /FARM_BUILD_PROFILE: ci/);
-  assert.match(docs, /--profile release/);
+  assert.match(docs, /scripts\/docs-native-products.py consume/);
   assert.match(docs, /cargo test .*farmfe_docs_snapshot/);
   assert.match(docs, /CODEX_DOCS_NATIVE_BASELINE/);
   const platform = await fs.readFile(new URL('../.github/workflows/ci-primary-platform.yaml', import.meta.url), 'utf8');
@@ -54,7 +54,7 @@ test('E2E calls Docs CI quality checks and keeps both OS lanes within the CI pro
 
 test('Docs native baseline records the formal product recipe while retaining CI acceptance role',async()=>{
   const source=await fs.readFile(new URL('../.github/workflows/farm-docs.yaml',import.meta.url),'utf8');
-  assert.match(source,/FARM_BUILD_PROFILE: ci/);assert.match(source,/run build:rs:publish/);assert.match(source,/--profile release/);
+  assert.match(source,/FARM_BUILD_PROFILE: ci/);assert.match(source,/scripts\/docs-native-build.mjs/);assert.match(source,/scripts\/docs-native-products.py consume/);
   assert.match(source,/profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false/);
   assert.doesNotMatch(source,/profile:'release'|ciProfileCompatibility:'not-yet-validated'/);
 });

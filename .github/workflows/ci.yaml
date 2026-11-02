@@ -194,13 +194,16 @@ jobs:
           artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
 
   docs-acceptance:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
     name: Docs CI quality checks
-    # Documentation validation is part of CI and produces no release candidates.
-    needs: [version-classification, release-contract-tests, performance-contract-tests]
-    uses: ./.github/workflows/farm-docs.yaml
-    permissions:
-      contents: read
+    needs: [version-classification, primary-linux, primary-windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require both platform Docs chains
+        env:
+          LINUX_RESULT: ${{ needs.primary-linux.result }}
+          WINDOWS_RESULT: ${{ needs.primary-windows.result }}
+        run: test "$LINUX_RESULT" = success && test "$WINDOWS_RESULT" = success
 
   performance-contract-tests:
     if: needs.version-classification.outputs.mode != 'verified-version-only'

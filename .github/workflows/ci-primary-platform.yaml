@@ -35,6 +35,16 @@ jobs:
         shell: bash
         run: test "$NATIVE_RESULT" = success
 
+  docs:
+    name: Docs CI quality checks
+    if: always() && needs.native-disposition.result == 'success' && inputs.abi != 'darwin-arm64'
+    needs: [native, native-disposition]
+    uses: ./.github/workflows/farm-docs.yaml
+    with:
+      platforms: ${{ format('[{{"os":"{0}","abi":"{1}"}}]', inputs.os, inputs.abi) }}
+      consume_native: true
+
+
   examples-test:
     name: Examples Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}

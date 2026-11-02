@@ -470,3 +470,33 @@ Selection and materialization evidence resolve the actual `Type Check` producer,
 not the compatibility aggregate. Older receipts lacking that producer identity
 fail closed and require current execution rather than accepting an aggregate as
 a build or selection producer.
+
+
+### Docs consumption of the current platform producer
+
+Linux and Windows Docs now start inside their matching primary platform chain
+after that native producer succeeds, in parallel with TypeScript and Examples.
+They do not wait for the other primary platform or the secondary native matrix.
+The existing top-level Docs context aggregates the two platform chains.
+
+The native producer seals Core plus the eleven Docs plugin payloads with the
+current source SHA/tree, actual run attempt, fixed toolchain, formal recipe,
+Cargo/npm dependency fingerprints, ABI cohort, and individual byte digests.
+The consumer authenticates the latest actual successful producer and its upload
+step, validates the artifact archive and every member, then materializes only
+matching owners. This is delivery within the current CI run; selection of older
+main products remains exclusively in the existing formal producer resolver.
+
+Missing/expired/deleted artifacts or incompatible owner fingerprints cause only
+the required owners to be built with the shared formal recipe. The localized
+source build uses the release recipe's existing owner-scope guard; it does not
+run publication or change the Docs CI acceptance role. Source/attempt/digest
+errors and failed/skipped producers are rejected. Fork PRs and standalone Docs
+retain source building without inheriting artifact trust. Reused bytes are
+guarded before and after any fallback and throughout the existing Docs checks.
+
+JS packages, the website, SSR, browser, notices, and Docs functional validation
+remain mandatory. Cargo unit/integration tests still compile their own test
+binaries; native payload reuse does not replace those tests or reuse results.
+The delivery bundle duplicates twelve already-uploaded payloads for bounded,
+atomic verification; it does not add another native compilation.

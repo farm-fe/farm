@@ -37,7 +37,7 @@ test('one fixed-main Release contains npm candidate and consumer validation befo
 
 test('Docs remains a CI quality lane using formal recipes, not a release reference',()=>{
   const docs=read('.github/workflows/farm-docs.yaml');
-  assert.match(docs,/FARM_BUILD_PROFILE: ci/);assert.match(docs,/run build:rs:publish/);assert.match(docs,/--profile release/);
+  assert.match(docs,/FARM_BUILD_PROFILE: ci/);assert.match(docs,/scripts\/docs-native-build.mjs/);assert.match(docs,/scripts\/docs-native-products.py consume/);
   assert.doesNotMatch(docs,/run build:rs\n|release-profile reference/);
-  assert.match(docs,/os: \[windows-latest, ubuntu-24.04\]/);
+  assert.match(docs,/windows-latest/);assert.match(docs,/ubuntu-24.04/);
 });
