@@ -8,13 +8,13 @@
     "sha256": "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502"
   },
   "toolchain": "nightly-2026-04-10",
-  "target": "x86_64-pc-windows-msvc",
+  "target": "aarch64-apple-darwin",
   "rkyv": "0.8.16",
   "downcastRs": "2.0.2",
   "workspacePatch": false,
-  "sourceCommit": "19ad1241c3f9c77f51f9d92a05f32adc40673a65",
+  "sourceCommit": "54882a576a28161c14313780af547c053fc02b0e",
   "traitSource": "crates/core/src/cache/cacheable.rs",
-  "traitSourceSha256": "4b2580bb6fd98721148f4466040567201f009cc6d74c60e26579741380bb9373",
+  "traitSourceSha256": "69ef34d09a2cc6b0c282c5418f5787c780313086db8886defbaf61f0f6c658fc",
   "fixtureFiles": [
     {
       "file": "scripts/release-fixtures/macro-consumer/Cargo.toml",
@@ -29,15 +29,24 @@
       "sha256": "51096b0458120c836b59839aa5a711afec087f7f64673d872da8f60abb6125da"
     }
   ],
-  "log": "docs/release-evidence/published-macro-compat.txt",
-  "logSha256": "7ec518bba0691ec7fd22a93e0d3adf478c212c486a4ca6c9c3c6eb254d91b04e",
+  "log": "docs/release-evidence/published-macro-compat-macos-formatted.txt",
+  "logSha256": "2c893adf8154cfabe045eb91e50f85bf1c0ed277b1ffb1d86dccfa31b9f9f9ed",
   "tests": {
     "passed": 2,
     "failed": 0,
     "structRoundTrip": true,
     "enumRoundTrip": true
   },
-  "finishedUtc": "2026-10-27T00:43:58.777Z",
+  "finishedUtc": "2026-11-02T00:54:22.620109+00:00",
   "hashEncoding": "UTF-8 text with LF line endings",
-  "logRedaction": "Local consumer and target paths replaced; compiler/test output otherwise retained"
+  "logRedaction": "Local consumer and target paths replaced; compiler/test output otherwise retained",
+  "previousEvidence": {
+    "sourceCommit": "19ad1241c3f9c77f51f9d92a05f32adc40673a65",
+    "target": "x86_64-pc-windows-msvc",
+    "traitSourceSha256": "4b2580bb6fd98721148f4466040567201f009cc6d74c60e26579741380bb9373",
+    "log": "docs/release-evidence/published-macro-compat.txt",
+    "logSha256": "7ec518bba0691ec7fd22a93e0d3adf478c212c486a4ca6c9c3c6eb254d91b04e",
+    "finishedUtc": "2026-10-27T00:43:58.777Z"
+  },
+  "contractComparison": "Current Cacheable trait and impl_downcast block exactly match the tested fixture"
 }

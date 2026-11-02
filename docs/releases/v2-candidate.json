@@ -23,7 +23,7 @@
         "version": "2.0.0",
         "manifestPath": "packages/create-farm/package.json",
         "manifestSha256": "1150ee8a1b6ac555f240ca5d3e370a7d1c41e55f237ba72621db51e278ee2886",
-        "sourceSha256": "471ac50de2ac0b1ded4429b9216a7a81cf3948ab429496fc0345618858b21f59"
+        "sourceSha256": "c4e4d3efdd584b923c9a87cb0e79680e988bdfcb4596f48d484c0194f078c280"
       },
       {
         "name": "create-farm-plugin",
