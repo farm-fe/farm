@@ -55,7 +55,7 @@ export async function measurementResolver({ api, repository, summary, producerSH
     if (raw.status === 'complete') assert.equal(execution.job.conclusion, 'success', 'Complete measurement producer failed');
     const reused = raw.metadata.nativeReuse != null;
     assert.ok(!reused || abi === 'linux-x64-gnu', 'Unsupported reuse platform');
-    const native = actualJob(reused ? 'Type Check & Changesets' : nativeJob); assert.equal(native.job.conclusion, 'success');
+    const native = actualJob(reused ? 'Type Check' : nativeJob); assert.equal(native.job.conclusion, 'success');
     const proof = await archive(reused ? `ci-consumer-native-proof-${run.id}-${native.attempt}` : `native-shadow-${producerSHA}-${abi}-${native.attempt}`, native);
     const productBytes = proof.files.get(reused ? 'consumer.json' : 'products.json'); assert.ok(productBytes && productBytes.length <= 2 * 1024 * 1024, 'Exact native products missing');
     const products = JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(productBytes));

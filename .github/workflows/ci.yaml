@@ -664,7 +664,7 @@ jobs:
 
   type-check:
     needs: [version-classification]
-    name: Type Check & Changesets
+    name: Type Check
     outputs:
       suite_selection_hash: ${{ steps.ci-suites.outputs.selection_hash }}
     runs-on: ubuntu-24.04
@@ -743,11 +743,6 @@ jobs:
       - name: Type Check With Tsc
         if: needs.version-classification.outputs.mode != 'verified-version-only'
         run: pnpm run --filter "@farmfe/*" type-check
-      - name: Changesets Check
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/check-pr-changesets.mjs
       - name: Preserve actual cell receipt (shadow only)
         if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
         continue-on-error: true
@@ -762,6 +757,58 @@ jobs:
         env:
           PROOF: ${{ needs.version-classification.outputs.proof_hash }}
         run: test "${#PROOF}" = 64 && echo 'Pure version preparation; heavy CI not applicable.'
+
+  changesets-check:
+    name: Changesets Check
+    needs: [version-classification]
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Changesets dependencies without running product builds
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check Changesets policy independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/check-pr-changesets.mjs
+
+  type-changesets-compatibility:
+    name: Type Check & Changesets
+    if: always()
+    needs: [version-classification, type-check, changesets-check]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Preserve the existing combined required context without gating product execution
+        shell: python
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          import json, os, re
+          rows=json.loads(os.environ['RESULTS'])
+          assert set(rows)=={'version-classification','type-check','changesets-check'}
+          version=rows['version-classification']
+          assert version['result']=='success' and rows['type-check']['result']=='success'
+          if version['outputs'].get('mode')=='verified-version-only':
+              assert re.fullmatch('[a-f0-9]{64}',version['outputs'].get('proof_hash',''))
+              assert rows['changesets-check']['result']=='skipped'
+          else:
+              assert rows['changesets-check']['result']=='success', 'Independent Changesets policy failed; product jobs report their own results'
 
   ts-test:
     name: All primary TypeScript chains
@@ -842,7 +889,7 @@ jobs:
       actions: read
     name: Incremental CI execution gate
     if: always()
-    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
+    needs: [version-classification, type-check, changesets-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -853,7 +900,7 @@ jobs:
         run: |
           import json, os
           rows=json.loads(os.environ['RESULTS'])
-          expected={'version-classification','type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
+          expected={'version-classification','type-check','changesets-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
           assert set(rows)==expected, 'Missing or unexpected DAG dependency'
           version=rows['version-classification']
           if version['result']=='success' and version['outputs'].get('mode')=='verified-version-only':

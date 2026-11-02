@@ -123,7 +123,7 @@ test('same immutable build and reused-native ZIPs pass aggregate schema3 PR publ
     const receipt={kind:'ci-consumer-materialization-not-a-new-build',chain:'ci',profile:'ci',abi:'linux-x64-gnu',consumerSHA:f.producerSHA,consumerTree:f.testedTree,runId:10,attempt:1,originBuildSHA:'9'.repeat(40),originArtifactId:901,originContext:{profile:'ci'},acceptanceInherited:false,records:Object.entries(raw.native.artifacts).map(([owner,row])=>({owner,...row}))};
     const artifact=f.artifacts.find(row=>row.name===`native-shadow-${f.producerSHA}-linux-x64-gnu-1`),bytes=zip('consumer.json',receipt);
     artifact.name='ci-consumer-native-proof-10-1';artifact.digest='sha256:'+hash(bytes);artifact.size_in_bytes=bytes.length;f.bodies.set(artifact.id,bytes);
-    for(const jobs of Object.values(f.jobs))for(const job of jobs)if(job.id===300)job.name='Type Check & Changesets';
+    for(const jobs of Object.values(f.jobs))for(const job of jobs)if(job.id===300)job.name='Type Check';
   }
   Object.assign(f.run,{status:'completed',conclusion:'success',head_repository:{id:5},pull_requests:[{number:2330,head:{sha:f.summary.headSHA}}]});
   for(const [abi,value] of f.raw){

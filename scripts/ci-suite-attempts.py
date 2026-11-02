@@ -12,7 +12,7 @@ check = execution.check
 
 
 def original_selection(transport, run, source, selection_hash):
-    producer, job = execution.actual_producer(transport, run, 'Type Check & Changesets')
+    producer, job = execution.actual_producer(transport, run, 'Type Check')
     attempt = producer['run_attempt']
     selection, artifact = execution.fetch_json_artifact(transport, producer, 'ci-suite-selection-' + str(run['id']) + '-' + str(attempt), 'selection.json')
     execution.upload_binding(job, 'Upload bound current suite selection', artifact)

@@ -197,7 +197,7 @@ def verify_measurement_source(transport, run, source, summary, row, proof, obser
     check(native_kind in ['build','materialization'], 'Unknown native source kind')
     reused = native_kind == 'materialization'
     check(not reused or abi == 'linux-x64-gnu', 'Unsupported native reuse platform')
-    native = producer(proof['nativeAttempt'], 'Type Check & Changesets' if reused else platform + ' / native / Build and Upload User Artifacts - ' + abi, proof['nativeJobId'])
+    native = producer(proof['nativeAttempt'], 'Type Check' if reused else platform + ' / native / Build and Upload User Artifacts - ' + abi, proof['nativeJobId'])
     name = 'ci-consumer-native-proof-' + str(run['id']) + '-' + str(proof['nativeAttempt']) if reused else 'native-shadow-' + source['sha'] + '-' + abi + '-' + str(proof['nativeAttempt'])
     products, _ = member(proof['nativeArtifactId'], proof['nativeArtifactDigest'], name, native, 'consumer.json' if reused else 'products.json')
     check(products.get('profile') == 'ci' and products.get('abi') == abi and str(products.get('runId')) == str(run['id']), 'Measured native producer differs')

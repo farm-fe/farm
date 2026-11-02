@@ -236,7 +236,7 @@ def consumer_producer(transport, source, environment, commitment):
           and run['repository']['id'] == int(environment['GITHUB_REPOSITORY_ID']) == run['head_repository']['id']
           and run['event'] == environment['GITHUB_EVENT_NAME'], 'Materialization current execution differs')
     check(run['head_sha'] == source['sha'] or run['event'] == 'pull_request' and run['head_sha'] in source.get('parents', []), 'Materialization current source differs')
-    original, job = execution.actual_producer(transport, run, 'Type Check & Changesets')
+    original, job = execution.actual_producer(transport, run, 'Type Check')
     name = 'ci-consumer-native-' + ABI + '-' + str(run_id) + '-' + str(original['run_attempt'])
     listed = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=2&name=' + name)
     check(listed.get('total_count') == 1 and len(listed['artifacts']) == 1, 'Original consumer materialization missing or ambiguous')

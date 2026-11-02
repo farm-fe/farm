@@ -442,3 +442,31 @@ PR 固定 head、比较基线及目录解析视图。多个 PR 可以只读消�
 - [x] npm Changesets 版本准备先完成，固定升版后的 main SHA 再规划/构建/发布；crates.io 独立。
 - [x] 两种 baseline、显式 publish、同事务恢复与跨运行复用的边界清楚。
 - [x] 接受上述验收和集中实施顺序；**用户已批准本地实施与真实验证；本记录不代表验收通过或发布授权。**
+
+
+### Independent type and Changesets checks
+
+Type checking and Changesets policy run as separate jobs. All three primary
+platform pipelines depend on the actual `Type Check` job, never on Changesets
+policy or its compatibility context. A Changesets failure therefore does not
+skip native builds or current TypeScript/Examples validation. A real type error
+still prevents those pipelines from starting.
+
+`Changesets Check` retains the existing policy command and failure semantics.
+The legacy `Type Check & Changesets` context remains an always-running strict
+aggregate, and the final execution gate still includes Changesets policy. This
+preserves ordinary PR constraints without changing repository protection rules.
+Only a verified pure version PR may use its existing explicit metadata-only
+skip; no general error waiver or title/branch exception is introduced.
+
+For the explicitly approved consumption in #2330, the standalone Changesets
+check and strict aggregate may remain failed while product checks actually run.
+That known policy exception is reported separately, never as a green workflow.
+If the repository requires the legacy aggregate or final execution gate for
+merge, the exception still needs the repository owner's normal review process;
+this implementation does not edit or bypass branch protection.
+
+Selection and materialization evidence resolve the actual `Type Check` producer,
+not the compatibility aggregate. Older receipts lacking that producer identity
+fail closed and require current execution rather than accepting an aggregate as
+a build or selection producer.

@@ -89,13 +89,20 @@ class Contracts(unittest.TestCase):
         member=json.dumps(value).encode();body=io.BytesIO()
         with zipfile.ZipFile(body,'w') as archive:archive.writestr('selection.json',member)
         raw=body.getvalue();name='ci-suite-selection-2-1';artifacts[name]={'id':999,'name':name,'expired':False,'workflow_run':{'id':2},'size_in_bytes':len(raw),'digest':'sha256:'+hashlib.sha256(raw).hexdigest(),'created_at':'2026-10-31T01:02:00Z'};bodies[999]=raw
-        job={'id':998,'run_id':2,'name':'Type Check & Changesets','status':'completed','conclusion':'success','started_at':'2026-10-31T01:00:00Z','completed_at':'2026-10-31T01:04:00Z','steps':[{'name':'Upload bound current suite selection','status':'completed','conclusion':'success','started_at':'2026-10-31T01:01:00Z','completed_at':'2026-10-31T01:03:00Z'}]}
+        job={'id':998,'run_id':2,'name':'Type Check','status':'completed','conclusion':'success','started_at':'2026-10-31T01:00:00Z','completed_at':'2026-10-31T01:04:00Z','steps':[{'name':'Upload bound current suite selection','status':'completed','conclusion':'success','started_at':'2026-10-31T01:01:00Z','completed_at':'2026-10-31T01:03:00Z'}]}
         for attempt in jobs:
             jobs[attempt]=[item for item in jobs[attempt] if item['name']!=job['name']]+[copy.deepcopy(job)]
         with tempfile.TemporaryDirectory() as tmp:
             target=Path(tmp)/'selection/selection.json'
             module.collect(transport,run,source,Path(tmp)/'receipts',hashlib.sha256(member).hexdigest(),target)
             self.assertEqual(target.read_bytes(),member)
+            # A successful legacy compatibility context is not a selection producer.
+            for attempt in jobs:
+                next(item for item in jobs[attempt] if item['id']==998)['name']='Type Check & Changesets'
+            with self.assertRaises(ValueError):
+                module.original_selection(transport,run,source,hashlib.sha256(member).hexdigest())
+            for attempt in jobs:
+                next(item for item in jobs[attempt] if item['id']==998)['name']='Type Check'
             self.assertEqual(json.loads((Path(tmp)/'receipts/producers.json').read_text())['selectionAttempt'],1)
             with self.assertRaisesRegex(ValueError,'selection bytes differ'):
                 module.collect(transport,run,source,Path(tmp)/'bad','0'*64,Path(tmp)/'bad-selection.json')

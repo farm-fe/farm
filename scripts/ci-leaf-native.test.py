@@ -107,7 +107,7 @@ class Contracts(unittest.TestCase):
                 if file.is_file():output.writestr(file.relative_to(folder).as_posix(),file.read_bytes())
         body=archive.getvalue();artifact={'id':900,'name':'ci-consumer-native-linux-x64-gnu-9-1','workflow_run':{'id':9},'expired':False,'created_at':'2026-01-01T00:01:00Z','size_in_bytes':len(body),'digest':'sha256:'+hashlib.sha256(body).hexdigest()}
         current={**self.run,'id':9,'head_sha':self.current['sha'],'event':'pull_request','status':'in_progress'}
-        job={'id':901,'run_id':9,'name':'Type Check & Changesets','status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z','steps':[{'name':'Upload current CI consumer native materialization','status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z'}]}
+        job={'id':901,'run_id':9,'name':'Type Check','status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z','steps':[{'name':'Upload current CI consumer native materialization','status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:02:00Z'}]}
         rows={attempt:[copy.deepcopy(job)] for attempt in [1,2,3]}
         def get(route):
             if '/actions/runs/9/attempts/' in route:
