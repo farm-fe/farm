@@ -40,12 +40,18 @@ def safe_error_fields(source):
         "code": ["operation-failed", "invalid-text-encoding", "invalid-json", "git-command-failed", "git-command-timeout", "file-operation-failed", "validation-failed", *BINDING_CODES],
         "encoding": ["utf-8", "utf8", "ascii", "charmap", "cp1252", "cp936"],
     }
+    allowed["resolutionStep"] = ["resolve-producer", "read-artifact", "bind-upload", "validate-digest", "validate-source", "validate-cell", "validate-workflow"]
+    allowed["resolutionReason"] = ["upload-time-window", "upload-step-unsuccessful", "artifact-missing-or-ambiguous", "artifact-bytes-differ", "artifact-members-differ", "latest-producer-unsuccessful", "carried-producer-unproven", "validation-rejected"]
     result = {key: source[key] if source.get(key) in values else "unknown" for key, values in allowed.items() if key in source}
     if source.get("identityField") in IDENTITY_FIELDS:
         result["identityField"] = source["identityField"]
     for key in ["start", "end", "line", "column", "errno", "windowsError", "returnCode", "missingCount", "unexpectedCount", "duplicateCount"]:
         value = source.get(key)
         if type(value) is int and abs(value) <= 2 ** 53:
+            result[key] = value
+    for key in ["producerAttempt", "producerJobId", "artifactId"]:
+        value = source.get(key)
+        if type(value) is int and 0 < value <= 2 ** 53:
             result[key] = value
     if source.get("reason") in ["invalid start byte", "invalid continuation byte", "unexpected end of data", "character maps to <undefined>", "decode failed"]:
         result["reason"] = source["reason"]
@@ -73,6 +79,11 @@ def report_error(stage, error):
     detail = {**safe_context(os.environ), **safe_error_fields(detail)}
     if isinstance(error, BindingError) and error.cell in impact.execution_cells("unit") + impact.execution_cells("e2e"):
         detail["cell"] = error.cell
+    context = getattr(error, "shadow_context", None)
+    if isinstance(context, dict):
+        detail.update(safe_error_fields({key:value for key,value in context.items() if key in ["resolutionStep", "resolutionReason", "producerAttempt", "producerJobId", "artifactId", "identityField"]}))
+        if context.get("cell") in impact.execution_cells("unit") + impact.execution_cells("e2e"):
+            detail["cell"] = context["cell"]
     sys.stderr.write("CI impact diagnostic: " + json.dumps(detail, ensure_ascii=True) + "\n")
     return detail
 

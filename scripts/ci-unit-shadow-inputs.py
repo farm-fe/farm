@@ -46,21 +46,42 @@ def resolve(transport, run, identity, *, scope="unit", cells=None):
     try:
         observations, bindings = [], {}
         for cell, producer, job_key, suffix in cells:
+            context = {'cell':cell, 'resolutionStep':'resolve-producer'}
             origin, job = execution.actual_producer(transport, run, producer, cache=cache)
+            context.update(producerAttempt=origin['run_attempt'], producerJobId=job['id'], resolutionStep='read-artifact')
             name = 'impact-cell-' + identity['testedSHA'] + '-' + job_key + '-' + suffix + '-' + str(origin['run_attempt'])
             row, meta = read_object(transport, origin, name, 'receipt.json')
+            context.update(artifactId=meta['id'], resolutionStep='bind-upload')
             execution.upload_binding(job, 'Preserve actual cell receipt (shadow only)', meta)
+            context['resolutionStep'] = 'validate-digest'
             check(row.get('observationHash') == impact.digest({key:value for key,value in row.items() if key != 'observationHash'}), 'Unit observation digest differs')
-            for key,value in identity.items(): check(row.get(key) == value, 'Unit observation source differs: ' + key)
+            context['resolutionStep'] = 'validate-source'
+            for key,value in identity.items():
+                context['identityField'] = key
+                check(row.get(key) == value, 'Unit observation source differs: ' + key)
+            context.pop('identityField', None)
+            context['resolutionStep'] = 'validate-cell'
             check(row.get('schemaVersion') == 2 and row.get('cell') == cell and row.get('jobKey') == job_key
                   and row.get('runAttempt') == str(origin['run_attempt']) and row.get('status') == 'executed-success'
                   and row.get('planBound') is False and row.get('acceptanceInherited') is False
                   and row.get('authoritativeJobIdentityVerified') is False, 'Unit observation identity or authority differs')
+            context['resolutionStep'] = 'validate-workflow'
             check(row.get('workflowRef', '').startswith(identity['repository'] + '/.github/workflows/' + workflow + '@'), 'Unit observation workflow differs')
             observations.append(row)
             bindings[cell] = {'producerAttempt':origin['run_attempt'], 'producerJobId':job['id'], 'artifactId':meta['id'], 'artifactDigest':meta['digest']}
     except (OSError, ValueError, KeyError) as error:
         error.shadow_plan = plan
+        reasons = {
+            'Artifact is outside its fixed upload step: ': 'upload-time-window',
+            'Actual producer upload did not succeed': 'upload-step-unsuccessful',
+            'Exact execution artifact missing or ambiguous': 'artifact-missing-or-ambiguous',
+            'Execution artifact bytes differ': 'artifact-bytes-differ',
+            'Execution receipt members differ': 'artifact-members-differ',
+            'Latest actual suite producer did not succeed': 'latest-producer-unsuccessful',
+            'Unproven carried suite producer': 'carried-producer-unproven',
+        }
+        context['resolutionReason'] = next((reason for prefix,reason in reasons.items() if str(error).startswith(prefix)), 'validation-rejected')
+        error.shadow_context = context
         raise
     return plan, observations, {'plannerAttempt':planner_run['run_attempt'], 'plannerJobId':planner_job['id'],
                                 'planArtifactId':artifact['id'], 'planArtifactDigest':artifact['digest'],

@@ -17,6 +17,23 @@ summary = importlib.util.module_from_spec(summary_spec); summary_spec.loader.exe
 
 
 class ReceiptContracts(unittest.TestCase):
+    def test_shadow_diagnostics_do_not_expose_error_or_injected_context(self):
+        error=ValueError('secret-token raw payload')
+        error.shadow_context={'cell':'cargo-check','resolutionStep':'bind-upload','resolutionReason':'upload-time-window','producerAttempt':1,'producerJobId':125700405402,'artifactId':13201446204,'identityField':'testedSHA','message':'secret-token'}
+        stderr=io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            detail=receipt.report_error('read-observations',error)
+            error.shadow_context={'cell':'secret-token','resolutionStep':'secret-token','resolutionReason':'secret-token','producerJobId':'secret-token','artifactId':-1,'identityField':'secret-token','stage':'secret-token'}
+            rejected=receipt.report_error('read-observations',error)
+        self.assertEqual(detail['resolutionStep'],'bind-upload')
+        self.assertEqual(detail['resolutionReason'],'upload-time-window')
+        self.assertEqual(detail['artifactId'],13201446204)
+        self.assertEqual(detail['cell'],'cargo-check')
+        self.assertEqual(rejected['resolutionStep'],'unknown')
+        self.assertEqual(rejected['stage'],'read-observations')
+        self.assertNotIn('secret-token',stderr.getvalue())
+        self.assertNotIn('artifactId',rejected)
+
     def test_matrix_missing_result_reports_counts_without_accepting_skipped_cells(self):
         plan, _ = self.fixture()
         with self.assertRaises(summary.receipt.BindingError) as failure:

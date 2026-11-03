@@ -73,6 +73,23 @@ class Contracts(unittest.TestCase):
         self.assertNotEqual(old,sha)
         self.assertTrue(data['limitations'])
 
+    def test_resolution_reports_exact_stage_cell_and_original_ids(self):
+        for defect,stage,reason in [('window','bind-upload','upload-time-window'),('missing','read-artifact','artifact-missing-or-ambiguous'),('bytes','read-artifact','artifact-bytes-differ')]:
+            api,run,identity,jobs,items,bodies,_=fixture()
+            name=next(name for name in items if 'cargo-check' in name)
+            if defect=='window':items[name]['created_at']='2026-11-02T01:05:00Z'
+            elif defect=='missing':del items[name]
+            else:bodies[2]+=b'corrupt'
+            with self.assertRaises(ValueError) as failure:module.resolve(api,run,identity)
+            detail=failure.exception.shadow_context
+            self.assertEqual(detail['resolutionStep'],stage)
+            self.assertEqual(detail['resolutionReason'],reason)
+            self.assertEqual(detail['cell'],'cargo-check')
+            self.assertEqual(detail['producerAttempt'],1)
+            self.assertEqual(detail['producerJobId'],102)
+            if defect=='window':self.assertEqual(detail['artifactId'],2)
+            self.assertEqual(failure.exception.shadow_plan['runAttempt'],'1')
+
     def test_mixed_attempts_keep_original_plan_and_per_cell_identity(self):
         api,run,identity,jobs,items,bodies,calls=fixture()
         plan,observations,bindings=module.resolve(api,run,identity)
