@@ -86,14 +86,62 @@ def artifact_redirect_url(value):
     return value
 
 
+def source_inputs(files, hashes, owners):
+    """Resolve product names once onto the shared directory-identity graph."""
+    spec = importlib.util.spec_from_file_location('native_shared_graph', Path(__file__).with_name('incremental-chain-plan.py'))
+    shared = importlib.util.module_from_spec(spec); spec.loader.exec_module(shared)
+    shared.DIRECTORY_RULES = shared.validate_directory_rules(json.loads(files["scripts/directory-impact-rules.json"]))
+    nodes, issues = shared.repository_graph(files)
+    if issues:
+        raise ValueError('Native source graph is incomplete or ambiguous: ' + ','.join(issues))
+    if not owners or len(owners) != len(set(owners)):
+        raise ValueError('Exact native source owner set required')
+    by_name, public_names = {}, set()
+    for key, node in nodes.items():
+        if node['kind'] == 'input':
+            continue
+        name = node['kind'] + ':' + node['name']
+        by_name.setdefault(name, []).append(key)
+        # Examples are directory identities, not publication identities. Public
+        # package names in the release roots must still be unique.
+        package = node['data'].get('package', {}) if node['kind'] == 'cargo' else node['data']
+        public = (node['kind'] == 'npm' and node['directory'].split('/')[0] in ['packages','js-plugins','rust-plugins'] and not package.get('private')) or (node['kind'] == 'cargo' and package.get('publish') is not False and package.get('publish') != [])
+        if public:
+            if name in public_names:
+                raise ValueError('Ambiguous publication package identity')
+            public_names.add(name)
+    # Include the shared graph contract in every key. A changed edge or input
+    # classification cannot retain an old fingerprint even if bytes coincide.
+    graph_hash = shared.graph_contract(nodes, issues)['graphHash']
+    result = {}
+    for owner in sorted(owners):
+        candidates = by_name.get(owner, [])
+        if len(candidates) != 1:
+            raise ValueError('Native source owner is missing or ambiguous')
+        pending, closure = list(candidates), set()
+        while pending:
+            key = pending.pop()
+            if key in closure:
+                continue
+            closure.add(key)
+            pending.extend(nodes[key]['productDeps'] | nodes[key]['preparationDeps'])
+        prefixes = [nodes[key]['directory'] + '/' for key in closure if nodes[key]['kind'] != 'input']
+        rules = [rule for key in closure if nodes[key]['kind'] == 'input' for rule in nodes[key]['paths']]
+        selected = {file:value for file,value in hashes.items() if any(file.startswith(prefix) for prefix in prefixes)
+                    or any(file.startswith(rule) if rule.endswith('/') else file == rule for rule in rules)
+                    or file in impact.GLOBAL or file in impact.BUILD_POLICY or file.startswith(('.cargo/','patches/'))}
+        result[owner] = impact.digest({'schemaVersion':2, 'graphHash':graph_hash, 'ownerNode':candidates[0],
+                                      'closure':sorted(closure), 'files':selected})
+    return result
+
+
 def committed_source(commit, expected):
     impact.revision(commit)
     files, hashes = impact.snapshot(commit)
-    nodes = impact.graph(files); fingerprints = impact.fingerprints(nodes, hashes)
     owners = expected["owners"]
     if not owners or len(owners) != len(set(owners)):
         raise ValueError("Exact native source owner set required")
-    inputs = {owner: fingerprints[owner]["product"] for owner in sorted(owners)}
+    inputs = source_inputs(files, hashes, owners)
     policies = expected["policyFiles"]
     if not policies or len(policies) != len(set(policies)):
         raise ValueError("Exact reviewed producer policy input set required")
@@ -179,7 +227,7 @@ def capture_source(products_file, output):
     products = json.loads(Path(products_file).read_text(encoding="utf-8"))
     commit = os.environ["GITHUB_SHA"]
     owners = sorted({"npm:" + row["owner"] for row in products["records"]})
-    policy_files = sorted(set(impact.BUILD_POLICY + ["scripts/ci-native-capture.mjs", "scripts/ci-native-proof.py", "scripts/ci-native-evidence.py", "scripts/ci-leaf-native.py", ".github/workflows/ci.yaml", ".github/workflows/ci-primary-platform.yaml", ".github/workflows/rust-build-user.yaml", ".github/workflows/rust-build-release.yaml"]))
+    policy_files = sorted(set(impact.BUILD_POLICY + ["scripts/incremental-chain-plan.py", "scripts/directory-impact-rules.json", "scripts/ci-impact-plan.py", "scripts/ci-native-capture.mjs", "scripts/ci-native-proof.py", "scripts/ci-native-evidence.py", "scripts/ci-leaf-native.py", ".github/workflows/ci.yaml", ".github/workflows/ci-primary-platform.yaml", ".github/workflows/rust-build-user.yaml", ".github/workflows/rust-build-release.yaml"]))
     expected = {"owners": owners, "policyFiles": policy_files, "workflowPath": ".github/workflows/ci.yaml"}
     source = committed_source(commit, expected)
     record = {"schemaVersion": 1, "kind": "native-source-shadow-ledger", "source": source, "owners": owners, "policyFiles": policy_files,
