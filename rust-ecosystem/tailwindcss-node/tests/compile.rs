@@ -90,7 +90,13 @@ mod compile {
         "simple:\n-- input --\n{simple_input}\n-- output --\n{}\n\nimports:\n-- input --\n{imports_input}\n-- output --\n{}\n-- deps --\n{}\n\nrewrite:\n-- input --\n{rewrite_input}\n-- output --\n{}",
         simple.build(&[]),
         imports.build(&[]),
-        deps.lock().unwrap().iter().map(|dep| manifest_path(std::path::Path::new(dep))).collect::<Vec<_>>().join("\n"),
+        deps
+          .lock()
+          .unwrap()
+          .iter()
+          .map(|dep| manifest_path(std::path::Path::new(dep)))
+          .collect::<Vec<_>>()
+          .join("\n"),
         rewrite.build(&[]),
       );
 
@@ -181,16 +187,20 @@ mod compile {
       let node = AstNode::Comment("test comment".to_string());
       assert_eq!(node.to_css(), "/* test comment */");
       assert!(ensure_source_detection_root_exists(&None).is_ok());
-      assert!(ensure_source_detection_root_exists(&Some(SourceRoot {
-        pattern: "**/*.css".to_string(),
-        base: fixture_dir.to_str().unwrap().to_string(),
-      }))
-      .is_ok());
-      assert!(ensure_source_detection_root_exists(&Some(SourceRoot {
-        pattern: "missing/**/*.css".to_string(),
-        base: fixture_dir.join("missing").to_string_lossy().to_string(),
-      }))
-      .is_err());
+      assert!(
+        ensure_source_detection_root_exists(&Some(SourceRoot {
+          pattern: "**/*.css".to_string(),
+          base: fixture_dir.to_str().unwrap().to_string(),
+        }))
+        .is_ok()
+      );
+      assert!(
+        ensure_source_detection_root_exists(&Some(SourceRoot {
+          pattern: "missing/**/*.css".to_string(),
+          base: fixture_dir.join("missing").to_string_lossy().to_string(),
+        }))
+        .is_err()
+      );
     }
 
     #[test]
@@ -219,7 +229,9 @@ mod compile {
       )
       .unwrap();
       assert!(stylesheet.content.contains("body { margin: 0; }"));
-      assert!(manifest_path(&stylesheet.path).ends_with("tests/fixtures/compile/imports/./sub.css"));
+      assert!(
+        manifest_path(&stylesheet.path).ends_with("tests/fixtures/compile/imports/./sub.css")
+      );
       assert!(!deps.lock().unwrap().is_empty());
 
       let module = load_module(

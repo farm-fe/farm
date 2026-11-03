@@ -1,9 +1,9 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
-  context::CompilationContext,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   HashSet,
+  context::CompilationContext,
+  module::{ModuleId, ModuleMetaData, module_graph::ModuleGraph},
 };
 
 pub fn find_async_modules(module_graph: &ModuleGraph) -> HashSet<ModuleId> {
@@ -96,10 +96,10 @@ pub fn update_async_modules(
 #[cfg(test)]
 mod tests {
   use farmfe_core::{
+    HashSet,
     module::{ModuleMetaData, ModuleType},
     swc_common::DUMMY_SP,
     swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt},
-    HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 

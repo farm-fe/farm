@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::{borrow::Cow, collections::BTreeMap, mem};
 
-use crate::directive::{is_directive, parse_directive, Directive, NormalDirective};
+use crate::directive::{Directive, NormalDirective, is_directive, parse_directive};
 use crate::options::Options;
 use crate::patch_flags::PatchFlags;
 use crate::slot_flag::SlotFlag;
@@ -12,7 +12,7 @@ use indexmap::IndexSet;
 
 use farmfe_core::serde_json;
 use farmfe_core::swc_common::{
-    comments::Comments, Globals, Mark, Span, Spanned, SyntaxContext, DUMMY_SP, GLOBALS,
+    DUMMY_SP, GLOBALS, Globals, Mark, Span, Spanned, SyntaxContext, comments::Comments,
 };
 use farmfe_core::swc_ecma_ast::*;
 use farmfe_toolkit::swc_atoms::Atom;

@@ -4,24 +4,24 @@ use std::{
   io::Write,
   path::{Path, PathBuf},
   sync::{
-    atomic::{AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicU64, Ordering},
   },
 };
 
 use dashmap::{DashMap, DashSet};
 use farmfe_utils::hash::sha256;
 use itertools::Itertools;
-use parking_lot::{lock_api::ArcMutexGuard, Mutex};
+use parking_lot::{Mutex, lock_api::ArcMutexGuard};
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 use super::{
+  CacheStoreKey,
   constant::{CacheStoreFactory, CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
   error::CacheError,
   namespace::NamespaceStore,
-  CacheStoreKey,
 };
-use crate::{cache::store::constant::CacheStoreItemRef, config::Mode, serialize, HashMap};
+use crate::{HashMap, cache::store::constant::CacheStoreItemRef, config::Mode, serialize};
 
 #[derive(Debug, Default)]
 pub struct ResourceLock<T: Debug + Eq + Hash + PartialEq> {
@@ -450,6 +450,114 @@ pub struct DiskCacheFactory {
   store: Arc<Box<dyn CacheStoreTrait>>,
 }
 
+impl DiskCacheFactory {
+  pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
+    let store: Arc<Box<dyn CacheStoreTrait>> =
+      Arc::new(Box::new(CacheStore::new(cache_dir, namespace, mode)));
+
+    Self { store }
+  }
+}
+
+#[cfg(feature = "profile")]
+mod profile {
+  use std::sync::Arc;
+
+  use crate::cache::{
+    CacheStoreTrait,
+    store::{CacheStoreKey, constant::CacheStoreItemRef, error::CacheError},
+  };
+
+  pub struct TimeCacheFactory {
+    store: Arc<Box<dyn CacheStoreTrait>>,
+  }
+
+  macro_rules! time {
+    ($f_name:literal, $name:expr, $code:expr) => {{
+      let start = std::time::Instant::now();
+      let result = { $code };
+      let duration = start.elapsed();
+      println!(
+        "Task {} {} Time taken: {:?}",
+        $f_name,
+        $name.to_string(),
+        duration
+      );
+      result
+    }};
+  }
+
+  impl TimeCacheFactory {
+    pub fn new(store: Arc<Box<dyn CacheStoreTrait>>) -> Self {
+      Self { store }
+    }
+  }
+
+  impl CacheStoreTrait for TimeCacheFactory {
+    fn has_cache(&self, name: &str) -> bool {
+      time!("has_cache", name, self.store.has_cache(name))
+    }
+
+    fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
+      let v1 = store_key.name.clone();
+      time!(
+        "is_cache_changed",
+        v1,
+        self.store.is_cache_changed(store_key)
+      )
+    }
+
+    fn write_single_cache(
+      &self,
+      store_key: CacheStoreKey,
+      bytes: Vec<u8>,
+    ) -> Result<(), CacheError> {
+      let v1 = store_key.name.clone();
+      time!(
+        "write_single_cache",
+        v1,
+        self.store.write_single_cache(store_key, bytes)
+      )
+    }
+
+    fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
+      time!("read_cache", name, self.store.read_cache(name))
+    }
+
+    fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
+      time!("read_cache_ref", name, self.store.read_cache_ref(name))
+    }
+
+    fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
+      time!("remove_cache", name, self.store.remove_cache(name))
+    }
+
+    fn remove_cache_only(&self, name: &str) {
+      time!(
+        "remove_cache_only",
+        name,
+        self.store.remove_cache_only(name)
+      )
+    }
+  }
+}
+
+impl CacheStoreFactory for DiskCacheFactory {
+  fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
+    #[cfg(feature = "profile")]
+    {
+      let profile_store: Arc<Box<dyn CacheStoreTrait>> =
+        Arc::new(Box::new(profile::TimeCacheFactory::new(self.store.clone())));
+      Box::new(NamespaceStore::new(profile_store, name.to_string()))
+    }
+
+    #[cfg(not(feature = "profile"))]
+    {
+      Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
+    }
+  }
+}
+
 #[cfg(test)]
 mod cache_format_tests {
   use super::*;
@@ -810,113 +918,5 @@ mod cache_format_tests {
       manifest.exists(),
       "upgrading must preserve the old cache directory"
     );
-  }
-}
-
-impl DiskCacheFactory {
-  pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    let store: Arc<Box<dyn CacheStoreTrait>> =
-      Arc::new(Box::new(CacheStore::new(cache_dir, namespace, mode)));
-
-    Self { store }
-  }
-}
-
-#[cfg(feature = "profile")]
-mod profile {
-  use std::sync::Arc;
-
-  use crate::cache::{
-    store::{constant::CacheStoreItemRef, error::CacheError, CacheStoreKey},
-    CacheStoreTrait,
-  };
-
-  pub struct TimeCacheFactory {
-    store: Arc<Box<dyn CacheStoreTrait>>,
-  }
-
-  macro_rules! time {
-    ($f_name:literal, $name:expr, $code:expr) => {{
-      let start = std::time::Instant::now();
-      let result = { $code };
-      let duration = start.elapsed();
-      println!(
-        "Task {} {} Time taken: {:?}",
-        $f_name,
-        $name.to_string(),
-        duration
-      );
-      result
-    }};
-  }
-
-  impl TimeCacheFactory {
-    pub fn new(store: Arc<Box<dyn CacheStoreTrait>>) -> Self {
-      Self { store }
-    }
-  }
-
-  impl CacheStoreTrait for TimeCacheFactory {
-    fn has_cache(&self, name: &str) -> bool {
-      time!("has_cache", name, self.store.has_cache(name))
-    }
-
-    fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
-      let v1 = store_key.name.clone();
-      time!(
-        "is_cache_changed",
-        v1,
-        self.store.is_cache_changed(store_key)
-      )
-    }
-
-    fn write_single_cache(
-      &self,
-      store_key: CacheStoreKey,
-      bytes: Vec<u8>,
-    ) -> Result<(), CacheError> {
-      let v1 = store_key.name.clone();
-      time!(
-        "write_single_cache",
-        v1,
-        self.store.write_single_cache(store_key, bytes)
-      )
-    }
-
-    fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
-      time!("read_cache", name, self.store.read_cache(name))
-    }
-
-    fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
-      time!("read_cache_ref", name, self.store.read_cache_ref(name))
-    }
-
-    fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
-      time!("remove_cache", name, self.store.remove_cache(name))
-    }
-
-    fn remove_cache_only(&self, name: &str) {
-      time!(
-        "remove_cache_only",
-        name,
-        self.store.remove_cache_only(name)
-      )
-    }
-  }
-}
-
-impl CacheStoreFactory for DiskCacheFactory {
-  fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
-    #[cfg(feature = "profile")]
-    {
-      let profile_store: Arc<Box<dyn CacheStoreTrait>> =
-        Arc::new(Box::new(profile::TimeCacheFactory::new(self.store.clone())));
-      Box::new(NamespaceStore::new(profile_store, name.to_string()))
-    }
-
-    #[cfg(not(feature = "profile"))]
-    {
-      Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
-    }
   }
 }

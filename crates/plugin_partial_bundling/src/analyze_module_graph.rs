@@ -195,8 +195,8 @@ mod tests {
     HashMap, HashSet,
     context::CompilationContext,
     module::module_group::{ModuleGroupId, ModuleGroupType},
-    sync::RwLock,
     plugin::{Plugin, PluginHookContext, ResolveKind},
+    sync::RwLock,
   };
   #[cfg(test)]
   use farmfe_testing_helpers::construct_test_module_graph;

@@ -2,26 +2,26 @@ use std::sync::Arc;
 
 use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_INPUT_SCOPE};
 use farmfe_core::{
+  HashSet,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::ModuleType,
   plugin::{
-    EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParam, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, PluginTransformHookResult, DEFAULT_PRIORITY,
+    DEFAULT_PRIORITY, EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParam,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    PluginResolveHookResult, PluginTransformHookParam, PluginTransformHookResult,
   },
-  resource::{resource_pot::ResourcePotType, Resource, ResourceOrigin, ResourceType},
+  resource::{Resource, ResourceOrigin, ResourceType, resource_pot::ResourcePotType},
   swc_ecma_parser::Syntax,
-  HashSet,
 };
 use farmfe_toolkit::{
-  css::{parse_css_stylesheet, ParseCssModuleResult},
+  css::{ParseCssModuleResult, parse_css_stylesheet},
   html::parse_html_document,
-  script::{parse_module, ParseScriptModuleResult},
+  script::{ParseScriptModuleResult, parse_module},
 };
 use napi::{
-  bindgen_prelude::{FromNapiValue, JsObjectValue, Object},
   Env, JsValue, Unknown,
+  bindgen_prelude::{FromNapiValue, JsObjectValue, Object},
 };
 
 use crate::{

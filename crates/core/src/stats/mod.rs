@@ -1,12 +1,12 @@
 use crate::sync::RwLock;
 
 use crate::{
+  HashMap,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
     ModuleId, ModuleType,
+    module_graph::{ModuleGraph, ModuleGraphEdge},
   },
   plugin::PluginHookContext,
-  HashMap,
 };
 
 pub struct Stats {

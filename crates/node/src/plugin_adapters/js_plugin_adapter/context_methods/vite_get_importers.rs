@@ -1,16 +1,16 @@
 use farmfe_core::{
+  HashMap,
   module::{ModuleId, ModuleType},
   relative_path::RelativePath,
-  HashMap,
 };
 use napi::{
+  Env, JsValue, Unknown,
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
-  Env, JsValue, Unknown,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::context::{
-  get_argv_and_context_from_cb_info, ArgvAndContext,
+  ArgvAndContext, get_argv_and_context_from_cb_info,
 };
 
 pub const VITE_GET_IMPORTERS: &str = "viteGetImporters";

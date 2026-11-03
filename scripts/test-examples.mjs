@@ -1,5 +1,7 @@
+import { prepareSuite } from './ci-suite-preparation.mjs';
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { actualSuiteInventory, executionPlan, saveSuiteReceipt } from './ci-suite-execution.mjs';
 
 import {
   buildCli,
@@ -70,6 +72,8 @@ const argv = process.argv.slice(2);
 const startFrom = parseStartFromArg(argv);
 const example = parseExampleArg(argv);
 const skipBuildJsPlugins = parseSkipBuildJsPluginsArg(argv);
+const suiteInventory = process.env.FARM_SUITE_ABI ? actualSuiteInventory() : null;
+const suitePlan = suiteInventory ? executionPlan(suiteInventory, 'examples-build') : null;
 
 if (startFrom) {
   const examples = readdirSync("./examples").filter((name) =>
@@ -91,6 +95,10 @@ if (example) {
   }
 }
 
+if (suitePlan) {
+  if (skipBuildJsPlugins) throw new Error('Bound suite preparation cannot be overridden');
+  prepareSuite(suiteInventory, suitePlan);
+} else {
 console.log("Building CLI...");
 await buildCli();
 console.log("Building runtime...");
@@ -104,6 +112,8 @@ if (skipBuildJsPlugins) {
   await buildJsPlugins();
 }
 
+}
+
 if (startFrom) {
   console.log(`Building examples from: ${startFrom}`);
 }
@@ -112,4 +122,15 @@ if (example) {
   console.log(`Building only example: ${example}`);
 }
 
-await buildExamples({ startFrom, example });
+let actualBuildIds = [];
+if (suitePlan && suitePlan.mode !== 'all') {
+  if (startFrom || example) throw new Error('Explicit Examples arguments conflict with the bound suite selection');
+  for (const id of suitePlan.ids) actualBuildIds.push(...await buildExamples({ example: id.slice('examples-build:examples/'.length) }));
+} else actualBuildIds = await buildExamples({ startFrom, example });
+if (suitePlan) {
+  if (startFrom || example) throw new Error('Partial manual builds cannot establish CI suite coverage');
+  if (JSON.stringify([...actualBuildIds].sort()) !== JSON.stringify(suitePlan.ids)) throw new Error('Actual successful Examples builds differ from the bound suite plan');
+  saveSuiteReceipt('ci-suite-results/build.json', suiteInventory, { kind: 'examples-build', inventoryHash: suiteInventory.inventoryHash,
+    planHash: suitePlan.planHash, selectedIds: suitePlan.ids, executedIds: actualBuildIds.sort(), failed: 0, skipped: 0,
+    disposition: suitePlan.ids.length ? 'executed' : 'not-applicable' });
+}

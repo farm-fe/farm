@@ -1,0 +1,15 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.03s
+     Running unittests src/lib.rs ([cows-instance]/.cows-cache/target/f92865fbae1b5eafa155f44b/debug/deps/farm_release_macro_compat-0f4f7bdd74d4a9d8)
+
+running 2 tests
+test tests::enum_round_trip ... ok
+test tests::struct_round_trip ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests farm_release_macro_compat
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

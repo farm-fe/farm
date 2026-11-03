@@ -2,11 +2,11 @@ use std::sync::{Arc, Mutex};
 
 use farmfe_core::config::config_regex::ConfigRegex;
 
-use crate::parser::generate_dts::{generate_dts, GenerateDtsOption};
+use crate::Dts;
+use crate::parser::generate_dts::{GenerateDtsOption, generate_dts};
 use crate::parser::scan_dirs_exports::scan_dirs_exports;
 use crate::parser::scan_exports::Import;
-use crate::presets::{resolve_presets, PresetItem};
-use crate::Dts;
+use crate::presets::{PresetItem, resolve_presets};
 
 pub struct FinishImportsParams<'a> {
   pub root_path: String,

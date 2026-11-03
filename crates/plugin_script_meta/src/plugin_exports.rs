@@ -4,9 +4,9 @@ use expand_exports::{
 use farmfe_core::{
   config::Config,
   module::{
-    meta_data::script::{ScriptModuleMetaData, EXPORT_DEFAULT},
-    module_graph::ModuleGraph,
     ModuleId,
+    meta_data::script::{EXPORT_DEFAULT, ScriptModuleMetaData},
+    module_graph::ModuleGraph,
   },
   plugin::{Plugin, ResolveKind},
 };

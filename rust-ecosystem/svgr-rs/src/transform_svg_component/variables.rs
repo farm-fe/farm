@@ -1,4 +1,4 @@
-use swc_common::{sync::Lrc, FileName, SourceMap, SyntaxContext, DUMMY_SP};
+use swc_common::{DUMMY_SP, FileName, SourceMap, SyntaxContext, sync::Lrc};
 use swc_ecma_ast::*;
 use swc_ecma_parser as parser;
 

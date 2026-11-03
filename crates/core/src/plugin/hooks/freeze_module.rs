@@ -1,4 +1,4 @@
-use crate::module::{module_graph::ModuleGraphEdge, Module, ModuleId};
+use crate::module::{Module, ModuleId, module_graph::ModuleGraphEdge};
 
 pub struct PluginFreezeModuleHookParam<'a> {
   pub module: &'a mut Module,

@@ -4,8 +4,8 @@ use std::{cell::RefCell, collections::HashMap};
 use linked_hash_set::LinkedHashSet;
 use swc_atoms::Atom;
 use swc_common::{
+  DUMMY_SP, Span, SyntaxContext,
   comments::{Comment, CommentKind, Comments},
-  Span, SyntaxContext, DUMMY_SP,
 };
 use swc_ecma_ast::*;
 use swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -245,10 +245,10 @@ impl VisitMut for ImportDeclVisitor {
 
 #[cfg(test)]
 mod tests {
-  use swc_common::{comments::SingleThreadedComments, sync::Lrc, FileName, SourceMap};
+  use swc_common::{FileName, SourceMap, comments::SingleThreadedComments, sync::Lrc};
   use swc_ecma_ast::*;
-  use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
-  use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax};
+  use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
+  use swc_ecma_parser::{EsSyntax, Parser, StringInput, Syntax, lexer::Lexer};
 
   use super::*;
 

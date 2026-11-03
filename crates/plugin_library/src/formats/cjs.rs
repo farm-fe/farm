@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   context::CompilationContext,
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
   swc_common::Mark,
   swc_ecma_ast::{Expr, Module},
-  HashSet,
 };
 use farmfe_toolkit::{
   script::{
@@ -15,13 +15,13 @@ use farmfe_toolkit::{
     swc_try_with::{resolve_module_mark, try_with},
     transform_to_esm::transform_hybrid::Hybrid2CjsCalleeAllocator,
   },
-  swc_ecma_transforms::hygiene::{hygiene_with_config, Config},
+  swc_ecma_transforms::hygiene::{Config, hygiene_with_config},
   swc_ecma_utils::StmtLikeInjector,
   swc_ecma_visit::VisitMutWith,
 };
 
 use crate::{
-  formats::{esm::create_farm_node_require_item, GenerateLibraryFormatResourcesOptions},
+  formats::{GenerateLibraryFormatResourcesOptions, esm::create_farm_node_require_item},
   import_meta_visitor::replace_import_meta_url,
   utils::{add_format_to_generated_resources, emit_resource_pot, inject_farm_runtime_helpers},
 };

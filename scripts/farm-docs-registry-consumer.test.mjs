@@ -11,8 +11,9 @@ const plan = JSON.parse(fs.readFileSync(new URL('../docs/farm-docs/registry-rele
 const sha = data => crypto.createHash('sha256').update(data).digest('hex');
 const integrity = 'sha512-' + Buffer.alloc(64, 7).toString('base64');
 function fixture(t) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-registry-entry-'));
-  t.after(() => { assert.ok(path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep)); fs.rmSync(root, {recursive:true}); });
+  const temporary = fs.realpathSync(os.tmpdir());
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(temporary, 'farm-registry-entry-')));
+  t.after(() => { assert.ok(path.resolve(root).startsWith(temporary + path.sep)); fs.rmSync(root, {recursive:true}); });
   const release = {schemaVersion:1,status:'approved',releaseId:'SYNTHETIC_UNIT_FIXTURE_NOT_PUBLISHED',farmMajor:2,baselineCommit:'a'.repeat(40),nativeAbi:'unit-fixture-abi',registry:'https://registry.npmjs.org',packages:[]};
   const rootPackage = {private:true,dependencies:{}};
   const metadata = new Map();

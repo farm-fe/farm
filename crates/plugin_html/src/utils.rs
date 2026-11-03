@@ -6,7 +6,7 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin, ResourceType},
   swc_html_ast::Element,
 };
-use farmfe_toolkit::fs::{transform_output_filename, TransformOutputFileNameParams};
+use farmfe_toolkit::fs::{TransformOutputFileNameParams, transform_output_filename};
 
 use crate::deps_analyzer::{
   get_href_link_value, get_link_css_code, get_script_src_value, get_script_type_module_code,

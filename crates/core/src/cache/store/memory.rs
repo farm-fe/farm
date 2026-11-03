@@ -5,10 +5,10 @@ use dashmap::DashMap;
 use crate::HashMap;
 
 use super::{
+  CacheStoreKey,
   constant::{CacheStoreFactory, CacheStoreTrait},
   error::CacheError,
   namespace::NamespaceStore,
-  CacheStoreKey,
 };
 
 #[derive(Default)]

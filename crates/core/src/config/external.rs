@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{config_regex::ConfigRegex, Config};
+use super::{Config, config_regex::ConfigRegex};
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", default)]

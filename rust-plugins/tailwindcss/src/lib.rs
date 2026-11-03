@@ -285,11 +285,12 @@ impl Plugin for FarmPluginTailwindCSS {
     if Self::is_candidate_source_file(&resolved_path) {
       // Cached Vue/Svelte modules can contain compiled script rather than their
       // original templates, so prefer the physical source when available.
-      let content =
-        context.source_observations
-          .read_file(&module.id.to_string(), path::Path::new(&resolved_path))
-          .ok().and_then(|bytes| String::from_utf8(bytes).ok())
-          .unwrap_or_else(|| module.content.to_string());
+      let content = context
+        .source_observations
+        .read_file(&module.id.to_string(), path::Path::new(&resolved_path))
+        .ok()
+        .and_then(|bytes| String::from_utf8(bytes).ok())
+        .unwrap_or_else(|| module.content.to_string());
       self.register_candidate_source(&resolved_path, &content)?;
     }
     // A compiled module cannot restore missing scanner/shared-root state.
@@ -318,7 +319,10 @@ impl Plugin for FarmPluginTailwindCSS {
         .map_err(plugin_cache_error)?
         .insert(
           resolved_path.to_string(),
-          (context.source_observations.generation(), param.module_id.clone()),
+          (
+            context.source_observations.generation(),
+            param.module_id.clone(),
+          ),
         );
 
       // Pass through — we don't modify the source.
@@ -596,10 +600,13 @@ mod tests {
   #[test]
   fn cached_candidates_survive_restart_and_a_new_source_update() {
     use farmfe_core::module::{Module, ModuleMetaData, meta_data::css::CssModuleMetaData};
-    let mut config = Config::default();
-    config.root = std::env::temp_dir().to_string_lossy().into_owned();
-    config.persistent_cache =
-      Box::new(farmfe_core::config::persistent_cache::PersistentCacheConfig::Bool(false));
+    let config = Config {
+      root: std::env::temp_dir().to_string_lossy().into_owned(),
+      persistent_cache: Box::new(
+        farmfe_core::config::persistent_cache::PersistentCacheConfig::Bool(false),
+      ),
+      ..Default::default()
+    };
     let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
     let root_id = ModuleId::new("farm-tailwind-restart.css", "", &context.config.root);
     let root = root_id.resolved_path(&context.config.root);
@@ -607,13 +614,13 @@ mod tests {
     module.module_type = ModuleType::Css;
     let raw = "@tailwind utilities;";
     module.content = Arc::new(raw.into());
-    module.meta = Box::new(ModuleMetaData::Css(Box::new(CssModuleMetaData {
+    *module.meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
       ast: parse_css_stylesheet(&root, Arc::new(raw.into()))
         .unwrap()
         .ast,
       comments: Default::default(),
       custom: Default::default(),
-    })));
+    }));
     context.module_graph.write().add_module(module.clone());
     let cached_source = Module::new(ModuleId::new("before.tsx", "", &context.config.root));
     let transform =
@@ -748,8 +755,10 @@ mod tests {
   #[test]
   fn lazy_sources_update_an_existing_tailwind_root_after_its_first_freeze() {
     use farmfe_core::module::{Module, ModuleMetaData, meta_data::css::CssModuleMetaData};
-    let mut config = Config::default();
-    config.root = std::env::temp_dir().to_string_lossy().into_owned();
+    let config = Config {
+      root: std::env::temp_dir().to_string_lossy().into_owned(),
+      ..Default::default()
+    };
     let root = path::Path::new(&config.root)
       .join("farm-tailwind-lazy.css")
       .to_string_lossy()
@@ -763,11 +772,11 @@ mod tests {
     let mut module = Module::new(id.clone());
     module.module_type = ModuleType::Css;
     module.content = Arc::new(content.clone());
-    module.meta = Box::new(ModuleMetaData::Css(Box::new(CssModuleMetaData {
+    *module.meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
       ast: parsed.ast,
       comments: Default::default(),
       custom: Default::default(),
-    })));
+    }));
     context.module_graph.write().add_module(module.clone());
     plugin
       .transform(

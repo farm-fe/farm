@@ -1,5 +1,5 @@
-use farmfe_core::module::{ModuleId, ModuleType};
 use farmfe_core::HashSet;
+use farmfe_core::module::{ModuleId, ModuleType};
 
 use crate::generate_module_pots::ModulePotSourceType;
 

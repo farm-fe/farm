@@ -3,20 +3,20 @@ use std::sync::Arc;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  hooks::freeze_module::PluginFreezeModuleHookParam, Plugin, PluginAnalyzeDepsHookParam,
-  PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParam,
-  PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParam, PluginHookContext,
-  PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParam,
-  PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
-  PluginResolveHookResult, PluginTransformHookParam, PluginUpdateModulesHookParam,
+  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
+  PluginFinalizeResourcesHookParam, PluginGenerateResourcesHookResult,
+  PluginHandleEntryResourceHookParam, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
+  PluginModuleGraphUpdatedHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
+  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+  PluginUpdateModulesHookParam, hooks::freeze_module::PluginFreezeModuleHookParam,
 };
 use crate::{
   config::Config,
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
-    ModuleType,
+    Module, ModuleId, ModuleMetaData, ModuleType, module_graph::ModuleGraph,
+    module_group::ModuleGroupGraph,
   },
   resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
   stats::{CompilationModuleGraphStats, CompilationPluginHookStats, Stats},

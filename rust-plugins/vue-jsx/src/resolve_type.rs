@@ -1,10 +1,10 @@
 use crate::VueJsxTransformVisitor;
+use farmfe_core::swc_common::{DUMMY_SP, EqIgnoreSpan, Span, comments::Comments};
+use farmfe_core::swc_ecma_ast::*;
+use farmfe_toolkit::swc_atoms::{Atom, atom};
+use farmfe_toolkit::swc_ecma_utils::{quote_ident, quote_str};
 use indexmap::{IndexMap, IndexSet};
 use std::borrow::Cow;
-use farmfe_core::swc_common::{comments::Comments, EqIgnoreSpan, Span, DUMMY_SP};
-use farmfe_core::swc_ecma_ast::*;
-use farmfe_toolkit::swc_atoms::{atom, Atom};
-use farmfe_toolkit::swc_ecma_utils::{quote_ident, quote_str};
 
 enum RefinedTsTypeElement {
     Property(TsPropertySignature),
@@ -22,7 +22,10 @@ impl<C> VueJsxTransformVisitor<C>
 where
     C: Comments,
 {
-    pub(crate) fn extract_props_type(&mut self, setup_fn: &ExprOrSpread) -> Result<Option<Expr>, String> {
+    pub(crate) fn extract_props_type(
+        &mut self,
+        setup_fn: &ExprOrSpread,
+    ) -> Result<Option<Expr>, String> {
         let mut defaults = None;
         let first_param_type = if let ExprOrSpread { expr, spread: None } = setup_fn {
             match &**expr {
@@ -334,10 +337,14 @@ where
                     if let Some((_, default)) = defaults.iter().flatten().find(|(name, _)| {
                         name.eq_ignore_span(&prop_name)
                             || match (&**name, &prop_name) {
-                                (PropName::Ident(IdentName { sym: a, .. }), PropName::Str(Str { value: b, .. }))
-                                | (PropName::Str(Str { value: b, .. }), PropName::Ident(IdentName { sym: a, .. })) => {
-                                    *a == *b.to_atom_lossy()
-                                }
+                                (
+                                    PropName::Ident(IdentName { sym: a, .. }),
+                                    PropName::Str(Str { value: b, .. }),
+                                )
+                                | (
+                                    PropName::Str(Str { value: b, .. }),
+                                    PropName::Ident(IdentName { sym: a, .. }),
+                                ) => *a == *b.to_atom_lossy(),
                                 _ => false,
                             }
                     }) {
@@ -359,7 +366,11 @@ where
         })
     }
 
-    fn resolve_type_elements(&self, ty: &TsType, props: &mut Vec<RefinedTsTypeElement>) -> Result<(), String> {
+    fn resolve_type_elements(
+        &self,
+        ty: &TsType,
+        props: &mut Vec<RefinedTsTypeElement>,
+    ) -> Result<(), String> {
         match ty {
             TsType::TsTypeLit(TsTypeLit { members, .. }) => {
                 props.extend(members.iter().filter_map(|member| match member {
@@ -498,7 +509,8 @@ where
                                     }) => match &**key {
                                         Expr::Ident(ident) => keys.contains(&ident.sym),
                                         Expr::Lit(Lit::Str(str)) => {
-                                            let atom_key: Atom = str.value.to_atom_lossy().into_owned();
+                                            let atom_key: Atom =
+                                                str.value.to_atom_lossy().into_owned();
                                             keys.contains(&atom_key)
                                         }
                                         _ => false,
@@ -530,7 +542,8 @@ where
                                     }) => match &**key {
                                         Expr::Ident(ident) => !keys.contains(&ident.sym),
                                         Expr::Lit(Lit::Str(str)) => {
-                                            let atom_key: Atom = str.value.to_atom_lossy().into_owned();
+                                            let atom_key: Atom =
+                                                str.value.to_atom_lossy().into_owned();
                                             !keys.contains(&atom_key)
                                         }
                                         _ => true,
@@ -625,7 +638,11 @@ where
         }
     }
 
-    fn resolve_indexed_access(&self, obj: &TsType, index: &TsType) -> Result<Option<TsType>, String> {
+    fn resolve_indexed_access(
+        &self,
+        obj: &TsType,
+        index: &TsType,
+    ) -> Result<Option<TsType>, String> {
         match obj {
             TsType::TsTypeRef(TsTypeRef {
                 type_name: TsEntityName::Ident(ident),
@@ -659,7 +676,8 @@ where
                                     ..
                                 }) => {
                                     let key_expr: &Expr = key;
-                                    if matches!(key_expr, Expr::Ident(..) | Expr::Lit(Lit::Str(..))) {
+                                    if matches!(key_expr, Expr::Ident(..) | Expr::Lit(Lit::Str(..)))
+                                    {
                                         type_ann.as_ref().map(|type_ann| type_ann.type_ann.clone())
                                     } else {
                                         None
@@ -716,7 +734,8 @@ where
                                                 }
                                             }
                                             Expr::Lit(Lit::Str(Str { value: key, .. })) => {
-                                                let atom_key: Atom = key.to_atom_lossy().into_owned();
+                                                let atom_key: Atom =
+                                                    key.to_atom_lossy().into_owned();
                                                 if keys.contains(&atom_key) {
                                                     type_ann
                                                         .as_ref()
@@ -748,7 +767,8 @@ where
                                                 }
                                             }
                                             Expr::Lit(Lit::Str(Str { value: key, .. })) => {
-                                                let atom_key: Atom = key.to_atom_lossy().into_owned();
+                                                let atom_key: Atom =
+                                                    key.to_atom_lossy().into_owned();
                                                 if keys.contains(&atom_key) {
                                                     Some(Box::new(TsType::TsTypeRef(TsTypeRef {
                                                         type_name: TsEntityName::Ident(
@@ -856,64 +876,60 @@ where
                                     key,
                                     type_ann,
                                     ..
-                                }) => {
-                                    match &**key {
-                                        Expr::Ident(Ident { sym: key, .. }) => {
-                                            if keys.contains(key) {
-                                                type_ann
-                                                    .as_ref()
-                                                    .map(|type_ann| type_ann.type_ann.clone())
-                                            } else {
-                                                None
-                                            }
+                                }) => match &**key {
+                                    Expr::Ident(Ident { sym: key, .. }) => {
+                                        if keys.contains(key) {
+                                            type_ann
+                                                .as_ref()
+                                                .map(|type_ann| type_ann.type_ann.clone())
+                                        } else {
+                                            None
                                         }
-                                        Expr::Lit(Lit::Str(Str { value: key, .. })) => {
-                                            let atom_key: Atom = key.to_atom_lossy().into_owned();
-                                            if keys.contains(&atom_key) {
-                                                type_ann
-                                                    .as_ref()
-                                                    .map(|type_ann| type_ann.type_ann.clone())
-                                            } else {
-                                                None
-                                            }
-                                        }
-                                        _ => None,
                                     }
-                                }
+                                    Expr::Lit(Lit::Str(Str { value: key, .. })) => {
+                                        let atom_key: Atom = key.to_atom_lossy().into_owned();
+                                        if keys.contains(&atom_key) {
+                                            type_ann
+                                                .as_ref()
+                                                .map(|type_ann| type_ann.type_ann.clone())
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                    _ => None,
+                                },
                                 TsTypeElement::TsMethodSignature(TsMethodSignature {
                                     key, ..
-                                }) => {
-                                    match &**key {
-                                        Expr::Ident(Ident { sym: key, .. }) => {
-                                            if keys.contains(key) {
-                                                Some(Box::new(TsType::TsTypeRef(TsTypeRef {
-                                                    type_name: TsEntityName::Ident(
-                                                        quote_ident!("Function").into(),
-                                                    ),
-                                                    type_params: None,
-                                                    span: DUMMY_SP,
-                                                })))
-                                            } else {
-                                                None
-                                            }
+                                }) => match &**key {
+                                    Expr::Ident(Ident { sym: key, .. }) => {
+                                        if keys.contains(key) {
+                                            Some(Box::new(TsType::TsTypeRef(TsTypeRef {
+                                                type_name: TsEntityName::Ident(
+                                                    quote_ident!("Function").into(),
+                                                ),
+                                                type_params: None,
+                                                span: DUMMY_SP,
+                                            })))
+                                        } else {
+                                            None
                                         }
-                                        Expr::Lit(Lit::Str(Str { value: key, .. })) => {
-                                            let atom_key: Atom = key.to_atom_lossy().into_owned();
-                                            if keys.contains(&atom_key) {
-                                                Some(Box::new(TsType::TsTypeRef(TsTypeRef {
-                                                    type_name: TsEntityName::Ident(
-                                                        quote_ident!("Function").into(),
-                                                    ),
-                                                    type_params: None,
-                                                    span: DUMMY_SP,
-                                                })))
-                                            } else {
-                                                None
-                                            }
-                                        }
-                                        _ => None,
                                     }
-                                }
+                                    Expr::Lit(Lit::Str(Str { value: key, .. })) => {
+                                        let atom_key: Atom = key.to_atom_lossy().into_owned();
+                                        if keys.contains(&atom_key) {
+                                            Some(Box::new(TsType::TsTypeRef(TsTypeRef {
+                                                type_name: TsEntityName::Ident(
+                                                    quote_ident!("Function").into(),
+                                                ),
+                                                type_params: None,
+                                                span: DUMMY_SP,
+                                            })))
+                                        } else {
+                                            None
+                                        }
+                                    }
+                                    _ => None,
+                                },
                                 TsTypeElement::TsCallSignatureDecl(..)
                                 | TsTypeElement::TsConstructSignatureDecl(..)
                                 | TsTypeElement::TsSetterSignature(..)
@@ -1137,7 +1153,10 @@ where
         Ok(runtime_types)
     }
 
-    pub(crate) fn extract_emits_type(&self, setup_fn: &ExprOrSpread) -> Result<Option<ArrayLit>, String> {
+    pub(crate) fn extract_emits_type(
+        &self,
+        setup_fn: &ExprOrSpread,
+    ) -> Result<Option<ArrayLit>, String> {
         let second_param_type = if let ExprOrSpread { expr, spread: None } = setup_fn {
             match &**expr {
                 Expr::Arrow(arrow) => match arrow.params.get(1) {
@@ -1186,7 +1205,9 @@ where
                                     key, ..
                                 }) => match &*key {
                                     Expr::Ident(ident) => vec![ident.sym.clone()],
-                                    Expr::Lit(Lit::Str(str)) => vec![str.value.to_atom_lossy().into_owned()],
+                                    Expr::Lit(Lit::Str(str)) => {
+                                        vec![str.value.to_atom_lossy().into_owned()]
+                                    }
                                     _ => vec![],
                                 },
                                 RefinedTsTypeElement::CallSignature(TsCallSignatureDecl {

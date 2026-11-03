@@ -1,16 +1,16 @@
 use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
+  HashMap, HashSet,
   context::CompilationContext,
   module::meta_data::script::{
-    statement::{Statement, StatementId, SwcId},
     FARM_RUNTIME_MODULE_HELPER_ID,
+    statement::{Statement, StatementId, SwcId},
   },
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
-  swc_common::{Globals, Mark, GLOBALS},
+  swc_common::{GLOBALS, Globals, Mark},
   swc_ecma_ast::{ImportSpecifier, Module, ModuleDecl, ModuleItem, Stmt},
-  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::EXT,
@@ -18,7 +18,7 @@ use farmfe_toolkit::{
   script::{
     analyze_statement::analyze_statements,
     minify::minify_js_resource_pot,
-    swc_try_with::{resolve_module_mark, ResetSyntaxContextVisitMut},
+    swc_try_with::{ResetSyntaxContextVisitMut, resolve_module_mark},
   },
   swc_ecma_transforms::resolver,
   swc_ecma_visit::{Visit, VisitMutWith, VisitWith},

@@ -1,17 +1,18 @@
 #![feature(box_patterns)]
 
 use farmfe_core::{
+  HashMap, HashSet,
   config::{
-    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
-    LibraryBundleType, ModuleFormatConfig,
+    Config, LibraryBundleType, ModuleFormatConfig, config_regex::ConfigRegex,
+    partial_bundling::PartialBundlingEnforceResourceConfig,
   },
   error::CompilationError,
   module::{
+    ModuleId, ModuleSystem, ModuleType,
     meta_data::script::{
       FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID, FARM_RUNTIME_SUFFIX,
     },
     module_graph::ModuleGraph,
-    ModuleId, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
   plugin::{
@@ -21,22 +22,21 @@ use farmfe_core::{
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   relative_path::RelativePath,
   resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
+    meta_data::{ResourcePotMetaData, js::JsResourcePotMetaData},
     resource_pot::ResourcePotType,
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{Module, ModuleDecl, ModuleItem, Str},
-  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
   runtime::RuntimeFeatureGuardRemover,
   script::{
     concatenate_modules::{
-      concatenate_modules_ast, ConcatenateModulesAstOptions, ConcatenateModulesAstResult,
+      ConcatenateModulesAstOptions, ConcatenateModulesAstResult, concatenate_modules_ast,
     },
     set_module_system_for_module_meta,
-    swc_try_with::{try_with, ResetSpanVisitMut},
+    swc_try_with::{ResetSpanVisitMut, try_with},
     transform_to_esm::{
       self, get_cjs_require_only_modules, update_module_graph_edges_of_cjs_modules,
     },
@@ -44,7 +44,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use crate::formats::{generate_library_format_resources, GenerateLibraryFormatResourcesOptions};
+use crate::formats::{GenerateLibraryFormatResourcesOptions, generate_library_format_resources};
 
 mod formats;
 mod import_meta_visitor;
@@ -80,14 +80,19 @@ impl Plugin for FarmPluginLibrary {
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
     if !config.partial_bundling.enforce_resources.is_empty() {
-      println!("[Farm warn] Config `partial_bundling.enforce_resources` does not work under library mode, it will be ignored.");
+      println!(
+        "[Farm warn] Config `partial_bundling.enforce_resources` does not work under library mode, it will be ignored."
+      );
       config.partial_bundling.enforce_resources = vec![];
     }
 
     match config.output.library_bundle_type {
       LibraryBundleType::SingleBundle => {
         if config.input.len() > 1 {
-          panic!("When output.library_bundle_type is single-bundle, output.input should configure only one entry, currently there are {} inputs", config.input.len());
+          panic!(
+            "When output.library_bundle_type is single-bundle, output.input should configure only one entry, currently there are {} inputs",
+            config.input.len()
+          );
         }
 
         config

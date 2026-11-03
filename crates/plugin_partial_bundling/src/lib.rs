@@ -5,7 +5,7 @@ pub use analyze_module_graph::module_group_graph_from_module_graph;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
+  module::{ModuleId, module_graph::ModuleGraph, module_group::ModuleGroupGraph},
   plugin::{Plugin, PluginHookContext},
   resource::resource_pot::ResourcePot,
 };

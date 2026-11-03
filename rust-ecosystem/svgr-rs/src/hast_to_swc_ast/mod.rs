@@ -3,7 +3,7 @@ use std::{borrow::Cow, collections::HashMap};
 use lazy_static::lazy_static;
 use regex::{Captures, Regex};
 use swc_atoms::Atom;
-use swc_common::{SyntaxContext, DUMMY_SP};
+use swc_common::{DUMMY_SP, SyntaxContext};
 use swc_ecma_ast::*;
 use swc_xml::visit::{Visit, VisitWith};
 
@@ -246,8 +246,8 @@ pub fn to_swc_ast(hast: swc_xml::ast::Document) -> Option<JSXElement> {
 mod tests {
   use std::{borrow::Borrow, fs, path::PathBuf};
 
-  use swc_common::{sync::Lrc, FileName, SourceFile, SourceMap};
-  use swc_ecma_codegen::{text_writer::JsWriter, Config, Emitter, Node};
+  use swc_common::{FileName, SourceFile, SourceMap, sync::Lrc};
+  use swc_ecma_codegen::{Config, Emitter, Node, text_writer::JsWriter};
   use swc_xml::parser::parse_file_as_document;
 
   use super::*;
@@ -324,7 +324,11 @@ mod tests {
       found = true;
       document_test(svg_path);
     }
-    assert!(found, "no fixtures discovered under {}", fixtures_dir.display());
+    assert!(
+      found,
+      "no fixtures discovered under {}",
+      fixtures_dir.display()
+    );
   }
 
   #[test]

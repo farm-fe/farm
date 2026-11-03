@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-use farmfe_core::{config::bool_or_obj::BoolOrObj, HashMap};
+use farmfe_core::{HashMap, config::bool_or_obj::BoolOrObj};
 use farmfe_testing_helpers::fixture;
 
 mod common;
 
 use common::{
-  assert_compiler_result, assert_compiler_result_with_config, create_compiler,
-  create_compiler_with_args, AssertCompilerResultConfig,
+  AssertCompilerResultConfig, assert_compiler_result, assert_compiler_result_with_config,
+  create_compiler, create_compiler_with_args,
 };
 
 #[test]

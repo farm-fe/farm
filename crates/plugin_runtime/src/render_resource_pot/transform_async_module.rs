@@ -1,6 +1,6 @@
 use farmfe_core::{
   config::FARM_REQUIRE,
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::{
     ArrayLit, ArrayPat, AwaitExpr, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
     ExprStmt, Ident, IdentName, Lit, MemberExpr, MemberProp, Module, ModuleItem, Pat, Stmt, Str,

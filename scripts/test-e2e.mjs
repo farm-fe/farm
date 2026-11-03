@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { cpus } from 'node:os';
 import { printSummary } from '../e2e/runner.mjs';
 import { cleanupStaleE2EProcesses } from '../e2e/process-cleanup.mjs';
+import { actualSuiteInventory, checkBrowserExecution, saveSuiteReceipt, executionPlan } from './ci-suite-execution.mjs';
 import { completeWorkerResults } from '../e2e/worker-outcome.mjs';
 import { logger, setLogFile, closeLogFiles } from '../e2e/utils.mjs';
 
@@ -208,7 +209,10 @@ export function runWorker(examples, index, workerPath, logFile, activeWorkers) {
         workerDone = true;
         if (worker.connected) worker.disconnect();
         shutdownTimer = setTimeout(() => {
-          if (!worker.killed) worker.kill('SIGTERM');
+          if (!worker.killed) {
+            workerError ??= new Error('Worker reported done but did not exit; parent completion watchdog sent SIGTERM');
+            worker.kill('SIGTERM');
+          }
         }, 5_000);
       } else if (msg?.type === 'fatal') {
         workerError = new Error(msg.error);
@@ -243,6 +247,8 @@ export function runWorker(examples, index, workerPath, logFile, activeWorkers) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const executionInventory = process.env.FARM_SUITE_RESULTS_FILE ? actualSuiteInventory() : null;
+  const suitePlan = executionInventory ? executionPlan(executionInventory, 'examples-browser') : null;
 
   // Set up log directory first so all output is captured
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -259,7 +265,9 @@ async function main() {
     logger(`Running E2E from example: ${args.startFrom}`, { color: 'cyan' });
   }
 
-  const exampleNames = discoverExamples(args);
+  const discoveredExamples = discoverExamples(args);
+  const exampleNames = suitePlan && suitePlan.mode !== 'all'
+    ? discoveredExamples.filter(name => suitePlan.ids.includes('examples-browser:examples/' + name)) : discoveredExamples;
   const runnableCount = exampleNames.filter(isRunnableExample).length;
   const concurrency = Math.min(args.concurrency, exampleNames.length);
 
@@ -267,6 +275,13 @@ async function main() {
   logger(`Runnable: ${runnableCount}  |  skipped: ${exampleNames.length - runnableCount}`, { color: 'cyan' });
 
   if (runnableCount === 0) {
+    if (suitePlan?.mode === 'not-applicable' && suitePlan.ids.length === 0) {
+      const receipt = checkBrowserExecution(executionInventory, new Map(), [], suitePlan);
+      saveSuiteReceipt(process.env.FARM_SUITE_RESULTS_FILE, executionInventory, receipt);
+      await closeLogFiles();
+      return;
+    }
+    if (executionInventory) throw new Error('Requested browser suite has no runnable examples');
     logger('No runnable browser E2E examples found.', { color: 'yellow' });
     printSummary(new Map());
     closeLogFiles();
@@ -333,6 +348,11 @@ async function main() {
   logger(`Logs saved to: ${logDir}`, { color: 'cyan' });
 
   printSummary(allResults);
+
+  if (executionInventory) {
+    const receipt = checkBrowserExecution(executionInventory, allResults, exampleNames.filter(isRunnableExample), suitePlan);
+    saveSuiteReceipt(process.env.FARM_SUITE_RESULTS_FILE, executionInventory, receipt);
+  }
 
   const totalFailed = [...allResults.values()]
     .flat()

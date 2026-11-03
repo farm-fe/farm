@@ -143,7 +143,7 @@ fn removed_dynamic_group_does_not_panic_when_later_edge_cleanup_revisits_it() {
       }]),
     )
     .unwrap();
-  let mut groups = module_group_graph_from_entries(&vec!["a".into()], &mut graph);
+  let mut groups = module_group_graph_from_entries(&["a".into()], &mut graph);
   let removed = ModuleGroupId::new(&"b".into(), &ModuleGroupType::DynamicImport);
   assert!(groups.has(&removed));
   let mut affected = HashSet::default();

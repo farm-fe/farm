@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 set -eu
+# cspell:words LINKEDIT
 
 node ./scripts/check-native-build-node.mjs
 
@@ -16,19 +17,24 @@ case "$ABI" in
     ;;
 esac
 
+BUILD_CORE=true
+BUILD_CREATE=true
+if [ -n "${FARM_RELEASE_NATIVE_OWNERS:-}" ]; then
+  BUILD_CORE="$(node scripts/release-native-scope.mjs core "$PLUGINS")"
+  BUILD_CREATE="$(node scripts/release-native-scope.mjs create "$PLUGINS")"
+  PLUGINS="$(node scripts/release-native-scope.mjs plugins "$PLUGINS")"
+fi
+
 if [ -z "${CARGO_TARGET_DIR:-}" ]; then
   export CARGO_TARGET_DIR="$(pwd)/target"
 fi
 
-if [ "$PROFILE" = "ci" ]; then
-  CORE_BUILD_SCRIPT="build:rs:ci"
-  CREATE_FARM_BUILD_SCRIPT="build:ci"
-  PLUGIN_PROFILE_ARGS="--profile ci"
-else
-  CORE_BUILD_SCRIPT="build:rs:publish"
-  CREATE_FARM_BUILD_SCRIPT="build"
-  PLUGIN_PROFILE_ARGS=""
-fi
+# Execution role never changes the product recipe. PR and main use the same
+# formal product commands; ci-test remains exclusive to unit-test binaries.
+case "$PROFILE" in ci|release) ;; *) echo "Unsupported execution role" >&2; exit 1 ;; esac
+CORE_BUILD_SCRIPT="build:rs:publish"
+CREATE_FARM_BUILD_SCRIPT="build"
+PLUGIN_PROFILE_ARGS=""
 
 TARGET_ARGS=""
 if [ -n "$TARGET" ]; then
@@ -41,10 +47,17 @@ if [ "$ZIG" = "true" ]; then
 fi
 
 case "$ABI" in
+  darwin-arm64|darwin-x64)
+    # Apple rejects the icons dylib when its stripped LINKEDIT pool is unaligned.
+    # Both PR and main formal release products use the same non-stripping recipe.
+    export CARGO_PROFILE_RELEASE_STRIP=none
+    ;;
   linux-x64-gnu)
     unset CC_x86_64_unknown_linux_gnu || true
     unset CC || true
     export CARGO_INCREMENTAL=0
+    # Both execution roles bind the same explicit measured linker.
+    export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
     ;;
   linux-x64-musl)
     if [ -f /etc/alpine-release ]; then
@@ -55,17 +68,13 @@ case "$ABI" in
       apk add --upgrade clang-static llvm-dev
     fi
     export CARGO_INCREMENTAL=0
-    if [ "$PROFILE" != "ci" ]; then
-      export CARGO_PROFILE_RELEASE_LTO=false
-    fi
+    export CARGO_PROFILE_RELEASE_LTO=false
     ;;
   win32-ia32-msvc|win32-arm64-msvc)
     cargo install cargo-xwin@0.18.6 --locked
-    if [ "$PROFILE" != "ci" ]; then
-      export CARGO_PROFILE_RELEASE_LTO=false
-      if [ "$ABI" = "win32-arm64-msvc" ]; then
-        export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
-      fi
+    export CARGO_PROFILE_RELEASE_LTO=false
+    if [ "$ABI" = "win32-arm64-msvc" ]; then
+      export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
     fi
     ;;
 esac
@@ -80,13 +89,15 @@ CORE_EXTRA_ARGS=""
 case "$ABI" in
   win32-ia32-msvc|win32-arm64-msvc)
     CORE_EXTRA_ARGS="--no-default-features"
-    if [ "$PROFILE" != "ci" ]; then
-      CORE_BUILD_SCRIPT="build:rs"
-    fi
+    CORE_BUILD_SCRIPT="build:rs"
     ;;
 esac
 
 if [ "${FARM_NATIVE_PROOF_MODE:-off}" = "shadow" ]; then
+  # Resolve the repository-pinned toolchain under the actual build budget, before
+  # the 15-second read-only version probes. A first installation is build setup,
+  # not optional diagnostics, and its failure must stop this producer.
+  cargo --version
   FARM_CAPTURE_CORE_SCRIPT="$CORE_BUILD_SCRIPT" \
   FARM_CAPTURE_CORE_ARGS="$TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS" \
   FARM_CAPTURE_PLUGIN_ARGS="$TARGET_ARGS $ZIG_ARGS --abi $ABI $PLUGIN_PROFILE_ARGS" \
@@ -95,11 +106,20 @@ if [ "${FARM_NATIVE_PROOF_MODE:-off}" = "shadow" ]; then
     node scripts/ci-native-capture.mjs runtime || printf '%s\n' 'Shadow native context unavailable; reuse remains disabled'
 fi
 
-cd packages/core
-npm run "$CORE_BUILD_SCRIPT" -- $TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS
-cd ../..
+if [ "${FARM_NATIVE_PREPARE_ONLY:-false}" = true ]; then exit 0; fi
+if [ "$PROFILE" = ci ] && [ -n "${FARM_FORMAL_RESOLUTION_HASH:-}" ]; then
+  BUILD_CORE="$(node scripts/formal-native-scope.mjs '@farmfe/core')"
+  BUILD_CREATE="$(node scripts/formal-native-scope.mjs create-farm)"
+  PLUGINS="$(node scripts/formal-native-scope.mjs --plugins "$PLUGINS")"
+fi
 
-build_create_farm
+if [ "$BUILD_CORE" = true ]; then
+  cd packages/core
+  npm run "$CORE_BUILD_SCRIPT" -- $TARGET_ARGS $ZIG_ARGS $CORE_EXTRA_ARGS
+  cd ../..
+fi
+
+if [ "$BUILD_CREATE" = true ]; then build_create_farm; fi
 
 cd rust-plugins
 for plugin in $PLUGINS; do

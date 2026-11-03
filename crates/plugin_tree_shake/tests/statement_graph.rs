@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use farmfe_core::module::meta_data::script::ScriptModuleMetaData;
 use farmfe_core::module::{Module, ModuleMetaData};
-use farmfe_core::swc_common::{Globals, SyntaxContext, GLOBALS};
+use farmfe_core::swc_common::{GLOBALS, Globals, SyntaxContext};
 use farmfe_core::{HashMap, HashSet};
 
 mod common;
@@ -342,10 +342,12 @@ export { a, b, c as d };"#;
       traced_import_stmts[0].used_stmt_idents.as_partial().len(),
       1
     );
-    assert!(traced_import_stmts[0]
-      .used_stmt_idents
-      .as_partial()
-      .contains(&UsedExportsIdent::SwcIdent("aValue".to_string())));
+    assert!(
+      traced_import_stmts[0]
+        .used_stmt_idents
+        .as_partial()
+        .contains(&UsedExportsIdent::SwcIdent("aValue".to_string()))
+    );
 
     let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();
@@ -415,10 +417,12 @@ export { a, b, c as d };"#;
       traced_import_stmts[0].used_stmt_idents.as_partial().len(),
       1
     );
-    assert!(traced_import_stmts[0]
-      .used_stmt_idents
-      .as_partial()
-      .contains(&UsedExportsIdent::SwcIdent("aValue".to_string())));
+    assert!(
+      traced_import_stmts[0]
+        .used_stmt_idents
+        .as_partial()
+        .contains(&UsedExportsIdent::SwcIdent("aValue".to_string()))
+    );
 
     let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();
@@ -507,10 +511,12 @@ export const {
       traced_import_stmts[0].used_stmt_idents.as_partial().len(),
       1
     );
-    assert!(traced_import_stmts[0]
-      .used_stmt_idents
-      .as_partial()
-      .contains(&UsedExportsIdent::Default));
+    assert!(
+      traced_import_stmts[0]
+        .used_stmt_idents
+        .as_partial()
+        .contains(&UsedExportsIdent::Default)
+    );
 
     let mut used_stmts = stmt_graph.used_stmts().iter().copied().collect::<Vec<_>>();
     used_stmts.sort();

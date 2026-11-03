@@ -3,25 +3,34 @@ name: Farm Docs
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      platforms:
+        type: string
+        default: '[{"os":"windows-latest","abi":"win32-x64-msvc"},{"os":"ubuntu-24.04","abi":"linux-x64-gnu"}]'
+      consume_native:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: farm-docs-${{ github.ref }}
+  group: farm-docs-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platforms || 'standalone' }}
   cancel-in-progress: true
 
 jobs:
   docs:
-    name: Docs / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Docs / ${{ matrix.settings.os }}
+    runs-on: ${{ matrix.settings.os }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-24.04]
+        settings: ${{ fromJSON(inputs.platforms || '[{"os":"windows-latest","abi":"win32-x64-msvc"},{"os":"ubuntu-24.04","abi":"linux-x64-gnu"}]') }}
     env:
       CARGO_BUILD_JOBS: '2'
+      FARM_BUILD_PROFILE: ci
       CODEX_DOCS_EVIDENCE_PHASE: p10
       CODEX_DOCS_EVIDENCE_ATTEMPT: ci
     defaults:
@@ -29,6 +38,9 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
@@ -64,15 +76,16 @@ jobs:
           for package in utils runtime runtime-plugin-hmr runtime-plugin-import-meta plugin-tools; do
             pnpm --dir "packages/$package" run build
           done
-      - name: Build current Core native binding
-        # Kept as a release-profile reference until real ci/release compatibility
-        # is exercised. Presence/hash checks alone cannot justify its removal.
-        run: pnpm --dir packages/core run build:rs
-      - name: Build Docs native plugin closure
-        run: |
-          for plugin in replace-dirname react mdx ssr-css syntax-highlight sass tailwindcss docs docs-snapshot docs-seo docs-snippets; do
-            pnpm --dir "rust-plugins/$plugin" run build
-          done
+      - name: Resolve verified current producer Docs products
+        id: docs_native
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_DOCS_CONSUME_NATIVE: ${{ inputs.consume_native }}
+        run: python -B scripts/docs-native-products.py consume --abi ${{ matrix.settings.abi }} --output docs-native-plan.json
+      - name: Build only unavailable Docs native products
+        env:
+          FARM_DOCS_PLAN_HASH: ${{ steps.docs_native.outputs.plan_hash }}
+        run: node scripts/docs-native-build.mjs docs-native-plan.json
       - name: Build public JS packages
         run: |
           for package in core cli docs docs-theme-default; do
@@ -109,7 +122,7 @@ jobs:
           const directory=path.join(process.env.RUNNER_TEMP,'farm-docs-native');
           fs.mkdirSync(directory,{recursive:true});
           const baseline=path.join(directory,'baseline.json');
-          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,profile:'release',ciProfileCompatibility:'not-yet-validated',binaries},null,2),{flag:'wx'});
+          fs.writeFileSync(baseline,JSON.stringify({sha:process.env.GITHUB_SHA,platform:process.platform,arch:process.arch,profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false,binaries},null,2),{flag:'wx'});
           fs.appendFileSync(process.env.GITHUB_ENV,`CODEX_DOCS_NATIVE_BASELINE=${baseline}
           CODEX_DOCS_NATIVE_GUARD_DIR=${path.join(directory,'guards')}
           `);
@@ -149,7 +162,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: farm-docs-${{ matrix.os }}-${{ github.run_attempt }}
+          name: farm-docs-${{ matrix.settings.os }}-${{ github.run_attempt }}
           if-no-files-found: warn
           path: |
             website/build-farm
@@ -157,11 +170,12 @@ jobs:
             examples/docs-features/build
             docs/farm-docs/evidence/p10/ci
             ${{ runner.temp }}/farm-docs-native
+            docs-native-plan.json
       - name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
-          cell: "docs:release:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          cell: "docs:ci:${{ matrix.settings.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.settings.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi || matrix.settings.os || 'single' }}

@@ -1,16 +1,16 @@
 use std::{
-  ffi::{c_void, CString},
+  ffi::{CString, c_void},
   ptr,
   sync::Arc,
 };
 
 use napi::{
+  Env, Error, JsValue, Status, Unknown,
   bindgen_prelude::{FromNapiValue, JsObjectValue, Object, ObjectRef, ToNapiValue},
   sys::{
     napi_callback, napi_callback_info, napi_create_function, napi_create_object, napi_env,
     napi_get_cb_info, napi_value,
   },
-  Env, Error, JsValue, Status, Unknown,
 };
 
 use farmfe_core::{
@@ -28,15 +28,15 @@ const ERROR: &str = "error";
 const SOURCE_MAP_ENABLED: &str = "sourceMapEnabled";
 
 use crate::plugin_adapters::js_plugin_adapter::context_methods::cache::{
-  context_read_metadata, context_read_metadata_by_scope, context_write_metadata,
   CONTEXT_READ_METADATA, CONTEXT_READ_METADATA_BY_SCOPE, CONTEXT_WRITE_METADATA,
+  context_read_metadata, context_read_metadata_by_scope, context_write_metadata,
 };
 
 /// These functions are used to make farm js plugin compatible with Vite plugin
-use super::context_methods::vite_get_importers::{vite_get_importers, VITE_GET_IMPORTERS};
-use super::context_methods::vite_get_module_by_id::{vite_get_module_by_id, VITE_GET_MODULE_BY_ID};
+use super::context_methods::vite_get_importers::{VITE_GET_IMPORTERS, vite_get_importers};
+use super::context_methods::vite_get_module_by_id::{VITE_GET_MODULE_BY_ID, vite_get_module_by_id};
 use super::context_methods::vite_get_modules_by_file::{
-  vite_get_modules_by_file, VITE_GET_MODULES_BY_FILE,
+  VITE_GET_MODULES_BY_FILE, vite_get_modules_by_file,
 };
 
 pub struct GetModulesByFileResultItem {

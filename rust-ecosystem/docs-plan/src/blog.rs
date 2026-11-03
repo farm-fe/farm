@@ -1,7 +1,7 @@
 use crate::metadata::{DiagnosticSource, MetadataSource};
 use crate::{
-  routes, DocPlan, PageNavigation, PublicBlogAuthor, PublicBlogIndex, PublicBlogPost,
-  PublicBlogTag, PublicBlogTagIndex, PublicBlogYearIndex,
+  DocPlan, PageNavigation, PublicBlogAuthor, PublicBlogIndex, PublicBlogPost, PublicBlogTag,
+  PublicBlogTagIndex, PublicBlogYearIndex, routes,
 };
 use farmfe_docs_config::{CollectionKind, ValidatedConfig};
 use serde::Deserialize;

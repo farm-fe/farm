@@ -3,8 +3,11 @@
 import copy
 import importlib.util
 import io
+import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("evidence", Path(__file__).with_name("ci-native-evidence.py"))
 evidence = importlib.util.module_from_spec(spec); spec.loader.exec_module(evidence)
@@ -31,6 +34,22 @@ def fixture():
 
 
 class EvidenceContracts(unittest.TestCase):
+    def test_source_ledger_explicitly_binds_the_platform_orchestration(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); products = root / "products.json"; output = root / "source.json"
+            products.write_text(json.dumps({"records": [{"owner": "@farmfe/core"}], "abi": "linux-x64-gnu", "profile": "ci"}), encoding="utf-8")
+            environment = {"GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "10", "GITHUB_RUN_ATTEMPT": "2", "GITHUB_JOB": "build"}
+            with mock.patch.dict(evidence.os.environ, environment, clear=True), mock.patch.object(evidence, "committed_source", return_value={"buildPolicyHash": "b" * 64}) as committed:
+                evidence.capture_source(products, output)
+            commit, expected = committed.call_args.args
+            self.assertEqual(commit, "a" * 40)
+            for file in ["ci.yaml", "ci-primary-platform.yaml", "rust-build-user.yaml", "rust-build-release.yaml"]:
+                self.assertIn(".github/workflows/" + file, expected["policyFiles"])
+            record = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(record["policyFiles"], expected["policyFiles"])
+            self.assertEqual(record["source"]["buildPolicyHash"], "b" * 64)
+            self.assertFalse(record["reuseAuthorized"])
+
     def test_identity_comes_from_api_not_artifact_claims(self):
         expected, candidate, transport, reader = fixture()
         data, github = evidence.GitHubEvidenceAdapter(transport, reader).load(candidate, expected)

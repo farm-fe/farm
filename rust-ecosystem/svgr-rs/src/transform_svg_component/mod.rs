@@ -1,7 +1,7 @@
-use swc_common::{SyntaxContext, DUMMY_SP};
+use swc_common::{DUMMY_SP, SyntaxContext};
 use swc_ecma_ast::*;
 
-use crate::{core, SvgrError};
+use crate::{SvgrError, core};
 
 mod variables;
 
@@ -112,9 +112,9 @@ pub fn transform(
 
 #[cfg(test)]
 mod tests {
-  use swc_common::{sync::Lrc, FileName, SourceMap};
+  use swc_common::{FileName, SourceMap, sync::Lrc};
   use swc_ecma_ast::EsVersion;
-  use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
+  use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
   use swc_ecma_parser as parser;
 
   use super::*;
@@ -389,8 +389,8 @@ export default SvgComponent;
   }
 
   #[test]
-  fn with_title_prop_desc_prop_and_expand_props_adds_title_title_id_desc_desc_id_props_and_expands_props(
-  ) {
+  fn with_title_prop_desc_prop_and_expand_props_adds_title_title_id_desc_desc_id_props_and_expands_props()
+   {
     test_js_n_ts(
       r#"<svg><g/></svg>"#,
       &core::config::Config {
@@ -530,8 +530,8 @@ export default SvgComponent;
   }
 
   #[test]
-  fn with_native_ref_and_expand_props_option_adds_import_from_react_native_svg_and_adds_props_and_adds_forward_ref_component(
-  ) {
+  fn with_native_ref_and_expand_props_option_adds_import_from_react_native_svg_and_adds_props_and_adds_forward_ref_component()
+   {
     test_js_n_ts(
       r#"<Svg><g/></Svg>"#,
       &core::config::Config {
@@ -657,8 +657,8 @@ export default img;
   }
 
   #[test]
-  fn with_named_export_and_export_type_option_and_without_previous_export_state_exports_via_named_export(
-  ) {
+  fn with_named_export_and_export_type_option_and_without_previous_export_state_exports_via_named_export()
+   {
     test_js_n_ts(
       r#"<svg><g/></svg>"#,
       &core::config::Config {

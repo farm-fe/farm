@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap,
   config::LibraryBundleType,
   context::CompilationContext,
   error::{CompilationError, Result},
   parking_lot::Mutex,
   plugin::{GeneratedResource, PluginGenerateResourcesHookResult, PluginHookContext},
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, Resource, ResourceType},
-  HashMap,
+  resource::{Resource, ResourceType, resource_pot::ResourcePot},
 };
 use farmfe_toolkit::{
-  fs::{transform_output_entry_filename, transform_output_filename, TransformOutputFileNameParams},
+  fs::{TransformOutputFileNameParams, transform_output_entry_filename, transform_output_filename},
   sourcemap::append_sourcemap_comment,
 };
 

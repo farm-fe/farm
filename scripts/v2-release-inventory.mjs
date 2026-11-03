@@ -27,20 +27,35 @@ export function nativeSourceDigest(directory, entries = ['src', 'Cargo.toml', 'b
 // The family remains complete for consumers and SDK validation. Only this delta
 // may be repacked/published; unchanged immutable versions come from registries.
 export const publicationNpm = plan => plan.publication?.npm ?? plan.npm;
+export function releaseCandidatePlanPath(root, env = process.env) {
+  if (!env.FARM_RELEASE_CANDIDATE_PLAN) return path.join(root, 'docs/releases/v2-candidate.json');
+  assert.equal(env.GITHUB_ACTIONS, 'true'); assert.equal(env.GITHUB_REF, 'refs/heads/main');
+  assert.equal(env.FARM_BUILD_PROFILE, 'release'); assert.equal(env.GITHUB_JOB, 'producer');
+  assert.equal(env.GITHUB_WORKFLOW_REF, `${env.GITHUB_REPOSITORY}/.github/workflows/incremental-release.yaml@refs/heads/main`);
+  const file = path.resolve(root, env.FARM_RELEASE_CANDIDATE_PLAN);
+  assert.equal(file, path.resolve(root, 'release-work/candidate-plan.json'), 'Unexpected release candidate plan path');
+  return file;
+}
 // create-farm uses the independent Node-API-4 interface, not Farm's Rust plugin ABI.
 export const farmAbiOwners = plan => [...new Set(plan.npm.payloads.filter(row => row.owner !== 'create-farm').map(row => row.owner))].sort();
-export function validationEvent() {
-  const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH));
+export function validationEvent({environment=process.env,event=JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH)),readPullRequest=(repository,number)=>JSON.parse(execFileSync('gh',['api',`repos/${repository}/pulls/${number}`],{encoding:'utf8',timeout:30000}))}={}) {
   if (event.pull_request) return event;
-  assert.equal(process.env.GITHUB_EVENT_NAME, 'workflow_dispatch');
-  const number = Number(event.inputs?.release_pr);
-  assert.ok(Number.isSafeInteger(number) && number > 0, 'Explicit release PR required');
-  const repository = process.env.GITHUB_REPOSITORY;
+  assert.equal(environment.GITHUB_EVENT_NAME, 'workflow_dispatch');
+  const genericCI = event.inputs?.pr_number !== undefined;
+  const number = Number(genericCI ? event.inputs.pr_number : event.inputs?.release_pr);
+  assert.ok(Number.isSafeInteger(number) && number > 0, 'Explicit same-repository PR required');
+  const repository = environment.GITHUB_REPOSITORY;
   assert.match(repository, /^[\w.-]+\/[\w.-]+$/);
-  const pr = JSON.parse(execFileSync('gh', ['api', `repos/${repository}/pulls/${number}`], { encoding: 'utf8', timeout: 30000 }));
+  const pr = readPullRequest(repository,number);
   assert.equal(pr.head.repo.full_name, repository); assert.equal(pr.base.ref, 'main');
-  assert.equal(pr.head.sha, process.env.GITHUB_SHA, 'Dispatched checkout is stale');
-  assert.equal(pr.head.ref, 'changeset-release/main');
+  assert.equal(pr.head.sha, environment.GITHUB_SHA, 'Dispatched checkout is stale');
+  if (genericCI) {
+    assert.equal(pr.base.repo.full_name,repository); assert.equal(pr.state,'open');
+    assert.equal(environment.GITHUB_REF,'refs/heads/'+pr.head.ref);
+    assert.equal(environment.GITHUB_WORKFLOW_REF,`${repository}/.github/workflows/ci.yaml@${environment.GITHUB_REF}`);
+    assert.match(event.inputs.base_sha ?? '',/^[a-f0-9]{40}$/);
+    assert.equal(event.inputs.base_sha,pr.base.sha,'Dispatched PR base is stale');
+  } else assert.equal(pr.head.ref, 'changeset-release/main');
   return { ...event, number, pull_request: pr };
 }
 export function changesetsPublication(family, baseline, officialReleases) {

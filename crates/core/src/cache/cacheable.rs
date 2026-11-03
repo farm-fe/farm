@@ -1,4 +1,4 @@
-use downcast_rs::{impl_downcast, Downcast};
+use downcast_rs::{Downcast, impl_downcast};
 
 use crate::{deserialize, serialize};
 
@@ -46,7 +46,9 @@ impl Cacheable for Vec<u8> {
   }
 }
 
-impl_primitive_cacheable!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char, String);
+impl_primitive_cacheable!(
+  i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char, String
+);
 
 #[cfg(test)]
 mod tests {

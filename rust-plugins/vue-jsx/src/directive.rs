@@ -1,8 +1,8 @@
-use std::{collections::BTreeSet, str::Split};
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::swc_ecma_ast::*;
 use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::swc_ecma_utils::{quote_ident, quote_str};
+use std::{collections::BTreeSet, str::Split};
 
 pub(crate) fn is_directive(jsx_attr: &JSXAttr) -> bool {
     let name = match &jsx_attr.name {
@@ -34,10 +34,7 @@ pub(crate) enum Directive {
     Slots(Option<Box<Expr>>),
 }
 
-pub(crate) fn parse_directive(
-    jsx_attr: &JSXAttr,
-    is_component: bool,
-) -> Result<Directive, String> {
+pub(crate) fn parse_directive(jsx_attr: &JSXAttr, is_component: bool) -> Result<Directive, String> {
     let (name, argument, splitted) = match &jsx_attr.name {
         JSXAttrName::Ident(ident) => {
             let mut splitted = ident
@@ -170,9 +167,7 @@ fn parse_v_text_directive(jsx_attr: &JSXAttr) -> Result<Directive, String> {
             }
         }
         None => {
-            return Err(
-                "You have to use JSX Expression inside your `v-text`.".to_string(),
-            );
+            return Err("You have to use JSX Expression inside your `v-text`.".to_string());
         }
         _ => unreachable!(),
     };
@@ -196,9 +191,7 @@ fn parse_v_html_directive(jsx_attr: &JSXAttr) -> Result<Directive, String> {
             }
         }
         None => {
-            return Err(
-                "You have to use JSX Expression inside your `v-html`.".to_string(),
-            );
+            return Err("You have to use JSX Expression inside your `v-html`.".to_string());
         }
         _ => unreachable!(),
     };
@@ -218,9 +211,7 @@ fn parse_v_model_directive(
             ..
         })) => (**expr).clone(),
         _ => {
-            return Err(
-                "You have to use JSX Expression inside your `v-model`.".to_string(),
-            );
+            return Err("You have to use JSX Expression inside your `v-model`.".to_string());
         }
     };
 

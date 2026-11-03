@@ -1,7 +1,7 @@
 use farmfe_macro_cache_item::cache_item;
 use swc_css_ast::Stylesheet;
 
-use crate::module::{meta_data::script::CommentsMetaData, CustomMetaDataMap};
+use crate::module::{CustomMetaDataMap, meta_data::script::CommentsMetaData};
 
 #[cache_item]
 #[derive(Clone)]

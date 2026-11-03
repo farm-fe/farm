@@ -12,7 +12,7 @@ export const digest = bytes => crypto.createHash('sha256').update(bytes).digest(
 export const requiredWorkflows = ['ci.yaml', 'rust-test.yaml', 'lint.yaml', 'code-spell-check.yaml', 'lint-pr-title.yml'].map(name => `.github/workflows/${name}`);
 export const performancePolicy = Object.freeze({ requiredForPublication: true, protocol: 'commerce-business-2048-farm-supervised-v2',
   platforms: Object.freeze([['linux', 'x64'], ['darwin', 'arm64'], ['win32', 'x64']]), regressionThreshold: null });
-export const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check & Changesets',
+export const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check',
   ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].flatMap(os => [`Examples Test (${os})`, `Typescript Test (${os})`]),
   'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Seal complete npm and Rust candidates',
   ...['ubuntu-24.04', 'macos-latest', 'windows-latest'].map(os => `Commerce Performance (${os})`), 'Aggregate informational performance report',

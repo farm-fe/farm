@@ -179,7 +179,7 @@
   "requiredCiJobs": [
     "Release source contracts",
     "Check declared native inputs (not ABI execution)",
-    "Type Check & Changesets",
+    "Type Check",
     "Examples Test (ubuntu-24.04)",
     "Typescript Test (ubuntu-24.04)",
     "Examples Test (macos-latest)",

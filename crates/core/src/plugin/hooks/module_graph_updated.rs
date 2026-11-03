@@ -1,4 +1,4 @@
-use crate::module::{module_graph::ModuleDepsDiffResult, ModuleId};
+use crate::module::{ModuleId, module_graph::ModuleDepsDiffResult};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]

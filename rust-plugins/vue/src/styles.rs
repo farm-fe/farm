@@ -12,8 +12,8 @@ use farmfe_core::parking_lot::Mutex;
 use fxhash::FxHashMap;
 
 use crate::consts::{
-  VUE_QUERY_BLOCK_KEY, VUE_QUERY_INDEX_KEY, VUE_QUERY_LANG_KEY, VUE_QUERY_SCOPED_KEY,
-  VUE_QUERY_SCOPE_ID_KEY, VUE_QUERY_TYPE_CUSTOM, VUE_QUERY_TYPE_KEY, VUE_QUERY_TYPE_STYLE,
+  VUE_QUERY_BLOCK_KEY, VUE_QUERY_INDEX_KEY, VUE_QUERY_LANG_KEY, VUE_QUERY_SCOPE_ID_KEY,
+  VUE_QUERY_SCOPED_KEY, VUE_QUERY_TYPE_CUSTOM, VUE_QUERY_TYPE_KEY, VUE_QUERY_TYPE_STYLE,
 };
 
 /// Lowercase comparison helper: a style block whose `lang` resolves to
@@ -77,9 +77,7 @@ pub fn style_virtual_id(
     scoped_key = VUE_QUERY_SCOPED_KEY,
   );
 
-  if scoped
-    && let Some(scope_id) = scope_id
-  {
+  if scoped && let Some(scope_id) = scope_id {
     id.push_str(&format!("&{VUE_QUERY_SCOPE_ID_KEY}={scope_id}"));
   }
 

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use base64::{engine::general_purpose, Engine};
-use farmfe_core::{context::CompilationContext, resource::ResourceType, HashMap};
+use base64::{Engine, engine::general_purpose};
+use farmfe_core::{HashMap, context::CompilationContext, resource::ResourceType};
 
 use crate::codegen::{INLINE_PLACEHOLDER_PREFIX, INLINE_PLACEHOLDER_SUFFIX};
 

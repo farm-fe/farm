@@ -52,8 +52,15 @@ pub(super) fn transition(c: &ParsedCandidate, _: &Theme) -> Declarations {
     v.as_str()
   } else {
     match c.utility_value.as_deref() {
- None=>"color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter",
- Some("all")=>"all",Some("shadow")=>"box-shadow",Some("transform")=>"transform",Some("none")=>"none",_=>return None}
+      None => {
+        "color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-backdrop-filter"
+      }
+      Some("all") => "all",
+      Some("shadow") => "box-shadow",
+      Some("transform") => "transform",
+      Some("none") => "none",
+      _ => return None,
+    }
   };
   Some(vec![
     ("transition-property".into(), property.into()),

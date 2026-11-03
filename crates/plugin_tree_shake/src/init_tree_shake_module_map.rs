@@ -1,9 +1,9 @@
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId},
+  HashMap,
+  module::{ModuleId, module_graph::ModuleGraph},
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   swc_common::GLOBALS,
-  HashMap,
 };
 
 use crate::module::TreeShakeModule;

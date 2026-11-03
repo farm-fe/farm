@@ -35,10 +35,10 @@ export async function candidateNpmEvidence(plan, receipt, directory) {
     assert.equal(manifest.name, row.name); assert.equal(manifest.version, row.version);
     evidence.set(row.name, { ...row, integrity: integrity(bytes), manifest, archive: file, kind: 'sealed' });
   }
-  for (const row of plan.publication?.reuseNpm ?? []) {
+  for (const row of ['incremental-source-release','incremental-npm-source-release'].includes(plan.preparation?.mode) ? plan.validationDependencies.npm : plan.publication?.reuseNpm ?? []) {
     assert.match(row.integrity, /^sha512-[A-Za-z0-9+/]+={0,2}$/);
     assert.ok(!evidence.has(row.name), 'Sealed/reuse identity collision');
-    evidence.set(row.name, { ...row, kind: 'registry-reuse' });
+    evidence.set(row.name, { ...row, kind: ['incremental-source-release','incremental-npm-source-release'].includes(plan.preparation?.mode) ? 'published-validation-dependency' : 'registry-reuse' });
   }
   for (const row of [...plan.npm.primary, ...plan.npm.payloads]) {
     const found = evidence.get(row.name);

@@ -1,4 +1,4 @@
-use farmfe_core::module::{module_graph::ModuleGraph, ModuleId};
+use farmfe_core::module::{ModuleId, module_graph::ModuleGraph};
 
 use crate::module_pot::ModulePot;
 

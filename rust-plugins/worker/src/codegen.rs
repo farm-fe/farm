@@ -2,7 +2,7 @@ use std::path::Path;
 
 use farmfe_core::config::Config;
 use farmfe_toolkit::fs::{
-  transform_output_entry_filename, transform_output_filename, TransformOutputFileNameParams,
+  TransformOutputFileNameParams, transform_output_entry_filename, transform_output_filename,
 };
 use regress::Regex as JsRegex;
 

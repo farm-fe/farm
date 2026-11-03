@@ -1119,7 +1119,7 @@ fn handle_text(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> 
   Some(vec![("color".into(), v)])
 }
 fn handle_bg(c: &ParsedCandidate, t: &Theme) -> Option<Vec<(String, String)>> {
-  use crate::utils::infer_data_type::{infer_data_type, DataType};
+  use crate::utils::infer_data_type::{DataType, infer_data_type};
   if let Some(value) = &c.arbitrary_value {
     let property = match c.type_hint.as_deref() {
       Some("image" | "url") => "background-image",

@@ -1,7 +1,7 @@
 #![deny(clippy::all)]
 
-use swc_common::{comments::SingleThreadedComments, sync::Lrc, FileName, SourceMap};
-use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
+use swc_common::{FileName, SourceMap, comments::SingleThreadedComments, sync::Lrc};
+use swc_ecma_codegen::{Emitter, text_writer::JsWriter};
 use swc_ecma_visit::VisitMutWith;
 use swc_xml::parser::parse_file_as_document;
 

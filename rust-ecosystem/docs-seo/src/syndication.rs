@@ -2,7 +2,7 @@
 use super::{Result, Xml};
 use chrono::{DateTime, Datelike, FixedOffset};
 use farmfe_docs_config::{AtomConfig, PublicCollection};
-use farmfe_docs_plan::{seo_url, syndication::OpenSearchTarget, DocPlan, PublicBlogPost};
+use farmfe_docs_plan::{DocPlan, PublicBlogPost, seo_url, syndication::OpenSearchTarget};
 use std::collections::{BTreeMap, BTreeSet};
 
 fn timestamp(value: &str) -> Result<DateTime<FixedOffset>> {

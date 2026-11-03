@@ -33,8 +33,9 @@ test('official no-Cargo output leaves a JS Changeset pending without recording a
 test('one real Core patch Changeset generates an official owner bump then synchronizes platform wrappers', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-official-version-'));
   try {
-    const cliDirectory = path.dirname(fs.realpathSync(fileURLToPath(new URL('../node_modules/@changesets/cli/package.json', import.meta.url))));
+    const cliDirectory = path.dirname(fs.realpathSync(process.env.FARM_TEST_CHANGESETS_MANIFEST ?? fileURLToPath(new URL('../node_modules/@changesets/cli/package.json', import.meta.url))));
     const cli = JSON.parse(fs.readFileSync(path.join(cliDirectory, 'package.json')));
+    assert.equal(cli.version,'2.27.9','Test must use the actual pinned Changesets CLI');
     const changelog = path.resolve(cliDirectory, cli.exports['./changelog'].default);
     const write = (file, value) => { const target = path.join(directory, file); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, typeof value === 'string' ? value : JSON.stringify(value)); };
     write('package.json', { name: 'version-fixture', private: true, workspaces: ['packages/*'] });

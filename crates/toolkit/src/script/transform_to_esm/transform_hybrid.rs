@@ -5,7 +5,7 @@ use crate::script::{
   module2cjs::{self, RuntimeCalleeAllocator, TransformModuleDeclsOptions},
 };
 use farmfe_core::{
-  module::meta_data::script::ScriptModuleMetaData, swc_common::Mark, swc_ecma_ast::Expr, HashSet,
+  HashSet, module::meta_data::script::ScriptModuleMetaData, swc_common::Mark, swc_ecma_ast::Expr,
 };
 
 pub fn transform_hybrid_to_cjs(meta: &mut ScriptModuleMetaData) -> HashSet<&'static str> {

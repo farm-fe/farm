@@ -1,5 +1,6 @@
 import { appendFileSync, mkdirSync, existsSync } from 'node:fs';
 import { createWriteStream } from 'node:fs';
+import { finished } from 'node:stream/promises';
 import * as fs from 'node:fs/promises';
 import { isAbsolute, join, dirname } from 'node:path';
 
@@ -51,6 +52,27 @@ export function closeLogFiles() {
   }
   _logStreams.clear();
   _defaultFilePath = null;
+}
+
+/** Await actual file-stream completion before an owned worker exits. */
+export async function flushLogFiles() {
+  const streams=[..._logStreams.values()];
+  _logStreams.clear();
+  _defaultFilePath=null;
+  const completion=Promise.all(streams.map(stream=>{
+    const done=finished(stream,{cleanup:true});
+    stream.end();
+    return done;
+  }));
+  let timer;
+  try {
+    await Promise.race([completion,new Promise((_,reject)=>{
+      timer=setTimeout(()=>reject(new Error('Worker log flush deadline exceeded')),3000);
+    })]);
+  } catch(error) {
+    for(const stream of streams) stream.destroy();
+    throw error;
+  } finally { clearTimeout(timer); }
 }
 
 // ---------------------------------------------------------------------------

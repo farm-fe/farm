@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, ItemStruct};
+use syn::{ItemStruct, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn farm_plugin(_attr: TokenStream, item: TokenStream) -> TokenStream {

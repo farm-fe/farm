@@ -14,9 +14,13 @@ mod utils;
 mod tests {
   use super::*;
   use farmfe_core::{
-    config::Mode, context::CompilationContext,
-    module::{Module, ModuleMetaData, ModuleSystem, ModuleType, module_graph::ModuleGraph,
-      meta_data::script::{ModuleExportIdent, ModuleExportIdentType, statement::SwcId}},
+    config::Mode,
+    context::CompilationContext,
+    module::{
+      Module, ModuleMetaData, ModuleSystem, ModuleType,
+      meta_data::script::{ModuleExportIdent, ModuleExportIdentType, statement::SwcId},
+      module_graph::ModuleGraph,
+    },
   };
   use std::sync::Arc;
 
@@ -27,12 +31,20 @@ mod tests {
     let mut barrel = Module::new("barrel.js".into());
     barrel.module_type = ModuleType::Js;
     *barrel.meta = ModuleMetaData::Script(Default::default());
-    barrel.meta.as_script_mut().reexport_ident_map.insert("Model".into(),
-      ModuleReExportIdentType::FromExportAll("source.js".into()));
+    barrel.meta.as_script_mut().reexport_ident_map.insert(
+      "Model".into(),
+      ModuleReExportIdentType::FromExportAll("source.js".into()),
+    );
     graph.add_module(barrel);
     let mappings = HashMap::from_iter([
-      ("source.js".into(), HashMap::from_iter([("Model".into(), "a".into())])),
-      ("barrel.js".into(), HashMap::from_iter([("Model".into(), "b".into())])),
+      (
+        "source.js".into(),
+        HashMap::from_iter([("Model".into(), "a".into())]),
+      ),
+      (
+        "barrel.js".into(),
+        HashMap::from_iter([("Model".into(), "b".into())]),
+      ),
     ]);
     mangle_exports::update_exports_meta_and_module_decl(&mappings, &HashMap::default(), &mut graph);
     let meta = graph.module(&"barrel.js".into()).unwrap().meta.as_script();
@@ -51,12 +63,21 @@ mod tests {
     *barrel.meta = ModuleMetaData::Script(Default::default());
     barrel.meta.as_script_mut().reexport_ident_map.insert(
       "Model".into(),
-      ModuleReExportIdentType::FromExportNamed { local: "default".into(), from_module_id: source_id },
+      ModuleReExportIdentType::FromExportNamed {
+        local: "default".into(),
+        from_module_id: source_id,
+      },
     );
     graph.add_module(barrel);
     let mappings = HashMap::from_iter([
-      ("source.js".into(), HashMap::from_iter([("default".into(), "a".into())])),
-      ("barrel.js".into(), HashMap::from_iter([("Model".into(), "b".into())])),
+      (
+        "source.js".into(),
+        HashMap::from_iter([("default".into(), "a".into())]),
+      ),
+      (
+        "barrel.js".into(),
+        HashMap::from_iter([("Model".into(), "b".into())]),
+      ),
     ]);
     mangle_exports::update_exports_meta_and_module_decl(&mappings, &HashMap::default(), &mut graph);
     let meta = graph.module(&"barrel.js".into()).unwrap().meta.as_script();
@@ -66,7 +87,10 @@ mod tests {
 
   #[test]
   fn development_keeps_export_names_for_incremental_imports() {
-    let config = Config { mode: Mode::Development, ..Default::default() };
+    let config = Config {
+      mode: Mode::Development,
+      ..Default::default()
+    };
     let plugin = FarmPluginMangleExports::new(&config);
     let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
     let mut graph = ModuleGraph::new();
@@ -75,11 +99,27 @@ mod tests {
     *module.meta = ModuleMetaData::Script(Default::default());
     module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
     let id = module.id.clone();
-    module.meta.as_script_mut().export_ident_map.insert("PageTitle".to_string(),
-      ModuleExportIdent::new(id.clone(), SwcId::new("PageTitle".into(), 0), ModuleExportIdentType::Declaration));
+    module.meta.as_script_mut().export_ident_map.insert(
+      "PageTitle".to_string(),
+      ModuleExportIdent::new(
+        id.clone(),
+        SwcId::new("PageTitle".into(), 0),
+        ModuleExportIdentType::Declaration,
+      ),
+    );
     graph.add_module(module);
-    plugin.freeze_module_graph_meta(&mut graph, &context).unwrap();
-    assert!(graph.module(&id).unwrap().meta.as_script().export_ident_map.contains_key("PageTitle"));
+    plugin
+      .freeze_module_graph_meta(&mut graph, &context)
+      .unwrap();
+    assert!(
+      graph
+        .module(&id)
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+        .contains_key("PageTitle")
+    );
   }
 }
 

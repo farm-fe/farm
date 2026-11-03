@@ -1,6 +1,6 @@
+use farmfe_core::HashMap;
 use farmfe_core::module::meta_data::script::statement::SwcId;
 use farmfe_core::swc_ecma_ast::{ModuleExportName, ModuleItem};
-use farmfe_core::HashMap;
 use farmfe_toolkit::script::idents_collector::DefinedIdentsCollector;
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 

@@ -2,8 +2,8 @@ use farmfe_macro_cache_item::cache_item;
 use swc_ecma_ast::Module as SwcModule;
 
 use crate::{
-  module::{meta_data::script::CommentsMetaData, CustomMetaDataMap, ModuleId},
   HashSet,
+  module::{CustomMetaDataMap, ModuleId, meta_data::script::CommentsMetaData},
 };
 
 #[cache_item]

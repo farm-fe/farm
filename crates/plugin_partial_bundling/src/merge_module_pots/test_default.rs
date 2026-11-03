@@ -1,10 +1,10 @@
 use farmfe_core::{
-  config::{partial_bundling::PartialBundlingConfig, Config},
+  config::{Config, partial_bundling::PartialBundlingConfig},
   module::module_group::{ModuleGroupId, ModuleGroupType},
 };
 use farmfe_testing_helpers::{assert_resource_pots, construct_test_module_graph_complex};
 
-use super::{common::create_test_module_pot, merge_module_pots, ModuleGroupModulePots};
+use super::{ModuleGroupModulePots, common::create_test_module_pot, merge_module_pots};
 
 #[test]
 fn test_default() {

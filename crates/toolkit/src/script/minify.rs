@@ -4,7 +4,7 @@ use farmfe_core::{
   config::minify::MinifyOptions,
   context::CompilationContext,
   resource::resource_pot::ResourcePot,
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark},
+  swc_common::{Mark, comments::SingleThreadedComments, util::take::Take},
 };
 use swc_ecma_minifier::{optimize, option::ExtraOptions};
 use swc_ecma_transforms::fixer::paren_remover;

@@ -1,10 +1,10 @@
 use farmfe_core::{
+  HashSet,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
+    module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
   },
   plugin::ResolveKind,
-  HashSet,
 };
 use farmfe_testing_helpers::construct_test_module_graph;
 

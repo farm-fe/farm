@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap, HashSet,
   config::{Mode, TargetEnv},
   context::CompilationContext,
   module::{
+    ModuleId,
     meta_data::script::feature_flag::FeatureFlag,
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
-    ModuleId,
   },
   plugin::ResolveKind,
-  swc_common::{SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, SyntaxContext},
   swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprOrSpread, ExprStmt, Ident, ImportDecl, ImportNamedSpecifier,
     ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
-  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   lazy_static::lazy_static,

@@ -98,8 +98,9 @@ try {
   for (const name of ['rust-build-user.yaml', 'rust-build-release.yaml']) {
     const workflow = fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8').replaceAll('\r\n', '\n');
     const steps = workflow.split(/\n(?=      - (?:name:|uses:|run:))/);
-    const docker = steps.filter(step => /^        run: node scripts\/v2-docker-cargo-cache\.mjs$/m.test(step));
-    assert.equal(docker.length, 1, 'Exactly one reviewed Docker wrapper step must exist');
+    const docker = steps.filter(step => /^        run: node scripts\/formal-native-build\.mjs$/m.test(step) && /if: \$\{\{ matrix\.settings\.docker \}\}/.test(step));
+    assert.equal(docker.length, 1, 'Exactly one reviewed formal Docker routing step must exist');
+    assert.doesNotMatch(workflow, /run: node scripts\/v2-docker-cargo-cache\.mjs/, 'Workflow must not bypass formal preparation and resolution');
     assert.match(docker[0], /if: \$\{\{ matrix\.settings\.docker \}\}/);
     for (const [key, expression] of Object.entries({
       FARM_BUILD_IMAGE: 'matrix.settings.docker', FARM_BUILD_PROFILE: 'inputs.profile',
@@ -108,8 +109,23 @@ try {
     })) assert.ok(docker[0].includes(`${key}: \${{ ${expression} }}`), `${name}: ${key} must retain its matrix/profile identity`);
     const image = name === 'rust-build-user.yaml' ? 'lts-debian' : 'lts-alpine';
     const abi = name === 'rust-build-user.yaml' ? 'linux-x64-gnu' : 'linux-x64-musl';
-    assert.ok(workflow.includes(`docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}`));
-    assert.ok(workflow.includes(`abi: ${abi}`));
+    if (name === 'rust-build-user.yaml') {
+      const selection = workflow.split(`inputs.platform == '${abi}' && '`)[1]?.split("'")[0];
+      assert.ok(selection, 'Primary ABI must have an explicit producer matrix selection');
+      const rows = JSON.parse(selection);
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].docker, `ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}`);
+      assert.equal(rows[0].abi, abi);
+      assert.equal(rows[0].target, 'x86_64-unknown-linux-gnu');
+      assert.equal(rows[0].os, 'ubuntu-24.04');
+      const platform = fs.readFileSync(path.join(root, '.github/workflows/ci-primary-platform.yaml'), 'utf8');
+      assert.ok(platform.includes('uses: ./.github/workflows/rust-build-user.yaml'));
+      assert.ok(platform.includes('platform: ${{ inputs.abi }}'));
+    } else {
+      assert.ok(workflow.includes(`docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}`));
+      assert.ok(workflow.includes(`abi: ${abi}`));
+      assert.ok(workflow.includes('target: x86_64-unknown-linux-musl'));
+    }
     assert.doesNotMatch(workflow, /addnab\/docker-run-action/);
   }
   console.log(JSON.stringify({status: 'passed', cases: results, scope: 'Mocked shell routing and failures with real installed engine guard; actual GNU/musl execution remains a CI gate.'}));

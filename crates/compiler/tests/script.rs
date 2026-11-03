@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use common::{test_builder, TestBuilderOptions};
+use common::{TestBuilderOptions, test_builder};
 
 mod common;
 

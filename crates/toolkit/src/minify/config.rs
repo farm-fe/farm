@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use farmfe_core::{config::minify::MinifyOptions, serde_json, swc_common::SourceMap};
 use swc_ecma_minifier::option::{
-  terser::{TerserCompressorOptions, TerserTopLevelOptions},
   MangleOptions, MinifyOptions as JsMinifyOptions,
+  terser::{TerserCompressorOptions, TerserTopLevelOptions},
 };
 
 #[derive(Clone)]

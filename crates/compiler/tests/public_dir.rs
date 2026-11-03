@@ -4,8 +4,8 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{bool_or_obj::BoolOrObj, Mode},
   HashMap,
+  config::{Mode, bool_or_obj::BoolOrObj},
 };
 
 mod common;

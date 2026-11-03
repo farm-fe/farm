@@ -1,15 +1,15 @@
 use std::{any::Any, sync::Arc};
 
 use crate::{
+  HashMap,
   config::Config,
   context::CompilationContext,
   error::Result,
   module::{
-    module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
+    Module, ModuleId, ModuleMetaData, module_graph::ModuleGraph, module_group::ModuleGroupGraph,
   },
   resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
   stats::Stats,
-  HashMap,
 };
 
 pub mod constants;

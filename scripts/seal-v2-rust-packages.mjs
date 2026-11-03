@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 // cspell:words statfs bavail
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +15,7 @@ export function sealRustPackages({ root = defaultRoot, output, env = process.env
   const receipt = { schemaVersion: 1, sourceCommit: sourceCommit ?? null, status: 'not-started', compiled: false, published: false, reusedRegistry: [], records: [] };
   let selected = [], stage = 'read-plan';
   try {
-    const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+    const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
     receipt.planSha256 = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');
     receipt.sourceCommit ??= execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
     if (!/^[a-f0-9]{40}$/.test(receipt.sourceCommit)) throw new Error('Exact source commit required');

@@ -22,7 +22,10 @@ jobs:
         with:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
-          sparse-checkout: scripts/performance-pr-reporter.mjs
+          sparse-checkout: |
+            scripts/performance-pr-reporter.mjs
+            scripts/performance-metrics.mjs
+            scripts/ci-attempt-producers.mjs
           sparse-checkout-cone-mode: false
       - name: Validate artifact and update the sticky PR comment
         env:

@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
 use farmfe_core::{
+  HashMap,
   common::PackageJsonInfo,
   dashmap::DashMap,
   error::{CompilationError, Result},
-  serde_json::{from_str, Value},
-  HashMap,
+  serde_json::{Value, from_str},
 };
 
 use crate::fs::read_file_utf8;

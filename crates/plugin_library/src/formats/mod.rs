@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashSet,
   config::ModuleFormat,
   context::CompilationContext,
   parking_lot::Mutex,
@@ -9,7 +10,6 @@ use farmfe_core::{
   resource::resource_pot::ResourcePot,
   swc_common::Mark,
   swc_ecma_ast::Module,
-  HashSet,
 };
 use farmfe_toolkit::swc_ecma_utils::StmtLikeInjector;
 

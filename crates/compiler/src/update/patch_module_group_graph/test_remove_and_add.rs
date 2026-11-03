@@ -1,11 +1,11 @@
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
+    Module, ModuleType,
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleType,
   },
   plugin::ResolveKind,
-  HashMap, HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_module_graph;
 use farmfe_testing_helpers::construct_test_module_graph_complex;

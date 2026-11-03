@@ -8,43 +8,43 @@ use std::fmt;
 /// Otherwise, it matches all elements in the given namespace.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub(crate) enum Namespace {
-    Empty,
-    Asterisk,
-    Other(Box<str>),
-    None,
+  Empty,
+  Asterisk,
+  Other(Box<str>),
+  None,
 }
 
 impl fmt::Display for Namespace {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Empty => write!(f, "|"),
-            Self::Asterisk => write!(f, "*|"),
-            Self::Other(namespace) => write!(f, "{}|", namespace),
-            Self::None => Ok(()),
-        }
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Self::Empty => write!(f, "|"),
+      Self::Asterisk => write!(f, "*|"),
+      Self::Other(namespace) => write!(f, "{}|", namespace),
+      Self::None => Ok(()),
     }
+  }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub(crate) struct QualifiedName {
-    pub ident: String,
-    pub namespace: Namespace,
+  pub ident: String,
+  pub namespace: Namespace,
 }
 
 impl fmt::Display for QualifiedName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.namespace)?;
-        f.write_str(&self.ident)
-    }
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", self.namespace)?;
+    f.write_str(&self.ident)
+  }
 }
 
 pub(crate) struct Specificity {
-    pub min: i32,
-    pub max: i32,
+  pub min: i32,
+  pub max: i32,
 }
 
 impl Specificity {
-    pub const fn new(min: i32, max: i32) -> Self {
-        Specificity { min, max }
-    }
+  pub const fn new(min: i32, max: i32) -> Self {
+    Specificity { min, max }
+  }
 }

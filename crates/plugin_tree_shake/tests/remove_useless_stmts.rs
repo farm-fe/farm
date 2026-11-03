@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use common::create_module;
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::{
   module::module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
   plugin::ResolveKind,
-  swc_common::{Globals, GLOBALS},
+  swc_common::{GLOBALS, Globals},
 };
-use farmfe_core::{HashMap, HashSet};
 use farmfe_plugin_tree_shake::{
   module::{TreeShakeModule, UsedExports, UsedExportsIdent},
   tree_shake_modules::remove_useless_stmts::remove_useless_stmts,

@@ -4,7 +4,8 @@ use farmfe_core::{
   module::{
     Module, ModuleId, ModuleSystem,
     meta_data::script::{
-      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType,
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleExportIdent, ModuleExportIdentType,
+      ModuleReExportIdentType,
       statement::{ExportSpecifierInfo, ImportSpecifierInfo},
     },
   },
@@ -296,7 +297,11 @@ pub fn update_exports_meta_and_module_decl(
               local: export.as_str().into(),
             };
           }
-          if let ModuleReExportIdentType::FromExportNamed { from_module_id, local } = reexport {
+          if let ModuleReExportIdentType::FromExportNamed {
+            from_module_id,
+            local,
+          } = reexport
+          {
             if let Some(mangled) = full_mangled_ident_map
               .get(from_module_id)
               .and_then(|exports| exports.get(local.as_str()))

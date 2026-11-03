@@ -1,9 +1,9 @@
-import { createSpawnCmd } from '@farmfe/utils';
 import { cac } from 'cac';
 import { copyArtifacts } from './copy-artifacts.js';
 import { preparePlatformPackages } from './prepare.js';
 import { prepublish } from './prepublish.js';
 import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
+import { runNativeBuild } from './run-native-build.js';
 
 const getArg = (argsObj: any, args: string[], name: string) => {
   const index = args.indexOf(name);
@@ -75,8 +75,7 @@ cli
     // all args are passed to napi-rs directly
     // 1. build with napi-rs
     try {
-      const spawn = createSpawnCmd(process.cwd(), 'inherit');
-      await spawn('node', [cliPath, 'build', ...args]);
+      await runNativeBuild(cliPath, args, process.cwd());
     } catch {
       process.exit(1);
     }

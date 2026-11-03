@@ -1,0 +1,36 @@
+{
+  "runId": 41428269805,
+  "jobId": 125257104526,
+  "runAttempt": 1,
+  "artifact": {
+    "id": 13139547429,
+    "name": "farm-ci-suite-browser-1b4e1b80c3100697bb34a49ab0e0be2f9bc4125b-darwin-arm64-1",
+    "size_in_bytes": 2422,
+    "url": "https://api.github.com/repos/farm-fe/farm/actions/artifacts/13139547429",
+    "archive_download_url": "https://api.github.com/repos/farm-fe/farm/actions/artifacts/13139547429/zip",
+    "expired": false,
+    "created_at": "2026-11-02T12:03:18Z",
+    "expires_at": "2026-11-16T12:03:16Z",
+    "updated_at": "2026-11-02T12:03:18Z",
+    "digest": "sha256:968d7b0d1c55723cbea6338d341501988bb0b53dd10714ad454da893c5feae51",
+    "workflow_run": {
+      "id": 41428269805,
+      "repository_id": 507542208,
+      "head_repository_id": 507542208,
+      "head_branch": "codex/ci-incremental-followup-20261030",
+      "head_sha": "e6f7e8b8dc8bc138304c0be5d861b3af24777b89"
+    }
+  },
+  "runnerLogExcerpt": [
+    "2026-11-02T12:03:15.8623830Z ##[group]Run actions/upload-artifact@v4",
+    "2026-11-02T12:03:15.8624490Z   name: farm-ci-suite-browser-1b4e1b80c3100697bb34a49ab0e0be2f9bc4125b-darwin-arm64-1",
+    "2026-11-02T12:03:17.1489100Z SHA256 digest of uploaded artifact zip is 968d7b0d1c55723cbea6338d341501988bb0b53dd10714ad454da893c5feae51",
+    "2026-11-02T12:03:17.6860270Z Artifact farm-ci-suite-browser-1b4e1b80c3100697bb34a49ab0e0be2f9bc4125b-darwin-arm64-1.zip successfully finalized. Artifact ID 13139547429",
+    "2026-11-02T12:03:17.6863750Z Artifact farm-ci-suite-browser-1b4e1b80c3100697bb34a49ab0e0be2f9bc4125b-darwin-arm64-1 has been successfully uploaded! Final size is 2422 bytes. Artifact ID is 13139547429",
+    "2026-11-02T12:03:17.7156970Z ##[group]Run actions/download-artifact@v4.1.3"
+  ],
+  "limitations": [
+    "API step started_at/completed_at unavailable through supported step summary; not inferred from runner log.",
+    "Which suite first triggered gate exception is not yet proven; original exception omits identity."
+  ]
+}

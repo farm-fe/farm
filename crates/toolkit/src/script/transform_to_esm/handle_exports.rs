@@ -3,19 +3,19 @@ use crate::script::{
   create_top_level_ident, create_var_decl_item, create_var_declarator,
 };
 use farmfe_core::{
+  HashMap,
   config::FARM_REQUIRE,
   module::{
-    meta_data::script::{
-      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
-    },
     ModuleId,
+    meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleExportIdent, ModuleExportIdentType,
+    },
   },
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext},
   swc_ecma_ast::{
     ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread, Ident, IdentName, MemberExpr,
     MemberProp, ModuleDecl, ModuleExportName, ModuleItem, NamedExport,
   },
-  HashMap,
 };
 
 use super::transform_cjs::{FARM_CJS_EXPORTS, FARM_INTEROP_REQUIRE};

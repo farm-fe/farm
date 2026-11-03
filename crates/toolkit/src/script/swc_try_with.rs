@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use farmfe_core::{
   error::{CompilationError, Result},
-  swc_common::{errors::HANDLER, Globals, Mark, SourceMap, SyntaxContext, DUMMY_SP, GLOBALS},
+  swc_common::{DUMMY_SP, GLOBALS, Globals, Mark, SourceMap, SyntaxContext, errors::HANDLER},
   swc_ecma_ast::Module,
 };
-use swc_ecma_transforms::helpers::{Helpers, HELPERS};
+use swc_ecma_transforms::helpers::{HELPERS, Helpers};
 use swc_ecma_transforms_base::resolver;
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 use swc_error_reporters::handler::try_with_handler;

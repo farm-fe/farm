@@ -5,14 +5,14 @@ use farmfe_core::{
   context::CompilationContext,
   module::ModuleId,
   plugin::PluginProcessModuleHookParam,
-  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap},
+  swc_common::{Globals, Mark, SourceMap, comments::SingleThreadedComments},
   swc_ecma_ast::Program,
 };
 use farmfe_toolkit::{
   script::swc_try_with::try_with,
   swc_ecma_transforms::{
     proposals::{decorator_2022_03::decorator_2022_03, decorators},
-    typescript::{tsx, typescript, Config as TsConfig, ImportsNotUsedAsValues, TsxConfig},
+    typescript::{Config as TsConfig, ImportsNotUsedAsValues, TsxConfig, tsx, typescript},
   },
   swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,

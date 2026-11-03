@@ -3,6 +3,7 @@
 import argparse
 import fnmatch
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -20,14 +21,16 @@ TARGETS = ["linux-x64-gnu", "linux-x64-musl", "linux-arm64-gnu", "linux-arm64-mu
 PRIMARY = ["linux-x64-gnu", "darwin-arm64", "win32-x64-msvc"]
 
 
+class WorkspaceIdentityError(ValueError):
+    pass
+
+
 def release_candidate(event, environment):
-    pr = event.get("pull_request", {})
-    repository = environment.get("GITHUB_REPOSITORY")
-    same_repository = bool(repository) and pr.get("head", {}).get("repo", {}).get("full_name") == repository
-    return environment.get("GITHUB_EVENT_NAME") == "workflow_dispatch" or (same_repository and (event.get("number") == 2329 or pr.get("head", {}).get("ref", "").startswith("changeset-release/")))
+    # Retained argument compatibility: CI never schedules release candidates.
+    return False
 
 
-def execution_cells(scope="e2e", release_candidate=True):
+def execution_cells(scope="e2e", release_candidate=False):
     # Full execution remains unchanged. Any workflow matrix/policy change forces
     # full planning and requires updating this reviewed shadow contract.
     if scope == "unit":
@@ -36,8 +39,7 @@ def execution_cells(scope="e2e", release_candidate=True):
         raise ValueError("Unknown execution scope")
     return (["native:ci:" + abi for abi in TARGETS]
             + [suite + ":" + abi for suite in ["examples", "ts-tests", "performance", "performance-contracts"] for abi in PRIMARY]
-            + ["docs:release:linux-x64-gnu", "docs:release:win32-x64-msvc", "types", "contracts", "native-assembly", "performance-summary"]
-            + (["seal", *["consumers:" + abi for abi in PRIMARY]] if release_candidate else []))
+            + ["docs:ci:linux-x64-gnu", "docs:ci:win32-x64-msvc", "types", "contracts", "native-assembly", "performance-summary"])
 
 
 def proposed_dag(suites, examples):
@@ -50,13 +52,11 @@ def proposed_dag(suites, examples):
         tasks["ts-tests:" + abi] = [producer]
         tasks["examples:" + abi] = [producer]
         tasks["rust-tests:ci-test:" + abi] = ["contracts"]
-        tasks["consumers:" + abi] = ["seal"]
         tasks["performance:" + abi] = ["examples:" + abi, "ts-tests:" + abi, "types", "docs-acceptance"]
     tasks["native-assembly"] = ["native:ci:" + abi for abi in TARGETS]
-    tasks["seal"] = ["native-assembly", "types", *["examples:" + abi for abi in PRIMARY], *["ts-tests:" + abi for abi in PRIMARY]]
-    tasks["docs:release:linux-x64-gnu"] = ["contracts"]
-    tasks["docs:release:win32-x64-msvc"] = ["contracts"]
-    tasks["docs-acceptance"] = ["docs:release:linux-x64-gnu", "docs:release:win32-x64-msvc"]
+    tasks["docs:ci:linux-x64-gnu"] = ["contracts"]
+    tasks["docs:ci:win32-x64-msvc"] = ["contracts"]
+    tasks["docs-acceptance"] = ["docs:ci:linux-x64-gnu", "docs:ci:win32-x64-msvc"]
     return {"tasks": tasks, "selectedSuites": suites, "exampleDirectories": examples,
             "docsSuites": ["source", "distribution", "platform", "compiled", "browser", "diagrams", "notices-source", "notices-built", "archive-python"] if "docs" in suites else [],
             "executionEnabled": False, "note": "Semantic suites and platform-local needs are a shadow proposal, not task omission authority."}
@@ -71,11 +71,21 @@ def git(*args):
     return result.stdout
 
 
-def revision(value):
+def revision(value, read_git=None):
     if not re.fullmatch(r"[a-f0-9]{40}", value or ""):
         raise ValueError("Exact forty-character Git identity required")
-    if git("rev-parse", value + "^{commit}").decode().strip() != value:
+    read_git = read_git or git
+    if read_git("rev-parse", value + "^{commit}").decode("ascii").strip() != value:
         raise ValueError("Commit identity differs")
+    return value
+
+
+def tree_revision(value, read_git=None):
+    if not re.fullmatch(r"[a-f0-9]{40}", value or ""):
+        raise ValueError("Exact forty-character Git tree identity required")
+    read_git = read_git or git
+    if read_git("cat-file", "-t", value).decode("ascii").strip() != "tree":
+        raise ValueError("Tree object type differs")
     return value
 
 
@@ -143,7 +153,7 @@ def graph(files):
             continue
         key = ("cargo:" if cargo else "npm:") + package["name"]
         if key in nodes:
-            raise ValueError("Duplicate workspace package identity")
+            raise WorkspaceIdentityError("Duplicate workspace package identity")
         nodes[key] = {"directory": directory, "manifest": file, "kind": "cargo" if cargo else "npm", "data": manifest, "productDeps": set(), "testDeps": set()}
         by_name[key] = key
     by_directory = {node["directory"]: key for key, node in nodes.items() if node["kind"] == "cargo"}
@@ -213,10 +223,11 @@ def test_only(file):
     return "/tests/" in file or "/__tests__/" in file or "/__snapshots__/" in file or file.endswith((".test.mjs", ".test.cjs", ".spec.ts", ".spec.mjs"))
 
 
-def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_test_inputs=frozenset()):
-    base, head = graph(base_files), graph(head_files)
+def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_test_inputs=frozenset(), graph_factory=None):
+    build_graph = graph_factory or graph
+    base, head = build_graph(base_files), build_graph(head_files)
     nodes = {}
-    graphs = [base, head, *[graph(files) for files in extra_snapshots]]
+    graphs = [base, head, *[build_graph(files) for files in extra_snapshots]]
     for current in graphs:
         for name, node in current.items():
             prior = nodes.get(name, {})
@@ -225,6 +236,13 @@ def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_tes
     full = False
     for change in changes:
         for file in change["paths"]:
+            if graph_factory is not None:
+                inputs = {key for current in graphs for key, node in current.items()
+                          if node["kind"] == "input" and (node.get("coverage") == "all-committed-inputs-v1"
+                          or any(file.startswith(rule) if rule.endswith("/") else file == rule for rule in node.get("paths", [])))}
+                if any(key.startswith("input:global:") or key == "input:historical-all-committed" for key in inputs):
+                    full = True; reasons.append({"file": file, "reason": "declared-global-input", "owners": sorted(inputs)}); continue
+                tests.update(inputs)
             if file in GLOBAL or file.startswith((".github/", ".cargo/", "patches/")) or file in BUILD_POLICY or file.startswith("scripts/ci-impact") or file.startswith("scripts/ci-native-proof"):
                 full = True; reasons.append({"file": file, "reason": "global-or-policy-input"}); continue
             names = set().union(*(owners(current, file) for current in graphs))
@@ -246,6 +264,8 @@ def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_tes
     test_closure = reverse_closure(nodes, products | tests, "testDeps")
     for name in product_closure + test_closure:
         node = nodes[name]; directory = node["directory"]
+        if node["kind"] == "input":
+            continue
         if node["kind"] == "cargo":
             suites.add("rust-tests")
         else:
@@ -254,14 +274,17 @@ def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_tes
             suites.add("examples")
         if "docs" in directory or directory == "website":
             suites.add("docs")
-        if directory in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr"]:
+        if directory in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr", "packages/runtime-plugin-import-meta"]:
             suites.update(["examples", "docs", "performance"])
     if any(nodes[name]["kind"] == "cargo" for name in product_closure):
         suites.add("native")
     if products:
         suites.update(["seal", "consumers"])
+    all_examples = full or any(nodes[name]["directory"] in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr", "packages/runtime-plugin-import-meta"] for name in product_closure + test_closure)
+    examples = [] if all_examples else sorted(nodes[name]["directory"] for name in test_closure if nodes[name]["directory"].startswith("examples/"))
+    example_selection = {"mode": "all" if all_examples else "selected" if "examples" in suites else "none", "directories": examples, "executionEnabled": False}
     return {"fullRequired": full, "reasons": reasons, "productNodes": product_closure, "testNodes": test_closure,
-            "proposedSuites": ALL if full else sorted(suites), "proposedExamples": sorted(nodes[name]["directory"] for name in test_closure if nodes[name]["directory"].startswith("examples/")),
+            "proposedSuites": ALL if full else sorted(suites), "proposedExamples": examples, "proposedExampleSelection": example_selection,
             "graph": {name: {key: sorted(value) if isinstance(value, set) else value for key, value in node.items() if key != "data"} for name, node in sorted(nodes.items())}}
 
 
@@ -303,47 +326,55 @@ def changed_paths(base, head):
 
 
 def make_plan(base, head, tested, scope="e2e", release_candidate=True):
-    revision(base); revision(head); revision(tested)
-    bases = git("merge-base", "--all", base, head).decode().split()
-    if len(bases) != 1:
-        raise ValueError("Ambiguous merge base")
-    snapshots = {}
-    def read_snapshot(commit):
-        if commit not in snapshots:
-            snapshots[commit] = snapshot(commit)
-        return snapshots[commit]
-    base_files, base_hashes = read_snapshot(bases[0]); head_files, head_hashes = read_snapshot(head)
-    base_tip_files, base_tip_hashes = read_snapshot(base); tested_files, tested_hashes = read_snapshot(tested)
-    changes = changed_paths(bases[0], head)
-    tested_changes = changed_paths(head, tested)
-    plan = plan_changes(base_files, head_files, changes + tested_changes, extra_snapshots=[base_tip_files, tested_files])
-    plan["proposedDag"] = proposed_dag(plan["proposedSuites"], plan["proposedExamples"])
-    plan.update({"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False,
-                 "baseSHA": base, "mergeBaseSHA": bases[0], "headSHA": head, "testedSHA": tested,
-                 "testedTree": git("rev-parse", tested + "^{tree}").decode().strip(), "changes": changes, "testedMergeChanges": tested_changes,
-                 "fingerprints": {"mergeBase": fingerprints(graph(base_files), base_hashes), "base": fingerprints(graph(base_tip_files), base_tip_hashes), "head": fingerprints(graph(head_files), head_hashes), "tested": fingerprints(graph(tested_files), tested_hashes)},
-                 "executedSuites": ALL, "reuseAuthorized": False, "profiles": ["ci", "ci-test", "release"],
-                 "runId": os.environ.get("GITHUB_RUN_ID"), "runAttempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
-                 "repository": os.environ.get("GITHUB_REPOSITORY"), "producerTrust": "not-enabled", "executionScope": scope, "executionCells": execution_cells(scope, release_candidate),
-                 "baseTree": git("rev-parse", base + "^{tree}").decode().strip(), "headTree": git("rev-parse", head + "^{tree}").decode().strip()})
-    plan["planHash"] = digest(plan)
-    return plan
+    spec = importlib.util.spec_from_file_location("committed_source_plan", Path(__file__).with_name("ci-source-plan.py"))
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    return module.make_plan(base, head, tested, scope, release_candidate)
+
+
+def conservative_plan(base, head, tested, scope, candidate, error, environment, read_git=None):
+    """Full execution fallback retains only independently verified identity."""
+    read_git = read_git or git
+    revision(base, read_git); revision(head, read_git); revision(tested, read_git)
+    if read_git("rev-parse", "HEAD").decode("ascii").strip() != tested:
+        raise ValueError("Fallback checkout differs from tested commit")
+    tree = tree_revision(read_git("rev-parse", "HEAD^{tree}").decode("ascii").strip(), read_git)
+    if read_git("rev-parse", tested + "^{tree}").decode("ascii").strip() != tree:
+        raise ValueError("Fallback tree differs from tested commit tree")
+    for key in ["GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT"]:
+        if not re.fullmatch(r"[1-9][0-9]*", environment.get(key, "")):
+            raise ValueError("Fallback run identity unavailable")
+    if not re.fullmatch(r"[\w.-]+/[\w.-]+", environment.get("GITHUB_REPOSITORY", "")):
+        raise ValueError("Fallback repository identity unavailable")
+    classes = ["WorkspaceIdentityError", "ValueError", "KeyError", "TimeoutExpired", "CalledProcessError", "UnicodeDecodeError", "JSONDecodeError", "TOMLDecodeError"]
+    result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
+              "fullRequired": True, "planningFallback": True, "sourceInputProofComplete": False,
+              "reasons": [{"reason": "planning-failed", "errorClass": type(error).__name__ if type(error).__name__ in classes else "unknown"}],
+              "baseSHA": base, "headSHA": head, "testedSHA": tested, "testedTree": tree,
+              "runId": environment["GITHUB_RUN_ID"], "runAttempt": environment["GITHUB_RUN_ATTEMPT"], "repository": environment["GITHUB_REPOSITORY"],
+              "executionScope": scope, "executionCells": execution_cells(scope, candidate), "proposedSuites": ALL, "executedSuites": ALL, "producerTrust": "not-enabled",
+              "proposedExampleSelection": {"mode": "all", "directories": [], "executionEnabled": False}}
+    result["planHash"] = digest(result)
+    return result
 
 
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--output", required=True); parser.add_argument("--event", default=os.environ.get("GITHUB_EVENT_PATH")); args = parser.parse_args()
+    base = head = None; candidate = False
     try:
-        event = json.loads(Path(args.event).read_text())
+        event = json.loads(Path(args.event).read_text(encoding="utf-8"))
         pr = event.get("pull_request", {})
-        base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("release_base")
+        base = pr.get("base", {}).get("sha") or event.get("inputs", {}).get("base_sha") or event.get("inputs", {}).get("release_base") or event.get("before")
         head = pr.get("head", {}).get("sha") or os.environ.get("GITHUB_SHA")
         candidate = release_candidate(event, os.environ)
         result = make_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate)
     except Exception as error:
-        result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
-                  "fullRequired": True, "reasons": [{"reason": "planning-failed", "detail": str(error)[:1200]}], "proposedSuites": ALL, "executedSuites": ALL}
-        result["planHash"] = digest(result)
-    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(result, indent=2) + "\n")
+        try:
+            result = conservative_plan(base, head, os.environ.get("GITHUB_SHA"), os.environ.get("CI_IMPACT_SCOPE", "e2e"), candidate, error, os.environ)
+        except Exception:
+            result = {"schemaVersion": SCHEMA, "policy": POLICY, "mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False,
+                      "fullRequired": True, "unavailable": "fallback identity could not be verified", "reasons": [{"reason": "planning-failed"}], "proposedSuites": ALL, "executedSuites": ALL}
+            result["planHash"] = digest(result)
+    output = Path(args.output); output.parent.mkdir(parents=True, exist_ok=True); output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: result[key] for key in ["mode", "planHash", "fullRequired", "skipAuthorized", "proposedSuites"]}))
 
 

@@ -22,6 +22,15 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 export const auxiliaryWorkloadInputs = ['tsconfig.base.json', 'js-plugins/svgr/package.json', 'website/package.json'];
 export const protocol = 'commerce-business-2048-farm-supervised-v2';
 export const workloadScale = 'business-2048';
+// The aggregate authenticates these exact bytes against the native producer.
+export function performanceSummary(report) {
+  return { ...report, records: undefined };
+}
+export function performanceFailureKind(phase, error = {}) {
+  if (error.cleanupConfirmed === false) return 'cleanup-failure';
+  if (error.failureKind && !['sampling-failure', 'supervised-command-failure'].includes(error.failureKind)) return error.failureKind;
+  return ({ identity: 'identity-failure', resources: 'resource-unavailable', graph: 'graph-validation-failure', correctness: 'browser-validation-failure' })[phase] ?? 'sampling-failure';
+}
 export function businessFixture() { const profile = scaleProfile(workloadScale); return extensionSources(profile.categories, profile); }
 export async function workloadFileCounts(sourceRoot, fixture) {
   let baseSourceFiles = 0;
@@ -245,7 +254,9 @@ async function main() {
       lockSha256: hash(await fs.readFile(path.join(root, 'pnpm-lock.yaml'))), fixtureSha256: await workloadFingerprint(root, fixture), harnessSha256: await harnessFingerprint(root),
       scale: { name: workloadScale, ...scaleProfile(workloadScale), fixtureGenerated: true, generatedFileCount: Object.keys(fixture).length, fileCountIsNotModuleCount: true },
       cacheSemantics: 'Unique cold directory; warm reuses successful cold directory. Reusable cache, not independently proven cache hit.',
-      artifactProducerSHA: process.env.GITHUB_SHA ?? revision };
+      artifactProducerSHA: process.env.GITHUB_SHA ?? revision,
+      nativeReuse: process.env.FARM_CI_NATIVE_ORIGIN_SHA ? {chain:'ci',originBuildSHA:process.env.FARM_CI_NATIVE_ORIGIN_SHA,
+        originArtifactId:process.env.FARM_CI_NATIVE_ARTIFACT_ID,consumerSHA:revision,acceptanceInherited:false} : null };
     report.metadata.scale.files = await workloadFileCounts(root, fixture);
     before = await trackedFingerprint();
     const { captureNativeProvenance } = await import('../examples/commerce-lab/benchmark/native-provenance.mjs');
@@ -297,6 +308,7 @@ async function main() {
       }
     }
     report.comparison.baseCells = aggregate(report.comparison.records ?? []);
+    phase = 'graph';
     report.graphs = [];
     for (const cohort of cohorts) {
       const graphFile = path.join(output, `graph-${cohort.name}.json`);
@@ -307,6 +319,7 @@ async function main() {
       report.graphs.push({ cohort: cohort.name, supervision, status: graph.status, summary: graph.summary,
         coverage: { generatedFiles: graph.coverage.generatedFiles, generatedCovered: graph.coverage.generatedCovered, missing: graph.coverage.missing }, detail: path.basename(graphFile) });
     }
+    phase = 'correctness';
     report.correctness = [];
     for (const cohort of cohorts) {
       const correctnessFile = path.join(output, `business-correctness-${cohort.name}.json`);
@@ -323,7 +336,7 @@ async function main() {
     const nativeAfter = await captureNativeProvenance({ groups: ['rust'] });
     report.nativeUnchanged = Object.entries(report.native.artifacts).every(([name, artifact]) => nativeAfter.artifacts[name]?.sha256 === artifact.sha256);
     if (!report.nativeUnchanged) throw new Error('Native cohort changed during sampling');
-  } catch (error) { report.status = 'invalid'; report.cleanupUnconfirmed = error.cleanupConfirmed === false; report.failureKind = report.cleanupUnconfirmed ? 'cleanup-failure' : error.failureKind ?? (phase === 'identity' ? 'identity-failure' : phase === 'resources' ? 'resource-unavailable' : 'sampling-failure'); report.errors.push(error.message); }
+  } catch (error) { report.status = 'invalid'; report.cleanupUnconfirmed = error.cleanupConfirmed === false; report.failureKind = performanceFailureKind(phase, error); report.errors.push(error.message); }
   finally {
     if (before) { report.sourcesUnchanged = before === await trackedFingerprint(); if (!report.sourcesUnchanged) { report.status = 'invalid'; report.errors.push('Tracked Commerce source changed'); } }
     if (temp && report.cleanupUnconfirmed) { report.temporaryDirectoryRemoved = false; report.errors.push(`Temporary inputs retained because process cleanup is unconfirmed: ${temp}`); }
@@ -331,7 +344,7 @@ async function main() {
     finalizePerformanceMetrics(report);
     report.limitations = ['Three scored pairs are insufficient for formal performance certification.', 'No HMR sampling. OS kernel peak RSS and sampled summed process-group RSS are distinct; live group CPU is diagnostic only, not a formal CPU benchmark.', 'No cross-OS absolute ranking.', report.comparison.reason];
     await persist();
-    await fs.writeFile(path.join(output, 'summary.json'), JSON.stringify({ ...report, records: undefined, native: undefined }, null, 2));
+    await fs.writeFile(path.join(output, 'summary.json'), JSON.stringify(performanceSummary(report), null, 2));
     await fs.writeFile(path.join(output, 'samples.csv'), toCsv([...report.records, ...(report.comparison.records ?? [])], ['round', 'scored', 'cohort', 'tool', 'cacheMode', 'cacheSemantics', 'success', 'eligibleForComparison', 'durationMs', 'error', 'artifacts']));
     const markdown = `### Commerce performance (${process.platform}/${process.arch})\n\nStatus: **${report.status}**; publishable: **false**; comparison: **${report.comparison.mode}**.\n\n| Cache | Valid samples | Median ms | IQR ms |\n|---|---:|---:|---:|\n${report.cells.map(cell => `| ${cell.cacheMode} | ${cell.validSamples} | ${cell.medianMs ?? 'unavailable'} | ${cell.iqrMs ?? 'unavailable'} |`).join('\n')}\n\n${report.errors.join('\n')}\n\n${report.limitations.join('\n\n')}\n`;
     await fs.writeFile(path.join(output, 'summary.md'), markdown);

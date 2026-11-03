@@ -104,8 +104,8 @@ fn create_file<P: AsRef<Path>>(file_path: P) -> io::Result<File> {
 mod tests {
   use super::*;
   use crate::parser::scan_dirs_exports::scan_dir_exports;
-  use crate::presets::resolve_presets;
   use crate::presets::PresetItem;
+  use crate::presets::resolve_presets;
 
   use std::env;
   #[test]

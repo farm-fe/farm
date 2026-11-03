@@ -1,6 +1,6 @@
 use farmfe_core::{
-  module::{module_group::ModuleGroupId, Module, ModuleId},
   HashSet,
+  module::{Module, ModuleId, module_group::ModuleGroupId},
 };
 
 /// A ModuleBucket is a collection of modules whose module_groups field is equal.

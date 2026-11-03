@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 // cspell:words statfs bavail taskkill
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -42,7 +43,7 @@ async function main() {
   const output = path.resolve(process.argv[2] ?? '');
   if (!process.argv[2]) throw new Error('Expected prepared SDK evidence directory');
   const materialization = JSON.parse(fs.readFileSync(path.join(output, 'materialization.json')));
-  const plan = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../docs/releases/v2-candidate.json', import.meta.url))));
+  const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(fileURLToPath(new URL('../', import.meta.url)))));
   assert.equal(materialization.planSha256, hash(JSON.stringify(plan)), 'SDK registry belongs to a different frozen release plan');
   assert.deepEqual([...materialization.selected, ...materialization.reused].map(({ name, version }) => `${name}@${version}`).sort(), plan.cargo.map(({ name, version }) => `${name}@${version}`).sort(), 'SDK candidate package coverage mismatch');
   const consumer = path.join(output, 'consumer');

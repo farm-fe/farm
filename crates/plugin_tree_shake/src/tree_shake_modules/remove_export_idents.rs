@@ -1,14 +1,14 @@
 use farmfe_core::{
+  HashMap, HashSet,
   module::{
+    ModuleId,
     meta_data::script::{
-      statement::{ExportSpecifierInfo, SwcId},
       ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
+      statement::{ExportSpecifierInfo, SwcId},
     },
     module_graph::ModuleGraph,
-    ModuleId,
   },
   plugin::ResolveKind,
-  HashMap, HashSet,
 };
 use farmfe_toolkit::script::create_export_default_ident;
 
@@ -16,9 +16,9 @@ use farmfe_toolkit::script::create_export_default_ident;
 mod tests {
   use super::*;
   use farmfe_core::module::{
+    Module, ModuleMetaData, ModuleType,
     meta_data::script::statement::{ExportInfo, Statement},
     module_graph::ModuleGraphEdgeDataItem,
-    Module, ModuleMetaData, ModuleType,
   };
 
   #[test]
@@ -113,13 +113,15 @@ mod tests {
       assert!(!meta.export_ident_map.contains_key("Model"), "{name}");
       assert!(!meta.reexport_ident_map.contains_key("Model"), "{name}");
     }
-    assert!(graph
-      .module(&"model.js".into())
-      .unwrap()
-      .meta
-      .as_script()
-      .export_ident_map
-      .contains_key("default"));
+    assert!(
+      graph
+        .module(&"model.js".into())
+        .unwrap()
+        .meta
+        .as_script()
+        .export_ident_map
+        .contains_key("default")
+    );
   }
 
   #[test]

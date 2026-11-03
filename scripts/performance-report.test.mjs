@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs, enablePairedCohort, finalizePerformanceMetrics } from './performance-report.mjs';
+import { performanceSummary, performanceFailureKind, aggregate, compatible, command, workloadFingerprint, businessFixture, workloadFileCounts, workloadScale, auxiliaryWorkloadInputs, completePairs, enablePairedCohort, finalizePerformanceMetrics } from './performance-report.mjs';
 
 test('failed and missing samples do not become zero-duration measurements', () => {
   const cells = aggregate([
@@ -132,7 +132,7 @@ test('performance job is non-blocking, follows Examples and pins artifact names 
   const source = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const job = source.split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
   const dependencies = job.match(/needs:\s*\[([^\]]+)\]/)?.[1].split(',').map(name => name.trim());
-  assert.deepEqual(new Set(dependencies), new Set(['examples-test', 'docs-acceptance', 'ts-test', 'type-check', 'check-native-candidate-assembly']));
+  assert.deepEqual(new Set(dependencies), new Set(['version-classification', 'examples-test', 'docs-acceptance', 'ts-test', 'type-check', 'check-native-candidate-assembly']));
   assert.match(job, /continue-on-error: true/);
   assert.match(job, /timeout-minutes: 90/);
   assert.deepEqual([...job.matchAll(/os: (ubuntu-24\.04|macos-latest|windows-latest)/g)].map(match => match[1]), ['ubuntu-24.04', 'macos-latest', 'windows-latest']);
@@ -230,4 +230,27 @@ test('failed full acceptance preserves historical measurements only as diagnosti
   assert.equal(report.diagnosticHistory, history);
   assert.deepEqual(report.history.entries, []);
   assert.equal(report.history.status, 'unavailable');
+});
+
+test('summary serialization preserves native and timing provenance without scored record duplication', () => {
+  const report = { status: 'complete', metadata: { revision: 'source' }, native: { artifacts: { core: { bytes: 12, sha256: 'digest' } } }, nativeUnchanged: true, records: [{ durationMs: 12 }], cells: [{ medianMs: 12 }] };
+  const summary = JSON.parse(JSON.stringify(performanceSummary(report)));
+  assert.deepEqual(summary.native, report.native);
+  assert.deepEqual(summary.metadata, report.metadata);
+  assert.deepEqual(summary.cells, report.cells);
+  assert.equal(summary.nativeUnchanged, true);
+  assert.equal(summary.records, undefined);
+  assert.equal(report.records.length, 1);
+});
+test('unscored graph and browser validation failures are distinct from scored sampling', () => {
+  assert.equal(performanceFailureKind('graph'), 'graph-validation-failure');
+  assert.equal(performanceFailureKind('correctness'), 'browser-validation-failure');
+  assert.equal(performanceFailureKind('sampling'), 'sampling-failure');
+});
+
+test('supervisor generic failures keep graph phase but retain resource and cleanup failures', () => {
+  assert.equal(performanceFailureKind('graph', { failureKind: 'sampling-failure', cleanupConfirmed: true }), 'graph-validation-failure');
+  assert.equal(performanceFailureKind('correctness', { failureKind: 'supervised-command-failure' }), 'browser-validation-failure');
+  assert.equal(performanceFailureKind('graph', { failureKind: 'resource-insufficient' }), 'resource-insufficient');
+  assert.equal(performanceFailureKind('graph', { failureKind: 'sampling-failure', cleanupConfirmed: false }), 'cleanup-failure');
 });

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "prepared-first-stable-on-merge",
+  "repository": "farm-fe/farm",
+  "repositoryId": 507542208,
+  "pullRequest": 2330,
+  "anchorCommit": "640215ed91bf635b60c6931eb7137dd3d0c10ed3",
+  "changesetsConsumptionCommit": "70404dd9959aef7c4c6cee3be66eeec5e3c6ad74",
+  "candidate": "docs/releases/v2-candidate.json",
+  "retainedCrates": [
+    {
+      "name": "farmfe_macro_cache_item",
+      "version": "2.1.0",
+      "sha256": "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502"
+    },
+    {
+      "name": "farmfe_macro_plugin",
+      "version": "2.0.0",
+      "sha256": "59ac048afc3bfcba0cefe8bbb25e1cdb2e266945094975a95fd9998fd80ae9a2"
+    },
+    {
+      "name": "farmfe_testing",
+      "version": "2.0.0",
+      "sha256": "8ed095b486896efdc12fdd5c22f4b7a7639cab5393f7c74c92ceeddb886a2e81"
+    }
+  ],
+  "consumedFollowups": [
+    {
+      "path": ".changeset/css-cache-recovery.md",
+      "sha256": "ef011a6b38c4ed628e3a6a7812f7a5ce4e8590b84388260858956945c3ec7266",
+      "archive": "docs/releases/consumed-changesets/2330/css-cache-recovery.md",
+      "includedIn": [
+        {
+          "name": "@farmfe/core",
+          "version": "2.0.0"
+        },
+        {
+          "name": "@farmfe/plugin-tailwindcss",
+          "version": "2.0.0"
+        }
+      ]
+    },
+    {
+      "path": ".changeset/native-cli-paths.md",
+      "sha256": "dafa67365a709ef44e04f5e2b1cf47dd069bf5ac981b000af6c785363c858997",
+      "archive": "docs/releases/consumed-changesets/2330/native-cli-paths.md",
+      "includedIn": [
+        {
+          "name": "@farmfe/plugin-tools",
+          "version": "2.0.0"
+        }
+      ]
+    }
+  ],
+  "followupDisposition": "User-approved inclusion in current unpublished versions; no additional patch bump."
+}

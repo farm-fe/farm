@@ -1,0 +1,100 @@
+name: Cargo source release from reviewed version PR
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: farm-stable-release
+  cancel-in-progress: false
+  queue: max
+jobs:
+  source:
+    name: Prepare Cargo source archives
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.number == 2329 || github.event.number == 2330 || startsWith(github.event.pull_request.head.ref, 'changeset-release/'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Restore the original source transaction before any packaging
+        id: frozen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -B scripts/cargo-source-release.py restore
+      - uses: pnpm/action-setup@v4
+        if: steps.frozen.outputs.restored != 'true'
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        if: steps.frozen.outputs.restored != 'true'
+        with:
+          node-version: 22.20.0
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+        if: steps.frozen.outputs.restored != 'true'
+      - name: Verify reviewed version provenance and semantic changes
+        if: steps.frozen.outputs.restored != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/automatic-release-source.mjs --cargo
+      - name: Prepare pinned source dependencies
+        if: steps.frozen.outputs.restored != 'true'
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          cargo fetch --locked
+      - name: Package and verify exact source crates
+        if: steps.frozen.outputs.restored != 'true'
+        run: python -B scripts/cargo-source-release.py prepare
+      - name: Freeze verified Cargo source archives
+        if: steps.frozen.outputs.restored != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-source-${{ github.run_id }}
+          path: |
+            cargo-source-frozen/receipt.json
+            cargo-source-frozen/files/*
+          if-no-files-found: error
+          retention-days: 90
+  publish:
+    name: Publish frozen Cargo source archives
+    needs: [source]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Publish only verified frozen source bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: python -B scripts/cargo-source-release.py publish
+      - name: Preserve per-package Cargo publication states
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-source-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cargo-source-frozen/publication.json
+          if-no-files-found: warn
+          retention-days: 90

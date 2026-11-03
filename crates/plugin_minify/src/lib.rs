@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{minify::MinifyOptions, Config},
+  config::{Config, minify::MinifyOptions},
   context::CompilationContext,
   plugin::Plugin,
   resource::resource_pot::{ResourcePot, ResourcePotType},

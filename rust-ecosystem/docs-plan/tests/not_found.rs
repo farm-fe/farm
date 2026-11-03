@@ -1,6 +1,6 @@
 use farmfe_docs_config::parse_config;
-use farmfe_docs_plan::{prepare, verify, DocPlan};
-use serde_json::{json, Value};
+use farmfe_docs_plan::{DocPlan, prepare, verify};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
 
@@ -71,10 +71,12 @@ fn physical_not_found_is_a_required_deterministic_separate_rust_plan() {
   assert_eq!(prepared.routes.len(), 1);
   assert_eq!(prepared.modules.len(), 1);
   assert_eq!(prepared.seo.len(), 1);
-  assert!(prepared
-    .routes
-    .iter()
-    .all(|route| route.output_path != "404.html"));
+  assert!(
+    prepared
+      .routes
+      .iter()
+      .all(|route| route.output_path != "404.html")
+  );
   assert_eq!(
     serde_json::to_value(plan(root.path(), config())).unwrap(),
     value
@@ -187,10 +189,12 @@ fn unicode_mount_three_locales_and_explicit_labels_are_deterministic() {
   assert_eq!(prepared.not_found[0].title, "未找到页面 | Docs & 中文");
   assert_eq!(prepared.not_found[0].home_label, "回到首页");
   for auxiliary in &prepared.not_found {
-    assert!(prepared
-      .routes
-      .iter()
-      .any(|route| route.page.route_path == auxiliary.home));
+    assert!(
+      prepared
+        .routes
+        .iter()
+        .any(|route| route.page.route_path == auxiliary.home)
+    );
     assert!(!auxiliary.head_html.contains("canonical"));
     assert!(!auxiliary.head_html.contains("hreflang"));
   }

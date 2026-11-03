@@ -1,5 +1,7 @@
 name: Unit Tests
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       release_pr:
@@ -13,13 +15,24 @@ on:
   pull_request:
     branches:
       - main
+      - codex/v2-unified-release-20261025
 
 concurrency:
-  group: test-${{ github.workflow }}-${{ github.ref }}
+  group: test-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.release_pr || (github.ref == 'refs/heads/main' && github.sha || github.ref) }}
   cancel-in-progress: true
 
 jobs:
+  version-classification:
+    uses: ./.github/workflows/classify-version-pr.yaml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      pr_number: ${{ inputs.release_pr || '' }}
+
   impact-plan:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
     name: Incremental Unit CI plan (shadow only)
     continue-on-error: true
     runs-on: ubuntu-24.04
@@ -36,7 +49,8 @@ jobs:
         env:
           CI_IMPACT_SCOPE: unit
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
-      - uses: actions/upload-artifact@v4
+      - name: Upload fixed source impact plan
+        uses: actions/upload-artifact@v4
         with:
           name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
           path: impact-plan/plan.json
@@ -46,8 +60,11 @@ jobs:
   impact-summary:
     name: Incremental Unit CI shadow summary
     continue-on-error: true
-    if: always()
-    needs: [impact-plan, cargo-check, cargo-test]
+    permissions:
+      contents: read
+      actions: read
+    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification, impact-plan, cargo-check, cargo-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -57,19 +74,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
-          path: impact-plan
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          pattern: impact-cell-${{ github.sha }}-*-${{ github.run_attempt }}
-          path: impact-cell-receipts
       - name: Report current Unit scope outcomes without publication authority
         if: always()
         env:
+          CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
+          GH_TOKEN: ${{ github.token }}
           CI_IMPACT_SCOPE: unit
           CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
         run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
@@ -82,6 +91,8 @@ jobs:
           retention-days: 14
 
   cargo-check:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
     name: Check
     runs-on: ubuntu-24.04
     steps:
@@ -109,6 +120,8 @@ jobs:
           artifact-suffix: ${{ matrix.os || 'single' }}
 
   cargo-test:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
     name: Test - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -161,16 +174,3 @@ jobs:
           cell: "rust-tests:ci-test:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
           artifact-suffix: ${{ matrix.os || 'single' }}
-
-  required-linux-test-compatibility:
-    name: Test - ubuntu-latest
-    if: always()
-    needs: [cargo-test]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Require the complete Rust test matrix to succeed
-        shell: bash
-        env:
-          UPSTREAM_RESULT: ${{ needs.cargo-test.result }}
-        run: test "$UPSTREAM_RESULT" = success

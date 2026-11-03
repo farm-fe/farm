@@ -1,29 +1,29 @@
 use std::{
   path::PathBuf,
   sync::{
-    mpsc::{channel, Receiver, Sender},
     Arc,
+    mpsc::{Receiver, Sender, channel},
   },
 };
 
 use farmfe_core::{
+  HashMap,
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     Module, ModuleId, ModuleType,
+    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
   },
   plugin::{
-    constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND,
-    plugin_driver::PluginDriverTransformHookResult, PluginAnalyzeDepsHookResultEntry,
-    PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
-    PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
+    PluginAnalyzeDepsHookResultEntry, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
+    PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
+    PluginTransformHookParam, ResolveKind, constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND,
+    plugin_driver::PluginDriverTransformHookResult,
   },
   rayon::ThreadPool,
   serde_json::json,
-  HashMap,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
@@ -34,12 +34,12 @@ use finalize_module_graph::{
 };
 
 use crate::{
+  Compiler,
   build::{
     analyze_deps::analyze_deps, finalize_module::finalize_module, load::load, parse::parse,
     resolve::resolve, transform::transform,
   },
   utils::get_module_ids_from_compilation_errors,
-  Compiler,
 };
 
 use self::module_cache::{
@@ -172,10 +172,12 @@ impl Compiler {
       for error in errors {
         error_messages.push(error.to_string());
       }
-      let errors_json = json!(error_messages
-        .iter()
-        .map(|e| e.to_string())
-        .collect::<Vec<_>>());
+      let errors_json = json!(
+        error_messages
+          .iter()
+          .map(|e| e.to_string())
+          .collect::<Vec<_>>()
+      );
       return Err(CompilationError::GenericError(errors_json.to_string()));
     } else {
       self.set_last_fail_module_ids(&[]);
@@ -287,7 +289,7 @@ impl Compiler {
 
     if use_module_cache
       && let Some(cached_module) =
-      try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
+        try_get_module_cache_by_timestamp(&module.id, module.last_update_timestamp, context)?
     {
       *module = cached_module.module;
       return Ok(CachedModule::dep_sources(cached_module.dependencies));
@@ -338,7 +340,7 @@ impl Compiler {
     // skip building if the module is already built and the cache is enabled
     if use_module_cache
       && let Some(cached_module) =
-      try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
+        try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
     {
       // should not overwrite the timestamp of current resolved module
       let last_update_timestamp = module.last_update_timestamp;
@@ -596,7 +598,9 @@ impl Compiler {
         }
       }
       ResolveKind::DynamicEntry { name, .. } => {
-        module_graph.dynamic_entries.insert(module_id.clone(), name.clone());
+        module_graph
+          .dynamic_entries
+          .insert(module_id.clone(), name.clone());
         if let Some(module) = module_graph.module_mut(&module_id) {
           module.is_dynamic_entry = true;
         }
@@ -675,26 +679,6 @@ impl Compiler {
   }
 }
 
-#[cfg(test)]
-mod entry_registration_tests {
-  use super::*;
-
-  #[test]
-  fn restored_worker_dependency_registers_its_dynamic_entry() {
-    let context = CompilationContext::new(Default::default(), vec![]).unwrap();
-    let id: ModuleId = "cached-worker.js".into();
-    Compiler::add_module(Module::new(id.clone()), &context);
-    Compiler::add_edge(&PluginResolveHookParam {
-      source: "cached-worker.js".to_string(),
-      importer: None,
-      kind: ResolveKind::DynamicEntry { name: "worker".to_string(), output_filename: None },
-    }, id.clone(), 0, &context);
-    let graph = context.module_graph.read();
-    assert_eq!(graph.dynamic_entries.get(&id), Some(&"worker".to_string()));
-    assert!(graph.module(&id).unwrap().is_dynamic_entry);
-  }
-}
-
 fn resolve_module(
   resolve_param: &PluginResolveHookParam,
   cached_dependency: Option<ModuleId>,
@@ -754,4 +738,32 @@ fn resolve_module(
   };
 
   Ok(res)
+}
+
+#[cfg(test)]
+mod entry_registration_tests {
+  use super::*;
+
+  #[test]
+  fn restored_worker_dependency_registers_its_dynamic_entry() {
+    let context = CompilationContext::new(Default::default(), vec![]).unwrap();
+    let id: ModuleId = "cached-worker.js".into();
+    Compiler::add_module(Module::new(id.clone()), &context);
+    Compiler::add_edge(
+      &PluginResolveHookParam {
+        source: "cached-worker.js".to_string(),
+        importer: None,
+        kind: ResolveKind::DynamicEntry {
+          name: "worker".to_string(),
+          output_filename: None,
+        },
+      },
+      id.clone(),
+      0,
+      &context,
+    );
+    let graph = context.module_graph.read();
+    assert_eq!(graph.dynamic_entries.get(&id), Some(&"worker".to_string()));
+    assert!(graph.module(&id).unwrap().is_dynamic_entry);
+  }
 }

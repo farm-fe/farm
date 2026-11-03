@@ -32,6 +32,20 @@ test('every functional, candidate-consumer and valid performance lane is require
     assert.throws(() => validateRequiredCiJobs(jobs.map(job => job.name === name ? { ...job, conclusion: 'skipped' } : job)), /not successful/);
   }
 });
+test('platform workflow prefixes preserve exact functional release jobs without ambiguous matches', () => {
+  const platforms = new Map([['ubuntu-24.04', 'Primary Linux'], ['macos-latest', 'Primary macOS'], ['windows-latest', 'Primary Windows']]);
+  const jobs = requiredCiJobs.map(name => {
+    for (const [os, prefix] of platforms) {
+      if (name === `Examples Test (${os})` || name === `Typescript Test (${os})`) return { name: `${prefix} / ${name}`, status: 'completed', conclusion: 'success' };
+    }
+    return { name, status: 'completed', conclusion: 'success' };
+  });
+  validateRequiredCiJobs(jobs);
+  const example = jobs.find(job => job.name === 'Primary Linux / Examples Test (ubuntu-24.04)');
+  assert.throws(() => validateRequiredCiJobs([...jobs, example]), /ambiguous/);
+  assert.throws(() => validateRequiredCiJobs(jobs.map(job => job === example ? { ...job, conclusion: 'skipped' } : job)), /not successful/);
+});
+
 test('missing or stale independent workflow runs do not become a green final release', () => {
   const run = { id: 1, head_sha: event.pull_request.head.sha, path: '.github/workflows/rust-test.yaml', event: 'pull_request', pull_requests: [{ number: 2329, head: { sha: event.pull_request.head.sha } }] };
   assert.equal(selectRequiredRuns([run], [run.path], run.head_sha, 2329)[0].id, 1);
@@ -163,4 +177,11 @@ test('publication entry module graph has no installed workspace dependency requi
     }
   }
   visit(fileURLToPath(new URL('./v2-auto-release.mjs', import.meta.url)));
+});
+
+test('retired combined context cannot replace the actual type-check producer', () => {
+  const jobs=requiredCiJobs.map(name=>({name,status:'completed',conclusion:'success'}));
+  assert.ok(requiredCiJobs.includes('Type Check'));assert.ok(!requiredCiJobs.includes('Type Check & Changesets'));
+  jobs.find(job=>job.name==='Type Check').name='Type Check & Changesets';
+  assert.throws(()=>validateRequiredCiJobs(jobs),/Missing or ambiguous required CI job: Type Check/);
 });

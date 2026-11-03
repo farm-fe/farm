@@ -1,6 +1,6 @@
 use farmfe_docs_config::parse_config;
-use farmfe_docs_plan::{prepare, prepare_with_cache, ContentCache};
-use serde_json::{json, Value};
+use farmfe_docs_plan::{ContentCache, prepare, prepare_with_cache};
+use serde_json::{Value, json};
 use std::{fs, path::Path};
 
 fn site() -> (tempfile::TempDir, Value) {
@@ -52,9 +52,11 @@ fn add_remove_and_recreate_routes_keep_complete_sidebars_and_identity() {
   fs::write(root.path().join("docs/added.md"), "# Added\n").unwrap();
   let added = equal_to_fresh(root.path(), &raw, &mut cache);
   assert_eq!(added.routes.len(), 2);
-  assert!(serde_json::to_string(&added.sidebars)
-    .unwrap()
-    .contains("Added"));
+  assert!(
+    serde_json::to_string(&added.sidebars)
+      .unwrap()
+      .contains("Added")
+  );
   fs::remove_file(root.path().join("docs/added.md")).unwrap();
   let removed = equal_to_fresh(root.path(), &raw, &mut cache);
   assert_eq!(original.snapshot_id, removed.snapshot_id);
@@ -104,17 +106,21 @@ fn warm_source_rechecks_link_targets_and_restores_after_errors() {
   let mut cache = ContentCache::default();
   equal_to_fresh(root.path(), &raw, &mut cache);
   fs::remove_file(root.path().join("docs/target.md")).unwrap();
-  assert!(prepare_with_cache(&config, &mut cache)
-    .err()
-    .unwrap()
-    .contains("DOCS_LINK_MISSING"));
+  assert!(
+    prepare_with_cache(&config, &mut cache)
+      .err()
+      .unwrap()
+      .contains("DOCS_LINK_MISSING")
+  );
   fs::write(root.path().join("docs/target.md"), "# Repaired\n").unwrap();
   equal_to_fresh(root.path(), &raw, &mut cache);
   fs::write(root.path().join("docs/index.mdx"), "import {\n").unwrap();
-  assert!(prepare_with_cache(&config, &mut cache)
-    .err()
-    .unwrap()
-    .contains("DOCS_CONTENT_COMPILE"));
+  assert!(
+    prepare_with_cache(&config, &mut cache)
+      .err()
+      .unwrap()
+      .contains("DOCS_CONTENT_COMPILE")
+  );
   fs::write(root.path().join("docs/index.mdx"), "# Restored\n").unwrap();
   equal_to_fresh(root.path(), &raw, &mut cache);
 }
@@ -149,10 +155,12 @@ fn changing_collection_format_cannot_reuse_a_markdown_parse_as_mdx() {
   let original = equal_to_fresh(root.path(), &raw, &mut cache);
   raw["docs"]["collections"][0]["format"] = json!("mdx");
   let config = parse_config(&raw.to_string(), root.path()).unwrap();
-  assert!(prepare_with_cache(&config, &mut cache)
-    .err()
-    .unwrap()
-    .contains("DOCS_CONTENT_COMPILE"));
+  assert!(
+    prepare_with_cache(&config, &mut cache)
+      .err()
+      .unwrap()
+      .contains("DOCS_CONTENT_COMPILE")
+  );
   raw["docs"]["collections"][0]["format"] = json!("markdown");
   let restored = equal_to_fresh(root.path(), &raw, &mut cache);
   assert_eq!(original.snapshot_id, restored.snapshot_id);

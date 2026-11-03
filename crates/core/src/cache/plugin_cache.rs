@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use dashmap::{mapref::one::Ref, DashMap};
+use dashmap::{DashMap, mapref::one::Ref};
 use farmfe_utils::hash::sha256;
 
 use crate::{Cacheable, HashMap};
 
-use super::{store::constant::CacheStoreTrait, CacheContext};
+use super::{CacheContext, store::constant::CacheStoreTrait};
 
 pub struct PluginCacheManager {
   store: Box<dyn CacheStoreTrait>,

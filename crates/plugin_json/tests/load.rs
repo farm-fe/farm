@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::Config, context::CompilationContext, plugin::Plugin, plugin::PluginHookContext, HashMap,
+  HashMap, config::Config, context::CompilationContext, plugin::Plugin, plugin::PluginHookContext,
 };
 use farmfe_testing_helpers::fixture;
 

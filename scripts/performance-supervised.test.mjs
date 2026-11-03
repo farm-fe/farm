@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { performanceFailureKind } from './performance-report.mjs';
 import { assertPressureObservation, finishBootstrap, commandBudget, supervisedCommand, safetyProtocol, performanceDeadline, performanceTotalBudgetMs, performanceJobTimeoutMinutes } from './performance-supervised.mjs';
 
 const observation = () => ({ availableBytes: null, diskFreeBytes: 30 * 1024 ** 3, pressure: { state: 'normal', source: 'fixture only' } });
@@ -62,9 +63,10 @@ test('real OS supervisor reports root exit and owned descendant cleanup, includi
     assert.doesNotMatch(JSON.stringify(runtime.execArgv), /setTimeout|process.exit/);
     const pidFile = path.join(directory, 'owned-child.json');
     const source = `const cp=require('node:child_process').spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});require('node:fs').writeFileSync(process.argv[1],JSON.stringify({parent:process.pid,child:cp.pid}));setInterval(()=>{},1000);`;
-    await assert.rejects(supervisedCommand(process.execPath, ['-e', source, pidFile], { ...options, commandLimitMs: 1500 }), error => {
+    await assert.rejects(supervisedCommand(process.execPath, ['-e', source, pidFile], { ...options, phase: 'graph', budget: finishBootstrap(rows(), identity), commandLimitMs: 1500 }), error => {
       cleanupConfirmed = error.cleanupConfirmed === true;
       assert.equal(error.cleanupConfirmed, true); assert.equal(error.supervision.status, 'invalid');
+      assert.equal(performanceFailureKind('graph', error), 'graph-validation-failure');
       if (process.platform !== 'win32') {
         const proof = error.supervision.cleanupScopes.find(row => row.scope === 'root');
         assert.equal(proof.ownershipVerified, true); assert.equal(proof.rootReaped, true);
@@ -82,7 +84,8 @@ test('real OS supervisor reports root exit and owned descendant cleanup, includi
     const detached = `const fs=require('node:fs');const cp=require('node:child_process').spawn(process.execPath,['-e','setTimeout(()=>process.exit(0),30000)'],{stdio:'ignore',detached:process.platform!=='win32'});const data={rootPid:process.pid,browserPid:cp.pid,state:'open'};const receipt=process.env.FARM_PERFORMANCE_BROWSER_OWNER;fs.writeFileSync(receipt+'.tmp',JSON.stringify(data),{flag:'wx'});fs.renameSync(receipt+'.tmp',receipt);fs.writeFileSync(process.argv[1],JSON.stringify(data));setTimeout(()=>process.exit(0),31000);`;
     await assert.rejects(supervisedCommand(process.execPath, ['-e', detached, browserPidFile], { ...options, phase: 'correctness', budget: finishBootstrap(rows(), identity), commandLimitMs: 1500 }), error => {
       cleanupConfirmed = error.cleanupConfirmed === true;
-      assert.equal(error.cleanupConfirmed, true); return true;
+      assert.equal(error.cleanupConfirmed, true);
+      assert.equal(performanceFailureKind('correctness', error), 'browser-validation-failure'); return true;
     });
     const ownedBrowser = JSON.parse(fs.readFileSync(browserPidFile));
     cleanupConfirmed = false;

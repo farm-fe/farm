@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -54,7 +55,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     fs.mkdirSync(destination); // Preserve any existing recipe or failure evidence.
     const receipt = { status: 'recipe-not-started', compiled: false, fetched: false };
     try {
-      const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+      const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
       receipt.registryReuse = rustRegistryReuse(plan);
       fs.writeFileSync(path.join(destination, 'Cargo.toml'), publicFetchManifest(plan, lock), { flag: 'wx' });
       fs.mkdirSync(path.join(destination, 'src')); fs.writeFileSync(path.join(destination, 'src/lib.rs'), '', { flag: 'wx' });
@@ -64,8 +65,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   } else {
     assert.equal(mode, 'bind-candidate');
     const materialization = JSON.parse(fs.readFileSync(path.join(destination, 'materialization.json')));
-    const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
-    if (plan.preparation?.mode === 'changesets') {
+    const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
+    if (['changesets', 'incremental-release'].includes(plan.preparation?.mode)) {
       // New crate versions cannot inherit the first-stable frozen resolution.
       // Resolve only against the already verified isolated registry, never paths.
       fs.rmSync(path.join(destination, 'consumer/Cargo.lock'), { force: true });

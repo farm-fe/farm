@@ -1,4 +1,4 @@
-use crate::{links::Index, routes::logical_id, DocPlan, PublicPage};
+use crate::{DocPlan, PublicPage, links::Index, routes::logical_id};
 use farmfe_docs_config::{LinkException, LinkExceptionCode, ValidatedConfig};
 use farmfe_docs_content::ContentReference;
 use std::collections::{HashMap, HashSet};

@@ -1,6 +1,6 @@
 use serde::{
-    de::{Error, Unexpected, Visitor},
     Deserialize, Deserializer,
+    de::{Error, Unexpected, Visitor},
 };
 use std::{fmt, ops::Deref};
 

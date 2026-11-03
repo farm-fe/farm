@@ -4,10 +4,10 @@ use farmfe_macro_cache_item::cache_item;
 use feature_flag::FeatureFlag;
 use swc_atoms::Atom;
 use swc_common::{
+  BytePos,
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
   },
-  BytePos,
 };
 use swc_ecma_ast::Module as SwcModule;
 

@@ -1,6 +1,6 @@
 use farmfe_core::{
-  module::module_group::{ModuleGroupId, ModuleGroupType},
   HashSet,
+  module::module_group::{ModuleGroupId, ModuleGroupType},
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{

@@ -2,9 +2,9 @@
 #![allow(unused_variables)]
 
 use std::{
-    collections::{BTreeSet, HashMap},
-    fmt,
-    sync::atomic::{AtomicUsize, Ordering},
+  collections::{BTreeSet, HashMap},
+  fmt,
+  sync::atomic::{AtomicUsize, Ordering},
 };
 
 use once_cell::sync::Lazy;
@@ -52,63 +52,55 @@ static FUNCTION_COUNT: AtomicUsize = AtomicUsize::new(0);
 /// ```
 #[derive(Clone)]
 pub struct Builtin(
-    pub(crate) fn(ArgumentResult, &mut Visitor) -> SassResult<Value>,
-    usize,
+  pub(crate) fn(ArgumentResult, &mut Visitor) -> SassResult<Value>,
+  usize,
 );
 
 impl fmt::Debug for Builtin {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Builtin")
-            .field("id", &self.1)
-            .field("fn_ptr", &(self.0 as usize))
-            .finish()
-    }
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("Builtin")
+      .field("id", &self.1)
+      .field("fn_ptr", &(self.0 as usize))
+      .finish()
+  }
 }
 
 impl Builtin {
-    pub fn new(body: fn(ArgumentResult, &mut Visitor) -> SassResult<Value>) -> Builtin {
-        let count = FUNCTION_COUNT.fetch_add(1, Ordering::Relaxed);
-        Self(body, count)
-    }
+  pub fn new(body: fn(ArgumentResult, &mut Visitor) -> SassResult<Value>) -> Builtin {
+    let count = FUNCTION_COUNT.fetch_add(1, Ordering::Relaxed);
+    Self(body, count)
+  }
 }
 
 impl PartialEq for Builtin {
-    fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
-    }
+  fn eq(&self, other: &Self) -> bool {
+    self.1 == other.1
+  }
 }
 
 impl Eq for Builtin {}
 
 pub(crate) static GLOBAL_FUNCTIONS: Lazy<GlobalFunctionMap> = Lazy::new(|| {
-    let mut m = HashMap::new();
-    color::declare(&mut m);
-    list::declare(&mut m);
-    map::declare(&mut m);
-    math::declare(&mut m);
-    meta::declare(&mut m);
-    selector::declare(&mut m);
-    string::declare(&mut m);
-    m
+  let mut m = HashMap::new();
+  color::declare(&mut m);
+  list::declare(&mut m);
+  map::declare(&mut m);
+  math::declare(&mut m);
+  meta::declare(&mut m);
+  selector::declare(&mut m);
+  string::declare(&mut m);
+  m
 });
 
 pub(crate) static DISALLOWED_PLAIN_CSS_FUNCTION_NAMES: Lazy<BTreeSet<&str>> = Lazy::new(|| {
-    GLOBAL_FUNCTIONS
-        .keys()
-        .copied()
-        .filter(|&name| {
-            !matches!(
-                name,
-                "rgb"
-                    | "rgba"
-                    | "hsl"
-                    | "hsla"
-                    | "grayscale"
-                    | "invert"
-                    | "alpha"
-                    | "opacity"
-                    | "saturate"
-            )
-        })
-        .collect()
+  GLOBAL_FUNCTIONS
+    .keys()
+    .copied()
+    .filter(|&name| {
+      !matches!(
+        name,
+        "rgb" | "rgba" | "hsl" | "hsla" | "grayscale" | "invert" | "alpha" | "opacity" | "saturate"
+      )
+    })
+    .collect()
 });

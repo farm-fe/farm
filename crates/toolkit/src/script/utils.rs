@@ -5,7 +5,7 @@ use swc_ecma_parser::{EsSyntax, Syntax, TsSyntax};
 use farmfe_core::{
   config::ScriptParserConfig,
   module::ModuleType,
-  swc_common::{comments::SingleThreadedComments, Mark, SourceMap, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SourceMap, SyntaxContext, comments::SingleThreadedComments},
   swc_ecma_ast::{
     CallExpr, Callee, Decl, Expr, ExprOrSpread, Ident, Import, Module as SwcModule, ModuleItem,
     Stmt, VarDecl,

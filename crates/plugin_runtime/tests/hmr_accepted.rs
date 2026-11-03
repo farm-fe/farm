@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  module::{meta_data::script::ScriptModuleMetaData, Module},
+  module::{Module, meta_data::script::ScriptModuleMetaData},
   plugin::{Plugin, PluginFinalizeModuleHookParam, PluginLoadHookResult},
 };
 use farmfe_testing_helpers::fixture;

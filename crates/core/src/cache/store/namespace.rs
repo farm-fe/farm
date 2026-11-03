@@ -2,7 +2,7 @@ use std::{borrow::Cow, sync::Arc};
 
 use crate::HashMap;
 
-use super::{constant::CacheStoreTrait, error::CacheError, CacheStoreKey};
+use super::{CacheStoreKey, constant::CacheStoreTrait, error::CacheError};
 
 pub struct NamespaceStore {
   store: Arc<Box<dyn CacheStoreTrait>>,

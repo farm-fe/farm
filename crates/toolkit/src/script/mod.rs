@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use swc_ecma_codegen::{
-  text_writer::{JsWriter, WriteJs},
   Emitter, Node,
+  text_writer::{JsWriter, WriteJs},
 };
-use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
+use swc_ecma_parser::{Parser, StringInput, Syntax, lexer::Lexer};
 
 use farmfe_core::{
   config::comments::CommentsConfig,
@@ -12,9 +12,9 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::ModuleId,
   swc_common::{
+    BytePos, LineCol, SourceMap,
     comments::{Comments, SingleThreadedComments},
     input::SourceFileInput,
-    BytePos, LineCol, SourceMap,
   },
   swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt},
 };

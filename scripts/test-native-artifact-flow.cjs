@@ -42,8 +42,16 @@ const sha='0123456789012345678901234567890123456789';
 const env={...process.env,TRACE:unix(trace),ARTIFACT_POOL:unix(pool),PROBE_SHA:sha,FARM_BUILD_PROFILE:'ci'};
 const receipts=[];
 for(const abi of abis){cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:{...env,FARM_BUILD_ABI:abi},windowsHide:true,encoding:'utf8',timeout:30000});const names=fs.readdirSync(pool).filter(n=>n.startsWith(sha+'-'+abi+'-plugin-')).map(n=>n.slice((sha+'-'+abi+'-plugin-').length)).sort();const expected=[...base,...(supported.has(abi)?docs:[])].sort();assert.deepEqual(names,expected);receipts.push({abi,plugins:names.length,expected:names.length});}
+// Compare actual shell commands for both execution roles on every target.
+const ciTrace=fs.readFileSync(trace,'utf8');
+fs.writeFileSync(trace,'');
+for(const abi of abis) cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:{...env,FARM_BUILD_PROFILE:'release',FARM_BUILD_ABI:abi},windowsHide:true,encoding:'utf8',timeout:30000});
+assert.equal(fs.readFileSync(trace,'utf8'),ciTrace,'PR and main formal native commands must be identical per target');
+assert.doesNotMatch(ciTrace,/build:rs:ci|build:ci|--profile ci(?:\s|$)/);
 const inventoryUrl=require('node:url').pathToFileURL(path.join(root,'scripts/native-artifact-inventory.mjs')).href;
 const plan=JSON.parse(cp.execFileSync(process.execPath,['--input-type=module','-e',`import {nativeArtifactInventory} from ${JSON.stringify(inventoryUrl)};process.stdout.write(JSON.stringify(nativeArtifactInventory(${JSON.stringify(root)})));`],{encoding:'utf8',windowsHide:true,timeout:30000}));
+assert.deepEqual([...new Set(plan.npm.payloads.map(pkg=>pkg.platform))].sort(),[...abis].sort(),'Assembly inventory must include all nine native ABIs');
+assert.equal(plan.npm.payloads.length,(base.length+2)*abis.length+docs.length*supported.size,'Assembly inventory must cover every declared plugin and platform');
 for(const pkg of [...plan.npm.primary,...plan.npm.payloads]){const dest=path.join(fixture,pkg.manifestPath);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,pkg.manifestPath),dest);}
 const assembler=path.join(root,'scripts/assemble-v2-native-artifacts.mjs');
 const ciWorkflow=fs.readFileSync(path.join(root,'.github/workflows/ci.yaml'),'utf8');

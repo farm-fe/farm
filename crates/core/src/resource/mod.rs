@@ -2,7 +2,7 @@ use heck::AsLowerCamelCase;
 
 use farmfe_macro_cache_item::cache_item;
 
-use crate::{module::ModuleId, HashMap};
+use crate::{HashMap, module::ModuleId};
 
 use self::resource_pot::ResourcePotId;
 

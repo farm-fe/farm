@@ -1,8 +1,8 @@
 use farmfe_docs_config::parse_config;
-use farmfe_docs_plan::{prepare, DocPlan};
+use farmfe_docs_plan::{DocPlan, prepare};
 use farmfe_docs_seo::generate;
-use quick_xml::{events::Event, Reader};
-use serde_json::{json, Value};
+use quick_xml::{Reader, events::Event};
+use serde_json::{Value, json};
 use std::{collections::BTreeSet, fs};
 
 fn fixture(blog: bool) -> (tempfile::TempDir, Value) {
@@ -145,9 +145,11 @@ fn atom_maximum_date_uses_instants_and_retains_boundary_offsets_and_real_authors
     let resources = generate(&plan(root.path(), &raw)).unwrap();
     let dates = values(&resources["blog/atom.xml"], "published");
     let expected = chrono::DateTime::parse_from_rfc3339(date).unwrap();
-    assert!(dates
-      .iter()
-      .any(|date| chrono::DateTime::parse_from_rfc3339(date).unwrap() == expected));
+    assert!(
+      dates
+        .iter()
+        .any(|date| chrono::DateTime::parse_from_rfc3339(date).unwrap() == expected)
+    );
   }
 }
 
@@ -209,9 +211,11 @@ fn rss_contains_only_articles_with_stable_dates_and_proper_xml_entities() {
   let links = values(rss, "guid");
   assert_eq!(links.len(), 3);
   assert_eq!(links.iter().collect::<BTreeSet<_>>().len(), 3);
-  assert!(links
-    .iter()
-    .all(|url| url.starts_with("https://example.com/guide/blog/")));
+  assert!(
+    links
+      .iter()
+      .all(|url| url.starts_with("https://example.com/guide/blog/"))
+  );
 }
 
 #[test]
@@ -285,14 +289,18 @@ fn fallback_indexing_changes_sitemap_but_never_duplicates_rss_articles() {
     .map(|route| noindex.seo[&route.page.key].canonical_url.clone())
     .collect();
   assert_eq!(excluded.len(), 3);
-  assert!(excluded
-    .iter()
-    .all(|url| !values(&before["sitemap.xml"], "loc").contains(url)));
+  assert!(
+    excluded
+      .iter()
+      .all(|url| !values(&before["sitemap.xml"], "loc").contains(url))
+  );
   raw["seo"] = json!({"fallbackIndexing":"index"});
   let indexed = generate(&plan(root.path(), &raw)).unwrap();
-  assert!(excluded
-    .iter()
-    .all(|url| values(&indexed["sitemap.xml"], "loc").contains(url)));
+  assert!(
+    excluded
+      .iter()
+      .all(|url| values(&indexed["sitemap.xml"], "loc").contains(url))
+  );
   assert!(values(&indexed["zh/blog/rss.xml"], "guid").is_empty());
   assert_eq!(values(&indexed["blog/rss.xml"], "guid").len(), 3);
 }

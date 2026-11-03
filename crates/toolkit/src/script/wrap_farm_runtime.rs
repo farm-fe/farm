@@ -1,6 +1,6 @@
 use farmfe_core::{
   config::{FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE},
-  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext, util::take::Take},
   swc_ecma_ast::{
     ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Expr, FnExpr, Function, Ident,
     Module as SwcModule, ModuleItem, Param,

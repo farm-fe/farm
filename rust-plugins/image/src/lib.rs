@@ -1,7 +1,7 @@
 #![deny(clippy::all)]
 
-use base64::engine::general_purpose;
 use base64::Engine;
+use base64::engine::general_purpose;
 use farmfe_core::config::config_regex::ConfigRegex;
 use farmfe_core::module::ModuleType;
 use farmfe_core::plugin::PluginLoadHookResult;

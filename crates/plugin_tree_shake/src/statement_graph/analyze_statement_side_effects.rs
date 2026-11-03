@@ -1,13 +1,13 @@
 use std::mem;
 
 use farmfe_core::{
+  HashMap, HashSet,
   module::meta_data::script::statement::{ReadTopLevelVar, SwcId, WriteTopLevelVar},
   swc_common::{
-    comments::{Comments, SingleThreadedComments},
     Mark, Spanned,
+    comments::{Comments, SingleThreadedComments},
   },
   swc_ecma_ast::{Expr, ModuleItem},
-  HashMap, HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 

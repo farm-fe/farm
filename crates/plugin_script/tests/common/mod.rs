@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  HashMap,
   context::CompilationContext,
   module::{Module, ModuleId},
   plugin::{
@@ -8,7 +9,6 @@ use farmfe_core::{
     PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
     PluginProcessModuleHookParam,
   },
-  HashMap,
 };
 
 pub fn build_module_deps(

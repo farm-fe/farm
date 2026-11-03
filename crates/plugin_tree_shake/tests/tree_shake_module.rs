@@ -1,5 +1,5 @@
-use farmfe_core::swc_common::{Globals, GLOBALS};
 use farmfe_core::HashSet;
+use farmfe_core::swc_common::{GLOBALS, Globals};
 use farmfe_plugin_tree_shake::module::UsedExportsIdent;
 
 use farmfe_plugin_tree_shake::module::{TreeShakeModule, UsedExports};
@@ -246,10 +246,12 @@ export default 'default';
     assert_eq!(result[0].stmt_id, 4);
     assert_eq!(result[0].source, "./src/foo");
     assert_eq!(result[0].used_stmt_idents.as_partial().len(), 1);
-    assert!(result[0]
-      .used_stmt_idents
-      .as_partial()
-      .contains(&UsedExportsIdent::Default));
+    assert!(
+      result[0]
+        .used_stmt_idents
+        .as_partial()
+        .contains(&UsedExportsIdent::Default)
+    );
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
     let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
@@ -302,9 +304,11 @@ export { a };
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].stmt_id, 0);
     assert_eq!(result[0].source, "./foo");
-    assert!(result[0]
-      .used_stmt_idents
-      .contains(&UsedExportsIdent::SwcIdent("foo".to_string())));
+    assert!(
+      result[0]
+        .used_stmt_idents
+        .contains(&UsedExportsIdent::SwcIdent("foo".to_string()))
+    );
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
     let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
@@ -352,14 +356,18 @@ export const b = 2;
     assert_eq!(result[0].stmt_id, 0);
     assert_eq!(result[0].source, "./foo");
     assert_eq!(result[0].used_stmt_idents.as_partial().len(), 2);
-    assert!(result[0]
-      .used_stmt_idents
-      .as_partial()
-      .contains(&UsedExportsIdent::SwcIdent("a".to_string())));
-    assert!(result[0]
-      .used_stmt_idents
-      .as_partial()
-      .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
+    assert!(
+      result[0]
+        .used_stmt_idents
+        .as_partial()
+        .contains(&UsedExportsIdent::SwcIdent("a".to_string()))
+    );
+    assert!(
+      result[0]
+        .used_stmt_idents
+        .as_partial()
+        .contains(&UsedExportsIdent::SwcIdent("c".to_string()))
+    );
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
     let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();
@@ -408,22 +416,30 @@ export * from './bar';
     assert_eq!(result[0].source, "./foo");
     assert_eq!(result[0].used_stmt_idents.as_partial().len(), 2);
     println!("{result:?}");
-    assert!(result[0]
-      .used_stmt_idents
-      .contains(&UsedExportsIdent::SwcIdent("b".to_string())));
-    assert!(result[0]
-      .used_stmt_idents
-      .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
+    assert!(
+      result[0]
+        .used_stmt_idents
+        .contains(&UsedExportsIdent::SwcIdent("b".to_string()))
+    );
+    assert!(
+      result[0]
+        .used_stmt_idents
+        .contains(&UsedExportsIdent::SwcIdent("c".to_string()))
+    );
 
     assert_eq!(result[1].stmt_id, 2);
     assert_eq!(result[1].source, "./bar");
     assert_eq!(result[1].used_stmt_idents.as_partial().len(), 2);
-    assert!(result[1]
-      .used_stmt_idents
-      .contains(&UsedExportsIdent::SwcIdent("b".to_string())));
-    assert!(result[1]
-      .used_stmt_idents
-      .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
+    assert!(
+      result[1]
+        .used_stmt_idents
+        .contains(&UsedExportsIdent::SwcIdent("b".to_string()))
+    );
+    assert!(
+      result[1]
+        .used_stmt_idents
+        .contains(&UsedExportsIdent::SwcIdent("c".to_string()))
+    );
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
     let mut stmts = used_stmts.iter().copied().collect::<Vec<_>>();

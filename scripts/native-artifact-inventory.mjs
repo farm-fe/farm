@@ -13,14 +13,33 @@ export const nativeTargets = Object.freeze({
   'i686-pc-windows-msvc': 'win32-ia32-msvc',
   'aarch64-pc-windows-msvc': 'win32-arm64-msvc'
 });
+export function nativeWorkflowPlatforms(source) {
+  const matrix = source.match(/settings:\s*\$\{\{\s*fromJSON\(([^\n]+)\)\s*\}\}/)?.[1];
+  if (!matrix) return [...source.matchAll(/^\s+abi:\s*([a-z0-9-]+)\s*$/gm)].map(match => match[1]);
+  const branches = [...matrix.matchAll(/inputs\.platform == '([^']+)' && '([^']+)'/g)];
+  assert.ok(branches.length > 1 && new Set(branches.map(row => row[1])).size === branches.length, 'Ambiguous native matrix selection');
+  assert.equal(matrix, branches.map(row => row[0]).join(' || ') + " || '[]'", 'Unreviewed native matrix expression');
+  const all = branches.find(row => row[1] === 'all');
+  assert.ok(all, 'Native matrix must declare its complete support set');
+  const settings = JSON.parse(all[2]);
+  assert.ok(Array.isArray(settings) && settings.length > 0 && new Set(settings.map(row => row.abi)).size === settings.length, 'Invalid native support set');
+  assert.equal(branches.length, settings.length + 1, 'Missing individual native matrix branch');
+  for (const row of settings) {
+    assert.equal(nativeTargets[row.target], row.abi, 'Native matrix ABI/target mismatch');
+    const selected = branches.find(branch => branch[1] === row.abi);
+    assert.ok(selected, 'Declared native ABI has no individual branch');
+    assert.deepEqual(JSON.parse(selected[2]), [row], 'Individual native branch differs from complete support');
+  }
+  return settings.map(row => row.abi);
+}
 // CI input discovery, deliberately independent of the one-off release inventory.
 export function nativeBuildSupport(root) {
   const recipe = fs.readFileSync(path.join(root, 'scripts/ci-build-rust-artifacts.sh'), 'utf8');
   const regularPlugins = recipe.match(/^PLUGINS="([^"]+)"/m)?.[1].split(' ');
   const docs = recipe.match(/^\s+((?:win32|linux|darwin)[^\n)]+)\)\r?\n\s+PLUGINS="\$PLUGINS ([^"]+)"/m);
   assert.ok(regularPlugins && docs, 'Native build support recipe changed; review discovery');
-  const abis = [...new Set(['rust-build-user.yaml', 'rust-build-release.yaml'].flatMap(file => [...fs.readFileSync(path.join(root, '.github/workflows', file), 'utf8').matchAll(/^\s+abi:\s*([a-z0-9-]+)\s*$/gm)].map(match => match[1])))];
-  assert.ok(abis.length && abis.every(abi => Object.values(nativeTargets).includes(abi)), 'Unknown CI native support matrix');
+  const abis = [...new Set(['rust-build-user.yaml', 'rust-build-release.yaml'].flatMap(file => nativeWorkflowPlatforms(fs.readFileSync(path.join(root, '.github/workflows', file), 'utf8'))))];
+  assert.deepEqual([...abis].sort(), Object.values(nativeTargets).sort(), 'CI native support must retain every declared target');
   return { abis, regularPlugins, docsAbis: docs[1].split('|'), docsPlugins: docs[2].split(' ') };
 }
 export function nativeArtifactInventory(root, support = nativeBuildSupport(root)) {

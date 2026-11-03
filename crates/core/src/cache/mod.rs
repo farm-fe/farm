@@ -2,9 +2,9 @@ use std::{path::PathBuf, sync::Arc};
 
 use parking_lot::Mutex;
 use store::{
+  DiskCacheFactory,
   constant::{CacheStoreFactory, CacheStoreTrait},
   memory::MemoryCacheFactory,
-  DiskCacheFactory,
 };
 
 use crate::config::Mode;
@@ -183,8 +183,9 @@ impl CacheManager {
 mod tests {
   use std::{
     sync::{
+      Arc,
       atomic::{AtomicBool, Ordering},
-      mpsc, Arc,
+      mpsc,
     },
     thread,
     time::Duration,

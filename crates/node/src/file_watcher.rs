@@ -3,15 +3,15 @@ use std::path::{Path, PathBuf};
 
 #[cfg(feature = "file_watcher")]
 use napi::{
+  Env, Status,
   bindgen_prelude::FunctionRef,
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Env, Status,
 };
 
 #[cfg(feature = "file_watcher")]
 use notify::{
-  event::{AccessKind, ModifyKind},
   EventKind, RecommendedWatcher, Watcher,
+  event::{AccessKind, ModifyKind},
 };
 
 #[cfg(feature = "file_watcher")]

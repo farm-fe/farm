@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { npmInventory, changesetsPublication } from './v2-release-inventory.mjs';
+import { npmInventory, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { root } from './v2-release-inventory.mjs';
 
 test('candidate scope includes SDK generator and approved Vuetify patch', () => {
@@ -53,9 +54,22 @@ test('Core/native versions and source changes without version bumps fail closed'
   assert.throws(() => changesetsPublication(family, old, []), /official Changesets/);
 });
 test('source consistency cannot be mistaken for publication approval', () => {
-  const run = (...args) => spawnSync(process.execPath, [new URL('./v2-release-preflight.mjs', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'), ...args], { encoding: 'utf8' });
+  const run = (...args) => spawnSync(process.execPath, [fileURLToPath(new URL('./v2-release-preflight.mjs', import.meta.url)), ...args], { encoding: 'utf8' });
   assert.equal(run().status, 0);
   const publication = run('--publication');
   assert.equal(publication.status, 1);
   assert.equal(JSON.parse(publication.stdout).readyToPublish, false);
+});
+
+
+test('generic CI dispatch binds an ordinary same-repository PR head and exact base',()=>{
+  const repository='farm-fe/farm',sha='a'.repeat(40),base='b'.repeat(40);
+  const environment={GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository,GITHUB_SHA:sha,GITHUB_REF:'refs/heads/topic',GITHUB_WORKFLOW_REF:repository+'/.github/workflows/ci.yaml@refs/heads/topic'};
+  const event={inputs:{pr_number:'2330',base_sha:base}},pr={number:2330,state:'open',head:{sha,ref:'topic',repo:{full_name:repository}},base:{sha:base,ref:'main',repo:{full_name:repository}}};
+  const options={environment,event,readPullRequest:()=>pr};
+  assert.equal(validationEvent(options).pull_request,pr);
+  for(const mutate of [value=>{value.event.inputs.base_sha='c'.repeat(40);},value=>{value.environment.GITHUB_SHA='c'.repeat(40);},value=>{value.environment.GITHUB_REF='refs/heads/other';},value=>{value.environment.GITHUB_WORKFLOW_REF=repository+'/.github/workflows/incremental-release.yaml@refs/heads/topic';}]){
+    const copy={environment:{...environment},event:structuredClone(event),readPullRequest:()=>pr};mutate(copy);assert.throws(()=>validationEvent(copy));
+  }
+  const fork=structuredClone(pr);fork.head.repo.full_name='fork/farm';assert.throws(()=>validationEvent({...options,readPullRequest:()=>fork}));
 });

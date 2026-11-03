@@ -6,7 +6,7 @@ use farmfe_core::{
   swc_ecma_parser::{Syntax, TsSyntax},
 };
 use farmfe_toolkit::{
-  script::{parse_module, ParseScriptModuleResult},
+  script::{ParseScriptModuleResult, parse_module},
   swc_ecma_visit::{Visit, VisitWith},
 };
 use std::sync::Arc;

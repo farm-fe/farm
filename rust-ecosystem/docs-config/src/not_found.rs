@@ -1,5 +1,5 @@
 use crate::{ConfigError, NotFoundConfig, NotFoundLabels};
-use serde::{de::Error, Deserialize};
+use serde::{Deserialize, de::Error};
 use std::collections::BTreeMap;
 
 impl<'de> Deserialize<'de> for NotFoundConfig {

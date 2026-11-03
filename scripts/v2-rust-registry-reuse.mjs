@@ -10,9 +10,18 @@ const firstStableMacros = [
   ['farmfe_macro_plugin', '2.0.0', 'published-plugin-macro-compat.json'],
 ];
 export const publicRustRegistry = 'registry+https://github.com/rust-lang/crates.io-index';
+export function sdkConsumerManifest(plan, text) {
+  assert.doesNotMatch(text, /^\s*\[patch|\bpath\s*=/m);
+  for (const row of plan.cargo) {
+    assert.match(row.name, /^[A-Za-z0-9_-]+$/); assert.match(row.version, /^\d+\.\d+\.\d+$/);
+    const pattern = new RegExp('^(\\s*' + row.name + '\\s*=\\s*)"=?[0-9]+\\.[0-9]+\\.[0-9]+"', 'm');
+    text = text.replace(pattern, (_, prefix) => prefix + '"=' + row.version + '"');
+  }
+  return text;
+}
 export function rustRegistryReuse(plan, { readEvidence = file => JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence', file), 'utf8')) } = {}) {
   let records;
-  if (plan.preparation?.mode === 'changesets') {
+  if (['changesets', 'incremental-release'].includes(plan.preparation?.mode)) {
     assert.ok(Array.isArray(plan.publication?.reuseRust), 'Reviewed Changesets Rust reuse set required');
     records = plan.publication.reuseRust;
   } else records = firstStableMacros.map(([name, version, file]) => {

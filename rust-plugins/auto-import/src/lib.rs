@@ -10,7 +10,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::{Config, config_regex::ConfigRegex},
   module::ModuleType,
   plugin::Plugin,
   serde_json,

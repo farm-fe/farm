@@ -3,23 +3,22 @@ use std::{
   sync::Arc,
 };
 
-use base64::engine::{general_purpose, Engine};
+use base64::engine::{Engine, general_purpose};
 use farmfe_core::{
-  cache_item,
-  config::{asset::AssetFormatMode, Config},
+  HashMap, cache_item,
+  config::{Config, asset::AssetFormatMode},
   context::{CompilationContext, EmitFileParams},
   module::ModuleType,
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceType},
   swc_common::sync::OnceCell,
-  HashMap,
 };
 use farmfe_toolkit::{
-  fs::{read_file_raw, read_file_utf8, transform_output_filename, TransformOutputFileNameParams},
+  fs::{TransformOutputFileNameParams, read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
-use farmfe_utils::{hash::sha256, stringify_query, FARM_IGNORE_ACTION_COMMENT};
+use farmfe_utils::{FARM_IGNORE_ACTION_COMMENT, hash::sha256, stringify_query};
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {

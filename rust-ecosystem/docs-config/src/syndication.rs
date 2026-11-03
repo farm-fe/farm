@@ -1,8 +1,8 @@
 use crate::{AtomConfig, ConfigError, OpenSearchConfig, SearchConfig, SearchProvider, SeoConfig};
 use chrono::Datelike;
 use serde::{
-  de::{DeserializeOwned, Error, MapAccess, Visitor},
   Deserialize, Deserializer,
+  de::{DeserializeOwned, Error, MapAccess, Visitor},
 };
 
 // Only object maps are accepted, and duplicates must be rejected before a Value

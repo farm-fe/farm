@@ -1,4 +1,4 @@
-use farmfe_ecosystem_tailwindcss::{compile, parse_candidate, CompilerOptions};
+use farmfe_ecosystem_tailwindcss::{CompilerOptions, compile, parse_candidate};
 use farmfe_ecosystem_tailwindcss::{theme::Theme, utilities::UtilityRegistry};
 
 const ACTUAL_CLASSES: &[&str] = &[

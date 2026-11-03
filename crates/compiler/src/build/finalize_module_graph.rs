@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap, HashSet,
   context::CompilationContext,
   farm_profile_function, farm_profile_scope,
   module::{
-    module_graph::{ModuleGraph, ModuleGraphEdge},
     ModuleId,
+    module_graph::{ModuleGraph, ModuleGraphEdge},
   },
   plugin::hooks::freeze_module::PluginFreezeModuleHookParam,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
-  HashMap, HashSet,
 };
 
 use super::module_cache::set_module_graph_cache;
@@ -161,7 +161,7 @@ mod explicit_update_freeze_tests {
   use super::*;
   use farmfe_core::{
     cache::module_cache::CachedModule,
-    config::{persistent_cache::PersistentCacheConfig, Config},
+    config::{Config, persistent_cache::PersistentCacheConfig},
     module::Module,
     plugin::Plugin,
   };

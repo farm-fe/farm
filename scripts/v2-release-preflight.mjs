@@ -3,13 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { npmInventory, root } from './v2-release-inventory.mjs';
+import { npmInventory, root, releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { checkPublishedRustCore } from './check-published-rust-core.mjs';
 import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
 import { checkPublishedRustClosure } from './check-published-rust-closure.mjs';
 
-const plan = JSON.parse(fs.readFileSync(new URL('../docs/releases/v2-candidate.json', import.meta.url), 'utf8'));
+const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root), 'utf8'));
 assert.deepEqual(npmInventory(), plan.npm, 'Candidate manifests drifted; regenerate and review the release scope');
 if ((plan.preparation?.mode ?? 'first-stable') === 'first-stable') {
   assert.equal(plan.npm.primary.find(pkg => pkg.name === '@farmfe/js-plugin-vuetify')?.version, '0.0.2');

@@ -1,6 +1,6 @@
 use farmfe_core::{
-  error::{CompilationError, Result},
   HashMap,
+  error::{CompilationError, Result},
 };
 
 use crate::hash::sha256;

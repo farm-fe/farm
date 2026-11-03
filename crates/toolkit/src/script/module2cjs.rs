@@ -2,13 +2,14 @@ use std::ffi::OsStr;
 
 use crate::{
   script::idents_collector::DefinedIdentsCollector,
-  swc_ecma_visit::{noop_visit_mut_type, VisitMut, VisitMutWith, VisitWith},
+  swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith, noop_visit_mut_type},
 };
 use farmfe_core::{
+  HashMap,
   config::FARM_REQUIRE,
   module::meta_data::script::statement::SwcId,
   regex::Regex,
-  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext, util::take::Take},
   swc_ecma_ast::{
     ArrowExpr, AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, BlockStmtOrExpr,
     CallExpr, Callee, Class, ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl,
@@ -17,7 +18,6 @@ use farmfe_core::{
     Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectPatProp, Pat,
     Prop, ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
-  HashMap,
 };
 
 ///
@@ -517,7 +517,7 @@ fn transform_export_decl(
         callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
-      )
+      );
     }
     Decl::Fn(fn_decl) => {
       return create_export_fn_decl_stmts(
@@ -527,7 +527,7 @@ fn transform_export_decl(
         callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
-      )
+      );
     }
     Decl::Var(mut var_decls) => {
       let mut local_items = vec![];

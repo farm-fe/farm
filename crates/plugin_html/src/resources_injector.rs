@@ -13,8 +13,8 @@ use farmfe_toolkit::{
 };
 
 use crate::utils::{
-  create_farm_runtime_output_resource, is_link_css_or_code, is_script_resource,
-  is_script_src_or_type_module_code, FARM_RESOURCE,
+  FARM_RESOURCE, create_farm_runtime_output_resource, is_link_css_or_code, is_script_resource,
+  is_script_src_or_type_module_code,
 };
 
 pub struct ResourcesInjectorOptions {
@@ -280,7 +280,14 @@ impl<'a> VisitMut for ResourcesInjector<'a> {
           self.get_resources_info_code(),
           self.get_bootstrap_code()
         );
-        self.inject_additional_resource(FARM_MODULE_SYSTEM_BOOTSTRAP, bootstrap_code, element);
+        // Entry-specific bootstrap bytes must not share a name when output.filename
+        // omits [hash]. Keep the stable HTML identity even for nested entries.
+        let bootstrap_name = format!(
+          "{}-{}",
+          FARM_MODULE_SYSTEM_BOOTSTRAP,
+          self.options.current_html_id.hash()
+        );
+        self.inject_additional_resource(&bootstrap_name, bootstrap_code, element);
       } else {
         self.inject_resources_info(element);
         self.inject_bootstrap(element);
@@ -288,5 +295,63 @@ impl<'a> VisitMut for ResourcesInjector<'a> {
     };
 
     element.visit_mut_children_with(self);
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use farmfe_core::config::Config;
+
+  #[test]
+  fn isolated_bootstraps_keep_each_html_entry_distinct() {
+    for filename in ["[name].[ext]", "[name]-[hash].[ext]"] {
+      let mut config = Config::default();
+      config.output.filename = filename.into();
+      config.runtime.isolate = true;
+      let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+      let mut resources = std::collections::HashMap::new();
+      let mut references = vec![];
+      for entry in ["index", "about"] {
+        let mut injector = ResourcesInjector::new(
+          vec![],
+          "",
+          vec![format!("{entry}.js")],
+          vec![],
+          vec![format!("{entry}-entry")],
+          "",
+          "",
+          ResourcesInjectorOptions {
+            public_path: "/".into(),
+            namespace: "test".into(),
+            current_html_id: ModuleId::from(format!("{entry}.html").as_str()),
+            context: context.clone(),
+          },
+        );
+        let mut body = create_element("body", None, vec![]);
+        injector.visit_mut_element(&mut body);
+        assert_eq!(injector.additional_inject_resources.len(), 1);
+        let resource = injector.additional_inject_resources.pop().unwrap();
+        let Child::Element(script) = body.children.last().unwrap() else {
+          panic!("Expected bootstrap script");
+        };
+        let src = script
+          .attributes
+          .iter()
+          .find(|attr| attr.name == "src")
+          .unwrap();
+        assert_eq!(
+          src.value.as_ref().unwrap().as_ref(),
+          format!("/{}", resource.name)
+        );
+        references.push((resource.name.clone(), format!("{entry}-entry")));
+        resources.insert(resource.name.clone(), resource.bytes);
+      }
+      assert_eq!(resources.len(), 2, "Each HTML page needs its own bootstrap");
+      for (name, entry) in references {
+        let code = std::str::from_utf8(&resources[&name]).unwrap();
+        assert!(code.contains(&format!("r(\"{entry}\")")));
+      }
+    }
   }
 }

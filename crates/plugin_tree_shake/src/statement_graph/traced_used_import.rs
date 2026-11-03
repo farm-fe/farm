@@ -5,8 +5,8 @@ use farmfe_core::{HashMap, HashSet};
 use crate::module::{UsedExports, UsedExportsIdent};
 
 use super::{
-  analyze_used_import_all_fields::UsedImportAllFields, ExportInfo, ExportSpecifierInfo, ImportInfo,
-  ImportSpecifierInfo, StatementId, UsedStatementIdent,
+  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId,
+  UsedStatementIdent, analyze_used_import_all_fields::UsedImportAllFields,
 };
 
 /// The result of tracing used import statements or export from statements

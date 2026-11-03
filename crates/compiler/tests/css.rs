@@ -1,5 +1,5 @@
-use farmfe_core::config::{CssConfig, CssModulesConfig, CssPrefixerConfig};
 use farmfe_core::HashMap;
+use farmfe_core::config::{CssConfig, CssModulesConfig, CssPrefixerConfig};
 use farmfe_testing_helpers::fixture;
 mod common;
 

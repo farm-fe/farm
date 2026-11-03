@@ -1,4 +1,4 @@
-use crate::{hash, prepare::farm_path, routes, PreparedAsset};
+use crate::{PreparedAsset, hash, prepare::farm_path, routes};
 use farmfe_docs_config::ValidatedConfig;
 use farmfe_docs_content::ContentReference;
 use std::{

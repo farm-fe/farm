@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,7 +39,7 @@ export function sealSdkConsumer(plan, proof, fixture, destination) {
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = fileURLToPath(new URL('../', import.meta.url));
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
   if (!process.argv[2] || !process.argv[3]) throw new Error('Expected completed SDK proof and a new portable output directory');
   console.log(JSON.stringify(sealSdkConsumer(plan, process.argv[2], path.join(root, 'scripts/release-fixtures/sdk-consumer/Cargo.toml'), path.resolve(process.argv[3])), null, 2));
 }

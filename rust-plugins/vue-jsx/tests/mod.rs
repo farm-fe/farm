@@ -11,10 +11,10 @@ use farmfe_plugin_vue_jsx::FarmPluginVueJsx;
 #[test]
 fn development_component_exports_create_hmr_records() {
     let code = transform_jsx(
-    "import { defineComponent as component } from 'vue'; export default component({setup:()=>()=> <div/>});",
-    "Inventory.tsx",
-    ModuleType::Tsx,
-  );
+        "import { defineComponent as component } from 'vue'; export default component({setup:()=>()=> <div/>});",
+        "Inventory.tsx",
+        ModuleType::Tsx,
+    );
     assert!(code.contains("import.meta.hot.accept"));
     assert!(code.contains("__VUE_HMR_RUNTIME__.createRecord"));
     assert!(code.contains("__VUE_HMR_RUNTIME__.reload"));
@@ -33,10 +33,10 @@ fn ordinary_jsx_exports_do_not_create_component_hmr_boundaries() {
 #[test]
 fn aliased_named_component_and_default_identifier_register_exports() {
     let code = transform_jsx(
-    "import * as Vue from 'vue'; const Card = Vue.defineComponent({setup:()=>()=> <div/>}); export {Card as Panel}; export default Card;",
-    "Card.tsx",
-    ModuleType::Tsx,
-  );
+        "import * as Vue from 'vue'; const Card = Vue.defineComponent({setup:()=>()=> <div/>}); export {Card as Panel}; export default Card;",
+        "Card.tsx",
+        ModuleType::Tsx,
+    );
     assert!(code.contains("import.meta.hot.accept"));
     assert!(code.contains("Card.tsx:default"));
 }
@@ -58,10 +58,10 @@ fn production_component_exports_do_not_include_hmr() {
 #[test]
 fn named_component_export_alias_is_used_by_hot_callback() {
     let code = transform_jsx(
-    "import {defineComponent as make} from 'vue'; const Card = make({setup:()=>()=> <div/>}); export {Card as Panel};",
-    "Card.tsx",
-    ModuleType::Tsx,
-  );
+        "import {defineComponent as make} from 'vue'; const Card = make({setup:()=>()=> <div/>}); export {Card as Panel};",
+        "Card.tsx",
+        ModuleType::Tsx,
+    );
     assert!(code.contains("Card.tsx:Panel"));
     assert!(code.contains("import.meta.hot.accept"));
 }

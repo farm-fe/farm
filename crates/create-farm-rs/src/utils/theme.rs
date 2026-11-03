@@ -1,7 +1,7 @@
 use std::fmt;
 
 use dialoguer::{
-  console::{style, Style, StyledObject},
+  console::{Style, StyledObject, style},
   theme::Theme,
 };
 

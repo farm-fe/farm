@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  HashMap, HashSet,
   config::external::ExternalConfig,
   context::CompilationContext,
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
+  swc_common::{DUMMY_SP, Mark, SyntaxContext},
   swc_ecma_ast::{
     BindingIdent, BlockStmt, Expr, FnExpr, Function, Ident, Lit, Module, ModuleItem, Param, Pat,
     Stmt,
   },
-  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   script::{create_top_level_ident, is_commonjs_require, parse_stmt, swc_try_with::try_with},
@@ -18,7 +18,7 @@ use farmfe_toolkit::{
 };
 
 use crate::{
-  formats::{cjs::transform_resource_pot_to_cjs, GenerateLibraryFormatResourcesOptions},
+  formats::{GenerateLibraryFormatResourcesOptions, cjs::transform_resource_pot_to_cjs},
   utils::{add_format_to_generated_resources, emit_resource_pot},
 };
 

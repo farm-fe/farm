@@ -1,6 +1,6 @@
 use std::sync::{
-  atomic::{AtomicU64, Ordering},
   Arc,
+  atomic::{AtomicU64, Ordering},
 };
 
 use dashmap::DashMap;
@@ -10,17 +10,17 @@ use parking_lot::Mutex;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
+  HashMap, HashSet,
   cache::{
-    store::{constant::CacheStoreTrait, CacheStoreKey},
-    utils::cache_panic,
     CacheContext, CacheType,
+    store::{CacheStoreKey, constant::CacheStoreTrait},
+    utils::cache_panic,
   },
   deserialize,
   module::ModuleId,
-  HashMap, HashSet,
 };
 
-use super::{module_memory_store::ModuleMemoryStore, CachedModule};
+use super::{CachedModule, module_memory_store::ModuleMemoryStore};
 
 const MANIFEST_KEY: &str = "immutable-modules.json";
 

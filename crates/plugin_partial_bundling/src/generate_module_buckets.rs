@@ -1,11 +1,11 @@
 use farmfe_core::{
+  HashMap,
   config::partial_bundling::PartialBundlingGroupConfigResourceType,
   module::{
+    ModuleId,
     module_graph::ModuleGraph,
     module_group::{ModuleGroupGraph, ModuleGroupId, ModuleGroupType},
-    ModuleId,
   },
-  HashMap,
 };
 
 use crate::module_bucket::ModuleBucket;

@@ -12,6 +12,7 @@ export default async function (ctx) {
         const host = new URL(page.url()).origin;
         {
           await page.goto(`${host}/about?query=1`);
+          await page.waitForFunction(() => document.querySelector('#root')?.textContent?.includes('about page'));
           const root = await page.$('body');
           const innerHTML = await root?.innerHTML();
           expect(innerHTML).toContain('about page');
@@ -21,6 +22,7 @@ export default async function (ctx) {
 
         {
           await page.goto(`${host}/about#/hello/world?hash=2`);
+          await page.waitForFunction(() => document.querySelector('#root')?.textContent?.includes('about page'));
           const root = await page.$('body');
           const innerHTML = await root?.innerHTML();
           expect(innerHTML).toContain('about page');

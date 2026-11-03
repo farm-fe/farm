@@ -1,0 +1,32 @@
+{
+  "_comment": "cspell:words noninteractive RANLIB ranlib READELF readelf LDFLAGS CXXFLAGS ",
+  "image": "ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian",
+  "configDigest": "sha256:aff05b1af4fd4484dc829b8b2991e6e7a2251060823d407589d11ed88f7370e6",
+  "environment": [
+    "PATH=/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/x86_64-unknown-linux-gnu/bin",
+    "DEBIAN_FRONTEND=noninteractive",
+    "CC_x86_64_unknown_linux_gnu=clang",
+    "AR_x86_64_unknown_linux_gnu=x86_64-unknown-linux-gnu-ar",
+    "CXX_x86_64_unknown_linux_gnu=clang++",
+    "TARGET_CC=x86_64-unknown-linux-gnu-gcc",
+    "TARGET_AR=x86_64-unknown-linux-gnu-ar",
+    "TARGET_RANLIB=x86_64-unknown-linux-gnu-ranlib",
+    "TARGET_CXX=x86_64-unknown-linux-gnu-g++",
+    "TARGET_READELF=x86_64-unknown-linux-gnu-readelf",
+    "TARGET_SYSROOT=/usr/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/sysroot/",
+    "TARGET_C_INCLUDE_PATH=/usr/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/sysroot/usr/include/",
+    "CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu",
+    "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-unknown-linux-gnu-gcc",
+    "TARGET_CMAKE_TOOLCHAIN_FILE_PATH=/usr/x86_64-unknown-linux-gnu/cmake-toolchain.cmake",
+    "X86_64_UNKNOWN_LINUX_GNU_OPENSSL_DIR=/usr/x86_64-unknown-linux-gnu/",
+    "RUSTUP_HOME=/usr/local/rustup",
+    "CARGO_HOME=/usr/local/cargo",
+    "CC=clang",
+    "CXX=clang++",
+    "RUST_TARGET=x86_64-unknown-linux-gnu",
+    "LDFLAGS=-fuse-ld=lld --sysroot=/usr/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/sysroot",
+    "CFLAGS=--sysroot=/usr/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/sysroot",
+    "CXXFLAGS=--sysroot=/usr/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/sysroot",
+    "C_INCLUDE_PATH=/usr/x86_64-unknown-linux-gnu/x86_64-unknown-linux-gnu/sysroot/usr/include"
+  ]
+}

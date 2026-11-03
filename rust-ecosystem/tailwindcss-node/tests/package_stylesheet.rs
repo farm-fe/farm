@@ -1,4 +1,4 @@
-use farmfe_ecosystem_tailwindcss_node::compile::{compile, CompileOptions};
+use farmfe_ecosystem_tailwindcss_node::compile::{CompileOptions, compile};
 use std::{
   fs,
   sync::atomic::{AtomicUsize, Ordering},
@@ -42,10 +42,12 @@ fn installed_tailwind_package_preserves_real_base_styles() {
     !css.contains("--theme("),
     "uncompiled internal theme function"
   );
-  assert!(compiler
-    .dependencies()
-    .iter()
-    .any(|path| path.ends_with("index.css")));
+  assert!(
+    compiler
+      .dependencies()
+      .iter()
+      .any(|path| path.ends_with("index.css"))
+  );
   if let Ok(output) = std::env::var("FARM_TAILWIND_PACKAGE_OUTPUT") {
     fs::write(output, css).expect("write actual package output evidence");
   }
@@ -83,9 +85,11 @@ fn tailwind_package_import_preserves_preflight_and_tracks_dependency() {
   assert!(css.contains("border: 0 solid"), "{css}");
   assert!(css.contains("--color-brand: #123456"), "{css}");
   assert!(css.contains(".md\\:grid-cols-2"), "{css}");
-  assert!(compiler
-    .dependencies()
-    .iter()
-    .any(|path| path.ends_with("index.css")));
+  assert!(
+    compiler
+      .dependencies()
+      .iter()
+      .any(|path| path.ends_with("index.css"))
+  );
   fs::remove_dir_all(&root).expect("remove owned fixture directory");
 }

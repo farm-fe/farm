@@ -1,8 +1,8 @@
 use farmfe_core::{
   config::comments::CommentsConfig,
   swc_common::{
-    comments::{Comment, CommentKind, SingleThreadedComments},
     BytePos,
+    comments::{Comment, CommentKind, SingleThreadedComments},
   },
 };
 

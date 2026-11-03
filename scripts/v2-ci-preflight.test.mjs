@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import YAML from 'yaml';
+import {spawnSync} from 'node:child_process';
 const read = file => fs.readFileSync(new URL(`../.github/workflows/${file}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
 
 test('native matrices wait for cheap spelling, release/pack and three-platform performance contracts', () => {
@@ -8,9 +10,52 @@ test('native matrices wait for cheap spelling, release/pack and three-platform p
   const preflight = ci.split('  release-contract-tests:')[1].split('  docs-acceptance:')[0];
   assert.match(preflight, /pnpm exec cspell "\*\*" --gitignore/);
   for (const command of ['test-native-container-node.cjs', 'test-native-artifact-flow.cjs', 'pack-v2-npm-candidates.test.mjs', 'verify-published-v2-consumers.test.mjs']) assert.ok(preflight.includes(command), command);
-  for (const job of ['call-rust-build-user', 'call-rust-build-release']) {
+  for (const job of ['primary-linux', 'primary-macos', 'primary-windows', 'call-rust-build-release']) {
     const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
-    assert.match(block, /needs: \[release-contract-tests, performance-contract-tests\]/);
+    assert.match(block, job === 'call-rust-build-release' ? /needs: \[version-classification, release-contract-tests, performance-contract-tests\]/ : /needs: \[version-classification, release-contract-tests, performance-contract-tests, type-check\]/);
+  }
+});
+
+test('primary platform consumers wait only for their own successful producer', () => {
+  const ci = read('ci.yaml'), platform = read('ci-primary-platform.yaml'), native = read('rust-build-user.yaml');
+  const lanes = [['primary-linux', 'ubuntu-24.04', 'linux-x64-gnu'], ['primary-macos', 'macos-latest', 'darwin-arm64'], ['primary-windows', 'windows-latest', 'win32-x64-msvc']];
+  for (const [job, os, abi] of lanes) {
+    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    assert.match(block, /uses: \.\/\.github\/workflows\/ci-primary-platform.yaml/);
+    assert.ok(block.includes(`os: ${os}`)); assert.ok(block.includes(`abi: ${abi}`));
+    assert.ok(native.includes(`inputs.platform == '${abi}'`));
+  }
+  assert.match(platform, /platform: \$\{\{ inputs.abi \}\}/);
+  for (const job of ['examples-test', 'ts-test']) {
+    const block = platform.split(`  ${job}:`)[1].split('\n\n')[0];
+    assert.match(block, /needs: \[native, native-disposition\]/);
+    assert.match(block, /if: always\(\) && needs.native-disposition.result == 'success'/);
+    assert.doesNotMatch(block, /call-rust-build-user|call-rust-build-release|primary-linux|primary-macos|primary-windows/);
+  }
+  const disposition = platform.split('  native-disposition:')[1].split('  examples-test:')[0];
+  assert.match(disposition, /if: always\(\)/);
+  assert.match(disposition, /needs: \[native\]/);
+  const actual=YAML.parse(platform).jobs['native-disposition'];
+  assert.equal(actual.if,'always()');assert.deepEqual(actual.needs,['native']);
+  assert.equal(actual.steps.length,1);
+  assert.equal(actual.steps[0].env.NATIVE_RESULT,'${{ needs.native.result }}');
+  for(const result of ['success','failure','cancelled','skipped']) {
+    const run=spawnSync('bash',['-c',actual.steps[0].run],{env:{...process.env,NATIVE_RESULT:result}});
+    assert.equal(run.status===0,result==='success','Only actual completed materialization authorizes consumers');
+  }
+  const build=fs.readFileSync(new URL('./formal-native-build.mjs',import.meta.url),'utf8');
+  assert.match(native,/node scripts\/formal-native-build.mjs/);
+  assert.match(build,/formal-native-products.py/);
+  assert.match(build,/ci-build-rust-artifacts.sh/);
+  assert.match(native, /group: rust-build-user-.*inputs.platform/);
+  assert.match(native, /inputs.platform == 'all'/);
+  assert.ok(native.includes("|| '[]'"), 'Unknown platform cannot choose a successful empty execution');
+  for (const job of ['call-rust-build-user', 'examples-test', 'ts-test']) {
+    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    const actualJob=YAML.parse(ci).jobs[job];
+    assert.equal(actualJob.if, "(always()) && needs.version-classification.outputs.mode != 'verified-version-only'");
+    assert.match(block, /needs: \[version-classification, primary-linux, primary-macos, primary-windows\]/);
+    assert.ok(block.includes('test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success'));
   }
 });
 
@@ -20,28 +65,31 @@ test('Cargo restores cover all nine targets while only the three primary produce
     assert.match(source, /uses: \.\/\.github\/actions\/cargo-source-cache/);
     assert.ok(source.includes('path.join(os.homedir(), \'.cargo\')'));
     assert.ok(source.includes('FARM_CARGO_HOME=${home}'));
-    assert.match(source, /node scripts\/v2-docker-cargo-cache.mjs/);
+    assert.match(source, /node scripts\/formal-native-build.mjs/);
     assert.match(source, /path: .ci-native-cache\/\$\{\{ matrix.settings.abi \}\}.json/);
     assert.doesNotMatch(source, /env.HOME/);
     assert.doesNotMatch(source, /addnab\/docker-run-action|:\/root\/.cargo\/(?:git|registry)/);
-    assert.ok(source.includes('scripts/ci-build-rust-artifacts.sh'));
+    assert.ok(source.includes('scripts/formal-native-build.mjs'));
+    const executor=fs.readFileSync(new URL('./formal-native-build.mjs',import.meta.url),'utf8');
+    assert.match(executor,/v2-docker-cargo-cache.mjs/);
+    assert.match(executor,/ci-build-rust-artifacts.sh/);
     assert.ok(source.includes('name: ${{ github.sha }}-${{ matrix.settings.abi }}'));
   }
   const release = read('rust-build-release.yaml');
   for (const target of ['linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu']) assert.ok(release.includes(`abi: ${target}`));
 });
 
-test('three independent candidate consumer jobs install the exact current seal without workspace dependencies', () => {
-  const source = read('v2-candidate-seal.yaml').split('  consumers:')[1];
+test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
+  const source = read('incremental-release.yaml').split('  candidate-consumers:')[1].split('  publisher:')[0];
   assert.ok(source);
-  assert.match(source, /needs: \[seal\]/);
+  assert.match(source, /needs: \[source, plan, producer\]/);
   assert.match(source, /os: \[ubuntu-24.04, macos-latest, windows-latest\]/);
-  assert.ok(source.includes('name: v2-release-seal-${{ github.sha }}'));
-  assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-consumer-results/);
+  assert.ok(source.includes('name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}'));
+  assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-results/);
   assert.doesNotMatch(source, /pnpm install|cargo |NPM_TOKEN|secrets:/);
 });
 
-test('cache writers are limited without replacing the Docs release reference or final nine-ABI assembly', () => {
+test('cache writers are limited while Docs stays inside CI and native assembly remains complete', () => {
   const user = read('rust-build-user.yaml'), release = read('rust-build-release.yaml'), docs = read('farm-docs.yaml');
   assert.match(user, /save-if: true/);
   for (const source of [release, docs]) {
@@ -49,12 +97,13 @@ test('cache writers are limited without replacing the Docs release reference or 
     assert.match(source, /uses: \.\/\.github\/actions\/cargo-source-cache/);
   }
   assert.doesNotMatch(docs, /cache: pnpm/);
-  assert.match(docs, /pnpm --dir packages\/core run build:rs/);
-  assert.match(docs, /ciProfileCompatibility:'not-yet-validated'/);
+  assert.match(docs, /scripts\/docs-native-build.mjs/);
+  assert.match(docs, /profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false/);
+  assert.match(docs,/cell: "docs:ci:/);
   const ci = read('ci.yaml');
-  assert.match(ci.split('  docs-acceptance:')[1].split('  release-candidate-seal:')[0], /needs: \[release-contract-tests, performance-contract-tests\]/);
+  assert.match(ci.split('  docs-acceptance:')[1].split('  performance-contract-tests:')[0], /needs: \[version-classification, primary-linux, primary-windows\]/);
   const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
-  assert.match(assembly, /needs: \[call-rust-build-user, call-rust-build-release\]/);
+  assert.match(assembly, /needs: \[version-classification, call-rust-build-user, call-rust-build-release, type-check\]/);
 });
 
 test('source archives and native target caches have disjoint ownership and stable compatible keys', () => {
