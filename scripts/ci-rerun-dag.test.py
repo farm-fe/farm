@@ -20,13 +20,22 @@ suite=load('dag_suite_fixture','ci-suite-attempts.test.py')
 class Contracts(unittest.TestCase):
     def test_full_fixed_source_rerun_dag_keeps_all_original_attempts_and_names(self):
         source,bindings,old,base_jobs,runs,base_artifacts=functional.Contracts().fixture()
+        base_sha = functional.Contracts.plans['e2e']['baseSHA']
+        def bind_source(value):
+            if isinstance(value, dict): return {key:bind_source(item) for key,item in value.items()}
+            if isinstance(value, list): return [bind_source(item) for item in value]
+            if isinstance(value, tuple): return tuple(bind_source(item) for item in value)
+            if isinstance(value, str):
+                for prior, current in [('a'*40,source['sha']),('b'*40,source['tree']),('c'*40,source['sha']),('d'*40,base_sha)]:
+                    value=value.replace(prior,current)
+            return value
         old_bodies={number:old.archive(number) for number in base_artifacts}
         source['files']={'scripts/performance-cohorts.mjs':Path(__file__).with_name('performance-cohorts.mjs').read_bytes()}
         for scope in ['ci','unit']:bindings[scope]['attempt']=3;runs[bindings[scope]['runId']]['run_attempt']=3
         run=runs[10];run['repository']['full_name']='farm-fe/farm'
         metadata={};bodies={};jobs={number:copy.deepcopy(base_jobs[10]) for number in [1,2,3]}
         for number in [10,20]:
-            plan=json.loads(zipfile.ZipFile(io.BytesIO(old_bodies[number])).read('plan.json'));plan['baseSHA']='d'*40
+            plan=json.loads(zipfile.ZipFile(io.BytesIO(old_bodies[number])).read('plan.json'))
             plan['planHash']=functional.module.entry.chain.digest({key:value for key,value in plan.items() if key!='planHash'})
             body=io.BytesIO()
             with zipfile.ZipFile(body,'w') as archive:archive.writestr('plan.json',json.dumps(plan))
@@ -42,9 +51,9 @@ class Contracts(unittest.TestCase):
         _,_,_,suite_jobs,suite_artifacts,suite_bodies,_=suite.fixture()
         for index,(name,artifact) in enumerate(suite_artifacts.items()):
             member='ts.json' if '-suite-ts-' in name else 'browser.json'
-            data=json.loads(zipfile.ZipFile(io.BytesIO(suite_bodies[artifact['id']])).read(member))
+            data=bind_source(json.loads(zipfile.ZipFile(io.BytesIO(suite_bodies[artifact['id']])).read(member)))
             attempt=[2,1,1,1,1,3][index];data['run'].update(repositoryId=5,runId=10,runAttempt=attempt)
-            new_name=name[:-1]+str(attempt);store(3000+index,new_name,member,data,attempt)
+            new_name=bind_source(name[:-1]+str(attempt));store(3000+index,new_name,member,data,attempt)
             for number in jobs:
                 jobs[number]=[job for job in jobs[number] if not job['name'].startswith(('Examples Test (','Typescript Test ('))]
             original=next(job for job in suite_jobs[1] if job['name'].startswith('Primary ') and (('Typescript' in job['name']) == (member=='ts.json')) and suite.module.execution.PLATFORMS[data['abi']] in job['name'])
@@ -53,11 +62,11 @@ class Contracts(unittest.TestCase):
             for number in range(attempt,4):jobs[number].append(copy.deepcopy(original))
         reports=[];proofs=[]
         for index,(os,arch,attempt) in enumerate([('linux','x64',2),('darwin','arm64',1),('win32','x64',1)]):
-            data=functional.MeasurementContracts().fixture(os,arch,attempt);row,proof=data[4],data[5]
+            data=bind_source(functional.MeasurementContracts().fixture(os,arch,attempt));row,proof=data[4],data[5]
             row['metadata'].update(fixtureSha256='e'*64,lockSha256='f'*64);data[9]['metadata'].update(fixtureSha256='e'*64,lockSha256='f'*64)
             for old_id,key,member in [(40,'artifactId','summary.json'),(50,'nativeArtifactId','products.json')]:
                 identity=1000+index*100+old_id;old_meta=data[7][old_id]
-                value=json.loads(zipfile.ZipFile(io.BytesIO(data[8][old_id])).read(member))
+                value=bind_source(json.loads(zipfile.ZipFile(io.BytesIO(data[8][old_id])).read(member)))
                 if old_id==40:value=data[9]
                 store(identity,old_meta['name'],member,value,attempt if old_id==40 else 1);proof[key]=identity
                 proof['artifactDigest' if old_id==40 else 'nativeArtifactDigest']=metadata[identity]['digest']
@@ -68,7 +77,7 @@ class Contracts(unittest.TestCase):
                 for job in data[6][min(number,2)]:
                     job=copy.deepcopy(job);job['id']+=index*100;job['run_id']=10;jobs[number].append(job)
             reports.append(row);proofs.append(proof)
-        summary={'schemaVersion':3,'protocol':'commerce-business-2048-farm-supervised-v2','repositoryId':5,'runId':10,'runAttempt':3,'event':'push','headSHA':source['sha'],'baseSHA':'d'*40,'prNumber':None,'reports':reports,'measurementSources':proofs}
+        summary={'schemaVersion':3,'protocol':'commerce-business-2048-farm-supervised-v2','repositoryId':5,'runId':10,'runAttempt':3,'event':'push','headSHA':source['sha'],'baseSHA':base_sha,'prNumber':None,'reports':reports,'measurementSources':proofs}
         store(9999,'performance-pr-summary-3','summary.json',summary,3)
         for number in jobs:
             if number < 3:jobs[number]=[job for job in jobs[number] if job['name']!='Aggregate informational performance report']

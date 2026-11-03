@@ -57,6 +57,7 @@ jobs:
           python scripts/ci-native-proof.test.py
           python scripts/ci-native-evidence.test.py
           python scripts/ci-native-source-graph.test.py
+          python scripts/ci-source-plan.test.py
           python scripts/ci-impact-receipt.test.py
       - name: Compute committed base and head impact without changing execution
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json

@@ -529,3 +529,24 @@ TS/browser receipts, selected files, per-file case counts, or build coverage.
 The six legacy TS/Examples contexts depend on this real product evidence gate.
 Changesets Check and the legacy combined policy context still report policy
 failure explicitly; no branch protection or policy result is rewritten.
+
+
+### Committed source-plan coverage and historical snapshots
+
+The live shadow planner uses the shared directory-identity graph for merge-base,
+base, head and tested snapshots. Source proof fingerprints bind all committed
+paths, modes and file hashes plus the graph, rule provenance and dependency
+closure hashes. They are conservative source proofs, not reusable binary keys.
+
+If a historical snapshot predates the committed directory rules, the explicit
+`all-committed-inputs-v1` analysis policy connects every node to a repository-wide
+input node. Every product/preparation/validation fingerprint includes the whole
+historical snapshot and the plan requires full execution. No current custom edge
+is claimed to have existed historically. The tested snapshot must contain valid
+committed rules; ambiguity and invalid source records still fail closed.
+
+For main functional acceptance, the release verifier independently recomputes
+this plan from the fixed Git commits and compares the entire result, after
+binding the already authenticated run identity. A self-consistent plan hash or
+`sourceInputProofComplete` flag alone is insufficient. Coverage means committed
+inputs only, not complete environment proof; skip/reuse remain unauthorized.

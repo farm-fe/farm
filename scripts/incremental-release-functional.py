@@ -85,6 +85,9 @@ def verify_functional(transport, source, bindings, current_run=None):
             check(run["event"] == "push" and run["head_branch"] == repository["default_branch"]
                   and run["head_sha"] == binding["testedSHA"] == source['sha'], "Functional default-branch checkout differs")
             check(not plan.get('planningFallback') and not plan.get('unavailable'), 'Functional main source plan unavailable')
+            source_plan = importlib.util.spec_from_file_location('functional_source_plan', Path(__file__).with_name('ci-source-plan.py'))
+            verifier = importlib.util.module_from_spec(source_plan); source_plan.loader.exec_module(verifier)
+            verifier.verify_main_plan(plan, 'e2e' if scope == 'ci' else 'unit')
         if scope == 'ci':
             verify_performance(transport, run, jobs, source, plan)
         if scope == "ci":

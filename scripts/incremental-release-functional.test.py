@@ -1,6 +1,7 @@
 """Functional CI proof is source-tree acceptance, never build-byte reuse."""
 # cspell:words importlib
 import hashlib
+import copy
 import importlib.util
 import io
 import json
@@ -14,26 +15,36 @@ module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
 
 
 class Contracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.sha = module.entry.chain.impact.git('rev-parse', 'HEAD').decode().strip()
+        cls.tree = module.entry.chain.impact.git('rev-parse', 'HEAD^{tree}').decode().strip()
+        cls.plans = {scope: module.entry.chain.impact.make_plan(cls.sha, cls.sha, cls.sha, scope)
+                     for scope in ['e2e', 'unit']}
+
     def fixture(self):
-        sha, tree = "a" * 40, "b" * 40
+        if not hasattr(self, "plans"):
+            type(self).setUpClass()
+        sha, tree = self.sha, self.tree
+        base = self.plans["e2e"]["baseSHA"]
         bindings = {"ci": {"runId": 10, "attempt": 1, "testedSHA": sha}, "unit": {"runId": 20, "attempt": 1, "testedSHA": sha}}
         bindings.update({key: {"runId": number, "attempt": 1} for key, number in [('lint',30),('spell',40),('title',50)]})
         runs = {number: {"id": number, "run_attempt": 1, "path": path, "status": "completed", "conclusion": "success",
                         "repository": {"id": 5}, "head_repository": {"id": 5}, "event": "push", "head_branch": "main", "head_sha": sha}
                 for number, path in [(10, '.github/workflows/ci.yaml'), (20, '.github/workflows/rust-test.yaml'),
                                      (30,'.github/workflows/lint.yaml'),(40,'.github/workflows/code-spell-check.yaml'),(50,'.github/workflows/lint-pr-title.yml')]}
-        plan = {"testedSHA": sha, "testedTree": tree, "runId": "10", "runAttempt": "1", "repository": "farm-fe/farm", "baseSHA": "c"*40}
         jobs = {}
         def archive(number):
-            value = {**plan, "runId": str(number)}
+            value = {**copy.deepcopy(self.plans["unit" if number == 20 else "e2e"]), "runId": str(number), "runAttempt": "1", "repository": "farm-fe/farm"}
+            value.pop("planHash")
             value['planHash'] = module.entry.chain.digest(value)
             output = io.BytesIO()
             with zipfile.ZipFile(output, 'w') as file: file.writestr('plan.json', json.dumps(value))
             return output.getvalue()
         bodies = {number: archive(number) for number in runs}
         summary = {'schemaVersion': 2, 'protocol': 'commerce-business-2048-farm-supervised-v2', 'runId': 10, 'runAttempt': 1,
-                   'repositoryId': 5, 'event': 'push', 'headSHA': sha, 'baseSHA': 'c'*40, 'prNumber': None,
-                   'reports': [{'metadata': {'os': os, 'arch': arch, 'revision': sha, 'baseSHA': 'c'*40, 'fixtureSha256': 'd'*64, 'lockSha256': 'e'*64},
+                   'repositoryId': 5, 'event': 'push', 'headSHA': sha, 'baseSHA': base, 'prNumber': None,
+                   'reports': [{'metadata': {'os': os, 'arch': arch, 'revision': sha, 'baseSHA': base, 'fixtureSha256': 'd'*64, 'lockSha256': 'e'*64},
                                 'status': 'complete', 'cells': [{'cacheMode': mode, 'samples': 3, 'validSamples': 3, 'medianMs': 100, 'iqrMs': 2} for mode in ['cold','warm']]}
                                for os,arch in [('linux','x64'),('darwin','arm64'),('win32','x64')]]}
         output=io.BytesIO()
