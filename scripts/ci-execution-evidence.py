@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("execution_evidence", Path(__file__).with_name("incremental-chain-evidence.py"))
@@ -81,6 +82,23 @@ def upload_binding(job, step_name, artifact, trusted_output=None):
               'createdAt':artifact['created_at']}, sort_keys=True))
 
 
+def carried_producer_diagnostic(run_id, attempt, current, prior):
+    """Bounded metadata only; diagnostics never authorize a carried execution."""
+    def number(value):
+        return value if type(value) is int and 0 < value < 2 ** 63 else None
+    def timestamp(value):
+        return value if isinstance(value, str) and len(value) <= 30 and re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z', value) else None
+    def record(job):
+        return {**{key:number(job.get(key)) for key in ['id','run_id','run_attempt']},
+                'status':job.get('status') if job.get('status') in ['queued','in_progress','completed','waiting','pending','requested'] else 'invalid',
+                'conclusion':job.get('conclusion') if job.get('conclusion') in [None,'success','failure','cancelled','skipped','neutral','timed_out','action_required','stale','startup_failure'] else 'invalid',
+                **{key:timestamp(job.get(key)) for key in ['started_at','completed_at']}}
+    return json.dumps({'runId':number(run_id),'currentAttempt':attempt,'priorAttempt':attempt-1,
+                       'mismatches':[label for label, failed in [('job-id',current.get('id') != prior.get('id')),
+                           ('prior-status',prior.get('status') != 'completed'),('prior-conclusion',prior.get('conclusion') != 'success')] if failed],
+                       'current':record(current),'prior':record(prior)}, sort_keys=True)
+
+
 def actual_producer(transport, run, name, current_jobs=None, cache=None):
     """Newest real execution wins, including failures; carried jobs retain origin."""
     check(type(run['run_attempt']) is int and 0 < run['run_attempt'] <= 32, 'Rerun attempt exceeds bound')
@@ -104,7 +122,8 @@ def actual_producer(transport, run, name, current_jobs=None, cache=None):
         prior = [item for item in observations.get(attempt - 1, (None, []))[1] if item['name'] == name or item['name'].endswith(' / ' + name)]
         check(len(prior) <= 1, 'Ambiguous prior suite producer')
         if prior and (job['started_at'], job.get('completed_at')) == (prior[0].get('started_at'), prior[0].get('completed_at')):
-            check(job.get('id') == prior[0].get('id') and prior[0].get('status') == 'completed' and prior[0].get('conclusion') == 'success', 'Unproven carried suite producer')
+            check(job.get('id') == prior[0].get('id') and prior[0].get('status') == 'completed' and prior[0].get('conclusion') == 'success',
+                  'Unproven carried suite producer: ' + carried_producer_diagnostic(run['id'], attempt, job, prior[0]))
             continue
         check(not prior or not prior[0].get('completed_at') or job['started_at'] >= prior[0]['completed_at'], 'Suite producer times overlap')
         check(job.get('run_id') == run['id'] and job.get('status') == 'completed' and job.get('conclusion') == 'success', 'Latest actual suite producer did not succeed')

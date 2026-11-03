@@ -55,6 +55,50 @@ def fixture():
 
 
 class Contracts(unittest.TestCase):
+    def test_carried_failure_diagnostic_distinguishes_identity_status_and_conclusion(self):
+        for defect, expected in [('id', 'job-id'), ('status', 'prior-status'), ('conclusion', 'prior-conclusion')]:
+            transport,run,source,jobs,*_=fixture()
+            name='Primary Linux / Typescript Test (ubuntu-24.04)'
+            current=next(row for row in jobs[3] if row['name']==name)
+            prior=next(row for row in jobs[2] if row['name']==name)
+            if defect=='id':current['id']=999
+            elif defect=='status':prior['status']='in_progress'
+            else:prior['conclusion']='failure'
+            with self.assertRaises(ValueError) as error:
+                module.execution.suite_receipt(transport,run,source,'ts','linux-x64-gnu')
+            message=str(error.exception)
+            self.assertTrue(message.startswith('Unproven carried suite producer: '))
+            detail=json.loads(message.split(': ',1)[1])
+            self.assertEqual(detail['mismatches'],[expected])
+            self.assertEqual(detail['runId'],run['id'])
+            self.assertEqual(detail['currentAttempt'],3)
+            self.assertEqual(detail['priorAttempt'],2)
+            self.assertEqual(detail['current']['id'],current['id'])
+            self.assertEqual(detail['prior']['id'],prior['id'])
+            self.assertEqual(detail['current']['started_at'],current['started_at'])
+            self.assertEqual(detail['current']['completed_at'],current['completed_at'])
+
+    def test_carried_diagnostic_is_bounded_and_does_not_log_arbitrary_metadata(self):
+        transport,run,source,jobs,*_=fixture()
+        name='Primary Linux / Typescript Test (ubuntu-24.04)'
+        current=next(row for row in jobs[3] if row['name']==name)
+        prior=next(row for row in jobs[2] if row['name']==name)
+        current.update(id=999, secret='do-not-log', runner_name='do-not-log', run_attempt='do-not-log')
+        prior.update(status='do-not-log', conclusion='do-not-log', steps=[{'name':'do-not-log'*10000}])
+        for row in [current,prior]:row.update(started_at='do-not-log'*10000,completed_at='do-not-log'*10000)
+        with self.assertRaises(ValueError) as error:
+            module.execution.suite_receipt(transport,run,source,'ts','linux-x64-gnu')
+        message=str(error.exception)
+        self.assertNotIn('do-not-log',message)
+        self.assertLess(len(message),2048)
+        detail=json.loads(message.split(': ',1)[1])
+        self.assertEqual(detail['mismatches'],['job-id','prior-status','prior-conclusion'])
+        self.assertIsNone(detail['current']['run_attempt'])
+        self.assertIsNone(detail['current']['started_at'])
+        self.assertIsNone(detail['prior']['completed_at'])
+        self.assertEqual(detail['prior']['status'],'invalid')
+        self.assertEqual(set(detail['current']),{'id','run_id','run_attempt','status','conclusion','started_at','completed_at'})
+
     def test_attempt3_aggregate_only_resolves_six_original_attempt1_receipts(self):
         transport,run,source,jobs,artifacts,bodies,_=fixture()
         with tempfile.TemporaryDirectory() as tmp:
