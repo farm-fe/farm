@@ -177,3 +177,17 @@ test('workflow routes rebuilds separately and terminal steps bind the trusted pl
   const consumers=workflow.split('  candidate-consumers:')[1].split('  publisher:')[0];
   assert.ok(consumers.includes("needs.plan.outputs.publish_required == 'true'"));
 });
+
+test('registry-selected publication builds without a successful baseline and retains public dependencies only for validation',()=>{
+ const value=fixture();
+ value.plan.npm.primary.push({name:'published',version:'1.0.0',manifestPath:'packages/published/package.json'});
+ value.selection={...value.selection,publicationScope:'npm',build:['npm:@farmfe/core'],versionRequired:[],registryRetained:{'npm:published':{version:'1.0.0',archiveSha256:'c'.repeat(64),integrity:'sha512-'+Buffer.alloc(64).toString('base64')}}};
+ const candidate=candidatePlanForSelection(value.plan,value.selection);
+ assert.deepEqual(candidate.publication.npm.primary.map(row=>row.name),['@farmfe/core']);
+ assert.deepEqual(candidate.validationDependencies.npm.map(row=>row.name),['published']);
+ assert.equal(candidate.incremental.baselineBinding,null);
+ value.selection.registrySnapshot={schemaVersion:1,sourceSHA:sha,sourceTree:tree,packages:{}};
+ assert.deepEqual(makePublicationManifest(value).registrySnapshot,value.selection.registrySnapshot);
+ delete value.selection.registryRetained['npm:published'].integrity;
+ assert.throws(()=>candidatePlanForSelection(value.plan,value.selection));
+});

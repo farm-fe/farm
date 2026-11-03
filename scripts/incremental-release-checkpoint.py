@@ -14,13 +14,24 @@ chain=evidence.chain_plan
 check=evidence.check
 MARKER='farm-release-checkpoint-v1'
 
+def load_registry_selection():
+    spec=importlib.util.spec_from_file_location('checkpoint_registry_selection',Path(__file__).with_name('release-registry-selection.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
 def create(manifest,source,baseline,proof,repository_id):
     check(proof.get('verified') is True and proof.get('manifestHash')==chain.digest(manifest)
           and proof.get('sourceSHA')==source['sha'] and proof.get('sourceTree')==source['tree'],'Verified public acceptance does not bind checkpoint source')
     check(manifest['profile']=='release' and manifest['chain']=='release' and manifest['namespace']=='farm-release-v1','CI cannot produce release checkpoints')
-    check(manifest.get('baseline')==(baseline['transaction'] if baseline else None),'Checkpoint prior baseline differs from frozen transaction')
+    expected_baseline=manifest['registrySnapshot'].get('stateBaseline') if manifest.get('registrySnapshot') is not None else (baseline['transaction'] if baseline else None)
+    check(manifest.get('baseline')==expected_baseline,'Checkpoint prior baseline differs from frozen transaction')
     prior=baseline['ledger']['packages'] if baseline else {}
     records={key:dict(row) for key,row in prior.items()}
+    if manifest.get('registrySnapshot') is not None:
+        selector=load_registry_selection()
+        family=selector.validate(source,'npm',manifest['registrySnapshot'])
+        for key,row in manifest['registrySnapshot']['packages'].items():
+            if row['status']=='published':
+                records[key]={**family[key],**row,'identity':key,'originKind':'independently-verified-registry'}
     for row in manifest['packages']:
         identity=row['kind']+':'+row['name']
         records[identity]={**row,'identity':identity,'originSourceSHA':source['sha'],'originRunId':manifest['producerRunId'],'originAttempt':manifest['producerAttempt']}
@@ -66,7 +77,12 @@ def decode(release,manifest,source,repository_id):
     check(set(records)==set(family) and all(row.get('version')==family[key]['version'] and row.get('identity')==key
           and re.fullmatch('[a-f0-9]{64}',row.get('archiveSha256','')) for key,row in records.items()),'Persistent checkpoint family differs')
     chain.exact(value.get('publicAcceptanceHash'),64)
-    for row in records.values():
+    for identity,row in records.items():
+        if row.get('originKind')=='independently-verified-registry':
+            snapshot=manifest.get('registrySnapshot',{})
+            observed=snapshot.get('packages',{}).get(identity,{})
+            check(observed.get('status')=='published' and all(row.get(key)==observed.get(key) for key in ['name','version','archiveSha256','integrity','metadata']),'Registry retained checkpoint differs from frozen observation')
+            continue
         chain.exact(row.get('originSourceSHA'),40)
         check(type(row.get('originRunId')) is int and row['originRunId']>0 and type(row.get('originAttempt')) is int and row['originAttempt']>0,'Persistent original producer identity missing')
     return value

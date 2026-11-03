@@ -89,10 +89,30 @@ export async function resolveAutomaticRelease({environment=process.env,event=JSO
  const normal=resolveNormal??(await import('./changesets-version-runtime.mjs')).resolveMergedVersion;
  return normal({environment,readApi,runGit});
 }
+export function resolveMainRegistrySource({environment=process.env,event=JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH)),readApi=api,runGit=git}={}) {
+ const source=environment.GITHUB_SHA;
+ assert.equal(environment.GITHUB_REF,'refs/heads/main');assert.match(source,/^[a-f0-9]{40}$/);
+ assert.equal(environment.GITHUB_WORKFLOW_SHA,source,'Control workflow and product source must be the same fixed main commit');
+ assert.equal(runGit(['rev-parse','HEAD']).trim(),source);
+ const repository=readApi('repos/'+environment.GITHUB_REPOSITORY);
+ assert.equal(repository.id,Number(environment.GITHUB_REPOSITORY_ID));assert.equal(repository.full_name,environment.GITHUB_REPOSITORY);assert.equal(repository.default_branch,'main');
+ assert.equal(repository.full_name,'farm-fe/farm');assert.equal(repository.id,507542208);
+ if(environment.GITHUB_EVENT_NAME==='push')assert.ok(event.ref==='refs/heads/main'&&event.after===source&&!event.deleted&&!event.forced,'Invalid fixed main push');
+ else assert.equal(environment.GITHUB_EVENT_NAME,'workflow_dispatch');
+ const workflow=environment.GITHUB_WORKFLOW_REF;
+ assert.ok(['incremental-release.yaml','cargo-source-release.yaml'].some(file=>workflow===repository.full_name+'/.github/workflows/'+file+'@refs/heads/main'),'Untrusted release workflow');
+ const files=runGit(['ls-tree','-r','--name-only',source,'--','.changeset']).trim().split('\n');
+ assert.ok(files.includes('.changeset/config.json'),'Changesets state missing');
+ const pending=files.filter(file=>file.endsWith('.md')&&file!=='.changeset/README.md');
+ // Active prerelease/exit state always requires the existing version action.
+ const preparing=pending.length>0||files.includes('.changeset/pre.json');
+ const result={mode:'verified-main-registry-selection',releaseReady:!preparing,reason:preparing?'changesets-version-preparation-required':'exact-registry-version-selection',
+  sourceSHA:source,sourceTree:runGit(['rev-parse',source+'^{tree}']).trim(),headSHA:source,baseSHA:event.before??source};
+ return {...result,receiptHash:sha(JSON.stringify(result))};
+}
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
- const result=await resolveAutomaticRelease();
+ const result=resolveMainRegistrySource();
  if(process.argv.includes('--cargo')) {
-  assert.equal(result.releaseReady,true,'Cargo source is not an authenticated prepared release');
   fs.writeFileSync('cargo-version-proof.json',JSON.stringify(result)+'\n');
  }
  if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,`release_ready=${result.releaseReady===true}\n`);

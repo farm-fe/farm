@@ -26,10 +26,10 @@ export function publicationManifestDigest(value) {
 export function candidatePlanForSelection(family, selection) {
   assert.equal(selection.chain,'release');assert.equal(selection.profile,'release');assert.notEqual(selection.publicationBlocked,true);
   assert.equal((selection.versionRequired??[]).length,0);
-  const required=new Set(selection.build),prior=selection.baselinePackages??{};
+  const required=new Set(selection.build),prior=selection.registryRetained??selection.baselinePackages??{};
   const dependencies = (rows,kind) => rows.filter(row=>!required.has(kind+':'+row.name)).map(row=>{
     const original=prior[kind+':'+row.name];
-    assert.ok(original&&original.version===row.version,'Unchanged validation dependency lacks a published baseline');
+    assert.ok(original&&original.version===row.version,'Unchanged validation dependency lacks verified registry evidence');
     assert.match(original.archiveSha256,/^[a-f0-9]{64}$/);
     if(kind==='npm')assert.match(original.integrity??'',/^sha512-[A-Za-z0-9+/]+={0,2}$/);
     return {name:row.name,version:row.version,sha256:original.archiveSha256,...(kind==='npm'?{integrity:original.integrity}:{})};
@@ -202,7 +202,7 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
       ? `v${packages.find(row => row.kind === 'npm' && row.name === '@farmfe/core').version}` : `packages-${selection.planHash.slice(0,16)}`,
     family:fullFamily, rebuild:[...(selection.build ?? selection.publish)], versionRequired:[...(selection.versionRequired ?? [])],
     publish:[...selection.publish], buildDependencyClosure:[...(selection.buildDependencyClosure ?? [])],
-    validationRequired:[...(selection.validationRequired ?? [])], packages};
+    validationRequired:[...(selection.validationRequired ?? [])], ...(selection.registrySnapshot ? {registrySnapshot:selection.registrySnapshot} : {}), packages};
 }
 
 async function main() {

@@ -29,15 +29,19 @@ PRODUCER = "Build independent release candidates"
 CONSUMER = "Verify independent release public consumers"
 
 
-def source_plan(source, baseline=None):
+def source_plan(source, baseline=None, registry_snapshot=None):
     family = json.loads(source["files"]["docs/releases/v2-candidate.json"])
     check(baseline is None or baseline['ledger'].get('publicationScope') == 'npm', 'A mixed Cargo publication baseline cannot enter npm-only release planning')
     abi=re.search(r'^pub const VERSION: &str = "([0-9]+\.[0-9]+\.[0-9]+)";',source['files']['crates/core/src/lib.rs'].decode('utf-8'),re.M)
     check(abi is not None and family['abi']==abi[1],'Candidate Farm ABI differs from actual source declaration')
     prior=baseline['source'] if baseline else None
-    result=chain.plan_chain("release", {"sha": source["sha"], "tree": source["tree"]}, source["files"], family, [],
-                            baseline=baseline['ledger'] if baseline else None,baseline_files=prior['files'] if prior else None,
-                            anchor=baseline['anchor'] if baseline else None,source_modes=source["modes"],publication_scope="npm",baseline_modes=prior['modes'] if prior else None)
+    if registry_snapshot is not None:
+        selector=load('release_registry_selection','release-registry-selection.py')
+        result=selector.plan(source,family,registry_snapshot)
+    else:
+        result=chain.plan_chain("release", {"sha": source["sha"], "tree": source["tree"]}, source["files"], family, [],
+                                baseline=baseline['ledger'] if baseline else None,baseline_files=prior['files'] if prior else None,
+                                anchor=baseline['anchor'] if baseline else None,source_modes=source["modes"],publication_scope="npm",baseline_modes=prior['modes'] if prior else None)
     nodes, issues = chain.repository_graph(source['files'])
     check(not issues, 'Release source dependency graph is invalid')
     # JS build recipes execute Farm. Their native compiler is a source-built
@@ -76,7 +80,7 @@ def published_baseline(transport,transaction=None,read_source=evidence.source_re
 def release_checkpoint(manifest,proof):
     transport=actions_transport()
     check(os.environ.get('GITHUB_JOB')=='finalize','Only the trusted finalizer creates a durable release receipt')
-    baseline=published_baseline(transport,manifest['baseline']) if manifest.get('baseline') is not None else None
+    baseline=published_baseline(transport,manifest['baseline']) if manifest.get('baseline') is not None and manifest.get('registrySnapshot') is None else None
     source=evidence.source_reader(manifest['sourceSHA'])
     module=load('release_checkpoint_writer','incremental-release-checkpoint.py')
     value=module.create(manifest,source,baseline,proof,transport.get('')['id'])
@@ -145,8 +149,12 @@ class ReleaseVerifier:
         # First-build path is independently recomputed. A later incremental
         # baseline must be verified by the durable published-ledger adapter;
         # accepting an uploaded baseline JSON here would be circular trust.
-        baseline=published_baseline(self.transport,manifest['baseline'],self.read_source) if manifest.get('baseline') is not None else None
-        plan = source_plan(source,baseline)
+        baseline=published_baseline(self.transport,manifest['baseline'],self.read_source) if manifest.get('baseline') is not None and manifest.get('registrySnapshot') is None else None
+        snapshot=manifest.get('registrySnapshot')
+        plan = source_plan(source,baseline,snapshot)
+        if snapshot is not None:
+            selector=load('verify_release_registry','release-registry-selection.py')
+            selector.verify_retained(source,snapshot,selector.Registry().lookup)
         check(plan["planHash"] == manifest.get("planHash") and plan["graphHash"] == manifest.get("graphHash"), "Release plan or graph differs from committed source")
         nodes, issues = chain.repository_graph(source["files"])
         check(not issues, "Release graph contains unresolved inputs")
@@ -216,8 +224,12 @@ def main():
     if args.command == "plan":
         source = evidence.source_reader(args.source)
         check(chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Checkout and release plan source differ")
-        baseline=published_baseline(actions_transport()) if os.environ.get('GITHUB_REF')=='refs/heads/main' and os.environ.get('GITHUB_ACTIONS')=='true' else None
-        result = source_plan(source,baseline)
+        selector=load('plan_release_registry','release-registry-selection.py')
+        snapshot=selector.collect(source,'npm',selector.Registry().lookup)
+        reader=load('registry_plan_publication_fence','incremental-release-baseline.py')
+        _, state=reader.ReleaseBaselineReader(actions_transport(),None).state()
+        snapshot['stateBaseline']=state['baseline']
+        result = source_plan(source,registry_snapshot=snapshot)
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         if os.environ.get('GITHUB_OUTPUT'):
             records={row['kind']+':'+row['name']:row for row in result['fullFamily']}

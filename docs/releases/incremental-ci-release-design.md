@@ -1,3 +1,5 @@
+> Main publication selection is being updated to [fixed-main registry version selection](registry-version-release.md). That document supersedes the code-diff and version-PR-history publication preconditions below. CI impact analysis and artifact provenance requirements remain in force. Implementation is under local validation.
+
 <!-- cspell:words codegen debuginfo rustflags rustup cdylib rlib napi libloading plz serde lto sse crt -->
 # 统一依赖图、PR 产物复用与升版后增量发布设计
 

@@ -64,6 +64,19 @@ class Contracts(unittest.TestCase):
         for where,key,value in [('base','ref','other'),('head','ref','feature'),('head','repo',{'full_name':'fork/farm'})]:
             changed=copy.deepcopy(event);changed['pull_request'][where][key]=value
             with self.assertRaises(ValueError):m.identity(changed,env,git)
+    def test_main_push_identity_needs_no_pr_history_and_rejects_source_drift(self):
+        sha='a'*40
+        env={'GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/main','GITHUB_SHA':sha,'GITHUB_WORKFLOW_SHA':sha,'GITHUB_REPOSITORY':'farm/farm','GITHUB_REPOSITORY_ID':'1','GITHUB_RUN_ID':'2','GITHUB_WORKFLOW_REF':'farm/farm/'+m.WORKFLOW+'@refs/heads/main'}
+        event={'ref':'refs/heads/main','after':sha,'forced':False,'deleted':False}
+        git=lambda *args:sha if args[-1]=='HEAD' else 'b'*40
+        result=m.identity(event,env,git)
+        self.assertEqual(result['event'],'push');self.assertNotIn('pr',result)
+        for key,value in [('ref','refs/heads/feature'),('after','c'*40),('forced',True),('deleted',True)]:
+            with self.assertRaises(ValueError):m.identity({**event,key:value},env,git)
+        for key,value in [('GITHUB_WORKFLOW_SHA','c'*40),('GITHUB_WORKFLOW_REF','fork/farm/'+m.WORKFLOW+'@refs/heads/main')]:
+            with self.assertRaises(ValueError):m.identity(event,{**env,key:value},git)
+        with self.assertRaises(ValueError):m.identity(event,env,lambda *args:'d'*40)
+
     def test_archive_path_and_link_are_rejected(self):
         for name,kind in [('leaf-1.0.0/../../escape',tarfile.REGTYPE),('leaf-1.0.0/link',tarfile.SYMTYPE)]:
             stream=io.BytesIO()
@@ -116,7 +129,7 @@ class Contracts(unittest.TestCase):
                         with self.assertRaises(ValueError):m.restore(destination,identity)
     def test_source_workflow_keeps_original_trigger_and_publisher_is_no_build(self):
         source=(m.ROOT/'.github/workflows/cargo-source-release.yaml').read_text();publisher=source.split('  publish:')[1]
-        self.assertIn('types: [closed]',source);self.assertIn('group: farm-stable-release',source)
+        self.assertIn('  push:\n    branches: [main]',source);self.assertNotIn('types: [closed]',source);self.assertIn('group: farm-stable-release',source)
         self.assertNotIn('CARGO_REGISTRY_TOKEN',source.split('  publish:')[0]);self.assertNotIn('npm',publisher);self.assertNotIn('cargo package',publisher)
         code=Path(m.__file__).read_text();self.assertNotIn('--no-verify',code);self.assertIn("'cargo','package','--locked','--offline'",code)
     def test_prepared_family_freezes_retained_versions_and_rechecks_before_writes(self):
