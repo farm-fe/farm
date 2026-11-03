@@ -107,8 +107,9 @@ def main():
     resolved = None
     resolution_error = None
     try:
-        if os.environ.get('CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS') == 'true':
-            resolver_spec = importlib.util.spec_from_file_location('unit_shadow_inputs', Path(__file__).with_name('ci-unit-shadow-inputs.py'))
+        if os.environ.get('CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS') == 'true' or os.environ.get('CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS') == 'true':
+            module_name = 'ci-e2e-shadow-inputs.py' if os.environ.get('CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS') == 'true' else 'ci-unit-shadow-inputs.py'
+            resolver_spec = importlib.util.spec_from_file_location('unit_shadow_inputs', Path(__file__).with_name(module_name))
             resolver = importlib.util.module_from_spec(resolver_spec); resolver_spec.loader.exec_module(resolver)
             resolved = resolver.current(os.environ)
             plan = resolved[0]

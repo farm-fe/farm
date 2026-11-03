@@ -24,12 +24,17 @@ def read_object(transport, run, name, member):
     return value, artifact
 
 
-def resolve(transport, run, identity):
-    check(run['path'] == '.github/workflows/rust-test.yaml' and run['event'] in ['pull_request','push','workflow_dispatch'], 'Unit shadow workflow differs')
+def resolve(transport, run, identity, *, scope="unit", cells=None):
+    check(scope in ["unit", "e2e"], "Unexpected shadow scope")
+    workflow = "rust-test.yaml" if scope == "unit" else "ci.yaml"
+    planner = "Incremental Unit CI plan (shadow only)" if scope == "unit" else "Incremental CI plan (shadow only)"
+    cells = CELLS if scope == "unit" else cells
+    check(cells is not None and sorted(row[0] for row in cells) == sorted(impact.execution_cells(scope)), "Shadow producer inventory differs")
+    check(run['path'] == '.github/workflows/' + workflow and run['event'] in ['pull_request','push','workflow_dispatch'], 'Unit shadow workflow differs')
     check(run['repository']['id'] == run['head_repository']['id'] and run['repository']['full_name'] == identity['repository']
           and str(run['id']) == identity['runId'] and run['head_sha'] == identity['headSHA'], 'Unit shadow run source differs')
     cache = {}
-    planner_run, planner_job = execution.actual_producer(transport, run, 'Incremental Unit CI plan (shadow only)', cache=cache)
+    planner_run, planner_job = execution.actual_producer(transport, run, planner, cache=cache)
     name = 'impact-plan-' + identity['testedSHA'] + '-' + str(planner_run['run_attempt'])
     plan, artifact = read_object(transport, planner_run, name, 'plan.json')
     execution.upload_binding(planner_job, 'Upload fixed source impact plan', artifact)
@@ -37,10 +42,10 @@ def resolve(transport, run, identity):
     for key,value in identity.items(): check(plan.get(key) == value, 'Unit shadow plan source differs: ' + key)
     check(plan.get('runAttempt') == str(planner_run['run_attempt']) and plan.get('mode') == 'shadow'
           and plan.get('skipAuthorized') is False and plan.get('reuseAuthorized') is False, 'Unit shadow plan authority or attempt differs')
-    check(plan.get('executionCells') == impact.execution_cells('unit'), 'Unit shadow inventory differs')
+    check(plan.get('executionCells') == impact.execution_cells(scope), 'Unit shadow inventory differs')
     try:
         observations, bindings = [], {}
-        for cell, producer, job_key, suffix in CELLS:
+        for cell, producer, job_key, suffix in cells:
             origin, job = execution.actual_producer(transport, run, producer, cache=cache)
             name = 'impact-cell-' + identity['testedSHA'] + '-' + job_key + '-' + suffix + '-' + str(origin['run_attempt'])
             row, meta = read_object(transport, origin, name, 'receipt.json')
@@ -51,7 +56,7 @@ def resolve(transport, run, identity):
                   and row.get('runAttempt') == str(origin['run_attempt']) and row.get('status') == 'executed-success'
                   and row.get('planBound') is False and row.get('acceptanceInherited') is False
                   and row.get('authoritativeJobIdentityVerified') is False, 'Unit observation identity or authority differs')
-            check(row.get('workflowRef', '').startswith(identity['repository'] + '/.github/workflows/rust-test.yaml@'), 'Unit observation workflow differs')
+            check(row.get('workflowRef', '').startswith(identity['repository'] + '/.github/workflows/' + workflow + '@'), 'Unit observation workflow differs')
             observations.append(row)
             bindings[cell] = {'producerAttempt':origin['run_attempt'], 'producerJobId':job['id'], 'artifactId':meta['id'], 'artifactDigest':meta['digest']}
     except (OSError, ValueError, KeyError) as error:
@@ -62,15 +67,15 @@ def resolve(transport, run, identity):
                                 'consumerAttempt':run['run_attempt'], 'cells':bindings}
 
 
-def current(environment):
+def current(environment, *, scope="unit", cells=None):
     check(environment.get('GITHUB_ACTIONS') == 'true' and environment.get('GITHUB_JOB') == 'impact-summary'
-          and environment.get('CI_IMPACT_SCOPE') == 'unit', 'Unexpected Unit shadow consumer')
+          and environment.get('CI_IMPACT_SCOPE') == scope, 'Unexpected Unit shadow consumer')
     event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
     pr = event.get('pull_request', {})
     sha = impact.git('rev-parse','HEAD').decode('ascii').strip()
     check(sha == environment['GITHUB_SHA'], 'Unit summary checkout differs')
     identity = {'headSHA':pr.get('head',{}).get('sha') or sha,
-                'baseSHA':pr.get('base',{}).get('sha') or event.get('inputs',{}).get('release_base') or event.get('before'),
+                'baseSHA':pr.get('base',{}).get('sha') or event.get('inputs',{}).get('base_sha') or event.get('inputs',{}).get('release_base') or event.get('before'),
                 'testedSHA':sha, 'testedTree':impact.git('rev-parse','HEAD^{tree}').decode('ascii').strip(),
                 'runId':environment['GITHUB_RUN_ID'], 'repository':environment['GITHUB_REPOSITORY'], 'policy':impact.POLICY}
     check(all(isinstance(value,str) and value for value in identity.values()), 'Unit summary identity unavailable')
@@ -78,4 +83,4 @@ def current(environment):
     run = transport.get('/actions/runs/' + identity['runId'] + '/attempts/' + environment['GITHUB_RUN_ATTEMPT'])
     check(str(run['run_attempt']) == environment['GITHUB_RUN_ATTEMPT']
           and str(run['repository']['id']) == environment['GITHUB_REPOSITORY_ID'], 'Unit summary current attempt differs')
-    return resolve(transport, run, identity)
+    return resolve(transport, run, identity, scope=scope, cells=cells)

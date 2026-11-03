@@ -58,6 +58,7 @@ jobs:
           python scripts/ci-native-evidence.test.py
           python scripts/ci-native-source-graph.test.py
           python scripts/ci-source-plan.test.py
+          python scripts/ci-e2e-shadow-inputs.test.py
           python scripts/ci-impact-receipt.test.py
       - name: Compute committed base and head impact without changing execution
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
@@ -84,6 +85,9 @@ jobs:
   impact-summary:
     name: Incremental CI shadow summary
     continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
     if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification, impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, performance-report, performance-summary]
     runs-on: ubuntu-24.04
@@ -95,19 +99,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
-          path: impact-plan
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          pattern: impact-cell-${{ github.sha }}-*-${{ github.run_attempt }}
-          path: impact-cell-receipts
       - name: Report actual results without inheriting old acceptance
         if: always()
         env:
+          CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
+          CI_IMPACT_SCOPE: e2e
           CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
         run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
       - uses: actions/upload-artifact@v4

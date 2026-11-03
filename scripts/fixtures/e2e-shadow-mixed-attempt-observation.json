@@ -1,0 +1,302 @@
+{
+  "runId": 41485189093,
+  "consumerAttempt": 2,
+  "summaryJobId": 125684566142,
+  "testedSHA": "b36622e558958c0088a2f5e5b0631c63a3e94145",
+  "requestedPlan": "impact-plan-b36622e558958c0088a2f5e5b0631c63a3e94145-2",
+  "plannerAttempt": 1,
+  "plannerAttemptEvidence": "Parent verified successful planner was carried from attempt 1; summary log confirms attempt 2 plan absent.",
+  "observedReceipts": [
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-performance-summary-single-2",
+      "id": 13198945014,
+      "size": 656,
+      "digest": "sha256:92faad950ccf2f20438cbe51ff017a023745adddcebb775f4f40a88b6f4d8ecd"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-performance-report-win32-x64-msvc-2",
+      "id": 13198840209,
+      "size": 673,
+      "digest": "sha256:9633fca9e35ce09064f3e8371ef2ea121ac44ea3cb10c3fd3d4fac3c0736235e"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-performance-report-darwin-arm64-2",
+      "id": 13198329396,
+      "size": 664,
+      "digest": "sha256:56a180f10cce868e2e9f9ae88033348af83c95fba756a38018ac334dc40ae944"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-check-native-candidate-assembly-single-2",
+      "id": 13198115258,
+      "size": 664,
+      "digest": "sha256:c626b589dc4b27d3a5b45a8163762fffe25a0957c473fcf4b262159dc3c8c0dc"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-performance-report-linux-x64-gnu-2",
+      "id": 13197507813,
+      "size": 664,
+      "digest": "sha256:07aa49493b476b1217c582aaa304ef0c362ddaa78d0ebb6dc059522b5b352836"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-examples-test-darwin-arm64-2",
+      "id": 13197095819,
+      "size": 659,
+      "digest": "sha256:a1b03385d06d4fd9c4b8da381435000b14ce9e4bd874273f3caa3ee2705b15d5"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-ts-test-darwin-arm64-2",
+      "id": 13196563333,
+      "size": 656,
+      "digest": "sha256:4bbee6302b84c2d71a4d24eb0d7903b7cc633ce89c73d00fc6ead9d7ff4c527e"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-darwin-arm64-2",
+      "id": 13196332606,
+      "size": 660,
+      "digest": "sha256:c68ab109297f6367ef9d335daa3d1f4634983afbe6d2cf2688332d76a1717c22"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-win32-arm64-msvc-2",
+      "id": 13196097104,
+      "size": 671,
+      "digest": "sha256:952fbb406c89c73ee2cf1ed0e2e7a47367da0481073687cb3d58a4d4909da307"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-linux-x64-musl-2",
+      "id": 13195521976,
+      "size": 661,
+      "digest": "sha256:e4dca6b161466bb778cac56ee2093d71c4d9ca81f2f3495a10c9cefe01e0ce31"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-docs-win32-x64-msvc-2",
+      "id": 13195487735,
+      "size": 666,
+      "digest": "sha256:4cb7432ee45ec00b466e83f5b1dda57a782144b459070006c72865431a455709"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-linux-arm64-musl-2",
+      "id": 13195365407,
+      "size": 663,
+      "digest": "sha256:970029acdb8199e22c9be50139a843021317cde54ee4e6853c7de2749e4e1177"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-darwin-x64-2",
+      "id": 13195229360,
+      "size": 660,
+      "digest": "sha256:3df73eafc20db6e10ccd0f26b783172efcc873a23c2ad77226916b942620806a"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-examples-test-win32-x64-msvc-2",
+      "id": 13194858927,
+      "size": 669,
+      "digest": "sha256:a7ee9aca7c4d45038da3f4257d7f850b2cc817c05949d74f03040eb39a25adba"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-win32-ia32-msvc-2",
+      "id": 13194647018,
+      "size": 669,
+      "digest": "sha256:b726d394a1c89bc1c8d047615125c8816d408099ef36f61bdf787e5fdfc968d2"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-examples-test-linux-x64-gnu-2",
+      "id": 13194377495,
+      "size": 659,
+      "digest": "sha256:4aef990a9cfca8aaa9c3a3dc406f815c8b8fb100f2b464ce612e13d24b41a201"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-linux-x64-gnu-2",
+      "id": 13194370355,
+      "size": 661,
+      "digest": "sha256:0fab2a3e89120c71c3a83a0dbdfa8f52dc41e11a1ad5baeafc506651e89f3d36"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-ts-test-linux-x64-gnu-2",
+      "id": 13194311257,
+      "size": 657,
+      "digest": "sha256:1085be5c6f23f5f14e5edf075ba62423d36dcd2e48865589711788b2c200a5fe"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-win32-x64-msvc-2",
+      "id": 13194287843,
+      "size": 667,
+      "digest": "sha256:4a8cac0fe63e68e930c496963cf501e0c4e5a05327a06096eab026e34faa249a"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-ts-test-win32-x64-msvc-2",
+      "id": 13194058784,
+      "size": 666,
+      "digest": "sha256:1c84e9f5231795753806634e326af34884546372bef510e489676b8180d816d0"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-docs-linux-x64-gnu-2",
+      "id": 13193813794,
+      "size": 658,
+      "digest": "sha256:f3347bc27ecfeb340d5985956787ffe030eb8472873aa09cc719ded6f858792e"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-build-linux-arm64-gnu-2",
+      "id": 13193343575,
+      "size": 662,
+      "digest": "sha256:95b0e9a4e92f36e546ff3d8c20d7d9cfcfa6a8d41a52a09b613031d3b80bbfcd"
+    },
+    {
+      "name": "impact-cell-b36622e558958c0088a2f5e5b0631c63a3e94145-performance-contract-tests-macos-latest-2",
+      "id": 13189992243,
+      "size": 671,
+      "digest": "sha256:81c2a59bc788eae5cac0daf5b0a5b2cd39763e76205f7fcbefc962eb7e0b4187"
+    }
+  ],
+  "jobs": [
+    {
+      "id": 125632314149,
+      "name": "Changesets Check",
+      "conclusion": "failure"
+    },
+    {
+      "id": 125632314822,
+      "name": "Performance report contract (macos-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632315633,
+      "name": "version-classification / Verify pure Changesets version preparation",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632316229,
+      "name": "Incremental CI plan (shadow only)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632316433,
+      "name": "Type Check",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632316521,
+      "name": "Performance report contract (windows-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632316540,
+      "name": "Release source contracts",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632316573,
+      "name": "Performance report contract (ubuntu-24.04)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562382,
+      "name": "call-rust-build-release / Build and Upload Release Artifacts - linux-arm64-musl",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562402,
+      "name": "Primary macOS / native / Build and Upload User Artifacts - darwin-arm64",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562447,
+      "name": "Primary Linux / native / Build and Upload User Artifacts - linux-x64-gnu",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562495,
+      "name": "call-rust-build-release / Build and Upload Release Artifacts - win32-arm64-msvc",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562497,
+      "name": "call-rust-build-release / Build and Upload Release Artifacts - linux-x64-musl",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562505,
+      "name": "call-rust-build-release / Build and Upload Release Artifacts - darwin-x64",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562535,
+      "name": "call-rust-build-release / Build and Upload Release Artifacts - linux-arm64-gnu",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562538,
+      "name": "call-rust-build-release / Build and Upload Release Artifacts - win32-ia32-msvc",
+      "conclusion": "success"
+    },
+    {
+      "id": 125632562574,
+      "name": "Primary Windows / native / Build and Upload User Artifacts - win32-x64-msvc",
+      "conclusion": "success"
+    },
+    {
+      "id": 125651633183,
+      "name": "Primary Linux / Verify current native materialization",
+      "conclusion": "success"
+    },
+    {
+      "id": 125651671050,
+      "name": "Primary Linux / Typescript Test (ubuntu-24.04)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125651671083,
+      "name": "Primary Linux / Examples Test (ubuntu-24.04)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125651672554,
+      "name": "Primary Linux / Docs CI quality checks / Docs / ubuntu-24.04",
+      "conclusion": "success"
+    },
+    {
+      "id": 125656171091,
+      "name": "Primary Windows / Verify current native materialization",
+      "conclusion": "success"
+    },
+    {
+      "id": 125656209210,
+      "name": "Primary Windows / Examples Test (windows-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125656209314,
+      "name": "Primary Windows / Typescript Test (windows-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125656209796,
+      "name": "Primary Windows / Docs CI quality checks / Docs / windows-latest",
+      "conclusion": "success"
+    },
+    {
+      "id": 125666535477,
+      "name": "Docs CI quality checks",
+      "conclusion": "success"
+    },
+    {
+      "id": 125668301267,
+      "name": "Primary macOS / Verify current native materialization",
+      "conclusion": "success"
+    },
+    {
+      "id": 125668340188,
+      "name": "Primary macOS / Typescript Test (macos-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125668340233,
+      "name": "Primary macOS / Examples Test (macos-latest)",
+      "conclusion": "success"
+    },
+    {
+      "id": 125668341914,
+      "name": "Primary macOS / Docs CI quality checks",
+      "conclusion": "skipped"
+    }
+  ],
+  "limitations": "First-page jobs and summary log only; job timestamps, original job IDs, archive bytes and attempt 1 receipts are not available here. Offline replay synthesizes those fields and is not authentication of this historical run."
+}
