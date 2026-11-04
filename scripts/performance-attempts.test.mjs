@@ -59,6 +59,30 @@ function fixture() {
   return {api,repository:'farm-fe/farm',summary,producerSHA,testedTree,run,jobs,artifacts,bodies,raw,routes};
 }
 
+function changedJobViews(f){
+  for(const [attempt,jobs] of Object.entries(f.jobs))for(const job of jobs){
+    Object.assign(job,{id:job.id+Number(attempt)*10000,run_attempt:Number(attempt),head_sha:f.run.head_sha,runner_id:44,runner_name:'hosted-runner',
+      steps:[{number:1,name:'Measured execution',status:'completed',conclusion:'success',started_at:job.started_at,completed_at:job.completed_at}]});
+  }
+}
+test('changed attempt view IDs retain original measurement and native IDs with complete execution proof',async()=>{
+  const f=fixture();changedJobViews(f);const resolve=await measurementResolver(f);
+  const rows=await Promise.all(measurementPlatforms.map(resolve));
+  assert.deepEqual(rows.map(row=>row.source.runAttempt),[2,1,1]);
+  assert.equal(rows[1].source.jobId,10201);assert.equal(rows[1].source.nativeJobId,10301);
+});
+test('changed view IDs cannot hide missing source runner steps or changed successful steps',async()=>{
+  for(const defect of ['source','runner','steps','step-time','attempt']){
+    const f=fixture();changedJobViews(f);const job=f.jobs[2].find(row=>row.name==='Commerce Performance (macos-latest)');
+    if(defect==='source')job.head_sha='0'.repeat(40);
+    else if(defect==='runner')job.runner_id=45;
+    else if(defect==='steps')delete job.steps;
+    else if(defect==='attempt')job.run_attempt=1;
+    else job.steps[0].completed_at='2026-10-31T01:19:59Z';
+    const resolve=await measurementResolver(f);await assert.rejects(()=>resolve(measurementPlatforms[1]),/Unproven carried/);
+  }
+});
+
 test('same-run Linux retry and earlier Mac/Windows measurements retain exact original sources', async()=>{
   const f=fixture(), resolve=await measurementResolver(f);
   const values=await Promise.all(measurementPlatforms.map(resolve));
@@ -119,7 +143,7 @@ import {validateSummary, report as publishReport} from './performance-pr-reporte
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 
-test('same immutable build and reused-native ZIPs pass aggregate schema3 PR publisher and independent Python release verifier',async()=>{
+test('changed-view immutable build and reused-native ZIPs pass aggregate publisher and independent Python release verifier',async()=>{
  for(const reused of [false,true]) {
   const f=fixture();
   if(reused) {
@@ -137,6 +161,7 @@ test('same immutable build and reused-native ZIPs pass aggregate schema3 PR publ
     const artifact=f.artifacts.find(row=>row.name.startsWith(`performance-${f.producerSHA}-${abi}-`)),bytes=zip('summary.json',value);
     f.bodies.set(artifact.id,bytes);Object.assign(artifact,{size_in_bytes:bytes.length,digest:'sha256:'+hash(bytes)});
   }
+  changedJobViews(f);
   const resolve=await measurementResolver(f),values=await Promise.all(measurementPlatforms.map(resolve));
   const summary={schemaVersion:3,...f.summary,prNumber:2330,reports:values.map(row=>compactReport(row.raw)),measurementSources:values.map(row=>row.source)};
   validateSummary(JSON.stringify(summary));assert.deepEqual(summary.measurementSources.map(row=>row.runAttempt),[2,1,1]);

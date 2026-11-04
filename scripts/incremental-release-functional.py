@@ -163,7 +163,7 @@ def verify_measurement_source(transport, run, source, summary, row, proof, obser
         if not matching: return True
         prior = matching[0]
         if (prior.get('started_at'), prior.get('completed_at')) == (job.get('started_at'), job.get('completed_at')):
-            check(prior.get('id') == job.get('id') and prior.get('status') == 'completed' and prior.get('conclusion') == 'success', 'Unproven carried measurement producer')
+            check(entry.execution.same_carried_execution(job, prior, run, attempt), 'Unproven carried measurement producer')
             return False
         check(not prior.get('completed_at') or job['started_at'] >= prior['completed_at'], 'Producer execution times overlap across attempts')
         return True

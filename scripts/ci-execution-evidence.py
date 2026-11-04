@@ -1,6 +1,7 @@
 """Verify E2E acceptance ledgers for a narrow docs-only path; never reuse build bytes."""
 # cspell:words importlib IFMT IFREG
 import hashlib
+from datetime import datetime
 import importlib.util
 import json
 import re
@@ -99,6 +100,38 @@ def carried_producer_diagnostic(run_id, attempt, current, prior):
                        'current':record(current),'prior':record(prior)}, sort_keys=True)
 
 
+def same_carried_execution(current, prior, run, attempt):
+    """API job IDs identify attempt views; authenticate the original execution.
+
+    Changed IDs require complete stable execution evidence from both authenticated
+    attempt inventories. Never use artifact-supplied job metadata here. The caller
+    still resolves the origin and verifies its upload, artifact digest and source.
+    """
+    if prior.get('status') != 'completed' or prior.get('conclusion') != 'success': return False
+    if current.get('id') == prior.get('id'): return True
+    def signature(job, expected_attempt):
+        if not (type(job.get('id')) is int and job['id'] > 0
+                and job.get('run_id') == run['id'] and job.get('head_sha') == run['head_sha']
+                and type(job.get('run_attempt')) is int and job['run_attempt'] == expected_attempt
+                and type(job.get('runner_id')) is int and job['runner_id'] > 0
+                and isinstance(job.get('runner_name'), str) and job['runner_name']
+                and job.get('status') == 'completed' and job.get('conclusion') == 'success'): return None
+        rows = job.get('steps')
+        if not isinstance(rows, list) or not rows: return None
+        steps = []
+        for step in rows:
+            if not isinstance(step, dict) or not all(key in step for key in ['number','name','status','conclusion','started_at','completed_at']): return None
+            if type(step['number']) is not int or step['number'] <= 0 or not isinstance(step['name'], str) or not step['name']: return None
+            if step['status'] != 'completed' or step['conclusion'] not in ['success','skipped']: return None
+            if step['conclusion'] == 'success' and not (isinstance(step['started_at'], str) and isinstance(step['completed_at'], str)
+                    and datetime.fromisoformat(job['started_at']) <= datetime.fromisoformat(step['started_at']) <= datetime.fromisoformat(step['completed_at']) <= datetime.fromisoformat(job['completed_at'])): return None
+            steps.append(tuple(step[key] for key in ['number','name','status','conclusion','started_at','completed_at']))
+        if len({step[0] for step in steps}) != len(steps) or not any(step[3] == 'success' for step in steps): return None
+        return (job.get('name'), job['runner_id'], job['runner_name'], job.get('started_at'), job.get('completed_at'), steps)
+    first, second = signature(current, attempt), signature(prior, attempt - 1)
+    return first is not None and first == second
+
+
 def actual_producer(transport, run, name, current_jobs=None, cache=None):
     """Newest real execution wins, including failures; carried jobs retain origin."""
     check(type(run['run_attempt']) is int and 0 < run['run_attempt'] <= 32, 'Rerun attempt exceeds bound')
@@ -122,7 +155,7 @@ def actual_producer(transport, run, name, current_jobs=None, cache=None):
         prior = [item for item in observations.get(attempt - 1, (None, []))[1] if item['name'] == name or item['name'].endswith(' / ' + name)]
         check(len(prior) <= 1, 'Ambiguous prior suite producer')
         if prior and (job['started_at'], job.get('completed_at')) == (prior[0].get('started_at'), prior[0].get('completed_at')):
-            check(job.get('id') == prior[0].get('id') and prior[0].get('status') == 'completed' and prior[0].get('conclusion') == 'success',
+            check(same_carried_execution(job, prior[0], run, attempt),
                   'Unproven carried suite producer: ' + carried_producer_diagnostic(run['id'], attempt, job, prior[0]))
             continue
         check(not prior or not prior[0].get('completed_at') or job['started_at'] >= prior[0]['completed_at'], 'Suite producer times overlap')
