@@ -127,14 +127,19 @@ def product_inputs(source, abi):
 
 
 def measured_context(source, capture, abi, image=None):
-    runtime = capture.get('runtimeCapture') or {}
+    check(isinstance(capture, dict), 'Measured capture must be an object')
+    runtime = capture.get('runtimeCapture')
+    check(isinstance(runtime, dict), 'Measured runtime must be an object')
     channel = tomllib.loads(source['files']['rust-toolchain.toml'].decode())['toolchain']['channel']
     check(runtime.get('abi') == abi and runtime.get('target') == paths.TARGETS[abi], 'Measured target differs')
     check(runtime.get('profile') in ['ci', 'release'], 'Unknown build role')
     check(not runtime.get('errors') and not runtime.get('unboundBuildVariables'), 'Incomplete measured compiler environment')
-    check(runtime.get('activeToolchain', '').startswith(channel + '-'), 'Pinned compiler differs')
-    check(runtime.get('rustc') and runtime.get('cargo') and runtime.get('runtime', {}).get('node') == 'v22.20.0', 'Missing formal tools')
-    check(runtime.get('linker', {}).get('version'), 'Unmeasured effective linker')
+    active = runtime.get('activeToolchain')
+    check(isinstance(active, str) and active.startswith(channel + '-'), 'Pinned compiler differs')
+    host = runtime.get('runtime')
+    check(isinstance(host, dict) and runtime.get('rustc') and runtime.get('cargo') and host.get('node') == 'v22.20.0', 'Missing formal tools')
+    linker = runtime.get('linker')
+    check(isinstance(linker, dict) and isinstance(linker.get('version'), str) and linker['version'].strip(), 'Unmeasured effective linker')
     # Environment is a compatibility dimension, never a content/source identity.
     if abi in ['linux-x64-gnu', 'linux-x64-musl']:
         container = capture.get('container') or {}
@@ -198,7 +203,7 @@ def inspect_catalog(body, artifact, run, job, source, current, abi, desired_envi
         context = manifest['context']
         check(context['platform'] == desired_environment['platform'] and context['formalFlagsHash'] == desired_environment['formalFlagsHash'], 'Formal platform or flags differ')
         check(all(key in desired_environment and context.get(key) == desired_environment[key] for key in ['toolchain', 'rustc', 'cargo', 'linker']), 'Measured consumer compiler or linker differs or is missing')
-        check(context['toolchain'] == next(iter(wanted.values()))['recipe']['toolchain'] and context['rustc'] and context['cargo'] and context['linker'].get('version'), 'Incomplete toolchain evidence')
+        check(context['toolchain'] == next(iter(wanted.values()))['recipe']['toolchain'] and context['rustc'] and context['cargo'] and isinstance(context['linker'], dict) and isinstance(context['linker'].get('version'), str) and context['linker']['version'].strip(), 'Incomplete toolchain evidence')
         check(len({row['owner'] for row in manifest['records']}) == len(manifest['records']), 'Duplicate product')
         check({row.filename for row in entries} == {'catalog.json'} | {row['member'] for row in manifest['records']}, 'Unexpected catalog member')
         accepted = {}

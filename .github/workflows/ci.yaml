@@ -152,6 +152,7 @@ jobs:
         run: |
           node --test scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs scripts/native-checkout-contract.test.mjs scripts/formal-native-scope.test.mjs
           node --test scripts/automatic-release-source.test.mjs scripts/main-registry-source.test.mjs
+          python -B scripts/formal-native-products.test.py
           python -B scripts/cargo-prepared-family.test.py
           python -B scripts/cargo-source-release.test.py
           python -B scripts/release-registry-selection.test.py

@@ -1,5 +1,9 @@
 """Offline resolver integration tests: real source graph, synthetic API/bytes."""
 import copy
+import contextlib
+import os
+import subprocess
+import sys
 import hashlib
 import importlib.util
 import io
@@ -159,6 +163,58 @@ class FormalProducts(unittest.TestCase):
         accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
         self.assertEqual(accepted, {})
         self.assertIn('artifact-missing-or-expired', reasons)
+
+    def captured_windows(self, abi):
+        # Execute the actual JS collector; tool output is an explicit fixture,
+        # not a claim that this host executed Windows tools.
+        program = """import {captureRuntime} from './scripts/ci-native-capture.mjs';
+const [abi,target]=process.argv.slice(1);
+console.log(JSON.stringify(captureRuntime({platform:'win32',env:{FARM_BUILD_ABI:abi,FARM_BUILD_TARGET:target,FARM_BUILD_PROFILE:'release'},
+run:exe=>({status:0,stdout:exe==='rustup'?'nightly-2026-04-10-x86_64-pc-windows-msvc':exe+' measured fixture'})})));"""
+        return json.loads(subprocess.check_output(['node', '--input-type=module', '-e', program, abi, formal.paths.TARGETS[abi]], cwd=Path(__file__).resolve().parent.parent))
+
+    def test_windows_collector_null_reaches_explicit_unavailable_producer(self):
+        for abi in ['win32-arm64-msvc', 'win32-ia32-msvc']:
+            runtime = self.captured_windows(abi)
+            self.assertIsNone(runtime['linker']); self.assertFalse(runtime['reuseAuthorized'])
+            with tempfile.TemporaryDirectory() as root:
+                root = Path(root); capture = root / 'capture.json'; output = root / 'catalog'; outputs = root / 'outputs'
+                capture.write_text(json.dumps({'runtimeCapture': runtime, 'records': []}))
+                env = {'GITHUB_SHA': self.source['sha'], 'GITHUB_REPOSITORY': 'fixture/farm', 'GITHUB_WORKFLOW_REF': 'fixture/farm/' + formal.WORKFLOW + '@refs/heads/main', 'GITHUB_REF': 'refs/heads/main', 'FARM_BUILD_PROFILE': 'release', 'GITHUB_OUTPUT': str(outputs)}
+                with patch.dict(os.environ, env), patch.object(sys, 'argv', ['formal-native-products.py', 'produce', '--abi', abi, '--capture', str(capture), '--output', str(output)]), patch.object(formal.evidence, 'source_reader', return_value=self.source), patch.object(formal, 'create_catalog') as create, contextlib.redirect_stdout(io.StringIO()) as stdout:
+                    formal.main()
+                result = json.loads(stdout.getvalue())
+                self.assertFalse(result['catalogAvailable']); self.assertEqual(result['consumerAction'], 'build-current')
+                self.assertEqual(result['reason'], 'Unmeasured effective linker')
+                self.assertEqual(outputs.read_text(), 'catalog_available=false\n'); self.assertFalse(output.exists()); create.assert_not_called()
+
+    def test_missing_null_and_malformed_measured_objects_are_not_reuse_evidence(self):
+        abi = 'win32-arm64-msvc'; runtime = self.captured_windows(abi)
+        for value in [None, [], '', 1, {}, {'version': None}, {'version': []}, {'version': ''}, {'version': ' '}]:
+            with self.subTest(linker=value), self.assertRaisesRegex(ValueError, 'Unmeasured effective linker'):
+                formal.measured_context(self.source, {'runtimeCapture': {**runtime, 'linker': value}}, abi)
+        absent = dict(runtime); absent.pop('linker')
+        with self.assertRaisesRegex(ValueError, 'Unmeasured effective linker'): formal.measured_context(self.source, {'runtimeCapture': absent}, abi)
+        for field in ['runtime', 'activeToolchain']:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                formal.measured_context(self.source, {'runtimeCapture': {**runtime, field: None}}, abi)
+        with self.assertRaises(ValueError): formal.measured_context(self.source, {'runtimeCapture': None}, abi)
+
+    def test_measured_windows_fixture_seals_only_bound_unchanged_native_bytes(self):
+        abi = 'win32-arm64-msvc'; runtime = self.captured_windows(abi)
+        # Positive measurement fixture, not inferred from a missing linker.
+        runtime.update(linker={'version': 'explicit measured linker fixture'}, platformSdk='explicit measured SDK fixture')
+        wanted = formal.product_inputs(self.source, abi)['@farmfe/core']
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root); file = root / wanted['file']; file.parent.mkdir(parents=True)
+            body = b'MZ' + bytes(58) + (64).to_bytes(4, 'little') + b'PE\0\0' + (0xaa64).to_bytes(2, 'little'); file.write_bytes(body)
+            capture = {'runtimeCapture': runtime, 'profile': 'release', 'originBuildSHA': self.source['sha'], 'runId': 10, 'runAttempt': 2,
+                       'records': [{**wanted, 'bytes': len(body), 'sha256': hashlib.sha256(body).hexdigest()}]}
+            catalog, bodies = formal.create_catalog(self.source, capture, abi, 10, 2, root)
+            self.assertEqual(catalog['records'][0]['sha256'], hashlib.sha256(body).hexdigest()); self.assertEqual(list(bodies.values()), [body])
+            with self.assertRaisesRegex(ValueError, 'identity'): formal.create_catalog(self.source, capture, abi, 10, 3, root)
+            file.write_bytes(body + b'changed')
+            with self.assertRaisesRegex(ValueError, 'bytes changed'): formal.create_catalog(self.source, capture, abi, 10, 2, root)
 
 
 if __name__ == '__main__': unittest.main()
