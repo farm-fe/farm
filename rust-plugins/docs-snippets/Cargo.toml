@@ -10,7 +10,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
 farmfe_toolkit = { version = "=2.2.0", path = "../../crates/toolkit" }
-farmfe_macro_plugin = { version = "=2.0.0", path = "../../crates/macro_plugin" }
+farmfe_macro_plugin = { version = "=2.1.0", path = "../../crates/macro_plugin" }
 farmfe_syntax_highlight = { path = "../../rust-ecosystem/syntax-highlight" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
