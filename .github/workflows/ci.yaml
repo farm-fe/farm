@@ -142,6 +142,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Check cold-cache Cargo packaging against public dependency sources
+        env:
+          FARM_CARGO_NETWORK_TESTS: '1'
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          python -B scripts/cargo-public-sources.test.py
       - name: Check independent CI and release selection contracts
         run: |
           node --test scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs scripts/native-checkout-contract.test.mjs scripts/formal-native-scope.test.mjs
