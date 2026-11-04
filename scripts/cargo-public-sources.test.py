@@ -1,3 +1,4 @@
+# cspell:words itoa nitoa
 """Public Cargo twins: graph contracts and opt-in real Cargo/registry tests.
 
 FARM_CARGO_NETWORK_TESTS=1 python -B scripts/cargo-public-sources.test.py
