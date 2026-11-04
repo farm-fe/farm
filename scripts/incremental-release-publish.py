@@ -472,8 +472,13 @@ def verify_locked_plan(transaction, source, transport, baseline_reader=entry.pub
         if latest['active']['phase'] == 'uploading' and not latest['active']['packages']:
             transaction.reject_unwritten(reason)
     try:
-        baseline = baseline_reader(transport, manifest['baseline']) if manifest['baseline'] is not None else None
-        fresh = planner(source, baseline)
+        baseline = baseline_reader(transport, manifest['baseline']) if manifest['baseline'] is not None and manifest.get('registrySnapshot') is None else None
+        if manifest.get('registrySnapshot') is not None:
+            selector=entry.load('locked_registry_selection','release-registry-selection.py')
+            selector.verify_retained(source,manifest['registrySnapshot'],selector.Registry().lookup)
+            fresh = planner(source,baseline,manifest['registrySnapshot'])
+        else:
+            fresh = planner(source, baseline)
         transaction.owned()
         matches = (fresh.get('sourceSHA') == manifest['sourceSHA'] and fresh.get('sourceTree') == manifest['sourceTree']
                    and fresh.get('planHash') == manifest['planHash'] and fresh.get('publicationBlocked') is False

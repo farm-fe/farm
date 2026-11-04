@@ -25,6 +25,25 @@ class Contracts(unittest.TestCase):
     def test_complete_receipt_roundtrip_binds_source_family_and_origin(self):
         self.assertEqual(module.decode(self.release,self.manifest,self.source,1),self.value)
         self.assertEqual(self.value['kind'],'repository-release-checkpoint-not-actions-attestation')
+    def test_registry_retained_family_has_no_invented_build_origin(self):
+        registry=load('checkpoint_registry_tests','release-registry-selection.test.py')
+        selector=registry.module
+        manifest=copy.deepcopy(self.manifest)
+        snapshot=selector.collect(self.source,'npm',lambda row:registry.observed(row,row['name']=='a'))
+        manifest['registrySnapshot']=snapshot
+        manifest['packages']=[row for row in manifest['packages'] if row['name']!='a']
+        transaction=module.chain.digest(manifest)
+        proof={'verified':True,'manifestHash':transaction,'sourceSHA':self.source['sha'],'sourceTree':self.source['tree']}
+        value=module.create(manifest,self.source,None,proof,1)
+        retained=value['packages']['npm:a']
+        self.assertEqual(retained['originKind'],'independently-verified-registry')
+        self.assertNotIn('originSourceSHA',retained);self.assertNotIn('originRunId',retained)
+        release={**self.release,'body':'<!-- farm-release-manifest:'+transaction+' -->\n'+module.encode(value)}
+        self.assertEqual(module.decode(release,manifest,self.source,1),value)
+        retained['archiveSha256']='f'*64
+        release['body']='<!-- farm-release-manifest:'+transaction+' -->\n'+module.encode(value)
+        with self.assertRaisesRegex(ValueError,'Registry retained checkpoint'):module.decode(release,manifest,self.source,1)
+
     def test_wrong_author_profile_source_partial_family_or_bad_bytes_are_rejected(self):
         for mutation in ['author','profile','source','family','bytes']:
             release=copy.deepcopy(self.release);value=copy.deepcopy(self.value)

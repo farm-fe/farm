@@ -28,6 +28,13 @@ def load(name,file):
     spec=importlib.util.spec_from_file_location(name,ROOT/'scripts'/file);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
 def identity(event,env,git=run):
+    if env.get('GITHUB_EVENT_NAME')=='push':
+        sha=env['GITHUB_SHA'];repo=env['GITHUB_REPOSITORY']
+        check(env.get('GITHUB_REF')=='refs/heads/main' and event.get('ref')=='refs/heads/main' and event.get('after')==sha and not event.get('forced') and not event.get('deleted'),'Cargo requires fixed main push')
+        check(env.get('GITHUB_WORKFLOW_SHA')==sha and env.get('GITHUB_WORKFLOW_REF')==repo+'/'+WORKFLOW+'@refs/heads/main','Cargo workflow/source identity differs')
+        check(re.fullmatch('[a-f0-9]{40}',sha) and git('git','rev-parse','HEAD')==sha,'Cargo checkout differs')
+        return {'repository':repo,'repositoryId':int(env['GITHUB_REPOSITORY_ID']),'runId':int(env['GITHUB_RUN_ID']),
+                'sourceSHA':sha,'sourceTree':git('git','rev-parse','HEAD^{tree}'),'headSHA':sha,'event':'push','workflow':WORKFLOW}
     pr=event['pull_request'];repo=env['GITHUB_REPOSITORY'];sha=pr['merge_commit_sha']
     check(env['GITHUB_EVENT_NAME']=='pull_request' and event['action']=='closed' and pr['merged'] is True,'Only a merged PR authorizes Cargo source release')
     check(pr['base']['ref']=='main' and pr['base']['repo']['full_name']==repo and pr['head']['repo']['full_name']==repo,'Wrong base or fork Cargo release')
@@ -160,7 +167,7 @@ def restore(directory,expected):
             retry=load('cargo_retry_safety','release-retry-safety.py')
             proof=retry.verify_unfrozen_retry(lambda route:api(base+route), run_id=expected['runId'], source_sha=expected['sourceSHA'],
                 current_attempt=attempt, workflow=WORKFLOW, producer='Prepare Cargo source archives',
-                freeze_step='Freeze verified Cargo source archives', publisher='Publish frozen Cargo source archives', events=['pull_request'])
+                freeze_step='Freeze verified Cargo source archives', publisher='Publish frozen Cargo source archives', events=[expected.get('event','pull_request')])
             print(json.dumps({'unfrozenRetryProof':proof}),flush=True)
         return False
     row=matches[0];check(not row['expired'],'Original Cargo archive expired; refusing to rebuild a possible partial publication')
@@ -179,11 +186,11 @@ def restore(directory,expected):
     receipt=verify_frozen(directory,expected)
     attempt=receipt['producerAttempt'];check(0<attempt<=int(os.environ['GITHUB_RUN_ATTEMPT']),'Invalid Cargo producer attempt')
     producer_run=api(base+f'/actions/runs/{expected["runId"]}/attempts/{attempt}')
-    check(producer_run['path']==WORKFLOW and producer_run['event']=='pull_request' and producer_run['head_sha']==expected['sourceSHA'] and producer_run['repository']['id']==expected['repositoryId'] and producer_run['head_repository']['id']==expected['repositoryId'],'Cargo producer run identity differs')
+    check(producer_run['path']==WORKFLOW and producer_run['event']==expected.get('event','pull_request') and producer_run['head_sha']==expected['sourceSHA'] and producer_run['repository']['id']==expected['repositoryId'] and producer_run['head_repository']['id']==expected['repositoryId'],'Cargo producer run identity differs')
     jobs=api(base+f'/actions/runs/{expected["runId"]}/attempts/{attempt}/jobs?per_page=100')['jobs']
     producers=[job for job in jobs if job['name']=='Prepare Cargo source archives'];check(len(producers)==1,'Cargo producer job absent')
     check(producers[0]['status']=='completed' and producers[0]['conclusion']=='success','Cargo producer job did not succeed')
-    for name in ['Verify reviewed version provenance and semantic changes','Package and verify exact source crates']:
+    for name in [('Verify fixed main versions and Changesets readiness' if expected.get('event')=='push' else 'Verify reviewed version provenance and semantic changes'),'Package and verify exact source crates']:
         matching=[step for step in producers[0]['steps'] if step['name']==name]
         check(len(matching)==1 and matching[0]['conclusion']=='success','Cargo source verification step missing or failed')
     steps=[step for step in producers[0]['steps'] if step['name']=='Freeze verified Cargo source archives']
@@ -191,19 +198,31 @@ def restore(directory,expected):
     return True
 
 def prepare(directory,expected):
-    proof=json.loads(Path('cargo-version-proof.json').read_text());check(proof['mode'] in ['verified-version-only','verified-prepared-migration'] and proof['headSHA']==expected['headSHA'] and re.fullmatch('[a-f0-9]{40}',proof['baseSHA']) and re.fullmatch('[a-f0-9]{64}',proof['receiptHash']),'Cargo version provenance is incomplete')
-    evidence=load('cargo_source_evidence','incremental-chain-evidence.py')
-    before=evidence.source_reader(proof['baseSHA']);source=evidence.source_reader(expected['sourceSHA'])
-    retained=[];family=None
-    if proof['mode']=='verified-prepared-migration':
-        check(expected['pr']==2330 and proof['sourceSHA']==expected['sourceSHA'] and proof['sourceTree']==expected['sourceTree'], 'Prepared Cargo proof belongs to another source')
-        policy=json.loads(source['files']['docs/releases/prepared-release-2330.json'])
-        check(digest(json.dumps(policy,separators=(',',':'),ensure_ascii=False).encode())==proof['policyHash'], 'Prepared policy hash differs')
-        check(policy['retainedCrates']==proof['retainedCrates'], 'Retained Cargo proof differs from reviewed policy')
-        plan=json.loads(source['files'][policy['candidate']]);retained=policy['retainedCrates'];family=plan['cargo']
-        selected=select_prepared_packages(source['files'],plan,retained,Registry().lookup)
+    proof=json.loads(Path('cargo-version-proof.json').read_text())
+    registry_snapshot=None
+    if proof.get('mode')=='verified-main-registry-selection':
+        check(proof.get('releaseReady') is True and proof['sourceSHA']==expected['sourceSHA'] and proof['sourceTree']==expected['sourceTree'],'Cargo source readiness differs')
+        evidence=load('cargo_registry_source','incremental-chain-evidence.py');source=evidence.source_reader(expected['sourceSHA'])
+        selector=load('cargo_registry_selection','release-registry-selection.py')
+        registry_snapshot=selector.collect(source,'cargo',selector.Registry().lookup)
+        declared=selector.validate(source,'cargo',registry_snapshot)
+        family=list(declared.values());selected=[row for key,row in declared.items() if registry_snapshot['packages'][key]['status']=='missing']
+        retained=[{'name':row['name'],'version':row['version'],'sha256':registry_snapshot['packages'][key]['archiveSha256']} for key,row in declared.items() if registry_snapshot['packages'][key]['status']=='published']
         fetch_retained_sources(retained)
-    else:selected=select_packages(before['files'],source['files'])
+    else:
+        check(proof['mode'] in ['verified-version-only','verified-prepared-migration'] and proof['headSHA']==expected['headSHA'] and re.fullmatch('[a-f0-9]{40}',proof['baseSHA']) and re.fullmatch('[a-f0-9]{64}',proof['receiptHash']),'Cargo version provenance is incomplete')
+        evidence=load('cargo_source_evidence','incremental-chain-evidence.py')
+        before=evidence.source_reader(proof['baseSHA']);source=evidence.source_reader(expected['sourceSHA'])
+        retained=[];family=None
+        if proof['mode']=='verified-prepared-migration':
+            check(expected['pr']==2330 and proof['sourceSHA']==expected['sourceSHA'] and proof['sourceTree']==expected['sourceTree'], 'Prepared Cargo proof belongs to another source')
+            policy=json.loads(source['files']['docs/releases/prepared-release-2330.json'])
+            check(digest(json.dumps(policy,separators=(',',':'),ensure_ascii=False).encode())==proof['policyHash'], 'Prepared policy hash differs')
+            check(policy['retainedCrates']==proof['retainedCrates'], 'Retained Cargo proof differs from reviewed policy')
+            plan=json.loads(source['files'][policy['candidate']]);retained=policy['retainedCrates'];family=plan['cargo']
+            selected=select_prepared_packages(source['files'],plan,retained,Registry().lookup)
+            fetch_retained_sources(retained)
+        else:selected=select_packages(before['files'],source['files'])
     check(run('git','diff','--name-only','HEAD')=='','Cargo preparation requires a clean tracked source')
     directory.mkdir();(directory/'files').mkdir()
     metadata=json.loads(run('cargo','metadata','--locked','--offline','--format-version','1','--no-deps'))
@@ -225,6 +244,7 @@ def prepare(directory,expected):
         records.append({**row,'archive':filename,'archiveSha256':digest(body),'archiveBytes':len(body),'metadata':meta_name,'metadataSha256':digest(upload),'metadataBytes':len(upload)})
     check(run('git','diff','--name-only','HEAD')=='','Cargo package altered tracked source')
     receipt={'schemaVersion':1,'identity':expected,'producerAttempt':int(os.environ['GITHUB_RUN_ATTEMPT']),'toolchain':run('rustc','-vV'),'verified':True,'versionBaseSHA':proof['baseSHA'],'versionProofHash':proof['receiptHash'],'packageCommand':['cargo','package','--locked','--offline','--registry','crates-io',*sum((['-p',row['name']] for row in selected),[])],'selection':selected,'selectionHash':digest(encoded(selected)),'records':records}
+    if registry_snapshot is not None:receipt['registrySnapshot']=registry_snapshot
     if family is not None:receipt.update(preparedFamily=family,preparedFamilyHash=digest(encoded(family)),retained=retained,retainedHash=digest(encoded(retained)))
     (directory/'receipt.json').write_bytes(encoded(receipt));verify_frozen(directory,expected)
 
@@ -277,8 +297,12 @@ def main():
     directory=ROOT/'cargo-source-frozen'
     if stage=='restore':
         restored=restore(directory,expected)
-        with open(os.environ['GITHUB_OUTPUT'],'a') as stream:stream.write('restored='+str(restored).lower()+'\n')
-    elif stage=='prepare':prepare(directory,expected)
+        with open(os.environ['GITHUB_OUTPUT'],'a') as stream:
+            stream.write('restored='+str(restored).lower()+'\n')
+            if restored:stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')
+    elif stage=='prepare':
+        prepare(directory,expected)
+        with open(os.environ['GITHUB_OUTPUT'],'a') as stream:stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')
     else:
         check(os.environ.get('CARGO_REGISTRY_TOKEN'),'Existing registry secret required')
         check(restore(directory,expected),'Publication requires frozen original producer artifact');publish(directory,expected)

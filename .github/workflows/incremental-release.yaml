@@ -81,7 +81,7 @@ jobs:
           node-version: 22.20.0
       - run: pnpm install --frozen-lockfile --ignore-scripts
         if: steps.frozen.outputs.reuse != 'true' && inputs.producer_run == ''
-      - name: Require an authenticated prepared version merge
+      - name: Verify fixed main source and Changesets readiness
         id: version
         if: steps.frozen.outputs.reuse != 'true' && inputs.producer_run == ''
         env:

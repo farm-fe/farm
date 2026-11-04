@@ -467,10 +467,18 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
               "registryCollisionChecks": publish if chain == "release" else [],
               "validationRequired": sorted(validation_required),
               "crossChainReuseAllowed": False, "executionAuthorized": False, "publicationAuthorized": False}
-    dependencies = set(build)
+    build_closure(result, records, head)
+    result["sameVersionRebuildPolicy"] = "compare-original-archive-bytes-or-require-new-version"
+    result["planHash"] = digest(result)
+    return result
+
+
+def build_closure(result, records, head):
+    """Shared source preparation closure; publication selection stays separate."""
+    dependencies = set(result["build"])
     by_node = {row["kind"] + ":" + posixpath.dirname(row["manifestPath"]): key for key, row in records.items()}
     pending, build_nodes = [], set()
-    for identity in build:
+    for identity in result["build"]:
         row = records[identity]
         if row.get("owner"):
             # Platform package wrappers are packed products, not independent
@@ -491,9 +499,6 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
     result["buildNodes"] = sorted(build_nodes)
     result["buildEdges"] = {key: sorted(head[key]["preparationDeps"] & build_nodes)
                             for key in sorted(build_nodes)}
-    result["sameVersionRebuildPolicy"] = "compare-original-archive-bytes-or-require-new-version"
-    result["planHash"] = digest(result)
-    return result
 
 
 def main():
