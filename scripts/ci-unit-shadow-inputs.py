@@ -34,15 +34,39 @@ def resolve(transport, run, identity, *, scope="unit", cells=None):
     check(run['repository']['id'] == run['head_repository']['id'] and run['repository']['full_name'] == identity['repository']
           and str(run['id']) == identity['runId'] and run['head_sha'] == identity['headSHA'], 'Unit shadow run source differs')
     cache = {}
-    planner_run, planner_job = execution.actual_producer(transport, run, planner, cache=cache)
-    name = 'impact-plan-' + identity['testedSHA'] + '-' + str(planner_run['run_attempt'])
-    plan, artifact = read_object(transport, planner_run, name, 'plan.json')
-    execution.upload_binding(planner_job, 'Upload fixed source impact plan', artifact)
-    check(plan.get('planHash') == impact.digest({key:value for key,value in plan.items() if key != 'planHash'}), 'Unit shadow plan digest differs')
-    for key,value in identity.items(): check(plan.get(key) == value, 'Unit shadow plan source differs: ' + key)
-    check(plan.get('runAttempt') == str(planner_run['run_attempt']) and plan.get('mode') == 'shadow'
-          and plan.get('skipAuthorized') is False and plan.get('reuseAuthorized') is False, 'Unit shadow plan authority or attempt differs')
-    check(plan.get('executionCells') == impact.execution_cells(scope), 'Unit shadow inventory differs')
+    context = {'resolutionStep':'resolve-producer'}
+    try:
+        planner_run, planner_job = execution.actual_producer(transport, run, planner, cache=cache)
+        context.update(producerAttempt=planner_run['run_attempt'], producerJobId=planner_job['id'], resolutionStep='read-artifact')
+        name = 'impact-plan-' + identity['testedSHA'] + '-' + str(planner_run['run_attempt'])
+        plan, artifact = read_object(transport, planner_run, name, 'plan.json')
+        context.update(artifactId=artifact['id'], resolutionStep='bind-upload')
+        execution.upload_binding(planner_job, 'Upload fixed source impact plan', artifact)
+        context['resolutionStep'] = 'validate-digest'
+        check(plan.get('planHash') == impact.digest({key:value for key,value in plan.items() if key != 'planHash'}), 'Unit shadow plan digest differs')
+        context['resolutionStep'] = 'validate-source'
+        for key,value in identity.items():
+            context['identityField'] = key
+            check(plan.get(key) == value, 'Unit shadow plan source differs: ' + key)
+        context.pop('identityField', None)
+        check(plan.get('runAttempt') == str(planner_run['run_attempt']) and plan.get('mode') == 'shadow'
+              and plan.get('skipAuthorized') is False and plan.get('reuseAuthorized') is False, 'Unit shadow plan authority or attempt differs')
+        check(plan.get('executionCells') == impact.execution_cells(scope), 'Unit shadow inventory differs')
+    except (OSError, ValueError, KeyError) as error:
+        # An unverified plan must never become shadow_plan: the summary must
+        # remain planUnavailable and cannot bind observations after this error.
+        reasons = {
+            'Unproven carried suite producer': 'carried-producer-unproven',
+            'Latest actual suite producer did not succeed': 'latest-producer-unsuccessful',
+            'Exact execution artifact missing or ambiguous': 'artifact-missing-or-ambiguous',
+            'Execution artifact bytes differ': 'artifact-bytes-differ',
+            'Execution receipt members differ': 'artifact-members-differ',
+            'Actual producer upload did not succeed': 'upload-step-unsuccessful',
+            'Artifact is outside its fixed upload step: ': 'upload-time-window',
+        }
+        context['resolutionReason'] = next((reason for prefix,reason in reasons.items() if str(error).startswith(prefix)), 'validation-rejected')
+        error.shadow_context = context
+        raise
     try:
         observations, bindings = [], {}
         for cell, producer, job_key, suffix in cells:
