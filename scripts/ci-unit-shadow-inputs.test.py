@@ -55,6 +55,54 @@ def fixture():
 
 
 class Contracts(unittest.TestCase):
+    def test_planner_diagnostics_preserve_rejections_in_both_workflows(self):
+        spec = importlib.util.spec_from_file_location('e2e_fixture', Path(__file__).with_name('ci-e2e-shadow-inputs.test.py'))
+        e2e = importlib.util.module_from_spec(spec); spec.loader.exec_module(e2e)
+        spec = importlib.util.spec_from_file_location('diagnostic_receipt', Path(__file__).with_name('ci-impact-receipt.py'))
+        receipt = importlib.util.module_from_spec(spec); spec.loader.exec_module(receipt)
+        for build, resolver in [(fixture, module.resolve), (e2e.fixture, e2e.module.resolve)]:
+            for defect, stage in [('carried', 'resolve-producer'), ('missing', 'read-artifact'), ('bytes', 'read-artifact'), ('upload', 'bind-upload'), ('digest', 'validate-digest'), ('source', 'validate-source')]:
+                with self.subTest(workflow=build.__module__, defect=defect):
+                    api, run, identity, jobs, items, bodies, _ = build()
+                    artifact = next(iter(items.values()))
+                    if defect == 'carried': jobs[2][0]['id'] += 1000
+                    elif defect == 'missing': del items[artifact['name']]
+                    elif defect == 'bytes': bodies[1] += b'corrupt'
+                    elif defect == 'upload': artifact['created_at'] = '2026-11-02T01:05:00Z'
+                    else:
+                        with zipfile.ZipFile(io.BytesIO(bodies[1])) as archive: plan = json.loads(archive.read('plan.json'))
+                        if defect == 'digest': plan['planHash'] = 'wrong'
+                        else:
+                            plan['testedTree'] = 'wrong'
+                            plan['planHash'] = module.impact.digest({k:v for k,v in plan.items() if k != 'planHash'})
+                        out = io.BytesIO()
+                        with zipfile.ZipFile(out, 'w') as archive: archive.writestr('plan.json', json.dumps(plan))
+                        bodies[1] = out.getvalue(); artifact['size_in_bytes'] = len(bodies[1]); artifact['digest'] = 'sha256:' + hashlib.sha256(bodies[1]).hexdigest()
+                    with self.assertRaises(ValueError) as caught: resolver(api, run, identity)
+                    error = caught.exception
+                    self.assertFalse(hasattr(error, 'shadow_plan'))
+                    self.assertEqual(error.shadow_context['resolutionStep'], stage)
+                    if defect == 'source': self.assertEqual(error.shadow_context['identityField'], 'testedTree')
+                    with mock.patch('sys.stderr', new_callable=io.StringIO) as output:
+                        detail = receipt.report_error('read-plan', error)
+                    self.assertEqual(detail['stage'], 'read-plan')
+                    self.assertEqual(detail['resolutionStep'], stage)
+                    self.assertNotIn('wrong', output.getvalue())
+                    self.assertNotIn('corrupt', output.getvalue())
+                    self.assertNotIn('shadow_plan', detail)
+
+    def test_planner_diagnostic_never_logs_untrusted_exception_text(self):
+        spec = importlib.util.spec_from_file_location('diagnostic_receipt', Path(__file__).with_name('ci-impact-receipt.py'))
+        receipt = importlib.util.module_from_spec(spec); spec.loader.exec_module(receipt)
+        api, run, identity, *_ = fixture()
+        with mock.patch.object(module.execution, 'actual_producer', side_effect=ValueError('sensitive-payload-not-for-logs')):
+            with self.assertRaises(ValueError) as caught: module.resolve(api, run, identity)
+        with mock.patch('sys.stderr', new_callable=io.StringIO) as output:
+            detail = receipt.report_error('read-plan', caught.exception)
+        self.assertEqual(detail['resolutionReason'], 'validation-rejected')
+        self.assertNotIn('sensitive-payload', output.getvalue())
+        self.assertFalse(hasattr(caught.exception, 'shadow_plan'))
+
     def test_observed_run_replay_preserves_names_without_guessing_api_times(self):
         data=json.loads(Path(__file__).with_name('fixtures').joinpath('unit-shadow-mixed-attempt-observation.json').read_text())
         sha=data['testedSHA']
