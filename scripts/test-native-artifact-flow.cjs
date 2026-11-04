@@ -71,7 +71,10 @@ assert.ok(selectedTrace[1].includes('/rust-plugins/react|'));
 for(const changes of [{FARM_BUILD_PROFILE:'ci'},{FARM_RELEASE_NATIVE_OWNERS:'invalid-json'},{FARM_RELEASE_NATIVE_OWNERS:'["unknown-owner"]'},{PROBE_ENGINE_FAILURE:'true'}]){
   fs.writeFileSync(trace,'');
   const failed=cp.spawnSync(bash,['build-probe.sh'],{cwd:fixture,env:{...selectedEnv,...changes},encoding:'utf8',windowsHide:true,timeout:30000});
-  assert.notEqual(failed.status,0);
+  assert.equal(failed.error,undefined);
+  assert.equal(failed.signal,null);
+  assert.ok(Number.isInteger(failed.status) && failed.status > 0);
+  if(changes.PROBE_ENGINE_FAILURE) assert.equal(failed.status,23);
   assert.equal(fs.readFileSync(trace,'utf8'),'','Rejected guard/scope must not build');
   assert.doesNotMatch(failed.stderr,/cd:.*satisfiesInstalledRanges/);
 }
