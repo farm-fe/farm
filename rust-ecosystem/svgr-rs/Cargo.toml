@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_svgr_rs"
-version = "0.2.0"
+version = "0.2.1"
 description = "A tool to transform SVG into React components (Farm fork of svgr-rs)."
 authors = ["SyMind <dacongsama@live.com>", "Farm Authors"]
 edition.workspace = true

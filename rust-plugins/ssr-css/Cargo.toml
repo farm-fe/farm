@@ -9,5 +9,5 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
-farmfe_macro_plugin = { version = "=2.0.0", path = "../../crates/macro_plugin" }
+farmfe_macro_plugin = { version = "=2.1.0", path = "../../crates/macro_plugin" }
 farmfe_toolkit_plugin_types = { version = "=2.2.0", path = "../../crates/toolkit_plugin_types" }

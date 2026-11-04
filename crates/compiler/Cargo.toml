@@ -32,7 +32,7 @@ farmfe_plugin_define = { path = "../plugin_define", version = "=2.2.0" }
 farmfe_plugin_mangle_exports = { path = "../plugin_mangle_exports", version = "=2.2.0" }
 farmfe_plugin_library = { path = "../plugin_library", version = "=2.2.0" }
 farmfe_plugin_file_size = { path = "../plugin_file_size", version = "=2.2.0" }
-farmfe_testing = { path = "../macro_testing", version = "=2.0.0" }
+farmfe_testing = { path = "../macro_testing", version = "=2.1.0" }
 enhanced-magic-string = { workspace = true }
 sourcemap = { workspace = true }
 

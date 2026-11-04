@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0](https://github.com/farm-fe/farm/compare/farmfe_plugin_json-v2.0.1...farmfe_plugin_json-v2.2.0) - 2026-11-04
+
+### Added
+
+- *(ci)* enable guarded incremental CI and independent release execution ([#2330](https://github.com/farm-fe/farm/pull/2330))
+- unify Farm V2 release candidate, docs and fixes ([#2329](https://github.com/farm-fe/farm/pull/2329))
+
+### Fixed
+
+- *(core)* SWC plugin runtime deadlock during emotion example build ([#2313](https://github.com/farm-fe/farm/pull/2313))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_json-v2.0.0...farmfe_plugin_json-v2.0.1) - 2025-09-21
 
 ### Other
