@@ -48,3 +48,13 @@ test('release and recovery require functional evidence but no performance archiv
   assert.ok(read('scripts/release-evidence-recovery.py').includes(release.jobs['main-evidence'].name));
   assert.ok(read('scripts/performance-report.mjs').includes('for (let round = -1; round < 3; round++)'));
 });
+
+test('Windows path safety receives the exact setup-python executable independently of sampling', () => {
+  const job = YAML.parse(read('.github/workflows/ci.yaml')).jobs['platform-contract-tests'];
+  assert.ok(job.strategy.matrix.os.includes('windows-latest'));
+  const setup = job.steps.find(step => step.id === 'contract-python');
+  assert.equal(setup.uses, 'actions/setup-python@v5');
+  const step = job.steps.find(step => step.run?.includes('verify-published-v2-consumers.test.mjs'));
+  assert.equal(step.env.FARM_CONTRACT_PYTHON, '${{ steps.contract-python.outputs.python-path }}');
+  assert.match(read('scripts/verify-published-v2-consumers.test.mjs'), /const python = process.env.FARM_CONTRACT_PYTHON \?\? process.env.FARM_PERFORMANCE_PYTHON/);
+});

@@ -238,6 +238,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Validate native, consumer and dependency contracts
+        env:
+          FARM_CONTRACT_PYTHON: ${{ steps.contract-python.outputs.python-path }}
         run: node --test scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/unified-impact-graph.test.mjs
       - name: Preserve actual cell receipt (shadow only)
         if: always()

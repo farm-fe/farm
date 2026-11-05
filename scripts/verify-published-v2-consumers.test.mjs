@@ -112,7 +112,7 @@ test('real Windows short aliases use native paths and junction escapes are rejec
     fsSync.mkdirSync(packageRoot, { recursive: true });
     const binary = path.join(packageRoot, 'farm.node'); fsSync.writeFileSync(binary, 'synthetic path fixture, not a native library');
     const nativeRoot = fsSync.realpathSync.native(root);
-    const python = process.env.FARM_PERFORMANCE_PYTHON;
+    const python = process.env.FARM_CONTRACT_PYTHON ?? process.env.FARM_PERFORMANCE_PYTHON;
     assert.ok(python, 'Windows path contracts require the configured Python executable');
     const script = 'import ctypes,sys\napi=ctypes.windll.kernel32.GetShortPathNameW\napi.argtypes=[ctypes.c_wchar_p,ctypes.c_wchar_p,ctypes.c_uint]\napi.restype=ctypes.c_uint\nresult=ctypes.create_unicode_buffer(32768)\nsize=api(sys.argv[1],result,len(result))\nif size==0: raise ctypes.WinError()\nif size>=len(result): raise RuntimeError("Short path exceeded bound")\nprint(result.value)';
     const shortRoot = execFileSync(python, ['-c', script, root], { encoding: 'utf8', windowsHide: true, timeout: 15000 }).trim();
