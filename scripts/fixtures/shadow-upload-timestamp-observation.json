@@ -1,0 +1,50 @@
+{
+  "observedRun": 41964188052,
+  "observedHeadSHA": "eb5372e09e44f56ec73a6924a465d0742c90ce26",
+  "testedSHA": "5412243698af8d1c42257c2c4a3243c31e818a59",
+  "job": {
+    "id": 127060396757,
+    "run_id": 41964188052,
+    "run_attempt": 1,
+    "name": "Primary macOS / Typescript Test (macos-latest)",
+    "status": "completed",
+    "conclusion": "success",
+    "steps": [
+      {
+        "name": "Preserve actual cell receipt (shadow only)",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 15,
+        "started_at": "2026-11-05T05:06:02Z",
+        "completed_at": "2026-11-05T05:06:03Z"
+      }
+    ]
+  },
+  "artifact": {
+    "id": 13390585293,
+    "node_id": "MDg6QXJ0aWZhY3QxMzM5MDU4NTI5Mw==",
+    "name": "impact-cell-5412243698af8d1c42257c2c4a3243c31e818a59-ts-test-darwin-arm64-1",
+    "size_in_bytes": 661,
+    "url": "https://api.github.com/repos/farm-fe/farm/actions/artifacts/13390585293",
+    "archive_download_url": "https://api.github.com/repos/farm-fe/farm/actions/artifacts/13390585293/zip",
+    "expired": false,
+    "digest": "sha256:d9a4722ddb3e3d1aaa8a72a001346e83a51db0352ac6f61ff9417ee2888354c1",
+    "created_at": "2026-11-05T05:06:04Z",
+    "updated_at": "2026-11-05T05:06:04Z",
+    "expires_at": "2026-11-19T05:06:03Z",
+    "workflow_run": {
+      "id": 41964188052,
+      "repository_id": 507542208,
+      "head_repository_id": 507542208,
+      "head_branch": "codex/native-probe-isolation-20261104",
+      "head_sha": "eb5372e09e44f56ec73a6924a465d0742c90ce26"
+    }
+  },
+  "uploadLog": {
+    "finalizedAt": "2026-11-05T05:06:03.7978950Z",
+    "artifact_id": "13390585293",
+    "artifact_digest": "d9a4722ddb3e3d1aaa8a72a001346e83a51db0352ac6f61ff9417ee2888354c1",
+    "run_attempt": "1"
+  },
+  "limitation": "Observed action log corroborates ID/digest. Fixed needs outputs were not exported by this old workflow; fixture supplies those values to test the new transport contract, not as historical authentication."
+}

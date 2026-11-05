@@ -24,6 +24,18 @@ on:
         value: ${{ jobs.examples-test.outputs.artifact_digest }}
       browser_run_attempt:
         value: ${{ jobs.examples-test.outputs.run_attempt }}
+      ts_shadow_artifact_id:
+        value: ${{ jobs.ts-test.outputs.shadow_artifact_id }}
+      ts_shadow_artifact_digest:
+        value: ${{ jobs.ts-test.outputs.shadow_artifact_digest }}
+      ts_shadow_run_attempt:
+        value: ${{ jobs.ts-test.outputs.shadow_run_attempt }}
+      browser_shadow_artifact_id:
+        value: ${{ jobs.examples-test.outputs.shadow_artifact_id }}
+      browser_shadow_artifact_digest:
+        value: ${{ jobs.examples-test.outputs.shadow_artifact_digest }}
+      browser_shadow_run_attempt:
+        value: ${{ jobs.examples-test.outputs.shadow_run_attempt }}
 permissions:
   contents: read
   actions: read
@@ -63,6 +75,9 @@ jobs:
       artifact_id: ${{ steps.suite-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.suite-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.suite-upload-origin.outputs.attempt }}
+      shadow_artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      shadow_artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      shadow_run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Examples Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}
     if: always() && needs.native-disposition.result == 'success'
@@ -74,7 +89,7 @@ jobs:
           - os: ${{ inputs.os }}
             abi: ${{ inputs.abi }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -93,7 +108,7 @@ jobs:
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -330,19 +345,23 @@ jobs:
             ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
             !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
       - name: Preserve actual cell receipt (shadow only)
+        id: shadow-upload
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "examples:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi }}
 
   ts-test:
     outputs:
       artifact_id: ${{ steps.suite-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.suite-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.suite-upload-origin.outputs.attempt }}
+      shadow_artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      shadow_artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      shadow_run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     # Vitest runs in node/forks; browser E2E jobs keep their downloads.
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -357,7 +376,7 @@ jobs:
           - os: ${{ inputs.os }}
             abi: ${{ inputs.abi }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -376,7 +395,7 @@ jobs:
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
       - uses: actions/download-artifact@v4.1.3
@@ -428,10 +447,11 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Preserve actual cell receipt (shadow only)
+        id: shadow-upload
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "ts-tests:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi }}

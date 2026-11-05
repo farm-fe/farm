@@ -89,7 +89,7 @@ jobs:
       contents: read
       actions: read
     if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
-    needs: [version-classification, impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, performance-report, performance-summary]
+    needs: [version-classification, primary-linux, primary-macos, primary-windows, impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, performance-report, performance-summary]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -104,6 +104,9 @@ jobs:
         env:
           CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
           CI_IMPACT_SCOPE: e2e
+          CI_SHADOW_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
+          CI_SHADOW_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
+          CI_SHADOW_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
           CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
         run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
       - uses: actions/upload-artifact@v4

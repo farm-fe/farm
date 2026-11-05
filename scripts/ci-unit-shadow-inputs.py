@@ -24,7 +24,7 @@ def read_object(transport, run, name, member):
     return value, artifact
 
 
-def resolve(transport, run, identity, *, scope="unit", cells=None):
+def resolve(transport, run, identity, *, scope="unit", cells=None, upload_outputs=None):
     check(scope in ["unit", "e2e"], "Unexpected shadow scope")
     workflow = "rust-test.yaml" if scope == "unit" else "ci.yaml"
     planner = "Incremental Unit CI plan (shadow only)" if scope == "unit" else "Incremental CI plan (shadow only)"
@@ -76,7 +76,10 @@ def resolve(transport, run, identity, *, scope="unit", cells=None):
             name = 'impact-cell-' + identity['testedSHA'] + '-' + job_key + '-' + suffix + '-' + str(origin['run_attempt'])
             row, meta = read_object(transport, origin, name, 'receipt.json')
             context.update(artifactId=meta['id'], resolutionStep='bind-upload')
-            execution.upload_binding(job, 'Preserve actual cell receipt (shadow only)', meta)
+            output = None if upload_outputs is None else upload_outputs.get(cell)
+            if output is not None:
+                check(output['run_attempt'] == str(origin['run_attempt']), 'Shadow upload output differs from original producer attempt')
+            execution.upload_binding(job, 'Preserve actual cell receipt (shadow only)', meta, output)
             context['resolutionStep'] = 'validate-digest'
             check(row.get('observationHash') == impact.digest({key:value for key,value in row.items() if key != 'observationHash'}), 'Unit observation digest differs')
             context['resolutionStep'] = 'validate-source'
@@ -112,7 +115,7 @@ def resolve(transport, run, identity, *, scope="unit", cells=None):
                                 'consumerAttempt':run['run_attempt'], 'cells':bindings}
 
 
-def current(environment, *, scope="unit", cells=None):
+def current(environment, *, scope="unit", cells=None, upload_outputs=None):
     check(environment.get('GITHUB_ACTIONS') == 'true' and environment.get('GITHUB_JOB') == 'impact-summary'
           and environment.get('CI_IMPACT_SCOPE') == scope, 'Unexpected Unit shadow consumer')
     event = json.loads(Path(environment['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
@@ -128,4 +131,4 @@ def current(environment, *, scope="unit", cells=None):
     run = transport.get('/actions/runs/' + identity['runId'] + '/attempts/' + environment['GITHUB_RUN_ATTEMPT'])
     check(str(run['run_attempt']) == environment['GITHUB_RUN_ATTEMPT']
           and str(run['repository']['id']) == environment['GITHUB_REPOSITORY_ID'], 'Unit summary current attempt differs')
-    return resolve(transport, run, identity, scope=scope, cells=cells)
+    return resolve(transport, run, identity, scope=scope, cells=cells, upload_outputs=upload_outputs)
