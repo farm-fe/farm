@@ -39,7 +39,10 @@ def primary_upload_outputs(environment):
     patterns = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
     for abi, platform in [('linux-x64-gnu','LINUX'), ('darwin-arm64','MACOS'), ('win32-x64-msvc','WINDOWS')]:
         row = json.loads(environment['CI_SHADOW_UPLOADS_' + platform])
-        shared.check(isinstance(row, dict), 'Missing shadow upload outputs')
+        expected = {label + '_' + prefix + field for label in ['ts','browser'] for prefix in ['', 'shadow_'] for field in patterns}
+        shared.check(isinstance(row, dict) and set(row) == expected, 'Missing or unexpected primary shadow upload outputs')
+        shared.check(all(isinstance(row[label + '_' + prefix + field], str) and re.fullmatch(pattern, row[label + '_' + prefix + field])
+                         for label in ['ts','browser'] for prefix in ['', 'shadow_'] for field, pattern in patterns.items()), 'Malformed primary upload outputs')
         for label, kind in [('ts','ts-tests'), ('browser','examples')]:
             output = {field:row.get(label + '_shadow_' + field) for field in patterns}
             shared.check(all(isinstance(output[field], str) and re.fullmatch(pattern, output[field]) for field, pattern in patterns.items()), 'Malformed or missing shadow upload outputs')

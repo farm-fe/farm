@@ -116,6 +116,7 @@ class Contracts(unittest.TestCase):
             for label,key in [('ts','ts-test'),('browser','examples-test')]:
                 artifact=next(a for a in items.values() if ('-'+key+'-'+abi+'-') in a['name'])
                 row.update({label+'_shadow_artifact_id':str(artifact['id']),label+'_shadow_artifact_digest':artifact['digest'][7:],label+'_shadow_run_attempt':artifact['name'].rsplit('-',1)[1]})
+                row.update({label+'_artifact_id':str(artifact['id']+1000),label+'_artifact_digest':'a'*64,label+'_run_attempt':artifact['name'].rsplit('-',1)[1]})
             outputs['CI_SHADOW_UPLOADS_'+platform]=json.dumps(row)
         bindings=module.primary_upload_outputs(outputs)
         target=next(a for a in items.values() if '-ts-test-darwin-arm64-' in a['name'])

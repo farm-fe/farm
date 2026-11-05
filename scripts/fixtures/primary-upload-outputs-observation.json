@@ -1,0 +1,50 @@
+{
+  "runId": 41982114967,
+  "jobId": 127151188329,
+  "headSHA": "b5f0d9303f775c0e8f06abdf74f717e278b8534b",
+  "source": "Actual execution gate environment logged at 2026-11-05T09:06:27Z; public IDs/digests only.",
+  "outputs": {
+    "FARM_SUITE_UPLOADS_LINUX": {
+      "browser_artifact_digest": "dde95203c5a99c48b0e37c7132295b50eab1efb2a6ccb2b2376c0b390fd17762",
+      "browser_artifact_id": "13398940799",
+      "browser_run_attempt": "1",
+      "browser_shadow_artifact_digest": "43d14ee959d92e20a0c3d4a510f2671595c60627250a058e96854c4f10f7167b",
+      "browser_shadow_artifact_id": "13399190328",
+      "browser_shadow_run_attempt": "1",
+      "ts_artifact_digest": "485fa2eb76d59ffca384002c44a9f7a7364e83341223f340a84a46c4495e80c6",
+      "ts_artifact_id": "13397821592",
+      "ts_run_attempt": "1",
+      "ts_shadow_artifact_digest": "fc8cee7ee56e2dc8aeb260307480d03ddae10aa3bf575fd4534d3fce9063dda7",
+      "ts_shadow_artifact_id": "13397444674",
+      "ts_shadow_run_attempt": "1"
+    },
+    "FARM_SUITE_UPLOADS_MACOS": {
+      "browser_artifact_digest": "174f4005e5fd4b1a0c3b8569d7e3f3da844ac2f6389bcf59c05e4f3b3a6c868a",
+      "browser_artifact_id": "13399160921",
+      "browser_run_attempt": "1",
+      "browser_shadow_artifact_digest": "f89090a1e0539163c5fa6fe09457d2b0a1407b4dc76b01460dff7971f369efe6",
+      "browser_shadow_artifact_id": "13398763796",
+      "browser_shadow_run_attempt": "1",
+      "ts_artifact_digest": "e950188303aa310c43fe2f42f75f8aefeb5628bc6cea8c018b03cd13418c460f",
+      "ts_artifact_id": "13398437236",
+      "ts_run_attempt": "1",
+      "ts_shadow_artifact_digest": "08d0d5c0d7bf519df1570053e2b38c3c7e41d5b7858e7f47f6e7d091c17b83c4",
+      "ts_shadow_artifact_id": "13398601780",
+      "ts_shadow_run_attempt": "1"
+    },
+    "FARM_SUITE_UPLOADS_WINDOWS": {
+      "browser_artifact_digest": "b06c332f3b5a53fbc638686db706c096892239ceef060c1e3682e1aa5143a9d8",
+      "browser_artifact_id": "13401335608",
+      "browser_run_attempt": "1",
+      "browser_shadow_artifact_digest": "edf16a6b0faf73c59d815f320a640b46213454f8b59f153067af8bb32ba0404c",
+      "browser_shadow_artifact_id": "13400753217",
+      "browser_shadow_run_attempt": "1",
+      "ts_artifact_digest": "0ae3b12dab48bf608c78b29c991edba9ee34954cff2b065826c2167538117163",
+      "ts_artifact_id": "13400212086",
+      "ts_run_attempt": "1",
+      "ts_shadow_artifact_digest": "11b8e2826d5be6043488047a3d45ffc23938f260aef348aa1ee32e49f9cf9cc8",
+      "ts_shadow_artifact_id": "13400441941",
+      "ts_shadow_run_attempt": "1"
+    }
+  }
+}

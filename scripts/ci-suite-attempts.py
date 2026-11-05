@@ -65,7 +65,14 @@ def current_upload_outputs(environment):
     fields = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
     for abi, platform in [('linux-x64-gnu','LINUX'), ('darwin-arm64','MACOS'), ('win32-x64-msvc','WINDOWS')]:
         row = json.loads(environment['FARM_SUITE_UPLOADS_' + platform])
-        check(isinstance(row, dict) and set(row) == {kind + '_' + field for kind in ['ts','browser'] for field in fields}, 'Missing or unexpected suite upload outputs')
+        suite_fields = {kind + '_' + field for kind in ['ts','browser'] for field in fields}
+        shadow_fields = {kind + '_shadow_' + field for kind in ['ts','browser'] for field in fields}
+        # Accept only the two reviewed producer interfaces. Older carried jobs
+        # export six suite fields; current jobs additionally export all six shadow fields.
+        check(isinstance(row, dict) and set(row) in [suite_fields, suite_fields | shadow_fields], 'Missing or unexpected suite upload outputs')
+        if set(row) == suite_fields | shadow_fields:
+            check(all(isinstance(row[label + '_shadow_' + field], str) and re.fullmatch(pattern, row[label + '_shadow_' + field])
+                      for label in ['ts','browser'] for field, pattern in fields.items()), 'Malformed shadow upload outputs')
         result[abi] = {}
         for label, kind in [('ts','ts'), ('browser','examples-browser')]:
             output = {field: row[label + '_' + field] for field in fields}
