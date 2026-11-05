@@ -12,7 +12,7 @@ test('native matrices wait for cheap spelling, release/pack and three-platform p
   for (const command of ['test-native-container-node.cjs', 'test-native-artifact-flow.cjs', 'pack-v2-npm-candidates.test.mjs', 'verify-published-v2-consumers.test.mjs']) assert.ok(preflight.includes(command), command);
   for (const job of ['primary-linux', 'primary-macos', 'primary-windows', 'call-rust-build-release']) {
     const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
-    assert.match(block, job === 'call-rust-build-release' ? /needs: \[version-classification, release-contract-tests, performance-contract-tests\]/ : /needs: \[version-classification, release-contract-tests, performance-contract-tests, type-check\]/);
+    assert.match(block, job === 'call-rust-build-release' ? /needs: \[version-classification, release-contract-tests, platform-contract-tests\]/ : /needs: \[version-classification, release-contract-tests, platform-contract-tests, type-check\]/);
   }
 });
 
@@ -101,7 +101,7 @@ test('cache writers are limited while Docs stays inside CI and native assembly r
   assert.match(docs, /profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false/);
   assert.match(docs,/cell: "docs:ci:/);
   const ci = read('ci.yaml');
-  assert.match(ci.split('  docs-acceptance:')[1].split('  performance-contract-tests:')[0], /needs: \[version-classification, primary-linux, primary-windows\]/);
+  assert.match(ci.split('  docs-acceptance:')[1].split('  platform-contract-tests:')[0], /needs: \[version-classification, primary-linux, primary-windows\]/);
   const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
   assert.match(assembly, /needs: \[version-classification, call-rust-build-user, call-rust-build-release, type-check\]/);
 });
@@ -152,7 +152,7 @@ test('validated metadata precedes cache registration and is checked again before
   const jobs=YAML.parse(read('ci.yaml')).jobs;
   for(const [name,job] of Object.entries(jobs))for(const step of job.steps??[]){
     const suffix=step.with?.['artifact-suffix'];if(suffix===undefined)continue;
-    if(name==='performance-contract-tests'){assert.equal(suffix,'${{ matrix.os }}');assert.ok(job.strategy.matrix.os.length);}
+    if(name==='platform-contract-tests'){assert.equal(suffix,'${{ matrix.os }}');assert.ok(job.strategy.matrix.os.length);}
     else if(name==='performance-report'){assert.equal(suffix,'${{ matrix.settings.abi }}');assert.ok(job.strategy.matrix.settings.every(row=>row.abi));}
     else {assert.equal(suffix,'single');assert.equal(job.strategy?.matrix,undefined);}
   }

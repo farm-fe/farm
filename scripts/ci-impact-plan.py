@@ -14,7 +14,7 @@ import tomllib
 
 SCHEMA = 1
 POLICY = "farm-impact-shadow-v1"
-ALL = ["native", "rust-tests", "types", "ts-tests", "examples", "docs", "performance", "seal", "consumers", "contracts"]
+ALL = ["native", "rust-tests", "types", "ts-tests", "examples", "docs", "seal", "consumers", "contracts"]
 GLOBAL = {"Cargo.toml", "Cargo.lock", "pnpm-lock.yaml", "pnpm-workspace.yaml", "package.json", "rust-toolchain.toml", "rust-toolchain", "tsconfig.base.json"}
 BUILD_POLICY = ["scripts/ci-build-rust-artifacts.sh", "scripts/v2-docker-cargo-cache.mjs", "scripts/check-native-build-node.mjs", "scripts/native-artifact-inventory.mjs"]
 TARGETS = ["linux-x64-gnu", "linux-x64-musl", "linux-arm64-gnu", "linux-arm64-musl", "darwin-x64", "darwin-arm64", "win32-x64-msvc", "win32-ia32-msvc", "win32-arm64-msvc"]
@@ -38,8 +38,8 @@ def execution_cells(scope="e2e", release_candidate=False):
     if scope != "e2e":
         raise ValueError("Unknown execution scope")
     return (["native:ci:" + abi for abi in TARGETS]
-            + [suite + ":" + abi for suite in ["examples", "ts-tests", "performance", "performance-contracts"] for abi in PRIMARY]
-            + ["docs:ci:linux-x64-gnu", "docs:ci:win32-x64-msvc", "types", "contracts", "native-assembly", "performance-summary"])
+            + [suite + ":" + abi for suite in ["examples", "ts-tests", "platform-contracts"] for abi in PRIMARY]
+            + ["docs:ci:linux-x64-gnu", "docs:ci:win32-x64-msvc", "types", "contracts", "native-assembly", "execution-baseline"])
 
 
 def proposed_dag(suites, examples):
@@ -52,7 +52,6 @@ def proposed_dag(suites, examples):
         tasks["ts-tests:" + abi] = [producer]
         tasks["examples:" + abi] = [producer]
         tasks["rust-tests:ci-test:" + abi] = ["contracts"]
-        tasks["performance:" + abi] = ["examples:" + abi, "ts-tests:" + abi, "types", "docs-acceptance"]
     tasks["native-assembly"] = ["native:ci:" + abi for abi in TARGETS]
     tasks["docs:ci:linux-x64-gnu"] = ["contracts"]
     tasks["docs:ci:win32-x64-msvc"] = ["contracts"]
@@ -253,7 +252,7 @@ def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_tes
             elif file.startswith(("scripts/verify-v2-", "scripts/v2-consumer-", "scripts/verify-published-")):
                 suites.update(["consumers", "seal"])
             elif file.startswith(("scripts/performance", "scripts/aggregate-performance", "scripts/prepare-performance", "scripts/business-")):
-                suites.add("performance")
+                suites.add("contracts")
             elif file.startswith(("scripts/seal-", "scripts/sdk-", "scripts/prepare-sdk-", "scripts/pack-v2-", "scripts/v2-rust-", "scripts/release", "docs/releases/", "docs/release-evidence/")):
                 suites.update(["seal", "consumers"])
             elif file.startswith(("scripts/farm-docs-", "docs/farm-docs/")):
@@ -275,7 +274,7 @@ def plan_changes(base_files, head_files, changes, extra_snapshots=(), proven_tes
         if "docs" in directory or directory == "website":
             suites.add("docs")
         if directory in ["packages/core", "packages/cli", "packages/runtime", "packages/runtime-plugin-hmr", "packages/runtime-plugin-import-meta"]:
-            suites.update(["examples", "docs", "performance"])
+            suites.update(["examples", "docs"])
     if any(nodes[name]["kind"] == "cargo" for name in product_closure):
         suites.add("native")
     if products:

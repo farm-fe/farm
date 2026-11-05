@@ -64,6 +64,8 @@ class Contracts(unittest.TestCase):
         data=json.loads(Path(__file__).with_name('fixtures').joinpath('e2e-shadow-mixed-attempt-observation.json').read_text())
         self.assertEqual(len(data['observedReceipts']),23)
         self.assertEqual(data['requestedPlan'],'impact-plan-'+data['testedSHA']+'-2')
+        data=copy.deepcopy(data)
+        data['observedReceipts']=[{**row,'name':row['name'].replace('performance-contract-tests','platform-contract-tests').replace('performance-summary','execution-baseline')} for row in data['observedReceipts'] if '-performance-report-' not in row['name']]
         api,run,identity,jobs,items,bodies,calls=fixture(data)
         plan,rows,bindings=module.resolve(api,run,identity)
         actual={name for name in items if name.startswith('impact-cell-') and name.endswith('-2')}
@@ -85,7 +87,7 @@ class Contracts(unittest.TestCase):
             loader=SimpleNamespace(exec_module=lambda _:None)
             with tempfile.TemporaryDirectory() as tmp:
                 target=Path(tmp)/'report.json'
-                keys=['impact-plan','release-contract-tests','performance-contract-tests','call-rust-build-user','call-rust-build-release','check-native-candidate-assembly','examples-test','docs-acceptance','type-check','ts-test','performance-report','performance-summary']
+                keys=['impact-plan','release-contract-tests','platform-contract-tests','call-rust-build-user','call-rust-build-release','check-native-candidate-assembly','examples-test','docs-acceptance','type-check','ts-test','execution-baseline']
                 env={'CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS':'true','CI_IMPACT_SCOPE':'e2e','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in keys})}
                 with mock.patch.dict(os.environ,env),mock.patch.object(sys,'argv',['summary','--plan','unused','--output',str(target)]),mock.patch.object(summary.importlib.util,'spec_from_file_location',return_value=SimpleNamespace(loader=loader)),mock.patch.object(summary.importlib.util,'module_from_spec',return_value=resolver):
                     if fails:
@@ -169,7 +171,7 @@ class Contracts(unittest.TestCase):
     def test_complete_mixed_attempt_inventory(self):
         api,run,identity,jobs,items,bodies,calls=fixture()
         plan,rows,bindings=module.resolve(api,run,identity)
-        self.assertEqual(len(rows),27)
+        self.assertEqual(len(rows),24)
         self.assertEqual(plan['runAttempt'],'1')
         self.assertEqual(bindings['plannerAttempt'],1)
         self.assertEqual({row['runAttempt'] for row in rows},{'1','2'})
@@ -185,7 +187,7 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):module.resolve(api,run,identity)
 
     def test_missing_each_artifact_rejects(self):
-        for index in range(28):
+        for index in range(len(module.CELLS) + 1):
             api,run,identity,jobs,items,*_=fixture()
             del items[list(items)[index]]
             with self.assertRaises(ValueError) as error:module.resolve(api,run,identity)

@@ -74,8 +74,8 @@ class Contracts(unittest.TestCase):
         with mock.patch.object(module.entry.execution, 'jobs_for', side_effect=lambda client,run:jobs[run['id']]):
             return module.verify_functional(transport, source, bindings)
 
-    def test_exact_functional_and_unit_evidence_keeps_nineteen_roles_and_no_build_bytes(self):
-        self.assertEqual(len(module.FUNCTIONAL)+4,19)
+    def test_exact_functional_and_unit_evidence_keeps_functional_roles_and_no_build_bytes(self):
+        self.assertEqual(len(module.FUNCTIONAL)+4,16)
         result=self.verify(self.fixture());self.assertTrue(result['functionalAcceptanceVerified']);self.assertFalse(result['buildBytesReused'])
 
     def test_real_type_check_is_required_instead_of_retired_combined_context(self):
@@ -89,8 +89,8 @@ class Contracts(unittest.TestCase):
             else:rows.remove(actual)
             with self.assertRaises(ValueError):self.verify(data)
 
-    def test_skipped_docs_or_missing_performance_is_not_success(self):
-        data=self.fixture();data[3][10]=[row for row in data[3][10] if row['name']!='Commerce Performance (macos-latest)']
+    def test_skipped_docs_or_missing_typescript_is_not_success(self):
+        data=self.fixture();data[3][10]=[row for row in data[3][10] if row['name']!='Typescript Test (macos-latest)']
         with self.assertRaises(ValueError):self.verify(data)
         data=self.fixture();next(row for row in data[3][10] if row['name']=='Docs / windows-latest')['conclusion']='skipped'
         with self.assertRaises(ValueError):self.verify(data)
@@ -114,16 +114,12 @@ class Contracts(unittest.TestCase):
         data=self.fixture();source,bindings,transport,jobs,runs,artifacts=data
         old_get=transport.get.side_effect
         for scope in ['ci','unit']:bindings[scope]['attempt']=3;runs[bindings[scope]['runId']]['run_attempt']=3
-        summary=json.loads(zipfile.ZipFile(io.BytesIO(transport.archive(110))).read('summary.json'));summary['runAttempt']=3
-        # Schema2 cannot authorize a mixed-attempt performance summary; this test
-        # isolates planner provenance while the real schema3 chain is checked separately.
         def get(route):
             value=old_get(route)
             if '/attempts/' in route:return {**value,'run_attempt':int(route.split('/attempts/')[1].split('/')[0])}
             return value
         transport.get.side_effect=get
-        with mock.patch.object(module,'verify_performance',return_value=summary):
-            self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
+        self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
         self.assertTrue(any('impact-plan-' in call.args[0] and call.args[0].endswith('-1') for call in transport.get.call_args_list))
         self.assertFalse(any('impact-plan-' in call.args[0] and call.args[0].endswith('-3') for call in transport.get.call_args_list))
 
@@ -133,13 +129,17 @@ class Contracts(unittest.TestCase):
         data[1].pop('title')
         self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
 
-    def test_performance_bytes_are_checked_not_just_job_names(self):
-        data=self.fixture();data[5][110]['digest']='sha256:'+'f'*64
-        with self.assertRaisesRegex(ValueError,'digest differs'):self.verify(data)
+    def test_performance_archive_is_not_a_publication_prerequisite(self):
+        data=self.fixture();data[5].pop(110)
+        self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
 
     def test_main_evidence_for_another_commit_is_not_authorized_by_equal_tree(self):
         data=self.fixture();data[0]['sha']='f'*40
         with self.assertRaisesRegex(ValueError,'default-branch checkout'):self.verify(data)
+
+
+spec = importlib.util.spec_from_file_location('local_performance_proof', Path(__file__).with_name('performance-source-verifier.py'))
+performance = importlib.util.module_from_spec(spec); spec.loader.exec_module(performance)
 
 
 class MeasurementContracts(unittest.TestCase):
@@ -147,7 +147,7 @@ class MeasurementContracts(unittest.TestCase):
         sha='a'*40;tree='b'*40;head='c'*40;base='d'*40
         abi,runner,platform={'linux':('linux-x64-gnu','ubuntu-24.04','Primary Linux'),'darwin':('darwin-arm64','macos-latest','Primary macOS'),'win32':('win32-x64-msvc','windows-latest','Primary Windows')}[os]
         policy=Path(__file__).with_name('performance-cohorts.mjs').read_bytes()
-        plugins=module.ast.literal_eval(module.re.search(r'export const nativePlugins = (\[[^;]+\]);',policy.decode('utf-8'))[1])
+        plugins=performance.ast.literal_eval(performance.re.search(r'export const nativePlugins = (\[[^;]+\]);',policy.decode('utf-8'))[1])
         native={owner:{'sha256':'e'*64,'bytes':10} for owner in ['@farmfe/core',*['@farmfe/plugin-'+name for name in plugins]]}
         source={'sha':sha,'tree':tree,'files':{'scripts/performance-cohorts.mjs':policy}}
         run={'id':10,'run_attempt':2,'head_sha':head,'path':'.github/workflows/ci.yaml','event':'push','repository':{'id':5,'full_name':'farm-fe/farm'},'head_repository':{'id':5}}
@@ -175,7 +175,7 @@ class MeasurementContracts(unittest.TestCase):
         transport=mock.Mock();transport.get.side_effect=get;transport.archive.side_effect=lambda number:bodies[number]
         return transport,run,source,summary,row,proof,jobs,artifacts,bodies,raw
 
-    def verify(self,data):return module.verify_measurement_source(*data[:6])
+    def verify(self,data):return performance.verify_measurement_source(*data[:6])
 
     def test_actual_mixed_attempt_platform_sources_are_independently_verified(self):
         for os,arch,attempt in [('linux','x64',2),('darwin','arm64',1),('win32','x64',1)]:self.verify(self.fixture(os,arch,attempt))
@@ -206,7 +206,7 @@ class MeasurementContracts(unittest.TestCase):
             return {'jobs':jobs[attempt]} if '/jobs?' in route else {**run,'run_attempt':attempt,'run_started_at':'2026-10-31T0'+str(attempt)+':00:00Z'}
         transport=mock.Mock();transport.get.side_effect=get;transport.archive.side_effect=lambda number:bodies[number]
         aggregation=[{'id':9000,'run_id':10,'name':'Aggregate informational performance report','status':'completed','conclusion':'success','started_at':'2026-10-31T02:00:00Z','completed_at':'2026-10-31T02:20:00Z'}]
-        self.assertEqual(module.verify_performance(transport,run,aggregation,source,{'baseSHA':'d'*40})['measurementSources'][1]['runAttempt'],1)
+        self.assertEqual(performance.verify_performance(transport,run,aggregation,source,{'baseSHA':'d'*40})['measurementSources'][1]['runAttempt'],1)
 
     def test_attempt_start_time_is_not_used_as_a_carried_execution_identity(self):
         data=self.fixture('darwin','arm64',1);original=data[0].get.side_effect

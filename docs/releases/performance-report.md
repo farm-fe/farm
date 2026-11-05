@@ -1,9 +1,18 @@
-<!-- cspell:words pageout microbenchmark errno -->
-# Commerce CI performance report
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
 
-The non-blocking PR job for three OS platforms follows Examples and Docs acceptance, uses
-its own exact-SHA native artifacts, and never rebuilds Rust. macOS remains the
-standard ARM64 cohort. No local measurement is implied by the implementation.
+<!-- cspell:words pageout microbenchmark errno -->
+# Local Commerce performance report
+
+Run locally with the repository toolchain and built native dependencies:
+
+```sh
+node scripts/performance-report.mjs
+```
+
+This performs actual compilation, graph and browser checks and writes
+`performance-results/`. It is not invoked by Actions or required for publication.
+Optional historical CI evidence readers are retained for local analysis; no new
+performance artifacts or PR comments are produced by workflows.
 
 ## Complete workload and timing
 
@@ -27,7 +36,7 @@ the measured child. Gzip sidecars use level 6 and threshold 1,024 without deleti
 originals; normalized size accounting uses Node gzip level 9 on raw JS/CSS only.
 
 Farm warm samples reuse the successful cold cache directory, without asserting
-an independently proven cache hit. CI measures Farm only: no Vite dependency
+an independently proven cache hit. The local protocol measures Farm only: no Vite dependency
 preparation, warmup, measured build, graph compilation or browser run is scheduled.
 Every enabled Farm cohort must have exactly three valid cold and three valid warm
 samples; missing samples cannot pass through an empty-array success check.

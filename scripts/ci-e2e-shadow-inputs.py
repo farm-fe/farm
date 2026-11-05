@@ -17,8 +17,7 @@ for abi, runner in shared.execution.PLATFORMS.items():
     CELLS.extend([
         ('examples:' + abi, PREFIX[abi] + ' / Examples Test (' + runner + ')', 'examples-test', abi),
         ('ts-tests:' + abi, PREFIX[abi] + ' / Typescript Test (' + runner + ')', 'ts-test', abi),
-        ('performance:' + abi, 'Commerce Performance (' + runner + ')', 'performance-report', abi),
-        ('performance-contracts:' + abi, 'Performance report contract (' + runner + ')', 'performance-contract-tests', runner),
+        ('platform-contracts:' + abi, 'Platform safety contracts (' + runner + ')', 'platform-contract-tests', runner),
     ])
     if abi != 'darwin-arm64':
         CELLS.append(('docs:ci:' + abi, PREFIX[abi] + ' / Docs CI quality checks / Docs / ' + runner, 'docs', abi))
@@ -26,7 +25,7 @@ CELLS.extend([
     ('types', 'Type Check', 'type-check', 'single'),
     ('contracts', 'Release source contracts', 'release-contract-tests', 'single'),
     ('native-assembly', 'Check declared native inputs (not ABI execution)', 'check-native-candidate-assembly', 'single'),
-    ('performance-summary', 'Aggregate informational performance report', 'performance-summary', 'single'),
+    ('execution-baseline', 'Record verified CI execution baseline', 'execution-baseline', 'single'),
 ])
 
 

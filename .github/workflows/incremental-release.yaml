@@ -117,7 +117,7 @@ jobs:
         run: pnpm exec cspell "**" --gitignore
 
   main-evidence:
-    name: Verify actual fixed-main functional and performance evidence
+    name: Verify actual fixed-main functional evidence
     needs: [source, plan, quality]
     if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.build_required == 'true'
     runs-on: ubuntu-24.04
@@ -134,7 +134,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Bind completed main CI and Unit and verify three actual performance reports
+      - name: Bind completed main CI and Unit functional acceptance
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_FUNCTIONAL_EVIDENCE: ${{ inputs.functional_evidence }}

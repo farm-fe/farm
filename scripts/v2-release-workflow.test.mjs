@@ -98,7 +98,7 @@ test('generated intent binds the independent release producer and preserves revi
   assert.equal(intent.seal.workflowPath, independentReleaseWorkflow);
   assert.deepEqual(intent.publication, independentPublicationPolicy());
   assert.deepEqual(intent.requiredWorkflows, ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow]);
-  assert.equal(intent.performanceRequired, true);
+  assert.equal(Object.hasOwn(intent, 'performanceRequired'), false);
   assert.ok(intent.requiredReleaseJobs.includes('Independent release candidate consumer (windows-latest)'));
   assert.ok(intent.requiredCiJobs.every(name=>!intent.requiredReleaseJobs.includes(name)));
   assert.equal(JSON.parse(serializeReleaseIntent(intent)).publication.publishDefault, false);

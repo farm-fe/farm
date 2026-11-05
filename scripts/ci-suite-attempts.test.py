@@ -119,7 +119,7 @@ class Contracts(unittest.TestCase):
                 cells.append({**data,'artifactName':artifact['name'],'producerBinding':binding})
         coverage={'kind':'complete-ci-suite-counts-not-build-bytes','sourceSHA':source['sha'],'sourceTree':source['tree'],
                   'run':{'repositoryId':1,'runId':2,'runAttempt':3,'event':'push'},'cells':cells}
-        ledger=fixtures.producer.create_ledger(source,coverage,{'GITHUB_ACTIONS':'true','GITHUB_JOB':'performance-summary','GITHUB_REPOSITORY_ID':'1','GITHUB_RUN_ID':'2','GITHUB_RUN_ATTEMPT':'3','GITHUB_EVENT_NAME':'push'})
+        ledger=fixtures.producer.create_ledger(source,coverage,{'GITHUB_ACTIONS':'true','GITHUB_JOB':'execution-baseline','GITHUB_REPOSITORY_ID':'1','GITHUB_RUN_ID':'2','GITHUB_RUN_ATTEMPT':'3','GITHUB_EVENT_NAME':'push'})
         meta={'name':'farm-ci-execution-baseline-2-3','workflow_run':{'id':2},'expired':False,'id':3,'digest':'sha256:'+'0'*64,'created_at':'2026-10-31T01:02:00Z'}
         result=module.execution.verify_execution_ledger(transport,run,{'id':1,'default_branch':'main'},ledger,meta,jobs[3],source,source,ledger['requiredJobs'],suite_discovery=lambda *_:discovery)
         self.assertFalse(result['buildBytesReused'])

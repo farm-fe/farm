@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 # Stable V2 merge publication
 
 The current reviewed release scope is 51 primary + 246 native npm packages (297)
@@ -84,12 +86,10 @@ delta. These new paths await CI execution; the first stable path remains separat
 1. Evidence: exact reviewed PR head, successful latest required workflows and
    individual functional jobs, including both integrated Docs lanes, all three
    Examples/TypeScript lanes, release source contracts, full candidate seal and
-   all three candidate registry-consumer lanes. Three valid Farm-only performance
-   reports and their aggregate are required for publication. Slow timings have no
-   uncalibrated regression threshold: completeness, correct source and successful
-   cleanup are the gates. PR performance jobs may remain informational, but their
-   actual per-job conclusions and bounded strict-schema summary artifact from the
-   same CI run/attempt must pass; overall workflow success alone is insufficient.
+   all three candidate registry-consumer lanes. Performance sampling and reports
+   are local-only and are not publication requirements. Actual functional job
+   conclusions, source identities and suite coverage remain required; overall
+   workflow success alone is insufficient.
 2. Compare PR head, actual artifact producer and final merge trees. A changed
    merge tree requires new validation; no old-head green result is substituted.
 3. Download only the exact run's complete seal; verify all archive identities,
@@ -112,11 +112,8 @@ delta. These new paths await CI execution; the first stable path remains separat
 7. Only its exact-run proof permits the immutable tag/GitHub Release. Existing
    identical tag/Release may be reused; different provenance is never overwritten.
 
-Timing comparisons are informational, not a performance certification. Complete,
-valid Farm-only evidence is nevertheless required for publication. A job configured
-with continue-on-error cannot substitute for its actual conclusion and strict
-report receipt. Functional acceptance and the candidate consumers are separate
-required evidence even when the overall workflow is green.
+Timing comparisons are local diagnostics only. Functional acceptance and candidate
+consumers remain required even when the overall workflow is green.
 No chain relies on GITHUB_TOKEN recursively triggering another workflow.
 
 ## Reviewed intent

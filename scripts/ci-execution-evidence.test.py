@@ -38,7 +38,7 @@ def fixture():
                           "inventoryHash": discovered["inventoryHash"], "planHash": expected["planHash"],
                           "artifactName": "farm-ci-suite-" + label + "-" + source["sha"] + "-" + abi + "-1"})
     coverage = {"kind": "complete-ci-suite-counts-not-build-bytes", "run": run_identity, "sourceSHA": source["sha"], "sourceTree": source["tree"], "cells": cells}
-    env = {"GITHUB_ACTIONS": "true", "GITHUB_JOB": "performance-summary", "GITHUB_REPOSITORY_ID": "1", "GITHUB_RUN_ID": "2",
+    env = {"GITHUB_ACTIONS": "true", "GITHUB_JOB": "execution-baseline", "GITHUB_REPOSITORY_ID": "1", "GITHUB_RUN_ID": "2",
            "GITHUB_RUN_ATTEMPT": "1", "GITHUB_EVENT_NAME": "push"}
     ledger = producer.create_ledger(source, coverage, env)
     run = {"id": 2, "run_attempt": 1, "repository": {"id": 1}, "head_repository": {"id": 1}, "path": ".github/workflows/ci.yaml",

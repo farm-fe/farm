@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 <!-- cspell:words finalizer unstarted -->
 # Independent incremental CI and publication
 
@@ -172,7 +174,7 @@ all suites. Decisions include path/owner/dependency explanations.
 This affects actual TS, Examples build and browser selection only after the
 independent same-chain baseline check; it does not authorize acceptance from a
 plan alone. Create-farm still validates all eight templates. Rust Unit, native
-production, Docs quality and performance remain full. Shared compiler/runtime
+production and Docs quality remain full. Shared compiler/runtime
 inputs and unowned SSR helpers are explicit global inputs. JS preparation follows the selected owners forward through npm dependencies,
 building ordinary private packages and JS plugins after the SDK bootstrap. Empty
 TS selection performs no preparation; empty Examples selection still prepares the
@@ -187,7 +189,7 @@ of the ordinary TS suite and is not claimed as executed by this selection.
 The additional `suiteGlobal` paths expand CI suites for shared native/runtime
 changes. Rust Unit receipts currently certify a whole workspace test command,
 native receipts certify complete owner/ABI artifacts, Docs quality certifies the
-whole documentation contract, and performance reports certify the fixed benchmark.
+whole documentation contract; local performance reports describe only their benchmark.
 There are no independently trusted per-crate/per-document/per-benchmark success
 baselines, so these gates remain full rather than inventing reusable acceptance.
 Cargo production edges do drive release owner build closure; Cargo dev-only edges

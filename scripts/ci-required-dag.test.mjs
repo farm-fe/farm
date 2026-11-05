@@ -39,7 +39,7 @@ for(const [label,typeResult,changesetResult,expected]of [
   ['approved consumed Changesets policy failure','success','failure',3],
   ['ordinary missing Changeset policy failure','success','failure',3]
 ])test(`actual workflow schedules product plans for ${label}`,()=>{
-  const rows={...full(),'release-contract-tests':{result:'success'},'performance-contract-tests':{result:'success'}};
+  const rows={...full(),'release-contract-tests':{result:'success'},'platform-contract-tests':{result:'success'}};
   rows['type-check'].result=typeResult;rows['changesets-check']={result:changesetResult};
   const scheduled=['primary-linux','primary-macos','primary-windows'].filter(key=>{
     const job=workflow.jobs[key];
@@ -60,7 +60,7 @@ for(const [label,typeResult,changesetResult,expected]of [
 });
 
 test('every real product summary is independent of policy while evidence validation remains mandatory',()=>{
-  for(const key of ['incremental-execution-gate','examples-test','ts-test','docs-acceptance','performance-report','performance-summary']) {
+  for(const key of ['incremental-execution-gate','examples-test','ts-test','docs-acceptance','execution-baseline']) {
     const seen=new Set();const visit=name=>{if(seen.has(name))return;seen.add(name);for(const dependency of workflow.jobs[name].needs??[])visit(dependency);};visit(key);
     assert.ok(!seen.has('changesets-check'),key);assert.ok(!seen.has('type-changesets-compatibility'),key);
   }
@@ -98,7 +98,7 @@ test('obsolete compatibility jobs are absent and all workflow dependencies still
     const needs=typeof job.needs==='string'?[job.needs]:job.needs??[];
     for(const dependency of needs)assert.ok(value.jobs[dependency],dependency);
   }
-  for(const key of ['type-check','changesets-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test','docs-acceptance','performance-report','performance-summary','incremental-execution-gate'])assert.ok(workflow.jobs[key],key);
+  for(const key of ['type-check','changesets-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test','docs-acceptance','execution-baseline','incremental-execution-gate'])assert.ok(workflow.jobs[key],key);
   assert.ok(unit.jobs['cargo-check'].steps.some(step=>step.run?.includes('cargo check')));
   assert.ok(unit.jobs['cargo-test'].steps.some(step=>step.run?.includes('cargo test')));
 });

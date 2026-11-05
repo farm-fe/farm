@@ -22,11 +22,7 @@ test('missing artifacts after skipped sampling produce explicit unavailable repo
     assert.ok(report.diagnostics.includes(reason));
   }
   const workflow = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
-  const summary = workflow.split('\n  performance-summary:')[1].split('\n  type-check:')[0];
-  assert.match(summary, /GITHUB_TOKEN: \$\{\{ github.token \}\}/);
-  assert.doesNotMatch(summary, /pattern: performance-/);
-  assert.match(summary, /PERFORMANCE_SAMPLING_RESULT:/);
-  assert.match(summary, /run: node scripts\/aggregate-performance-reports.mjs/);
+  assert.doesNotMatch(workflow, /aggregate-performance-reports|PERFORMANCE_SAMPLING_RESULT/);
 });
 test('Farm base/head cells remain separate and comparison fields are absent', () => {
   const report = compactReport({ metadata: {}, status: 'complete', cells: [cell(100)], comparison: { mode: 'paired', baseCells: [cell(120)] } });

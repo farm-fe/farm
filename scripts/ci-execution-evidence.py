@@ -14,7 +14,7 @@ chain = evidence.chain_plan
 runtime = evidence.load("execution_suite_policy", "incremental-chain-runtime.py")
 check = evidence.check
 PLATFORMS = {"linux-x64-gnu": "ubuntu-24.04", "darwin-arm64": "macos-latest", "win32-x64-msvc": "windows-latest"}
-PRODUCER = "Aggregate informational performance report"
+PRODUCER = "Record verified CI execution baseline"
 UPLOAD = "Upload trusted CI execution baseline"
 
 

@@ -62,7 +62,7 @@ def validate_cells(plan, receipts, *, trusted_inventory, expected_identity, requ
     return True
 
 
-def summarize(plan, needs, expected_jobs, informational_jobs=("performance-report", "performance-summary")):
+def summarize(plan, needs, expected_jobs, informational_jobs=()):
     if plan.get("mode") != "shadow" or plan.get("skipAuthorized") is not False or plan.get("reuseAuthorized") is not False:
         raise ValueError("Unreviewed incremental execution policy")
     rows = []
@@ -81,7 +81,7 @@ def summarize(plan, needs, expected_jobs, informational_jobs=("performance-repor
 
 def cell_outcomes(rows):
     outcomes = [{"cell": row["cell"], "status": row["status"]} for row in rows]
-    required_failures = [row for row in outcomes if not row["cell"].startswith("performance:") and row["cell"] != "performance-summary" and row["status"] != "executed-success"]
+    required_failures = [row for row in outcomes if row["status"] != "executed-success"]
     return outcomes, required_failures
 
 
@@ -127,7 +127,7 @@ def main():
     except (OSError, ValueError, KeyError):
         event = {}
     # CI shadow reporting has no release candidate or publication stage.
-    expected = ["impact-plan", "release-contract-tests", "performance-contract-tests", "call-rust-build-user", "call-rust-build-release", "check-native-candidate-assembly", "examples-test", "docs-acceptance", "type-check", "ts-test", "performance-report", "performance-summary"]
+    expected = ["impact-plan", "release-contract-tests", "platform-contract-tests", "call-rust-build-user", "call-rust-build-release", "check-native-candidate-assembly", "examples-test", "docs-acceptance", "type-check", "ts-test", "execution-baseline"]
     if os.environ.get("CI_IMPACT_SCOPE") == "unit":
         expected = ["impact-plan", "cargo-check", "cargo-test"]
     report = summarize(plan, needs, expected)

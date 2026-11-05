@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
-import { digest, validateTrigger, validateCandidateRun, validateArchiveProvenance, immutablePublish, orchestrate, validateFinalRelease, selectRequiredRuns, requiredWorkflows, requiredCiJobs, validateRequiredCiJobs, confirmRegistryChecksum, verifyRegistryArchive, performancePolicy, validatePerformanceEvidence } from './v2-auto-release.mjs';
-const intent = { schemaVersion: 1, pullRequest: 2329, baseBranch: 'main', sourceCommit: 'a'.repeat(40), tag: 'v2.0.0', requiredWorkflows, requiredCiJobs, performanceRequired: true, abi: '0.5.4', rustCoreVersion: '2.2.0' };
+import { digest, validateTrigger, validateCandidateRun, validateArchiveProvenance, immutablePublish, orchestrate, validateFinalRelease, selectRequiredRuns, requiredWorkflows, requiredCiJobs, validateRequiredCiJobs, confirmRegistryChecksum, verifyRegistryArchive } from './v2-auto-release.mjs';
+const intent = { schemaVersion: 1, pullRequest: 2329, baseBranch: 'main', sourceCommit: 'a'.repeat(40), tag: 'v2.0.0', requiredWorkflows, requiredCiJobs, abi: '0.5.4', rustCoreVersion: '2.2.0' };
 const bytes = JSON.stringify(intent);
 const event = { action: 'closed', number: 2329, pull_request: { merged: true, base: { ref: 'main' }, head: { sha: 'a'.repeat(40) }, merge_commit_sha: 'b'.repeat(40) } };
 
@@ -25,8 +25,7 @@ test('future version PR validates its own intent and explicitly dispatched final
 test('every functional, candidate-consumer and valid performance lane is required before publication', () => {
   const jobs = requiredCiJobs.map(name => ({ name, status: 'completed', conclusion: 'success' }));
   validateRequiredCiJobs(jobs);
-  assert.equal(performancePolicy.regressionThreshold, null);
-  assert.equal(performancePolicy.requiredForPublication, true);
+  assert.ok(requiredCiJobs.every(name => !/Performance|performance/.test(name)));
   for (const name of requiredCiJobs) {
     assert.throws(() => validateRequiredCiJobs(jobs.filter(job => job.name !== name)), /required CI job/);
     assert.throws(() => validateRequiredCiJobs(jobs.map(job => job.name === name ? { ...job, conclusion: 'skipped' } : job)), /not successful/);
@@ -129,19 +128,6 @@ for (const failure of ['prepare', 'sourceGate', 'rust', 'publicationGate', 'npm'
   assert.deepEqual(calls, ['prepare', 'sourceGate', 'rust', 'publicationGate', 'npm', 'registryVerify', 'release']);
 });
 
-test('publication requires all three strict Farm-only reports from the sealed producer and exact attempt', () => {
-  const producerSHA = 'c'.repeat(40), runId = 4, runAttempt = 2;
-  const samples = ['cold', 'warm'].map(cacheMode => ({ cacheMode, samples: 3, validSamples: 3, medianMs: 100, iqrMs: 0 }));
-  const summary = { schemaVersion: 2, protocol: performancePolicy.protocol, event: 'pull_request', repositoryId: 1, runId, runAttempt,
-    headSHA: event.pull_request.head.sha, baseSHA: 'd'.repeat(40), prNumber: 2329,
-    reports: performancePolicy.platforms.map(([os, arch]) => ({ metadata: { os, arch, revision: producerSHA, baseSHA: 'd'.repeat(40), node: 'v22.20.0', pnpm: '9.4.0', fixtureSha256: 'e'.repeat(64), lockSha256: 'f'.repeat(64), runnerImage: 'ci' },
-      status: 'complete', cells: samples, comparison: { mode: 'current-only', baseCells: [] }, history: [], diagnostics: [] })) };
-  const expected = { repositoryId: 1, runId, runAttempt, headSHA: summary.headSHA, baseSHA: summary.baseSHA, prNumber: 2329, producerSHA };
-  validatePerformanceEvidence(JSON.stringify(summary), expected);
-  const mutations = [value => value.reports.pop(), value => { value.reports[0].status = 'invalid'; }, value => { value.reports[0].cells = []; }, value => { value.reports[0].metadata.revision = summary.headSHA; }, value => { value.runAttempt = 1; }, value => { value.protocol = 'commerce-business-2048-supervised-v1'; }, value => { value.reports[1].metadata.arch = 'x64'; }];
-  for (const mutate of mutations) { const value = JSON.parse(JSON.stringify(summary)); mutate(value); assert.throws(() => validatePerformanceEvidence(JSON.stringify(value), expected)); }
-  assert.throws(() => validateTrigger(event, { ...intent, performanceRequired: false }, JSON.stringify({ ...intent, performanceRequired: false }), digest(JSON.stringify({ ...intent, performanceRequired: false }))), /requires complete/);
-});
 
 test('stable latest tags are read back and never deliberately replace a higher version', async () => {
   const record = { name: '@farmfe/core', version: '2.0.0' };

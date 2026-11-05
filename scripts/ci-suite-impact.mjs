@@ -22,7 +22,7 @@ export function suiteImpact({ before, after, changes, inventory }) {
   const affected = new Set(), explanations = [];
   // Only committed ordinary engineering Markdown is outside these suite inputs.
   // Missing metadata is not evidence; inspect both sides of deletions/renames and
-  // mode changes. Docs quality, Unit and performance remain independent gates.
+  // mode changes. Docs quality and Unit remain independent CI gates; benchmarks run locally.
   const documentationOnly = file => {
     canonicalSuiteFile(file);
     if (!file.startsWith('docs/experiences/') || !file.endsWith('.md')) return false;

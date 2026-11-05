@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 # Current CI suite execution scope
 
 The same-run type-check job verifies a completed main CI baseline and original
@@ -13,7 +15,7 @@ an addition, edit, deletion or rename. Missing metadata, executable files and
 symlinks cannot receive this exemption. A mixed change still includes every
 product path; renames are compared as deletion plus addition. No-op and notes-only
 changes select no TS/Examples cases, with explicit `not-applicable` receipts;
-create-farm, Unit, Docs quality and performance gates remain unchanged. Source/config/manifest changes outside those audited
+create-farm, Unit and Docs quality gates remain unchanged. Source/config/manifest changes outside those audited
 boundaries, unresolved workspace or npm aliases, ambiguous relevant dependencies,
 policy changes, missing or inaccessible baselines and forks execute all suites.
 The PostCSS test's dependency on the vite-adapter-vue Example manifest is explicit.
@@ -27,7 +29,7 @@ that build evidence and actual terminal cases. A planned empty collection is
 The stable gate checks all six current-run receipt sets and counts; skipped,
 missing, failed or foreign receipts cannot satisfy it. Create-farm candidates,
 Docs release-profile reference checks and full three-platform business-2048
-performance remain separate and still run.
+local performance runs remain separate from CI.
 
 A reduced execution ledger is never accepted as a complete baseline. Lookup is
 bounded to three main runs and falls back to all current suites when no complete

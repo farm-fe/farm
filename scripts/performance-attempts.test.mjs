@@ -181,17 +181,15 @@ test('changed-view immutable build and reused-native ZIPs pass aggregate publish
   }});
   assert.equal(writes.length,1);assert.match(JSON.parse(writes[0].body).body,/Measurement attempt 1/);
   const payload={run:f.run,sourceSHA:f.producerSHA,sourceTree:f.testedTree,baseSHA:f.summary.baseSHA,jobs:f.jobs,artifacts:[...f.artifacts,summaryArtifact],bodies:Object.fromEntries([...f.bodies.entries(),[999,summaryBytes]].map(([id,body])=>[id,body.toString('base64')]))};
-  const python=`import base64, importlib.util, json, sys\nfrom pathlib import Path\np=json.load(sys.stdin)\nspec=importlib.util.spec_from_file_location('joint_functional',Path('scripts/incremental-release-functional.py'));m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nclass API:\n def get(self,route):\n  if '/artifacts?' in route:return {'total_count':1,'artifacts':[p['artifacts'][-1]]}\n  if route.startswith('/actions/artifacts/'):return next(row for row in p['artifacts'] if row['id']==int(route.rsplit('/',1)[1]))\n  attempt=int(route.split('/attempts/')[1].split('/')[0])\n  return {'jobs':p['jobs'][str(attempt)]} if '/jobs?' in route else {**p['run'],'run_attempt':attempt}\n def archive(self,identity):return base64.b64decode(p['bodies'][str(identity)])\nsource={'sha':p['sourceSHA'],'tree':p['sourceTree'],'files':{'scripts/performance-cohorts.mjs':Path('scripts/performance-cohorts.mjs').read_bytes()}}\naggregate=[{'id':998,'run_id':10,'name':'Aggregate informational performance report','status':'completed','conclusion':'success','started_at':'2026-10-31T02:00:00Z','completed_at':'2026-10-31T02:20:00Z'}]\nm.verify_performance(API(),p['run'],aggregate,source,{'baseSHA':p['baseSHA']})\nprint('independent release verifier accepted original ZIPs')\n`;
+  const python=`import base64, importlib.util, json, sys\nfrom pathlib import Path\np=json.load(sys.stdin)\nspec=importlib.util.spec_from_file_location('joint_functional',Path('scripts/performance-source-verifier.py'));m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nclass API:\n def get(self,route):\n  if '/artifacts?' in route:return {'total_count':1,'artifacts':[p['artifacts'][-1]]}\n  if route.startswith('/actions/artifacts/'):return next(row for row in p['artifacts'] if row['id']==int(route.rsplit('/',1)[1]))\n  attempt=int(route.split('/attempts/')[1].split('/')[0])\n  return {'jobs':p['jobs'][str(attempt)]} if '/jobs?' in route else {**p['run'],'run_attempt':attempt}\n def archive(self,identity):return base64.b64decode(p['bodies'][str(identity)])\nsource={'sha':p['sourceSHA'],'tree':p['sourceTree'],'files':{'scripts/performance-cohorts.mjs':Path('scripts/performance-cohorts.mjs').read_bytes()}}\naggregate=[{'id':998,'run_id':10,'name':'Aggregate informational performance report','status':'completed','conclusion':'success','started_at':'2026-10-31T02:00:00Z','completed_at':'2026-10-31T02:20:00Z'}]\nm.verify_performance(API(),p['run'],aggregate,source,{'baseSHA':p['baseSHA']})\nprint('independent release verifier accepted original ZIPs')\n`;
   const checked=spawnSync(process.env.FARM_TEST_PYTHON??'python',['-B','-c',python],{input:JSON.stringify(payload),encoding:'utf8'});
   assert.equal(checked.status,0,checked.stderr);assert.match(checked.stdout,/accepted original ZIPs/);
  }
 });
 
 
-test('workflow_run publisher sparse checkout includes the real schema validator dependency',()=>{
-  const yaml=fs.readFileSync(new URL('../.github/workflows/performance-report-comment.yaml',import.meta.url),'utf8');
-  assert.ok(yaml.includes('scripts/performance-pr-reporter.mjs') && yaml.includes('scripts/performance-metrics.mjs'));
-  assert.ok(yaml.includes('ref: ${{ github.workflow_sha }}'));
+test('performance reports have no automatic workflow publisher',()=>{
+  assert.equal(fs.existsSync(new URL('../.github/workflows/performance-report-comment.yaml',import.meta.url)),false);
 });
 
 test('writer output retains measured bytes and missing or altered bytes still reject', async () => {

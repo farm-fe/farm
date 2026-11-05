@@ -80,9 +80,9 @@ class Contracts(unittest.TestCase):
         summary={'schemaVersion':3,'protocol':'commerce-business-2048-farm-supervised-v2','repositoryId':5,'runId':10,'runAttempt':3,'event':'push','headSHA':source['sha'],'baseSHA':base_sha,'prNumber':None,'reports':reports,'measurementSources':proofs}
         store(9999,'performance-pr-summary-3','summary.json',summary,3)
         for number in jobs:
-            if number < 3:jobs[number]=[job for job in jobs[number] if job['name']!='Aggregate informational performance report']
+            if number < 3:jobs[number]=[job for job in jobs[number] if job['name']!='Record verified CI execution baseline']
             for job in jobs[number]:
-                if job['name']=='Aggregate informational performance report':window(job,3)
+                if job['name']=='Record verified CI execution baseline':window(job,3)
         class API:
             def get(self,route):
                 if route=='':return {'id':5,'full_name':'farm-fe/farm','default_branch':'main'}

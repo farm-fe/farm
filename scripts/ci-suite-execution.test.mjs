@@ -119,7 +119,7 @@ test('complete collection requires every platform and original per-file case cou
   original.items.push({ id: 'examples-browser:examples/react', kind: 'examples-browser', requiresActualCases: true });
   const combined = { ...original, inventoryHash: crypto.createHash('sha256').update(JSON.stringify(original)).digest('hex') };
   const env = { GITHUB_ACTIONS: 'true', GITHUB_RUN_ID: '1', GITHUB_RUN_ATTEMPT: '2', GITHUB_REPOSITORY_ID: '3',
-    GITHUB_SHA: 'a'.repeat(40), GITHUB_JOB: 'performance-summary', GITHUB_WORKFLOW_REF: 'farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge',
+    GITHUB_SHA: 'a'.repeat(40), GITHUB_JOB: 'execution-baseline', GITHUB_WORKFLOW_REF: 'farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge',
     GITHUB_EVENT_NAME: 'pull_request' };
   const rows = ['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc'].flatMap(abi => ['ts', 'examples-browser'].map(kind => {
     const plan = makeSuiteExecutionPlan(combined, kind);

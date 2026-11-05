@@ -84,7 +84,7 @@ def current_upload_outputs(environment):
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--output'); parser.add_argument('--selection-only', action='store_true'); parser.add_argument('--selection-output', default='ci-suite-selection/selection.json'); args = parser.parse_args()
     env = os.environ
-    check(env.get('GITHUB_ACTIONS') == 'true' and env.get('GITHUB_JOB') in ['performance-summary', 'incremental-execution-gate', 'ts-test', 'examples-test'], 'Unexpected receipt resolver job')
+    check(env.get('GITHUB_ACTIONS') == 'true' and env.get('GITHUB_JOB') in ['execution-baseline', 'incremental-execution-gate', 'ts-test', 'examples-test'], 'Unexpected receipt resolver job')
     transport = execution.evidence.transport_module.GitHubReadOnly(env['GITHUB_REPOSITORY'], env['GH_TOKEN'], allow_archive=True)
     run = transport.get('/actions/runs/' + env['GITHUB_RUN_ID'] + '/attempts/' + env['GITHUB_RUN_ATTEMPT'])
     check(run['id'] == int(env['GITHUB_RUN_ID']) and run['run_attempt'] == int(env['GITHUB_RUN_ATTEMPT']) and run['repository']['id'] == int(env['GITHUB_REPOSITORY_ID']) == run['head_repository']['id'], 'Resolver executing run differs')
@@ -95,7 +95,7 @@ def main():
         attempt = restore_selection(transport, run, source, env['FARM_SUITE_SELECTION_HASH'], args.selection_output)
         with Path(env['GITHUB_ENV']).open('a', encoding='utf-8') as stream: stream.write('CI_SUITE_SELECTION_PRODUCER_ATTEMPT=' + str(attempt) + '\n')
         print(json.dumps({'selectionProducerAttempt':attempt, 'currentConsumerAttempt':run['run_attempt']})); return
-    check(args.output is not None and env.get('GITHUB_JOB') in ['performance-summary','incremental-execution-gate'], 'Suite collection role or output missing')
+    check(args.output is not None and env.get('GITHUB_JOB') in ['execution-baseline','incremental-execution-gate'], 'Suite collection role or output missing')
     print(json.dumps({'cells':len(collect(transport, run, source, args.output, env.get('FARM_SUITE_SELECTION_HASH', ''), args.selection_output, current_upload_outputs(env))), 'buildExecuted':False}))
 
 if __name__ == '__main__': main()

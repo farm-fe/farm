@@ -1,7 +1,9 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 <!-- cspell:words microbenchmark -->
 # Retired Vite comparison record
 
-CI now measures Farm only. See [the Farm performance protocol](./performance-report.md).
+Performance measurements now run locally only. See [the Farm performance protocol](./performance-report.md).
 Comparator-specific workers, adapters, fixtures and tests have been removed; the
 following historical record describes the former implementation and is not a
 runnable CI recipe or evidence for the current Farm-only cohort. Existing Vite
