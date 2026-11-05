@@ -139,6 +139,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           FARM_FUNCTIONAL_EVIDENCE: ${{ inputs.functional_evidence }}
         run: python -B scripts/incremental-release-functional.py --source "$GITHUB_SHA" --output functional-evidence.json --wait
+      - name: Preserve pending fixed-main evidence for bounded recovery
+        if: failure() && hashFiles('release-functional-pending.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-functional-pending-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-functional-pending.json
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
@@ -151,6 +159,7 @@ jobs:
     if: needs.source.outputs.reuse != 'true' && needs.source.outputs.version_ready == 'true'
     name: Calculate independent release build requirements
     outputs:
+      plan_attempt: ${{ github.run_attempt }}
       native_required: ${{ steps.release-plan.outputs.native_required }}
       native_owners: ${{ steps.release-plan.outputs.native_owners }}
       publish_required: ${{ steps.release-plan.outputs.publish_required }}
@@ -203,7 +212,7 @@ jobs:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
         with:
-          name: independent-release-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          name: independent-release-plan-${{ github.run_id }}-${{ needs.plan.outputs.plan_attempt }}
           path: no-publication-plan
       - name: Verify empty publication scope without advancing a published baseline
         shell: python
@@ -285,6 +294,8 @@ jobs:
       native_owners: ${{ needs.plan.outputs.native_owners }}
   producer:
     name: Build independent release candidates
+    outputs:
+      candidate_attempt: ${{ github.run_attempt }}
     needs: [source, plan, main-evidence, release-native-primary, release-native-extra]
     if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && needs.main-evidence.result == 'success' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
     runs-on: ubuntu-24.04
@@ -318,7 +329,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
-          name: independent-release-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          name: independent-release-plan-${{ github.run_id }}-${{ needs.plan.outputs.plan_attempt }}
           path: release-work
       - name: Verify the exact source-bound selection received from plan
         shell: python
@@ -401,10 +412,31 @@ jobs:
           path: release-candidate/
           if-no-files-found: error
           retention-days: 90
+  candidate-identity:
+    name: Select original frozen candidate attempt
+    needs: [source, producer]
+    if: always() && needs.source.result == 'success' && (needs.producer.result == 'success' || needs.source.outputs.reuse == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      attempt: ${{ steps.identity.outputs.attempt }}
+    steps:
+      - name: Preserve candidate producer identity across carried jobs
+        id: identity
+        env:
+          CANDIDATE_ATTEMPT: ${{ needs.source.outputs.reuse == 'true' && needs.source.outputs.producer_attempt || needs.producer.outputs.candidate_attempt }}
+        shell: python
+        run: |
+          import os, re
+          from pathlib import Path
+          attempt = os.environ['CANDIDATE_ATTEMPT']
+          assert re.fullmatch(r'[1-9][0-9]*', attempt) and int(attempt) <= int(os.environ['GITHUB_RUN_ATTEMPT'])
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as stream:
+              stream.write('attempt=' + attempt + '\n')
   candidate-consumers:
     name: Independent release candidate consumer (${{ matrix.os }})
-    needs: [source, plan, producer]
-    if: always() && needs.source.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
+    needs: [source, plan, producer, candidate-identity]
+    if: always() && needs.candidate-identity.result == 'success' && needs.source.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     strategy:
@@ -421,7 +453,7 @@ jobs:
           node-version: 22.20.0
       - uses: actions/download-artifact@v4
         with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
       - run: node scripts/verify-v2-npm-consumer.mjs release-candidate candidate-results
       - name: Upload independent release candidate acceptance
@@ -433,8 +465,8 @@ jobs:
           retention-days: 90
   publisher:
     name: Publish exact independent release archives under durable lock
-    needs: [source, plan, producer, candidate-consumers]
-    if: always() && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
+    needs: [source, plan, producer, candidate-identity, candidate-consumers]
+    if: always() && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
@@ -454,7 +486,7 @@ jobs:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
         with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
       - name: Acquire exact source lock, preflight all packages and upload originals
         env:
@@ -464,7 +496,7 @@ jobs:
         run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
   public-consumers:
     name: Independent public registry consumer (${{ matrix.os }})
-    needs: [source, publisher]
+    needs: [source, publisher, candidate-identity]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -484,7 +516,7 @@ jobs:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
         with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
       - run: rustup toolchain install nightly-2026-04-10 --profile minimal
       - name: Install public originals with no workspace or publish credentials
@@ -517,7 +549,7 @@ jobs:
           retention-days: 90
   public-proof:
     name: Verify independent release public consumers
-    needs: [source, public-consumers]
+    needs: [source, public-consumers, candidate-identity]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -534,7 +566,7 @@ jobs:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
         with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
       - name: Select each successful OS report independently across attempts
         env:
@@ -555,7 +587,7 @@ jobs:
           retention-days: 90
   finalize:
     name: Finalize exact independent release and durable baseline
-    needs: [source, public-proof]
+    needs: [source, public-proof, candidate-identity]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -572,7 +604,7 @@ jobs:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
         with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}
+          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
       - name: Claim explicit handoff, verify public proof, confirm Release then advance baseline
         env:

@@ -174,6 +174,8 @@ jobs:
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
           python -B scripts/release-retry-safety.test.py
+          python -B scripts/release-evidence-recovery.test.py
+          node --test scripts/release-recovery-dag.test.mjs
           node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-chain-boundaries.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
           python scripts/ci-execution-ledger.test.py
@@ -199,7 +201,7 @@ jobs:
         with:
           cell: "contracts"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   docs-acceptance:
     if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
@@ -243,7 +245,7 @@ jobs:
         with:
           cell: "performance-contracts:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.os }}
 
   primary-linux:
     if: needs.version-classification.outputs.mode != 'verified-version-only'
@@ -362,7 +364,7 @@ jobs:
         with:
           cell: "native-assembly"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   examples-test:
     name: All primary Examples chains
@@ -603,7 +605,7 @@ jobs:
         with:
           cell: "performance:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi }}
 
   performance-summary:
     name: Aggregate informational performance report
@@ -674,7 +676,7 @@ jobs:
         with:
           cell: "performance-summary"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   type-check:
     needs: [version-classification]
@@ -687,7 +689,7 @@ jobs:
       actions: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         if: needs.version-classification.outputs.mode != 'verified-version-only'
         with:
           fetch-depth: 0
@@ -730,7 +732,7 @@ jobs:
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         if: needs.version-classification.outputs.mode != 'verified-version-only'
         with:
           node-version: 20
@@ -764,7 +766,7 @@ jobs:
         with:
           cell: "types"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
       - name: Accept independently verified Changesets version-only preparation
         if: needs.version-classification.outputs.mode == 'verified-version-only'

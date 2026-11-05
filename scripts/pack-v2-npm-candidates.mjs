@@ -2,7 +2,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assertReviewedCandidatePackHooks } from './candidate-pack-hooks.mjs';
@@ -41,7 +40,7 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
   fs.mkdirSync(output); // Preserve partial runs; never overwrite evidence.
   const receipt = { schemaVersion: 1, sourceCommit, testedCommit, testedTree, planSha256: sha256(Buffer.from(JSON.stringify(plan))), published: false, status: 'incomplete', records: [], errors: [] };
   const save = () => fs.writeFileSync(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2));
-  const guard = () => { const disk = fs.statfsSync(output); assert.ok(os.freemem() >= 3.4 * 1024 ** 3 && disk.bavail * disk.bsize >= 8 * 1024 ** 3, 'Candidate pack resource guard'); };
+  const guard = () => { const disk = fs.statfsSync(output); assert.ok(disk.bavail * disk.bsize >= 8 * 1024 ** 3, 'Candidate pack disk resource guard'); };
   function legalCopy(directory, destination) {
     for (const name of ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'licenses', 'license-components.json']) {
       const source = path.join(directory, name);

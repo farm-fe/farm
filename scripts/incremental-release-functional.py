@@ -271,25 +271,28 @@ def discover_main(transport, source, current_run):
     for scope, file in [('ci', 'ci.yaml'), ('unit', 'rust-test.yaml')]:
         runs = transport.get('/actions/workflows/' + file + '/runs?per_page=20&event=push&head_sha=' + source['sha'])['workflow_runs']
         matches = [run for run in runs if run.get('head_sha') == source['sha'] and run.get('head_branch') == repository['default_branch']
-                   and run.get('status') == 'completed' and run.get('conclusion') == 'success'
                    and run.get('repository', {}).get('id') == repository['id'] == run.get('head_repository', {}).get('id')]
         check(matches, 'Exact main functional run is not ready; wait and redispatch without publication')
         run = max(matches, key=lambda row: row['id'])
+        check(run.get('status') == 'completed' and run.get('conclusion') == 'success',
+              'Exact main functional run is not ready; wait and redispatch without publication')
         result[scope] = {'runId': run['id'], 'attempt': run['run_attempt'], 'testedSHA': source['sha']}
     result.update({scope: dict(current_run) for scope in ['lint', 'spell']})
     return result
 
 
 def original_attempt(transport, run_id, source_sha, current_attempt):
-    check(type(current_attempt) is int and current_attempt > 0, 'Invalid current release attempt')
-    prefix = 'farm-release-candidates-' + source_sha + '-'; matches = []; exhausted = False
-    for page in range(1, 4):
-        rows = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=100&page=' + str(page))['artifacts']
-        matches.extend(row for row in rows if row['name'].startswith(prefix) and row['name'][len(prefix):].isdigit())
-        if len(rows) < 100:
-            exhausted = True
-            break
-    check(exhausted, 'Frozen release artifact listing exceeds the verification bound')
+    check(type(current_attempt) is int and 1 <= current_attempt <= 20, 'Invalid current release attempt')
+    prefix = 'farm-release-candidates-' + source_sha + '-'; matches = []
+    # Native products can exceed three artifact pages. Exact transaction names
+    # keep the search bounded independently of native owner/platform inventory.
+    for attempt in range(1, current_attempt + 1):
+        name = prefix + str(attempt)
+        response = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=2&name=' + name)
+        rows = response['artifacts']
+        check(response.get('total_count') == len(rows) and len(rows) <= 1 and all(row['name'] == name for row in rows),
+              'Frozen release artifact lookup is incomplete or ambiguous')
+        matches.extend(rows)
     if not matches:
         if current_attempt > 1:
             proof = retry.verify_unfrozen_retry(transport.get, run_id=run_id, source_sha=source_sha, current_attempt=current_attempt,
@@ -316,6 +319,28 @@ def original_attempt(transport, run_id, source_sha, current_attempt):
     return attempt
 
 
+PENDING_MESSAGE = 'Exact main functional run is not ready; wait and redispatch without publication'
+
+
+def wait_for_main(transport, source, current, *, seconds, clock=time.monotonic, sleep=time.sleep):
+    """A bounded wait preserves a recoverable pending state, never acceptance."""
+    deadline = clock() + seconds
+    while True:
+        try:
+            return discover_main(transport, source, current)
+        except ValueError as error:
+            if str(error) != PENDING_MESSAGE or clock() >= deadline:
+                raise
+            sleep(min(30, max(0, deadline - clock())))
+
+
+def pending_record(source, current):
+    return {'schemaVersion': 1, 'kind': 'release-functional-pending',
+            'sourceSHA': source['sha'], 'sourceTree': source['tree'],
+            'releaseRunId': current['runId'], 'releaseAttempt': current['attempt'],
+            'reason': 'exact-main-evidence-not-ready', 'publicationAuthorized': False}
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('--source', required=True); parser.add_argument('--output', required=True); parser.add_argument('--wait', action='store_true')
     args = parser.parse_args(); transport = entry.actions_transport()
@@ -323,14 +348,11 @@ if __name__ == '__main__':
     source = entry.evidence.source_reader(args.source)
     current = {'runId': int(os.environ['GITHUB_RUN_ID']), 'attempt': int(os.environ['GITHUB_RUN_ATTEMPT'])}
     supplied = os.environ.get('FARM_FUNCTIONAL_EVIDENCE', '')
-    deadline = time.monotonic() + (120 * 60 if args.wait else 0)
-    while True:
-        try:
-            bindings = json.loads(supplied) if supplied else discover_main(transport, source, current)
-            break
-        except ValueError as error:
-            if str(error) != 'Exact main functional run is not ready; wait and redispatch without publication' or time.monotonic() >= deadline:
-                raise
-            time.sleep(30)
+    try:
+        bindings = json.loads(supplied) if supplied else wait_for_main(transport, source, current, seconds=120 * 60 if args.wait else 0)
+    except ValueError as error:
+        if not supplied and str(error) == PENDING_MESSAGE:
+            Path('release-functional-pending.json').write_text(json.dumps(pending_record(source, current), sort_keys=True) + '\n', encoding='utf-8')
+        raise
     verify_functional(transport, source, bindings, current)
     Path(args.output).write_text(json.dumps(bindings, sort_keys=True) + '\n', encoding='utf-8')

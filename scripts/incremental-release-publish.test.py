@@ -301,7 +301,12 @@ class Contracts(unittest.TestCase):
         self.assertIn('group: farm-independent-release\n  cancel-in-progress: false',workflow)
         for stage in ['publisher','public-consumers','public-proof','finalize']:
             block=re.search(r'^  '+re.escape(stage)+r':\n(.*?)(?=^  [A-Za-z][A-Za-z0-9-]*:\n|\Z)',workflow,re.M|re.S).group(1)
-            self.assertIn('needs.source.outputs.producer_attempt',block)
+            self.assertIn('needs.candidate-identity.outputs.attempt',block)
+            self.assertIn('candidate-identity',re.search(r'needs: (.*)',block).group(1))
+        identity=re.search(r'^  candidate-identity:\n(.*?)(?=^  [A-Za-z][A-Za-z0-9-]*:)',workflow,re.M|re.S).group(1)
+        self.assertIn("needs.source.outputs.reuse == 'true' && needs.source.outputs.producer_attempt || needs.producer.outputs.candidate_attempt",identity)
+        self.assertIn("needs.producer.result == 'success' || needs.source.outputs.reuse == 'true'",identity)
+        self.assertIn("int(attempt) <= int(os.environ['GITHUB_RUN_ATTEMPT'])",identity)
         self.assertIn("inputs.publish == true",workflow)
         self.assertIn('name: '+module.ROLES['upload'],workflow)
         self.assertIn('name: '+module.ROLES['finalize'],workflow)

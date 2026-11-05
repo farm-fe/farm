@@ -82,9 +82,9 @@ test('Cargo restores cover all nine targets while only the three primary produce
 test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
   const source = read('incremental-release.yaml').split('  candidate-consumers:')[1].split('  publisher:')[0];
   assert.ok(source);
-  assert.match(source, /needs: \[source, plan, producer\]/);
+  assert.match(source, /needs: \[source, plan, producer, candidate-identity\]/);
   assert.match(source, /os: \[ubuntu-24.04, macos-latest, windows-latest\]/);
-  assert.ok(source.includes('name: farm-release-candidates-${{ github.sha }}-${{ needs.source.outputs.producer_attempt }}'));
+  assert.ok(source.includes('name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}'));
   assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-results/);
   assert.doesNotMatch(source, /pnpm install|cargo |NPM_TOKEN|secrets:/);
 });
@@ -147,3 +147,15 @@ test('validated metadata precedes cache registration and is checked again before
   assert.match(user, /cache-on-failure: false/);
   assert.equal(user.split('FARM_CARGO_METADATA: ${{ runner.temp }}/farm-cargo-metadata.json').length - 1, 3);
 });
+
+ test('evidence suffixes bind only declared matrix axes without changing cell identities', () => {
+  const jobs=YAML.parse(read('ci.yaml')).jobs;
+  for(const [name,job] of Object.entries(jobs))for(const step of job.steps??[]){
+    const suffix=step.with?.['artifact-suffix'];if(suffix===undefined)continue;
+    if(name==='performance-contract-tests'){assert.equal(suffix,'${{ matrix.os }}');assert.ok(job.strategy.matrix.os.length);}
+    else if(name==='performance-report'){assert.equal(suffix,'${{ matrix.settings.abi }}');assert.ok(job.strategy.matrix.settings.every(row=>row.abi));}
+    else {assert.equal(suffix,'single');assert.equal(job.strategy?.matrix,undefined);}
+  }
+  const uses=jobs['type-check'].steps.map(step=>step.uses).filter(Boolean);
+  assert.ok(uses.includes('actions/checkout@v4'));assert.ok(uses.includes('actions/setup-node@v4'));
+ });
