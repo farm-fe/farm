@@ -236,6 +236,28 @@ def capture_source(products_file, output):
     destination = Path(output); destination.parent.mkdir(parents=True, exist_ok=True); destination.write_text(json.dumps(record, indent=2) + "\n")
 
 
+def audit_native_bindings(client, run, source_sha, bindings):
+    """Read-only current-run fixed output verification, never a byte reuse grant."""
+    spec = importlib.util.spec_from_file_location('native_audit_execution', Path(__file__).with_name('ci-execution-evidence.py'))
+    execution = importlib.util.module_from_spec(spec); spec.loader.exec_module(execution)
+    execution.check(isinstance(bindings, dict) and set(bindings) == set(impact.TARGETS), 'Native upload binding inventory differs')
+    execution.check(run.get('path') == '.github/workflows/ci.yaml' and run.get('event') in ['push', 'pull_request', 'workflow_dispatch'], 'Native audit workflow differs')
+    cache, rows = {}, []
+    for abi in impact.TARGETS:
+        output = bindings[abi]
+        name = ('Build and Upload User Artifacts - ' if abi in impact.PRIMARY else 'Build and Upload Release Artifacts - ') + abi
+        origin, job = execution.explicit_producer(client, run, name, output, cache)
+        artifact = client.get('/actions/artifacts/' + output['artifact_id'])
+        wanted = 'native-shadow-' + source_sha + '-' + abi + '-' + str(origin['run_attempt'])
+        execution.check(artifact.get('name') == wanted and artifact.get('workflow_run', {}).get('id') == run['id']
+                        and artifact.get('expired') is False and type(artifact.get('size_in_bytes')) is int
+                        and 0 < artifact['size_in_bytes'] <= 16 * 1024 * 1024, 'Native audit artifact identity differs')
+        execution.upload_binding(job, 'Preserve bounded shadow producer context without duplicating native archives', artifact, output)
+        rows.append({'abi':abi, 'runId':run['id'], 'runAttempt':origin['run_attempt'], 'jobId':job['id'], 'jobName':job['name'],
+                     'artifactId':artifact['id'], 'artifactDigest':artifact['digest'], 'artifactBytes':artifact['size_in_bytes'], 'contextVerified':False})
+    return rows
+
+
 def audit_current_run(output):
     """Uses the assembly job's existing actions:read; never downloads a ZIP."""
     record = {"schemaVersion": 1, "mode": "shadow", "reuseAuthorized": False, "acceptanceInherited": False, "producers": [], "errors": []}
@@ -245,30 +267,9 @@ def audit_current_run(output):
         run = client.get("/actions/runs/" + str(run_id) + "/attempts/" + str(attempt))
         if run["id"] != run_id or run["run_attempt"] != attempt:
             raise ValueError("Current producer attempt differs")
-        jobs, artifacts = [], []
-        for page in range(1, 4):
-            batch = client.get("/actions/runs/" + str(run_id) + "/attempts/" + str(attempt) + "/jobs?per_page=100&page=" + str(page))["jobs"]
-            jobs.extend(batch)
-            if len(batch) < 100:
-                break
-        for page in range(1, 4):
-            batch = client.get("/actions/runs/" + str(run_id) + "/artifacts?per_page=100&page=" + str(page))["artifacts"]
-            artifacts.extend(batch)
-            if len(batch) < 100:
-                break
-        for abi in impact.TARGETS:
-            suffix = ("Build and Upload User Artifacts - " if abi in impact.PRIMARY else "Build and Upload Release Artifacts - ") + abi
-            matches = [job for job in jobs if job["name"] == suffix or job["name"].endswith(" / " + suffix)]
-            wanted = "native-shadow-" + os.environ["GITHUB_SHA"] + "-" + abi + "-" + str(attempt)
-            outputs = [artifact for artifact in artifacts if artifact["name"] == wanted and not artifact["expired"]]
-            if len(matches) != 1 or len(outputs) != 1:
-                raise ValueError("Missing or ambiguous native shadow producer: " + abi)
-            job, artifact = matches[0], outputs[0]
-            if job["conclusion"] != "success" or job["status"] != "completed" or artifact["workflow_run"]["id"] != run_id:
-                raise ValueError("Native shadow producer was not successful: " + abi)
-            if not job["started_at"] <= artifact["created_at"] <= job["completed_at"]:
-                raise ValueError("Native shadow artifact is outside the producer attempt")
-            record["producers"].append({"abi": abi, "runId": run_id, "runAttempt": attempt, "jobId": job["id"], "jobName": job["name"], "artifactId": artifact["id"], "artifactDigest": artifact.get("digest"), "artifactBytes": artifact["size_in_bytes"], "contextVerified": False})
+        if run['repository']['id'] != int(os.environ['GITHUB_REPOSITORY_ID']) or run['head_repository']['id'] != run['repository']['id']:
+            raise ValueError('Native audit repository differs')
+        record['producers'] = audit_native_bindings(client, run, os.environ['GITHUB_SHA'], json.loads(os.environ['CI_NATIVE_UPLOADS']))
         record["status"] = "api-identities-recorded-not-reuse-authority"
     except Exception as error:
         record["status"] = "unavailable"; record["errors"].append(str(error)[:1000])

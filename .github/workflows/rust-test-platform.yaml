@@ -1,0 +1,71 @@
+name: Unit platform execution
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      abi:
+        required: true
+        type: string
+    outputs:
+      artifact_id:
+        value: ${{ jobs.cargo-test.outputs.artifact_id }}
+      artifact_digest:
+        value: ${{ jobs.cargo-test.outputs.artifact_digest }}
+      run_attempt:
+        value: ${{ jobs.cargo-test.outputs.run_attempt }}
+jobs:
+  cargo-test:
+    name: Test - ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
+    outputs:
+      artifact_id: ${{ steps.receipt.outputs.artifact-id }}
+      artifact_digest: ${{ steps.receipt.outputs.artifact-digest }}
+      run_attempt: ${{ steps.receipt.outputs.run-attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+        with:
+          profile: minimal
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: pnpm i --frozen-lockfile
+
+      - name: Restore dependency sources without native target/profile reuse
+        uses: ./.github/actions/cargo-source-cache
+      - name: Fetch locked dependencies with bounded network retries
+        timeout-minutes: 10
+        env:
+          CARGO_NET_RETRY: '3'
+          CARGO_HTTP_TIMEOUT: '60'
+        run: cargo fetch --locked
+      - name: Run cargo test
+        run: cargo test --locked --profile ci-test --tests
+      - id: receipt
+        name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "rust-tests:ci-test:${{ inputs.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ inputs.os }}

@@ -60,7 +60,17 @@ class FormalProducts(unittest.TestCase):
 
     def inspect(self, values, current=None):
         body, artifact, run, job, desired = values
-        return formal.inspect_catalog(body, artifact, run, job, self.source, current or self.source, ABI, desired)
+        return formal.inspect_catalog(body, artifact, run, job, self.source, current or self.source, ABI, desired,
+            trusted_output={'artifact_id':str(artifact['id']), 'artifact_digest':artifact['digest'].removeprefix('sha256:'), 'run_attempt':str(run['run_attempt'])})
+
+    def test_unsigned_catalog_cannot_use_upload_time_as_authority(self):
+        body, artifact, run, job, desired = self.fixture()
+        with self.assertRaisesRegex(ValueError, 'Unsigned formal catalog'):
+            formal.inspect_catalog(body, artifact, run, job, self.source, self.source, ABI, desired)
+        for step in job['steps']:
+            step.pop('started_at'); step.pop('completed_at')
+        artifact.pop('created_at')
+        self.assertEqual(set(self.inspect((body, artifact, run, job, desired))), set(self.products))
 
     def test_matching_main_products_reused_without_test_acceptance(self):
         accepted = self.inspect(self.fixture())
@@ -149,6 +159,24 @@ class FormalProducts(unittest.TestCase):
         self.assertEqual(accepted, {})
         self.assertIn('latest-producer-attempt-not-successful', reasons)
         self.assertFalse(any('/attempts/' in route for route in requests))
+
+    def test_unsigned_successful_catalog_rebuilds_without_downloading_bytes(self):
+        _, artifact, run, job, _ = self.fixture(); source = self.source
+        class Transport:
+            def get(self, route):
+                if route == '/commits/main': return {'sha': source['sha']}
+                if route.startswith('/compare/'): return {'status':'identical','merge_base_commit':{'sha':source['sha']}}
+                if '/workflows/' in route: return {'workflow_runs':[{'id':10,'run_attempt':2}]}
+                if route == '/actions/runs/10': return run
+                if '/artifacts?' in route: return {'artifacts':[artifact]}
+                if route == '/actions/artifacts/20': return artifact
+                if '/jobs?' in route: return {'jobs':[job]}
+                raise AssertionError(route)
+            def archive(self, artifact_id):
+                raise AssertionError('Unsigned historical bytes must not be downloaded')
+        accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
+        self.assertEqual(accepted,{})
+        self.assertEqual(reasons,['unsigned-formal-catalog-build-current'])
 
     def test_missing_artifact_is_build_miss(self):
         _, _, run, _, _ = self.fixture(); source = self.source

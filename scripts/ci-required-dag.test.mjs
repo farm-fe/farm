@@ -100,5 +100,7 @@ test('obsolete compatibility jobs are absent and all workflow dependencies still
   }
   for(const key of ['type-check','changesets-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test','docs-acceptance','execution-baseline','incremental-execution-gate'])assert.ok(workflow.jobs[key],key);
   assert.ok(unit.jobs['cargo-check'].steps.some(step=>step.run?.includes('cargo check')));
-  assert.ok(unit.jobs['cargo-test'].steps.some(step=>step.run?.includes('cargo test')));
+  const platform=YAML.parse(fs.readFileSync(new URL('../.github/workflows/rust-test-platform.yaml',import.meta.url),'utf8'));
+  assert.ok(platform.jobs['cargo-test'].steps.some(step=>step.run?.includes('cargo test')));
+  for(const key of ['linux','macos','windows'])assert.equal(unit.jobs['cargo-test-'+key].uses,'./.github/workflows/rust-test-platform.yaml');
 });

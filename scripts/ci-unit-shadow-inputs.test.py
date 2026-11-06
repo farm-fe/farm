@@ -40,6 +40,8 @@ def fixture():
         value={**identity,'runAttempt':str(attempt),'cell':cell,'jobKey':key,'workflowRef':'farm-fe/farm/.github/workflows/rust-test.yaml@refs/pull/2330/merge','schemaVersion':2,'planBound':False,'status':'executed-success','acceptanceInherited':False,'authoritativeJobIdentityVerified':False}
         value['observationHash']=module.impact.digest(value)
         add(i+2,'impact-cell-'+identity['testedSHA']+'-'+key+'-'+suffix+'-'+str(attempt),attempt,value,'receipt.json','Preserve actual cell receipt (shadow only)',name)
+    for attempt, rows in jobs.items():
+        for job in rows: job.update(head_sha=run['head_sha'], run_attempt=attempt)
     class API:
         def get(self,route):
             calls.append(route)
@@ -201,7 +203,7 @@ class Contracts(unittest.TestCase):
             loader=SimpleNamespace(exec_module=lambda _:None)
             with tempfile.TemporaryDirectory() as tmp:
                 target=Path(tmp)/'report.json'
-                env={'CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS':'true','CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test']})}
+                env={'CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS':'true','CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test-linux','cargo-test-macos','cargo-test-windows']})}
                 with mock.patch.dict(os.environ,env), mock.patch.object(sys,'argv',['summary','--plan','unused','--output',str(target)]), mock.patch.object(summary.importlib.util,'spec_from_file_location',return_value=SimpleNamespace(loader=loader)), mock.patch.object(summary.importlib.util,'module_from_spec',return_value=resolver):
                     if fails:
                         with self.assertRaises(SystemExit):summary.main()
@@ -220,7 +222,7 @@ class Contracts(unittest.TestCase):
     def test_missing_plan_reports_unavailable_without_false_sha_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:
             output=Path(tmp)/'report.json'
-            env={**os.environ,'CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test']})}
+            env={**os.environ,'CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test-linux','cargo-test-macos','cargo-test-windows']})}
             env.pop('CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS',None)
             result=subprocess.run([sys.executable,'-B',str(Path(__file__).with_name('ci-impact-summary.py')),'--plan',str(Path(tmp)/'missing'),'--output',str(output)],env=env,capture_output=True,text=True)
             self.assertEqual(result.returncode,1)

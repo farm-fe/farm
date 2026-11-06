@@ -20,18 +20,18 @@ test('actual Farm env source exposes harness variables unless the TS child is is
   const code = stripTypeScriptTypes(source).replace(/^import[\s\S]*?;[ \t]*(?:\r?\n)?/gm, '').replace(/^export /gm, '');
   const create = new Function('fs', 'path', 'parse', 'expand', 'arraify', 'normalizePath', 'tryStatSync', 'process', code + '\nreturn loadEnv;');
   const load = env => create({}, path, () => ({}), () => {}, value => Array.isArray(value) ? value : [value], value => value, () => null, {env})('development', '/empty-fixture');
-  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: '', FARM_SUITE_RESULTS_FILE: 'ci-suite-results/ts.json', FARM_DISABLE_CACHE: ''};
+  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: '', FARM_SUITE_SELECTION_UPLOAD: '{"artifact_id":"123"}', FARM_SUITE_RESULTS_FILE: 'ci-suite-results/ts.json', FARM_DISABLE_CACHE: ''};
   assert.deepEqual(load(parent), parent);
   assert.deepEqual(load(typeScriptChildEnvironment(parent)), {FARM_DISABLE_CACHE: ''});
   assert.equal(parent.FARM_SUITE_ABI, 'linux-x64-gnu');
 });
 
 test('actual TS child invocation keeps product env and parent evidence while removing only harness controls', async () => {
-  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: 'bound hash', FARM_DISABLE_CACHE: 'true', VITE_FEATURE: 'kept'};
+  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: 'bound hash', FARM_SUITE_SELECTION_UPLOAD: '{"artifact_id":"123"}', FARM_DISABLE_CACHE: 'true', VITE_FEATURE: 'kept'};
   let observed;
   await runVitestCommand({run: async (_file, _args, options) => {observed = options.env;}, npm: 'npm-cli.js', filters: [],
     raw: 'not-written.json', directory: '.', env: parent, log: 'not-written.log'});
-  assert.equal(observed.FARM_SUITE_ABI, undefined); assert.equal(observed.FARM_SUITE_SELECTION_HASH, undefined);
+  assert.equal(observed.FARM_SUITE_SELECTION_UPLOAD, undefined); assert.equal(observed.FARM_SUITE_ABI, undefined); assert.equal(observed.FARM_SUITE_SELECTION_HASH, undefined);
   assert.equal(observed.FARM_DISABLE_CACHE, 'true'); assert.equal(observed.VITE_FEATURE, 'kept');
   assert.equal(parent.FARM_SUITE_SELECTION_HASH, 'bound hash');
 });

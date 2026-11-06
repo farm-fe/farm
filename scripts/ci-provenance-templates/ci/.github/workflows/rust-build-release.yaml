@@ -1,0 +1,428 @@
+name: Build Release Rust Artifacts
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        default: all
+      native_owners:
+        required: false
+        type: string
+        default: ''
+      profile:
+        required: false
+        type: string
+        default: ci
+
+    outputs:
+      product_upload:
+        value: ${{ jobs.build.outputs.product_upload }}
+      artifact_id:
+        value: ${{ jobs.build.outputs.artifact_id }}
+      artifact_digest:
+        value: ${{ jobs.build.outputs.artifact_digest }}
+      run_attempt:
+        value: ${{ jobs.build.outputs.run_attempt }}
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rust-build-release-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    outputs:
+      product_upload: ${{ steps.product-binding.outputs.binding }}
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
+    name: Build and Upload Release Artifacts - ${{ matrix.settings.abi }}
+    runs-on: ${{ matrix.settings.os }}
+    env:
+      FARM_NATIVE_PROOF_MODE: shadow
+      FARM_RELEASE_NATIVE_OWNERS: ${{ inputs.native_owners }}
+    # Only musl receives the tighter outer bound; other targets keep the 360-minute default.
+    timeout-minutes: ${{ matrix.settings.abi == 'linux-x64-musl' && 150 || 360 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings: ${{ fromJSON(inputs.platform == 'all' && '[{"os":"ubuntu-24.04","docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine","abi":"linux-x64-musl","target":"x86_64-unknown-linux-musl"},{"os":"macos-latest","abi":"darwin-x64","target":"x86_64-apple-darwin"},{"os":"windows-latest","abi":"win32-ia32-msvc","target":"i686-pc-windows-msvc"},{"os":"windows-latest","abi":"win32-arm64-msvc","target":"aarch64-pc-windows-msvc"},{"os":"ubuntu-24.04","abi":"linux-arm64-musl","target":"aarch64-unknown-linux-musl","zig":true},{"os":"ubuntu-24.04","abi":"linux-arm64-gnu","target":"aarch64-unknown-linux-gnu","zig":true}]' || inputs.platform == 'linux-x64-musl' && '[{"os":"ubuntu-24.04","docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine","abi":"linux-x64-musl","target":"x86_64-unknown-linux-musl"}]' || inputs.platform == 'darwin-x64' && '[{"os":"macos-latest","abi":"darwin-x64","target":"x86_64-apple-darwin"}]' || inputs.platform == 'win32-ia32-msvc' && '[{"os":"windows-latest","abi":"win32-ia32-msvc","target":"i686-pc-windows-msvc"}]' || inputs.platform == 'win32-arm64-msvc' && '[{"os":"windows-latest","abi":"win32-arm64-msvc","target":"aarch64-pc-windows-msvc"}]' || inputs.platform == 'linux-arm64-musl' && '[{"os":"ubuntu-24.04","abi":"linux-arm64-musl","target":"aarch64-unknown-linux-musl","zig":true}]' || inputs.platform == 'linux-arm64-gnu' && '[{"os":"ubuntu-24.04","abi":"linux-arm64-gnu","target":"aarch64-unknown-linux-gnu","zig":true}]' || '[]') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Resolve the host Cargo cache for Docker mounts
+        shell: bash
+        run: |
+          node --input-type=commonjs <<'NODE'
+          const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
+          const home = path.join(os.homedir(), '.cargo');
+          if (/[\r\n]/.test(home)) throw Error('Cargo source home must be a single line');
+          for (const member of ['git', 'registry']) fs.mkdirSync(path.join(home, member), {recursive: true});
+          fs.appendFileSync(process.env.GITHUB_ENV, `FARM_CARGO_HOME=${home}\n`);
+          NODE
+      - name: Restore small dependency sources without saving target archives
+        uses: ./.github/actions/cargo-source-cache
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Install Dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: pnpm i --frozen-lockfile
+
+      - name: Build Plugin Tools
+        run: pnpm --filter @farmfe/plugin-tools run build
+      - run: rustup target add ${{ matrix.settings.target }}
+        if: ${{ matrix.settings.target }}
+      - uses: mlugg/setup-zig@v2
+        if: ${{ matrix.settings.zig }}
+        with:
+          version: 0.13.0
+      - name: Free Disk Space (Ubuntu)
+        if: ${{ matrix.settings.docker }}
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+      - name: Build in Docker with host-owned Cargo cache export
+        if: ${{ matrix.settings.docker }}
+        run: node scripts/formal-native-build.mjs
+        env:
+          FARM_BUILD_IMAGE: ${{ matrix.settings.docker }}
+          GH_TOKEN: ${{ github.token }}
+          FARM_BUILD_PROFILE: ${{ inputs.profile }}
+          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
+          FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
+          FARM_BUILD_ZIG: ${{ matrix.settings.zig || false }}
+      - name: Preserve owned-container cache readability and build exit evidence
+        if: ${{ always() && matrix.settings.docker }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-cache-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .ci-native-cache/${{ matrix.settings.abi }}.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Build
+        if: ${{ !matrix.settings.docker }}
+        run: node scripts/formal-native-build.mjs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_BUILD_PROFILE: ${{ inputs.profile }}
+          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
+          FARM_BUILD_TARGET: ${{ matrix.settings.target || '' }}
+          FARM_BUILD_ZIG: ${{ matrix.settings.zig || false }}
+      - name: Preserve current consumer binding and original main provenance
+        if: inputs.profile == 'ci'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formal-resolution-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .formal-native/${{ matrix.settings.abi }}/resolution.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Core
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/core') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
+          if-no-files-found: error
+      - name: Upload Create Farm Rust
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), 'create-farm') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
+          path: ./packages/create-farm/create-farm.${{ matrix.settings.abi }}.node
+          if-no-files-found: error
+      - name: Upload Plugin React
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-react') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
+          path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Replace Dirname
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-replace-dirname') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Sass
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-sass') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
+          path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Vue
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-vue') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
+          path: rust-plugins/vue/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Vue JSX
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-vue-jsx') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
+          path: rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Auto Import
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-auto-import') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
+          path: rust-plugins/auto-import/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Compress
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-compress') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
+          path: rust-plugins/compress/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Dsv
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-dsv') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
+          path: rust-plugins/dsv/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Dts
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-dts') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
+          path: rust-plugins/dts/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Icons
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-icons') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
+          path: rust-plugins/icons/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Image
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-image') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
+          path: rust-plugins/image/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Mdx
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-mdx') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
+          path: rust-plugins/mdx/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Modular Import
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-modular-import') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
+          path: rust-plugins/modular-import/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin React Components
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-react-components') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
+          path: rust-plugins/react-components/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Strip
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-strip') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
+          path: rust-plugins/strip/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Svgr
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-svgr') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
+          path: rust-plugins/svgr/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Url
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-url') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
+          path: rust-plugins/url/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Virtual
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-virtual') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
+          path: rust-plugins/virtual/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Wasm
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-wasm') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
+          path: rust-plugins/wasm/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Worker
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-worker') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
+          path: rust-plugins/worker/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin Yaml
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-yaml') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
+          path: rust-plugins/yaml/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin TailwindCSS
+        if: ${{ inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-tailwindcss') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
+          path: rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin ssr-css
+        if: ${{ (contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi)) && (inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-ssr-css')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-ssr-css
+          path: rust-plugins/ssr-css/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin syntax-highlight
+        if: ${{ (contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi)) && (inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-syntax-highlight')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-syntax-highlight
+          path: rust-plugins/syntax-highlight/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs
+        if: ${{ (contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi)) && (inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-docs')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs
+          path: rust-plugins/docs/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs-snapshot
+        if: ${{ (contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi)) && (inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-docs-snapshot')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snapshot
+          path: rust-plugins/docs-snapshot/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs-seo
+        if: ${{ (contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi)) && (inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-docs-seo')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-seo
+          path: rust-plugins/docs-seo/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - name: Upload Plugin docs-snippets
+        if: ${{ (contains(fromJSON('["win32-x64-msvc","linux-x64-gnu","linux-arm64-gnu","darwin-x64","darwin-arm64"]'), matrix.settings.abi)) && (inputs.profile != 'release' || inputs.native_owners == '' || contains(fromJSON(inputs.native_owners), '@farmfe/plugin-docs-snippets')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snippets
+          path: rust-plugins/docs-snippets/npm/${{ matrix.settings.abi }}/index.farm
+          if-no-files-found: error
+      - uses: actions/setup-python@v5
+        continue-on-error: true
+        with:
+          python-version: '3.12'
+      - name: Capture exact native product bytes
+        continue-on-error: ${{ inputs.profile != 'release' }}
+        env:
+          FARM_BUILD_ABI: ${{ matrix.settings.abi }}
+          GH_TOKEN: ${{ github.token }}
+          FARM_BUILD_PROFILE: ${{ inputs.profile }}
+          FARM_BUILD_TARGET: ${{ matrix.settings.target }}
+        run: |
+          node scripts/ci-native-capture.mjs products
+      - name: Capture committed source ledger (shadow only)
+        continue-on-error: true
+        run: |
+          python scripts/ci-native-evidence.py --products .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output .ci-native-host-proof/${{ matrix.settings.abi }}/source.json
+      - name: Preserve required release product proof
+        if: ${{ inputs.profile == 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-shadow-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .ci-native-host-proof/${{ matrix.settings.abi }}/products.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Seal formal native product catalog
+        id: formal-catalog
+        if: inputs.profile == 'release'
+        env:
+          FARM_BUILD_PROFILE: release
+        run: python -B scripts/formal-native-products.py produce --abi ${{ matrix.settings.abi }} --capture .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output formal-native-catalog
+      - name: Upload formal native product catalog
+        if: inputs.profile == 'release' && steps.formal-catalog.outputs.catalog_available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formal-native-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          path: formal-native-catalog/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Preserve bounded shadow producer context without duplicating native archives
+        id: product-upload
+        if: ${{ always() && inputs.profile != 'release' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-shadow-${{ github.sha }}-${{ matrix.settings.abi }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: .ci-native-host-proof/${{ matrix.settings.abi }}/*.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Bind native product upload action outputs
+        if: always() && steps.product-upload.outputs.artifact-id != ''
+        id: product-binding
+        shell: bash
+        env:
+          PRODUCT_ID: ${{ steps.product-upload.outputs.artifact-id }}
+          PRODUCT_DIGEST: ${{ steps.product-upload.outputs.artifact-digest }}
+        run: |
+          python - <<'PYBIND'
+          import json, os
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('binding=' + json.dumps({'artifact_id':os.environ['PRODUCT_ID'], 'artifact_digest':os.environ['PRODUCT_DIGEST'], 'run_attempt':os.environ['GITHUB_RUN_ATTEMPT']}) + '\n')
+          PYBIND
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "native:${{ inputs.profile }}:${{ matrix.settings.abi }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ matrix.settings.abi }}

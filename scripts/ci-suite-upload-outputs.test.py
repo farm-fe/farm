@@ -91,8 +91,10 @@ class Contracts(unittest.TestCase):
         root=Path(__file__).parents[1]
         interface=(root/'.github/workflows/ci-primary-platform.yaml').read_text().split('    outputs:\n',1)[1].split('permissions:',1)[0]
         declared=set(re.findall(r'^      ([a-z_]+):$',interface,re.M))
-        self.assertEqual(len(declared),12)
-        for row in data['outputs'].values():self.assertEqual(set(row),declared)
+        self.assertEqual(len(declared),19)
+        self.assertIn('native_product_upload',declared)
+        legacy = {key for key in declared if not key.startswith(('native_', 'docs_'))}
+        for row in data['outputs'].values():self.assertEqual(set(row),legacy)
         spec=importlib.util.spec_from_file_location('shadow_outputs',Path(__file__).with_name('ci-e2e-shadow-inputs.py'))
         shadow=importlib.util.module_from_spec(spec);spec.loader.exec_module(shadow)
         observed=shadow.primary_upload_outputs({key.replace('FARM_SUITE_','CI_SHADOW_'):value for key,value in env.items()})
@@ -102,6 +104,33 @@ class Contracts(unittest.TestCase):
             row=data['outputs']['FARM_SUITE_UPLOADS_'+platform]
             for label,kind in [('ts','ts'),('browser','examples-browser')]:
                 self.assertEqual(resolved[abi][kind],{field:row[label+'_'+field] for field in ['artifact_id','artifact_digest','run_attempt']})
+
+    def test_new_primary_fields_accept_missing_skipped_mac_docs_but_not_partial_or_forged(self):
+        original=json.loads(Path(__file__).with_name('fixtures').joinpath('primary-upload-outputs-observation.json').read_text())['outputs']
+        for defect in [None,'partial-docs','partial-native','unknown','native-digest','linux-missing-docs','mac-docs-present','proof-digest','proof-attempt']:
+            rows=copy.deepcopy(original)
+            for platform in ['LINUX','MACOS','WINDOWS']:
+                row=rows['FARM_SUITE_UPLOADS_'+platform]
+                for label in ['native','docs']:
+                    if platform=='MACOS' and label=='docs':continue
+                    row.update({label+'_shadow_artifact_id':'123',label+'_shadow_artifact_digest':'a'*64,label+'_shadow_run_attempt':'1'})
+            for row in rows.values():row['native_product_upload']=json.dumps({'artifact_id':'123','artifact_digest':'b'*64,'run_attempt':'1'})
+            rows['FARM_SUITE_UPLOADS_LINUX']['native_product_upload']=''
+            mac=rows['FARM_SUITE_UPLOADS_MACOS']
+            if defect=='proof-digest':mac['native_product_upload']=json.dumps({'artifact_id':'123','artifact_digest':'bad','run_attempt':'1'})
+            elif defect=='proof-attempt':mac['native_product_upload']=json.dumps({'artifact_id':'123','artifact_digest':'b'*64,'run_attempt':'2'})
+            elif defect=='partial-docs':mac['docs_shadow_artifact_id']=''
+            elif defect=='partial-native':mac.pop('native_shadow_artifact_id')
+            elif defect=='unknown':mac['unknown']=''
+            elif defect=='native-digest':mac['native_shadow_artifact_digest']='bad'
+            elif defect=='linux-missing-docs':
+                for field in ['artifact_id','artifact_digest','run_attempt']:rows['FARM_SUITE_UPLOADS_LINUX'].pop('docs_shadow_'+field)
+            elif defect=='mac-docs-present':
+                mac.update({'docs_shadow_artifact_id':'123','docs_shadow_artifact_digest':'a'*64,'docs_shadow_run_attempt':'1'})
+            env={key:json.dumps(value) for key,value in rows.items()}
+            if defect:
+                with self.subTest(defect=defect),self.assertRaises(ValueError):module.current_upload_outputs(env)
+            else:self.assertEqual(len(module.current_upload_outputs(env)),3)
 
     def test_extended_outputs_reject_unknown_partial_or_malformed_fields(self):
         data=json.loads(Path(__file__).with_name('fixtures').joinpath('primary-upload-outputs-observation.json').read_text())
@@ -123,6 +152,9 @@ class Contracts(unittest.TestCase):
                 row={('ts' if kind=='ts' else 'browser')+'_'+field:value for kind,output in trusted[abi].items() for field,value in output.items()}
                 for label in ['ts','browser']:
                     row.update({label+'_shadow_artifact_id':'987654',label+'_shadow_artifact_digest':'a'*64,label+'_shadow_run_attempt':'1'})
+                for label in ['native','docs']:
+                    if label == 'docs' and abi == 'darwin-arm64': continue
+                    row.update({label+'_shadow_artifact_id':'987655',label+'_shadow_artifact_digest':'b'*64,label+'_shadow_run_attempt':'1'})
                 if defect and abi=='darwin-arm64':row['ts_'+defect]={'artifact_id':'999999','artifact_digest':'0'*64,'run_attempt':'3'}[defect]
                 env['FARM_SUITE_UPLOADS_'+platform]=json.dumps(row)
             for artifact in artifacts.values():artifact['created_at']='2026-10-31T01:03:01Z'

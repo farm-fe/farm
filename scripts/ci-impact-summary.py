@@ -129,7 +129,7 @@ def main():
     # CI shadow reporting has no release candidate or publication stage.
     expected = ["impact-plan", "release-contract-tests", "platform-contract-tests", "call-rust-build-user", "call-rust-build-release", "check-native-candidate-assembly", "examples-test", "docs-acceptance", "type-check", "ts-test", "execution-baseline"]
     if os.environ.get("CI_IMPACT_SCOPE") == "unit":
-        expected = ["impact-plan", "cargo-check", "cargo-test"]
+        expected = ["impact-plan", "cargo-check", "cargo-test-linux", "cargo-test-macos", "cargo-test-windows"]
     report = summarize(plan, needs, expected)
     report["planningFallback"] = plan.get("planningFallback") is True
     report["planUnavailable"] = plan.get("unavailable")

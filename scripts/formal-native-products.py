@@ -177,7 +177,7 @@ def create_catalog(source, capture, abi, run_id, attempt, root):
             'runId': run_id, 'attempt': attempt, 'abi': abi, 'context': context, 'records': records}, bodies
 
 
-def inspect_catalog(body, artifact, run, job, source, current, abi, desired_environment):
+def inspect_catalog(body, artifact, run, job, source, current, abi, desired_environment, *, trusted_output=None):
     check(run['path'] == WORKFLOW and run['head_branch'] == 'main' and run['event'] in ['push', 'workflow_dispatch'], 'Not a main formal producer')
     check(run['status'] == 'completed' and run['conclusion'] == 'success', 'Producer candidate validation did not succeed')
     check(run['repository']['id'] == run['head_repository']['id'] == desired_environment['repositoryId'], 'Fork or foreign producer')
@@ -186,7 +186,10 @@ def inspect_catalog(body, artifact, run, job, source, current, abi, desired_envi
     check(job.get('run_attempt') == run['run_attempt'], 'Native job attempt differs')
     check(artifact['workflow_run']['id'] == run['id'] and artifact['expired'] is False, 'Artifact expired or wrong run')
     check(artifact['name'] == f"formal-native-{abi}-{run['run_attempt']}", 'Wrong catalog attempt')
-    execution.upload_binding(job, UPLOAD, artifact)
+    check(trusted_output is not None, 'Unsigned formal catalog has no independent producer binding; build current source')
+    check(set(trusted_output) == {'artifact_id', 'artifact_digest', 'run_attempt'}
+          and trusted_output['run_attempt'] == str(run['run_attempt']), 'Formal catalog binding attempt differs')
+    execution.upload_binding(job, UPLOAD, artifact, trusted_output)
     check(0 < len(body) <= MAX and len(body) == artifact['size_in_bytes'] and artifact['digest'] == 'sha256:' + hashlib.sha256(body).hexdigest(), 'Catalog bytes differ')
     check(source['sha'] == run['head_sha'], 'Producer source differs')
     old, wanted = product_inputs(source, abi), product_inputs(current, abi)
@@ -242,8 +245,11 @@ def resolve_products(transport, source, abi, desired, read_source=evidence.sourc
             matching = [job for job in jobs if any(step.get('name') == UPLOAD for step in job.get('steps', []))
                         and abi in job['name']]
             check(len(matching) == 1, 'Ambiguous native producer job')
-            products = inspect_catalog(transport.archive(artifact['id']), artifact, run, matching[0], read_source(run['head_sha']), source, abi, desired)
-            for owner, value in products.items(): accepted.setdefault(owner, value)
+            # Historical REST metadata has no independent producer/attempt anchor.
+            # CI/Unit attestations cannot authenticate this release producer. Do
+            # not download or reuse unsigned bytes; the caller builds each miss.
+            reasons.append('unsigned-formal-catalog-build-current')
+            continue
         except PermissionError:
             reasons.append('artifact-access-denied-build-current'); break
         except Exception as error:

@@ -1,0 +1,1407 @@
+{
+  "kind": "read-only-api-observation-not-upload-authority",
+  "runId": 41759140572,
+  "headSHA": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+  "limitations": "Jobs are real API records. needs outputs are not publicly available; replay supplies simulated bindings and is not authentication of historical artifacts.",
+  "attempts": {
+    "1": {
+      "total_count": 38,
+      "read_count": 38,
+      "url": "https://api.github.com/repos/farm-fe/farm/actions/runs/41759140572/attempts/1/jobs?per_page=100",
+      "jobs": [
+        {
+          "id": 126345437265,
+          "run_id": 41759140572,
+          "run_attempt": 1,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary Linux / Typescript Test (${{ matrix.settings.os }})",
+          "status": "completed",
+          "conclusion": "skipped",
+          "steps": []
+        },
+        {
+          "id": 126362153634,
+          "run_id": 41759140572,
+          "run_attempt": 1,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary macOS / Typescript Test (macos-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T03:09:15Z",
+              "completed_at": "2026-11-04T03:09:18Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T03:09:18Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:26Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T03:09:26Z",
+              "completed_at": "2026-11-04T03:09:30Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T03:09:30Z",
+              "completed_at": "2026-11-04T03:09:31Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T03:09:31Z",
+              "completed_at": "2026-11-04T03:17:05Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T03:17:05Z",
+              "completed_at": "2026-11-04T03:17:07Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T03:17:07Z",
+              "completed_at": "2026-11-04T03:17:26Z"
+            },
+            {
+              "name": "Test - darwin-arm64",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T03:17:26Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:36Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T03:17:36Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:39Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T03:17:39Z",
+              "completed_at": "2026-11-04T03:17:40Z"
+            }
+          ]
+        },
+        {
+          "id": 126374419345,
+          "run_id": 41759140572,
+          "run_attempt": 1,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary Windows / Typescript Test (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T03:46:09Z",
+              "completed_at": "2026-11-04T03:46:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T03:46:11Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:27Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T03:46:27Z",
+              "completed_at": "2026-11-04T03:46:36Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T03:46:36Z",
+              "completed_at": "2026-11-04T03:46:37Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T03:46:37Z",
+              "completed_at": "2026-11-04T03:49:27Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T03:49:27Z",
+              "completed_at": "2026-11-04T03:49:29Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T03:49:29Z",
+              "completed_at": "2026-11-04T03:50:28Z"
+            },
+            {
+              "name": "Test - win32-x64-msvc",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T03:50:28Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:02Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T03:51:02Z",
+              "completed_at": "2026-11-04T03:51:04Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T03:51:04Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:07Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T03:51:07Z",
+              "completed_at": "2026-11-04T03:51:07Z"
+            }
+          ]
+        }
+      ]
+    },
+    "2": {
+      "total_count": 40,
+      "read_count": 40,
+      "url": "https://api.github.com/repos/farm-fe/farm/actions/runs/41759140572/attempts/2/jobs?per_page=100",
+      "jobs": [
+        {
+          "id": 126384860013,
+          "run_id": 41759140572,
+          "run_attempt": 2,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary macOS / Typescript Test (macos-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T03:09:15Z",
+              "completed_at": "2026-11-04T03:09:18Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T03:09:18Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:26Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T03:09:26Z",
+              "completed_at": "2026-11-04T03:09:30Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T03:09:30Z",
+              "completed_at": "2026-11-04T03:09:31Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T03:09:31Z",
+              "completed_at": "2026-11-04T03:17:05Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T03:17:05Z",
+              "completed_at": "2026-11-04T03:17:07Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T03:17:07Z",
+              "completed_at": "2026-11-04T03:17:26Z"
+            },
+            {
+              "name": "Test - darwin-arm64",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T03:17:26Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:36Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T03:17:36Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:39Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T03:17:39Z",
+              "completed_at": "2026-11-04T03:17:40Z"
+            }
+          ]
+        },
+        {
+          "id": 126384860623,
+          "run_id": 41759140572,
+          "run_attempt": 2,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary Windows / Typescript Test (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T03:46:09Z",
+              "completed_at": "2026-11-04T03:46:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T03:46:11Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:27Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T03:46:27Z",
+              "completed_at": "2026-11-04T03:46:36Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T03:46:36Z",
+              "completed_at": "2026-11-04T03:46:37Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T03:46:37Z",
+              "completed_at": "2026-11-04T03:49:27Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T03:49:27Z",
+              "completed_at": "2026-11-04T03:49:29Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T03:49:29Z",
+              "completed_at": "2026-11-04T03:50:28Z"
+            },
+            {
+              "name": "Test - win32-x64-msvc",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T03:50:28Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:02Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T03:51:02Z",
+              "completed_at": "2026-11-04T03:51:04Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T03:51:04Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:07Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T03:51:07Z",
+              "completed_at": "2026-11-04T03:51:07Z"
+            }
+          ]
+        },
+        {
+          "id": 126406306733,
+          "run_id": 41759140572,
+          "run_attempt": 2,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary Linux / Typescript Test (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T05:25:04Z",
+              "completed_at": "2026-11-04T05:25:07Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T05:25:07Z",
+              "completed_at": "2026-11-04T05:25:12Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T05:25:12Z",
+              "completed_at": "2026-11-04T05:25:12Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T05:25:12Z",
+              "completed_at": "2026-11-04T05:25:12Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T05:25:12Z",
+              "completed_at": "2026-11-04T05:25:13Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T05:25:13Z",
+              "completed_at": "2026-11-04T05:25:17Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T05:25:17Z",
+              "completed_at": "2026-11-04T05:25:19Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T05:25:19Z",
+              "completed_at": "2026-11-04T05:26:34Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T05:26:34Z",
+              "completed_at": "2026-11-04T05:26:36Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T05:26:36Z",
+              "completed_at": "2026-11-04T05:27:07Z"
+            },
+            {
+              "name": "Test - linux-x64-gnu",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T05:27:07Z",
+              "completed_at": "2026-11-04T05:27:24Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T05:27:24Z",
+              "completed_at": "2026-11-04T05:27:24Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T05:27:24Z",
+              "completed_at": "2026-11-04T05:27:24Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T05:27:24Z",
+              "completed_at": "2026-11-04T05:27:26Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T05:27:26Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            }
+          ]
+        }
+      ]
+    },
+    "3": {
+      "total_count": 40,
+      "read_count": 40,
+      "url": "https://api.github.com/repos/farm-fe/farm/actions/runs/41759140572/attempts/3/jobs?per_page=100",
+      "jobs": [
+        {
+          "id": 126425320280,
+          "run_id": 41759140572,
+          "run_attempt": 3,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary macOS / Typescript Test (macos-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T03:09:15Z",
+              "completed_at": "2026-11-04T03:09:18Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T03:09:18Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:25Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T03:09:25Z",
+              "completed_at": "2026-11-04T03:09:26Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T03:09:26Z",
+              "completed_at": "2026-11-04T03:09:30Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T03:09:30Z",
+              "completed_at": "2026-11-04T03:09:31Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T03:09:31Z",
+              "completed_at": "2026-11-04T03:17:05Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T03:17:05Z",
+              "completed_at": "2026-11-04T03:17:07Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T03:17:07Z",
+              "completed_at": "2026-11-04T03:17:26Z"
+            },
+            {
+              "name": "Test - darwin-arm64",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T03:17:26Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:35Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T03:17:35Z",
+              "completed_at": "2026-11-04T03:17:36Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T03:17:36Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:38Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T03:17:38Z",
+              "completed_at": "2026-11-04T03:17:39Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T03:17:39Z",
+              "completed_at": "2026-11-04T03:17:40Z"
+            }
+          ]
+        },
+        {
+          "id": 126425320753,
+          "run_id": 41759140572,
+          "run_attempt": 3,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary Windows / Typescript Test (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T03:46:09Z",
+              "completed_at": "2026-11-04T03:46:11Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T03:46:11Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:23Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T03:46:23Z",
+              "completed_at": "2026-11-04T03:46:27Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T03:46:27Z",
+              "completed_at": "2026-11-04T03:46:36Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T03:46:36Z",
+              "completed_at": "2026-11-04T03:46:37Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T03:46:37Z",
+              "completed_at": "2026-11-04T03:49:27Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T03:49:27Z",
+              "completed_at": "2026-11-04T03:49:29Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T03:49:29Z",
+              "completed_at": "2026-11-04T03:50:28Z"
+            },
+            {
+              "name": "Test - win32-x64-msvc",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T03:50:28Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:01Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T03:51:01Z",
+              "completed_at": "2026-11-04T03:51:02Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T03:51:02Z",
+              "completed_at": "2026-11-04T03:51:04Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T03:51:04Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:05Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T03:51:05Z",
+              "completed_at": "2026-11-04T03:51:07Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T03:51:07Z",
+              "completed_at": "2026-11-04T03:51:07Z"
+            }
+          ]
+        },
+        {
+          "id": 126425320863,
+          "run_id": 41759140572,
+          "run_attempt": 3,
+          "head_sha": "bd4dbca5cc0b0ca834160ea46b5be2c7ff46326d",
+          "name": "Primary Linux / Typescript Test (ubuntu-24.04)",
+          "status": "completed",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2026-11-04T05:25:04Z",
+              "completed_at": "2026-11-04T05:25:07Z"
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2026-11-04T05:25:07Z",
+              "completed_at": "2026-11-04T05:25:12Z"
+            },
+            {
+              "name": "Run actions/setup-python@v5",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 3,
+              "started_at": "2026-11-04T05:25:12Z",
+              "completed_at": "2026-11-04T05:25:12Z"
+            },
+            {
+              "name": "Restore original same-run suite selection",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 4,
+              "started_at": "2026-11-04T05:25:12Z",
+              "completed_at": "2026-11-04T05:25:12Z"
+            },
+            {
+              "name": "Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 5,
+              "started_at": "2026-11-04T05:25:12Z",
+              "completed_at": "2026-11-04T05:25:13Z"
+            },
+            {
+              "name": "Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 6,
+              "started_at": "2026-11-04T05:25:13Z",
+              "completed_at": "2026-11-04T05:25:17Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 7,
+              "started_at": "2026-11-04T05:25:17Z",
+              "completed_at": "2026-11-04T05:25:19Z"
+            },
+            {
+              "name": "Install Dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 8,
+              "started_at": "2026-11-04T05:25:19Z",
+              "completed_at": "2026-11-04T05:26:34Z"
+            },
+            {
+              "name": "Run actions/download-artifact@v4.1.3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 9,
+              "started_at": "2026-11-04T05:26:34Z",
+              "completed_at": "2026-11-04T05:26:36Z"
+            },
+            {
+              "name": "Prepare selected TypeScript suite dependencies",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 10,
+              "started_at": "2026-11-04T05:26:36Z",
+              "completed_at": "2026-11-04T05:27:07Z"
+            },
+            {
+              "name": "Test - linux-x64-gnu",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 11,
+              "started_at": "2026-11-04T05:27:07Z",
+              "completed_at": "2026-11-04T05:27:24Z"
+            },
+            {
+              "name": "Preserve bounded TypeScript failure diagnostics without acceptance receipts",
+              "status": "completed",
+              "conclusion": "skipped",
+              "number": 12,
+              "started_at": "2026-11-04T05:27:24Z",
+              "completed_at": "2026-11-04T05:27:24Z"
+            },
+            {
+              "name": "Bind actual suite upload attempt",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 13,
+              "started_at": "2026-11-04T05:27:24Z",
+              "completed_at": "2026-11-04T05:27:24Z"
+            },
+            {
+              "name": "Preserve actual TypeScript discovery and execution counts",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 14,
+              "started_at": "2026-11-04T05:27:24Z",
+              "completed_at": "2026-11-04T05:27:26Z"
+            },
+            {
+              "name": "Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 15,
+              "started_at": "2026-11-04T05:27:26Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Preserve actual cell receipt (shadow only)",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 27,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Run actions/setup-node@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 28,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Setup pnpm",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 29,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Post Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 30,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            },
+            {
+              "name": "Complete job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 31,
+              "started_at": "2026-11-04T05:27:28Z",
+              "completed_at": "2026-11-04T05:27:28Z"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

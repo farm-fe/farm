@@ -5,7 +5,7 @@ import YAML from 'yaml';
 import {spawnSync} from 'node:child_process';
 const read = file => fs.readFileSync(new URL(`../.github/workflows/${file}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
 
-test('native matrices wait for cheap spelling, release/pack and three-platform performance contracts', () => {
+test('native matrices wait for cheap spelling, release/pack and three-platform safety contracts', () => {
   const ci = read('ci.yaml');
   const preflight = ci.split('  release-contract-tests:')[1].split('  docs-acceptance:')[0];
   assert.match(preflight, /pnpm exec cspell "\*\*" --gitignore/);
@@ -76,7 +76,7 @@ test('Cargo restores cover all nine targets while only the three primary produce
     assert.ok(source.includes('name: ${{ github.sha }}-${{ matrix.settings.abi }}'));
   }
   const release = read('rust-build-release.yaml');
-  for (const target of ['linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu']) assert.ok(release.includes(`abi: ${target}`));
+  for (const target of ['linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu']) assert.ok(JSON.parse(YAML.parse(release).jobs.build.strategy.matrix.settings.match(/inputs.platform == 'all' && '([^']+)'/)[1]).some(row => row.abi === target));
 });
 
 test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
@@ -103,7 +103,7 @@ test('cache writers are limited while Docs stays inside CI and native assembly r
   const ci = read('ci.yaml');
   assert.match(ci.split('  docs-acceptance:')[1].split('  platform-contract-tests:')[0], /needs: \[version-classification, primary-linux, primary-windows\]/);
   const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
-  assert.match(assembly, /needs: \[version-classification, call-rust-build-user, call-rust-build-release, type-check\]/);
+  assert.match(assembly, /needs: \[version-classification, call-rust-build-user, call-rust-build-release, type-check, primary-linux, primary-macos, primary-windows\]/);
 });
 
 test('source archives and native target caches have disjoint ownership and stable compatible keys', () => {
@@ -127,7 +127,7 @@ test('source archives and native target caches have disjoint ownership and stabl
 });
 
 test('Unit preserves its existing ci-test profile and source fetch retries do not wrap compiler failures', () => {
-  const unit = read('rust-test.yaml'), docs = read('farm-docs.yaml');
+  const unit = read('rust-test.yaml') + read('rust-test-platform.yaml'), docs = read('farm-docs.yaml');
   assert.match(unit, /cargo test --locked --profile ci-test --tests/);
   assert.match(unit, /cargo check --locked --color always --all --all-targets/);
   assert.doesNotMatch(unit, /Swatinem\/rust-cache|cargo test.*\|\|/);

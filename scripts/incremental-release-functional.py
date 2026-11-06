@@ -34,7 +34,16 @@ def exact_plan(body, artifact, member="plan.json"):
         return json.loads(archive.read(rows[0]).decode("utf-8"))
 
 
-def verify_functional(transport, source, bindings, current_run=None):
+def main_binding_proof(transport, run, source):
+    consumer = entry.load('functional_signed_consumer', 'ci-provenance-consumer.py')
+    verifier = entry.load('functional_pinned_cli', 'ci-pinned-attestation-cli.py')
+    trust = json.loads(Path(__file__).with_name('ci-provenance-trust.json').read_text())
+    check(isinstance(trust, dict) and set(trust) == {'schemaVersion', 'signerSHA'} and trust['schemaVersion'] == 1,
+          'Reviewed signer trust configuration differs')
+    return consumer.load_verified_run(transport, run, source, trust['signerSHA'], verify=verifier.verify_on_host)
+
+
+def verify_functional(transport, source, bindings, current_run=None, *, proof_provider=None):
     check(isinstance(bindings, dict) and set(bindings) in [{"ci", "unit", "lint", "spell"}, {"ci", "unit", "lint", "spell", "title"}],
           "Exact CI, Unit and quality workflow acceptance runs required")
     repository = transport.get("")
@@ -51,39 +60,31 @@ def verify_functional(transport, source, bindings, current_run=None):
               and run["status"] == "completed" and run["conclusion"] == "success", "Functional workflow did not succeed")
         check(run["repository"]["id"] == repository["id"] == run["head_repository"]["id"]
               and run["event"] in ["pull_request", "workflow_dispatch", "push"], "Functional run repository/event differs")
+        latest = transport.get('/actions/runs/' + str(run['id']))
+        check(all(latest.get(key) == run.get(key) for key in ['id','run_attempt','path','head_sha','event','status','conclusion']),
+              'Functional latest attempt differs; prior success cannot authorize publication')
         tested = transport.get("/git/commits/" + binding["testedSHA"])
         check(tested["tree"]["sha"] == source["tree"], "Actually tested functional tree differs from release source")
+        check(run['event'] == 'push' and run['head_branch'] == repository['default_branch']
+              and run['head_sha'] == binding['testedSHA'] == source['sha'], 'Functional default-branch checkout differs')
         jobs = entry.execution.jobs_for(transport, run)
-        attempts = {}
         for name in required:
-            entry.execution.actual_producer(transport, run, name, jobs, attempts)
-        planner_run, planner_job = entry.execution.actual_producer(transport, run, planner, jobs, attempts)
-        name = "impact-plan-" + binding["testedSHA"] + "-" + str(planner_run["run_attempt"])
-        response = transport.get("/actions/runs/" + str(run["id"]) + "/artifacts?per_page=2&name=" + name)
-        rows = response["artifacts"]
-        check(response.get("total_count") == 1 and len(rows) == 1 and rows[0]["name"] == name and rows[0]["expired"] is False, "Exact functional source artifact missing")
-        artifact = transport.get("/actions/artifacts/" + str(rows[0]["id"]))
-        check(artifact["workflow_run"]["id"] == run["id"] and artifact["name"] == name and artifact["expired"] is False
-              and 0 < artifact["size_in_bytes"] <= 4 * 1024 * 1024, "Functional artifact producer differs")
-        entry.execution.upload_binding(planner_job, 'Upload fixed source impact plan', artifact)
-        plan = exact_plan(transport.archive(artifact["id"]), artifact)
+            job = entry.evidence.successful_job(jobs, name)
+            check(job.get('run_id') == run['id'] and job.get('head_sha') == run['head_sha']
+                  and job.get('run_attempt') == run['run_attempt'], 'Functional current attempt job identity differs')
+        expected, signed = (main_binding_proof if proof_provider is None else proof_provider)(transport, run, source)
+        check('planner' in signed and signed['planner']['producer'] == planner, 'Signed functional planner role missing')
+        consumer = entry.load('functional_attested_binding', 'ci-attested-bindings.py')
+        body, artifact, planner_run, planner_job = consumer.bound_artifact(transport, run, signed['planner'], expected)
+        plan = exact_plan(body, artifact)
         check(plan.get("testedSHA") == binding["testedSHA"] and plan.get("testedTree") == source["tree"]
               and str(plan.get("runId")) == str(run["id"]) and str(plan.get("runAttempt")) == str(planner_run["run_attempt"])
               and plan.get("repository") == repository["full_name"], "Functional plan execution identity differs")
         check(plan.get("planHash") == entry.chain.digest({key: value for key, value in plan.items() if key != "planHash"}), "Functional plan hash differs")
-        if run["event"] == "pull_request":
-            parents = {row["sha"] for row in tested.get("parents", [])}
-            check(plan.get("headSHA") == run["head_sha"] and {plan.get("headSHA"), plan.get("baseSHA")} == parents,
-                  "Functional checkout is not its actual PR test merge")
-            check(any(row.get("head", {}).get("sha") == plan["headSHA"] and row.get("base", {}).get("sha") == plan["baseSHA"]
-                      for row in run.get("pull_requests", [])), "Functional PR source association differs")
-        else:
-            check(run["event"] == "push" and run["head_branch"] == repository["default_branch"]
-                  and run["head_sha"] == binding["testedSHA"] == source['sha'], "Functional default-branch checkout differs")
-            check(not plan.get('planningFallback') and not plan.get('unavailable'), 'Functional main source plan unavailable')
-            source_plan = importlib.util.spec_from_file_location('functional_source_plan', Path(__file__).with_name('ci-source-plan.py'))
-            verifier = importlib.util.module_from_spec(source_plan); source_plan.loader.exec_module(verifier)
-            verifier.verify_main_plan(plan, 'e2e' if scope == 'ci' else 'unit')
+        check(not plan.get('planningFallback') and not plan.get('unavailable'), 'Functional main source plan unavailable')
+        source_plan = importlib.util.spec_from_file_location('functional_source_plan', Path(__file__).with_name('ci-source-plan.py'))
+        verifier = importlib.util.module_from_spec(source_plan); source_plan.loader.exec_module(verifier)
+        verifier.verify_main_plan(plan, 'e2e' if scope == 'ci' else 'unit')
         if scope == "ci":
             accepted_head, accepted_base = run["head_sha"], plan.get("baseSHA")
     for scope, path in [("lint", ".github/workflows/lint.yaml"), ("spell", ".github/workflows/code-spell-check.yaml"), ("title", ".github/workflows/lint-pr-title.yml")]:

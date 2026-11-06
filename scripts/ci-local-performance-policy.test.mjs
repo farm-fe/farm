@@ -26,7 +26,7 @@ test('ordinary execution baseline keeps real coverage and immutable source evide
     assert.ok(job.steps.some(step => step.run?.includes(command)), command);
   assert.ok(job.steps.some(step => step.with?.name === 'farm-ci-execution-baseline-${{ github.run_id }}-${{ github.run_attempt }}' && step.with['if-no-files-found'] === 'error'));
   for (const name of ['v2-cargo-cache-command', 'verify-published-v2-consumers', 'ci-native-capture', 'unified-impact-graph'])
-    assert.ok(jobs['platform-contract-tests'].steps.some(step => step.run?.includes(name)), name);
+    assert.ok(YAML.parse(read('.github/workflows/ci-platform-safety.yaml')).jobs['platform-contract-tests'].steps.some(step => step.run?.includes(name)), name);
 });
 test('Commerce retains actual business assertions as ordinary production Examples E2E', () => {
   const spec = read('examples/commerce-lab/e2e.spec.mjs');
@@ -43,15 +43,17 @@ test('release and recovery require functional evidence but no performance archiv
   for (const name of ['incremental-release-functional.py', 'incremental-chain-runtime.py', 'v2-auto-release.mjs', 'prepare-v2-release-intent.mjs'])
     assert.doesNotMatch(read('scripts/' + name), /performanceRequired|verify_performance|Commerce Performance|performance-pr-summary/, name);
   const functional = read('scripts/incremental-release-functional.py');
-  for (const value of ['Typescript Test', 'Examples Test', 'Docs /', 'Type Check', 'actual_producer', 'exact_plan', 'tested functional tree']) assert.ok(functional.includes(value), value);
+  for (const value of ['Typescript Test', 'Examples Test', 'Docs /', 'Type Check', 'main_binding_proof', 'bound_artifact', 'exact_plan', 'tested functional tree']) assert.ok(functional.includes(value), value);
   const release = YAML.parse(read('.github/workflows/incremental-release.yaml'));
   assert.ok(read('scripts/release-evidence-recovery.py').includes(release.jobs['main-evidence'].name));
   assert.ok(read('scripts/performance-report.mjs').includes('for (let round = -1; round < 3; round++)'));
 });
 
 test('Windows path safety receives the exact setup-python executable independently of sampling', () => {
-  const job = YAML.parse(read('.github/workflows/ci.yaml')).jobs['platform-contract-tests'];
-  assert.ok(job.strategy.matrix.os.includes('windows-latest'));
+  const caller = YAML.parse(read('.github/workflows/ci.yaml')).jobs['platform-contract-windows'];
+  assert.equal(caller.with.os, 'windows-latest');
+  assert.equal(caller.uses, './.github/workflows/ci-platform-safety.yaml');
+  const job = YAML.parse(read('.github/workflows/ci-platform-safety.yaml')).jobs['platform-contract-tests'];
   const setup = job.steps.find(step => step.id === 'contract-python');
   assert.equal(setup.uses, 'actions/setup-python@v5');
   const step = job.steps.find(step => step.run?.includes('verify-published-v2-consumers.test.mjs'));

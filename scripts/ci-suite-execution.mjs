@@ -43,7 +43,7 @@ export function typeScriptChildEnvironment(env) {
   const child = {...env};
   // Farm exposes FARM_* to application config. Harness-only receipt/selection
   // controls stay in the parent and must not change product tests or snapshots.
-  for (const name of ['FARM_SUITE_ABI', 'FARM_SUITE_SELECTION_HASH', 'CI_SUITE_SELECTION_PRODUCER_ATTEMPT', 'FARM_SUITE_RESULTS_FILE']) delete child[name];
+  for (const name of ['FARM_SUITE_ABI', 'FARM_SUITE_SELECTION_HASH', 'FARM_SUITE_SELECTION_UPLOAD', 'CI_SUITE_SELECTION_PRODUCER_ATTEMPT', 'FARM_SUITE_RESULTS_FILE']) delete child[name];
   return child;
 }
 

@@ -68,8 +68,9 @@ def produce(source, abi, capture, root, run_id, attempt):
             'runId': run_id, 'attempt': attempt, 'abi': abi, 'capture': capture, 'records': records}, bodies
 
 
-def inspect(body, artifact, run, job, source, abi):
-    execution.upload_binding(job, UPLOAD, artifact)
+def inspect(body, artifact, run, job, source, abi, trusted_output):
+    check(trusted_output is not None, 'Fixed Docs upload binding is required')
+    execution.upload_binding(job, UPLOAD, artifact, trusted_output)
     check(artifact['workflow_run']['id'] == run['id'] and artifact['expired'] is False, 'Docs artifact origin differs')
     check(artifact['name'] == f"docs-native-{source['sha']}-{abi}-{run['run_attempt']}", 'Docs artifact identity differs')
     check(0 < len(body) <= MAX and len(body) == artifact['size_in_bytes']
@@ -103,20 +104,21 @@ def inspect(body, artifact, run, job, source, abi):
     return reused, missing
 
 
-def resolve(transport, run, source, abi):
+def resolve(transport, run, source, abi, trusted_output):
     check(run['path'] == '.github/workflows/ci.yaml' and run['event'] in ['push', 'pull_request', 'workflow_dispatch'], 'Unexpected Docs producer workflow')
     check(source['sha'] == run['head_sha'] or run['event'] == 'pull_request' and run['head_sha'] in source['parents'], 'Docs source differs from run')
     if run['repository']['id'] != run['head_repository']['id']:
         return {}, list(OWNERS), 'fork-source-build'
     prefix = {'linux-x64-gnu': 'Primary Linux', 'win32-x64-msvc': 'Primary Windows'}[abi]
-    producer, job = execution.actual_producer(transport, run, prefix + ' / native / Build and Upload User Artifacts - ' + abi)
+    producer, job = execution.explicit_producer(transport, run, prefix + ' / native / Build and Upload User Artifacts - ' + abi, trusted_output)
     name = f"docs-native-{source['sha']}-{abi}-{producer['run_attempt']}"
-    response = transport.get('/actions/runs/' + str(run['id']) + '/artifacts?per_page=2&name=' + name)
-    rows = [row for row in response['artifacts'] if row['name'] == name]
-    check(response.get('total_count', len(rows)) <= 1 and len(rows) <= 1, 'Ambiguous Docs artifact')
-    if not rows or rows[0]['expired']: return {}, list(OWNERS), 'missing-or-expired'
     try:
-        artifact = transport.get('/actions/artifacts/' + str(rows[0]['id']))
+        # Fixed action output ID is the locator. An unrelated same-name artifact
+        # (including an expired one) cannot select bytes or manufacture a miss.
+        artifact = transport.get('/actions/artifacts/' + trusted_output['artifact_id'])
+        check(str(artifact.get('id')) == trusted_output['artifact_id'] and artifact.get('name') == name
+              and artifact.get('workflow_run', {}).get('id') == run['id'], 'Docs fixed artifact identity differs')
+        execution.upload_binding(job, UPLOAD, artifact, trusted_output)
         if artifact['expired']: return {}, list(OWNERS), 'expired'
         body = transport.archive(artifact['id'])
     except urllib.error.HTTPError as error:
@@ -129,8 +131,13 @@ def resolve(transport, run, source, abi):
                           for kind in ['evidence', 'artifact read'] for code in [404, 410]]:
             return {}, list(OWNERS), 'artifact-no-longer-available'
         raise
-    reused, missing = inspect(body, artifact, producer, job, source, abi)
+    reused, missing = inspect(body, artifact, producer, job, source, abi, trusted_output)
     return reused, missing, 'verified-current-producer'
+
+
+def upload_output(environment):
+    value = environment.get('FARM_DOCS_NATIVE_UPLOAD', '')
+    return json.loads(value) if value else None
 
 
 def main():
@@ -156,7 +163,7 @@ def main():
         run = transport.get('/actions/runs/' + env['GITHUB_RUN_ID'] + '/attempts/' + env['GITHUB_RUN_ATTEMPT'])
         check(run['id'] == int(env['GITHUB_RUN_ID']) and run['run_attempt'] == int(env['GITHUB_RUN_ATTEMPT'])
               and run['repository']['id'] == int(env['GITHUB_REPOSITORY_ID']), 'Docs executing run differs')
-        reused, missing, reason = resolve(transport, run, source, args.abi)
+        reused, missing, reason = resolve(transport, run, source, args.abi, upload_output(env))
     for owner, (file, body) in reused.items():
         target = formal.workspace_path(Path.cwd(), file, create_parents=True)
         target.write_bytes(body)

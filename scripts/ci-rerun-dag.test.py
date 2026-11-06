@@ -90,15 +90,24 @@ class Contracts(unittest.TestCase):
                 if '/artifacts?' in route:
                     name=urllib.parse.parse_qs(urllib.parse.urlsplit(route).query)['name'][0];run_id=int(route.split('/')[3]);found=[row for row in metadata.values() if row['name']==name and row['workflow_run']['id']==run_id];return {'total_count':len(found),'artifacts':found}
                 if route.startswith('/actions/artifacts/'):return metadata[int(route.rsplit('/',1)[1])]
-                run_id=int(route.split('/')[3]);attempt=int(route.split('/attempts/')[1].split('/')[0])
-                if '/jobs?' in route:return {'jobs':jobs[attempt] if run_id==10 else base_jobs[run_id]}
+                run_id=int(route.split('/')[3]);attempt=int(route.split('/attempts/')[1].split('/')[0]) if '/attempts/' in route else runs[run_id]['run_attempt']
+                if '/jobs?' in route:return {'jobs':[{**job,'head_sha':runs[run_id]['head_sha'],'run_attempt':attempt} for job in (jobs[attempt] if run_id==10 else base_jobs[run_id])]}
                 return {**runs[run_id],'run_attempt':attempt}
             def archive(self,identity):return bodies[identity]
         api=API()
         with tempfile.TemporaryDirectory() as tmp:
             resolved=suite.module.collect(api,run,source,Path(tmp)/'suites')
             self.assertEqual({row['runAttempt'] for row in resolved.values()},{1,2,3})
-        result=functional.module.verify_functional(api,source,bindings)
+        def verified_fixture(client, execution, fixed_source):
+            # Simulated signature boundary, real archive/API/attempt consumption.
+            identity=execution['id'];artifact=metadata[identity];job=base_jobs[identity][0]
+            row={'producer':job['name'],'jobId':job['id'],'originAttempt':1,
+                 'uploadStep':'Upload fixed source impact plan','artifactId':identity,
+                 'artifactDigest':'sha256:'+hashlib.sha256(bodies[identity]).hexdigest(),
+                 'artifactName':artifact['name']}
+            return {'runId':identity,'attempt':3,'callerWorkflow':execution['path'],
+                    'sourceSHA':fixed_source['sha'],'repositoryId':5},{'planner':row}
+        result=functional.module.verify_functional(api,source,bindings,proof_provider=verified_fixture)
         self.assertTrue(result['functionalAcceptanceVerified']);self.assertFalse(result['buildBytesReused'])
         self.assertEqual([row['runAttempt'] for row in summary['measurementSources']],[2,1,1])
 

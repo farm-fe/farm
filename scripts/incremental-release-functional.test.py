@@ -62,7 +62,10 @@ class Contracts(unittest.TestCase):
             if route.startswith('/actions/runs/'):
                 number=int(route.split('/')[3])
                 if '/artifacts?' in route: return {"total_count": 1, "artifacts": [artifacts[110 if 'performance-pr-summary-' in route else number]]}
-                return runs[number]
+                attempt=int(route.split('/attempts/')[1].split('/')[0]) if '/attempts/' in route else runs[number]['run_attempt']
+                if '/jobs?' in route:
+                    return {'jobs':[{**job,'head_sha':runs[number]['head_sha'],'run_attempt':attempt} for job in jobs[number]]}
+                return {**runs[number],'run_attempt':attempt}
             if route.startswith('/git/commits/'): return {"tree": {"sha": tree}}
             if route.startswith('/actions/artifacts/'): return artifacts[int(route.split('/')[-1])]
             raise AssertionError('Unexpected proof API route')
@@ -71,12 +74,38 @@ class Contracts(unittest.TestCase):
 
     def verify(self, data):
         source, bindings, transport, jobs, runs, artifacts=data
-        with mock.patch.object(module.entry.execution, 'jobs_for', side_effect=lambda client,run:jobs[run['id']]):
-            return module.verify_functional(transport, source, bindings)
+        def verified_fixture(client, run, fixed_source):
+            # Explicit crypto boundary fixture. The archive digest comes from
+            # frozen fixture bytes, not mutable API artifact metadata.
+            artifact=artifacts[run['id']]
+            row={'producer':jobs[run['id']][0]['name'],'jobId':jobs[run['id']][0]['id'],
+                 'originAttempt':1,'uploadStep':'Upload fixed source impact plan','artifactId':artifact['id'],
+                 'artifactDigest':'sha256:'+hashlib.sha256(transport.archive(artifact['id'])).hexdigest(),
+                 'artifactName':'impact-plan-'+bindings['ci' if run['id']==10 else 'unit']['testedSHA']+'-1'}
+            expected={'runId':run['id'],'attempt':run['run_attempt'],'callerWorkflow':run['path'],
+                      'sourceSHA':fixed_source['sha'],'repositoryId':5}
+            return expected,{'planner':row}
+        return module.verify_functional(transport, source, bindings, proof_provider=verified_fixture)
 
     def test_exact_functional_and_unit_evidence_keeps_functional_roles_and_no_build_bytes(self):
         self.assertEqual(len(module.FUNCTIONAL)+4,16)
         result=self.verify(self.fixture());self.assertTrue(result['functionalAcceptanceVerified']);self.assertFalse(result['buildBytesReused'])
+
+    def test_signed_main_acceptance_does_not_consult_clock_fields(self):
+        data=self.fixture()
+        for rows in data[3].values():
+            for job in rows:
+                job.pop('started_at');job.pop('completed_at')
+                for step in job['steps']:
+                    step.pop('started_at');step.pop('completed_at')
+        for artifact in data[5].values():artifact.pop('created_at')
+        self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
+
+    def test_signature_rejection_is_not_a_legacy_time_fallback(self):
+        source,bindings,transport,*_=self.fixture()
+        def reject(*args):raise ValueError('required attestation rejected')
+        with self.assertRaisesRegex(ValueError,'attestation rejected'):
+            module.verify_functional(transport,source,bindings,proof_provider=reject)
 
     def test_real_type_check_is_required_instead_of_retired_combined_context(self):
         self.assertIn('Type Check',module.FUNCTIONAL)
@@ -104,7 +133,7 @@ class Contracts(unittest.TestCase):
 
     def test_wrong_artifact_bytes_cannot_supply_source_proof(self):
         data=self.fixture();data[5][10]['digest']='sha256:'+'f'*64
-        with self.assertRaisesRegex(ValueError,'digest differs'):self.verify(data)
+        with self.assertRaisesRegex(ValueError,'fixed upload|digest differs'):self.verify(data)
 
     def test_missing_bindings_do_not_authorize_release(self):
         data=self.fixture();data[1].pop('unit')
@@ -120,8 +149,8 @@ class Contracts(unittest.TestCase):
             return value
         transport.get.side_effect=get
         self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
-        self.assertTrue(any('impact-plan-' in call.args[0] and call.args[0].endswith('-1') for call in transport.get.call_args_list))
-        self.assertFalse(any('impact-plan-' in call.args[0] and call.args[0].endswith('-3') for call in transport.get.call_args_list))
+        self.assertTrue(any(call.args[0]=='/actions/artifacts/10' for call in transport.get.call_args_list))
+        self.assertFalse(any('/artifacts?' in call.args[0] for call in transport.get.call_args_list))
 
     def test_main_acceptance_does_not_depend_on_historical_pull_request_associations(self):
         data=self.fixture()

@@ -1,0 +1,10 @@
+[
+  ".github/workflows/ci.yaml",
+  ".github/workflows/ci-primary-platform.yaml",
+  ".github/workflows/farm-docs.yaml",
+  ".github/workflows/rust-build-user.yaml",
+  ".github/workflows/rust-build-release.yaml",
+  ".github/workflows/ci-secondary-native.yaml",
+  ".github/workflows/ci-platform-safety.yaml",
+  ".github/workflows/classify-version-pr.yaml"
+]

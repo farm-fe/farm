@@ -8,10 +8,27 @@ on:
       abi:
         required: true
         type: string
+      suite_selection_upload:
+        type: string
+        default: ''
       suite_selection_hash:
         type: string
         default: ''
     outputs:
+      native_product_upload:
+        value: ${{ jobs.native.outputs.product_upload }}
+      native_shadow_artifact_id:
+        value: ${{ jobs.native.outputs.artifact_id }}
+      native_shadow_artifact_digest:
+        value: ${{ jobs.native.outputs.artifact_digest }}
+      native_shadow_run_attempt:
+        value: ${{ jobs.native.outputs.run_attempt }}
+      docs_shadow_artifact_id:
+        value: ${{ jobs.docs.outputs.artifact_id }}
+      docs_shadow_artifact_digest:
+        value: ${{ jobs.docs.outputs.artifact_digest }}
+      docs_shadow_run_attempt:
+        value: ${{ jobs.docs.outputs.run_attempt }}
       ts_artifact_id:
         value: ${{ jobs.ts-test.outputs.artifact_id }}
       ts_artifact_digest:
@@ -68,6 +85,7 @@ jobs:
     with:
       platforms: ${{ format('[{{"os":"{0}","abi":"{1}"}}]', inputs.os, inputs.abi) }}
       consume_native: true
+      native_upload: ${{ needs.native.outputs.docs_upload }}
 
 
   examples-test:
@@ -102,6 +120,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+          FARM_SUITE_SELECTION_UPLOAD: ${{ inputs.suite_selection_upload }}
         run: python -B scripts/ci-suite-attempts.py --selection-only
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -389,6 +408,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+          FARM_SUITE_SELECTION_UPLOAD: ${{ inputs.suite_selection_upload }}
         run: python -B scripts/ci-suite-attempts.py --selection-only
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

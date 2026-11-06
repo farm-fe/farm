@@ -37,6 +37,10 @@ jobs:
       pr_number: ${{ inputs.pr_number || '' }}
 
   impact-plan:
+    outputs:
+      artifact_id: ${{ steps.plan-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.plan-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.plan-origin.outputs.attempt }}
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification]
     name: Incremental CI plan (shadow only)
@@ -62,7 +66,10 @@ jobs:
           python scripts/ci-impact-receipt.test.py
       - name: Compute committed base and head impact without changing execution
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
-      - name: Upload fixed source impact plan
+      - id: plan-origin
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - id: plan-upload
+        name: Upload fixed source impact plan
         uses: actions/upload-artifact@v4
         with:
           name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
@@ -89,7 +96,7 @@ jobs:
       contents: read
       actions: read
     if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
-    needs: [version-classification, primary-linux, primary-macos, primary-windows, impact-plan, release-contract-tests, platform-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, execution-baseline]
+    needs: [platform-contract-linux, platform-contract-macos, platform-contract-windows, version-classification, primary-linux, primary-macos, primary-windows, impact-plan, release-contract-tests, platform-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, execution-baseline]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -103,6 +110,32 @@ jobs:
         if: always()
         env:
           CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
+          CI_E2E_UPLOADS: >-
+            {"planner":{"artifact_id":"${{ needs.impact-plan.outputs.artifact_id }}","artifact_digest":"${{ needs.impact-plan.outputs.artifact_digest }}","run_attempt":"${{ needs.impact-plan.outputs.run_attempt }}"},
+             "native:ci:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.native_shadow_run_attempt }}"},
+             "ts-tests:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.ts_shadow_run_attempt }}"},
+             "examples:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.browser_shadow_run_attempt }}"},
+             "docs:ci:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.docs_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.docs_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.docs_shadow_run_attempt }}"},
+             "platform-contracts:linux-x64-gnu":{"artifact_id":"${{ needs.platform-contract-linux.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-linux.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-linux.outputs.run_attempt }}"},
+             "native:ci:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.native_shadow_run_attempt }}"},
+             "ts-tests:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.ts_shadow_run_attempt }}"},
+             "examples:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.browser_shadow_run_attempt }}"},
+             "platform-contracts:darwin-arm64":{"artifact_id":"${{ needs.platform-contract-macos.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-macos.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-macos.outputs.run_attempt }}"},
+             "native:ci:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.native_shadow_run_attempt }}"},
+             "ts-tests:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.ts_shadow_run_attempt }}"},
+             "examples:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.browser_shadow_run_attempt }}"},
+             "docs:ci:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.docs_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.docs_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.docs_shadow_run_attempt }}"},
+             "platform-contracts:win32-x64-msvc":{"artifact_id":"${{ needs.platform-contract-windows.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-windows.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-windows.outputs.run_attempt }}"},
+             "native:ci:linux-x64-musl":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_run_attempt }}"},
+             "native:ci:darwin-x64":{"artifact_id":"${{ needs.call-rust-build-release.outputs.darwin_x64_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.darwin_x64_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.darwin_x64_run_attempt }}"},
+             "native:ci:win32-ia32-msvc":{"artifact_id":"${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_run_attempt }}"},
+             "native:ci:win32-arm64-msvc":{"artifact_id":"${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_run_attempt }}"},
+             "native:ci:linux-arm64-musl":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_arm64_musl_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_arm64_musl_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_arm64_musl_run_attempt }}"},
+             "native:ci:linux-arm64-gnu":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_run_attempt }}"},
+             "types":{"artifact_id":"${{ needs.type-check.outputs.artifact_id }}","artifact_digest":"${{ needs.type-check.outputs.artifact_digest }}","run_attempt":"${{ needs.type-check.outputs.run_attempt }}"},
+             "contracts":{"artifact_id":"${{ needs.release-contract-tests.outputs.artifact_id }}","artifact_digest":"${{ needs.release-contract-tests.outputs.artifact_digest }}","run_attempt":"${{ needs.release-contract-tests.outputs.run_attempt }}"},
+             "native-assembly":{"artifact_id":"${{ needs.check-native-candidate-assembly.outputs.artifact_id }}","artifact_digest":"${{ needs.check-native-candidate-assembly.outputs.artifact_digest }}","run_attempt":"${{ needs.check-native-candidate-assembly.outputs.run_attempt }}"},
+             "execution-baseline":{"artifact_id":"${{ needs.execution-baseline.outputs.artifact_id }}","artifact_digest":"${{ needs.execution-baseline.outputs.artifact_digest }}","run_attempt":"${{ needs.execution-baseline.outputs.run_attempt }}"}}
           CI_IMPACT_SCOPE: e2e
           CI_SHADOW_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           CI_SHADOW_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
@@ -118,6 +151,10 @@ jobs:
           retention-days: 14
 
   release-contract-tests:
+    outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification]
     name: Release source contracts
@@ -197,7 +234,8 @@ jobs:
           scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
           scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs scripts/ci-suite-inventory.test.mjs
           scripts/ci-suite-execution.test.mjs scripts/ci-suite-rerun.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-selection.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
@@ -219,36 +257,36 @@ jobs:
         run: test "$LINUX_RESULT" = success && test "$WINDOWS_RESULT" = success
 
   platform-contract-tests:
+    if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification, platform-contract-linux, platform-contract-macos, platform-contract-windows]
+    name: Platform safety contracts
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require all platform safety executions
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: python -c "import json,os; assert all(v['result']=='success' for v in json.loads(os.environ['RESULTS']).values())"
+
+  platform-contract-linux:
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification]
-    name: Platform safety contracts (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: actions/setup-python@v5
-        id: contract-python
-        with:
-          python-version: '3.12'
-      - name: Validate native, consumer and dependency contracts
-        env:
-          FARM_CONTRACT_PYTHON: ${{ steps.contract-python.outputs.python-path }}
-        run: node --test scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/unified-impact-graph.test.mjs
-      - name: Preserve actual cell receipt (shadow only)
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/ci-impact-cell
-        with:
-          cell: "platform-contracts:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
-          status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.os }}
+    uses: ./.github/workflows/ci-platform-safety.yaml
+    with:
+      os: ubuntu-24.04
+
+  platform-contract-macos:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/ci-platform-safety.yaml
+    with:
+      os: macos-latest
+
+  platform-contract-windows:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/ci-platform-safety.yaml
+    with:
+      os: windows-latest
 
   primary-linux:
     if: needs.version-classification.outputs.mode != 'verified-version-only'
@@ -262,6 +300,7 @@ jobs:
       os: ubuntu-24.04
       abi: linux-x64-gnu
       suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
+      suite_selection_upload: ${{ needs.type-check.outputs.suite_selection_upload }}
     secrets: inherit
 
   primary-macos:
@@ -276,6 +315,7 @@ jobs:
       os: macos-latest
       abi: darwin-arm64
       suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
+      suite_selection_upload: ${{ needs.type-check.outputs.suite_selection_upload }}
     secrets: inherit
 
   primary-windows:
@@ -290,6 +330,7 @@ jobs:
       os: windows-latest
       abi: win32-x64-msvc
       suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
+      suite_selection_upload: ${{ needs.type-check.outputs.suite_selection_upload }}
     secrets: inherit
 
   call-rust-build-user:
@@ -313,13 +354,17 @@ jobs:
       actions: read
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification, release-contract-tests, platform-contract-tests]
-    uses: ./.github/workflows/rust-build-release.yaml
+    uses: ./.github/workflows/ci-secondary-native.yaml
     secrets: inherit
 
   check-native-candidate-assembly:
+    outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     name: Check declared native inputs (not ABI execution)
-    needs: [version-classification, call-rust-build-user, call-rust-build-release, type-check]
+    needs: [version-classification, call-rust-build-user, call-rust-build-release, type-check, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -346,6 +391,9 @@ jobs:
           python-version: '3.12'
       - name: Bind shadow producer identities using existing read-only access (no ZIP download)
         continue-on-error: true
+        env:
+          CI_NATIVE_UPLOADS: >-
+            {"linux-x64-musl":${{ needs.call-rust-build-release.outputs.linux_x64_musl_product_upload }},"darwin-x64":${{ needs.call-rust-build-release.outputs.darwin_x64_product_upload }},"win32-ia32-msvc":${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_product_upload }},"win32-arm64-msvc":${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_product_upload }},"linux-arm64-musl":${{ needs.call-rust-build-release.outputs.linux_arm64_musl_product_upload }},"linux-arm64-gnu":${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_product_upload }},"linux-x64-gnu":${{ needs.primary-linux.outputs.native_product_upload }},"darwin-arm64":${{ needs.primary-macos.outputs.native_product_upload }},"win32-x64-msvc":${{ needs.primary-windows.outputs.native_product_upload }}}
         run: python scripts/ci-native-evidence.py --audit-current-run --output native-shadow-identities.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -360,7 +408,8 @@ jobs:
           name: native-assembly-${{ github.sha }}
           path: native-assembly.json
           if-no-files-found: error
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
@@ -385,6 +434,13 @@ jobs:
         run: test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success
 
   execution-baseline:
+    outputs:
+      execution_id: ${{ steps.execution-upload.outputs.artifact-id }}
+      execution_digest: ${{ steps.execution-upload.outputs.artifact-digest }}
+      execution_attempt: ${{ steps.execution-origin.outputs.attempt }}
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Record verified CI execution baseline
     needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows]
     if: (always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')) && needs.version-classification.outputs.mode != 'verified-version-only'
@@ -413,6 +469,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+          FARM_SUITE_SELECTION_UPLOAD: ${{ needs.type-check.outputs.suite_selection_upload }}
           FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
           FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
@@ -425,7 +482,11 @@ jobs:
       - name: Record candidate CI execution baseline (no build-byte authority)
         if: success()
         run: python scripts/ci-execution-ledger.py --coverage ci-execution-ledger/suite-coverage.json --output ci-execution-ledger/ledger.json
-      - name: Upload trusted CI execution baseline
+      - id: execution-origin
+        if: success()
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - id: execution-upload
+        name: Upload trusted CI execution baseline
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -433,7 +494,8 @@ jobs:
           path: ci-execution-ledger/ledger.json
           if-no-files-found: error
           retention-days: 14
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
@@ -446,7 +508,11 @@ jobs:
     needs: [version-classification]
     name: Type Check
     outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
       suite_selection_hash: ${{ steps.ci-suites.outputs.selection_hash }}
+      suite_selection_upload: ${{ steps.selection-binding.outputs.binding }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -474,6 +540,7 @@ jobs:
         continue-on-error: true
         run: python -B scripts/ci-suite-baseline.py --output ci-suite-selection/selection.json
       - name: Upload bound current suite selection
+        id: selection-upload
         if: steps.ci-suites.outputs.selection_hash != '' && needs.version-classification.outputs.mode != 'verified-version-only'
         uses: actions/upload-artifact@v4
         with:
@@ -481,6 +548,18 @@ jobs:
           path: ci-suite-selection/selection.json
           if-no-files-found: error
           retention-days: 7
+      - name: Bind selection upload action outputs
+        if: steps.selection-upload.outputs.artifact-id != ''
+        id: selection-binding
+        env:
+          SELECTION_ID: ${{ steps.selection-upload.outputs.artifact-id }}
+          SELECTION_DIGEST: ${{ steps.selection-upload.outputs.artifact-digest }}
+        run: |
+          python - <<'PYBIND'
+          import json, os
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('binding=' + json.dumps({'artifact_id':os.environ['SELECTION_ID'], 'artifact_digest':os.environ['SELECTION_DIGEST'], 'run_attempt':os.environ['GITHUB_RUN_ATTEMPT']}) + '\n')
+          PYBIND
       - name: Preserve exact current-chain plan and baseline binding
         if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
         continue-on-error: true
@@ -523,7 +602,8 @@ jobs:
       - name: Type Check With Tsc
         if: needs.version-classification.outputs.mode != 'verified-version-only'
         run: pnpm run --filter "@farmfe/*" type-check
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
@@ -628,6 +708,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+          FARM_SUITE_SELECTION_UPLOAD: ${{ needs.type-check.outputs.suite_selection_upload }}
           FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
           FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}

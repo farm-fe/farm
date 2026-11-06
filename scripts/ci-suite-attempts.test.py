@@ -38,7 +38,7 @@ def fixture():
         raw=body.getvalue();identity=100+index
         artifacts[name]={'id':identity,'name':name,'expired':False,'workflow_run':{'id':run['id']},'size_in_bytes':len(raw),'digest':'sha256:'+hashlib.sha256(raw).hexdigest(),'created_at':'2026-10-31T01:02:00Z'};bodies[identity]=raw
         job={'id':200+index,'run_id':run['id'],'name':prefix+' / '+job_label+' ('+module.execution.PLATFORMS[abi]+')','status':'completed','conclusion':'success','started_at':'2026-10-31T01:00:00Z','completed_at':'2026-10-31T01:04:00Z','steps':[{'name':step_label,'status':'completed','conclusion':'success','started_at':'2026-10-31T01:01:00Z','completed_at':'2026-10-31T01:03:00Z'}]}
-        for attempt in jobs:jobs[attempt].append(copy.deepcopy(job))
+        for attempt in jobs:jobs[attempt].append({**copy.deepcopy(job), 'head_sha':run['head_sha'], 'run_attempt':attempt})
     class Transport:
         calls=[]
         def get(self,route):

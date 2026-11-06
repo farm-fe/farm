@@ -34,6 +34,10 @@ jobs:
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification]
     name: Incremental Unit CI plan (shadow only)
+    outputs:
+      artifact_id: ${{ steps.plan-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.plan-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.plan-origin.outputs.attempt }}
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -49,7 +53,10 @@ jobs:
         env:
           CI_IMPACT_SCOPE: unit
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
-      - name: Upload fixed source impact plan
+      - id: plan-origin
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - id: plan-upload
+        name: Upload fixed source impact plan
         uses: actions/upload-artifact@v4
         with:
           name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
@@ -64,7 +71,7 @@ jobs:
       contents: read
       actions: read
     if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
-    needs: [version-classification, impact-plan, cargo-check, cargo-test]
+    needs: [version-classification, impact-plan, cargo-check, cargo-test-linux, cargo-test-macos, cargo-test-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -77,6 +84,12 @@ jobs:
       - name: Report current Unit scope outcomes without publication authority
         if: always()
         env:
+          CI_UNIT_UPLOADS: >-
+            {"planner":${{ toJSON(needs.impact-plan.outputs) }},
+             "cargo-check":${{ toJSON(needs.cargo-check.outputs) }},
+             "rust-tests:ci-test:linux-x64-gnu":${{ toJSON(needs.cargo-test-linux.outputs) }},
+             "rust-tests:ci-test:darwin-arm64":${{ toJSON(needs.cargo-test-macos.outputs) }},
+             "rust-tests:ci-test:win32-x64-msvc":${{ toJSON(needs.cargo-test-windows.outputs) }}}
           CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
           GH_TOKEN: ${{ github.token }}
           CI_IMPACT_SCOPE: unit
@@ -94,9 +107,15 @@ jobs:
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification]
     name: Check
+    outputs:
+      artifact_id: ${{ steps.receipt.outputs.artifact-id }}
+      artifact_digest: ${{ steps.receipt.outputs.artifact-digest }}
+      run_attempt: ${{ steps.receipt.outputs.run-attempt }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
 
@@ -110,67 +129,36 @@ jobs:
         run: cargo fetch --locked
       - name: Run cargo check
         run: cargo check --locked --color always --all --all-targets
-      - name: Preserve actual cell receipt (shadow only)
+      - id: receipt
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "cargo-check"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.os || 'single' }}
+          artifact-suffix: single
 
-  cargo-test:
+  cargo-test-linux:
     if: needs.version-classification.outputs.mode != 'verified-version-only'
     needs: [version-classification]
-    name: Test - ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-24.04
-          - macos-latest
-          - windows-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Rust
-        uses: oxidecomputer/actions-rs_toolchain@oxide/master
-        with:
-          profile: minimal
+    uses: ./.github/workflows/rust-test-platform.yaml
+    with:
+      os: ubuntu-24.04
+      abi: linux-x64-gnu
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.4.0
-          run_install: false
+  cargo-test-macos:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/rust-test-platform.yaml
+    with:
+      os: macos-latest
+      abi: darwin-arm64
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Dependencies
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_wait_seconds: 60
-          command: pnpm i --frozen-lockfile
-
-      - name: Restore dependency sources without native target/profile reuse
-        uses: ./.github/actions/cargo-source-cache
-      - name: Fetch locked dependencies with bounded network retries
-        timeout-minutes: 10
-        env:
-          CARGO_NET_RETRY: '3'
-          CARGO_HTTP_TIMEOUT: '60'
-        run: cargo fetch --locked
-      - name: Run cargo test
-        run: cargo test --locked --profile ci-test --tests
-      - name: Preserve actual cell receipt (shadow only)
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/ci-impact-cell
-        with:
-          cell: "rust-tests:ci-test:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
-          status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.os || 'single' }}
+  cargo-test-windows:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/rust-test-platform.yaml
+    with:
+      os: windows-latest
+      abi: win32-x64-msvc

@@ -1,0 +1,179 @@
+name: Unit Tests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_pr:
+        description: Exact same-repository Changesets version PR
+        required: true
+        type: string
+      release_base:
+        description: Reviewed version preparation base SHA
+        required: true
+        type: string
+  pull_request:
+    branches:
+      - main
+      - codex/v2-unified-release-20261025
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.release_pr || (github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+  cancel-in-progress: true
+
+jobs:
+  version-classification:
+    uses: ./.github/workflows/classify-version-pr.yaml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      pr_number: ${{ inputs.release_pr || '' }}
+
+  impact-plan:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    name: Incremental Unit CI plan (shadow only)
+    outputs:
+      artifact_id: ${{ steps.plan-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.plan-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.plan-origin.outputs.attempt }}
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Plan Unit scope without changing execution
+        env:
+          CI_IMPACT_SCOPE: unit
+        run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
+      - id: plan-origin
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - id: plan-upload
+        name: Upload fixed source impact plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-plan/plan.json
+          if-no-files-found: error
+          retention-days: 14
+
+  impact-summary:
+    name: Incremental Unit CI shadow summary
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
+    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification, impact-plan, cargo-check, cargo-test-linux, cargo-test-macos, cargo-test-windows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Report current Unit scope outcomes without publication authority
+        if: always()
+        env:
+          CI_UNIT_UPLOADS: >-
+            {"planner":${{ toJSON(needs.impact-plan.outputs) }},
+             "cargo-check":${{ toJSON(needs.cargo-check.outputs) }},
+             "rust-tests:ci-test:linux-x64-gnu":${{ toJSON(needs.cargo-test-linux.outputs) }},
+             "rust-tests:ci-test:darwin-arm64":${{ toJSON(needs.cargo-test-macos.outputs) }},
+             "rust-tests:ci-test:win32-x64-msvc":${{ toJSON(needs.cargo-test-windows.outputs) }}}
+          CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
+          GH_TOKEN: ${{ github.token }}
+          CI_IMPACT_SCOPE: unit
+          CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
+        run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: impact-summary-${{ github.sha }}-${{ github.run_attempt }}
+          path: impact-summary/summary.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  cargo-check:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    name: Check
+    outputs:
+      artifact_id: ${{ steps.receipt.outputs.artifact-id }}
+      artifact_digest: ${{ steps.receipt.outputs.artifact-digest }}
+      run_attempt: ${{ steps.receipt.outputs.run-attempt }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+
+      - name: Restore dependency sources without native target/profile reuse
+        uses: ./.github/actions/cargo-source-cache
+      - name: Fetch locked dependencies with bounded network retries
+        timeout-minutes: 10
+        env:
+          CARGO_NET_RETRY: '3'
+          CARGO_HTTP_TIMEOUT: '60'
+        run: cargo fetch --locked
+      - name: Run cargo check
+        run: cargo check --locked --color always --all --all-targets
+      - id: receipt
+        name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "cargo-check"
+          status: ${{ job.status }}
+          artifact-suffix: single
+
+  cargo-test-linux:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/rust-test-platform.yaml
+    with:
+      os: ubuntu-24.04
+      abi: linux-x64-gnu
+
+  cargo-test-macos:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/rust-test-platform.yaml
+    with:
+      os: macos-latest
+      abi: darwin-arm64
+
+  cargo-test-windows:
+    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    needs: [version-classification]
+    uses: ./.github/workflows/rust-test-platform.yaml
+    with:
+      os: windows-latest
+      abi: win32-x64-msvc
+
+  sign-ci-bindings:
+    name: Sign fixed unit artifact bindings
+    if: success() && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [impact-plan, cargo-check, cargo-test-linux, cargo-test-macos, cargo-test-windows]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@__REVIEWED_SIGNER_REVISION__
+    with:
+      scope: unit
+      upload_bindings: >-
+        {"planner":{"artifact_id":"${{ needs.impact-plan.outputs.artifact_id }}","artifact_digest":"${{ needs.impact-plan.outputs.artifact_digest }}","run_attempt":"${{ needs.impact-plan.outputs.run_attempt }}"}}

@@ -51,7 +51,10 @@ class DocsProducts(unittest.TestCase):
                        'created_at':'2','size_in_bytes':len(body),'digest':'sha256:'+hashlib.sha256(body).hexdigest()}
         return body
 
-    def inspect(self,body):return docs.inspect(body,self.artifact,self.run,self.job,self.source,self.abi)
+    def binding(self):
+        return {'artifact_id':'20', 'artifact_digest':self.artifact['digest'].removeprefix('sha256:'), 'run_attempt':'2'}
+
+    def inspect(self,body):return docs.inspect(body,self.artifact,self.run,self.job,self.source,self.abi,self.binding())
 
     def test_full_cohort_bytes_reused(self):
         reused,missing=self.inspect(self.fixture());self.assertEqual(set(reused),set(docs.OWNERS));self.assertEqual(missing,[])
@@ -79,40 +82,73 @@ class DocsProducts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'upload'):self.inspect(body)
 
     def test_missing_expired_and_latest_failed_producer(self):
-        self.fixture();self.abi='linux-x64-gnu'
+        self.fixture(abi='linux-x64-gnu'); artifact=copy.deepcopy(self.artifact)
         class Transport:
-            def __init__(self,rows):self.rows=rows
-            def get(self,path):return {'artifacts':self.rows,'total_count':len(self.rows)}
-        with patch.object(docs.execution,'actual_producer',return_value=(self.run,self.job)):
-            result=docs.resolve(Transport([]),self.run,self.source,self.abi);self.assertEqual(result[1],docs.OWNERS)
-            row={'name':f"docs-native-{self.source['sha']}-{self.abi}-2",'expired':True}
-            self.assertEqual(docs.resolve(Transport([row]),self.run,self.source,self.abi)[1],docs.OWNERS)
+            def __init__(self,missing=False):self.missing=missing
+            def get(self,path):
+                if self.missing:raise ValueError('GitHub evidence unavailable (HTTP 404)')
+                return {**artifact,'expired':True}
+        with patch.object(docs.execution,'explicit_producer',return_value=(self.run,self.job)):
+            result=docs.resolve(Transport(True),self.run,self.source,self.abi,self.binding());self.assertEqual(result[1],docs.OWNERS)
+            self.assertEqual(docs.resolve(Transport(),self.run,self.source,self.abi,self.binding())[1],docs.OWNERS)
+            with self.assertRaisesRegex(ValueError,'identity differs'):
+                docs.resolve(Transport(),self.run,self.source,self.abi,{**self.binding(),'artifact_id':'21'})
+            with self.assertRaisesRegex(ValueError,'fixed upload'):
+                docs.resolve(Transport(),self.run,self.source,self.abi,{**self.binding(),'artifact_digest':'0'*64})
         for status in ['failure','skipped','cancelled']:
-            with patch.object(docs.execution,'actual_producer',side_effect=ValueError('Latest producer '+status)):
-                with self.assertRaisesRegex(ValueError,status):docs.resolve(Transport([]),self.run,self.source,self.abi)
+            with patch.object(docs.execution,'explicit_producer',side_effect=ValueError('Latest producer '+status)):
+                with self.assertRaisesRegex(ValueError,status):docs.resolve(Transport(),self.run,self.source,self.abi,self.binding())
 
     def test_download_disappearance_falls_back_but_denial_and_bad_proof_do_not(self):
-        self.fixture(); self.abi='linux-x64-gnu'
-        name=f"docs-native-{self.source['sha']}-{self.abi}-2"
+        self.fixture(abi='linux-x64-gnu');artifact=copy.deepcopy(self.artifact)
         class Transport:
             def __init__(self,error):self.error=error
-            def get(self,path):
-                if '/artifacts?' in path:return {'artifacts':[{'id':20,'name':name,'expired':False}], 'total_count':1}
-                return {'id':20,'expired':False}
+            def get(self,path):return artifact
             def archive(self,identity):raise self.error
-        with patch.object(docs.execution,'actual_producer',return_value=(self.run,self.job)):
+        with patch.object(docs.execution,'explicit_producer',return_value=(self.run,self.job)):
             for message in ['GitHub evidence unavailable (HTTP 404)','GitHub artifact read unavailable (HTTP 410)']:
-                result=docs.resolve(Transport(ValueError(message)),self.run,self.source,self.abi)
+                result=docs.resolve(Transport(ValueError(message)),self.run,self.source,self.abi,self.binding())
                 self.assertEqual(result[1],docs.OWNERS)
             for error in [PermissionError('denied'),ValueError('Docs archive digest differs')]:
-                with self.assertRaises(type(error)):docs.resolve(Transport(error),self.run,self.source,self.abi)
+                with self.assertRaises(type(error)):docs.resolve(Transport(error),self.run,self.source,self.abi,self.binding())
+
+    def test_real_resolver_fixed_upload_binding_ignores_all_clock_fields(self):
+        body=self.fixture(abi='linux-x64-gnu'); artifact=copy.deepcopy(self.artifact)
+        artifact.pop('created_at'); original=copy.deepcopy(self.run)
+        current={**original,'run_attempt':3};state={'failure':False}
+        name='Primary Linux / native / Build and Upload User Artifacts - linux-x64-gnu'
+        class Transport:
+            def get(self,path):
+                if '/attempts/' in path:
+                    attempt=int(path.split('/attempts/')[1].split('/')[0])
+                    if '/jobs?' in path:
+                        return {'jobs':[{'id':100+attempt,'run_id':10,'run_attempt':attempt,'head_sha':original['head_sha'],
+                            'name':name,'status':'completed','conclusion':'failure' if state['failure'] and attempt==3 else 'success',
+                            'steps':[{'name':docs.UPLOAD,'status':'completed','conclusion':'success'}]}]}
+                    return {**original,'run_attempt':attempt}
+                if '/artifacts?' in path:return {'artifacts':[artifact],'total_count':1}
+                return artifact
+            def archive(self,artifact_id):
+                assert artifact_id==20
+                return body
+        reused,missing,reason=docs.resolve(Transport(),current,self.source,self.abi,self.binding())
+        self.assertEqual(len(reused),12);self.assertEqual(missing,[]);self.assertEqual(reason,'verified-current-producer')
+        for output in [None,{}, {**self.binding(),'unknown':'value'}, {**self.binding(),'artifact_id':'21'},
+                       {**self.binding(),'artifact_digest':'0'*64}, {**self.binding(),'run_attempt':'4'}]:
+            with self.subTest(output=output),self.assertRaises(ValueError):
+                docs.resolve(Transport(),current,self.source,self.abi,output)
+        state['failure']=True
+        with self.assertRaisesRegex(ValueError,'did not succeed'):
+            docs.resolve(Transport(),current,self.source,self.abi,self.binding())
 
     def test_fork_source_build_never_reads_artifacts(self):
         self.fixture(); self.run['head_repository']['id']=2
-        result=docs.resolve(None,self.run,self.source,'linux-x64-gnu')
+        self.assertIsNone(docs.upload_output({'FARM_DOCS_NATIVE_UPLOAD':''}))
+        self.assertIsNone(docs.upload_output({}))
+        result=docs.resolve(None,self.run,self.source,'linux-x64-gnu',docs.upload_output({'FARM_DOCS_NATIVE_UPLOAD':''}))
         self.assertEqual(result,({},docs.OWNERS,'fork-source-build'))
         self.run['head_sha']='f'*40
-        with self.assertRaisesRegex(ValueError,'source differs'):docs.resolve(None,self.run,self.source,'linux-x64-gnu')
+        with self.assertRaisesRegex(ValueError,'source differs'):docs.resolve(None,self.run,self.source,'linux-x64-gnu',None)
 
     def test_linux_windows_seal_and_consume_keep_complete_compiler_evidence(self):
         for abi in ['linux-x64-gnu','win32-x64-msvc']:
