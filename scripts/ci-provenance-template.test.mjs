@@ -5,6 +5,10 @@ import test from 'node:test';
 import YAML from 'yaml';
 const root = path.resolve(import.meta.dirname, '..');
 const marker = '__REVIEWED_SIGNER_REVISION__';
+const trust = JSON.parse(fs.readFileSync(path.join(root, 'scripts/ci-provenance-trust.json')));
+assert.deepEqual(Object.keys(trust), ['schemaVersion', 'signerSHA']);
+assert.equal(trust.schemaVersion, 1);
+assert.match(trust.signerSHA, /^[a-f0-9]{40}$/);
 
 for (const [scope, caller, count] of [['ci', 'ci.yaml', 8], ['unit', 'rust-test.yaml', 1]]) {
   test(`${scope} A/B template authenticates exact caller and fixed needs outputs`, () => {
@@ -17,7 +21,7 @@ for (const [scope, caller, count] of [['ci', 'ci.yaml', 8], ['unit', 'rust-test.
       const bytes = fs.readFileSync(path.join(directory, file), 'utf8');
       const current = fs.readFileSync(path.join(root, file), 'utf8');
       if (file === callerPath) {
-        assert.equal(bytes.split('\n  sign-ci-bindings:')[0], current);
+        assert.equal(bytes.replace(marker, trust.signerSHA), current);
         assert.equal(bytes.split(marker).length, 2);
       } else assert.equal(bytes, current, file);
     }
