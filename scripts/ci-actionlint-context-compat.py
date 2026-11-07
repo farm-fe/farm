@@ -5,12 +5,14 @@ https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#job-
 This does not erase diagnostics: the report records each documented compatibility
 case, and any other diagnostic retains a failure exit status.
 """
+# cspell:words shellcheck
 import argparse
 import json
 from pathlib import Path
 import subprocess
 
 WORKFLOW = '.github/workflows/ci-provenance-signer.yaml'
+WORKFLOWS = {WORKFLOW, '.github/workflows/release-provenance-signer.yaml'}
 OBJECT = '{check_run_id: number; container: {id: string; network: string}; services: {string => {id: string; network: string; ports: {string => string}}}; status: string}'
 ALLOWED = {
     'ref: ${{ job.workflow_sha }}':'workflow_sha',
@@ -22,17 +24,20 @@ ALLOWED = {
 def classify(diagnostics, source):
     if not isinstance(diagnostics, list):
         raise ValueError('Malformed actionlint diagnostics')
-    lines = source.splitlines(); known, remaining, seen = [], [], set()
+    sources = source if isinstance(source, dict) else {WORKFLOW:source}
+    known, remaining, seen = [], [], set()
     for row in diagnostics:
+        filename = row.get('filepath') if isinstance(row, dict) else None
+        lines = sources.get(filename, '').splitlines()
         line = row.get('line') if isinstance(row, dict) else None
         statement = lines[line-1].strip() if type(line) is int and 0 < line <= len(lines) else ''
         field = ALLOWED.get(statement)
         expected = 'property "' + str(field) + '" is not defined in object type ' + OBJECT
         column = lines[line-1].find('job.' + str(field)) + 1 if field else -1
-        if (isinstance(row, dict) and row.get('filepath') == WORKFLOW and row.get('kind') == 'expression'
+        if (isinstance(row, dict) and filename in WORKFLOWS and row.get('kind') == 'expression'
                 and field and row.get('message') == expected and row.get('column') == column
-                and statement not in seen):
-            seen.add(statement); known.append(row)
+                and (filename, statement) not in seen):
+            seen.add((filename, statement)); known.append(row)
         else:
             remaining.append(row)
     return {'documentedContextCompatibility':known, 'errors':remaining}
@@ -49,7 +54,7 @@ def main():
     result = subprocess.run([args.actionlint, '-shellcheck=', '-format', '{{json .}}', *args.workflows], capture_output=True, text=True)
     if result.returncode not in [0,1] or result.stderr:
         raise ValueError('actionlint execution failed: ' + result.stderr[:2000])
-    report = classify(json.loads(result.stdout or '[]'), Path(WORKFLOW).read_text())
+    report = classify(json.loads(result.stdout or '[]'), {name:Path(name).read_text() for name in WORKFLOWS if Path(name).is_file()})
     if result.returncode and not report['documentedContextCompatibility'] and not report['errors']:
         raise ValueError('actionlint failed without diagnostics')
     print(json.dumps(report, indent=2))

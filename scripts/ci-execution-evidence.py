@@ -137,7 +137,7 @@ def same_carried_execution(current, prior, run, attempt):
 
 
 
-def explicit_producer(transport, run, name, trusted_output, cache=None):
+def explicit_producer(transport, run, name, trusted_output, cache=None, *, required_conclusion="success"):
     """Validate an origin supplied by fixed needs outputs, never infer from clocks.
 
     This entry accepts only the current workflow's external needs binding. An
@@ -148,6 +148,7 @@ def explicit_producer(transport, run, name, trusted_output, cache=None):
     check(isinstance(trusted_output, dict) and set(trusted_output) == set(patterns), 'Explicit producer binding missing or unexpected')
     check(all(isinstance(trusted_output[key], str) and re.fullmatch(pattern, trusted_output[key])
               for key, pattern in patterns.items()), 'Malformed explicit producer binding')
+    check(required_conclusion in ['success', 'failure'], 'Unsupported explicit producer result policy')
     origin_attempt = int(trusted_output['run_attempt'])
     check(type(run['run_attempt']) is int and 0 < origin_attempt <= run['run_attempt'] <= 32, 'Explicit producer attempt differs')
     observations = {} if cache is None else cache
@@ -166,7 +167,7 @@ def explicit_producer(transport, run, name, trusted_output, cache=None):
         job = matches[0]
         check(type(job.get('id')) is int and job['id'] > 0 and job.get('run_id') == run['id']
               and job.get('run_attempt') == attempt and job.get('head_sha') == run['head_sha'], 'Explicit producer job identity differs')
-        check(job.get('status') == 'completed' and job.get('conclusion') == 'success', 'Latest actual suite producer did not succeed')
+        check(job.get('status') == 'completed' and job.get('conclusion') == required_conclusion, 'Latest actual suite producer result differs from fixed policy')
         if attempt == origin_attempt:
             origin = (execution, job)
     return origin

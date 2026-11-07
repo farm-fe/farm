@@ -1,0 +1,129 @@
+name: Cargo source release from fixed main versions
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: farm-stable-release
+  cancel-in-progress: false
+  queue: max
+jobs:
+  source:
+    name: Prepare Cargo source archives
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      frozen_restored: ${{ steps.archive-upload.outcome != 'success' }}
+      frozen_id: ${{ steps.archive-upload.outputs.artifact-id || steps.frozen.outputs.artifact_id }}
+      frozen_digest: ${{ steps.archive-upload.outputs.artifact-digest || steps.frozen.outputs.artifact_digest }}
+      frozen_attempt: ${{ steps.archive-origin.outputs.attempt || steps.frozen.outputs.producer_attempt }}
+      release_ready: ${{ steps.frozen.outputs.restored == 'true' || steps.version.outputs.release_ready == 'true' }}
+      publish_required: ${{ steps.frozen.outputs.publish_required || steps.package.outputs.publish_required }}
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Restore the original source transaction before any packaging
+        id: frozen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -B scripts/cargo-source-release.py restore
+      - uses: pnpm/action-setup@v4
+        if: steps.frozen.outputs.restored != 'true'
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        if: steps.frozen.outputs.restored != 'true'
+        with:
+          node-version: 22.20.0
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+        if: steps.frozen.outputs.restored != 'true'
+      - name: Verify fixed main versions and Changesets readiness
+        id: version
+        if: steps.frozen.outputs.restored != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/automatic-release-source.mjs --cargo
+      - name: Prepare pinned source dependencies
+        if: steps.frozen.outputs.restored != 'true' && steps.version.outputs.release_ready == 'true'
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          cargo fetch --locked
+      - name: Package and verify exact source crates
+        id: package
+        if: steps.frozen.outputs.restored != 'true' && steps.version.outputs.release_ready == 'true'
+        run: python -B scripts/cargo-source-release.py prepare
+      - name: Freeze verified Cargo source archives
+        id: archive-upload
+        if: steps.frozen.outputs.restored != 'true' && steps.version.outputs.release_ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-source-${{ github.run_id }}
+          path: |
+            cargo-source-frozen/receipt.json
+            cargo-source-frozen/files/*
+          if-no-files-found: error
+          retention-days: 90
+      - name: Bind Cargo archive upload to its producing attempt
+        id: archive-origin
+        if: steps.archive-upload.outcome == 'success'
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+  publish:
+    name: Publish frozen Cargo source archives
+    needs: [source, sign-frozen-cargo]
+    if: needs.source.outputs.release_ready == 'true' && needs.source.outputs.publish_required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Publish only verified frozen source bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: python -B scripts/cargo-source-release.py publish
+      - name: Preserve per-package Cargo publication states
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-source-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: cargo-source-frozen/publication.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  sign-frozen-cargo:
+    if: needs.source.result == 'success' && needs.source.outputs.frozen_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [source]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-proof-call.yaml
+    with:
+      scope: cargo
+      cargo_restored: ${{ needs.source.outputs.frozen_restored == 'true' }}
+      upload_bindings: >-
+        {"cargo":{"artifact_id":"${{ needs.source.outputs.frozen_id }}","artifact_digest":"${{ needs.source.outputs.frozen_digest }}","run_attempt":"${{ needs.source.outputs.frozen_attempt }}"}}

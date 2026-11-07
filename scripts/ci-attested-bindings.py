@@ -164,7 +164,7 @@ def build_manifest_from_fixed_outputs(transport, expected, outputs, templates):
     rows, cache = [], {}
     for cell, role in expected['cells'].items():
         output = outputs[cell]
-        origin, job = execution.explicit_producer(transport, run, role['producer'], output, cache)
+        origin, job = execution.explicit_producer(transport, run, role['producer'], output, cache, required_conclusion=role.get('producerConclusion', 'success'))
         artifact = transport.get('/actions/artifacts/' + output['artifact_id'])
         name = role['artifactName'].format(sourceSHA=expected['sourceSHA'], runId=expected['runId'], originAttempt=origin['run_attempt'])
         check(artifact.get('name') == name and artifact.get('workflow_run', {}).get('id') == run['id']
@@ -178,7 +178,7 @@ def build_manifest_from_fixed_outputs(transport, expected, outputs, templates):
     return json.dumps(manifest, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()
 
 
-def bound_artifact(transport, run, row, expected, *, maximum_bytes=4 * 1024 * 1024):
+def bound_artifact_metadata(transport, run, row, expected, *, maximum_bytes=4 * 1024 * 1024, required_conclusion="success"):
     """Resolve a row ONLY after validate_verified_manifest/verified CLI policy.
 
     API state is checked again, so a newer failed attempt cannot inherit success.
@@ -198,7 +198,7 @@ def bound_artifact(transport, run, row, expected, *, maximum_bytes=4 * 1024 * 10
           and run.get('event') == 'push' and run.get('head_branch') == 'main',
           'Signed aggregation run differs; a new attempt requires a new verified manifest')
     output = {'artifact_id':str(row['artifactId']), 'artifact_digest':row['artifactDigest'].removeprefix('sha256:'), 'run_attempt':str(row['originAttempt'])}
-    origin, job = execution.explicit_producer(transport, run, row['producer'], output)
+    origin, job = execution.explicit_producer(transport, run, row['producer'], output, required_conclusion=required_conclusion)
     check(job['id'] == row['jobId'] and origin['run_attempt'] == row['originAttempt'], 'Signed original producer differs')
     artifact = transport.get('/actions/artifacts/' + str(row['artifactId']))
     check(artifact.get('id') == row['artifactId'] and artifact.get('name') == row['artifactName']
@@ -206,6 +206,12 @@ def bound_artifact(transport, run, row, expected, *, maximum_bytes=4 * 1024 * 10
           'Signed artifact identity differs')
     check(type(artifact.get('size_in_bytes')) is int and 0 < artifact['size_in_bytes'] <= maximum_bytes, 'Signed archive bounds exceeded')
     execution.upload_binding(job, row['uploadStep'], artifact, output)
+    return artifact, origin, job
+
+
+def bound_artifact(transport, run, row, expected, *, maximum_bytes=4 * 1024 * 1024, required_conclusion="success"):
+    artifact, origin, job = bound_artifact_metadata(transport, run, row, expected,
+        maximum_bytes=maximum_bytes, required_conclusion=required_conclusion)
     body = transport.archive(row['artifactId'])
     check(isinstance(body, bytes) and len(body) == artifact['size_in_bytes']
           and 'sha256:' + hashlib.sha256(body).hexdigest() == row['artifactDigest'], 'Signed archive bytes differ')

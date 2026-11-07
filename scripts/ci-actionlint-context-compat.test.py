@@ -20,6 +20,15 @@ class Contracts(unittest.TestCase):
         self.assertEqual(value['errors'],[])
         self.assertEqual(m.classify([],source),{'documentedContextCompatibility':[],'errors':[]})
 
+    def test_release_signer_uses_the_same_exact_documented_contexts_without_hiding_other_errors(self):
+        source,rows=self.fixture()
+        release='.github/workflows/release-provenance-signer.yaml'
+        renamed=[{**row,'filepath':release} for row in rows]
+        report=m.classify(rows+renamed,{m.WORKFLOW:source,release:source})
+        self.assertEqual(len(report['documentedContextCompatibility']),6)
+        self.assertEqual(report['errors'],[])
+        self.assertEqual(m.classify(renamed,{release:source.replace('job.workflow_sha','github.workflow_sha')})['errors'],renamed[:2])
+
     def test_other_files_fields_locations_errors_and_duplicates_still_fail(self):
         source,rows=self.fixture()
         for field,value in [('filepath','other.yaml'),('line',999),('column',0),('kind','syntax-check'),('message','unrecognized input')]:
