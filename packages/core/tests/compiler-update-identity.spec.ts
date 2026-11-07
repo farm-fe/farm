@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,6 +8,7 @@ import { Compiler } from '../src/compiler/index.js';
 const native = vi.hoisted(() => ({
   known: new Set<string>(),
   realpathErrors: new Map<string, string>(),
+  realpathResults: new Map<string, string>(),
   calls: [] as unknown[]
 }));
 vi.mock('node:fs', async (importOriginal) => {
@@ -16,7 +18,7 @@ vi.mock('node:fs', async (importOriginal) => {
     realpathSync: (file: string) => {
       const code = native.realpathErrors.get(file);
       if (code) throw Object.assign(new Error(code), { code });
-      return actual.realpathSync(file);
+      return native.realpathResults.get(file) ?? actual.realpathSync(file);
     }
   };
 });
@@ -39,6 +41,7 @@ it.each([true, false])(
     native.calls = [];
     native.known.clear();
     native.realpathErrors.clear();
+    native.realpathResults.clear();
     const owner = await fs.mkdtemp(
       path.join(os.tmpdir(), 'farm-update-identity-')
     );
@@ -47,7 +50,9 @@ it.each([true, false])(
       const alias = path.join(owner, 'alias.js');
       await fs.writeFile(file, 'export default 1');
       await fs.symlink(file, alias);
-      const physical = await fs.realpath(file);
+      // Async realpath expands Windows short names; the resolver and this
+      // synchronous boundary may retain them. Seed the exact graph identity.
+      const physical = realpathSync(alias);
       // Match native hasModule's filename lookup (including query-only modules).
       native.known.add(physical);
       const unknown = path.join(owner, 'unknown.js');
@@ -85,6 +90,7 @@ it.each(['ENOENT', 'ENOTDIR', 'EACCES'])(
     native.calls = [];
     native.known.clear();
     native.realpathErrors.clear();
+    native.realpathResults.clear();
     const owner = await fs.mkdtemp(path.join(os.tmpdir(), 'farm-alias-race-'));
     try {
       const file = path.join(owner, 'event.js');
@@ -110,6 +116,42 @@ it.each(['ENOENT', 'ENOTDIR', 'EACCES'])(
       expect(compiler.compiling).toBe(false);
     } finally {
       native.realpathErrors.clear();
+      native.realpathResults.clear();
+      await fs.rm(owner, { recursive: true, force: true });
+    }
+  }
+);
+
+it.each([false, true])(
+  'redirects only to the exact known Windows physical identity (known=%s)',
+  async (known) => {
+    native.calls = [];
+    native.known.clear();
+    native.realpathErrors.clear();
+    native.realpathResults.clear();
+    const owner = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'farm-short-identity-')
+    );
+    try {
+      const alias = path.join(owner, 'alias.js');
+      await fs.writeFile(alias, 'export default 1');
+      const short = String.raw`C:\Users\RUNNER~1\project\module.js`;
+      const long = String.raw`C:\Users\runneradmin\project\module.js`;
+      native.realpathResults.set(alias, short);
+      native.known.add(known ? short : long);
+      const compiler = new Compiler({ compilation: { root: owner } } as any);
+      const item = { path: alias + '?variant', type: 'updated' as const };
+      await compiler.update([item]);
+      expect(native.calls).toEqual([
+        [[known ? short + '?variant' : item.path, 'updated']]
+      ]);
+      // Never equate short/long names without an actual known graph identity.
+      // A known lexical identity still wins over a known physical alias.
+      native.known.add(alias);
+      await compiler.update([item]);
+      expect(native.calls[1]).toEqual([[item.path, 'updated']]);
+    } finally {
+      native.realpathResults.clear();
       await fs.rm(owner, { recursive: true, force: true });
     }
   }
