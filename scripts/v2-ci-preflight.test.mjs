@@ -80,12 +80,18 @@ test('Cargo restores cover all nine targets while only the three primary produce
 });
 
 test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
-  const source = read('incremental-release.yaml').split('  candidate-consumers:')[1].split('  publisher:')[0];
-  assert.ok(source);
-  assert.match(source, /needs: \[source, plan, producer, candidate-identity\]/);
-  assert.match(source, /os: \[ubuntu-24.04, macos-latest, windows-latest\]/);
-  assert.ok(source.includes('name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}'));
-  assert.match(source, /node scripts\/verify-v2-npm-consumer.mjs release-candidate candidate-results/);
+  const caller=YAML.parse(read('incremental-release.yaml')).jobs['candidate-consumers'];
+  assert.deepEqual(caller.needs,['source','plan','producer','candidate-identity']);
+  assert.equal(caller.uses,'./.github/workflows/release-candidate-consumers.yaml');
+  assert.equal(caller.with.candidate_attempt,'${{ needs.candidate-identity.outputs.attempt }}');
+  const source=read('release-candidate-consumers.yaml');
+  const jobs=YAML.parse(source).jobs;
+  assert.deepEqual(Object.values(jobs).map(job=>job['runs-on']),['ubuntu-24.04','macos-latest','windows-latest']);
+  for(const job of Object.values(jobs)){
+    assert.equal(job.strategy,undefined);
+    assert.ok(job.steps.some(step=>step.with?.name==='farm-release-candidates-${{ github.sha }}-${{ inputs.candidate_attempt }}'));
+    assert.ok(job.steps.some(step=>step.run==='node scripts/verify-v2-npm-consumer.mjs release-candidate candidate-results'));
+  }
   assert.doesNotMatch(source, /pnpm install|cargo |NPM_TOKEN|secrets:/);
 });
 
