@@ -496,11 +496,20 @@ impl Compiler {
 
     // If the module type is not script, we should skip render and generate update resource.
     // and just return `window.location.reload()`
-    let should_reload_page = updated_module_ids.iter().any(|id| {
+    // The update renderer includes newly discovered dependencies as well as
+    // updated modules. Non-script additions must use the same reload path;
+    // otherwise an added HTML module is rendered as JavaScript without script
+    // metadata (including SWC globals).
+    let should_reload_page = {
       let module_graph = self.context.module_graph.read();
-      let module = module_graph.module(id).unwrap();
-      !module.module_type.is_script()
-    });
+      updated_module_ids
+        .iter()
+        .chain(diff_result.added_modules.iter())
+        .any(|id| {
+          let module = module_graph.module(id).unwrap();
+          !module.external && !module.module_type.is_script()
+        })
+    };
 
     let (immutable_resources, mutable_resources) = if should_reload_page && generate_update_resource
     {

@@ -29,6 +29,18 @@ class Contracts(unittest.TestCase):
         self.assertEqual(report['errors'],[])
         self.assertEqual(m.classify(renamed,{release:source.replace('job.workflow_sha','github.workflow_sha')})['errors'],renamed[:2])
 
+    def test_queue_compatibility_requires_exact_non_cancelling_release_policy(self):
+        name='.github/workflows/incremental-release.yaml'
+        source='concurrency:\n  group: release-main\n  cancel-in-progress: false\n  queue: max\n'
+        row={'filepath':name,'line':4,'column':3,'kind':'syntax-check','message':'unexpected key "queue" for "concurrency" section. expected one of "cancel-in-progress", "group"'}
+        self.assertEqual(m.classify([row],{name:source})['errors'],[])
+        for altered in [source.replace('false','true'),source.replace('max','single'),source.replace('concurrency:','other:')]:
+            self.assertEqual(m.classify([row],{name:altered})['errors'],[row])
+        self.assertEqual(m.classify([row,row],{name:source})['errors'],[row])
+        unrelated={**row,'line':6}
+        self.assertEqual(m.classify([unrelated],{name:source+'other:\n  queue: max\n'})['errors'],[unrelated])
+        self.assertEqual(m.classify([{**row,'filepath':'other.yaml'}],{'other.yaml':source})['errors'],[{**row,'filepath':'other.yaml'}])
+
     def test_other_files_fields_locations_errors_and_duplicates_still_fail(self):
         source,rows=self.fixture()
         for field,value in [('filepath','other.yaml'),('line',999),('column',0),('kind','syntax-check'),('message','unrecognized input')]:

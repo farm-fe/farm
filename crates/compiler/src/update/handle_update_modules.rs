@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
 #[cfg(test)]
+mod glob_membership_tests;
+
+#[cfg(test)]
 mod watch_query_tests {
   use super::*;
   use farmfe_core::{config::Config, module::Module};
@@ -120,7 +123,21 @@ pub fn handle_update_modules(
   } else {
     (vec![], 0)
   };
-  let paths = resolve_watch_graph_paths(paths, context);
+  // Preserve original filesystem membership events for plugin observers even
+  // when watch-root expansion replaces a file with an owning CSS module.
+  let membership_events = paths
+    .iter()
+    .filter(|(_, kind)| matches!(kind, UpdateType::Added | UpdateType::Removed))
+    .cloned()
+    .collect::<Vec<_>>();
+  let mut paths = resolve_watch_graph_paths(paths, context);
+  for event in membership_events {
+    if !paths.iter().any(|(path, kind)| {
+      path == &event.0 && std::mem::discriminant(kind) == std::mem::discriminant(&event.1)
+    }) {
+      paths.push(event);
+    }
+  }
   let paths = resolve_last_failed_module_paths(paths, last_fail_module_ids, context);
 
   if context.config.record {
@@ -159,7 +176,15 @@ pub fn handle_update_modules(
   } else {
     ("".to_string(), 0)
   };
-  let paths = plugin_update_modules_hook_params.paths;
+  // Plugins may remove, replace or append any event. Preserve every returned
+  // membership event, without guessing whether an equal tuple was synthetic.
+  // Only Updated events are compiler roots (see update and diff_and_patch_context),
+  // so query-target normalization must not turn membership notifications into
+  // bare compile targets or hide an explicit same-path Updated target.
+  let (paths, membership_events): (Vec<_>, Vec<_>) = plugin_update_modules_hook_params
+    .paths
+    .into_iter()
+    .partition(|(_, kind)| matches!(kind, UpdateType::Updated));
   let mut module_graph = context.module_graph.write();
 
   let mut additional_paths = vec![];
@@ -250,7 +275,7 @@ pub fn handle_update_modules(
     })
     .collect::<Vec<_>>();
 
-  let result: Vec<(String, UpdateType)> = filtered_paths
+  let mut result: Vec<(String, UpdateType)> = filtered_paths
     .into_iter()
     .map(|p| {
       if let Some((_, ty)) = paths.iter().find(|(pp, _)| *pp == p) {
@@ -260,6 +285,8 @@ pub fn handle_update_modules(
       }
     })
     .collect();
+
+  result.extend(membership_events);
 
   if context.config.record {
     let end_time = std::time::SystemTime::now()

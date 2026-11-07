@@ -52,12 +52,13 @@ fn get_exclude_imports(content: &str, imports: Vec<Import>) -> Vec<Import> {
 }
 
 pub fn inject_imports(
+  file_path: &str,
   content: &str,
   imports: Vec<Import>,
   priority: Option<usize>,
   inject_at_end: bool,
-) -> String {
-  let esm_imports = parse_esm_imports(None, Some(content));
+) -> farmfe_core::error::Result<String> {
+  let esm_imports = parse_esm_imports(Some(file_path), Some(content))?;
   let imports = get_exclude_imports(content, imports)
     .into_iter()
     .filter(|import| {
@@ -125,5 +126,5 @@ pub fn inject_imports(
   let mut content = content.to_string();
   content.insert_str(inject_idx, &content_str);
   // content_str.push_str(content);
-  content
+  Ok(content)
 }

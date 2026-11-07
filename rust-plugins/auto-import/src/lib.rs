@@ -103,21 +103,9 @@ pub struct FarmfePluginAutoImport {
 }
 
 impl FarmfePluginAutoImport {
-  fn new(config: &Config, options: String) -> Self {
+  fn new(_config: &Config, options: String) -> Self {
     let options: Options = serde_json::from_str(&options).unwrap();
     let collect_imports: Arc<Mutex<Vec<Import>>> = Arc::new(Mutex::new(vec![]));
-    let dirs = options.dirs.clone().unwrap_or_default();
-    let root_path = config.root.clone();
-    let presets = options.presets.clone().unwrap_or_default();
-    let ignore = options.ignore.clone().unwrap_or_default();
-    finish_imports::finish_imports(FinishImportsParams {
-      root_path,
-      presets,
-      dirs,
-      ignore,
-      dts: options.dts.clone().unwrap_or_default(),
-      context_imports: &collect_imports,
-    });
     Self {
       options,
       collect_imports,
@@ -129,6 +117,14 @@ impl Plugin for FarmfePluginAutoImport {
   fn name(&self) -> &str {
     "FarmfePluginAutoImport"
   }
+  fn build_start(
+    &self,
+    context: &Arc<farmfe_core::context::CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // Discovery can parse user files. Run it in a fallible hook, not the native constructor.
+    self.update_finished(context)
+  }
+
   fn transform(
     &self,
     param: &farmfe_core::plugin::PluginTransformHookParam,
@@ -159,11 +155,12 @@ impl Plugin for FarmfePluginAutoImport {
         vue_template_addon(&mut content, &imports);
       }
       let content = parser::inject_imports::inject_imports(
+        param.resolved_path,
         &content,
         imports.clone().to_vec(),
         None,
         options.inject_at_end.unwrap_or(false),
-      );
+      )?;
       // let (cm, src) = create_swc_source_map(Source {
       //   path: PathBuf::from(param.resolved_path),
       //   content: Arc::new(content.clone()),
@@ -198,7 +195,141 @@ impl Plugin for FarmfePluginAutoImport {
       ignore,
       dts: self.options.dts.clone().unwrap_or_default(),
       context_imports: &self.collect_imports,
-    });
+    })?;
     Ok(None)
+  }
+}
+
+#[cfg(test)]
+mod recovery_tests {
+  use super::*;
+  use farmfe_core::{
+    context::CompilationContext, error::CompilationError, plugin::PluginTransformHookParam,
+  };
+
+  #[test]
+  fn transform_preserves_diagnostic_then_recovers_without_poisoning_imports() {
+    let config = Config::default();
+    let plugin =
+      FarmfePluginAutoImport::new(&config, r#"{"dts":false,"presets":["react"]}"#.into());
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    plugin.build_start(&context).unwrap();
+    for content in ["export const value =", "const value = 1 2;"] {
+      let param = PluginTransformHookParam {
+        module_id: "stream.tsx".into(),
+        resolved_path: "stream.tsx",
+        content: content.into(),
+        module_type: ModuleType::Tsx,
+        query: vec![],
+        meta: Default::default(),
+        source_map_chain: vec![],
+      };
+      assert!(
+        matches!(plugin.transform(&param, &context), Err(CompilationError::ParseError { resolved_path, .. }) if resolved_path == "stream.tsx")
+      );
+      let valid = PluginTransformHookParam {
+        content:
+          "export const View = () => { const [value] = useState(1); return <div>{value}</div> };"
+            .into(),
+        ..param
+      };
+      let result = plugin.transform(&valid, &context).unwrap().unwrap();
+      assert!(result.content.contains("useState"));
+      assert!(result.content.contains("import"));
+    }
+  }
+
+  #[test]
+  fn directory_discovery_failure_is_fallible_and_can_retry() {
+    let dir =
+      std::env::temp_dir().join(format!("farm-auto-import-recovery-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("exports.ts");
+    std::fs::write(&file, "export const item =").unwrap();
+    let config = Config {
+      root: dir.to_string_lossy().into_owned(),
+      ..Default::default()
+    };
+    let plugin =
+      FarmfePluginAutoImport::new(&config, r#"{"dts":false,"dirs":["exports\\.ts$"]}"#.into());
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    assert!(plugin.build_start(&context).is_err());
+    assert!(plugin.collect_imports.lock().unwrap().is_empty());
+    std::fs::write(&file, "export const item = 1;").unwrap();
+    plugin.build_start(&context).unwrap();
+    assert!(
+      plugin
+        .collect_imports
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|item| item.name == "item")
+    );
+    std::fs::write(&file, "export const item =").unwrap();
+    assert!(plugin.update_finished(&context).is_err());
+    assert!(
+      plugin
+        .collect_imports
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|item| item.name == "item")
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+  }
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+  use super::*;
+  use farmfe_core::context::CompilationContext;
+  // Prepared supplemental crate test; not appended/compiled yet.
+  // Uses the existing recovery_tests scope imports and FarmfePluginAutoImport.
+  #[test]
+  fn repeated_build_start_rescans_and_preserves_dts_on_failure() {
+    let dir = std::env::temp_dir().join(format!(
+      "farm-auto-import-dts-lifecycle-{}",
+      std::process::id()
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    let source = dir.join("exports.ts");
+    let dts = dir.join("generated.d.ts");
+    std::fs::write(&source, "export const alpha = 1;").unwrap();
+    let config = Config {
+      root: dir.to_string_lossy().into_owned(),
+      ..Default::default()
+    };
+    let plugin = FarmfePluginAutoImport::new(
+      &config,
+      r#"{"dirs":["exports\\.ts$"],"dts":"generated.d.ts"}"#.into(),
+    );
+    assert!(!dts.exists());
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    plugin.build_start(&context).unwrap();
+    let first = std::fs::read_to_string(&dts).unwrap();
+    assert!(first.contains("alpha"));
+    std::fs::write(&dts, format!("{first}\n// sentinel")).unwrap();
+    plugin.build_start(&context).unwrap();
+    assert!(std::fs::read_to_string(&dts).unwrap().contains("sentinel"));
+    std::fs::write(&source, "export const beta = 2;").unwrap();
+    plugin.build_start(&context).unwrap();
+    let second = std::fs::read_to_string(&dts).unwrap();
+    assert!(second.contains("beta"));
+    assert!(!second.contains("sentinel"));
+    std::fs::write(&source, "export const beta =").unwrap();
+    assert!(plugin.build_start(&context).is_err());
+    assert_eq!(std::fs::read_to_string(&dts).unwrap(), second);
+    assert!(
+      plugin
+        .collect_imports
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|item| item.name == "beta")
+    );
+    std::fs::write(&source, "export const beta = 2;").unwrap();
+    plugin.build_start(&context).unwrap();
+    assert_eq!(std::fs::read_to_string(&dts).unwrap(), second);
+    std::fs::remove_dir_all(dir).unwrap();
   }
 }

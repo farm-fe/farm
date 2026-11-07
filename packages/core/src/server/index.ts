@@ -372,7 +372,7 @@ export class Server extends httpServer {
       };
 
       if (this.hmrEngine) {
-        await this.hmrEngine.hmrUpdate(currentAddedItem);
+        await this.hmrEngine.queueWatchUpdate(currentAddedItem);
       } else {
         await this.compiler.update([currentAddedItem]);
       }
@@ -380,6 +380,10 @@ export class Server extends httpServer {
 
     this.watcher.on('unlink', async (file: string) => {
       if (!this.compiler) return;
+      if (this.hmrEngine) {
+        await this.hmrEngine.queueWatchRemove(normalizePath(file));
+        return;
+      }
       const currentRemovedItem: CompilerUpdateItem = {
         path: normalizePath(file),
         type: 'removed'
@@ -397,11 +401,7 @@ export class Server extends httpServer {
           type: 'updated' as const
         }))
       ];
-      if (this.hmrEngine) {
-        await this.hmrEngine.hmrUpdate(paths, true);
-      } else {
-        await this.compiler.update(paths);
-      }
+      await this.compiler.update(paths);
     });
 
     this.watcher.on('change', async (file: string) => {
@@ -422,7 +422,11 @@ export class Server extends httpServer {
           path: normalizePath(file),
           type: 'updated'
         };
-        this.hmrEngine?.hmrUpdate(currentRemovedItem);
+        void this.hmrEngine
+          ?.queueWatchUpdate(currentRemovedItem)
+          .catch((error) => {
+            this.logger.error(`Farm Hmr Update Error: ${error}`);
+          });
       } catch (error: any) {
         this.logger.error(`Farm Hmr Update Error: ${error}`);
       }

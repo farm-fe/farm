@@ -76,8 +76,11 @@ fn get_filename_by_path(file_path: &str) -> String {
   to_pascal_case(&filename)
 }
 
-pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
-  let exports = parse_esm_exports(Some(file_path), content);
+pub fn scan_exports(
+  file_path: &str,
+  content: Option<&str>,
+) -> farmfe_core::error::Result<Vec<Import>> {
+  let exports = parse_esm_exports(Some(file_path), content)?;
   let filename = get_filename_by_path(file_path);
   let mut exports_names = Vec::new();
   for export in exports {
@@ -173,13 +176,24 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
           let specifier_path = parent_dir_path.join(specifier.unwrap());
           let specifier_path = normalize_path(specifier_path.to_str().unwrap());
           let file_exts = FILE_EXTENSION_LOOKUP.to_vec();
-          if metadata(&specifier_path).unwrap().is_dir() {
+          if metadata(&specifier_path)
+            .map_err(|error| farmfe_core::error::CompilationError::LoadError {
+              resolved_path: specifier_path.clone(),
+              source: Some(Box::new(error)),
+            })?
+            .is_dir()
+          {
             // check if specifier_path has index.tsx ...
             for ext in &file_exts {
               let index_path = format!("{specifier_path}/index{ext}");
               if metadata(&index_path).is_ok() {
-                let index_content = read_to_string(&index_path).unwrap();
-                let index_exports = scan_exports(&index_path, Some(&index_content));
+                let index_content = read_to_string(&index_path).map_err(|error| {
+                  farmfe_core::error::CompilationError::LoadError {
+                    resolved_path: index_path.clone(),
+                    source: Some(Box::new(error)),
+                  }
+                })?;
+                let index_exports = scan_exports(&index_path, Some(&index_content))?;
                 exports_names.extend(index_exports);
                 break;
               }
@@ -189,8 +203,13 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
             for ext in &file_exts {
               let index_path = format!("{specifier_path}{ext}");
               if metadata(&index_path).is_ok() {
-                let index_content = read_to_string(&index_path).unwrap();
-                let index_exports = scan_exports(&index_path, Some(&index_content));
+                let index_content = read_to_string(&index_path).map_err(|error| {
+                  farmfe_core::error::CompilationError::LoadError {
+                    resolved_path: index_path.clone(),
+                    source: Some(Box::new(error)),
+                  }
+                })?;
+                let index_exports = scan_exports(&index_path, Some(&index_content))?;
                 exports_names.extend(index_exports);
                 break;
               }
@@ -203,5 +222,5 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
       }
     }
   }
-  exports_names
+  Ok(exports_names)
 }

@@ -150,7 +150,7 @@ export class Compiler {
 
     try {
       const res = await this._bindingCompiler.update(
-        paths.map((item) => [item.path, item.type]),
+        paths.map((item) => [this.existingUpdateIdentity(item), item.type]),
         async () => {
           const next = this._updateQueue.shift();
 
@@ -194,6 +194,36 @@ export class Compiler {
 
   private isCompilingAndCheckIgnored(ignoreCompilingCheck: boolean): boolean {
     return this.compiling && !ignoreCompilingCheck;
+  }
+
+  private existingUpdateIdentity(item: CompilerUpdateItem): string {
+    // Preserve membership notifications, virtual identities and symlinks:false.
+    // Only redirect an update to a physical identity already in this graph.
+    if (
+      item.type !== 'updated' ||
+      this.config.compilation?.resolve?.symlinks === false
+    )
+      return item.path;
+    const filename = cleanUrl(item.path);
+    const root =
+      this.config.compilation?.root ?? this.config.root ?? process.cwd();
+    const absolute = path.resolve(root, filename);
+    if (!existsSync(absolute)) return item.path;
+    // Native hasModule accepts a filename and also finds its query variants.
+    if (this._bindingCompiler.hasModule(filename)) return item.path;
+    let physical: string;
+    try {
+      physical = realpathSync(absolute);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      // The file can disappear after existsSync. Preserve the original event
+      // and let native update/error handling decide, without dropping siblings.
+      if (code === 'ENOENT' || code === 'ENOTDIR') return item.path;
+      throw error;
+    }
+    return this._bindingCompiler.hasModule(physical)
+      ? physical + item.path.slice(filename.length)
+      : item.path;
   }
 
   hasModule(resolvedPath: string): boolean {

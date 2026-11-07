@@ -167,9 +167,18 @@ describe('public Server runtime mode', () => {
         ).toContain('external.js')
       );
       await fs.writeFile(external, 'export default "external updated";');
-      await vi.waitFor(() => expect(broadcast).toHaveBeenCalled(), {
-        timeout: 3000
-      });
+      // A startup/directory broadcast is not completion of this file edit.
+      await vi.waitFor(
+        () => {
+          expect(broadcast).toHaveBeenCalled();
+          expect(
+            Object.values(requireDefined(server.runtime).resources()).some(
+              (bytes) => bytes.toString().includes('external updated')
+            )
+          ).toBe(true);
+        },
+        { timeout: 3000 }
+      );
       expect(update.mock.calls.some((call) => call[1] === true)).toBe(true);
       expect(
         Object.values(requireDefined(server.runtime).resources()).some(

@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 
 use farmfe_core::{
-  swc_common::Span,
+  error::{CompilationError, Result},
+  swc_common::{Span, Spanned},
   swc_ecma_ast::*,
-  swc_ecma_parser::{Syntax, TsSyntax},
+  swc_ecma_parser::{Parser, StringInput, Syntax, TsSyntax},
 };
 use farmfe_toolkit::{
-  script::{ParseScriptModuleResult, parse_module},
+  sourcemap::create_swc_source_map,
   swc_ecma_visit::{Visit, VisitWith},
 };
 use std::sync::Arc;
@@ -392,110 +393,110 @@ impl Visit for ExportsVisitor {
   }
 }
 
+fn parse_source(file_path: Option<&str>, content: Option<&str>, syntax: Syntax) -> Result<Module> {
+  let file_path = file_path.unwrap_or("<auto-import>");
+  let content = match content {
+    Some(content) => content.to_owned(),
+    None => fs::read_to_string(file_path).map_err(|error| CompilationError::LoadError {
+      resolved_path: file_path.to_owned(),
+      source: Some(Box::new(error)),
+    })?,
+  };
+  let (source_map, source_file) = create_swc_source_map(&file_path.into(), Arc::new(content));
+  let mut parser = Parser::new(syntax, StringInput::from(&*source_file), None);
+  let parsed = parser.parse_module();
+  let mut errors = parser.take_errors();
+  let ast = match parsed {
+    Ok(ast) => Some(ast),
+    Err(error) => {
+      errors.push(error);
+      None
+    }
+  };
+  if !errors.is_empty() {
+    let msg = errors
+      .into_iter()
+      .map(|error| {
+        let location = source_map.lookup_char_pos(error.span().lo);
+        format!(
+          "{}:{}: {}",
+          location.line,
+          location.col_display + 1,
+          error.kind().msg()
+        )
+      })
+      .collect::<Vec<_>>()
+      .join("\n");
+    return Err(CompilationError::ParseError {
+      resolved_path: file_path.to_owned(),
+      msg,
+    });
+  }
+  ast.ok_or_else(|| CompilationError::ParseError {
+    resolved_path: file_path.to_owned(),
+    msg: "Parser produced no module".into(),
+  })
+}
+
 pub fn parse_esm_imports_exports(
   file_path: Option<&str>,
   content: Option<&str>,
-) -> (Vec<ESMImport>, Vec<ESMExport>) {
+) -> Result<(Vec<ESMImport>, Vec<ESMExport>)> {
   if file_path.is_none() && content.is_none() {
-    return (vec![], vec![]);
+    return Ok((vec![], vec![]));
   }
-  let file_path = file_path.unwrap_or("");
-  let content = if let Some(c) = content {
-    c
-  } else {
-    &fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
-  };
-  let content = Arc::new(content.to_string());
-  let ParseScriptModuleResult { ast, .. } = match parse_module(
-    &file_path.into(),
+  let ast = parse_source(
+    file_path,
     content,
     Syntax::Typescript(TsSyntax {
       tsx: true,
       decorators: true,
       ..Default::default()
     }),
-    EsVersion::latest(),
-  ) {
-    Ok(res) => res,
-    Err(err) => {
-      println!("{err}");
-      panic!("Parse {file_path} failed. See error details above.");
-    }
-  };
-
-  let mut imports_visitor = ImportsVisitor::new();
-  ast.visit_with(&mut imports_visitor);
-  let mut exports_visitor = ExportsVisitor::new();
-  ast.visit_with(&mut exports_visitor);
-  (imports_visitor.imports, exports_visitor.exports)
+  )?;
+  let mut imports = ImportsVisitor::new();
+  ast.visit_with(&mut imports);
+  let mut exports = ExportsVisitor::new();
+  ast.visit_with(&mut exports);
+  Ok((imports.imports, exports.exports))
 }
 
-pub fn parse_esm_imports(file_path: Option<&str>, content: Option<&str>) -> Vec<ESMImport> {
+pub fn parse_esm_imports(file_path: Option<&str>, content: Option<&str>) -> Result<Vec<ESMImport>> {
   if file_path.is_none() && content.is_none() {
-    return vec![];
+    return Ok(vec![]);
   }
-  let file_path = file_path.unwrap_or("");
-  let content = if let Some(c) = content {
-    c
-  } else {
-    &fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
-  };
-  let content = Arc::new(content.to_string());
-  let ParseScriptModuleResult { ast, .. } = match parse_module(
-    &file_path.into(),
+  let ast = parse_source(
+    file_path,
     content,
     Syntax::Typescript(TsSyntax {
       tsx: true,
       decorators: false,
       dts: false,
-      no_early_errors: true,
+      no_early_errors: false,
       disallow_ambiguous_jsx_like: true,
     }),
-    EsVersion::latest(),
-  ) {
-    Ok(res) => res,
-    Err(err) => {
-      println!("{err}");
-      panic!("Parse {file_path} failed. See error details above.");
-    }
-  };
-
-  let mut imports_visitor = ImportsVisitor::new();
-  ast.visit_with(&mut imports_visitor);
-  imports_visitor.imports
+  )?;
+  let mut imports = ImportsVisitor::new();
+  ast.visit_with(&mut imports);
+  Ok(imports.imports)
 }
 
-pub fn parse_esm_exports(file_path: Option<&str>, content: Option<&str>) -> Vec<ESMExport> {
+pub fn parse_esm_exports(file_path: Option<&str>, content: Option<&str>) -> Result<Vec<ESMExport>> {
   if file_path.is_none() && content.is_none() {
-    return vec![];
+    return Ok(vec![]);
   }
-  let file_path = file_path.unwrap_or("");
-  let content = if let Some(c) = content {
-    c
-  } else {
-    &fs::read_to_string(file_path).unwrap_or_else(|_| panic!("Unable to read file: {file_path:?}"))
-  };
-  let content = Arc::new(content.to_string());
-  let ParseScriptModuleResult { ast, .. } = match parse_module(
-    &file_path.into(),
+  let ast = parse_source(
+    file_path,
     content,
     Syntax::Typescript(TsSyntax {
       tsx: true,
       decorators: true,
       ..Default::default()
     }),
-    EsVersion::latest(),
-  ) {
-    Ok(res) => res,
-    Err(err) => {
-      println!("{err}");
-      panic!("Parse {file_path} failed. See error details above.");
-    }
-  };
-
-  let mut exports_visitor = ExportsVisitor::new();
-  ast.visit_with(&mut exports_visitor);
-  exports_visitor.exports
+  )?;
+  let mut exports = ExportsVisitor::new();
+  ast.visit_with(&mut exports);
+  Ok(exports.exports)
 }
 #[cfg(test)]
 mod tests {
@@ -503,8 +504,88 @@ mod tests {
 
   #[test]
   fn test_parse_esm_imports_exports() {
-    let (imports, exports) = parse_esm_imports_exports(Some("./tests/test.ts"), None);
+    let (imports, exports) = parse_esm_imports_exports(Some("./tests/test.ts"), None).unwrap();
     println!("imports: {imports:#?}");
     println!("exports: {exports:#?}");
+  }
+}
+
+#[cfg(test)]
+mod recovery_regression_tests {
+  use super::*;
+
+  #[test]
+  fn incomplete_source_does_not_unwind() {
+    for content in [
+      "export const value =",
+      "type Props = { onChange: (value: string) => v",
+      "export default () => <div>",
+    ] {
+      assert!(
+        std::panic::catch_unwind(|| parse_esm_imports(Some("stream.tsx"), Some(content))).is_ok()
+      );
+      assert!(
+        std::panic::catch_unwind(|| parse_esm_exports(Some("stream.tsx"), Some(content))).is_ok()
+      );
+      assert!(
+        std::panic::catch_unwind(|| parse_esm_imports_exports(Some("stream.tsx"), Some(content)))
+          .is_ok()
+      );
+    }
+  }
+
+  #[test]
+  fn missing_source_does_not_unwind() {
+    assert!(
+      std::panic::catch_unwind(|| parse_esm_imports(
+        Some("/farm-auto-import-missing-test.tsx"),
+        None
+      ))
+      .is_ok()
+    );
+  }
+}
+
+#[cfg(test)]
+mod diagnostic_regression_tests {
+  use super::*;
+  #[test]
+  fn invalid_then_valid_returns_diagnostic_and_recovers() {
+    for content in [
+      "export const value =",
+      "export default () => <div>",
+      "type Props = { onChange: (value: string) => v",
+    ] {
+      for result in [
+        parse_esm_imports(Some("stream.tsx"), Some(content)).map(|_| ()),
+        parse_esm_exports(Some("stream.tsx"), Some(content)).map(|_| ()),
+        parse_esm_imports_exports(Some("stream.tsx"), Some(content)).map(|_| ()),
+      ] {
+        match result {
+          Err(CompilationError::ParseError { resolved_path, msg }) => {
+            assert_eq!(resolved_path, "stream.tsx");
+            assert!(!msg.is_empty());
+          }
+          other => panic!("expected diagnostic: {other:?}"),
+        }
+      }
+      assert!(
+        parse_esm_imports(
+          Some("stream.tsx"),
+          Some("import React from 'react'; export const value = <div />;")
+        )
+        .is_ok()
+      );
+    }
+  }
+  #[test]
+  fn recoverable_parser_errors_are_not_success() {
+    assert!(parse_esm_imports(Some("stream.tsx"), Some("const value = 1 2;")).is_err());
+  }
+  #[test]
+  fn missing_file_keeps_path_in_load_error() {
+    assert!(
+      matches!(parse_esm_exports(Some("/farm-auto-import-missing-test.tsx"), None), Err(CompilationError::LoadError { resolved_path, .. }) if resolved_path == "/farm-auto-import-missing-test.tsx")
+    );
   }
 }

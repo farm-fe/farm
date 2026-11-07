@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 
 WORKFLOW = '.github/workflows/ci-provenance-signer.yaml'
+QUEUE_WORKFLOWS = {'.github/workflows/cargo-source-release.yaml', '.github/workflows/incremental-release.yaml'}
 WORKFLOWS = {WORKFLOW, '.github/workflows/release-provenance-signer.yaml'}
 OBJECT = '{check_run_id: number; container: {id: string; network: string}; services: {string => {id: string; network: string; ports: {string => string}}}; status: string}'
 ALLOWED = {
@@ -31,6 +32,15 @@ def classify(diagnostics, source):
         lines = sources.get(filename, '').splitlines()
         line = row.get('line') if isinstance(row, dict) else None
         statement = lines[line-1].strip() if type(line) is int and 0 < line <= len(lines) else ''
+        # github.com supports queue:max; preserve the exact serial release policy.
+        # https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency
+        queue_message = 'unexpected key "queue" for "concurrency" section. expected one of "cancel-in-progress", "group"'
+        queue_policy = (type(line) is int and 4 <= line <= len(lines) and lines[line-4] == 'concurrency:' and lines[line-3].startswith('  group: ') and lines[line-2] == '  cancel-in-progress: false' and lines[line-1] == '  queue: max')
+        if (isinstance(row, dict) and filename in QUEUE_WORKFLOWS and queue_policy
+                and statement == 'queue: max' and lines[line-1] == '  queue: max'
+                and row.get('kind') == 'syntax-check' and row.get('message') == queue_message
+                and row.get('column') == 3 and (filename, statement) not in seen):
+            seen.add((filename, statement)); known.append(row); continue
         field = ALLOWED.get(statement)
         expected = 'property "' + str(field) + '" is not defined in object type ' + OBJECT
         column = lines[line-1].find('job.' + str(field)) + 1 if field else -1
@@ -54,7 +64,7 @@ def main():
     result = subprocess.run([args.actionlint, '-shellcheck=', '-format', '{{json .}}', *args.workflows], capture_output=True, text=True)
     if result.returncode not in [0,1] or result.stderr:
         raise ValueError('actionlint execution failed: ' + result.stderr[:2000])
-    report = classify(json.loads(result.stdout or '[]'), {name:Path(name).read_text() for name in WORKFLOWS if Path(name).is_file()})
+    report = classify(json.loads(result.stdout or '[]'), {name:Path(name).read_text() for name in WORKFLOWS | QUEUE_WORKFLOWS if Path(name).is_file()})
     if result.returncode and not report['documentedContextCompatibility'] and not report['errors']:
         raise ValueError('actionlint failed without diagnostics')
     print(json.dumps(report, indent=2))

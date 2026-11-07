@@ -6,7 +6,7 @@ use farmfe_toolkit::plugin_utils::{normalize_path::normalize_path, path_filter::
 use glob::Pattern;
 use walkdir::{DirEntry, WalkDir};
 
-pub fn scan_dir_exports(dir: &str) -> Vec<Import> {
+pub fn scan_dir_exports(dir: &str) -> farmfe_core::error::Result<Vec<Import>> {
   let walker = WalkDir::new(dir).into_iter();
   let file_exts = ["js", "ts", "jsx", "tsx"];
   let filtered_entries = walker.filter_map(Result::ok).filter(|e| {
@@ -18,10 +18,10 @@ pub fn scan_dir_exports(dir: &str) -> Vec<Import> {
   let mut exports = Vec::new();
   for entry in filtered_entries {
     let file_path = entry.path();
-    let exports_names = scan_exports(&normalize_path(file_path.to_str().unwrap()), None);
+    let exports_names = scan_exports(&normalize_path(file_path.to_str().unwrap()), None)?;
     exports.extend(exports_names);
   }
-  exports
+  Ok(exports)
 }
 
 pub fn is_exclude_dir(entry: &DirEntry, exclude_patterns: &[Pattern]) -> bool {
@@ -29,7 +29,10 @@ pub fn is_exclude_dir(entry: &DirEntry, exclude_patterns: &[Pattern]) -> bool {
   exclude_patterns.iter().any(|p| p.matches_path(path))
 }
 
-pub fn scan_dirs_exports(root_path: &str, dirs: &[ConfigRegex]) -> Vec<Import> {
+pub fn scan_dirs_exports(
+  root_path: &str,
+  dirs: &[ConfigRegex],
+) -> farmfe_core::error::Result<Vec<Import>> {
   let exclude_patterns = vec![Pattern::new("**/node_modules/**").expect("Invalid pattern")];
   let exclude = vec![];
   let dirs_vec = dirs.to_vec();
@@ -56,8 +59,8 @@ pub fn scan_dirs_exports(root_path: &str, dirs: &[ConfigRegex]) -> Vec<Import> {
     });
   let mut exports = Vec::new();
   for file_path in filtered_entries {
-    let exports_names = scan_exports(&file_path, None);
+    let exports_names = scan_exports(&file_path, None)?;
     exports.extend(exports_names);
   }
-  exports
+  Ok(exports)
 }
