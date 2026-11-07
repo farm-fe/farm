@@ -16,11 +16,14 @@ execution=load('published_baseline_execution','ci-execution-evidence.py')
 chain=evidence.chain_plan
 check=evidence.check
 checkpoint=load('published_release_checkpoint','incremental-release-checkpoint.py')
+provenance=load('published_release_provenance','release-provenance.py')
+consumers=load('published_release_consumers','release-consumer-bindings.py')
 WORKFLOW='.github/workflows/incremental-release.yaml'
 
 class ReleaseBaselineReader:
-    def __init__(self,transport,registry,read_source=evidence.source_reader):
+    def __init__(self,transport,registry,read_source=evidence.source_reader,*,proof_provider=None):
         self.transport,self.registry,self.read_source=transport,registry,read_source
+        self.proof_provider=proof_provider
     def state(self):
         refs=self.transport.get('/git/matching-refs/heads/farm-release-state')
         check(isinstance(refs,list) and len(refs)<=8,'Publication state ref inventory exceeds bound')
@@ -56,33 +59,22 @@ class ReleaseBaselineReader:
         check(obj.get('type')=='commit' and obj.get('sha')==source['sha'],'Persistent checkpoint tag source differs')
         value=checkpoint.decode(release,manifest,source,repository['id'])
         return value,source
-    def candidates(self,manifest,repository,last_attempt):
+    def candidates(self,manifest,repository,last_attempt,*,trusted_outputs=None):
         run_id,first=manifest['producerRunId'],manifest['producerAttempt']
-        check(type(last_attempt) is int and first<=last_attempt<first+16,'Candidate acceptance history exceeds bound')
+        check(type(last_attempt) is int and first<=last_attempt<=32,'Candidate acceptance history exceeds bound')
+        run=self.transport.get('/actions/runs/'+str(run_id)+'/attempts/'+str(last_attempt))
+        check(run.get('repository',{}).get('id')==repository['id'],'Candidate repository differs')
+        if trusted_outputs is None:
+            source={'sha':manifest['sourceSHA'],'tree':manifest['sourceTree']}
+            provider=provenance.verified_run if self.proof_provider is None else self.proof_provider
+            _,rows=provider(self.transport,run,source,'public')
+            trusted_outputs=provenance.consumer_outputs(rows,'candidate')
+        check(isinstance(trusted_outputs,dict) and set(trusted_outputs)==set(consumers.ABI),
+              'Exact trusted candidate platform inventory required')
         result={}
-        expected={'ubuntu-24.04':{'os':'linux','arch':'x64','abi':'linux-x64-gnu'},
-                  'macos-latest':{'os':'darwin','arch':'arm64','abi':'darwin-arm64'},
-                  'windows-latest':{'os':'win32','arch':'x64','abi':'win32-x64-msvc'}}
-        for platform in ['ubuntu-24.04','macos-latest','windows-latest']:
-            for attempt in range(last_attempt,first-1,-1):
-                run=self.transport.get('/actions/runs/'+str(run_id)+'/attempts/'+str(attempt))
-                check(run['id']==run_id and run['run_attempt']==attempt and run['head_sha']==manifest['sourceSHA']
-                      and run['path']==WORKFLOW and run['head_branch']=='main' and run['event'] in ['push','workflow_dispatch']
-                      and run['repository']['id']==repository['id']==run['head_repository']['id'],'Candidate acceptance source or repository differs')
-                try:
-                    job=evidence.successful_job(execution.jobs_for(self.transport,run),'Independent release candidate consumer ('+platform+')')
-                    check(job.get('run_id')==run_id,'Candidate consumer belongs to another run')
-                    name='farm-release-candidate-consumer-'+manifest['sourceSHA']+'-'+platform+'-'+str(attempt)
-                    report,artifact=execution.fetch_json_artifact(self.transport,run,name,'result.json')
-                    execution.upload_binding(job,'Upload independent release candidate acceptance',artifact)
-                    binding={'manifestHash':chain.digest(manifest),'sourceSHA':manifest['sourceSHA'],'sourceTree':manifest['sourceTree'],
-                             'producerRunId':run_id,'producerAttempt':first,'consumerRunId':run_id,'consumerAttempt':attempt}
-                    check(report.get('releaseBinding')==binding and report.get('status')=='passed'
-                          and report.get('scratchRemoved') is True and report.get('cleanupConfirmed') is not False,'Candidate acceptance does not bind original frozen archives or cleanup')
-                    check(report.get('platform')==expected[platform],'Candidate report OS or ABI differs')
-                    result[platform]={'attempt':attempt,'artifactId':artifact['id'],'artifactDigest':artifact['digest']};break
-                except (ValueError,KeyError):continue
-            check(platform in result,'No valid independent candidate acceptance for '+platform)
+        for platform,output in trusted_outputs.items():
+            _,artifact,origin,_=consumers.receipt(self.transport,run,manifest,'candidate',platform,output)
+            result[platform]={'attempt':origin['run_attempt'],'artifactId':artifact['id'],'artifactDigest':artifact['digest']}
         return result
     def completed(self,transaction,record,repository):
         manifest=record.get('manifest',{})
@@ -97,36 +89,24 @@ class ReleaseBaselineReader:
               and run['status']=='completed'
               and run['event'] in ['push','workflow_dispatch'] and run['head_branch']=='main'
               and run['repository']['id']==repository['id']==run['head_repository']['id'],'Completed producer provenance differs')
-        jobs=execution.jobs_for(self.transport,run)
-        producer=evidence.successful_job(jobs,'Build independent release candidates')
-        check(producer.get('run_id')==run_id,'Completed producer job belongs to another run')
-        seal,artifact=execution.fetch_json_artifact(self.transport,run,'farm-release-seal-'+source['sha']+'-'+str(attempt))
-        execution.upload_binding(producer,'Upload independent release seal',artifact)
+        seal,artifact,origin,producer=provenance.frozen_json(self.transport,run,source,'seal',proof_provider=self.proof_provider)
+        check(origin['run_attempt']==attempt,'Completed frozen origin differs')
         check(seal.get('manifestHash')==transaction and seal.get('profile')=='release' and seal.get('namespace')=='farm-release-v1'
               and seal.get('sourceTree')==source['tree'] and seal.get('producerJobId')==producer['id']
               and seal.get('packageInputs')==evidence.package_input_hashes(source),'Completed seal or source inputs differ')
         latest=self.transport.get('/actions/runs/'+str(run_id))
-        check(type(latest['run_attempt']) is int and latest['run_attempt']>=attempt,'Latest release attempt differs')
-        self.candidates(manifest,repository,latest['run_attempt'])
-        accepted=False
-        # Same frozen producer may finish in a later attempt; never borrow a
-        # public result from another run or another source transaction.
-        check(latest['run_attempt']-attempt<16,'Release recovery history exceeds bound')
-        for current in range(latest['run_attempt'],attempt-1,-1):
-            observed=self.transport.get('/actions/runs/'+str(run_id)+'/attempts/'+str(current))
-            if observed['head_sha']!=source['sha'] or observed['path']!=WORKFLOW:continue
-            try:
-                public,meta=execution.fetch_json_artifact(self.transport,observed,'farm-release-public-acceptance-'+source['sha']+'-'+str(current))
-                job=evidence.successful_job(execution.jobs_for(self.transport,observed),'Verify independent release public consumers')
-                check(job.get('run_id')==run_id,'Completed public consumer belongs to another run')
-                execution.upload_binding(job,'Upload independent release public acceptance',meta)
-                check(public.get('manifestHash')==transaction and public.get('sourceTree')==source['tree']
-                      and public.get('planHash')==manifest['planHash'] and public.get('producerJobId')==job['id'],'Completed public acceptance identity differs')
-                expected={row['kind']+':'+row['name']:row['archiveSha256'] for row in manifest['packages']}
-                check(public.get('packages')==expected and all(public.get(key) is True for key in ['registryInstall','nativeABI','latestTargets']),'Completed public consumer coverage differs')
-                accepted=True;break
-            except (ValueError,KeyError):continue
-        check(accepted,'No independent public acceptance for completed manifest')
+        check(type(latest['run_attempt']) is int and attempt<=latest['run_attempt']<=32,'Latest release attempt differs')
+        public,_,_,job,_,signed=provenance.signed_json(self.transport,latest,source,'public','public',proof_provider=self.proof_provider)
+        self.candidates(manifest,repository,latest['run_attempt'],trusted_outputs=provenance.consumer_outputs(signed,'candidate'))
+        check(public.get('manifestHash')==transaction and public.get('sourceTree')==source['tree']
+              and public.get('planHash')==manifest['planHash'] and public.get('producerJobId')==job['id'],
+              'Completed public acceptance identity differs')
+        expected={row['kind']+':'+row['name']:row['archiveSha256'] for row in manifest['packages']}
+        check(public.get('packages')==expected and all(public.get(key) is True for key in ['registryInstall','nativeABI','latestTargets']),
+              'Completed public consumer coverage differs')
+        publisher=load('completed_public_consumer_validation','incremental-release-publish.py')
+        publisher.verify_public_selection(self.transport,manifest,run_id,latest['run_attempt'],public.get('consumerReports'),
+                                         upload_outputs=provenance.consumer_outputs(signed,'public'))
         tag=manifest.get('tag');check(isinstance(tag,str) and re.fullmatch(r'(?:v\d+\.\d+\.\d+|packages-[a-f0-9]{16})',tag),'Completed tag identity missing')
         obj=self.transport.get('/git/ref/tags/'+tag)['object']
         for _ in range(5):

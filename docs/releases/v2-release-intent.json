@@ -189,14 +189,10 @@
     "Docs / windows-latest",
     "Docs / ubuntu-24.04",
     "Seal complete npm and Rust candidates",
-    "Commerce Performance (ubuntu-24.04)",
-    "Commerce Performance (macos-latest)",
-    "Commerce Performance (windows-latest)",
-    "Aggregate informational performance report",
+    "Record verified CI execution baseline",
     "Candidate registry consumer (ubuntu-24.04)",
     "Candidate registry consumer (macos-latest)",
     "Candidate registry consumer (windows-latest)"
   ],
-  "performanceRequired": true,
   "preparationMode": "first-stable"
 }

@@ -95,7 +95,7 @@ jobs:
         with:
           cell: "seal"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   consumers:
     name: Candidate registry consumer (${{ matrix.os }})
@@ -142,4 +142,4 @@ jobs:
         with:
           cell: "consumers:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.os }}

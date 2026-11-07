@@ -21,8 +21,8 @@ export function independentPublicationPolicy() {
 const requiredWorkflows = ['.github/workflows/ci.yaml', '.github/workflows/rust-test.yaml', independentReleaseWorkflow];
 const platforms = ['ubuntu-24.04', 'macos-latest', 'windows-latest'];
 const requiredCiJobs = ['Release source contracts', 'Check declared native inputs (not ABI execution)', 'Type Check',
-  ...['Examples Test', 'Typescript Test', 'Commerce Performance'].flatMap(name => platforms.map(platform => `${name} (${platform})`)),
-  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Aggregate informational performance report'];
+  ...['Examples Test', 'Typescript Test'].flatMap(name => platforms.map(platform => `${name} (${platform})`)),
+  'Docs / windows-latest', 'Docs / ubuntu-24.04', 'Record verified CI execution baseline'];
 const requiredReleaseJobs = ['Build independent release candidates', ...platforms.map(platform => `Independent release candidate consumer (${platform})`)];
 export function serializeReleaseIntent(intent) {
   assert.deepEqual(intent.publication, independentPublicationPolicy(), 'Intent cannot enable publication or select another build chain');
@@ -57,7 +57,7 @@ export function createReleaseIntent(root, plan, metadata, pullRequest = 2329) {
   const abi = fs.readFileSync(path.join(root, 'crates/core/src/lib.rs'), 'utf8').match(/^pub const VERSION: &str = "([^"]+)";/m)?.[1];
   return { schemaVersion: 1, preparationMode: changesets ? 'changesets' : 'first-stable', pullRequest, baseBranch: 'main', tag: plan.publication?.releaseIdentity ?? `v${plan.npm.primary.find(pkg => pkg.name === '@farmfe/core').version}`,
     abi, rustCoreVersion: plan.cargo.find(row => row.name === 'farmfe_core').version, candidatePlanSha256: digest(JSON.stringify(plan)), counts: plan.publication?.counts ?? plan.counts,
-    requiredWorkflows, requiredCiJobs, requiredReleaseJobs, performanceRequired: true, publication: independentPublicationPolicy(), seal: { workflowPath: independentReleaseWorkflow }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
+    requiredWorkflows, requiredCiJobs, requiredReleaseJobs, publication: independentPublicationPolicy(), seal: { workflowPath: independentReleaseWorkflow }, candidateSeal: 'receipt.json', sdkProof: 'sdk-consumer.json',
     rust, registryVerification: { script, sha256: digest(fs.readFileSync(path.join(root, script), 'utf8').replaceAll('\r\n', '\n')) }, websiteDeployment: false };
 }
 export async function refreshChangesetsVersionPr(root, number) {

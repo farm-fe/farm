@@ -128,18 +128,7 @@ test('workload fingerprint changes for HTML, adapters and scale inputs, not gene
     assert.equal(await workloadFingerprint(root, {}), original);
   } finally { await fs.rm(root, { recursive: true }); }
 });
-test('performance job is non-blocking, follows Examples and pins artifact names to SHA', async () => {
-  const source = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
-  const job = source.split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
-  const dependencies = job.match(/needs:\s*\[([^\]]+)\]/)?.[1].split(',').map(name => name.trim());
-  assert.deepEqual(new Set(dependencies), new Set(['version-classification', 'examples-test', 'docs-acceptance', 'ts-test', 'type-check', 'check-native-candidate-assembly']));
-  assert.match(job, /continue-on-error: true/);
-  assert.match(job, /timeout-minutes: 90/);
-  assert.deepEqual([...job.matchAll(/os: (ubuntu-24\.04|macos-latest|windows-latest)/g)].map(match => match[1]), ['ubuntu-24.04', 'macos-latest', 'windows-latest']);
-  assert.doesNotMatch(job, /cargo |pattern:/);
-  for (const line of job.split('\n').filter(line => line.trim().startsWith('name:') && line.includes('plugin-'))) assert.ok(line.includes('github.sha'));
-  assert.match(job, /playwright-chromium\/cli.js install --with-deps chromium/);
-  assert.match(source.split('\n  performance-contract-tests:')[1].split('\n  call-rust-build-user:')[0], /node --test scripts\/performance\*\.test\.mjs/);
+test('local sampler keeps browser correctness outside measured rounds', async () => {
   const sampler = await fs.readFile(new URL('./performance-report.mjs', import.meta.url), 'utf8');
   const timingStart = sampler.indexOf('for (let round = -1; round < 3; round++)');
   const timingEnd = sampler.indexOf('report.comparison.baseCells = aggregate', timingStart);

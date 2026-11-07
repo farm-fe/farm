@@ -122,9 +122,9 @@ try {
       assert.ok(platform.includes('uses: ./.github/workflows/rust-build-user.yaml'));
       assert.ok(platform.includes('platform: ${{ inputs.abi }}'));
     } else {
-      assert.ok(workflow.includes(`docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}`));
-      assert.ok(workflow.includes(`abi: ${abi}`));
-      assert.ok(workflow.includes('target: x86_64-unknown-linux-musl'));
+      assert.ok(workflow.includes(`docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}`) || workflow.includes(`"docker":"ghcr.io/napi-rs/napi-rs/nodejs-rust:${image}"`));
+      assert.ok(workflow.includes(`abi: ${abi}`) || workflow.includes(`"abi":"${abi}"`));
+      assert.ok(workflow.includes('target: x86_64-unknown-linux-musl') || workflow.includes('"target":"x86_64-unknown-linux-musl"'));
     }
     assert.doesNotMatch(workflow, /addnab\/docker-run-action/);
   }

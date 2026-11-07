@@ -3,7 +3,6 @@ import copy
 import importlib.util
 from pathlib import Path
 import unittest
-from unittest import mock
 spec=importlib.util.spec_from_file_location('cargo_source_release',Path(__file__).with_name('cargo-source-release.py'));m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class PreparedFamily(unittest.TestCase):
     def fixture(self):
@@ -29,11 +28,4 @@ class PreparedFamily(unittest.TestCase):
         duplicate=copy.deepcopy(plan);duplicate['cargo'].append(duplicate['cargo'][0])
         with self.assertRaisesRegex(ValueError,'Duplicate'):m.select_prepared_packages(files,duplicate,retained,lambda row:'a'*64)
         with self.assertRaisesRegex(ValueError,'outside'):m.select_prepared_packages(files,plan,[{**retained[0],'name':'foreign'}],lambda row:'a'*64)
-    def test_retained_registry_sources_are_seeded_without_workspace_patch(self):
-        _,_,retained=self.fixture();seen=[]
-        def fetch(command,check):
-            self.assertTrue(check);self.assertEqual(command[:3],['cargo','fetch','--manifest-path'])
-            text=Path(command[3]).read_text();self.assertIn('retained="=2.0.0"',text);self.assertNotIn('path=',text);self.assertIn('publish=false',text);seen.append(text)
-        with mock.patch.object(m.subprocess,'run',side_effect=fetch):m.fetch_retained_sources(retained)
-        self.assertEqual(len(seen),1)
 if __name__=='__main__':unittest.main(verbosity=2)

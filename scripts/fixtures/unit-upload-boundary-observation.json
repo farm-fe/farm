@@ -1,0 +1,31 @@
+{
+  "runId": 42006252057,
+  "attempt": 1,
+  "headSHA": "c2ad45f0854d91ae00a016d9806a1a10d344ea6c",
+  "job": {
+    "id": 127174108144,
+    "name": "Test - macos-latest",
+    "steps": [
+      {
+        "name": "Preserve actual cell receipt (shadow only)",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10,
+        "started_at": "2026-11-05T10:26:21Z",
+        "completed_at": "2026-11-05T10:26:25Z"
+      }
+    ]
+  },
+  "artifact": {
+    "id": 13405399980,
+    "digest": "sha256:3148d8b3ccbb3da37fc52f10bc6f14ef93f4c145f5902c93e82f62e0cf582b6d",
+    "created_at": "2026-11-05T10:26:26Z"
+  },
+  "uploadOutputs": {
+    "artifact_id": "13405399980",
+    "artifact_digest": "3148d8b3ccbb3da37fc52f10bc6f14ef93f4c145f5902c93e82f62e0cf582b6d",
+    "run_attempt": "1"
+  },
+  "uploadFinalizedAt": "2026-11-05T10:26:25.6650720Z",
+  "limitations": "Public API and fixed upload log observation only; regression does not authenticate GitHub or grant publication."
+}

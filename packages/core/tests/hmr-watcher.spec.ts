@@ -145,7 +145,9 @@ it('watcher removals capture importers before the compiler removes their source'
   const { source, importer, compiler, watcher, send } = await fixture();
   await fs.rm(source);
   await watcher.handlers.get('unlink')(source);
-  expect(compiler.getParentFiles).toHaveBeenCalledWith(source);
+  expect(compiler.getParentFiles).toHaveBeenCalledWith(
+    source.replaceAll('\\', '/')
+  );
   expect(compiler.update).toHaveBeenCalledTimes(1);
   expect(compiler.update.mock.calls[0][0]).toEqual(
     expect.arrayContaining([

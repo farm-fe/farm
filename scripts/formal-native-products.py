@@ -127,14 +127,19 @@ def product_inputs(source, abi):
 
 
 def measured_context(source, capture, abi, image=None):
-    runtime = capture.get('runtimeCapture') or {}
+    check(isinstance(capture, dict), 'Measured capture must be an object')
+    runtime = capture.get('runtimeCapture')
+    check(isinstance(runtime, dict), 'Measured runtime must be an object')
     channel = tomllib.loads(source['files']['rust-toolchain.toml'].decode())['toolchain']['channel']
     check(runtime.get('abi') == abi and runtime.get('target') == paths.TARGETS[abi], 'Measured target differs')
     check(runtime.get('profile') in ['ci', 'release'], 'Unknown build role')
     check(not runtime.get('errors') and not runtime.get('unboundBuildVariables'), 'Incomplete measured compiler environment')
-    check(runtime.get('activeToolchain', '').startswith(channel + '-'), 'Pinned compiler differs')
-    check(runtime.get('rustc') and runtime.get('cargo') and runtime.get('runtime', {}).get('node') == 'v22.20.0', 'Missing formal tools')
-    check(runtime.get('linker', {}).get('version'), 'Unmeasured effective linker')
+    active = runtime.get('activeToolchain')
+    check(isinstance(active, str) and active.startswith(channel + '-'), 'Pinned compiler differs')
+    host = runtime.get('runtime')
+    check(isinstance(host, dict) and runtime.get('rustc') and runtime.get('cargo') and host.get('node') == 'v22.20.0', 'Missing formal tools')
+    linker = runtime.get('linker')
+    check(isinstance(linker, dict) and isinstance(linker.get('version'), str) and linker['version'].strip(), 'Unmeasured effective linker')
     # Environment is a compatibility dimension, never a content/source identity.
     if abi in ['linux-x64-gnu', 'linux-x64-musl']:
         container = capture.get('container') or {}
@@ -172,7 +177,7 @@ def create_catalog(source, capture, abi, run_id, attempt, root):
             'runId': run_id, 'attempt': attempt, 'abi': abi, 'context': context, 'records': records}, bodies
 
 
-def inspect_catalog(body, artifact, run, job, source, current, abi, desired_environment):
+def inspect_catalog(body, artifact, run, job, source, current, abi, desired_environment, *, trusted_output=None):
     check(run['path'] == WORKFLOW and run['head_branch'] == 'main' and run['event'] in ['push', 'workflow_dispatch'], 'Not a main formal producer')
     check(run['status'] == 'completed' and run['conclusion'] == 'success', 'Producer candidate validation did not succeed')
     check(run['repository']['id'] == run['head_repository']['id'] == desired_environment['repositoryId'], 'Fork or foreign producer')
@@ -181,7 +186,10 @@ def inspect_catalog(body, artifact, run, job, source, current, abi, desired_envi
     check(job.get('run_attempt') == run['run_attempt'], 'Native job attempt differs')
     check(artifact['workflow_run']['id'] == run['id'] and artifact['expired'] is False, 'Artifact expired or wrong run')
     check(artifact['name'] == f"formal-native-{abi}-{run['run_attempt']}", 'Wrong catalog attempt')
-    execution.upload_binding(job, UPLOAD, artifact)
+    check(trusted_output is not None, 'Unsigned formal catalog has no independent producer binding; build current source')
+    check(set(trusted_output) == {'artifact_id', 'artifact_digest', 'run_attempt'}
+          and trusted_output['run_attempt'] == str(run['run_attempt']), 'Formal catalog binding attempt differs')
+    execution.upload_binding(job, UPLOAD, artifact, trusted_output)
     check(0 < len(body) <= MAX and len(body) == artifact['size_in_bytes'] and artifact['digest'] == 'sha256:' + hashlib.sha256(body).hexdigest(), 'Catalog bytes differ')
     check(source['sha'] == run['head_sha'], 'Producer source differs')
     old, wanted = product_inputs(source, abi), product_inputs(current, abi)
@@ -198,7 +206,7 @@ def inspect_catalog(body, artifact, run, job, source, current, abi, desired_envi
         context = manifest['context']
         check(context['platform'] == desired_environment['platform'] and context['formalFlagsHash'] == desired_environment['formalFlagsHash'], 'Formal platform or flags differ')
         check(all(key in desired_environment and context.get(key) == desired_environment[key] for key in ['toolchain', 'rustc', 'cargo', 'linker']), 'Measured consumer compiler or linker differs or is missing')
-        check(context['toolchain'] == next(iter(wanted.values()))['recipe']['toolchain'] and context['rustc'] and context['cargo'] and context['linker'].get('version'), 'Incomplete toolchain evidence')
+        check(context['toolchain'] == next(iter(wanted.values()))['recipe']['toolchain'] and context['rustc'] and context['cargo'] and isinstance(context['linker'], dict) and isinstance(context['linker'].get('version'), str) and context['linker']['version'].strip(), 'Incomplete toolchain evidence')
         check(len({row['owner'] for row in manifest['records']}) == len(manifest['records']), 'Duplicate product')
         check({row.filename for row in entries} == {'catalog.json'} | {row['member'] for row in manifest['records']}, 'Unexpected catalog member')
         accepted = {}
@@ -237,8 +245,11 @@ def resolve_products(transport, source, abi, desired, read_source=evidence.sourc
             matching = [job for job in jobs if any(step.get('name') == UPLOAD for step in job.get('steps', []))
                         and abi in job['name']]
             check(len(matching) == 1, 'Ambiguous native producer job')
-            products = inspect_catalog(transport.archive(artifact['id']), artifact, run, matching[0], read_source(run['head_sha']), source, abi, desired)
-            for owner, value in products.items(): accepted.setdefault(owner, value)
+            # Historical REST metadata has no independent producer/attempt anchor.
+            # CI/Unit attestations cannot authenticate this release producer. Do
+            # not download or reuse unsigned bytes; the caller builds each miss.
+            reasons.append('unsigned-formal-catalog-build-current')
+            continue
         except PermissionError:
             reasons.append('artifact-access-denied-build-current'); break
         except Exception as error:

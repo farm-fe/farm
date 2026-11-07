@@ -16,7 +16,7 @@
         "version": "2.0.0",
         "manifestPath": "packages/core/package.json",
         "manifestSha256": "8b4e029b6b3dfb23f2578f56dba21be1b1bde726fdba179d18728742c677e1fa",
-        "sourceSha256": "280b030ff4f84f047353bfc8ba77b18cfd2301bc21d73e0d291d2646949dd7b6"
+        "sourceSha256": "ff21f7379f095a492da4a970f2c2a9468f1f0e8092ddf49df021374531256ca7"
       },
       {
         "name": "create-farm",
@@ -86,7 +86,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/auto-import/package.json",
         "manifestSha256": "8b61e12d1c077c69d49a0723083324af114b505c2c1bf2a1d42db37b787ff0c2",
-        "sourceSha256": "48a2ac1b8ed5c07a3a9526556f9787fa893e3d06c313a8456eaf4d537dc63517"
+        "sourceSha256": "c05f75c06e12564da63e2f37dce7f9d45fbc70ff1749aeda810f32f354ba966c"
       },
       {
         "name": "@farmfe/plugin-compress",
@@ -2101,7 +2101,7 @@
       "manifestPath": "crates/compiler/Cargo.toml",
       "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
       "publish": null,
-      "sourceSha256": "f475b11f63079d142d6c3008dedf22f893bd7afd335b27a0c2715a15811fdf09"
+      "sourceSha256": "89cc6d67c9efa4a8dd629f197c3adc6a9af57f2a99daea3ad301150871b35cf9"
     },
     {
       "name": "farmfe_core",
@@ -2109,7 +2109,7 @@
       "manifestPath": "crates/core/Cargo.toml",
       "manifestSha256": "b0728964f5fcdf61bd714c32cf0ebfc937cb3830bc9065dc8f345d71f9f94da2",
       "publish": null,
-      "sourceSha256": "b21f717459187c7741d1d892db3bb30888855876f3bd7f35cd2459a88c086fbe"
+      "sourceSha256": "f4c5c95c07bc2bb2dcdb1053010d5a879176bf4960f930f1be041b76c5d42f69"
     },
     {
       "name": "farmfe_ecosystem_glob",

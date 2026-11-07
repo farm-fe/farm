@@ -224,13 +224,17 @@ class SchedulingOracle(unittest.TestCase):
             with self.assertRaises(ValueError):
                 fixtures.calculate("release", source, bad_files, bad_family, [], ledger, previous, anchor)
 
-    @unittest.skip("Not implemented: real publication lock and concurrent candidate execution")
-    def test_real_concurrent_publication_lock(self):
-        pass
+    def local_integration(self):
+        spec = importlib.util.spec_from_file_location("local_publication", Path(__file__).with_name("release-local-integration.py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
-    @unittest.skip("Not implemented: new incremental release executor and durable partial-upload recovery")
-    def test_real_incremental_release_recovery(self):
-        pass
+    def test_local_concurrent_publication_lock(self):
+        self.local_integration().concurrent_lock()
+
+    def test_local_durable_partial_upload_recovery(self):
+        self.local_integration().durable_recovery()
 
 
 if __name__ == "__main__":

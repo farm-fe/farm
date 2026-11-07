@@ -8,10 +8,27 @@ on:
       abi:
         required: true
         type: string
+      suite_selection_upload:
+        type: string
+        default: ''
       suite_selection_hash:
         type: string
         default: ''
     outputs:
+      native_product_upload:
+        value: ${{ jobs.native.outputs.product_upload }}
+      native_shadow_artifact_id:
+        value: ${{ jobs.native.outputs.artifact_id }}
+      native_shadow_artifact_digest:
+        value: ${{ jobs.native.outputs.artifact_digest }}
+      native_shadow_run_attempt:
+        value: ${{ jobs.native.outputs.run_attempt }}
+      docs_shadow_artifact_id:
+        value: ${{ jobs.docs.outputs.artifact_id }}
+      docs_shadow_artifact_digest:
+        value: ${{ jobs.docs.outputs.artifact_digest }}
+      docs_shadow_run_attempt:
+        value: ${{ jobs.docs.outputs.run_attempt }}
       ts_artifact_id:
         value: ${{ jobs.ts-test.outputs.artifact_id }}
       ts_artifact_digest:
@@ -24,6 +41,18 @@ on:
         value: ${{ jobs.examples-test.outputs.artifact_digest }}
       browser_run_attempt:
         value: ${{ jobs.examples-test.outputs.run_attempt }}
+      ts_shadow_artifact_id:
+        value: ${{ jobs.ts-test.outputs.shadow_artifact_id }}
+      ts_shadow_artifact_digest:
+        value: ${{ jobs.ts-test.outputs.shadow_artifact_digest }}
+      ts_shadow_run_attempt:
+        value: ${{ jobs.ts-test.outputs.shadow_run_attempt }}
+      browser_shadow_artifact_id:
+        value: ${{ jobs.examples-test.outputs.shadow_artifact_id }}
+      browser_shadow_artifact_digest:
+        value: ${{ jobs.examples-test.outputs.shadow_artifact_digest }}
+      browser_shadow_run_attempt:
+        value: ${{ jobs.examples-test.outputs.shadow_run_attempt }}
 permissions:
   contents: read
   actions: read
@@ -56,6 +85,7 @@ jobs:
     with:
       platforms: ${{ format('[{{"os":"{0}","abi":"{1}"}}]', inputs.os, inputs.abi) }}
       consume_native: true
+      native_upload: ${{ needs.native.outputs.docs_upload }}
 
 
   examples-test:
@@ -63,6 +93,9 @@ jobs:
       artifact_id: ${{ steps.suite-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.suite-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.suite-upload-origin.outputs.attempt }}
+      shadow_artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      shadow_artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      shadow_run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Examples Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}
     if: always() && needs.native-disposition.result == 'success'
@@ -74,7 +107,7 @@ jobs:
           - os: ${{ inputs.os }}
             abi: ${{ inputs.abi }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -87,13 +120,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+          FARM_SUITE_SELECTION_UPLOAD: ${{ inputs.suite_selection_upload }}
         run: python -B scripts/ci-suite-attempts.py --selection-only
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -330,19 +364,23 @@ jobs:
             ${{ steps.create-farm-candidates.outputs.evidence }}/**/*-generated-package.json
             !${{ steps.create-farm-candidates.outputs.evidence }}/**/node_modules/**
       - name: Preserve actual cell receipt (shadow only)
+        id: shadow-upload
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "examples:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi }}
 
   ts-test:
     outputs:
       artifact_id: ${{ steps.suite-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.suite-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.suite-upload-origin.outputs.attempt }}
+      shadow_artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      shadow_artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      shadow_run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     # Vitest runs in node/forks; browser E2E jobs keep their downloads.
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
@@ -357,7 +395,7 @@ jobs:
           - os: ${{ inputs.os }}
             abi: ${{ inputs.abi }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -370,13 +408,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
+          FARM_SUITE_SELECTION_UPLOAD: ${{ inputs.suite_selection_upload }}
         run: python -B scripts/ci-suite-attempts.py --selection-only
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
       - uses: actions/download-artifact@v4.1.3
@@ -428,10 +467,11 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Preserve actual cell receipt (shadow only)
+        id: shadow-upload
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "ts-tests:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi }}

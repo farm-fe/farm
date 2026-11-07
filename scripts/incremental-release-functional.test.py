@@ -62,7 +62,10 @@ class Contracts(unittest.TestCase):
             if route.startswith('/actions/runs/'):
                 number=int(route.split('/')[3])
                 if '/artifacts?' in route: return {"total_count": 1, "artifacts": [artifacts[110 if 'performance-pr-summary-' in route else number]]}
-                return runs[number]
+                attempt=int(route.split('/attempts/')[1].split('/')[0]) if '/attempts/' in route else runs[number]['run_attempt']
+                if '/jobs?' in route:
+                    return {'jobs':[{**job,'head_sha':runs[number]['head_sha'],'run_attempt':attempt} for job in jobs[number]]}
+                return {**runs[number],'run_attempt':attempt}
             if route.startswith('/git/commits/'): return {"tree": {"sha": tree}}
             if route.startswith('/actions/artifacts/'): return artifacts[int(route.split('/')[-1])]
             raise AssertionError('Unexpected proof API route')
@@ -71,12 +74,38 @@ class Contracts(unittest.TestCase):
 
     def verify(self, data):
         source, bindings, transport, jobs, runs, artifacts=data
-        with mock.patch.object(module.entry.execution, 'jobs_for', side_effect=lambda client,run:jobs[run['id']]):
-            return module.verify_functional(transport, source, bindings)
+        def verified_fixture(client, run, fixed_source):
+            # Explicit crypto boundary fixture. The archive digest comes from
+            # frozen fixture bytes, not mutable API artifact metadata.
+            artifact=artifacts[run['id']]
+            row={'producer':jobs[run['id']][0]['name'],'jobId':jobs[run['id']][0]['id'],
+                 'originAttempt':1,'uploadStep':'Upload fixed source impact plan','artifactId':artifact['id'],
+                 'artifactDigest':'sha256:'+hashlib.sha256(transport.archive(artifact['id'])).hexdigest(),
+                 'artifactName':'impact-plan-'+bindings['ci' if run['id']==10 else 'unit']['testedSHA']+'-1'}
+            expected={'runId':run['id'],'attempt':run['run_attempt'],'callerWorkflow':run['path'],
+                      'sourceSHA':fixed_source['sha'],'repositoryId':5}
+            return expected,{'planner':row}
+        return module.verify_functional(transport, source, bindings, proof_provider=verified_fixture)
 
-    def test_exact_functional_and_unit_evidence_keeps_nineteen_roles_and_no_build_bytes(self):
-        self.assertEqual(len(module.FUNCTIONAL)+4,19)
+    def test_exact_functional_and_unit_evidence_keeps_functional_roles_and_no_build_bytes(self):
+        self.assertEqual(len(module.FUNCTIONAL)+4,16)
         result=self.verify(self.fixture());self.assertTrue(result['functionalAcceptanceVerified']);self.assertFalse(result['buildBytesReused'])
+
+    def test_signed_main_acceptance_does_not_consult_clock_fields(self):
+        data=self.fixture()
+        for rows in data[3].values():
+            for job in rows:
+                job.pop('started_at');job.pop('completed_at')
+                for step in job['steps']:
+                    step.pop('started_at');step.pop('completed_at')
+        for artifact in data[5].values():artifact.pop('created_at')
+        self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
+
+    def test_signature_rejection_is_not_a_legacy_time_fallback(self):
+        source,bindings,transport,*_=self.fixture()
+        def reject(*args):raise ValueError('required attestation rejected')
+        with self.assertRaisesRegex(ValueError,'attestation rejected'):
+            module.verify_functional(transport,source,bindings,proof_provider=reject)
 
     def test_real_type_check_is_required_instead_of_retired_combined_context(self):
         self.assertIn('Type Check',module.FUNCTIONAL)
@@ -89,8 +118,8 @@ class Contracts(unittest.TestCase):
             else:rows.remove(actual)
             with self.assertRaises(ValueError):self.verify(data)
 
-    def test_skipped_docs_or_missing_performance_is_not_success(self):
-        data=self.fixture();data[3][10]=[row for row in data[3][10] if row['name']!='Commerce Performance (macos-latest)']
+    def test_skipped_docs_or_missing_typescript_is_not_success(self):
+        data=self.fixture();data[3][10]=[row for row in data[3][10] if row['name']!='Typescript Test (macos-latest)']
         with self.assertRaises(ValueError):self.verify(data)
         data=self.fixture();next(row for row in data[3][10] if row['name']=='Docs / windows-latest')['conclusion']='skipped'
         with self.assertRaises(ValueError):self.verify(data)
@@ -104,7 +133,7 @@ class Contracts(unittest.TestCase):
 
     def test_wrong_artifact_bytes_cannot_supply_source_proof(self):
         data=self.fixture();data[5][10]['digest']='sha256:'+'f'*64
-        with self.assertRaisesRegex(ValueError,'digest differs'):self.verify(data)
+        with self.assertRaisesRegex(ValueError,'fixed upload|digest differs'):self.verify(data)
 
     def test_missing_bindings_do_not_authorize_release(self):
         data=self.fixture();data[1].pop('unit')
@@ -114,18 +143,14 @@ class Contracts(unittest.TestCase):
         data=self.fixture();source,bindings,transport,jobs,runs,artifacts=data
         old_get=transport.get.side_effect
         for scope in ['ci','unit']:bindings[scope]['attempt']=3;runs[bindings[scope]['runId']]['run_attempt']=3
-        summary=json.loads(zipfile.ZipFile(io.BytesIO(transport.archive(110))).read('summary.json'));summary['runAttempt']=3
-        # Schema2 cannot authorize a mixed-attempt performance summary; this test
-        # isolates planner provenance while the real schema3 chain is checked separately.
         def get(route):
             value=old_get(route)
             if '/attempts/' in route:return {**value,'run_attempt':int(route.split('/attempts/')[1].split('/')[0])}
             return value
         transport.get.side_effect=get
-        with mock.patch.object(module,'verify_performance',return_value=summary):
-            self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
-        self.assertTrue(any('impact-plan-' in call.args[0] and call.args[0].endswith('-1') for call in transport.get.call_args_list))
-        self.assertFalse(any('impact-plan-' in call.args[0] and call.args[0].endswith('-3') for call in transport.get.call_args_list))
+        self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
+        self.assertTrue(any(call.args[0]=='/actions/artifacts/10' for call in transport.get.call_args_list))
+        self.assertFalse(any('/artifacts?' in call.args[0] for call in transport.get.call_args_list))
 
     def test_main_acceptance_does_not_depend_on_historical_pull_request_associations(self):
         data=self.fixture()
@@ -133,13 +158,17 @@ class Contracts(unittest.TestCase):
         data[1].pop('title')
         self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
 
-    def test_performance_bytes_are_checked_not_just_job_names(self):
-        data=self.fixture();data[5][110]['digest']='sha256:'+'f'*64
-        with self.assertRaisesRegex(ValueError,'digest differs'):self.verify(data)
+    def test_performance_archive_is_not_a_publication_prerequisite(self):
+        data=self.fixture();data[5].pop(110)
+        self.assertTrue(self.verify(data)['functionalAcceptanceVerified'])
 
     def test_main_evidence_for_another_commit_is_not_authorized_by_equal_tree(self):
         data=self.fixture();data[0]['sha']='f'*40
         with self.assertRaisesRegex(ValueError,'default-branch checkout'):self.verify(data)
+
+
+spec = importlib.util.spec_from_file_location('local_performance_proof', Path(__file__).with_name('performance-source-verifier.py'))
+performance = importlib.util.module_from_spec(spec); spec.loader.exec_module(performance)
 
 
 class MeasurementContracts(unittest.TestCase):
@@ -147,7 +176,7 @@ class MeasurementContracts(unittest.TestCase):
         sha='a'*40;tree='b'*40;head='c'*40;base='d'*40
         abi,runner,platform={'linux':('linux-x64-gnu','ubuntu-24.04','Primary Linux'),'darwin':('darwin-arm64','macos-latest','Primary macOS'),'win32':('win32-x64-msvc','windows-latest','Primary Windows')}[os]
         policy=Path(__file__).with_name('performance-cohorts.mjs').read_bytes()
-        plugins=module.ast.literal_eval(module.re.search(r'export const nativePlugins = (\[[^;]+\]);',policy.decode('utf-8'))[1])
+        plugins=performance.ast.literal_eval(performance.re.search(r'export const nativePlugins = (\[[^;]+\]);',policy.decode('utf-8'))[1])
         native={owner:{'sha256':'e'*64,'bytes':10} for owner in ['@farmfe/core',*['@farmfe/plugin-'+name for name in plugins]]}
         source={'sha':sha,'tree':tree,'files':{'scripts/performance-cohorts.mjs':policy}}
         run={'id':10,'run_attempt':2,'head_sha':head,'path':'.github/workflows/ci.yaml','event':'push','repository':{'id':5,'full_name':'farm-fe/farm'},'head_repository':{'id':5}}
@@ -175,7 +204,7 @@ class MeasurementContracts(unittest.TestCase):
         transport=mock.Mock();transport.get.side_effect=get;transport.archive.side_effect=lambda number:bodies[number]
         return transport,run,source,summary,row,proof,jobs,artifacts,bodies,raw
 
-    def verify(self,data):return module.verify_measurement_source(*data[:6])
+    def verify(self,data):return performance.verify_measurement_source(*data[:6])
 
     def test_actual_mixed_attempt_platform_sources_are_independently_verified(self):
         for os,arch,attempt in [('linux','x64',2),('darwin','arm64',1),('win32','x64',1)]:self.verify(self.fixture(os,arch,attempt))
@@ -206,7 +235,7 @@ class MeasurementContracts(unittest.TestCase):
             return {'jobs':jobs[attempt]} if '/jobs?' in route else {**run,'run_attempt':attempt,'run_started_at':'2026-10-31T0'+str(attempt)+':00:00Z'}
         transport=mock.Mock();transport.get.side_effect=get;transport.archive.side_effect=lambda number:bodies[number]
         aggregation=[{'id':9000,'run_id':10,'name':'Aggregate informational performance report','status':'completed','conclusion':'success','started_at':'2026-10-31T02:00:00Z','completed_at':'2026-10-31T02:20:00Z'}]
-        self.assertEqual(module.verify_performance(transport,run,aggregation,source,{'baseSHA':'d'*40})['measurementSources'][1]['runAttempt'],1)
+        self.assertEqual(performance.verify_performance(transport,run,aggregation,source,{'baseSHA':'d'*40})['measurementSources'][1]['runAttempt'],1)
 
     def test_attempt_start_time_is_not_used_as_a_carried_execution_identity(self):
         data=self.fixture('darwin','arm64',1);original=data[0].get.side_effect
@@ -246,25 +275,58 @@ class MeasurementContracts(unittest.TestCase):
 
 class OriginalArchiveContracts(unittest.TestCase):
     def test_first_attempt_without_archive_may_build(self):
-        transport=mock.Mock();transport.get.return_value={'artifacts':[]}
+        transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
         self.assertEqual(module.original_attempt(transport,123,'a'*40,1),1)
     def test_missing_candidate_or_seal_only_retry_requires_strict_no_freeze_proof(self):
         for rows in [[],[{'name':'farm-release-seal-'+'a'*40+'-1'}]]:
-            transport=mock.Mock();transport.get.return_value={'artifacts':rows}
+            transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
             with mock.patch.object(module.retry,'verify_unfrozen_retry',side_effect=ValueError('prior publisher unproven')) as verify:
                 with self.assertRaisesRegex(ValueError,'unproven'):module.original_attempt(transport,123,'a'*40,2)
                 verify.assert_called_once()
     def test_proven_pre_freeze_failure_can_prepare_current_attempt(self):
-        transport=mock.Mock();transport.get.return_value={'artifacts':[]}
+        transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
         with mock.patch.object(module.retry,'verify_unfrozen_retry',return_value=[{'attempt':1}]) as verify:
             self.assertEqual(module.original_attempt(transport,123,'a'*40,2),2)
             self.assertEqual(verify.call_args.kwargs['freeze_step'],'Freeze independent release candidates')
-    def test_incomplete_listing_cannot_assert_no_prior_archives(self):
-        transport=mock.Mock();transport.get.return_value={'artifacts':[{'name':'other-'+str(i)} for i in range(100)]}
-        with self.assertRaisesRegex(ValueError,'verification bound'):module.original_attempt(transport,123,'a'*40,1)
+    def test_exact_lookup_cannot_assert_absence_from_an_incomplete_response(self):
+        transport=mock.Mock();transport.get.return_value={'total_count':2,'artifacts':[]}
+        with self.assertRaisesRegex(ValueError,'incomplete or ambiguous'):module.original_attempt(transport,123,'a'*40,1)
+        self.assertEqual(transport.get.call_count,1)
+    def test_large_native_inventory_uses_only_exact_candidate_names(self):
+        transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
+        with mock.patch.object(module.retry,'verify_unfrozen_retry',return_value=[]):
+            self.assertEqual(module.original_attempt(transport,123,'a'*40,3),3)
         self.assertEqual(transport.get.call_count,3)
+        for call in transport.get.call_args_list:self.assertIn('per_page=2&name=farm-release-candidates-',call.args[0])
+    def test_exact_lookup_preserves_original_frozen_attempt_after_later_main(self):
+        sha='a'*40;candidate={'id':800,'name':'farm-release-candidates-'+sha+'-1','expired':False,'workflow_run':{'id':123},'size_in_bytes':123,'digest':'sha256:'+'d'*64}
+        run={'id':123,'run_attempt':1,'path':module.entry.WORKFLOW,'head_sha':sha,'head_branch':'main','event':'push',
+             'repository':{'id':5},'head_repository':{'id':5}}
+        job={'id':700,'run_id':123,'run_attempt':1,'head_sha':sha,'name':module.entry.PRODUCER,'status':'completed','conclusion':'success',
+             'steps':[{'name':'Freeze independent release candidates','status':'completed','conclusion':'success'}]}
+        def get(route):
+            if route.startswith('/git/commits/'):return {'tree':{'sha':'b'*40}}
+            if '/artifacts?' in route:
+                name=route.split('&name=')[1]
+                rows=([{'id':900}] if name=='farm-release-bindings-frozen-123-1' else []) if 'farm-release-bindings-' in name else ([candidate] if candidate['name']==name else [])
+                return {'total_count':len(rows),'artifacts':rows}
+            if '/jobs?' in route:return {'jobs':[job]}
+            if '/attempts/' in route:return {**run,'run_attempt':int(route.rsplit('/',1)[1])}
+            if route=='/actions/artifacts/800':return candidate
+            raise AssertionError(route)
+        def verified_fixture(client,execution,source,scope):
+            self.assertEqual(scope,'frozen')
+            expected={'runId':123,'attempt':1,'callerWorkflow':module.entry.WORKFLOW,'sourceSHA':sha,'repositoryId':5}
+            return expected,{'candidates':{'artifactId':800,'artifactDigest':'sha256:'+'d'*64,'artifactName':candidate['name'],
+                'originAttempt':1,'jobId':700,'producer':module.entry.PRODUCER,'uploadStep':'Freeze independent release candidates'}}
+        transport=mock.Mock();transport.get.side_effect=get
+        self.assertEqual(module.original_attempt(transport,123,sha,3,proof_provider=verified_fixture),1)
+        run['head_sha']='c'*40
+        with self.assertRaisesRegex(ValueError,'source differs'):module.original_attempt(transport,123,sha,3,proof_provider=verified_fixture)
+
     def test_expired_candidates_are_never_rebuilt(self):
-        transport=mock.Mock();transport.get.return_value={'artifacts':[{'name':'farm-release-candidates-'+'a'*40+'-1','expired':True,'workflow_run':{'id':123}}]}
+        transport=mock.Mock();artifact={'name':'farm-release-candidates-'+'a'*40+'-1','expired':True,'workflow_run':{'id':123}}
+        transport.get.side_effect=lambda route: {'total_count':1,'artifacts':[artifact]} if route.endswith(artifact['name']) else {'total_count':0,'artifacts':[]}
         with self.assertRaisesRegex(ValueError,'do not rebuild recovery'):module.original_attempt(transport,123,'a'*40,2)
 
 

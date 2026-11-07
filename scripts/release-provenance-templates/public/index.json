@@ -1,0 +1,6 @@
+[
+  ".github/workflows/incremental-release.yaml",
+  ".github/workflows/release-proof-call.yaml",
+  ".github/workflows/release-candidate-consumers.yaml",
+  ".github/workflows/release-public-consumers.yaml"
+]

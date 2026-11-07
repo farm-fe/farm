@@ -1,0 +1,47 @@
+name: Platform safety execution
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: true
+    outputs:
+      artifact_id:
+        value: ${{ jobs.platform-contract-tests.outputs.artifact_id }}
+      artifact_digest:
+        value: ${{ jobs.platform-contract-tests.outputs.artifact_digest }}
+      run_attempt:
+        value: ${{ jobs.platform-contract-tests.outputs.run_attempt }}
+permissions:
+  contents: read
+jobs:
+  platform-contract-tests:
+    outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
+    name: Platform safety contracts (${{ inputs.os }})
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        id: contract-python
+        with:
+          python-version: '3.12'
+      - name: Validate native, consumer and dependency contracts
+        env:
+          FARM_CONTRACT_PYTHON: ${{ steps.contract-python.outputs.python-path }}
+        run: node --test scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/unified-impact-graph.test.mjs
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/ci-impact-cell
+        with:
+          cell: "platform-contracts:${{ inputs.os == 'ubuntu-24.04' && 'linux-x64-gnu' || inputs.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
+          status: ${{ job.status }}
+          artifact-suffix: ${{ inputs.os }}

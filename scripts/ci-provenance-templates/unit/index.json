@@ -1,0 +1,5 @@
+[
+  ".github/workflows/rust-test.yaml",
+  ".github/workflows/rust-test-platform.yaml",
+  ".github/workflows/classify-version-pr.yaml"
+]

@@ -20,7 +20,7 @@ def ancestor(base, head):
     return result.returncode==0
 
 def lookup(transport, current, environment, read_source=evidence.source_reader,is_ancestor=ancestor,
-           suite_discovery=acceptance.runtime.discover_source_suites):
+           suite_discovery=acceptance.runtime.discover_source_suites, *, proof_provider=None):
     repository=transport.get('')
     evidence.check(repository['id']==int(environment['GITHUB_REPOSITORY_ID']) and repository['default_branch']=='main','Trusted repository differs')
     trusted=read_source(transport.get('/branches/main')['commit']['sha'])
@@ -33,9 +33,13 @@ def lookup(transport, current, environment, read_source=evidence.source_reader,i
             source=read_source(run['head_sha'])
             evidence.check(is_ancestor(source['sha'],trusted['sha']),'Suite baseline is not an ancestor of trusted main')
             jobs=acceptance.jobs_for(transport,run)
-            aggregation,_=acceptance.actual_producer(transport,run,acceptance.PRODUCER,jobs)
-            ledger,artifact=acceptance.fetch_json_artifact(transport,aggregation,'farm-ci-execution-baseline-'+str(run['id'])+'-'+str(aggregation['run_attempt']))
-            proof=acceptance.verify_execution_ledger(transport,run,repository,ledger,artifact,jobs,source,trusted,acceptance.runtime.ci_required_jobs(),suite_discovery=suite_discovery)
+            provider = proof_provider or load('baseline_functional_proof','incremental-release-functional.py').main_binding_proof
+            signed_proof = provider(transport, run, source)
+            expected, bindings = signed_proof
+            signed = load('baseline_signed_archive','ci-attested-bindings.py')
+            body,artifact,_,_=signed.bound_artifact(transport,run,bindings['execution-baseline'],expected)
+            ledger=acceptance.decode_json_artifact(body,artifact)
+            proof=acceptance.verify_execution_ledger(transport,run,repository,ledger,artifact,jobs,source,trusted,acceptance.runtime.ci_required_jobs(),suite_discovery=suite_discovery,signed_proof=signed_proof)
         except (ValueError,KeyError,OSError,UnicodeError,subprocess.SubprocessError):
             continue
         evidence.check(transport.get('/branches/main')['commit']['sha']==trusted['sha'],'Trusted baseline moved')

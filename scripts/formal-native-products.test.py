@@ -1,5 +1,9 @@
 """Offline resolver integration tests: real source graph, synthetic API/bytes."""
 import copy
+import contextlib
+import os
+import subprocess
+import sys
 import hashlib
 import importlib.util
 import io
@@ -56,7 +60,17 @@ class FormalProducts(unittest.TestCase):
 
     def inspect(self, values, current=None):
         body, artifact, run, job, desired = values
-        return formal.inspect_catalog(body, artifact, run, job, self.source, current or self.source, ABI, desired)
+        return formal.inspect_catalog(body, artifact, run, job, self.source, current or self.source, ABI, desired,
+            trusted_output={'artifact_id':str(artifact['id']), 'artifact_digest':artifact['digest'].removeprefix('sha256:'), 'run_attempt':str(run['run_attempt'])})
+
+    def test_unsigned_catalog_cannot_use_upload_time_as_authority(self):
+        body, artifact, run, job, desired = self.fixture()
+        with self.assertRaisesRegex(ValueError, 'Unsigned formal catalog'):
+            formal.inspect_catalog(body, artifact, run, job, self.source, self.source, ABI, desired)
+        for step in job['steps']:
+            step.pop('started_at'); step.pop('completed_at')
+        artifact.pop('created_at')
+        self.assertEqual(set(self.inspect((body, artifact, run, job, desired))), set(self.products))
 
     def test_matching_main_products_reused_without_test_acceptance(self):
         accepted = self.inspect(self.fixture())
@@ -146,6 +160,24 @@ class FormalProducts(unittest.TestCase):
         self.assertIn('latest-producer-attempt-not-successful', reasons)
         self.assertFalse(any('/attempts/' in route for route in requests))
 
+    def test_unsigned_successful_catalog_rebuilds_without_downloading_bytes(self):
+        _, artifact, run, job, _ = self.fixture(); source = self.source
+        class Transport:
+            def get(self, route):
+                if route == '/commits/main': return {'sha': source['sha']}
+                if route.startswith('/compare/'): return {'status':'identical','merge_base_commit':{'sha':source['sha']}}
+                if '/workflows/' in route: return {'workflow_runs':[{'id':10,'run_attempt':2}]}
+                if route == '/actions/runs/10': return run
+                if '/artifacts?' in route: return {'artifacts':[artifact]}
+                if route == '/actions/artifacts/20': return artifact
+                if '/jobs?' in route: return {'jobs':[job]}
+                raise AssertionError(route)
+            def archive(self, artifact_id):
+                raise AssertionError('Unsigned historical bytes must not be downloaded')
+        accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
+        self.assertEqual(accepted,{})
+        self.assertEqual(reasons,['unsigned-formal-catalog-build-current'])
+
     def test_missing_artifact_is_build_miss(self):
         _, _, run, _, _ = self.fixture(); source = self.source
         class Transport:
@@ -159,6 +191,58 @@ class FormalProducts(unittest.TestCase):
         accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
         self.assertEqual(accepted, {})
         self.assertIn('artifact-missing-or-expired', reasons)
+
+    def captured_windows(self, abi):
+        # Execute the actual JS collector; tool output is an explicit fixture,
+        # not a claim that this host executed Windows tools.
+        program = """import {captureRuntime} from './scripts/ci-native-capture.mjs';
+const [abi,target]=process.argv.slice(1);
+console.log(JSON.stringify(captureRuntime({platform:'win32',env:{FARM_BUILD_ABI:abi,FARM_BUILD_TARGET:target,FARM_BUILD_PROFILE:'release'},
+run:exe=>({status:0,stdout:exe==='rustup'?'nightly-2026-04-10-x86_64-pc-windows-msvc':exe+' measured fixture'})})));"""
+        return json.loads(subprocess.check_output(['node', '--input-type=module', '-e', program, abi, formal.paths.TARGETS[abi]], cwd=Path(__file__).resolve().parent.parent))
+
+    def test_windows_collector_null_reaches_explicit_unavailable_producer(self):
+        for abi in ['win32-arm64-msvc', 'win32-ia32-msvc']:
+            runtime = self.captured_windows(abi)
+            self.assertIsNone(runtime['linker']); self.assertFalse(runtime['reuseAuthorized'])
+            with tempfile.TemporaryDirectory() as root:
+                root = Path(root); capture = root / 'capture.json'; output = root / 'catalog'; outputs = root / 'outputs'
+                capture.write_text(json.dumps({'runtimeCapture': runtime, 'records': []}))
+                env = {'GITHUB_SHA': self.source['sha'], 'GITHUB_REPOSITORY': 'fixture/farm', 'GITHUB_WORKFLOW_REF': 'fixture/farm/' + formal.WORKFLOW + '@refs/heads/main', 'GITHUB_REF': 'refs/heads/main', 'FARM_BUILD_PROFILE': 'release', 'GITHUB_OUTPUT': str(outputs)}
+                with patch.dict(os.environ, env), patch.object(sys, 'argv', ['formal-native-products.py', 'produce', '--abi', abi, '--capture', str(capture), '--output', str(output)]), patch.object(formal.evidence, 'source_reader', return_value=self.source), patch.object(formal, 'create_catalog') as create, contextlib.redirect_stdout(io.StringIO()) as stdout:
+                    formal.main()
+                result = json.loads(stdout.getvalue())
+                self.assertFalse(result['catalogAvailable']); self.assertEqual(result['consumerAction'], 'build-current')
+                self.assertEqual(result['reason'], 'Unmeasured effective linker')
+                self.assertEqual(outputs.read_text(), 'catalog_available=false\n'); self.assertFalse(output.exists()); create.assert_not_called()
+
+    def test_missing_null_and_malformed_measured_objects_are_not_reuse_evidence(self):
+        abi = 'win32-arm64-msvc'; runtime = self.captured_windows(abi)
+        for value in [None, [], '', 1, {}, {'version': None}, {'version': []}, {'version': ''}, {'version': ' '}]:
+            with self.subTest(linker=value), self.assertRaisesRegex(ValueError, 'Unmeasured effective linker'):
+                formal.measured_context(self.source, {'runtimeCapture': {**runtime, 'linker': value}}, abi)
+        absent = dict(runtime); absent.pop('linker')
+        with self.assertRaisesRegex(ValueError, 'Unmeasured effective linker'): formal.measured_context(self.source, {'runtimeCapture': absent}, abi)
+        for field in ['runtime', 'activeToolchain']:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                formal.measured_context(self.source, {'runtimeCapture': {**runtime, field: None}}, abi)
+        with self.assertRaises(ValueError): formal.measured_context(self.source, {'runtimeCapture': None}, abi)
+
+    def test_measured_windows_fixture_seals_only_bound_unchanged_native_bytes(self):
+        abi = 'win32-arm64-msvc'; runtime = self.captured_windows(abi)
+        # Positive measurement fixture, not inferred from a missing linker.
+        runtime.update(linker={'version': 'explicit measured linker fixture'}, platformSdk='explicit measured SDK fixture')
+        wanted = formal.product_inputs(self.source, abi)['@farmfe/core']
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root); file = root / wanted['file']; file.parent.mkdir(parents=True)
+            body = b'MZ' + bytes(58) + (64).to_bytes(4, 'little') + b'PE\0\0' + (0xaa64).to_bytes(2, 'little'); file.write_bytes(body)
+            capture = {'runtimeCapture': runtime, 'profile': 'release', 'originBuildSHA': self.source['sha'], 'runId': 10, 'runAttempt': 2,
+                       'records': [{**wanted, 'bytes': len(body), 'sha256': hashlib.sha256(body).hexdigest()}]}
+            catalog, bodies = formal.create_catalog(self.source, capture, abi, 10, 2, root)
+            self.assertEqual(catalog['records'][0]['sha256'], hashlib.sha256(body).hexdigest()); self.assertEqual(list(bodies.values()), [body])
+            with self.assertRaisesRegex(ValueError, 'identity'): formal.create_catalog(self.source, capture, abi, 10, 3, root)
+            file.write_bytes(body + b'changed')
+            with self.assertRaisesRegex(ValueError, 'bytes changed'): formal.create_catalog(self.source, capture, abi, 10, 2, root)
 
 
 if __name__ == '__main__': unittest.main()

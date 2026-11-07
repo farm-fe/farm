@@ -73,18 +73,56 @@ def select_prepared_packages(files, plan, retained, lookup):
         kept.add(row['name'])
     return [row for row in declared if row['name'] not in kept]
 
-def fetch_retained_sources(retained):
-    # Workspace path dependencies do not fetch their published registry twins.
-    # Seed only the reviewed versions before offline package verification.
-    if not retained:return
-    with tempfile.TemporaryDirectory(prefix='farm-retained-cargo-') as temporary:
-        root=Path(temporary);(root/'src').mkdir();(root/'src/lib.rs').write_text('')
-        lines=['[package]','name="farm-retained-source-validation"','version="0.0.0"','edition="2024"','publish=false','[workspace]','[dependencies]']
-        for row in retained:
-            check(re.fullmatch('[a-zA-Z0-9_-]+',row['name']) and re.fullmatch(r'\d+\.\d+\.\d+',row['version']), 'Invalid retained dependency identity')
-            lines.append(row['name']+'="='+row['version']+'"')
-        manifest=root/'Cargo.toml';manifest.write_text('\n'.join(lines)+'\n')
-        subprocess.run(['cargo','fetch','--manifest-path',str(manifest)],check=True)
+def public_source_seeds(metadata, selected):
+    """Find registry twins hidden by local paths in the selected locked closure.
+
+    Use the all-features, all-target Cargo graph so optional, build and dev
+    dependencies are covered too. Selected unpublished crates stay local: Cargo's
+    multi-package staging registry supplies those during offline packaging.
+    """
+    packages = {row['id']: row for row in metadata['packages']}
+    nodes = {row['id']: row for row in metadata['resolve']['nodes']}
+    selected_ids = set()
+    for row in selected:
+        matches = [pkg['id'] for pkg in packages.values()
+                   if pkg['name'] == row['name'] and pkg['version'] == row['version'] and pkg['source'] is None]
+        check(len(matches) == 1, 'Missing exact selected Cargo source')
+        selected_ids.add(matches[0])
+    pending = list(selected_ids); seen = set(); seeds = {}
+    while pending:
+        package_id = pending.pop()
+        if package_id in seen: continue
+        seen.add(package_id)
+        check(package_id in nodes and package_id in packages, 'Incomplete locked Cargo dependency graph')
+        pkg = packages[package_id]; node = nodes[package_id]
+        pending.extend(node['dependencies'])
+        if pkg['source'] is None and package_id not in selected_ids:
+            key = (pkg['name'], pkg['version'])
+            check(key not in seeds, 'Ambiguous local Cargo registry twin')
+            seeds[key] = {'name': pkg['name'], 'version': pkg['version'], 'features': sorted(node['features'])}
+    return [seeds[key] for key in sorted(seeds)]
+
+
+def fetch_public_sources(seeds):
+    # Resolve each exact registry twin outside the repository, without workspace
+    # patches or repository .cargo configuration. Independent roots also allow
+    # multiple versions of the same crate without artificial feature unification.
+    if not seeds: return
+    toolchain = run('rustup', 'show', 'active-toolchain').split()[0]
+    env = {**os.environ, 'RUSTUP_TOOLCHAIN': toolchain}
+    with tempfile.TemporaryDirectory(prefix='farm-public-cargo-') as temporary:
+        for index, row in enumerate(seeds):
+            root = Path(temporary) / str(index); (root / 'src').mkdir(parents=True)
+            (root / 'src/lib.rs').write_text('')
+            dependency = ('seed = { package = ' + json.dumps(row['name']) + ', version = ' +
+                          json.dumps('=' + row['version']) + ', registry = "crates-io", default-features = false, features = ' +
+                          json.dumps(row['features']) + ' }')
+            (root / 'Cargo.toml').write_text('[package]\nname="farm-public-source-validation"\nversion="0.0.0"\nedition="2024"\npublish=false\n[workspace]\n[dependencies]\n' + dependency + '\n')
+            print('Preparing public Cargo source ' + row['name'] + '@' + row['version'], flush=True)
+            # Only this disposable manifest gets a new lockfile. The checked-in
+            # lock and the final --locked --offline package command never change.
+            subprocess.run(['cargo', 'generate-lockfile'], cwd=root, env=env, check=True)
+            subprocess.run(['cargo', 'fetch', '--locked'], cwd=root, env=env, check=True)
 
 def select_packages(before,after):
     chain=load('cargo_source_chain','incremental-chain-plan.py')
@@ -157,7 +195,7 @@ def verify_frozen(directory,expected):
         meta=json.loads((directory/'files'/row['metadata']).read_bytes());check(meta['name']==row['name'] and meta['vers']==row['version'],'Upload metadata identity differs')
     return receipt
 
-def restore(directory,expected):
+def restore(directory,expected,*,proof_provider=None,binding_output=None):
     name='cargo-source-'+str(expected['runId']);base='repos/'+expected['repository'];rows=api(base+'/actions/runs/'+str(expected['runId'])+'/artifacts?per_page=100')['artifacts']
     check(len(rows)<100,'Cargo frozen artifact listing exceeds verification bound')
     matches=[row for row in rows if row['name']==name];check(len(matches)<=1,'Ambiguous Cargo frozen artifact')
@@ -172,6 +210,14 @@ def restore(directory,expected):
         return False
     row=matches[0];check(not row['expired'],'Original Cargo archive expired; refusing to rebuild a possible partial publication')
     check(row['workflow_run']['id']==expected['runId'] and 0<row['size_in_bytes']<512*1024**2,'Cargo artifact origin or size differs')
+    provenance=load('cargo_frozen_provenance','release-provenance.py')
+    class ReadOnly:
+        def get(self,route):return api(base+route)
+        def archive(self,identity):return subprocess.check_output(['gh','api',base+'/actions/artifacts/'+str(identity)+'/zip'],timeout=120)
+    signed_meta,origin,origin_job=provenance.find_frozen_binding(ReadOnly(),
+        {'sha':expected['sourceSHA'],'tree':expected['sourceTree']},'cargo',expected['runId'],
+        int(os.environ['GITHUB_RUN_ATTEMPT']),row['id'],'cargo',proof_provider=proof_provider)
+    check(all(signed_meta.get(key)==row.get(key) for key in ['id','name','digest','size_in_bytes']), 'Cargo discovered archive differs from signed binding')
     body=subprocess.check_output(['gh','api',base+'/actions/artifacts/'+str(row['id'])+'/zip'],timeout=120)
     check(len(body)==row['size_in_bytes'] and row['digest']=='sha256:'+digest(body),'Cargo artifact digest differs')
     with zipfile.ZipFile(io.BytesIO(body)) as archive:
@@ -194,7 +240,10 @@ def restore(directory,expected):
         matching=[step for step in producers[0]['steps'] if step['name']==name]
         check(len(matching)==1 and matching[0]['conclusion']=='success','Cargo source verification step missing or failed')
     steps=[step for step in producers[0]['steps'] if step['name']=='Freeze verified Cargo source archives']
-    check(len(steps)==1 and steps[0]['conclusion']=='success' and steps[0]['started_at']<=row['created_at']<=steps[0]['completed_at'],'Cargo artifact upload was not a completed producer step')
+    check(len(steps)==1 and steps[0]['status']=='completed' and steps[0]['conclusion']=='success'
+          and origin['run_attempt']==attempt and origin_job['id']==producers[0]['id'], 'Cargo artifact signed producer differs')
+    if binding_output is not None:
+        binding_output.update(artifact_id=str(row['id']),artifact_digest=row['digest'].removeprefix('sha256:'),producer_attempt=str(attempt))
     return True
 
 def prepare(directory,expected):
@@ -208,7 +257,6 @@ def prepare(directory,expected):
         declared=selector.validate(source,'cargo',registry_snapshot)
         family=list(declared.values());selected=[row for key,row in declared.items() if registry_snapshot['packages'][key]['status']=='missing']
         retained=[{'name':row['name'],'version':row['version'],'sha256':registry_snapshot['packages'][key]['archiveSha256']} for key,row in declared.items() if registry_snapshot['packages'][key]['status']=='published']
-        fetch_retained_sources(retained)
     else:
         check(proof['mode'] in ['verified-version-only','verified-prepared-migration'] and proof['headSHA']==expected['headSHA'] and re.fullmatch('[a-f0-9]{40}',proof['baseSHA']) and re.fullmatch('[a-f0-9]{64}',proof['receiptHash']),'Cargo version provenance is incomplete')
         evidence=load('cargo_source_evidence','incremental-chain-evidence.py')
@@ -221,11 +269,13 @@ def prepare(directory,expected):
             check(policy['retainedCrates']==proof['retainedCrates'], 'Retained Cargo proof differs from reviewed policy')
             plan=json.loads(source['files'][policy['candidate']]);retained=policy['retainedCrates'];family=plan['cargo']
             selected=select_prepared_packages(source['files'],plan,retained,Registry().lookup)
-            fetch_retained_sources(retained)
         else:selected=select_packages(before['files'],source['files'])
     check(run('git','diff','--name-only','HEAD')=='','Cargo preparation requires a clean tracked source')
     directory.mkdir();(directory/'files').mkdir()
     metadata=json.loads(run('cargo','metadata','--locked','--offline','--format-version','1','--no-deps'))
+    if selected:
+        resolved=json.loads(run('cargo','metadata','--locked','--offline','--all-features','--format-version','1'))
+        fetch_public_sources(public_source_seeds(resolved,selected))
     target=directory.resolve()/'target';env={**os.environ,'CARGO_TARGET_DIR':str(target)}
     if selected: subprocess.run(['cargo','package','--locked','--offline','--registry','crates-io',*sum((['-p',row['name']] for row in selected),[])],cwd=ROOT,env=env,check=True)
     order=json.loads(subprocess.check_output(['node','--input-type=module','-e',"import {rustPublicationOrder} from './scripts/release-rust-metadata.mjs';let s='';for await(const c of process.stdin)s+=c;const v=JSON.parse(s);console.log(JSON.stringify(rustPublicationOrder({cargo:v.selection},v.metadata,{includeUploadMetadata:false})));"],input=json.dumps({'selection':selected,'metadata':metadata}).encode(),cwd=ROOT))
@@ -296,10 +346,13 @@ def main():
     event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text());expected=identity(event,os.environ)
     directory=ROOT/'cargo-source-frozen'
     if stage=='restore':
-        restored=restore(directory,expected)
+        original_binding={}
+        restored=restore(directory,expected,binding_output=original_binding)
         with open(os.environ['GITHUB_OUTPUT'],'a') as stream:
             stream.write('restored='+str(restored).lower()+'\n')
-            if restored:stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')
+            if restored:
+                stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')
+                for key,value in original_binding.items():stream.write(key+'='+value+'\n')
     elif stage=='prepare':
         prepare(directory,expected)
         with open(os.environ['GITHUB_OUTPUT'],'a') as stream:stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')

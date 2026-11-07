@@ -25,8 +25,10 @@ test('one fixed-main Release contains npm candidate and consumer validation befo
   for(const stage of ['  producer:','  candidate-consumers:','  publisher:','  public-consumers:','  public-proof:','  finalize:'])assert.ok(release.includes(stage),stage);
   assert.doesNotMatch(release,/run-sdk-consumer|seal-v2-rust-packages|CARGO_REGISTRY_TOKEN/);
   assert.match(release,/seal-npm/);
-  assert.ok(release.includes('scripts/verify-v2-npm-consumer.mjs'));
-  assert.ok(release.includes('scripts/verify-published-v2-consumers.mjs'));
+  assert.ok(release.includes('uses: ./.github/workflows/release-candidate-consumers.yaml'));
+  assert.ok(release.includes('uses: ./.github/workflows/release-public-consumers.yaml'));
+  assert.ok(read('.github/workflows/release-candidate-consumers.yaml').includes('scripts/verify-v2-npm-consumer.mjs'));
+  assert.ok(read('.github/workflows/release-public-consumers.yaml').includes('scripts/verify-published-v2-consumers.mjs'));
   assert.ok(release.includes("github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true'"));
   assert.ok(release.includes("github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)"));
   assert.ok(release.includes("needs.candidate-consumers.result == 'success'"));

@@ -28,6 +28,7 @@ def load(name, file):
 entry = load("publication_entry", "incremental-release-entry.py")
 state = load("publication_state", "incremental-publication-state.py")
 functional = load("publication_functional", "incremental-release-functional.py")
+consumer_bindings = load("publication_consumer_bindings", "release-consumer-bindings.py")
 check = entry.check
 ROLES = {"upload": "Publish exact independent release archives under durable lock",
          "finalize": "Finalize exact independent release and durable baseline"}
@@ -210,11 +211,22 @@ def verify_release_checkpoint(api, manifest, release):
     return checkpoint.decode(release, manifest, source, api.reader.get('')['id'])
 
 
-def completed_publication_receipt(api, manifest, verifier, directory, current):
-    proof = verifier.verify(manifest, directory / 'archives', phase='postpublish', current_run=current)
+def completed_publication_receipt(api, manifest, preflight, *, registry=None):
+    # Only the completed-transaction no-op path may use durable publication
+    # state. It never authorizes writes or substitutes for fresh public tests.
+    # Waiting for this attempt's downstream public signer here creates a cycle.
+    check(preflight.get('prepublicationVerified') is True
+          and preflight.get('manifestHash')==state.digest(manifest)
+          and preflight.get('sourceSHA')==manifest['sourceSHA']
+          and preflight.get('sourceTree')==manifest['sourceTree'],
+          'Already-complete confirmation requires current frozen-byte preflight')
     _, release = inspect_release(api, manifest)
-    check(proof.get('verified') is True and release is not None, 'Independent completed Release confirmation missing')
-    verify_release_checkpoint(api, manifest, release)
+    check(release is not None, 'Independent completed Release confirmation missing')
+    checkpoint=verify_release_checkpoint(api, manifest, release)
+    reader=entry.evidence.registry_module.RegistryReadOnly() if registry is None else registry
+    expected={identity:row['archiveSha256'] for identity,row in checkpoint['packages'].items()}
+    check(reader.verify(checkpoint['packages'])==expected,
+          'Completed publication registry bytes are absent or changed')
     return True
 
 
@@ -246,85 +258,48 @@ def report_binding(manifest, run_id, attempt, platform):
             'consumerRunId': run_id, 'consumerAttempt': attempt, 'platform': platform}
 
 
-def report_producer(transport, manifest, run_id, attempt, platform):
-    check(platform in PUBLIC_PLATFORMS and type(attempt) is int and attempt >= manifest['producerAttempt'], 'Public report platform or attempt differs')
-    run = transport.get('/actions/runs/' + str(run_id) + '/attempts/' + str(attempt))
-    repository = transport.get('')
-    check(run['id'] == run_id == manifest['producerRunId'] and run['run_attempt'] == attempt and run['path'] == entry.WORKFLOW
-          and run['head_sha'] == manifest['sourceSHA'] and run['head_branch'] == repository['default_branch'] == 'main'
-          and run['event'] in ['push', 'workflow_dispatch'] and run['repository']['id'] == repository['id'] == run['head_repository']['id'],
-          'Public consumer source or main origin differs')
-    jobs = entry.execution.jobs_for(transport, run)
-    name = 'Independent public registry consumer (' + platform + ')'
-    matches = [job for job in jobs if job['name'] == name or job['name'].endswith(' / ' + name)]
-    check(len(matches) == 1, 'Missing or ambiguous public consumer platform job')
-    job = matches[0]
-    check(job.get('run_id', run_id) == run_id and job.get('run_attempt', attempt) == attempt, 'Public consumer job belongs to another attempt')
-    return job
+def verify_public_report(transport, manifest, run_id, attempt, platform, artifact_id, *, trusted_output=None):
+    check(isinstance(trusted_output,dict) and trusted_output.get('artifact_id')==str(artifact_id),
+          'Independent fixed public upload binding required')
+    run=transport.get('/actions/runs/'+str(run_id)+'/attempts/'+str(attempt))
+    report,artifact,origin,job=consumer_bindings.receipt(transport,run,manifest,'public',platform,trusted_output)
+    selected={'platform':platform,'runId':run_id,'attempt':origin['run_attempt'],'artifactId':artifact_id,
+              'artifactDigest':artifact['digest'],'jobId':job['id'],'manifestHash':state.digest(manifest)}
+    return report,selected
 
 
-def verify_public_report(transport, manifest, run_id, attempt, platform, artifact_id):
-    job = report_producer(transport, manifest, run_id, attempt, platform)
-    check(job['status'] == 'completed' and job['conclusion'] == 'success', 'Public consumer platform job did not succeed')
-    artifact = transport.get('/actions/artifacts/' + str(artifact_id))
-    name = 'release-public-' + platform + '-' + str(attempt)
-    check(artifact['id'] == artifact_id and artifact['name'] == name and artifact['workflow_run']['id'] == run_id
-          and artifact['expired'] is False, 'Public report artifact producer differs')
-    entry.execution.upload_binding(job, PUBLIC_UPLOAD, artifact)
-    report = functional.exact_plan(transport.archive(artifact_id), artifact, 'result.json')
-    check(report.get('publicationBinding') == report_binding(manifest, run_id, attempt, platform), 'Public report frozen manifest or platform binding differs')
-    check(report.get('status') == 'passed' and report.get('publicRegistry') is True and report.get('workspacePatches') is False
-          and report.get('cleanupConfirmed') is True, 'Public consumer or confirmed cleanup failed')
-    check({'npm-install', 'esm-cjs', 'types', 'docs-build', 'sdk'}.issubset(report.get('stages', [])), 'Public consumer stages missing')
-    selected = {'platform': platform, 'runId': run_id, 'attempt': attempt, 'artifactId': artifact_id,
-                'artifactDigest': artifact['digest'], 'jobId': job['id'], 'manifestHash': state.digest(manifest)}
-    return report, selected
-
-
-def verify_public_selection(transport, manifest, run_id, maximum_attempt, selections):
-    check(isinstance(selections, list) and len(selections) == 3 and {row.get('platform') for row in selections} == set(PUBLIC_PLATFORMS),
+def verify_public_selection(transport, manifest, run_id, maximum_attempt, selections, *, upload_outputs=None):
+    check(isinstance(selections,list) and len(selections)==3
+          and {row.get('platform') for row in selections}==set(PUBLIC_PLATFORMS),
           'Exactly one independent report per public platform required')
-    verified = []
+    check(isinstance(upload_outputs,dict) and set(upload_outputs)==set(PUBLIC_PLATFORMS),
+          'Fixed public consumer outputs required')
+    verified=[]
     for selected in selections:
-        check(type(selected.get('attempt')) is int and selected['attempt'] <= maximum_attempt, 'Public report attempt is newer than its acceptance proof')
-        _, actual = verify_public_report(transport, manifest, run_id, selected['attempt'], selected['platform'], selected['artifactId'])
-        check(selected == actual, 'Public report provenance changed or was forged')
+        platform=selected['platform'];output=upload_outputs[platform]
+        check(type(selected.get('attempt')) is int and selected['attempt']<=maximum_attempt,
+              'Public report attempt is newer than its acceptance proof')
+        _,actual=verify_public_report(transport,manifest,run_id,maximum_attempt,platform,selected['artifactId'],trusted_output=output)
+        check(selected==actual,'Public report provenance changed or was forged')
         verified.append(actual)
-    return sorted(verified, key=lambda row: row['platform'])
+    return sorted(verified,key=lambda row:row['platform'])
 
 
-def collect_public_reports(transport, manifest, current, directory):
-    rows = []
-    for page in range(1, 4):
-        batch = transport.get('/actions/runs/' + str(current['runId']) + '/artifacts?per_page=100&page=' + str(page))['artifacts']
-        rows.extend(batch)
-        if len(batch) < 100:
-            break
-    else:
-        raise ValueError('Public report artifact inventory exceeded bound')
-    reports, selected = {}, []
+def collect_public_reports(transport, manifest, current, directory, *, upload_outputs=None):
+    check(isinstance(upload_outputs,dict) and set(upload_outputs)==set(PUBLIC_PLATFORMS),
+          'Fixed public consumer outputs required')
+    reports,selected={},[]
     for platform in PUBLIC_PLATFORMS:
-        pattern = r'release-public-' + re.escape(platform) + r'-([1-9][0-9]*)'
-        candidates = []
-        for row in rows:
-            match = re.fullmatch(pattern, row['name'])
-            if match and row.get('expired') is False and manifest['producerAttempt'] <= int(match[1]) <= current['attempt']:
-                candidates.append((int(match[1]), row))
-        check(len(candidates) <= 64 and len({attempt for attempt, row in candidates}) == len(candidates), 'Ambiguous or excessive public platform artifacts')
-        for attempt, artifact in sorted(candidates, key=lambda row: row[0], reverse=True):
-            job = report_producer(transport, manifest, current['runId'], attempt, platform)
-            if job['status'] != 'completed' or job['conclusion'] != 'success':
-                continue
-            reports[platform], selection = verify_public_report(transport, manifest, current['runId'], attempt, platform, artifact['id'])
-            selected.append(selection)
-            break
-        check(platform in reports, 'Successful public consumer report missing for ' + platform)
-    target = Path(directory); target.mkdir(parents=True, exist_ok=False)
-    for platform, report in reports.items():
-        output = target / ('release-public-' + platform); output.mkdir()
-        (output / 'result.json').write_text(json.dumps(report, sort_keys=True) + '\n', encoding='utf-8')
-    selection = {'manifestHash': state.digest(manifest), 'reports': sorted(selected, key=lambda row: row['platform'])}
-    (target / 'selection.json').write_text(json.dumps(selection, sort_keys=True) + '\n', encoding='utf-8')
+        output=upload_outputs[platform]
+        reports[platform],selection=verify_public_report(transport,manifest,current['runId'],current['attempt'],
+            platform,int(output['artifact_id']),trusted_output=output)
+        selected.append(selection)
+    target=Path(directory);target.mkdir(parents=True,exist_ok=False)
+    for platform,report in reports.items():
+        output=target/('release-public-'+platform);output.mkdir()
+        (output/'result.json').write_text(json.dumps(report,sort_keys=True)+'\n',encoding='utf-8')
+    selection={'manifestHash':state.digest(manifest),'reports':sorted(selected,key=lambda row:row['platform'])}
+    (target/'selection.json').write_text(json.dumps(selection,sort_keys=True)+'\n',encoding='utf-8')
     return selection
 
 
@@ -335,8 +310,9 @@ class RecoveryVerifier(entry.ReleaseVerifier):
     Only that same frozen run's later attempt may resume it, after independent
     terminal-attempt and original upload-step checks; CI runs never qualify.
     """
-    def __init__(self, transport, current, read_source=entry.evidence.source_reader, frozen=None):
-        super().__init__(transport, read_source)
+    def __init__(self, transport, current, read_source=entry.evidence.source_reader, frozen=None, *, receipt_provider=None, candidate_outputs=None, proof_provider=None):
+        super().__init__(transport, read_source, receipt_provider=receipt_provider)
+        self.candidate_outputs,self.proof_provider=candidate_outputs,proof_provider
         self.current, self.frozen = current, frozen
         self.candidate_selection = None
 
@@ -374,8 +350,8 @@ class RecoveryVerifier(entry.ReleaseVerifier):
         # Use exactly the same content/attempt/artifact selector as the durable
         # baseline reader. Successful intermediate attempts must not disappear.
         reader_module = entry.load('publication_candidate_baseline', 'incremental-release-baseline.py')
-        reader = reader_module.ReleaseBaselineReader(self.transport, None, self.read_source)
-        selected = reader.candidates(self.verifying_manifest, repository, self.current['attempt'])
+        reader = reader_module.ReleaseBaselineReader(self.transport, None, self.read_source, proof_provider=self.proof_provider)
+        selected = reader.candidates(self.verifying_manifest, repository, self.current['attempt'], trusted_outputs=self.candidate_outputs)
         observed = {}
         expected = {'ubuntu-24.04': ('linux', 'x64', 'linux-x64-gnu'),
                     'macos-latest': ('darwin', 'arm64', 'darwin-arm64'),
@@ -407,30 +383,17 @@ class RecoveryVerifier(entry.ReleaseVerifier):
         if phase == 'prepublish':
             return {**preflight, 'candidateReports': self.candidate_selection}
         check(phase in ['postpublish', 'complete'], 'Unknown publication verification phase')
-        rows = []
-        for page in range(1, 4):
-            response = self.transport.get('/actions/runs/' + str(self.current['runId']) + '/artifacts?per_page=100&page=' + str(page))
-            rows.extend(response['artifacts'])
-            if len(response['artifacts']) < 100:
-                break
-        prefix = 'farm-release-public-acceptance-' + manifest['sourceSHA'] + '-'
-        candidates = [row for row in rows if row.get('expired') is False and row['name'].startswith(prefix)
-                      and row['name'][len(prefix):].isdigit()
-                      and manifest['producerAttempt'] <= int(row['name'][len(prefix):]) <= self.current['attempt']]
-        check(candidates, 'Original public acceptance artifact missing')
-        selected = max(candidates, key=lambda row: (int(row['name'][len(prefix):]), row['id']))
-        attempt = int(selected['name'][len(prefix):])
-        run = self.transport.get('/actions/runs/' + str(self.current['runId']) + '/attempts/' + str(attempt))
-        check(run['id'] == self.current['runId'] and run['run_attempt'] == attempt and run['path'] == entry.WORKFLOW
-              and run['head_sha'] == manifest['sourceSHA'], 'Public acceptance run differs')
-        job = entry.evidence.successful_job(entry.execution.jobs_for(self.transport, run), entry.CONSUMER)
-        proof, artifact = entry.execution.fetch_json_artifact(self.transport, run, selected['name'])
-        entry.execution.upload_binding(job, 'Upload independent release public acceptance', artifact)
+        provenance=load('publication_signed_acceptance','release-provenance.py')
+        run=self.transport.get('/actions/runs/'+str(self.current['runId'])+'/attempts/'+str(self.current['attempt']))
+        source={'sha':manifest['sourceSHA'],'tree':manifest['sourceTree']}
+        proof,artifact,origin,job,_,signed=provenance.signed_json(self.transport,run,source,'public','public',proof_provider=self.proof_provider)
+        attempt=run['run_attempt']
         check(proof.get('manifestHash') == state.digest(manifest) and proof.get('sourceTree') == manifest['sourceTree']
               and proof.get('planHash') == manifest['planHash'] and proof.get('producerJobId') == job['id'], 'Public acceptance frozen identity differs')
         check(proof.get('packages') == {row['kind'] + ':' + row['name']: row['archiveSha256'] for row in manifest['packages']}
               and all(proof.get(key) is True for key in ['registryInstall', 'nativeABI', 'latestTargets']), 'Actual public acceptance is incomplete')
-        reports = verify_public_selection(self.transport, manifest, self.current['runId'], attempt, proof.get('consumerReports'))
+        reports = verify_public_selection(self.transport, manifest, self.current['runId'], attempt, proof.get('consumerReports'),
+            upload_outputs=provenance.consumer_outputs(signed,'public'))
         actual = entry.evidence.registry_module.RegistryReadOnly().verify({row['kind'] + ':' + row['name']: row for row in manifest['packages']})
         check(actual == proof['packages'], 'Public registry changed after consumer acceptance')
         return {'manifestHash': state.digest(manifest), 'sourceSHA': manifest['sourceSHA'], 'sourceTree': manifest['sourceTree'],
@@ -520,12 +483,14 @@ def main():
         check(len([job for job in jobs if job['name'] == entry.CONSUMER and job['status'] == 'in_progress']) == 1, 'Running public proof job missing')
         check(args.reports is not None, 'Public report directory required')
         if args.stage == 'collect-public':
-            selection = collect_public_reports(transport, manifest, current, args.reports)
+            selection = collect_public_reports(transport, manifest, current, args.reports,
+                upload_outputs=consumer_bindings.outputs(os.environ['FARM_RELEASE_PUBLIC_UPLOADS']))
         else:
             check(args.proof is not None, 'Public proof ledger required')
             selection = json.loads((Path(args.reports) / 'selection.json').read_text(encoding='utf-8'))
             check(selection.get('manifestHash') == state.digest(manifest), 'Report selection belongs to another manifest')
-            reports = verify_public_selection(transport, manifest, current['runId'], current['attempt'], selection.get('reports'))
+            reports = verify_public_selection(transport, manifest, current['runId'], current['attempt'], selection.get('reports'),
+                upload_outputs=consumer_bindings.outputs(os.environ['FARM_RELEASE_PUBLIC_UPLOADS']))
             proof = json.loads(Path(args.proof).read_text(encoding='utf-8'))
             check(proof.get('manifestHash') == state.digest(manifest) and proof.get('sourceTree') == manifest['sourceTree']
                   and proof.get('planHash') == manifest['planHash'], 'Public proof frozen identity differs')
@@ -547,7 +512,8 @@ def main():
     current = {"runId": run_id, "attempt": attempt}
     store = state.GitRefStore(state.GitHubStateAPI(api.request))
     frozen = frozen_authorization(store, manifest, source, repository["id"], current)
-    verifier = RecoveryVerifier(api.reader, current, frozen=frozen)
+    candidate_outputs=consumer_bindings.outputs(os.environ['FARM_RELEASE_CANDIDATE_UPLOADS']) if args.stage=='upload' else None
+    verifier = RecoveryVerifier(api.reader, current, frozen=frozen, candidate_outputs=candidate_outputs)
     preflight = verifier.verify(manifest, directory / "archives", phase="prepublish", current_run=current)
     functional.verify_functional(api.reader, source, manifest.get("functionalEvidence"), current)
     owner = {"runId": run_id, "attempt": attempt, "repositoryId": repository["id"], "sourceSHA": source["sha"],
@@ -556,7 +522,7 @@ def main():
     transaction = state.Publication(store, manifest, owner,
                                     lambda value: preflight["manifestHash"] == state.digest(value) and preflight["prepublicationVerified"] is True)
     def completed_receipt(receipt):
-        return completed_publication_receipt(api, manifest, verifier, directory, current)
+        return completed_publication_receipt(api, manifest, preflight)
     recover = lambda previous: terminal_owner(api.reader, current, source, previous)
     if args.stage == "upload":
         transaction.recover(recover, completed_receipt)

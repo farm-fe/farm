@@ -15,6 +15,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     outputs:
+      frozen_restored: ${{ steps.archive-upload.outcome != 'success' }}
+      frozen_id: ${{ steps.archive-upload.outputs.artifact-id || steps.frozen.outputs.artifact_id }}
+      frozen_digest: ${{ steps.archive-upload.outputs.artifact-digest || steps.frozen.outputs.artifact_digest }}
+      frozen_attempt: ${{ steps.archive-origin.outputs.attempt || steps.frozen.outputs.producer_attempt }}
       release_ready: ${{ steps.frozen.outputs.restored == 'true' || steps.version.outputs.release_ready == 'true' }}
       publish_required: ${{ steps.frozen.outputs.publish_required || steps.package.outputs.publish_required }}
     permissions:
@@ -63,6 +67,7 @@ jobs:
         if: steps.frozen.outputs.restored != 'true' && steps.version.outputs.release_ready == 'true'
         run: python -B scripts/cargo-source-release.py prepare
       - name: Freeze verified Cargo source archives
+        id: archive-upload
         if: steps.frozen.outputs.restored != 'true' && steps.version.outputs.release_ready == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -72,9 +77,13 @@ jobs:
             cargo-source-frozen/files/*
           if-no-files-found: error
           retention-days: 90
+      - name: Bind Cargo archive upload to its producing attempt
+        id: archive-origin
+        if: steps.archive-upload.outcome == 'success'
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
   publish:
     name: Publish frozen Cargo source archives
-    needs: [source]
+    needs: [source, sign-frozen-cargo]
     if: needs.source.outputs.release_ready == 'true' && needs.source.outputs.publish_required == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -103,3 +112,18 @@ jobs:
           path: cargo-source-frozen/publication.json
           if-no-files-found: warn
           retention-days: 90
+
+  sign-frozen-cargo:
+    if: needs.source.result == 'success' && needs.source.outputs.frozen_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [source]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-proof-call.yaml
+    with:
+      scope: cargo
+      cargo_restored: ${{ needs.source.outputs.frozen_restored == 'true' }}
+      upload_bindings: >-
+        {"cargo":{"artifact_id":"${{ needs.source.outputs.frozen_id }}","artifact_digest":"${{ needs.source.outputs.frozen_digest }}","run_attempt":"${{ needs.source.outputs.frozen_attempt }}"}}

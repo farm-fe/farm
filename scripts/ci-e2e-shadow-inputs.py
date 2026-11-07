@@ -1,6 +1,8 @@
 """E2E producer inventory for the shared strict original-attempt reader."""
 # cspell:words importlib
 import importlib.util
+import json
+import re
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location('shared_shadow_inputs', Path(__file__).with_name('ci-unit-shadow-inputs.py'))
@@ -15,8 +17,7 @@ for abi, runner in shared.execution.PLATFORMS.items():
     CELLS.extend([
         ('examples:' + abi, PREFIX[abi] + ' / Examples Test (' + runner + ')', 'examples-test', abi),
         ('ts-tests:' + abi, PREFIX[abi] + ' / Typescript Test (' + runner + ')', 'ts-test', abi),
-        ('performance:' + abi, 'Commerce Performance (' + runner + ')', 'performance-report', abi),
-        ('performance-contracts:' + abi, 'Performance report contract (' + runner + ')', 'performance-contract-tests', runner),
+        ('platform-contracts:' + abi, 'Platform safety contracts (' + runner + ')', 'platform-contract-tests', runner),
     ])
     if abi != 'darwin-arm64':
         CELLS.append(('docs:ci:' + abi, PREFIX[abi] + ' / Docs CI quality checks / Docs / ' + runner, 'docs', abi))
@@ -24,13 +25,50 @@ CELLS.extend([
     ('types', 'Type Check', 'type-check', 'single'),
     ('contracts', 'Release source contracts', 'release-contract-tests', 'single'),
     ('native-assembly', 'Check declared native inputs (not ABI execution)', 'check-native-candidate-assembly', 'single'),
-    ('performance-summary', 'Aggregate informational performance report', 'performance-summary', 'single'),
+    ('execution-baseline', 'Record verified CI execution baseline', 'execution-baseline', 'single'),
 ])
 
 
-def resolve(transport, run, identity):
-    return shared.resolve(transport, run, identity, scope='e2e', cells=CELLS)
+PRIMARY_CELLS = {kind + ':' + abi for abi in PREFIX for kind in ['ts-tests', 'examples']}
+
+
+def primary_upload_outputs(environment):
+    # Only fixed workflow needs outputs, never receipt or artifact self-assertions.
+    result = {}
+    patterns = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
+    for abi, platform in [('linux-x64-gnu','LINUX'), ('darwin-arm64','MACOS'), ('win32-x64-msvc','WINDOWS')]:
+        row = json.loads(environment['CI_SHADOW_UPLOADS_' + platform])
+        expected = {label + '_' + prefix + field for label in ['ts','browser'] for prefix in ['', 'shadow_'] for field in patterns}
+        shared.check(isinstance(row, dict) and set(row) == expected, 'Missing or unexpected primary shadow upload outputs')
+        shared.check(all(isinstance(row[label + '_' + prefix + field], str) and re.fullmatch(pattern, row[label + '_' + prefix + field])
+                         for label in ['ts','browser'] for prefix in ['', 'shadow_'] for field, pattern in patterns.items()), 'Malformed primary upload outputs')
+        for label, kind in [('ts','ts-tests'), ('browser','examples')]:
+            output = {field:row.get(label + '_shadow_' + field) for field in patterns}
+            shared.check(all(isinstance(output[field], str) and re.fullmatch(pattern, output[field]) for field, pattern in patterns.items()), 'Malformed or missing shadow upload outputs')
+            result[kind + ':' + abi] = output
+    return result
+
+
+def explicit_upload_outputs(environment):
+    """Only the current fixed workflow needs outputs may supply this inventory."""
+    values = json.loads(environment['CI_E2E_UPLOADS'])
+    expected = {'planner', *[row[0] for row in CELLS]}
+    shared.check(isinstance(values, dict) and set(values) == expected, 'E2E upload output inventory differs')
+    patterns = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
+    for row in values.values():
+        shared.check(isinstance(row, dict) and set(row) == set(patterns), 'Missing or unexpected E2E upload outputs')
+        shared.check(all(isinstance(row[key], str) and re.fullmatch(pattern, row[key]) for key, pattern in patterns.items()), 'Malformed E2E upload outputs')
+    return values['planner'], {key:values[key] for key in expected if key != 'planner'}
+
+
+def resolve(transport, run, identity, *, upload_outputs=None, planner_output=None, require_explicit=False):
+    if upload_outputs is not None:
+        expected = {row[0] for row in CELLS} if require_explicit else PRIMARY_CELLS
+        shared.check(set(upload_outputs) == expected, 'Shadow upload output inventory differs')
+    return shared.resolve(transport, run, identity, scope='e2e', cells=CELLS,
+                          upload_outputs=upload_outputs, planner_output=planner_output, require_explicit=require_explicit)
 
 
 def current(environment):
-    return shared.current(environment, scope='e2e', cells=CELLS)
+    planner, cells = explicit_upload_outputs(environment)
+    return shared.current(environment, scope='e2e', cells=CELLS, upload_outputs=cells, planner_output=planner)

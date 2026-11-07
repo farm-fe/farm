@@ -113,97 +113,43 @@ class Contracts(unittest.TestCase):
         self.assertEqual(reader.state()[1],self.state)
         blob['content']=base64.b64encode(body+b' ').decode();self.transport.get.side_effect=[responses[0],responses[1],tree,blob]
         with self.assertRaises(ValueError):reader.state()
-    def test_completed_provenance_reads_real_seal_and_public_zip_then_exact_tag_and_release(self):
-        fixture=entry_fixtures.Contracts();fixture.setUp()
-        manifest=fixture.manifest;manifest['tag']='v1.0.0';transaction=module.chain.digest(manifest)
-        fixture.seal['manifestHash']=transaction;fixture.public['manifestHash']=transaction
-        for job in fixture.jobs:job['run_id']=10
-        metadata={};bodies={}
-        for index,(prefix,record) in enumerate([('farm-release-seal-',fixture.seal),('farm-release-public-acceptance-',fixture.public)],100):
-            name=prefix+fixture.source['sha']+'-2';body=io.BytesIO()
-            with zipfile.ZipFile(body,'w') as archive:archive.writestr('ledger.json',json.dumps(record))
-            raw=body.getvalue();bodies[index]=raw
-            metadata[name]={'id':index,'name':name,'workflow_run':{'id':10},'expired':False,'size_in_bytes':len(raw),
-                            'digest':'sha256:'+hashlib.sha256(raw).hexdigest(),'created_at':'2026-01-01T00:00:30Z'}
-        for index,platform in enumerate(['ubuntu-24.04','macos-latest','windows-latest'],200):
-            name='farm-release-candidate-consumer-'+fixture.source['sha']+'-'+platform+'-2'
-            report={'status':'passed','scratchRemoved':True,'platform':{'os':{'ubuntu-24.04':'linux','macos-latest':'darwin','windows-latest':'win32'}[platform],'arch':'arm64' if platform=='macos-latest' else 'x64','abi':{'ubuntu-24.04':'linux-x64-gnu','macos-latest':'darwin-arm64','windows-latest':'win32-x64-msvc'}[platform]},'releaseBinding':{'manifestHash':transaction,'sourceSHA':fixture.source['sha'],
-                    'sourceTree':fixture.source['tree'],'producerRunId':10,'producerAttempt':2,'consumerRunId':10,'consumerAttempt':2}}
-            body=io.BytesIO()
-            with zipfile.ZipFile(body,'w') as archive:archive.writestr('result.json',json.dumps(report))
-            raw=body.getvalue();bodies[index]=raw
-            metadata[name]={'id':index,'name':name,'workflow_run':{'id':10},'expired':False,'size_in_bytes':len(raw),
-                            'digest':'sha256:'+hashlib.sha256(raw).hexdigest(),'created_at':'2026-01-01T00:00:30Z'}
-            job=next(row for row in fixture.jobs if row['name']=='Independent release candidate consumer ('+platform+')')
-            job['steps']=[{'name':'Upload independent release candidate acceptance','status':'completed','conclusion':'success',
-                           'started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:01:00Z'}]
+    def test_completed_provenance_reads_real_signed_seal_public_and_all_platform_receipts(self):
+        publisher=load('baseline_full_release_fixture','incremental-release-publish.test.py')
+        test=publisher.Contracts()
+        fixture,_,original,current=test.recovery_fixture(1,3,{'ubuntu-24.04':2,'macos-latest':1,'windows-latest':3})
+        manifest=fixture.manifest;transaction=module.chain.digest(manifest)
+        source={'sha':fixture.source['sha'],'tree':fixture.source['tree']}
+        # Freeze the external-verifier fixture result BEFORE mutating API/content.
+        # Nothing below derives a trusted digest from a mutated receipt.
+        saved={scope:copy.deepcopy(fixture.proof_provider(fixture.transport,run,source,scope))
+               for scope,run in [('frozen',original),('public',current)]}
+        def verified(client,run,identity,scope):
+            expected,rows=copy.deepcopy(saved[scope])
+            module.check(run['run_attempt']==expected['attempt'] and {key:identity.get(key) for key in ['sha','tree']}==source,'Fixture signed source/attempt differs')
+            return expected,rows
+        old=fixture.transport.get.side_effect
         def get(route):
-            if route in ['/actions/runs/10','/actions/runs/10/attempts/2']:return fixture.run
-            if '/jobs?' in route:return {'jobs':fixture.jobs}
-            if '/artifacts?' in route:
-                name=module.evidence.transport_module.urllib.parse.parse_qs(module.evidence.transport_module.urllib.parse.urlsplit(route).query)['name'][0]
-                rows=[metadata[name]] if name in metadata else [];return {'total_count':len(rows),'artifacts':rows}
-            if route.startswith('/actions/artifacts/'):return next(row for row in metadata.values() if row['id']==int(route.rsplit('/',1)[1]))
-            if route=='/git/ref/tags/v1.0.0':return {'object':{'type':'commit','sha':fixture.source['sha']}}
+            if route=='/git/ref/tags/v1.0.0':return {'object':{'type':'commit','sha':source['sha']}}
             if route=='/releases/tags/v1.0.0':return {'draft':False,'prerelease':False,'body':'<!-- farm-release-manifest:'+transaction+' -->'}
-            raise AssertionError(route)
-        transport=mock.Mock();transport.get.side_effect=get;transport.archive.side_effect=lambda number:bodies[number]
-        reader=module.ReleaseBaselineReader(transport,self.registry,lambda _:fixture.source)
+            return old(route)
+        fixture.transport.get.side_effect=get
+        reader=module.ReleaseBaselineReader(fixture.transport,self.registry,lambda _:fixture.source,proof_provider=verified)
         self.assertEqual(reader.completed(transaction,{'manifest':manifest},fixture.repository)[0],manifest)
-        linux_name='farm-release-candidate-consumer-'+fixture.source['sha']+'-ubuntu-24.04-2'
-        original_linux=bodies[200];original_linux_meta=copy.deepcopy(metadata[linux_name])
-        for field,value in [('os','darwin'),('abi','linux-x64-musl')]:
-            wrong=json.loads(zipfile.ZipFile(io.BytesIO(original_linux)).read('result.json'));wrong['platform'][field]=value
-            stream=io.BytesIO()
-            with zipfile.ZipFile(stream,'w') as archive:archive.writestr('result.json',json.dumps(wrong))
-            bodies[200]=stream.getvalue();metadata[linux_name].update({'size_in_bytes':len(bodies[200]),'digest':'sha256:'+hashlib.sha256(bodies[200]).hexdigest()})
-            with self.assertRaises(ValueError):reader.completed(transaction,{'manifest':manifest},fixture.repository)
-        bodies[200]=original_linux;metadata[linux_name]=original_linux_meta
-        current={**fixture.run,'run_attempt':3};new_jobs=copy.deepcopy(fixture.jobs)
-        for job in new_jobs:
-            if job['name'].startswith('Independent release candidate consumer (') and 'windows-latest' not in job['name']:job['conclusion']='failure'
-        original_windows=next(job for job in fixture.jobs if job['name']=='Independent release candidate consumer (windows-latest)')
-        original_windows['conclusion']='failure'
-        old_name='farm-release-candidate-consumer-'+fixture.source['sha']+'-windows-latest-2'
-        name=old_name[:-1]+'3';report=json.loads(zipfile.ZipFile(io.BytesIO(bodies[202])).read('result.json'))
-        report['releaseBinding']['consumerAttempt']=3;body=io.BytesIO()
-        with zipfile.ZipFile(body,'w') as archive:archive.writestr('result.json',json.dumps(report))
-        raw=body.getvalue();bodies[203]=raw
-        metadata[name]={**metadata[old_name],'id':203,'name':name,'size_in_bytes':len(raw),'digest':'sha256:'+hashlib.sha256(raw).hexdigest()}
-        def mixed(route):
-            if route in ['/actions/runs/10','/actions/runs/10/attempts/3']:return current
-            if '/attempts/3/jobs?' in route:return {'jobs':new_jobs}
-            return get(route)
-        transport.get.side_effect=mixed
-        self.assertEqual(reader.completed(transaction,{'manifest':manifest},fixture.repository)[0],manifest)
-        # Producer 2, Mac acceptance 2, Linux acceptance 3, Windows acceptance 4.
-        # Neither original+current alone nor one shared successful attempt works.
-        middle={**current};last={**current,'run_attempt':4}
-        middle_jobs=copy.deepcopy(new_jobs)
-        for job in middle_jobs:
-            if job['name'].startswith('Independent release candidate consumer ('):
-                job['conclusion']='success' if 'ubuntu-24.04' in job['name'] else 'failure'
-        next(job for job in fixture.jobs if job['name']=='Independent release candidate consumer (ubuntu-24.04)')['conclusion']='failure'
-        for index,platform,attempt in [(204,'ubuntu-24.04',3),(205,'windows-latest',4)]:
-            original_name='farm-release-candidate-consumer-'+fixture.source['sha']+'-'+platform+'-2'
-            original_id=200 if platform=='ubuntu-24.04' else 202
-            report=json.loads(zipfile.ZipFile(io.BytesIO(bodies[original_id])).read('result.json'));report['releaseBinding']['consumerAttempt']=attempt
-            stream=io.BytesIO()
-            with zipfile.ZipFile(stream,'w') as archive:archive.writestr('result.json',json.dumps(report))
-            bodies[index]=stream.getvalue();name=original_name[:-1]+str(attempt)
-            metadata[name]={**metadata[original_name],'id':index,'name':name,'size_in_bytes':len(bodies[index]),'digest':'sha256:'+hashlib.sha256(bodies[index]).hexdigest()}
-        def three_attempts(route):
-            if route in ['/actions/runs/10','/actions/runs/10/attempts/4']:return last
-            if route=='/actions/runs/10/attempts/3':return middle
-            if '/attempts/4/jobs?' in route:return {'jobs':new_jobs}
-            if '/attempts/3/jobs?' in route:return {'jobs':middle_jobs}
-            return get(route)
-        transport.get.side_effect=three_attempts
-        self.assertEqual(reader.completed(transaction,{'manifest':manifest},fixture.repository)[0],manifest)
-        last['head_sha']='f'*40
-        with self.assertRaises(ValueError):reader.completed(transaction,{'manifest':manifest},fixture.repository)
-        last['head_sha']=fixture.source['sha']
-        next(iter(metadata.values()))['digest']='sha256:'+'0'*64
-        with self.assertRaises(ValueError):reader.completed(transaction,{'manifest':manifest},fixture.repository)
+        for defect in ['candidate-bytes','public-bytes','seal-digest','latest-failure','wrong-source','missing-upload']:
+            metadata=copy.deepcopy(fixture.candidate_metadata);bodies=dict(fixture.candidate_bodies)
+            jobs=copy.deepcopy(fixture.jobs_by_attempt);run=copy.deepcopy(current)
+            if defect=='candidate-bytes':fixture.candidate_bodies[200]+=b'tampered'
+            if defect=='public-bytes':fixture.candidate_bodies[400]+=b'tampered'
+            if defect=='seal-digest':fixture.candidate_metadata[61]['digest']='sha256:'+'0'*64
+            if defect=='latest-failure':
+                next(row for row in fixture.jobs_by_attempt[3] if row['name']=='Independent release candidate consumer (macos-latest)')['conclusion']='failure'
+            if defect=='wrong-source':current['head_sha']='f'*40
+            if defect=='missing-upload':
+                next(row for row in fixture.jobs_by_attempt[3] if row['name']==entry.CONSUMER)['steps']=[]
+            with self.subTest(defect=defect),self.assertRaises(ValueError):reader.completed(transaction,{'manifest':manifest},fixture.repository)
+            fixture.candidate_metadata.clear();fixture.candidate_metadata.update(metadata)
+            fixture.candidate_bodies.clear();fixture.candidate_bodies.update(bodies)
+            fixture.jobs_by_attempt.clear();fixture.jobs_by_attempt.update(jobs)
+            current.clear();current.update(run)
 
 if __name__=='__main__':unittest.main(verbosity=2)

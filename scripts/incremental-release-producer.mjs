@@ -181,7 +181,9 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
     if(done.has(name))return;
     assert.ok(!active.has(name),'Cyclic npm publication dependencies');active.add(name);
     const row=byName.get(name),manifest=readPackage(row);
-    for(const dependency of [...new Set(['dependencies','peerDependencies','optionalDependencies'].flatMap(field=>Object.keys(manifest[field]??{})))].sort())
+    // Peers constrain consumer compatibility, not upload order (Docs/theme peers form a valid cycle).
+    // Keep peer declarations in archive/family/consumer checks; hard and optional cycles still fail.
+    for(const dependency of [...new Set(['dependencies','optionalDependencies'].flatMap(field=>Object.keys(manifest[field]??{})))].sort())
       if(byName.has(dependency))visit(dependency);
     active.delete(name);done.add(name);ordered.push(row);
   }
