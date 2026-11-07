@@ -27,7 +27,7 @@ export function cachedVersions(bytes, name) {
 }
 function guard(directory) {
   const disk = fs.statfsSync(directory);
-  if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('SDK registry materialization resource guard');
+  if (disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('SDK registry materialization resource guard');
 }
 export function materializeRegistry(cohortDirectory, output, cargoHome = process.env.CARGO_HOME ?? path.join(os.homedir(), '.cargo')) {
   if (fs.existsSync(output)) throw new Error('Preserve existing SDK registry evidence');

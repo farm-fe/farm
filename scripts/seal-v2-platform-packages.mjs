@@ -1,7 +1,6 @@
 // cspell:words statfs bavail
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { archiveFiles, sha256 } from './release-archive.mjs';
@@ -28,7 +27,7 @@ try {
     const producer = cohort.artifacts.find(row => row.file.startsWith(path.dirname(owner.manifestPath) + '/'));
     if (!producer) continue; // An absent producer stays missing; do not invent provenance.
     const disk = fs.statfsSync(output);
-    if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('Resource guard');
+    if (disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('Resource guard');
     const directory = path.dirname(path.join(root, pkg.manifestPath));
     const manifest = JSON.parse(fs.readFileSync(path.join(root, pkg.manifestPath)));
     if (path.basename(manifest.main) !== manifest.main) throw new Error('Unsafe native package main');

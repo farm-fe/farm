@@ -1,7 +1,6 @@
 // cspell:words statfs bavail
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import crypto from 'node:crypto';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -27,7 +26,7 @@ save();
 try {
   for (const pkg of selected) {
     const disk = fs.statfsSync(output);
-    if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('Resource guard before next package');
+    if (disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('Resource guard before next package');
     const directory = path.dirname(path.join(root, pkg.manifestPath));
     const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json')));
     assertReviewedCandidatePackHooks(directory, manifest);

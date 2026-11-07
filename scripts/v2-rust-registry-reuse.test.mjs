@@ -124,3 +124,15 @@ test('archive preparation checks disk without estimating available memory', () =
     assert.doesNotMatch(fs.readFileSync(new URL('./seal-v2-rust-packages.mjs', import.meta.url), 'utf8'), /freemem|freeRamGiB/);
   } finally { fs.rmSync(f.root, { recursive: true }); }
 });
+
+
+test('release packing and consumer entries retain disk checks without RAM estimates', () => {
+  for (const name of ['prepare-v2-candidate-js.mjs', 'sdk-candidate-registry.mjs',
+    'verify-published-v2-consumers.mjs', 'seal-v2-primary-packages.mjs',
+    'seal-v2-platform-packages.mjs', 'run-sdk-consumer.mjs']) {
+    const source = fs.readFileSync(new URL(name, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /freemem|freeRamGiB|candidate-resources/, name);
+    assert.match(source, /statfs/, name);
+    assert.match(source, /9\.75/, name);
+  }
+});
