@@ -3,7 +3,7 @@
 Archive names locate proof bytes only. The verifier must be the pinned CLI
 adapter; tests replace that boundary explicitly and do not claim cryptography.
 """
-# cspell:words importlib
+# cspell:words importlib sigstore
 import hashlib
 import importlib.util
 import io

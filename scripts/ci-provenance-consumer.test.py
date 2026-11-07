@@ -1,5 +1,5 @@
 """Real ZIP bytes with explicitly simulated signature verification boundary."""
-# cspell:words importlib
+# cspell:words importlib sigstore
 import hashlib
 import importlib.util
 import io
