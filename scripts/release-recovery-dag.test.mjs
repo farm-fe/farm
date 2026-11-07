@@ -30,9 +30,19 @@ test('carried plan and newly frozen candidate have independent attempt names',()
  assert.ok(store.has(plan.with.name.replace('${{ github.run_id }}','50').replace('${{ needs.plan.outputs.plan_attempt }}','1')));
  for(const name of ['candidate-consumers','publisher','public-consumers','public-proof','finalize']){
   assert.ok(jobs[name].needs.includes('candidate-identity'));
-  const download=jobs[name].steps.find(step=>step.uses==='actions/download-artifact@v4');
-  assert.equal(download.with.name,'farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}');
-  assert.ok(store.has(download.with.name.replace('${{ github.sha }}','source').replace('${{ needs.candidate-identity.outputs.attempt }}','2')));
+  if(jobs[name].uses){
+   assert.equal(jobs[name].with.candidate_attempt,'${{ needs.candidate-identity.outputs.attempt }}');
+   const child=parse(fs.readFileSync(new URL('../'+jobs[name].uses.replace('./',''),import.meta.url),'utf8'));
+   for(const job of Object.values(child.jobs)){
+    const download=job.steps.find(step=>step.uses==='actions/download-artifact@v4');
+    assert.equal(download.with.name,'farm-release-candidates-${{ github.sha }}-${{ inputs.candidate_attempt }}');
+    assert.ok(store.has(download.with.name.replace('${{ github.sha }}','source').replace('${{ inputs.candidate_attempt }}','2')));
+   }
+  }else{
+   const download=jobs[name].steps.find(step=>step.uses==='actions/download-artifact@v4');
+   assert.equal(download.with.name,'farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}');
+   assert.ok(store.has(download.with.name.replace('${{ github.sha }}','source').replace('${{ needs.candidate-identity.outputs.attempt }}','2')));
+  }
  }
 });
 test('recovery wake-up never checks out triggering code or receives publication tokens',()=>{

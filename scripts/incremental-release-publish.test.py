@@ -136,7 +136,9 @@ class Contracts(unittest.TestCase):
             store.swap(None, complete)
             raise OSError('final CAS response lost')
         with self.assertRaisesRegex(OSError, 'final CAS response lost'): final_cas()
-        verifier = mock.Mock(); verifier.verify.return_value = {'verified': True}
+        preflight={'prepublicationVerified':True,'manifestHash':transaction,'sourceSHA':manifest['sourceSHA'],'sourceTree':manifest['sourceTree']}
+        registry=mock.Mock()
+        registry.verify.side_effect=lambda records:{key:row['archiveSha256'] for key,row in records.items()}
         owner = {'runId': 10, 'attempt': 2}
         valid_body = api.release['body']
         with mock.patch.object(module.entry.evidence, 'source_reader', return_value=fixture.source):
@@ -146,7 +148,7 @@ class Contracts(unittest.TestCase):
                     if mutation == 'missing': api.release['body'] = '<!-- farm-release-manifest:' + transaction + ' -->'
                     if mutation == 'corrupt': api.release['body'] = valid_body.replace('farm-release-checkpoint-v1:', 'farm-release-checkpoint-v1:' + '0')
                     retry = module.state.Publication(store, manifest, owner, lambda value: True)
-                    verify = lambda receipt: module.completed_publication_receipt(api, manifest, verifier, Path('.'), owner)
+                    verify = lambda receipt: module.completed_publication_receipt(api, manifest, preflight, registry=registry)
                     if mutation == 'valid':
                         retry.recover(lambda previous: True, verify)
                         self.assertTrue(retry.completed)
@@ -155,7 +157,14 @@ class Contracts(unittest.TestCase):
                             retry.recover(lambda previous: True, verify)
                         self.assertFalse(retry.completed)
                     self.assertEqual(api.writes, [])
-            self.assertEqual(verifier.verify.call_count, 3)
+            self.assertEqual(registry.verify.call_count, 1)
+            registry.verify.return_value={}
+            registry.verify.side_effect=None
+            with self.assertRaisesRegex(ValueError,'registry bytes'):
+                module.completed_publication_receipt(api,manifest,preflight,registry=registry)
+            with self.assertRaisesRegex(ValueError,'current frozen-byte preflight'):
+                module.completed_publication_receipt(api,manifest,{**preflight,'manifestHash':'0'*64},registry=registry)
+            self.assertEqual(api.writes, [])
 
     def environment(self):
         return {"GITHUB_ACTIONS": "true", "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch",
@@ -226,7 +235,11 @@ class Contracts(unittest.TestCase):
         spec=importlib.util.spec_from_file_location('shared_release_fixture',Path(__file__).with_name('incremental-release-entry.test.py'))
         shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
         fixture=shared.Contracts();fixture.setUp()
+        fixture.repository['id']=507542208
+        fixture.run.update(event='push',repository={'id':507542208,'full_name':'farm-fe/farm'},head_repository={'id':507542208})
+        for job in fixture.jobs:job['head_sha']=fixture.source['sha']
         fixture.manifest['producerAttempt']=producer_attempt
+        fixture.manifest['tag']='v1.0.0'
         transaction=module.state.digest(fixture.manifest)
         fixture.seal['manifestHash']=fixture.public['manifestHash']=transaction
         original={**fixture.run,'run_attempt':producer_attempt,'conclusion':'failure'}
@@ -256,13 +269,59 @@ class Contracts(unittest.TestCase):
             job={'id':index+100,'run_id':10,'run_attempt':attempt,'name':'Independent release candidate consumer ('+platform+')',
                  'status':'completed','conclusion':'success','steps':[{'name':'Upload independent release candidate acceptance',
                  'status':'completed','conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:01:00Z'}]}
+            job['head_sha']=fixture.source['sha']
             fixture.jobs_by_attempt[attempt].append(job);candidate_jobs.append(job)
+            for carried in range(attempt+1,current_attempt+1):
+                fixture.jobs_by_attempt[carried].append({**job,'id':job['id']+carried*1000,'run_attempt':carried})
         fixture.jobs=base_jobs+candidate_jobs
+        fixture.candidate_outputs={platform:{'artifact_id':str(index),'artifact_digest':metadata[index]['digest'][7:],
+                                           'run_attempt':str(choices[platform])} for index,platform in enumerate(module.PUBLIC_PLATFORMS,200)}
+        archive(62,'farm-release-candidates-'+fixture.source['sha']+'-'+str(producer_attempt),{'fixture':'candidate bytes'})
+        next(job for job in base_jobs if job['name']==module.entry.PRODUCER)['steps'].append({'name':'Freeze independent release candidates','status':'completed','conclusion':'success'})
+        metadata[800]={'id':800,'name':'farm-release-bindings-frozen-10-'+str(producer_attempt)}
         archive(61,'farm-release-seal-'+fixture.source['sha']+'-'+str(producer_attempt),fixture.seal)
         archive(60,'farm-release-public-acceptance-'+fixture.source['sha']+'-'+str(current_attempt),fixture.public)
+        public_outputs={};public_selections=[]
+        for index,platform in enumerate(module.PUBLIC_PLATFORMS,400):
+            report={'status':'passed','publicRegistry':True,'workspacePatches':False,'cleanupConfirmed':True,
+                    'stages':['npm-install','esm-cjs','types','docs-build','sdk'],
+                    'publicationBinding':module.report_binding(fixture.manifest,10,current_attempt,platform)}
+            archive(index,'release-public-'+platform+'-'+str(current_attempt),report)
+            # Public receipts use result.json, independently of seal ledgers.
+            stream=io.BytesIO()
+            with zipfile.ZipFile(stream,'w') as z:z.writestr('result.json',json.dumps(report))
+            bodies[index]=stream.getvalue();metadata[index].update(size_in_bytes=len(bodies[index]),digest='sha256:'+hashlib.sha256(bodies[index]).hexdigest())
+            job={'id':index+100,'run_id':10,'run_attempt':current_attempt,'head_sha':fixture.source['sha'],
+                 'name':'Independent public registry consumer ('+platform+')','status':'completed','conclusion':'success',
+                 'steps':[{'name':module.PUBLIC_UPLOAD,'status':'completed','conclusion':'success'}]}
+            fixture.jobs_by_attempt[current_attempt].append(job)
+            public_outputs[platform]={'artifact_id':str(index),'artifact_digest':metadata[index]['digest'][7:],'run_attempt':str(current_attempt)}
+            public_selections.append({'platform':platform,'runId':10,'attempt':current_attempt,'artifactId':index,
+                'artifactDigest':metadata[index]['digest'],'jobId':job['id'],'manifestHash':transaction})
+        fixture.public['consumerReports']=sorted(public_selections,key=lambda row:row['platform'])
+        archive(60,'farm-release-public-acceptance-'+fixture.source['sha']+'-'+str(current_attempt),fixture.public)
+        def signed_provider(client,observed,source,scope):
+            # Explicit offline cryptographic boundary; real ZIP/API binding follows.
+            proof=module.load('fixture_public_provenance','release-provenance.py')
+            expected=proof.expected_policy(observed,source,scope,'c'*40)
+            bindings={}
+            for cell,role in expected['cells'].items():
+                if cell in ['seal','candidates']:identity=61 if cell=='seal' else 62;origin=producer_attempt
+                elif cell=='public':identity=60;origin=current_attempt
+                elif cell.startswith('candidate:'):
+                    output=fixture.candidate_outputs[cell.split(':',1)[1]];identity=int(output['artifact_id']);origin=int(output['run_attempt'])
+                else:
+                    output=public_outputs[cell.split(':',1)[1]];identity=int(output['artifact_id']);origin=int(output['run_attempt'])
+                job=next(row for row in fixture.jobs_by_attempt[origin] if row['name']==role['producer'])
+                meta=metadata[identity]
+                bindings[cell]={'cell':cell,**{key:role[key] for key in ['producer','uploadStep']},'jobId':job['id'],
+                    'originAttempt':origin,'artifactId':identity,'artifactName':meta['name'],'artifactDigest':meta['digest']}
+            return expected,bindings
+        fixture.proof_provider=signed_provider
         def get(route):
             if route=='':return fixture.repository
             if route=='/branches/main':return {'commit':{'sha':fixture.source['sha']}}
+            if route=='/actions/runs/10':return current
             match=re.fullmatch(r'/actions/runs/10/attempts/([1-9][0-9]*)(/jobs\?per_page=100&page=1)?',route)
             if match:
                 attempt=int(match[1]);return {'jobs':fixture.jobs_by_attempt[attempt]} if match[2] else runs[attempt]
@@ -275,7 +334,7 @@ class Contracts(unittest.TestCase):
             raise AssertionError('Unexpected recovery route: '+route)
         fixture.transport.get.side_effect=get;fixture.transport.archive.side_effect=lambda number:bodies[number]
         fixture.candidate_metadata,fixture.candidate_bodies,fixture.runs=metadata,bodies,runs
-        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':current_attempt},lambda sha:fixture.source)
+        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':current_attempt},lambda sha:fixture.source,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
         return fixture,verifier,original,current
 
     def test_recovery_uses_existing_release_seal_verifier_with_original_producer(self):
@@ -291,7 +350,7 @@ class Contracts(unittest.TestCase):
     def test_postpublish_joint_contract_binds_original_seal_new_acceptance_and_live_registry(self):
         fixture,verifier,original,current=self.recovery_fixture()
         registry=mock.Mock();registry.verify.return_value=fixture.public['packages']
-        with mock.patch.object(module.entry.execution,'jobs_for',return_value=fixture.jobs), mock.patch.object(module.entry.execution,'fetch_json_artifact',side_effect=[(fixture.seal,fixture.artifact),(fixture.public,fixture.artifact)]), mock.patch.object(module.entry.evidence.registry_module,'RegistryReadOnly',return_value=registry), mock.patch.object(module,'verify_public_selection',return_value=[]):
+        with mock.patch.object(module.entry.evidence.registry_module,'RegistryReadOnly',return_value=registry):
             proof=verifier.verify(fixture.manifest,fixture.root,phase='postpublish')
         self.assertTrue(proof['verified']);self.assertEqual(proof['producerAttempt'],2);self.assertEqual(proof['publicAttempt'],3)
         registry.verify.assert_called_once_with({row['kind']+':'+row['name']:row for row in fixture.manifest['packages']})
@@ -302,7 +361,7 @@ class Contracts(unittest.TestCase):
         for stage in ['publisher','public-consumers','public-proof','finalize']:
             block=re.search(r'^  '+re.escape(stage)+r':\n(.*?)(?=^  [A-Za-z][A-Za-z0-9-]*:\n|\Z)',workflow,re.M|re.S).group(1)
             self.assertIn('needs.candidate-identity.outputs.attempt',block)
-            self.assertIn('candidate-identity',re.search(r'needs: (.*)',block).group(1))
+            self.assertRegex(block,r'needs:(?:[^\n]*candidate-identity|\n(?:      - [^\n]+\n)*      - candidate-identity)')
         identity=re.search(r'^  candidate-identity:\n(.*?)(?=^  [A-Za-z][A-Za-z0-9-]*:)',workflow,re.M|re.S).group(1)
         self.assertIn("needs.source.outputs.reuse == 'true' && needs.source.outputs.producer_attempt || needs.producer.outputs.candidate_attempt",identity)
         self.assertIn("needs.producer.result == 'success' || needs.source.outputs.reuse == 'true'",identity)
@@ -324,12 +383,12 @@ class Contracts(unittest.TestCase):
     def public_fixture(self):
         manifest={'chain':'release','profile':'release','sourceSHA':'a'*40,'sourceTree':'b'*40,'producerRunId':7,'producerAttempt':1,'planHash':'c'*64}
         runs={attempt:{'id':7,'run_attempt':attempt,'path':module.entry.WORKFLOW,'head_sha':manifest['sourceSHA'],
-              'head_branch':'main','event':'workflow_dispatch','repository':{'id':5},'head_repository':{'id':5}}
+              'head_branch':'main','event':'push','repository':{'id':507542208},'head_repository':{'id':507542208}}
               for attempt in [1,2]}
         jobs={1:[],2:[]};artifacts={};bodies={};reports={}
         for index,(platform,attempt) in enumerate([('ubuntu-24.04',1),('macos-latest',1),('windows-latest',2)],1):
             job={'id':index+10,'name':'Independent public registry consumer ('+platform+')','run_id':7,'run_attempt':attempt,
-                 'status':'completed','conclusion':'success','steps':[{'name':module.PUBLIC_UPLOAD,'status':'completed','conclusion':'success',
+                 'head_sha':manifest['sourceSHA'],'status':'completed','conclusion':'success','steps':[{'name':module.PUBLIC_UPLOAD,'status':'completed','conclusion':'success',
                  'started_at':'1','completed_at':'3'}]}
             jobs[attempt].append(job)
             report={'status':'passed','publicRegistry':True,'workspacePatches':False,'cleanupConfirmed':True,
@@ -341,21 +400,28 @@ class Contracts(unittest.TestCase):
             bodies[index]=output.getvalue()
             artifacts[index]={'id':index,'name':'release-public-'+platform+'-'+str(attempt),'expired':False,'created_at':'2',
                               'workflow_run':{'id':7},'size_in_bytes':len(bodies[index]),'digest':'sha256:'+hashlib.sha256(bodies[index]).hexdigest()}
+        jobs[2].extend([{**job,'id':job['id']+100,'run_attempt':2} for job in jobs[1]])
         def get(route):
             if route=='':return {'id':5,'default_branch':'main'}
             if route=='/actions/runs/7/artifacts?per_page=100&page=1':return {'artifacts':list(artifacts.values())}
+            if '/jobs?' in route:return {'jobs':jobs[int(route.split('/attempts/')[1].split('/')[0])]}
             if '/attempts/' in route:return runs[int(route.rsplit('/',1)[1])]
             if route.startswith('/actions/artifacts/'):return artifacts[int(route.rsplit('/',1)[1])]
             raise AssertionError('Unexpected public report API route: '+route)
         transport=mock.Mock();transport.get.side_effect=get;transport.archive.side_effect=lambda number:bodies[number]
         return manifest,transport,jobs,artifacts,bodies,reports,runs
 
+    def public_outputs(self,artifacts):
+        return {platform:{'artifact_id':str(index),'artifact_digest':artifacts[index]['digest'][7:],
+                          'run_attempt':'2' if index==3 else '1'}
+                for index,platform in enumerate(module.PUBLIC_PLATFORMS,1)}
+
     def test_mixed_attempt_public_matrix_is_bound_independently_for_each_os(self):
         manifest,transport,jobs,artifacts,bodies,reports,runs=self.public_fixture()
         output=Path(tempfile.mkdtemp(prefix='farm-public-mixed-contract-'))/'reports'
         with mock.patch.object(module.entry.execution,'jobs_for',side_effect=lambda client,run:jobs[run['run_attempt']]):
-            selection=module.collect_public_reports(transport,manifest,{'runId':7,'attempt':2},output)
-            verified=module.verify_public_selection(transport,manifest,7,2,selection['reports'])
+            selection=module.collect_public_reports(transport,manifest,{'runId':7,'attempt':2},output,upload_outputs=self.public_outputs(artifacts))
+            verified=module.verify_public_selection(transport,manifest,7,2,selection['reports'],upload_outputs=self.public_outputs(artifacts))
         self.assertEqual({row['platform']:row['attempt'] for row in verified},{'ubuntu-24.04':1,'macos-latest':1,'windows-latest':2})
         for platform in module.PUBLIC_PLATFORMS:self.assertTrue((output/('release-public-'+platform)/'result.json').is_file())
 
@@ -368,24 +434,24 @@ class Contracts(unittest.TestCase):
         with zipfile.ZipFile(output,'w') as file:file.writestr('result.json',json.dumps(reports[3]))
         bodies[3]=output.getvalue();artifacts[3].update({'size_in_bytes':len(bodies[3]),'digest':'sha256:'+hashlib.sha256(bodies[3]).hexdigest()})
         with mock.patch.object(module.entry.execution,'jobs_for',side_effect=lambda client,run:jobs[run['run_attempt']]):
-            with self.assertRaisesRegex(ValueError,'platform binding differs'):
-                module.verify_public_report(transport,manifest,7,2,'windows-latest',3)
+            with self.assertRaisesRegex(ValueError,'Public receipt frozen bytes'):
+                module.verify_public_report(transport,manifest,7,2,'windows-latest',3,trusted_output=self.public_outputs(artifacts)['windows-latest'])
 
     def test_wrong_public_source_or_artifact_digest_cannot_resume(self):
         for field,value in [('head_sha','f'*40),('event','pull_request'),('head_repository',{'id':99})]:
             manifest,transport,jobs,artifacts,bodies,reports,runs=self.public_fixture();runs[2][field]=value
-            with self.assertRaisesRegex(ValueError,'main origin differs'):
-                module.verify_public_report(transport,manifest,7,2,'windows-latest',3)
+            with self.assertRaisesRegex(ValueError,'run or source differs'):
+                module.verify_public_report(transport,manifest,7,2,'windows-latest',3,trusted_output=self.public_outputs(artifacts)['windows-latest'])
         manifest,transport,jobs,artifacts,bodies,reports,runs=self.public_fixture();artifacts[3]['digest']='sha256:'+'f'*64
         with mock.patch.object(module.entry.execution,'jobs_for',side_effect=lambda client,run:jobs[run['run_attempt']]):
-            with self.assertRaisesRegex(ValueError,'digest differs'):module.verify_public_report(transport,manifest,7,2,'windows-latest',3)
+            with self.assertRaisesRegex(ValueError,'digest differs'):module.verify_public_report(transport,manifest,7,2,'windows-latest',3,trusted_output=self.public_outputs(artifacts)['windows-latest'])
 
     def frozen_fixture(self):
         fixture,verifier,original,current=self.recovery_fixture()
         spec=importlib.util.spec_from_file_location('state_frozen_fixture',Path(__file__).with_name('incremental-publication-state.test.py'))
         shared=importlib.util.module_from_spec(spec);spec.loader.exec_module(shared)
         store=module.state.GitRefStore(shared.GitAPI())
-        owner={'runId':10,'attempt':2,'repositoryId':5,'sourceSHA':fixture.source['sha'],'sourceTree':fixture.source['tree'],
+        owner={'runId':10,'attempt':2,'repositoryId':fixture.repository['id'],'sourceSHA':fixture.source['sha'],'sourceTree':fixture.source['tree'],
                'workflow':module.entry.WORKFLOW,'policyHash':fixture.source['policyHash'],'producerRunId':10,'producerAttempt':2}
         first=module.state.Publication(store,fixture.manifest,owner,lambda value:True);first.acquire()
         return fixture,verifier,original,current,shared,store,owner,first
@@ -398,8 +464,8 @@ class Contracts(unittest.TestCase):
         newer={**copy.deepcopy(fixture.source),'sha':'d'*40,'tree':'e'*40,'policyHash':'new-main-policy'}
         old_get=fixture.transport.get.side_effect
         fixture.transport.get.side_effect=lambda route: {'commit':{'sha':newer['sha']}} if route=='/branches/main' else old_get(route)
-        frozen=module.frozen_authorization(store,fixture.manifest,fixture.source,5,{'runId':10,'attempt':3})
-        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:newer if sha==newer['sha'] else fixture.source,frozen=frozen)
+        frozen=module.frozen_authorization(store,fixture.manifest,fixture.source,fixture.repository['id'],{'runId':10,'attempt':3})
+        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:newer if sha==newer['sha'] else fixture.source,frozen=frozen,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
         b=copy.deepcopy(fixture.manifest);b.update({'sourceSHA':newer['sha'],'sourceTree':newer['tree'],'planHash':'f'*64,'producerRunId':11,'producerAttempt':1})
         b_owner={**owner,'runId':11,'attempt':1,'sourceSHA':newer['sha'],'sourceTree':newer['tree'],'policyHash':newer['policyHash'],'producerRunId':11,'producerAttempt':1}
         with self.assertRaisesRegex(ValueError,'original manifest'):module.state.Publication(store,b,b_owner,lambda value:True).acquire()
@@ -421,18 +487,21 @@ class Contracts(unittest.TestCase):
         fixture,verifier,original,current,shared,store,owner,first=self.frozen_fixture()
         revision,saved=store.read();saved['active']['authorization']['policyHash']='forged-old-policy';store.swap(revision,saved)
         with self.assertRaisesRegex(ValueError,'authorization or source policy differs'):
-            module.frozen_authorization(store,fixture.manifest,fixture.source,5,{'runId':10,'attempt':3})
+            module.frozen_authorization(store,fixture.manifest,fixture.source,fixture.repository['id'],{'runId':10,'attempt':3})
         for field,value in [('event','pull_request'),('path','.github/workflows/ci.yaml'),('head_repository',{'id':99})]:
             fixture,verifier,original,current,shared,store,owner,first=self.frozen_fixture()
-            frozen=module.frozen_authorization(store,fixture.manifest,fixture.source,5,{'runId':10,'attempt':3})
+            frozen=module.frozen_authorization(store,fixture.manifest,fixture.source,fixture.repository['id'],{'runId':10,'attempt':3})
             original[field]=value
-            verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:fixture.source,frozen=frozen)
+            verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:fixture.source,frozen=frozen,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
             with self.assertRaisesRegex(ValueError,'not terminal or its source differs'):verifier.verify(fixture.manifest,fixture.root)
 
     def test_public_matrix_has_no_shared_attempt_and_uses_explicit_cross_platform_shell(self):
         workflow=(Path(__file__).parents[1]/'.github/workflows/incremental-release.yaml').read_text(encoding='utf-8')
         self.assertNotIn('consumer_attempt:',workflow);self.assertNotIn('outputs.consumer_attempt',workflow)
-        block=workflow.split('      - name: Record actual consumer attempt',1)[1].split('      - name: Upload independent public consumer report',1)[0]
+        consumer=(Path(__file__).parents[1]/'.github/workflows/release-public-consumers.yaml').read_text()
+        self.assertNotIn('matrix:',consumer)
+        self.assertEqual(consumer.count('      - name: Record actual consumer attempt'),3)
+        block=consumer.split('      - name: Record actual consumer attempt',1)[1].split('      - name: Upload independent public consumer report',1)[0]
         self.assertIn('shell: python',block);self.assertIn('publicationBinding',block)
         self.assertIn('collect-public --candidate release-candidate',workflow)
         self.assertIn('bind-public-proof --candidate release-candidate',workflow)
@@ -478,12 +547,12 @@ class Contracts(unittest.TestCase):
         self.assertEqual({platform:row['attempt'] for platform,row in proof['candidateReports'].items()},
                          {'ubuntu-24.04':2,'macos-latest':1,'windows-latest':3})
         baseline=module.entry.load('joint_candidate_baseline','incremental-release-baseline.py').ReleaseBaselineReader(fixture.transport,None,lambda sha:fixture.source)
-        self.assertEqual(proof['candidateReports'],baseline.candidates(fixture.manifest,fixture.repository,3))
+        self.assertEqual(proof['candidateReports'],baseline.candidates(fixture.manifest,fixture.repository,3,trusted_outputs=fixture.candidate_outputs))
 
     def test_candidate_middle_attempt_rejects_wrong_source_and_wrong_host_report(self):
         fixture,verifier,original,current=self.recovery_fixture(1,3,{'ubuntu-24.04':2,'macos-latest':1,'windows-latest':3})
         fixture.runs[2]['head_sha']='f'*40
-        with self.assertRaisesRegex(ValueError,'Candidate acceptance source'):verifier.verify(fixture.manifest,fixture.root)
+        with self.assertRaisesRegex(ValueError,'Explicit producer run identity'):verifier.verify(fixture.manifest,fixture.root)
         fixture,verifier,original,current=self.recovery_fixture(1,3,{'ubuntu-24.04':2,'macos-latest':1,'windows-latest':3})
         report=json.loads(zipfile.ZipFile(io.BytesIO(fixture.candidate_bodies[200])).read('result.json'))
         report['platform']={'os':'win32','arch':'x64','abi':'win32-x64-msvc'}
@@ -491,7 +560,7 @@ class Contracts(unittest.TestCase):
         with zipfile.ZipFile(output,'w') as file:file.writestr('result.json',json.dumps(report))
         body=output.getvalue();fixture.candidate_bodies[200]=body
         fixture.candidate_metadata[200].update({'size_in_bytes':len(body),'digest':'sha256:'+hashlib.sha256(body).hexdigest()})
-        with self.assertRaisesRegex(ValueError,'No valid independent candidate acceptance|OS or ABI differs'):verifier.verify(fixture.manifest,fixture.root)
+        with self.assertRaisesRegex(ValueError,'Artifact differs from fixed upload action outputs'):verifier.verify(fixture.manifest,fixture.root)
 
     def test_locked_planner_exception_releases_only_durably_unwritten_claim(self):
         fixture,verifier,original,current,shared,store,owner,first=self.frozen_fixture()
@@ -529,9 +598,13 @@ class Contracts(unittest.TestCase):
     def test_workflow_uploads_the_candidate_report_expected_by_the_baseline_reader(self):
         workflow=(Path(__file__).parents[1]/'.github/workflows/incremental-release.yaml').read_text(encoding='utf-8')
         block=workflow.split('  candidate-consumers:',1)[1].split('  publisher:',1)[0]
-        self.assertIn('name: Upload independent release candidate acceptance',block)
-        self.assertIn('name: farm-release-candidate-consumer-${{ github.sha }}-${{ matrix.os }}-${{ github.run_attempt }}',block)
-        self.assertIn('path: candidate-results/result.json',block)
+        self.assertIn('uses: ./.github/workflows/release-candidate-consumers.yaml',block)
+        consumer=(Path(__file__).parents[1]/'.github/workflows/release-candidate-consumers.yaml').read_text()
+        self.assertNotIn('matrix:',consumer)
+        self.assertEqual(consumer.count('name: Upload independent release candidate acceptance'),3)
+        for platform in module.PUBLIC_PLATFORMS:
+            self.assertIn('name: farm-release-candidate-consumer-${{ github.sha }}-'+platform+'-${{ github.run_attempt }}',consumer)
+        self.assertEqual(consumer.count('path: candidate-results/result.json'),3)
 
     def test_locked_plan_hash_ignores_only_state_revision_not_baseline_content(self):
         shared=module.entry.load('joint_plan_baseline_fixture','incremental-release-baseline.test.py')
@@ -554,7 +627,7 @@ class Contracts(unittest.TestCase):
             if route=='/compare/'+fixture.source['sha']+'...'+newer['sha']:return comparison
             return get(route)
         fixture.transport.get.side_effect=history
-        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:newer if sha==newer['sha'] else fixture.source)
+        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:newer if sha==newer['sha'] else fixture.source,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
         self.assertTrue(verifier.verify(fixture.manifest,fixture.root)['prepublicationVerified'])
         comparison['status']='diverged'
         with self.assertRaisesRegex(ValueError,'trusted main history'):verifier.verify(fixture.manifest,fixture.root)

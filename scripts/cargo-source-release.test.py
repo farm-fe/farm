@@ -102,31 +102,48 @@ class Contracts(unittest.TestCase):
         normalized.write_bytes(b'original');(root/'README.md').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError,'README differs'):m.bind_normalized_metadata(files,pkg,normalized)
     def test_original_successful_attempt_restores_after_later_failure_and_rejects_bad_proofs(self):
-        for variant in ['valid','expired','digest','failed-job','failed-package','wrong-source','wrong-workflow','wrong-attempt']:
+        for variant in ['valid','expired','digest','failed-job','failed-package','wrong-source','wrong-workflow','wrong-attempt','unsigned','wrong-signed-id']:
             with self.subTest(variant=variant):
                 root,identity,receipt=self.fixture()
-                if variant=='wrong-attempt':
-                    receipt['producerAttempt']=9;(root/'receipt.json').write_bytes(m.encoded(receipt))
+                identity.update(repository='farm-fe/farm',repositoryId=507542208,event='push')
+                if variant=='wrong-attempt':receipt['producerAttempt']=9
+                (root/'receipt.json').write_bytes(m.encoded(receipt))
                 buffer=io.BytesIO()
                 with zipfile.ZipFile(buffer,'w') as archive:
                     for file in [root/'receipt.json',*(root/'files').iterdir()]:archive.writestr(str(file.relative_to(root)),file.read_bytes())
-                body=buffer.getvalue();artifact={'id':4,'name':'cargo-source-2','expired':variant=='expired','workflow_run':{'id':2},'size_in_bytes':len(body),'digest':'sha256:'+m.digest(body),'created_at':'2026-01-01T00:00:30Z'}
+                body=buffer.getvalue();digest='sha256:'+m.digest(body)
+                artifact={'id':4,'name':'cargo-source-2','expired':variant=='expired','workflow_run':{'id':2},'size_in_bytes':len(body),'digest':digest}
                 if variant=='digest':artifact['digest']='sha256:'+'0'*64
-                run={'path':m.WORKFLOW,'event':'pull_request','head_sha':identity['sourceSHA'],'repository':{'id':1},'head_repository':{'id':1}}
+                run={'id':2,'run_attempt':1,'path':m.WORKFLOW,'event':'push','head_branch':'main','head_sha':identity['sourceSHA'],
+                     'repository':{'id':identity['repositoryId'],'full_name':'farm-fe/farm'},'head_repository':{'id':identity['repositoryId']}}
                 if variant=='wrong-source':run['head_sha']='0'*40
                 if variant=='wrong-workflow':run['path']='other.yaml'
-                steps=[{'name':name,'conclusion':'success','started_at':'2026-01-01T00:00:00Z','completed_at':'2026-01-01T00:01:00Z'} for name in ['Verify reviewed version provenance and semantic changes','Package and verify exact source crates','Freeze verified Cargo source archives']]
+                steps=[{'name':name,'status':'completed','conclusion':'success'} for name in ['Verify fixed main versions and Changesets readiness','Package and verify exact source crates','Freeze verified Cargo source archives']]
                 if variant=='failed-package':steps[1]['conclusion']='failure'
-                job={'name':'Prepare Cargo source archives','status':'completed','conclusion':'failure' if variant=='failed-job' else 'success','steps':steps}
+                job={'id':7,'run_id':2,'run_attempt':1,'head_sha':run['head_sha'],'name':'Prepare Cargo source archives','status':'completed','conclusion':'failure' if variant=='failed-job' else 'success','steps':steps}
                 def api(route):
-                    if '/artifacts?' in route:return {'artifacts':[artifact]}
+                    if '/artifacts?' in route:
+                        if 'name=farm-release-bindings-' in route:
+                            found=[] if variant=='unsigned' or not route.endswith('-1') else [{'id':5}]
+                            return {'artifacts':found,'total_count':len(found)}
+                        return {'artifacts':[artifact]}
+                    if route.endswith('/artifacts/4'):return artifact
                     if '/jobs?' in route:return {'jobs':[job]}
-                    self.assertTrue(route.endswith('/attempts/1'));return run
+                    attempt=int(route.rsplit('/attempts/',1)[1]);return {**run,'run_attempt':attempt}
+                def verified_fixture(transport,execution,source,scope):
+                    self.assertEqual(scope,'cargo')
+                    expected={'runId':2,'attempt':1,'callerWorkflow':m.WORKFLOW,'sourceSHA':identity['sourceSHA'],'repositoryId':identity['repositoryId']}
+                    row={'artifactId':99 if variant=='wrong-signed-id' else 4,'artifactDigest':digest,'artifactName':'cargo-source-2',
+                         'originAttempt':1,'jobId':7,'producer':'Prepare Cargo source archives','uploadStep':'Freeze verified Cargo source archives'}
+                    return expected,{'cargo':row}
                 with mock.patch.object(m,'api',side_effect=api),mock.patch.object(m.subprocess,'check_output',return_value=body),mock.patch.dict(m.os.environ,{'GITHUB_RUN_ATTEMPT':'3'}):
-                    destination=root/'restored'
-                    if variant=='valid':self.assertTrue(m.restore(destination,identity));self.assertEqual(m.verify_frozen(destination,identity),receipt)
+                    destination=root/'restored';binding={}
+                    if variant=='valid':
+                        self.assertTrue(m.restore(destination,identity,proof_provider=verified_fixture,binding_output=binding))
+                        self.assertEqual(m.verify_frozen(destination,identity),receipt)
+                        self.assertEqual(binding,{'artifact_id':'4','artifact_digest':digest[7:],'producer_attempt':'1'})
                     else:
-                        with self.assertRaises(ValueError):m.restore(destination,identity)
+                        with self.assertRaises(ValueError):m.restore(destination,identity,proof_provider=verified_fixture)
     def test_source_workflow_keeps_original_trigger_and_publisher_is_no_build(self):
         source=(m.ROOT/'.github/workflows/cargo-source-release.yaml').read_text();publisher=source.split('  publish:')[1]
         self.assertIn('  push:\n    branches: [main]',source);self.assertNotIn('types: [closed]',source);self.assertIn('group: farm-stable-release',source)

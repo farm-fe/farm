@@ -117,6 +117,10 @@ jobs:
         run: pnpm exec cspell "**" --gitignore
 
   main-evidence:
+    outputs:
+      pending_id: ${{ steps.pending-upload.outputs.artifact-id }}
+      pending_digest: ${{ steps.pending-upload.outputs.artifact-digest }}
+      pending_attempt: ${{ steps.pending-origin.outputs.attempt }}
     name: Verify actual fixed-main functional evidence
     needs: [source, plan, quality]
     if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.build_required == 'true'
@@ -140,6 +144,7 @@ jobs:
           FARM_FUNCTIONAL_EVIDENCE: ${{ inputs.functional_evidence }}
         run: python -B scripts/incremental-release-functional.py --source "$GITHUB_SHA" --output functional-evidence.json --wait
       - name: Preserve pending fixed-main evidence for bounded recovery
+        id: pending-upload
         if: failure() && hashFiles('release-functional-pending.json') != ''
         uses: actions/upload-artifact@v4
         with:
@@ -147,6 +152,10 @@ jobs:
           path: release-functional-pending.json
           if-no-files-found: error
           retention-days: 14
+      - name: Bind the pending upload to its executing attempt
+        id: pending-origin
+        if: always() && steps.pending-upload.outcome == 'success'
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
@@ -296,6 +305,11 @@ jobs:
     name: Build independent release candidates
     outputs:
       candidate_attempt: ${{ github.run_attempt }}
+      seal_id: ${{ steps.seal-upload.outputs.artifact-id }}
+      seal_digest: ${{ steps.seal-upload.outputs.artifact-digest }}
+      candidates_id: ${{ steps.candidates-upload.outputs.artifact-id }}
+      candidates_digest: ${{ steps.candidates-upload.outputs.artifact-digest }}
+      frozen_attempt: ${{ steps.frozen-origin.outputs.attempt }}
     needs: [source, plan, main-evidence, release-native-primary, release-native-extra]
     if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && needs.main-evidence.result == 'success' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
     runs-on: ubuntu-24.04
@@ -397,6 +411,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
       - name: Upload independent release seal
+        id: seal-upload
         if: needs.plan.outputs.publish_required == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -405,6 +420,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
       - name: Freeze independent release candidates
+        id: candidates-upload
         uses: actions/upload-artifact@v4
         if: needs.plan.outputs.publish_required == 'true'
         with:
@@ -412,6 +428,10 @@ jobs:
           path: release-candidate/
           if-no-files-found: error
           retention-days: 90
+      - name: Bind frozen uploads to the actual producing attempt
+        id: frozen-origin
+        if: steps.seal-upload.outcome == 'success' && steps.candidates-upload.outcome == 'success'
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
   candidate-identity:
     name: Select original frozen candidate attempt
     needs: [source, producer]
@@ -434,39 +454,24 @@ jobs:
           with Path(os.environ['GITHUB_OUTPUT']).open('a') as stream:
               stream.write('attempt=' + attempt + '\n')
   candidate-consumers:
-    name: Independent release candidate consumer (${{ matrix.os }})
-    needs: [source, plan, producer, candidate-identity]
+    name: Fixed independent release candidate consumers
+    needs:
+      - source
+      - plan
+      - producer
+      - candidate-identity
     if: always() && needs.candidate-identity.result == 'success' && needs.source.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: actions/download-artifact@v4
-        with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
-          path: release-candidate
-      - run: node scripts/verify-v2-npm-consumer.mjs release-candidate candidate-results
-      - name: Upload independent release candidate acceptance
-        uses: actions/upload-artifact@v4
-        with:
-          name: farm-release-candidate-consumer-${{ github.sha }}-${{ matrix.os }}-${{ github.run_attempt }}
-          path: candidate-results/result.json
-          if-no-files-found: error
-          retention-days: 90
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/release-candidate-consumers.yaml
+    with:
+      candidate_attempt: ${{ needs.candidate-identity.outputs.attempt }}
+
   publisher:
     name: Publish exact independent release archives under durable lock
-    needs: [source, plan, producer, candidate-identity, candidate-consumers]
-    if: always() && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
+    needs: [source, plan, producer, candidate-identity, candidate-consumers, sign-frozen-release]
+    if: always() && (needs.sign-frozen-release.result == 'success' || needs.source.outputs.reuse == 'true') && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
@@ -493,63 +498,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           FARM_EXPLICIT_PUBLICATION: 'true'
+          FARM_RELEASE_CANDIDATE_UPLOADS: ${{ toJSON(needs.candidate-consumers.outputs) }}
         run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
   public-consumers:
-    name: Independent public registry consumer (${{ matrix.os }})
-    needs: [source, publisher, candidate-identity]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - uses: actions/download-artifact@v4
-        with:
-          name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
-          path: release-candidate
-      - run: rustup toolchain install nightly-2026-04-10 --profile minimal
-      - name: Install public originals with no workspace or publish credentials
-        env:
-          FARM_RELEASE_CANDIDATE_DIRECTORY: ${{ github.workspace }}/release-candidate
-        run: node scripts/verify-published-v2-consumers.mjs
-      - name: Record actual consumer attempt
-        shell: python
-        env:
-          PUBLIC_PLATFORM: ${{ matrix.os }}
-        run: |
-          import hashlib, json, os
-          from pathlib import Path
-          manifest = json.loads(Path('release-candidate/manifest.json').read_text(encoding='utf-8'))
-          attempt = int(os.environ['GITHUB_RUN_ATTEMPT'])
-          report = Path('release-candidate/public-consumer/attempt-' + str(attempt) + '/result.json')
-          result = json.loads(report.read_text(encoding='utf-8'))
-          assert result.get('status') == 'passed' and result.get('cleanupConfirmed') is True
-          result['publicationBinding'] = {'manifestHash': hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
-            'sourceSHA': manifest['sourceSHA'], 'sourceTree': manifest['sourceTree'], 'producerRunId': manifest['producerRunId'],
-            'producerAttempt': manifest['producerAttempt'], 'consumerRunId': int(os.environ['GITHUB_RUN_ID']),
-            'consumerAttempt': attempt, 'platform': os.environ['PUBLIC_PLATFORM']}
-          report.write_text(json.dumps(result, sort_keys=True) + '\n', encoding='utf-8')
-      - name: Upload independent public consumer report
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-public-${{ matrix.os }}-${{ github.run_attempt }}
-          path: release-candidate/public-consumer/attempt-${{ github.run_attempt }}/result.json
-          if-no-files-found: error
-          retention-days: 90
+    name: Fixed independent release public consumers
+    needs:
+      - source
+      - publisher
+      - candidate-identity
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/release-public-consumers.yaml
+    with:
+      candidate_attempt: ${{ needs.candidate-identity.outputs.attempt }}
+
   public-proof:
+    outputs:
+      public_id: ${{ steps.public-upload.outputs.artifact-id }}
+      public_digest: ${{ steps.public-upload.outputs.artifact-digest }}
+      public_attempt: ${{ steps.public-origin.outputs.attempt }}
     name: Verify independent release public consumers
-    needs: [source, public-consumers, candidate-identity]
+    needs: [source, public-consumers, candidate-identity, candidate-consumers]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -571,23 +541,30 @@ jobs:
       - name: Select each successful OS report independently across attempts
         env:
           GH_TOKEN: ${{ github.token }}
+          FARM_RELEASE_PUBLIC_UPLOADS: ${{ toJSON(needs.public-consumers.outputs) }}
         run: python -B scripts/incremental-release-publish.py collect-public --candidate release-candidate --reports release-public-results
       - name: Read back every registry checksum and stable tag after real consumers
         env:
           GH_TOKEN: ${{ github.token }}
+          FARM_RELEASE_PUBLIC_UPLOADS: ${{ toJSON(needs.public-consumers.outputs) }}
+          FARM_RELEASE_CANDIDATE_UPLOADS: ${{ toJSON(needs.candidate-consumers.outputs) }}
         run: |
           python -B scripts/incremental-release-record.py public --candidate release-candidate --reports release-public-results --output release-public-proof/ledger.json
           python -B scripts/incremental-release-publish.py bind-public-proof --candidate release-candidate --reports release-public-results --proof release-public-proof/ledger.json
       - name: Upload independent release public acceptance
+        id: public-upload
         uses: actions/upload-artifact@v4
         with:
           name: farm-release-public-acceptance-${{ github.sha }}-${{ github.run_attempt }}
           path: release-public-proof/ledger.json
           if-no-files-found: error
           retention-days: 90
+      - name: Bind public acceptance to the actual proving attempt
+        id: public-origin
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
   finalize:
     name: Finalize exact independent release and durable baseline
-    needs: [source, public-proof, candidate-identity]
+    needs: [source, public-proof, candidate-identity, sign-public-acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -614,3 +591,45 @@ jobs:
 # Publication never invokes the legacy CI-candidate publisher. Read-only plans
 # and dry runs cannot authorize writes. Later-baseline selection and original
 # recovery keeps the original producer archives; no rerun rebuild supplies recovery bytes.
+
+  sign-pending-evidence:
+    if: always() && needs.main-evidence.result == 'failure' && needs.main-evidence.outputs.pending_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [main-evidence]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-proof-call.yaml
+    with:
+      scope: pending
+      upload_bindings: >-
+        {"pending":{"artifact_id":"${{ needs.main-evidence.outputs.pending_id }}","artifact_digest":"${{ needs.main-evidence.outputs.pending_digest }}","run_attempt":"${{ needs.main-evidence.outputs.pending_attempt }}"}}
+
+  sign-frozen-release:
+    if: needs.producer.result == 'success' && needs.producer.outputs.seal_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [producer]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-proof-call.yaml
+    with:
+      scope: frozen
+      upload_bindings: >-
+        {"seal":{"artifact_id":"${{ needs.producer.outputs.seal_id }}","artifact_digest":"${{ needs.producer.outputs.seal_digest }}","run_attempt":"${{ needs.producer.outputs.frozen_attempt }}"},"candidates":{"artifact_id":"${{ needs.producer.outputs.candidates_id }}","artifact_digest":"${{ needs.producer.outputs.candidates_digest }}","run_attempt":"${{ needs.producer.outputs.frozen_attempt }}"}}
+
+  sign-public-acceptance:
+    if: needs.public-proof.result == 'success' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [public-proof, candidate-consumers, public-consumers]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-proof-call.yaml
+    with:
+      scope: public
+      upload_bindings: >-
+        {"public":{"artifact_id":"${{ needs.public-proof.outputs.public_id }}","artifact_digest":"${{ needs.public-proof.outputs.public_digest }}","run_attempt":"${{ needs.public-proof.outputs.public_attempt }}"},"candidate:ubuntu-24.04":{"artifact_id":"${{ needs.candidate-consumers.outputs.linux_artifact_id }}","artifact_digest":"${{ needs.candidate-consumers.outputs.linux_artifact_digest }}","run_attempt":"${{ needs.candidate-consumers.outputs.linux_run_attempt }}"},"candidate:macos-latest":{"artifact_id":"${{ needs.candidate-consumers.outputs.macos_artifact_id }}","artifact_digest":"${{ needs.candidate-consumers.outputs.macos_artifact_digest }}","run_attempt":"${{ needs.candidate-consumers.outputs.macos_run_attempt }}"},"candidate:windows-latest":{"artifact_id":"${{ needs.candidate-consumers.outputs.windows_artifact_id }}","artifact_digest":"${{ needs.candidate-consumers.outputs.windows_artifact_digest }}","run_attempt":"${{ needs.candidate-consumers.outputs.windows_run_attempt }}"},"public:ubuntu-24.04":{"artifact_id":"${{ needs.public-consumers.outputs.linux_artifact_id }}","artifact_digest":"${{ needs.public-consumers.outputs.linux_artifact_digest }}","run_attempt":"${{ needs.public-consumers.outputs.linux_run_attempt }}"},"public:macos-latest":{"artifact_id":"${{ needs.public-consumers.outputs.macos_artifact_id }}","artifact_digest":"${{ needs.public-consumers.outputs.macos_artifact_digest }}","run_attempt":"${{ needs.public-consumers.outputs.macos_run_attempt }}"},"public:windows-latest":{"artifact_id":"${{ needs.public-consumers.outputs.windows_artifact_id }}","artifact_digest":"${{ needs.public-consumers.outputs.windows_artifact_digest }}","run_attempt":"${{ needs.public-consumers.outputs.windows_run_attempt }}"}}

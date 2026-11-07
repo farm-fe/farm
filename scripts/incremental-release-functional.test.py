@@ -299,22 +299,30 @@ class OriginalArchiveContracts(unittest.TestCase):
         self.assertEqual(transport.get.call_count,3)
         for call in transport.get.call_args_list:self.assertIn('per_page=2&name=farm-release-candidates-',call.args[0])
     def test_exact_lookup_preserves_original_frozen_attempt_after_later_main(self):
-        sha='a'*40;candidate={'id':800,'name':'farm-release-candidates-'+sha+'-1','expired':False,'workflow_run':{'id':123},'created_at':'2026-11-05T01:00:01Z'}
-        seal={'id':801,'name':'farm-release-seal-'+sha+'-1','expired':False,'workflow_run':{'id':123},'created_at':'2026-11-05T01:00:01Z'}
-        run={'id':123,'run_attempt':1,'path':module.entry.WORKFLOW,'head_sha':sha,'head_branch':'main'}
-        job={'name':module.entry.PRODUCER,'status':'completed','conclusion':'success','started_at':'2026-11-05T01:00:00Z','completed_at':'2026-11-05T01:00:03Z',
-             'steps':[{'name':'Upload independent release seal','status':'completed','conclusion':'success','started_at':'2026-11-05T01:00:00Z','completed_at':'2026-11-05T01:00:02Z'}]}
+        sha='a'*40;candidate={'id':800,'name':'farm-release-candidates-'+sha+'-1','expired':False,'workflow_run':{'id':123},'size_in_bytes':123,'digest':'sha256:'+'d'*64}
+        run={'id':123,'run_attempt':1,'path':module.entry.WORKFLOW,'head_sha':sha,'head_branch':'main','event':'push',
+             'repository':{'id':5},'head_repository':{'id':5}}
+        job={'id':700,'run_id':123,'run_attempt':1,'head_sha':sha,'name':module.entry.PRODUCER,'status':'completed','conclusion':'success',
+             'steps':[{'name':'Freeze independent release candidates','status':'completed','conclusion':'success'}]}
         def get(route):
+            if route.startswith('/git/commits/'):return {'tree':{'sha':'b'*40}}
             if '/artifacts?' in route:
-                name=route.split('&name=')[1];rows=[row for row in [candidate,seal] if row['name']==name];return {'total_count':len(rows),'artifacts':rows}
+                name=route.split('&name=')[1]
+                rows=([{'id':900}] if name=='farm-release-bindings-frozen-123-1' else []) if 'farm-release-bindings-' in name else ([candidate] if candidate['name']==name else [])
+                return {'total_count':len(rows),'artifacts':rows}
             if '/jobs?' in route:return {'jobs':[job]}
-            if route=='/actions/runs/123/attempts/1':return run
-            if route=='/actions/artifacts/801':return seal
+            if '/attempts/' in route:return {**run,'run_attempt':int(route.rsplit('/',1)[1])}
+            if route=='/actions/artifacts/800':return candidate
             raise AssertionError(route)
+        def verified_fixture(client,execution,source,scope):
+            self.assertEqual(scope,'frozen')
+            expected={'runId':123,'attempt':1,'callerWorkflow':module.entry.WORKFLOW,'sourceSHA':sha,'repositoryId':5}
+            return expected,{'candidates':{'artifactId':800,'artifactDigest':'sha256:'+'d'*64,'artifactName':candidate['name'],
+                'originAttempt':1,'jobId':700,'producer':module.entry.PRODUCER,'uploadStep':'Freeze independent release candidates'}}
         transport=mock.Mock();transport.get.side_effect=get
-        self.assertEqual(module.original_attempt(transport,123,sha,3),1)
+        self.assertEqual(module.original_attempt(transport,123,sha,3,proof_provider=verified_fixture),1)
         run['head_sha']='c'*40
-        with self.assertRaisesRegex(ValueError,'source differs'):module.original_attempt(transport,123,sha,3)
+        with self.assertRaisesRegex(ValueError,'source differs'):module.original_attempt(transport,123,sha,3,proof_provider=verified_fixture)
 
     def test_expired_candidates_are_never_rebuilt(self):
         transport=mock.Mock();artifact={'name':'farm-release-candidates-'+'a'*40+'-1','expired':True,'workflow_run':{'id':123}}

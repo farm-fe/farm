@@ -133,7 +133,7 @@ def discover_main(transport, source, current_run):
     return result
 
 
-def original_attempt(transport, run_id, source_sha, current_attempt):
+def original_attempt(transport, run_id, source_sha, current_attempt, *, proof_provider=None):
     check(type(current_attempt) is int and 1 <= current_attempt <= 20, 'Invalid current release attempt')
     prefix = 'farm-release-candidates-' + source_sha + '-'; matches = []
     # Native products can exceed three artifact pages. Exact transaction names
@@ -159,15 +159,12 @@ def original_attempt(transport, run_id, source_sha, current_attempt):
     run = transport.get('/actions/runs/' + str(run_id) + '/attempts/' + str(attempt))
     check(run['id'] == run_id and run['run_attempt'] == attempt and run['path'] == entry.WORKFLOW
           and run['head_sha'] == source_sha and run['head_branch'] == 'main', 'Original release producer source differs')
-    producer = entry.evidence.successful_job(entry.execution.jobs_for(transport, run), entry.PRODUCER)
-    seal_name = 'farm-release-seal-' + source_sha + '-' + str(attempt)
-    response = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=2&name=' + seal_name)
-    seals = response['artifacts']
-    check(response.get('total_count') == 1 and len(seals) == 1 and seals[0]['name'] == seal_name, 'Original release seal is missing or ambiguous')
-    seal = transport.get('/actions/artifacts/' + str(seals[0]['id']))
-    check(seal['name'] == seal_name and seal['expired'] is False and seal['workflow_run']['id'] == run_id, 'Original release seal producer differs')
-    entry.execution.upload_binding(producer, 'Upload independent release seal', seal)
-    check(producer['started_at'] <= artifact['created_at'] <= producer['completed_at'], 'Candidate artifact outside original producer')
+    commit=transport.get('/git/commits/'+source_sha)
+    provenance=entry.load('original_frozen_provenance','release-provenance.py')
+    metadata,origin,producer=provenance.find_frozen_binding(transport,
+        {'sha':source_sha,'tree':commit['tree']['sha']},'frozen',run_id,current_attempt,artifact['id'],'candidates',proof_provider=proof_provider)
+    check(origin['run_attempt']==attempt and metadata['id']==artifact['id'], 'Original frozen producer attempt differs')
+
     return attempt
 
 

@@ -195,7 +195,7 @@ def verify_frozen(directory,expected):
         meta=json.loads((directory/'files'/row['metadata']).read_bytes());check(meta['name']==row['name'] and meta['vers']==row['version'],'Upload metadata identity differs')
     return receipt
 
-def restore(directory,expected):
+def restore(directory,expected,*,proof_provider=None,binding_output=None):
     name='cargo-source-'+str(expected['runId']);base='repos/'+expected['repository'];rows=api(base+'/actions/runs/'+str(expected['runId'])+'/artifacts?per_page=100')['artifacts']
     check(len(rows)<100,'Cargo frozen artifact listing exceeds verification bound')
     matches=[row for row in rows if row['name']==name];check(len(matches)<=1,'Ambiguous Cargo frozen artifact')
@@ -210,6 +210,14 @@ def restore(directory,expected):
         return False
     row=matches[0];check(not row['expired'],'Original Cargo archive expired; refusing to rebuild a possible partial publication')
     check(row['workflow_run']['id']==expected['runId'] and 0<row['size_in_bytes']<512*1024**2,'Cargo artifact origin or size differs')
+    provenance=load('cargo_frozen_provenance','release-provenance.py')
+    class ReadOnly:
+        def get(self,route):return api(base+route)
+        def archive(self,identity):return subprocess.check_output(['gh','api',base+'/actions/artifacts/'+str(identity)+'/zip'],timeout=120)
+    signed_meta,origin,origin_job=provenance.find_frozen_binding(ReadOnly(),
+        {'sha':expected['sourceSHA'],'tree':expected['sourceTree']},'cargo',expected['runId'],
+        int(os.environ['GITHUB_RUN_ATTEMPT']),row['id'],'cargo',proof_provider=proof_provider)
+    check(all(signed_meta.get(key)==row.get(key) for key in ['id','name','digest','size_in_bytes']), 'Cargo discovered archive differs from signed binding')
     body=subprocess.check_output(['gh','api',base+'/actions/artifacts/'+str(row['id'])+'/zip'],timeout=120)
     check(len(body)==row['size_in_bytes'] and row['digest']=='sha256:'+digest(body),'Cargo artifact digest differs')
     with zipfile.ZipFile(io.BytesIO(body)) as archive:
@@ -232,7 +240,10 @@ def restore(directory,expected):
         matching=[step for step in producers[0]['steps'] if step['name']==name]
         check(len(matching)==1 and matching[0]['conclusion']=='success','Cargo source verification step missing or failed')
     steps=[step for step in producers[0]['steps'] if step['name']=='Freeze verified Cargo source archives']
-    check(len(steps)==1 and steps[0]['conclusion']=='success' and steps[0]['started_at']<=row['created_at']<=steps[0]['completed_at'],'Cargo artifact upload was not a completed producer step')
+    check(len(steps)==1 and steps[0]['status']=='completed' and steps[0]['conclusion']=='success'
+          and origin['run_attempt']==attempt and origin_job['id']==producers[0]['id'], 'Cargo artifact signed producer differs')
+    if binding_output is not None:
+        binding_output.update(artifact_id=str(row['id']),artifact_digest=row['digest'].removeprefix('sha256:'),producer_attempt=str(attempt))
     return True
 
 def prepare(directory,expected):
@@ -335,10 +346,13 @@ def main():
     event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text());expected=identity(event,os.environ)
     directory=ROOT/'cargo-source-frozen'
     if stage=='restore':
-        restored=restore(directory,expected)
+        original_binding={}
+        restored=restore(directory,expected,binding_output=original_binding)
         with open(os.environ['GITHUB_OUTPUT'],'a') as stream:
             stream.write('restored='+str(restored).lower()+'\n')
-            if restored:stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')
+            if restored:
+                stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')
+                for key,value in original_binding.items():stream.write(key+'='+value+'\n')
     elif stage=='prepare':
         prepare(directory,expected)
         with open(os.environ['GITHUB_OUTPUT'],'a') as stream:stream.write('publish_required='+str(bool(verify_frozen(directory,expected)['selection'])).lower()+'\n')

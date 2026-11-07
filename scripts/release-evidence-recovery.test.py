@@ -46,6 +46,8 @@ class LocalActions:
                          'workflow_run': {'id': 50, 'head_sha': SHA}, 'created_at': '2026-11-05T02:00:01Z',
                          'size_in_bytes': len(self.body), 'digest': 'sha256:' + hashlib.sha256(self.body).hexdigest()}
         self.artifacts = [self.artifact]
+        self.signed_digest=self.artifact['digest']
+        self.signed_artifact_id=900
 
     def get(self, route):
         if route == '': return {'id': m.REPOSITORY_ID, 'full_name': m.REPOSITORY, 'default_branch': 'main'}
@@ -61,7 +63,7 @@ class LocalActions:
         if route == '/actions/runs/10': return copy.deepcopy(self.ci)
         if route == '/actions/runs/20': return copy.deepcopy(self.unit)
         if route in ['/actions/runs/50/attempts/1','/actions/runs/50/attempts/2']: return copy.deepcopy(self.release)
-        if route.endswith('/jobs?per_page=100'): return {'total_count': len(self.jobs), 'jobs': copy.deepcopy(self.jobs)}
+        if '/jobs?per_page=100' in route: return {'total_count': len(self.jobs), 'jobs': copy.deepcopy(self.jobs)}
         if route.startswith('/actions/runs/50/artifacts?'):
             name = route.split('&name=')[1]; rows = [a for a in self.artifacts if a['name'] == name]
             return {'total_count': len(rows), 'artifacts': copy.deepcopy(rows)}
@@ -82,6 +84,20 @@ class LocalActions:
         return {'action': 'completed', 'workflow_run': copy.deepcopy(getattr(self, scope))}
 
 
+def verified_fixture(transport,run,source,scope):
+    # Offline signature seam; actual pending bytes and producer API still run.
+    assert scope=='pending'
+    expected={'runId':50,'attempt':1,'callerWorkflow':m.WORKFLOW,'sourceSHA':SHA,'repositoryId':m.REPOSITORY_ID}
+    row={'artifactId':transport.signed_artifact_id,'artifactDigest':transport.signed_digest,
+         'artifactName':'release-functional-pending-50-1','originAttempt':1,'jobId':100,
+         'producer':m.EVIDENCE_JOB,'uploadStep':m.UPLOAD}
+    return expected,{'pending':row}
+
+
+def recover(transport,event):
+    return m.recover(transport,event,proof_provider=verified_fixture)
+
+
 class Recovery(unittest.TestCase):
     def test_deadline_boundaries_and_later_success_use_actual_wait_and_recovery(self):
         for ready in [7199, 7200, 7201]:
@@ -98,74 +114,81 @@ class Recovery(unittest.TestCase):
                     pending = m.functional.pending_record(source, current)
                     # Transport uses the actual pending bytes, digest, original upload step and run.
                     transport = LocalActions(pending); event = transport.event()
-                    result = m.recover(transport, event)
+                    result = recover(transport, event)
                     self.assertTrue(result['requested']); self.assertEqual(transport.posts, [50])
                     self.assertEqual(result['sourceSHA'], SHA)
-                    self.assertEqual(m.recover(transport, event)['action'], 'none')
+                    self.assertEqual(recover(transport, event)['action'], 'none')
                     self.assertEqual(transport.posts, [50])
 
     def test_pending_then_ci_completion_and_release_completion_race(self):
         transport = LocalActions(); transport.ready = False
-        self.assertEqual(m.recover(transport, transport.event())['action'], 'none')
+        self.assertEqual(recover(transport, transport.event())['action'], 'none')
         transport.ready = True
-        self.assertTrue(m.recover(transport, transport.event('ci'))['requested'])
+        self.assertTrue(recover(transport, transport.event('ci'))['requested'])
         self.assertEqual(transport.posts, [50])
         # If CI finishes while release is still running, release completion wakes recovery.
         transport = LocalActions(); transport.release['status'] = 'in_progress'
-        self.assertEqual(m.recover(transport, transport.event('ci'))['action'], 'none')
+        self.assertEqual(recover(transport, transport.event('ci'))['action'], 'none')
         transport.release['status'] = 'completed'
-        self.assertTrue(m.recover(transport, transport.event())['requested'])
+        self.assertTrue(recover(transport, transport.event())['requested'])
 
     def test_failure_cancellation_and_new_attempt_never_accept_old_success(self):
         for status in ['failure', 'cancelled']:
             transport = LocalActions(); transport.ci['conclusion'] = status
-            self.assertEqual(m.recover(transport, transport.event())['action'], 'none'); self.assertFalse(transport.posts)
+            self.assertEqual(recover(transport, transport.event())['action'], 'none'); self.assertFalse(transport.posts)
             with self.assertRaisesRegex(ValueError, 'not ready'):
                 m.functional.discover_main(transport, {'sha': SHA}, {'runId': 50, 'attempt': 1})
         transport = LocalActions(); transport.release['conclusion'] = 'cancelled'
-        self.assertEqual(m.recover(transport, transport.event('ci'))['action'], 'none')
+        self.assertEqual(recover(transport, transport.event('ci'))['action'], 'none')
         transport = LocalActions(); event = transport.event('ci'); transport.ci.update(run_attempt=4, status='in_progress', conclusion=None)
-        self.assertEqual(m.recover(transport, event)['action'], 'none')
+        self.assertEqual(recover(transport, event)['action'], 'none')
 
     def test_source_repository_event_and_tree_tampering_reject(self):
         for mutate in [lambda t:t.release.update(head_sha='c'*40), lambda t:t.release.update(event='pull_request'), lambda t:t.ci.update(workflow_id=99),
                        lambda t:t.ci['head_repository'].update(id=9), lambda t:t.artifact['workflow_run'].update(head_sha='c'*40)]:
             transport = LocalActions(); event = transport.event(); mutate(transport)
-            with self.assertRaises(ValueError): m.recover(transport, event)
+            with self.assertRaises(ValueError): recover(transport, event)
             self.assertFalse(transport.posts)
         receipt = m.functional.pending_record({'sha': SHA, 'tree': 'c'*40}, {'runId': 50, 'attempt': 1})
-        with self.assertRaisesRegex(ValueError, 'receipt source'): m.recover(LocalActions(receipt), LocalActions().event())
+        with self.assertRaisesRegex(ValueError, 'receipt source'): recover(LocalActions(receipt), LocalActions().event())
 
     def test_missing_corrupt_expired_or_unbound_pending_receipt_never_reruns(self):
         transport = LocalActions(); transport.artifacts = []
-        self.assertEqual(m.recover(transport, transport.event())['action'], 'none')
+        self.assertEqual(recover(transport, transport.event())['action'], 'none')
         for mutate in [lambda t:setattr(t,'body',t.body+b'corrupt'),lambda t:t.artifact.update(expired=True),
-                       lambda t:t.artifact.update(created_at='2026-11-05T02:00:03Z'),
+                       lambda t:setattr(t,'signed_artifact_id',901),
                        lambda t:t.job.update(head_sha='c'*40),lambda t:t.job['steps'][0].update(conclusion='failure')]:
             transport = LocalActions(); mutate(transport)
-            with self.assertRaises(ValueError): m.recover(transport, transport.event())
+            with self.assertRaises(ValueError): recover(transport, transport.event())
             self.assertFalse(transport.posts)
+
+    def test_pending_binding_is_independent_of_clock_fields(self):
+        transport=LocalActions()
+        transport.artifact['created_at']='2099-01-01T00:00:00+12:00'
+        for step in transport.job['steps']:
+            step.pop('started_at');step.pop('completed_at')
+        self.assertTrue(recover(transport,transport.event())['requested'])
 
     def test_frozen_transaction_and_possible_publisher_never_rebuild(self):
         for name in ['farm-release-candidates-'+SHA+'-1', 'farm-release-seal-'+SHA+'-1']:
             transport = LocalActions(); transport.artifacts.append({**transport.artifact, 'name':name, 'id':901})
-            result = m.recover(transport, transport.event()); self.assertEqual(result['reason'], 'frozen-transaction-use-original-recovery')
+            result = recover(transport, transport.event()); self.assertEqual(result['reason'], 'frozen-transaction-use-original-recovery')
             self.assertFalse(transport.posts)
         for index in [1,2]:
             transport = LocalActions(); transport.jobs[index].update(conclusion='success')
-            with self.assertRaises(ValueError): m.recover(transport, transport.event())
+            with self.assertRaises(ValueError): recover(transport, transport.event())
             self.assertFalse(transport.posts)
 
     def test_main_moving_does_not_change_original_transaction_source(self):
         transport = LocalActions()
-        result = m.recover(transport, transport.event())
+        result = recover(transport, transport.event())
         self.assertEqual(result['sourceSHA'], SHA); self.assertEqual(transport.posts, [50])
         # No branch resolution/dispatch occurs: original run 50 determines checkout.
         self.assertNotIn('ref', result)
 
     def test_different_latest_run_and_recheck_race_fail_closed(self):
         transport = LocalActions(); transport.rows.append(run(51,m.WORKFLOW,'success'))
-        self.assertEqual(m.recover(transport, transport.event('ci'))['action'], 'none')
+        self.assertEqual(recover(transport, transport.event('ci'))['action'], 'none')
         transport = LocalActions(); original = transport.get; count = 0
         def get(route):
             nonlocal count
@@ -174,23 +197,23 @@ class Recovery(unittest.TestCase):
                 if count == 2: transport.release.update(status='queued', conclusion=None, run_attempt=2)
             return original(route)
         transport.get = get
-        self.assertEqual(m.recover(transport, transport.event())['action'], 'none'); self.assertFalse(transport.posts)
+        self.assertEqual(recover(transport, transport.event())['action'], 'none'); self.assertFalse(transport.posts)
 
     def test_native_failure_or_cancellation_is_not_an_automatic_retry_channel(self):
         for state in ['failure','cancelled','timed_out']:
             transport = LocalActions()
             transport.jobs.append({'name':'native producer','status':'completed','conclusion':state})
-            self.assertEqual(m.recover(transport,transport.event())['reason'],'another-job-requires-independent-repair')
+            self.assertEqual(recover(transport,transport.event())['reason'],'another-job-requires-independent-repair')
             self.assertFalse(transport.posts)
 
     def test_native_artifact_volume_does_not_hide_frozen_candidates(self):
         transport = LocalActions()
         transport.artifacts.extend({'id':1000+i,'name':'native-'+str(i)} for i in range(400))
-        self.assertTrue(m.recover(transport, transport.event())['requested'])
+        self.assertTrue(recover(transport, transport.event())['requested'])
         transport = LocalActions()
         transport.artifacts.extend({'id':1000+i,'name':'native-'+str(i)} for i in range(400))
         transport.artifacts.append({'id':2000,'name':'farm-release-candidates-'+SHA+'-1'})
-        self.assertEqual(m.recover(transport, transport.event())['reason'],'frozen-transaction-use-original-recovery')
+        self.assertEqual(recover(transport, transport.event())['reason'],'frozen-transaction-use-original-recovery')
 
     def test_retry_failure_without_current_pending_receipt_does_not_loop(self):
         transport = LocalActions()
@@ -198,7 +221,7 @@ class Recovery(unittest.TestCase):
         transport.job['run_attempt'] = 2
         # A genuine verifier error has no pending upload in the new attempt.
         transport.job['steps'] = []
-        self.assertEqual(m.recover(transport, transport.event())['reason'],'no-pending-evidence-receipt')
+        self.assertEqual(recover(transport, transport.event())['reason'],'no-pending-evidence-receipt')
         self.assertFalse(transport.posts)
 
     def test_unfrozen_retry_rebuilds_only_original_fixed_source(self):

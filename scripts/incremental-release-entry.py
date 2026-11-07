@@ -111,8 +111,24 @@ def strict_archive(directory, row):
 
 
 class ReleaseVerifier:
-    def __init__(self, transport, read_source=evidence.source_reader):
+    def __init__(self, transport, read_source=evidence.source_reader, *, receipt_provider=None):
         self.transport, self.read_source = transport, read_source
+        # Explicit Python-only offline seam. Production CLI never supplies it.
+        self.receipt_provider=receipt_provider
+
+    def receipt(self, scope, run, source, manifest=None):
+        if self.receipt_provider is not None:return self.receipt_provider(scope,run,source)
+        provenance=load('release_entry_provenance','release-provenance.py')
+        if scope=='frozen':return provenance.frozen_json(self.transport,run,source,'seal')
+        result=provenance.signed_json(self.transport,run,source,'public','public')
+        check(isinstance(manifest,dict),'Public proof requires the frozen manifest')
+        consumers=load('release_entry_consumers','release-consumer-bindings.py')
+        for platform,output in provenance.consumer_outputs(result[5],'candidate').items():
+            consumers.receipt(self.transport,run,manifest,'candidate',platform,output)
+        publisher=load('release_entry_public_reports','incremental-release-publish.py')
+        publisher.verify_public_selection(self.transport,manifest,run['id'],run['run_attempt'],
+            result[0].get('consumerReports'),upload_outputs=provenance.consumer_outputs(result[5],'public'))
+        return result[:4]
 
     def run(self, run_id, attempt, source_sha, current_run=None):
         check(type(run_id) is int and run_id > 0 and type(attempt) is int and attempt > 0, "Exact release run and attempt required")
@@ -174,10 +190,8 @@ class ReleaseVerifier:
         for identity, row in records.items():
             check(row["version"] == family[identity]["version"], "Release version differs from actual manifest")
             strict_archive(archive_directory, row)
-        producer = evidence.successful_job(jobs, PRODUCER)
-        name = "farm-release-seal-" + source["sha"] + "-" + str(run["run_attempt"])
-        receipt, artifact = execution.fetch_json_artifact(self.transport, run, name)
-        execution.upload_binding(producer, "Upload independent release seal", artifact)
+        receipt,artifact,origin,producer=self.receipt('frozen',run,source)
+        check(origin['run_attempt']==manifest['producerAttempt'],'Frozen seal original attempt differs')
         manifest_hash = chain.digest(manifest)
         check(receipt.get("kind") == "release-seal" and receipt.get("profile") == "release"
               and receipt.get("namespace") == "farm-release-v1", "Release seal profile or namespace differs")
@@ -193,9 +207,8 @@ class ReleaseVerifier:
             check(self.transport.get(route)["commit"]["sha"] == policy_sha, "Trusted release policy moved during verification")
             return {"manifestHash": manifest_hash, "sourceSHA": source["sha"], "sourceTree": source["tree"],
                     "prepublicationVerified": True, "verified": False, "publicationExecuted": False}
-        consumer = evidence.successful_job(jobs, CONSUMER)
-        proof, artifact = execution.fetch_json_artifact(self.transport, run, "farm-release-public-acceptance-" + source["sha"] + "-" + str(run["run_attempt"]))
-        execution.upload_binding(consumer, "Upload independent release public acceptance", artifact)
+        latest=self.transport.get('/actions/runs/'+str(run['id']))
+        proof,artifact,_,consumer=self.receipt('public',latest,source,manifest)
         check(proof.get("manifestHash") == manifest_hash and proof.get("producerJobId") == consumer["id"]
               and proof.get("sourceTree") == source["tree"] and proof.get("planHash") == plan["planHash"], "Public acceptance binding differs")
         check(proof.get("packages") == {key: row["archiveSha256"] for key, row in records.items()}, "Public acceptance package coverage differs")

@@ -138,7 +138,7 @@ class DocsProducts(unittest.TestCase):
             with self.subTest(output=output),self.assertRaises(ValueError):
                 docs.resolve(Transport(),current,self.source,self.abi,output)
         state['failure']=True
-        with self.assertRaisesRegex(ValueError,'did not succeed'):
+        with self.assertRaisesRegex(ValueError,'result differs from fixed policy'):
             docs.resolve(Transport(),current,self.source,self.abi,self.binding())
 
     def test_fork_source_build_never_reads_artifacts(self):

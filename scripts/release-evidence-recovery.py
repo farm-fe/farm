@@ -48,7 +48,7 @@ def latest(get, workflow, sha):
     return max(rows, key=lambda row: row['id']) if rows else None
 
 
-def decision(transport, event):
+def decision(transport, event, *, proof_provider=None):
     check(event.get('action') == 'completed', 'Only completed workflow wake-ups are allowed')
     event_run = event['workflow_run']; trusted_run(event_run)
     wake = transport.get('/actions/runs/' + str(event_run['id']))
@@ -101,9 +101,17 @@ def decision(transport, event):
     artifact = transport.get('/actions/artifacts/' + str(pending[0]['id']))
     check(artifact['name'] == name and artifact.get('expired') is False and artifact['workflow_run']['id'] == run_id
           and artifact['workflow_run'].get('head_sha') == sha and 0 < artifact['size_in_bytes'] <= 65536, 'Pending receipt origin differs')
-    functional.entry.execution.upload_binding(job, UPLOAD, artifact)
-    receipt = functional.exact_plan(transport.archive(artifact['id']), artifact, 'release-functional-pending.json')
     commit = transport.get('/git/commits/' + sha)
+    provenance=load('pending_recovery_provenance','release-provenance.py')
+    provider=provenance.verified_run if proof_provider is None else proof_provider
+    expected,bindings=provider(transport,original,{'sha':sha,'tree':commit['tree']['sha']},'pending')
+    binding=bindings['pending']
+    check(binding['artifactId']==artifact['id'] and binding['originAttempt']==attempt and binding['jobId']==job['id'],
+          'Pending signed upload identity differs')
+    body,authenticated,_,_=provenance.policy.bound_artifact(transport,original,binding,expected,
+        maximum_bytes=65536,required_conclusion='failure')
+    check(authenticated==artifact,'Pending archive metadata changed')
+    receipt = functional.exact_plan(body, artifact, 'release-functional-pending.json')
     check(receipt == functional.pending_record({'sha': sha, 'tree': commit['tree']['sha']}, {'runId': run_id, 'attempt': attempt}), 'Pending receipt source or intent differs')
     functional.retry.verify_unfrozen_retry(transport.get, run_id=run_id, source_sha=sha, current_attempt=attempt + 1,
         workflow=WORKFLOW, producer=functional.entry.PRODUCER, freeze_step='Freeze independent release candidates',
@@ -111,11 +119,11 @@ def decision(transport, event):
     return {'action': 'rerun-failed-jobs', 'runId': run_id, 'attempt': attempt, 'sourceSHA': sha, 'functional': accepted}
 
 
-def recover(transport, event):
-    first = decision(transport, event)
+def recover(transport, event, *, proof_provider=None):
+    first = decision(transport, event, proof_provider=proof_provider)
     if first['action'] != 'rerun-failed-jobs': return first
     # Re-read immediately before the only write. Concurrent/manual reruns become no-ops.
-    second = decision(transport, event)
+    second = decision(transport, event, proof_provider=proof_provider)
     if second != first: return {'action': 'none', 'reason': 'recovery-state-changed'}
     # YAML preserves the original plan and candidate attempt outputs across carries.
     transport.rerun(first['runId'])
