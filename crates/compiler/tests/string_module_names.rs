@@ -338,6 +338,7 @@ fn native_entry_slots_recover_compiled_hmr_candidates_and_no_write_replacements(
   let crate_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   let root = std::env::temp_dir().join(format!("farm-entry-hmr-source-{}", std::process::id()));
   std::fs::create_dir_all(&root).unwrap();
+  let node_root = root.clone();
   let root = root.canonicalize().unwrap();
   std::fs::write(
     root.join("state.js"),
@@ -447,7 +448,15 @@ console.log('compiled-hmr-native-slots-restored');
   );
   let file = output.join("consumer.mjs");
   std::fs::write(&file, consumer).unwrap();
-  let result = Command::new("node").arg(file).output().unwrap();
+  assert_eq!(
+    std::fs::canonicalize(node_root.join(output.file_name().unwrap())).unwrap(),
+    output
+  );
+  let result = Command::new("node")
+    .current_dir(node_root.join(output.file_name().unwrap()))
+    .arg(file.file_name().unwrap())
+    .output()
+    .unwrap();
   assert!(
     result.status.success(),
     "{}",
@@ -486,6 +495,7 @@ fn native_entry_bindings_survive_disk_cache_and_source_contract_changes() {
   let crate_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   let root = std::env::temp_dir().join(format!("farm-entry-warm-{}", std::process::id()));
   std::fs::create_dir_all(&root).unwrap();
+  let node_root = root.clone();
   let root = root.canonicalize().unwrap();
   let output = root.join("output");
   std::fs::write(
@@ -563,7 +573,15 @@ fn native_entry_bindings_survive_disk_cache_and_source_contract_changes() {
     );
     let file = output.join(format!("consumer-{phase}.mjs"));
     std::fs::write(&file, consumer).unwrap();
-    let result = Command::new("node").arg(file).output().unwrap();
+    assert_eq!(
+      std::fs::canonicalize(node_root.join(output.file_name().unwrap())).unwrap(),
+      output
+    );
+    let result = Command::new("node")
+      .current_dir(node_root.join(output.file_name().unwrap()))
+      .arg(file.file_name().unwrap())
+      .output()
+      .unwrap();
     assert!(
       result.status.success(),
       "phase={phase}, renders={renders}: {}",
@@ -578,6 +596,7 @@ fn native_library_mutable_exports_do_not_receive_runtime_bridges() {
   let crate_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
   let root = std::env::temp_dir().join(format!("farm-library-live-domain-{}", std::process::id()));
   std::fs::create_dir_all(&root).unwrap();
+  let node_root = root.clone();
   let root = root.canonicalize().unwrap();
   std::fs::write(
     root.join("state.js"),
@@ -623,9 +642,14 @@ fn native_library_mutable_exports_do_not_receive_runtime_bridges() {
         let file = output.join(if esm { "library.mjs" } else { "library.cjs" });
         std::fs::write(&file, &resource.bytes).unwrap();
         let script = "import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';import {createRequire} from 'node:module';const p=process.argv[1];const m=p.endsWith('.cjs')?createRequire(import.meta.url)(p):await import(pathToFileURL(p));assert.equal(m.value,1);m.increment();assert.equal(m.value,2);";
+        assert_eq!(
+          std::fs::canonicalize(node_root.join(output.file_name().unwrap())).unwrap(),
+          output
+        );
         let result = Command::new("node")
           .args(["--input-type=module", "--eval", script])
-          .arg(file)
+          .current_dir(node_root.join(output.file_name().unwrap()))
+          .arg(PathBuf::from(".").join(file.file_name().unwrap()))
           .output()
           .unwrap();
         assert!(
@@ -950,4 +974,50 @@ fn native_entry_upgrade_rejects_unclosed_factory_dependencies() {
       );
     }
   }
+}
+
+#[test]
+fn node_consumers_load_the_same_canonical_files_by_relative_name() {
+  let temporary =
+    std::env::temp_dir().join(format!("farm node consumer 路径 {}", std::process::id()));
+  std::fs::create_dir_all(&temporary).unwrap();
+  let root = temporary.canonicalize().unwrap();
+  // Keep the compiler/filesystem path canonical (verbatim on Windows). Only
+  // Node uses the original cwd spelling and a relative specifier for the same files.
+  let esm = root.join("consumer space.mjs");
+  let cjs = root.join("consumer space.cjs");
+  std::fs::write(&esm, "import assert from 'node:assert/strict';import fs from 'node:fs';import {fileURLToPath} from 'node:url';const actual=fs.statSync(fileURLToPath(import.meta.url),{bigint:true});const expected=fs.statSync(process.env.FARM_EXPECTED_CONSUMER,{bigint:true});assert.equal(actual.dev,expected.dev);assert.equal(actual.ino,expected.ino);assert.ok(actual.ino>0n);assert.notEqual(process.cwd().slice(0,4),String.fromCharCode(92,92,63,92));console.log('same-esm-consumer');").unwrap();
+  std::fs::write(&cjs, "const assert=require('node:assert/strict');const fs=require('node:fs');const actual=fs.statSync(__filename,{bigint:true});const expected=fs.statSync(process.env.FARM_EXPECTED_CONSUMER,{bigint:true});assert.equal(actual.dev,expected.dev);assert.equal(actual.ino,expected.ino);assert.ok(actual.ino>0n);assert.notEqual(process.cwd().slice(0,4),String.fromCharCode(92,92,63,92));module.exports={marker:'same-cjs-consumer'};").unwrap();
+  let result = Command::new("node")
+    .current_dir(&temporary)
+    .arg(esm.file_name().unwrap())
+    .env("FARM_EXPECTED_CONSUMER", &esm)
+    .output()
+    .unwrap();
+  assert!(
+    result.status.success(),
+    "{}",
+    String::from_utf8_lossy(&result.stderr)
+  );
+  assert!(String::from_utf8_lossy(&result.stdout).contains("same-esm-consumer"));
+  let script = "import assert from 'node:assert/strict';import {createRequire} from 'node:module';assert.equal(createRequire(import.meta.url)(process.argv[1]).marker,'same-cjs-consumer');";
+  for (file, succeeds) in [(&cjs, true), (&root.join("missing.cjs"), false)] {
+    let result = Command::new("node")
+      .current_dir(&temporary)
+      .args(["--input-type=module", "--eval", script])
+      .arg(PathBuf::from(".").join(file.file_name().unwrap()))
+      .env("FARM_EXPECTED_CONSUMER", &cjs)
+      .output()
+      .unwrap();
+    assert_eq!(
+      result.status.success(),
+      succeeds,
+      "{}",
+      String::from_utf8_lossy(&result.stderr)
+    );
+    if !succeeds {
+      assert!(String::from_utf8_lossy(&result.stderr).contains("MODULE_NOT_FOUND"));
+    }
+  }
+  std::fs::remove_dir_all(temporary).unwrap();
 }

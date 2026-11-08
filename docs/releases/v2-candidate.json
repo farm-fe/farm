@@ -2101,7 +2101,7 @@
       "manifestPath": "crates/compiler/Cargo.toml",
       "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
       "sourceSha256": "321ec7e59c6a6152aeead20bbb9de093e7fdd0d9f29fc96c02c0dfff19f019d9",
-      "packageInputsSha256": "abae19a55cfc09267b3eb2204eee4353119142d5c3353f5454c3095e5778f4aa",
+      "packageInputsSha256": "cba53df19fb1eddc6daa016aed35b55430fcef84420e2bd3eb1807c8c92d7e57",
       "publish": null
     },
     {
