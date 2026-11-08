@@ -79,50 +79,51 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
                     }
                 }
             };
-            function p(e, t, r) {
+            function c(e, t, r) {
                 Object.prototype.hasOwnProperty.call(e, t) || Object.defineProperty(e, t, {
                     enumerable: !0,
                     get: r
                 });
             }
-            function c(e, t, r) {
-                p(e, t, function() {
-                    return r;
-                });
-            }
-            function d(e, t) {
+            function p(e, t) {
                 return Object.keys(t).forEach(function(r) {
                     "default" === r || Object.prototype.hasOwnProperty.call(e, r) || Object.defineProperty(e, r, {
-                        value: t[r],
+                        get: function() {
+                            return t[r];
+                        },
                         enumerable: !0,
                         configurable: !0
                     });
                 }), t;
             }
-            function s(e) {
+            function d(e) {
                 if ("function" != typeof WeakMap) return null;
                 var t = new WeakMap, r = new WeakMap;
-                return (s = function(e) {
+                return (d = function(e) {
                     return e ? r : t;
                 })(e);
             }
             u.p = a, u.b = function() {
                 a.s("bootstrap", this);
-            }, (e = u.r).o = p, e.d = c, e._m = function(e) {
+            }, (e = u.r).o = c, e.d = function(e, t, r) {
+                c(e, t, function() {
+                    return r;
+                });
+            }, e._m = function(e) {
                 let t = "__esModule";
                 e[t] || Object.defineProperty(e, t, {
                     value: !0
                 });
-            }, e._e = d, e.i = function(e) {
+            }, e._e = p, e.i = function(e) {
                 return e && e.__esModule ? e : {
                     default: e
                 };
-            }, e._g = s, e.w = function(e, t) {
+            }, e._g = d, e.w = function(e, t) {
                 if (!t && e && e.__esModule) return e;
                 if (null === e || "object" != typeof e && "function" != typeof e) return {
                     default: e
                 };
-                var r = s(t);
+                var r = d(t);
                 if (r && r.has(e)) return r.get(e);
                 var n = {
                     __proto__: null
@@ -133,13 +134,15 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
                 }
                 return n.default = e, r && r.set(e, n), n;
             }, e._ = function(e, t, r, n) {
-                c(e, t, r[n || t]);
+                c(e, t, function() {
+                    return r[null == n ? t : n];
+                });
             }, e.f = function(e) {
                 return void 0 !== e.default ? e.default : e;
             }, t = "@farm-runtime/module-helper", u.c()[t] || (u.c()[t] = {
                 id: t,
                 exports: {
-                    defineExportStar: d
+                    defineExportStar: p
                 }
             }), global.f081367f80fe14896375a9f8b8918ca3.m.p.p([
                 {
