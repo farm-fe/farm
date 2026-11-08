@@ -207,13 +207,17 @@ def durable_recovery():
     with tempfile.TemporaryDirectory(prefix='farm-local-recovery-') as directory:
         d = Path(directory); manifest = prepare(d); server = start(d, 'serve'); writer = None
         try:
-            wait_for(lambda: (d / 'endpoint').exists()); writer = start(d, 'crash'); assert writer.wait(timeout=20) == 77
+            wait_for(lambda: (d / 'endpoint').exists()); writer = start(d, 'crash')
+            writer_exit = writer.wait(timeout=20)
+            assert writer_exit == 77
             (d / 'writer-terminal').write_text(str(writer.returncode))
             old = production.GitRefStore(GitAPI(d)).read()[1]
             assert old['active']['packages'] == {'npm:one': 'upload-started'}
             stop(server); (d / 'endpoint').unlink(); server = start(d, 'serve'); wait_for(lambda: (d / 'endpoint').exists())
             # Fresh process and restarted HTTP service read the same durable stores.
-            stop(writer); writer = start(d, 'resume'); assert writer.wait(timeout=20) == 0
+            stop(writer); writer = start(d, 'resume')
+            writer_exit = writer.wait(timeout=20)
+            assert writer_exit == 0
             assert (d / 'result-resume').read_text() == 'uploaded'
             with closing(sqlite3.connect(d / 'registry.sqlite')) as db, db:
                 rows = db.execute('SELECT name,body,writes FROM packages ORDER BY name').fetchall()

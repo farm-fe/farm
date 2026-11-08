@@ -3,11 +3,133 @@
 exports[`Js Plugin Execution - full 1`] = `
 {
   "resourcesMap": {
-    "farm_internal_runtime_index.6a29b09e.js": {
+    "farm_internal_runtime_index.71a9c67b.js": {
       "bytes": [],
-      "code": "(function(){if(typeof global==='undefined'||!global['f081367f80fe14896375a9f8b8918ca3']||!global['f081367f80fe14896375a9f8b8918ca3'].m){let e,t;{let e;(e=void 0!==(o="u">typeof globalThis?globalThis:global)?o:{}).require=e.require||l;}let r={},n={};var o,u={r:l,g:function(e,t){return r[e]=t,()=>l(e);},m:()=>r,c:()=>n};function l(e){if(n[e]){var t=n[e].initializer||n[e].exports;if(!u.p?.b("readModuleCache",n[e]))return t;}let o=r[e];if(!o){if(u.em[e])return u.em[e];{let t=u.p?.b("moduleNotFound",e);if(t)return t;}try{return __farmNodeRequire(e);}catch(e){}return console.debug(\`[Farm] Module "\${e}" is not registered\`),{};}let i=n[e]={id:e,meta:{env:{}},exports:{},require:l};return u.p?.s("moduleCreated",i),n[e]=i,o(i,i.exports,l,u.d),u.p?.s("moduleInitialized",i),i.exports;}u.te="node",u.em={},u.se=function(e){for(let t in e){let r=e[t];r&&r.default&&!r.__esModule&&(r={...r,__esModule:!0}),u.em[t]=r;}},(global.f081367f80fe14896375a9f8b8918ca3={}).m=u;let i={},f=[],a={p:function(e){f=e;},s:function(e,...t){for(let r in f){let n=f[r],o=n[e];o&&o.apply(n,t);}},b:function(e,...t){for(let r in f){let n=f[r],o=n[e];if(o){let e=o.apply(n,t);if(e)return e;}}}};function c(e,t,r){Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r});}function p(e,t){return Object.keys(t).forEach(function(r){"default"===r||Object.prototype.hasOwnProperty.call(e,r)||Object.defineProperty(e,r,{get:function(){return t[r];},enumerable:!0,configurable:!0});}),t;}function d(e){if("function"!=typeof WeakMap)return null;var t=new WeakMap,r=new WeakMap;return(d=function(e){return e?r:t;})(e);}u.p=a,u.b=function(){a.s("bootstrap",this);},(e=u.r).o=c,e.d=function(e,t,r){c(e,t,function(){return r;});},e._m=function(e){let t="__esModule";e[t]||Object.defineProperty(e,t,{value:!0});},e._e=p,e.i=function(e){return e&&e.__esModule?e:{default:e};},e._g=d,e.w=function(e,t){if(!t&&e&&e.__esModule)return e;if(null===e||"object"!=typeof e&&"function"!=typeof e)return{default:e};var r=d(t);if(r&&r.has(e))return r.get(e);var n={__proto__:null},o=Object.defineProperty&&Object.getOwnPropertyDescriptor;for(var u in e)if("default"!==u&&Object.prototype.hasOwnProperty.call(e,u)){var l=o?Object.getOwnPropertyDescriptor(e,u):null;l&&(l.get||l.set)?Object.defineProperty(n,u,l):n[u]=e[u];}return n.default=e,r&&r.set(e,n),n;},e._=function(e,t,r,n){c(e,t,function(){return r[null==n?t:n];});},e.f=function(e){return void 0!==e.default?e.default:e;},t="@farm-runtime/module-helper",u.c()[t]||(u.c()[t]={id:t,exports:{defineExportStar:p}}),global.f081367f80fe14896375a9f8b8918ca3.m.p.p([{name:"farm-runtime-import-meta",bootstrap:e=>{i=e;},moduleCreated:e=>{let t=i.pp?.[0]||"",r="node"===i.te;e.meta.env={NODE_ENV:null,BASE_URL:"/",mode:null,DEV:!1,PROD:!1}??{};var n=e.meta.env,o={dev:"development"===process.env.NODE_ENV,prod:"production"===process.env.NODE_ENV,BASE_URL:t,SSR:r};for(let e in o)n[e]=o[e];e.meta.url=i.m()[e.id].url;}}]);}}());",
+      "code": "(function(){if(typeof global==='undefined'||!global['f081367f80fe14896375a9f8b8918ca3']||!global['f081367f80fe14896375a9f8b8918ca3'].m){let e,t,r,n,l,o,u;{let e;(e=void 0!==(p="u">typeof globalThis?globalThis:global)?p:{}).require=e.require||c;}let a={},i={};var f,p,d={r:c,g:function(e,t){return a[e]=t,()=>c(e);},m:()=>a,c:()=>i};function c(e){if(i[e]){var t=i[e].initializer||i[e].exports;if(!d.p?.b("readModuleCache",i[e]))return t;}let r=a[e];if(!r){if(d.em[e])return d.em[e];{let t=d.p?.b("moduleNotFound",e);if(t)return t;}try{return __farmNodeRequire(e);}catch(e){}return console.debug(\`[Farm] Module "\${e}" is not registered\`),{};}let n=i[e]={id:e,meta:{env:{}},exports:{},require:c};return d.p?.s("moduleCreated",n),i[e]=n,r(n,n.exports,c,d.d),d.p?.s("moduleInitialized",n),n.exports;}d.te="node",d.em={},d.se=function(e){for(let t in e){let r=e[t];r&&r.default&&!r.__esModule&&(r={...r,__esModule:!0}),d.em[t]=r;}},(global.f081367f80fe14896375a9f8b8918ca3={}).m=d;let s={},m=[],b={p:function(e){m=e;},s:function(e,...t){for(let r in m){let n=m[r],l=n[e];l&&l.apply(n,t);}},b:function(e,...t){for(let r in m){let n=m[r],l=n[e];if(l){let e=l.apply(n,t);if(e)return e;}}}};function y(e,t,r){Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r});}function v(e,t){return Object.keys(t).forEach(function(r){"default"===r||Object.prototype.hasOwnProperty.call(e,r)||Object.defineProperty(e,r,{get:function(){return t[r];},enumerable:!0,configurable:!0});}),t;}function _(e){if("function"!=typeof WeakMap)return null;var t=new WeakMap,r=new WeakMap;return(_=function(e){return e?r:t;})(e);}d.p=b,d.b=function(){b.s("bootstrap",this);};e=d.r,e.entryBindings??=(f=d,r=new Map,n=new Map,l=e=>f.c()[e.owner.id]===e.owner,o=(e,t)=>{e.listener(t),e.value=t,e.initialized=!0;},u=(e,t)=>{for(let r of n.get(e)?.values()??[])o(r,t);},{bind(e,t,n,o){let a={ready:!1,owner:t,read:n,write:o};return l(a)&&r.set(e,a),{get value(){return n();},set value(value){o(value),l(a)&&(a.ready=!0,r.set(e,a),u(e,n()));}};},seed(e,t,n){let o={ready:!0,owner:t,read:n};if(!l(o))return;let a=n();r.set(e,o),u(e,a);},complete(e,t){for(let n of t){let t=r.get(n);if(t&&t.owner===e&&l(t)){let e=t.read();t.ready=!0,u(n,e);}}},subscribe(e,t,...u){let a=n.get(e);a||n.set(e,a=new Map);let i=Symbol(),f={listener:t,initialized:!1,value:void 0};if(a.set(i,f),u.length)o(f,u[0]);else{let t=r.get(e);t?.ready&&l(t)&&o(f,t.read());}return()=>{let t=n.get(e);t?.delete(i),t?.size===0&&n.delete(e);};},snapshot(){let e=new Map([...r].filter(([,e])=>e.ready).map(([e,t])=>[e,{origin:t,value:t.read()}])),t=new Map([...n].map(([e,t])=>[e,new Map([...t].map(([e,t])=>[e,{...t}]))]));return()=>{for(let[e,l]of(r.clear(),n.clear(),t))n.set(e,new Map([...l].map(([e,t])=>[e,{...t}])));for(let[t,{origin:n,value:l}]of e)r.set(t,n),n.write?.(l);for(let e of n.values())for(let t of e.values())t.initialized&&t.listener(t.value);};}}),e.o=y,e.d=function(e,t,r){y(e,t,function(){return r;});},e._m=function(e){let t="__esModule";e[t]||Object.defineProperty(e,t,{value:!0});},e._e=v,e.i=function(e){return e&&e.__esModule?e:{default:e};},e._g=_,e.w=function(e,t){if(!t&&e&&e.__esModule)return e;if(null===e||"object"!=typeof e&&"function"!=typeof e)return{default:e};var r=_(t);if(r&&r.has(e))return r.get(e);var n={__proto__:null},l=Object.defineProperty&&Object.getOwnPropertyDescriptor;for(var o in e)if("default"!==o&&Object.prototype.hasOwnProperty.call(e,o)){var u=l?Object.getOwnPropertyDescriptor(e,o):null;u&&(u.get||u.set)?Object.defineProperty(n,o,u):n[o]=e[o];}return n.default=e,r&&r.set(e,n),n;},e._=function(e,t,r,n){y(e,t,function(){return r[null==n?t:n];});},e.f=function(e){return void 0!==e.default?e.default:e;},t="@farm-runtime/module-helper",d.c()[t]||(d.c()[t]={id:t,exports:{defineExportStar:v}}),global.f081367f80fe14896375a9f8b8918ca3.m.p.p([{name:"farm-runtime-import-meta",bootstrap:e=>{s=e;},moduleCreated:e=>{let t=s.pp?.[0]||"",r="node"===s.te;e.meta.env={NODE_ENV:null,BASE_URL:"/",mode:null,DEV:!1,PROD:!1}??{};var n=e.meta.env,l={dev:"development"===process.env.NODE_ENV,prod:"production"===process.env.NODE_ENV,BASE_URL:t,SSR:r};for(let e in l)n[e]=l[e];e.meta.url=s.m()[e.id].url;}}]);}else if(!global['f081367f80fe14896375a9f8b8918ca3'].m.r.entryBindings){function createEntryLiveBindings(modules) {
+    const origins = new Map();
+    const listeners = new Map();
+    const current = (origin)=>modules.c()[origin.owner.id] === origin.owner;
+    const deliver = (subscription, value)=>{
+        subscription.listener(value);
+        subscription.value = value;
+        subscription.initialized = true;
+    };
+    const emit = (key, value)=>{
+        for (const subscription of listeners.get(key)?.values() ?? [])deliver(subscription, value);
+    };
+    return {
+        bind (key, owner, read, write) {
+            const origin = {
+                ready: false,
+                owner,
+                read,
+                write
+            };
+            if (current(origin)) origins.set(key, origin);
+            return {
+                get value () {
+                    return read();
+                },
+                set value (value){
+                    write(value);
+                    if (current(origin)) {
+                        origin.ready = true;
+                        origins.set(key, origin);
+                        emit(key, read());
+                    }
+                }
+            };
+        },
+        seed (key, owner, read) {
+            const origin = {
+                ready: true,
+                owner,
+                read
+            };
+            if (!current(origin)) return;
+            const value = read();
+            origins.set(key, origin);
+            emit(key, value);
+        },
+        complete (owner, keys) {
+            for (const key of keys){
+                const origin = origins.get(key);
+                if (origin && origin.owner === owner && current(origin)) {
+                    const value = origin.read();
+                    origin.ready = true;
+                    emit(key, value);
+                }
+            }
+        },
+        subscribe (key, listener, ...seed) {
+            let bucket = listeners.get(key);
+            if (!bucket) listeners.set(key, bucket = new Map());
+            const token = Symbol();
+            const subscription = {
+                listener,
+                initialized: false,
+                value: undefined
+            };
+            bucket.set(token, subscription);
+            if (seed.length) deliver(subscription, seed[0]);
+            else {
+                const origin = origins.get(key);
+                if (origin?.ready && current(origin)) deliver(subscription, origin.read());
+            }
+            return ()=>{
+                const active = listeners.get(key);
+                active?.delete(token);
+                if (active?.size === 0) listeners.delete(key);
+            };
+        },
+        snapshot () {
+            const saved = new Map([
+                ...origins
+            ].filter(([, origin])=>origin.ready).map(([key, origin])=>[
+                    key,
+                    {
+                        origin,
+                        value: origin.read()
+                    }
+                ]));
+            const savedListeners = new Map([
+                ...listeners
+            ].map(([key, bucket])=>[
+                    key,
+                    new Map([
+                        ...bucket
+                    ].map(([token, subscription])=>[
+                            token,
+                            {
+                                ...subscription
+                            }
+                        ]))
+                ]));
+            return ()=>{
+                origins.clear();
+                listeners.clear();
+                for (const [key, bucket] of savedListeners)listeners.set(key, new Map([
+                    ...bucket
+                ].map(([token, subscription])=>[
+                        token,
+                        {
+                            ...subscription
+                        }
+                    ])));
+                for (const [key, { origin, value }] of saved){
+                    origins.set(key, origin);
+                    origin.write?.(value);
+                }
+                for (const bucket of listeners.values())for (const subscription of bucket.values()){
+                    if (subscription.initialized) subscription.listener(subscription.value);
+                }
+            };
+        }
+    };
+}
+;global['f081367f80fe14896375a9f8b8918ca3'].m.r.entryBindings=createEntryLiveBindings(global['f081367f80fe14896375a9f8b8918ca3'].m);}}());",
       "emitted": true,
-      "name": "farm_internal_runtime_index.6a29b09e.js",
+      "name": "farm_internal_runtime_index.71a9c67b.js",
       "nameHash": "",
       "origin": {
         "type": "ResourcePot",
@@ -19,7 +141,129 @@ exports[`Js Plugin Execution - full 1`] = `
     },
     "index.mjs": {
       "bytes": [],
-      "code": "import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){if(typeof global==='undefined'||!global['f081367f80fe14896375a9f8b8918ca3']||!global['f081367f80fe14896375a9f8b8918ca3'].m){let e,t;{let e;(e=void 0!==(o="u">typeof globalThis?globalThis:global)?o:{}).require=e.require||l;}let r={},n={};var o,u={r:l,g:function(e,t){return r[e]=t,()=>l(e);},m:()=>r,c:()=>n};function l(e){if(n[e]){var t=n[e].initializer||n[e].exports;if(!u.p?.b("readModuleCache",n[e]))return t;}let o=r[e];if(!o){if(u.em[e])return u.em[e];{let t=u.p?.b("moduleNotFound",e);if(t)return t;}try{return __farmNodeRequire(e);}catch(e){}return console.debug(\`[Farm] Module "\${e}" is not registered\`),{};}let i=n[e]={id:e,meta:{env:{}},exports:{},require:l};return u.p?.s("moduleCreated",i),n[e]=i,o(i,i.exports,l,u.d),u.p?.s("moduleInitialized",i),i.exports;}u.te="node",u.em={},u.se=function(e){for(let t in e){let r=e[t];r&&r.default&&!r.__esModule&&(r={...r,__esModule:!0}),u.em[t]=r;}},(global.f081367f80fe14896375a9f8b8918ca3={}).m=u;let i={},f=[],a={p:function(e){f=e;},s:function(e,...t){for(let r in f){let n=f[r],o=n[e];o&&o.apply(n,t);}},b:function(e,...t){for(let r in f){let n=f[r],o=n[e];if(o){let e=o.apply(n,t);if(e)return e;}}}};function c(e,t,r){Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r});}function p(e,t){return Object.keys(t).forEach(function(r){"default"===r||Object.prototype.hasOwnProperty.call(e,r)||Object.defineProperty(e,r,{get:function(){return t[r];},enumerable:!0,configurable:!0});}),t;}function d(e){if("function"!=typeof WeakMap)return null;var t=new WeakMap,r=new WeakMap;return(d=function(e){return e?r:t;})(e);}u.p=a,u.b=function(){a.s("bootstrap",this);},(e=u.r).o=c,e.d=function(e,t,r){c(e,t,function(){return r;});},e._m=function(e){let t="__esModule";e[t]||Object.defineProperty(e,t,{value:!0});},e._e=p,e.i=function(e){return e&&e.__esModule?e:{default:e};},e._g=d,e.w=function(e,t){if(!t&&e&&e.__esModule)return e;if(null===e||"object"!=typeof e&&"function"!=typeof e)return{default:e};var r=d(t);if(r&&r.has(e))return r.get(e);var n={__proto__:null},o=Object.defineProperty&&Object.getOwnPropertyDescriptor;for(var u in e)if("default"!==u&&Object.prototype.hasOwnProperty.call(e,u)){var l=o?Object.getOwnPropertyDescriptor(e,u):null;l&&(l.get||l.set)?Object.defineProperty(n,u,l):n[u]=e[u];}return n.default=e,r&&r.set(e,n),n;},e._=function(e,t,r,n){c(e,t,function(){return r[null==n?t:n];});},e.f=function(e){return void 0!==e.default?e.default:e;},t="@farm-runtime/module-helper",u.c()[t]||(u.c()[t]={id:t,exports:{defineExportStar:p}}),global.f081367f80fe14896375a9f8b8918ca3.m.p.p([{name:"farm-runtime-import-meta",bootstrap:e=>{i=e;},moduleCreated:e=>{let t=i.pp?.[0]||"",r="node"===i.te;e.meta.env={NODE_ENV:null,BASE_URL:"/",mode:null,DEV:!1,PROD:!1}??{};var n=e.meta.env,o={dev:"development"===process.env.NODE_ENV,prod:"production"===process.env.NODE_ENV,BASE_URL:t,SSR:r};for(let e in o)n[e]=o[e];e.meta.url=i.m()[e.id].url;}}]);}}());!function(a,f){for(var r in f){var e=f[r];e.url=import.meta.url,a.g(r,e);}}(global.f081367f80fe14896375a9f8b8918ca3.m,{"0ae9e27c":(a,f,r,e)=>{r._m(f),f.default=2;}});var __farm_ms__ = global['f081367f80fe14896375a9f8b8918ca3'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("0ae9e27c");var __farm_entry_default__=__farm_entry__.default;export {__farm_entry_default__ as default};",
+      "code": "import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){if(typeof global==='undefined'||!global['f081367f80fe14896375a9f8b8918ca3']||!global['f081367f80fe14896375a9f8b8918ca3'].m){let e,t,r,n,l,o,u;{let e;(e=void 0!==(p="u">typeof globalThis?globalThis:global)?p:{}).require=e.require||c;}let a={},i={};var f,p,d={r:c,g:function(e,t){return a[e]=t,()=>c(e);},m:()=>a,c:()=>i};function c(e){if(i[e]){var t=i[e].initializer||i[e].exports;if(!d.p?.b("readModuleCache",i[e]))return t;}let r=a[e];if(!r){if(d.em[e])return d.em[e];{let t=d.p?.b("moduleNotFound",e);if(t)return t;}try{return __farmNodeRequire(e);}catch(e){}return console.debug(\`[Farm] Module "\${e}" is not registered\`),{};}let n=i[e]={id:e,meta:{env:{}},exports:{},require:c};return d.p?.s("moduleCreated",n),i[e]=n,r(n,n.exports,c,d.d),d.p?.s("moduleInitialized",n),n.exports;}d.te="node",d.em={},d.se=function(e){for(let t in e){let r=e[t];r&&r.default&&!r.__esModule&&(r={...r,__esModule:!0}),d.em[t]=r;}},(global.f081367f80fe14896375a9f8b8918ca3={}).m=d;let s={},m=[],b={p:function(e){m=e;},s:function(e,...t){for(let r in m){let n=m[r],l=n[e];l&&l.apply(n,t);}},b:function(e,...t){for(let r in m){let n=m[r],l=n[e];if(l){let e=l.apply(n,t);if(e)return e;}}}};function y(e,t,r){Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r});}function v(e,t){return Object.keys(t).forEach(function(r){"default"===r||Object.prototype.hasOwnProperty.call(e,r)||Object.defineProperty(e,r,{get:function(){return t[r];},enumerable:!0,configurable:!0});}),t;}function _(e){if("function"!=typeof WeakMap)return null;var t=new WeakMap,r=new WeakMap;return(_=function(e){return e?r:t;})(e);}d.p=b,d.b=function(){b.s("bootstrap",this);};e=d.r,e.entryBindings??=(f=d,r=new Map,n=new Map,l=e=>f.c()[e.owner.id]===e.owner,o=(e,t)=>{e.listener(t),e.value=t,e.initialized=!0;},u=(e,t)=>{for(let r of n.get(e)?.values()??[])o(r,t);},{bind(e,t,n,o){let a={ready:!1,owner:t,read:n,write:o};return l(a)&&r.set(e,a),{get value(){return n();},set value(value){o(value),l(a)&&(a.ready=!0,r.set(e,a),u(e,n()));}};},seed(e,t,n){let o={ready:!0,owner:t,read:n};if(!l(o))return;let a=n();r.set(e,o),u(e,a);},complete(e,t){for(let n of t){let t=r.get(n);if(t&&t.owner===e&&l(t)){let e=t.read();t.ready=!0,u(n,e);}}},subscribe(e,t,...u){let a=n.get(e);a||n.set(e,a=new Map);let i=Symbol(),f={listener:t,initialized:!1,value:void 0};if(a.set(i,f),u.length)o(f,u[0]);else{let t=r.get(e);t?.ready&&l(t)&&o(f,t.read());}return()=>{let t=n.get(e);t?.delete(i),t?.size===0&&n.delete(e);};},snapshot(){let e=new Map([...r].filter(([,e])=>e.ready).map(([e,t])=>[e,{origin:t,value:t.read()}])),t=new Map([...n].map(([e,t])=>[e,new Map([...t].map(([e,t])=>[e,{...t}]))]));return()=>{for(let[e,l]of(r.clear(),n.clear(),t))n.set(e,new Map([...l].map(([e,t])=>[e,{...t}])));for(let[t,{origin:n,value:l}]of e)r.set(t,n),n.write?.(l);for(let e of n.values())for(let t of e.values())t.initialized&&t.listener(t.value);};}}),e.o=y,e.d=function(e,t,r){y(e,t,function(){return r;});},e._m=function(e){let t="__esModule";e[t]||Object.defineProperty(e,t,{value:!0});},e._e=v,e.i=function(e){return e&&e.__esModule?e:{default:e};},e._g=_,e.w=function(e,t){if(!t&&e&&e.__esModule)return e;if(null===e||"object"!=typeof e&&"function"!=typeof e)return{default:e};var r=_(t);if(r&&r.has(e))return r.get(e);var n={__proto__:null},l=Object.defineProperty&&Object.getOwnPropertyDescriptor;for(var o in e)if("default"!==o&&Object.prototype.hasOwnProperty.call(e,o)){var u=l?Object.getOwnPropertyDescriptor(e,o):null;u&&(u.get||u.set)?Object.defineProperty(n,o,u):n[o]=e[o];}return n.default=e,r&&r.set(e,n),n;},e._=function(e,t,r,n){y(e,t,function(){return r[null==n?t:n];});},e.f=function(e){return void 0!==e.default?e.default:e;},t="@farm-runtime/module-helper",d.c()[t]||(d.c()[t]={id:t,exports:{defineExportStar:v}}),global.f081367f80fe14896375a9f8b8918ca3.m.p.p([{name:"farm-runtime-import-meta",bootstrap:e=>{s=e;},moduleCreated:e=>{let t=s.pp?.[0]||"",r="node"===s.te;e.meta.env={NODE_ENV:null,BASE_URL:"/",mode:null,DEV:!1,PROD:!1}??{};var n=e.meta.env,l={dev:"development"===process.env.NODE_ENV,prod:"production"===process.env.NODE_ENV,BASE_URL:t,SSR:r};for(let e in l)n[e]=l[e];e.meta.url=s.m()[e.id].url;}}]);}else if(!global['f081367f80fe14896375a9f8b8918ca3'].m.r.entryBindings){function createEntryLiveBindings(modules) {
+    const origins = new Map();
+    const listeners = new Map();
+    const current = (origin)=>modules.c()[origin.owner.id] === origin.owner;
+    const deliver = (subscription, value)=>{
+        subscription.listener(value);
+        subscription.value = value;
+        subscription.initialized = true;
+    };
+    const emit = (key, value)=>{
+        for (const subscription of listeners.get(key)?.values() ?? [])deliver(subscription, value);
+    };
+    return {
+        bind (key, owner, read, write) {
+            const origin = {
+                ready: false,
+                owner,
+                read,
+                write
+            };
+            if (current(origin)) origins.set(key, origin);
+            return {
+                get value () {
+                    return read();
+                },
+                set value (value){
+                    write(value);
+                    if (current(origin)) {
+                        origin.ready = true;
+                        origins.set(key, origin);
+                        emit(key, read());
+                    }
+                }
+            };
+        },
+        seed (key, owner, read) {
+            const origin = {
+                ready: true,
+                owner,
+                read
+            };
+            if (!current(origin)) return;
+            const value = read();
+            origins.set(key, origin);
+            emit(key, value);
+        },
+        complete (owner, keys) {
+            for (const key of keys){
+                const origin = origins.get(key);
+                if (origin && origin.owner === owner && current(origin)) {
+                    const value = origin.read();
+                    origin.ready = true;
+                    emit(key, value);
+                }
+            }
+        },
+        subscribe (key, listener, ...seed) {
+            let bucket = listeners.get(key);
+            if (!bucket) listeners.set(key, bucket = new Map());
+            const token = Symbol();
+            const subscription = {
+                listener,
+                initialized: false,
+                value: undefined
+            };
+            bucket.set(token, subscription);
+            if (seed.length) deliver(subscription, seed[0]);
+            else {
+                const origin = origins.get(key);
+                if (origin?.ready && current(origin)) deliver(subscription, origin.read());
+            }
+            return ()=>{
+                const active = listeners.get(key);
+                active?.delete(token);
+                if (active?.size === 0) listeners.delete(key);
+            };
+        },
+        snapshot () {
+            const saved = new Map([
+                ...origins
+            ].filter(([, origin])=>origin.ready).map(([key, origin])=>[
+                    key,
+                    {
+                        origin,
+                        value: origin.read()
+                    }
+                ]));
+            const savedListeners = new Map([
+                ...listeners
+            ].map(([key, bucket])=>[
+                    key,
+                    new Map([
+                        ...bucket
+                    ].map(([token, subscription])=>[
+                            token,
+                            {
+                                ...subscription
+                            }
+                        ]))
+                ]));
+            return ()=>{
+                origins.clear();
+                listeners.clear();
+                for (const [key, bucket] of savedListeners)listeners.set(key, new Map([
+                    ...bucket
+                ].map(([token, subscription])=>[
+                        token,
+                        {
+                            ...subscription
+                        }
+                    ])));
+                for (const [key, { origin, value }] of saved){
+                    origins.set(key, origin);
+                    origin.write?.(value);
+                }
+                for (const bucket of listeners.values())for (const subscription of bucket.values()){
+                    if (subscription.initialized) subscription.listener(subscription.value);
+                }
+            };
+        }
+    };
+}
+;global['f081367f80fe14896375a9f8b8918ca3'].m.r.entryBindings=createEntryLiveBindings(global['f081367f80fe14896375a9f8b8918ca3'].m);}}());!function(a,f){for(var r in f){var e=f[r];e.url=import.meta.url,a.g(r,e);}}(global.f081367f80fe14896375a9f8b8918ca3.m,{"0ae9e27c":(a,f,r,e)=>{r._m(f),f.default=2;}});var __farm_ms__ = global['f081367f80fe14896375a9f8b8918ca3'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("0ae9e27c");var __farm_entry_default__=__farm_entry__.default;export {__farm_entry_default__ as default};",
       "emitted": false,
       "name": "index.mjs",
       "nameHash": "eab4eb4a846cd9fa318a455919afa864",

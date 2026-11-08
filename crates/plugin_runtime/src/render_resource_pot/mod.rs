@@ -57,6 +57,7 @@ pub fn render_resource_pot_modules(
         (
           RenderModuleOptions {
             module_id: module.id.clone(),
+            is_concatenated: true,
             ast: result.ast,
             comments: result.comments,
             hoisted_sourcemap: result.source_map,
@@ -74,6 +75,7 @@ pub fn render_resource_pot_modules(
         (
           RenderModuleOptions {
             module_id: module.id.clone(),
+            is_concatenated: false,
             ast: meta.ast.clone(),
             comments: meta.comments.clone(),
             hoisted_sourcemap: context.meta.get_module_source_map(&module.id),

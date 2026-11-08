@@ -240,16 +240,11 @@ def resolve_products(transport, source, abi, desired, read_source=evidence.sourc
             name = f"formal-native-{abi}-{run['run_attempt']}"
             rows = transport.get(f"/actions/runs/{run['id']}/artifacts?per_page=2&name={name}")['artifacts']
             if len(rows) != 1 or rows[0]['expired']: reasons.append('artifact-missing-or-expired'); continue
-            artifact = transport.get('/actions/artifacts/' + str(rows[0]['id']))
-            jobs = execution.jobs_for(transport, run)
-            matching = [job for job in jobs if any(step.get('name') == UPLOAD for step in job.get('steps', []))
-                        and abi in job['name']]
-            check(len(matching) == 1, 'Ambiguous native producer job')
             # Historical REST metadata has no independent producer/attempt anchor.
             # CI/Unit attestations cannot authenticate this release producer. Do
             # not download or reuse unsigned bytes; the caller builds each miss.
             reasons.append('unsigned-formal-catalog-build-current')
-            continue
+            break
         except PermissionError:
             reasons.append('artifact-access-denied-build-current'); break
         except Exception as error:

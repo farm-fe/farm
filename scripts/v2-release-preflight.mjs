@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { npmInventory, nativeSourceDigest, root, releaseCandidatePlanPath } from './v2-release-inventory.mjs';
+import { npmInventory, nativeSourceDigest, cargoPackageInputsDigest, root, releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { checkPublishedRustCore } from './check-published-rust-core.mjs';
 import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
@@ -22,6 +22,7 @@ for (const pkg of plan.cargo) {
   const hash = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, pkg.manifestPath), 'utf8').replaceAll('\r\n', '\n')).digest('hex');
   assert.equal(hash, pkg.manifestSha256, `Cargo candidate manifest drifted: ${pkg.name}`);
   assert.equal(nativeSourceDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.sourceSha256, `Cargo candidate source drifted: ${pkg.name}`);
+    assert.equal(cargoPackageInputsDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.packageInputsSha256, `Cargo candidate package inputs drifted: ${pkg.name}`);
 }
 const hashText = file => crypto.createHash('sha256').update(fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n')).digest('hex');
 const planDigest = crypto.createHash('sha256').update(JSON.stringify(plan)).digest('hex');

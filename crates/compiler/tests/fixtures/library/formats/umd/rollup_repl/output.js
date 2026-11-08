@@ -66,7 +66,9 @@
     ; // module_id: qux.js
     const qux = 'QUX';
     var qux_js_namespace_farm_internal_ = {
-        qux: qux,
+        get qux () {
+            return qux;
+        },
         __esModule: true
     };
     ; // module_id: index.ts

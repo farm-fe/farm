@@ -84,6 +84,7 @@ function farmRegister(id, module) {
 ; // module_id: ae1b52c0
 function initModuleSystem(ms) {
     const farmRequire = ms.r;
+    farmRequire.entryBindings ??= createEntryLiveBindings(ms);
     farmRequire.o = exportByDefineProperty;
     farmRequire.d = defineExport;
     farmRequire._m = defineExportEsModule;
@@ -187,9 +188,257 @@ function importDefault(v) {
     // compatible with `import default from "module"`
     return v;
 }
+function createEntryLiveBindings(modules) {
+    const origins = new Map();
+    const listeners = new Map();
+    const current = (origin)=>modules.c()[origin.owner.id] === origin.owner;
+    const deliver = (subscription, value)=>{
+        subscription.listener(value);
+        subscription.value = value;
+        subscription.initialized = true;
+    };
+    const emit = (key, value)=>{
+        for (const subscription of listeners.get(key)?.values() ?? [])deliver(subscription, value);
+    };
+    return {
+        bind (key, owner, read, write) {
+            const origin = {
+                ready: false,
+                owner,
+                read,
+                write
+            };
+            if (current(origin)) origins.set(key, origin);
+            // Registration happens only after a successful write. An early TDZ or
+            // stale async factory must not replace a currently initialized origin.
+            return {
+                get value () {
+                    return read();
+                },
+                set value (value){
+                    write(value);
+                    if (current(origin)) {
+                        origin.ready = true;
+                        origins.set(key, origin);
+                        emit(key, read());
+                    }
+                }
+            };
+        },
+        seed (key, owner, read) {
+            const origin = {
+                ready: true,
+                owner,
+                read
+            };
+            if (!current(origin)) return;
+            const value = read();
+            origins.set(key, origin);
+            emit(key, value);
+        },
+        complete (owner, keys) {
+            for (const key of keys){
+                const origin = origins.get(key);
+                if (origin && origin.owner === owner && current(origin)) {
+                    const value = origin.read();
+                    origin.ready = true;
+                    emit(key, value);
+                }
+            }
+        },
+        subscribe (key, listener, ...seed) {
+            let bucket = listeners.get(key);
+            if (!bucket) listeners.set(key, bucket = new Map());
+            const token = Symbol();
+            const subscription = {
+                listener,
+                initialized: false,
+                value: undefined
+            };
+            bucket.set(token, subscription);
+            if (seed.length) deliver(subscription, seed[0]);
+            else {
+                const origin = origins.get(key);
+                if (origin?.ready && current(origin)) deliver(subscription, origin.read());
+            }
+            return ()=>{
+                const active = listeners.get(key);
+                active?.delete(token);
+                if (active?.size === 0) listeners.delete(key);
+            };
+        },
+        snapshot () {
+            const saved = new Map([
+                ...origins
+            ].filter(([, origin])=>origin.ready).map(([key, origin])=>[
+                    key,
+                    {
+                        origin,
+                        value: origin.read()
+                    }
+                ]));
+            const savedListeners = new Map([
+                ...listeners
+            ].map(([key, bucket])=>[
+                    key,
+                    new Map([
+                        ...bucket
+                    ].map(([token, subscription])=>[
+                            token,
+                            {
+                                ...subscription
+                            }
+                        ]))
+                ]));
+            return ()=>{
+                origins.clear();
+                listeners.clear();
+                for (const [key, bucket] of savedListeners)listeners.set(key, new Map([
+                    ...bucket
+                ].map(([token, subscription])=>[
+                        token,
+                        {
+                            ...subscription
+                        }
+                    ])));
+                for (const [key, { origin, value }] of saved){
+                    origins.set(key, origin);
+                    origin.write?.(value);
+                }
+                // Native slots have their own transaction state. A cleared source can
+                // legitimately differ from the last value delivered to a native slot.
+                for (const bucket of listeners.values())for (const subscription of bucket.values()){
+                    if (subscription.initialized) subscription.listener(subscription.value);
+                }
+            };
+        }
+    };
+}
 ; // module_id: 20764041
 initModuleSystem(__farm_internal_module_system__);
-}}());window['__farm_default_namespace__'].m.se({
+}else if(!window['__farm_default_namespace__'].m.r.entryBindings){function createEntryLiveBindings(modules) {
+    const origins = new Map();
+    const listeners = new Map();
+    const current = (origin)=>modules.c()[origin.owner.id] === origin.owner;
+    const deliver = (subscription, value)=>{
+        subscription.listener(value);
+        subscription.value = value;
+        subscription.initialized = true;
+    };
+    const emit = (key, value)=>{
+        for (const subscription of listeners.get(key)?.values() ?? [])deliver(subscription, value);
+    };
+    return {
+        bind (key, owner, read, write) {
+            const origin = {
+                ready: false,
+                owner,
+                read,
+                write
+            };
+            if (current(origin)) origins.set(key, origin);
+            return {
+                get value () {
+                    return read();
+                },
+                set value (value){
+                    write(value);
+                    if (current(origin)) {
+                        origin.ready = true;
+                        origins.set(key, origin);
+                        emit(key, read());
+                    }
+                }
+            };
+        },
+        seed (key, owner, read) {
+            const origin = {
+                ready: true,
+                owner,
+                read
+            };
+            if (!current(origin)) return;
+            const value = read();
+            origins.set(key, origin);
+            emit(key, value);
+        },
+        complete (owner, keys) {
+            for (const key of keys){
+                const origin = origins.get(key);
+                if (origin && origin.owner === owner && current(origin)) {
+                    const value = origin.read();
+                    origin.ready = true;
+                    emit(key, value);
+                }
+            }
+        },
+        subscribe (key, listener, ...seed) {
+            let bucket = listeners.get(key);
+            if (!bucket) listeners.set(key, bucket = new Map());
+            const token = Symbol();
+            const subscription = {
+                listener,
+                initialized: false,
+                value: undefined
+            };
+            bucket.set(token, subscription);
+            if (seed.length) deliver(subscription, seed[0]);
+            else {
+                const origin = origins.get(key);
+                if (origin?.ready && current(origin)) deliver(subscription, origin.read());
+            }
+            return ()=>{
+                const active = listeners.get(key);
+                active?.delete(token);
+                if (active?.size === 0) listeners.delete(key);
+            };
+        },
+        snapshot () {
+            const saved = new Map([
+                ...origins
+            ].filter(([, origin])=>origin.ready).map(([key, origin])=>[
+                    key,
+                    {
+                        origin,
+                        value: origin.read()
+                    }
+                ]));
+            const savedListeners = new Map([
+                ...listeners
+            ].map(([key, bucket])=>[
+                    key,
+                    new Map([
+                        ...bucket
+                    ].map(([token, subscription])=>[
+                            token,
+                            {
+                                ...subscription
+                            }
+                        ]))
+                ]));
+            return ()=>{
+                origins.clear();
+                listeners.clear();
+                for (const [key, bucket] of savedListeners)listeners.set(key, new Map([
+                    ...bucket
+                ].map(([token, subscription])=>[
+                        token,
+                        {
+                            ...subscription
+                        }
+                    ])));
+                for (const [key, { origin, value }] of saved){
+                    origins.set(key, origin);
+                    origin.write?.(value);
+                }
+                for (const bucket of listeners.values())for (const subscription of bucket.values()){
+                    if (subscription.initialized) subscription.listener(subscription.value);
+                }
+            };
+        }
+    };
+}
+;window['__farm_default_namespace__'].m.r.entryBindings=createEntryLiveBindings(window['__farm_default_namespace__'].m);}}());window['__farm_default_namespace__'].m.se({
     "/external/foo": window['/external/foo'] || {},
     "/external/react-dom": window['/external/react-dom'] || {},
     "node:fs": window['node:fs'] || {}

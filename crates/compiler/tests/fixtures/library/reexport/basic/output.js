@@ -29,14 +29,22 @@ var e_js_default = function() {
     console.log("e" + e);
 };
 var e_js_namespace_farm_internal_ = {
-    default: e_js_default,
-    e: e,
+    get default () {
+        return e_js_default;
+    },
+    get e () {
+        return e;
+    },
     __esModule: true
 };
 var d_js_default = 3;
 var d_js_namespace_farm_internal_ = {
-    default: d_js_default,
-    e: e,
+    get default () {
+        return d_js_default;
+    },
+    get e () {
+        return e;
+    },
     __esModule: true
 };
 var bar = "bar" + 2;

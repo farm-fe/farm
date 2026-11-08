@@ -62,16 +62,11 @@ pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) ->
 pub(crate) fn create_var_namespace_item(
   module_id: &ModuleId,
   export_ident_map: &HashMap<String, ModuleExportIdent>,
-  cyclic_idents: &HashSet<(Option<SwcId>, ModuleExportIdent)>,
+  _cyclic_idents: &HashSet<(Option<SwcId>, ModuleExportIdent)>,
   rename_handler: &TopLevelIdentsRenameHandler,
 ) -> ModuleItem {
   let mut key_ident_vec = export_ident_map.iter().collect::<Vec<_>>();
   key_ident_vec.sort_by_key(|a| a.0);
-
-  let cyclic_idents = cyclic_idents
-    .iter()
-    .map(|(_, module_export_ident)| module_export_ident)
-    .collect::<HashSet<_>>();
 
   let mut props: Vec<PropOrSpread> = key_ident_vec
     .into_iter()
@@ -93,37 +88,24 @@ pub(crate) fn create_var_namespace_item(
 
       let value_expr = Box::new(Expr::Ident(renamed_ident.into()));
 
-      // External import bindings remain live even without an internal cycle.
-      let prop = if cyclic_idents.contains(&org_module_export_ident)
-        || matches!(
-          module_export_ident.export_type,
-          ModuleExportIdentType::External
-        ) {
-        Prop::Getter(GetterProp {
+      // Every materialized module namespace must observe the current binding,
+      // including mutable declarations in ordinary acyclic internal modules.
+      let prop = Prop::Getter(GetterProp {
+        span: DUMMY_SP,
+        key: match ModuleExportName::from(SwcId::from(key.as_str())) {
+          ModuleExportName::Ident(ident) => PropName::Ident(ident.into()),
+          ModuleExportName::Str(name) => PropName::Str(name),
+        },
+        type_ann: None,
+        body: Some(BlockStmt {
           span: DUMMY_SP,
-          key: match ModuleExportName::from(SwcId::from(key.as_str())) {
-            ModuleExportName::Ident(ident) => PropName::Ident(ident.into()),
-            ModuleExportName::Str(name) => PropName::Str(name),
-          },
-          type_ann: None,
-          body: Some(BlockStmt {
+          stmts: vec![Stmt::Return(ReturnStmt {
             span: DUMMY_SP,
-            stmts: vec![Stmt::Return(ReturnStmt {
-              span: DUMMY_SP,
-              arg: Some(value_expr),
-            })],
-            ctxt: SyntaxContext::empty(),
-          }),
-        })
-      } else {
-        Prop::KeyValue(KeyValueProp {
-          key: match ModuleExportName::from(SwcId::from(key.as_str())) {
-            ModuleExportName::Ident(ident) => PropName::Ident(ident.into()),
-            ModuleExportName::Str(name) => PropName::Str(name),
-          },
-          value: value_expr,
-        })
-      };
+            arg: Some(value_expr),
+          })],
+          ctxt: SyntaxContext::empty(),
+        }),
+      });
 
       PropOrSpread::Prop(Box::new(prop))
     })

@@ -19,6 +19,7 @@ pub fn parse_module_internal(code: &str) -> (Module, SingleThreadedComments, Mar
     Arc::new(code.to_string()),
     Syntax::Es(EsSyntax {
       auto_accessors: true,
+      decorators: true,
       ..Default::default()
     }),
     EsVersion::Es2022,
@@ -557,6 +558,32 @@ fn class_static_initializer_inert_values() {
           super::StatementSideEffects::NoSideEffects,
           "{code}"
         );
+      }
+    }
+  });
+}
+
+#[test]
+fn class_decorator_application_is_a_definition_time_effect() {
+  GLOBALS.set(&Globals::new(), || {
+    for decorator in ["decorate", "decorate()"] {
+      for target in [
+        format!("@{decorator} class Unused {{}}"),
+        format!("class Unused {{ @{decorator} method() {{}} }}"),
+        format!("class Unused {{ @{decorator} static method() {{}} }}"),
+        format!("class Unused {{ @{decorator} #method() {{}} }}"),
+        format!("class Unused {{ @{decorator} static #method() {{}} }}"),
+        format!("class Unused {{ @{decorator} value = 1; }}"),
+      ] {
+        let code = format!("function decorate() {{}}; {target}");
+        let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(&code);
+        let effects = super::analyze_statement_side_effects(
+          module.body.last().unwrap(),
+          unresolved_mark,
+          top_level_mark,
+          &comments,
+        );
+        assert!(effects.is_preserved(), "{target}: {effects:?}");
       }
     }
   });

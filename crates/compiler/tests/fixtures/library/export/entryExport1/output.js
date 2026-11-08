@@ -10,10 +10,18 @@ class c {
 }
 var dep_ts_default = 40;
 var dep_ts_namespace_farm_internal_ = {
-    a: a,
-    b: b,
-    c: c,
-    default: dep_ts_default,
+    get a () {
+        return a;
+    },
+    get b () {
+        return b;
+    },
+    get c () {
+        return c;
+    },
+    get default () {
+        return dep_ts_default;
+    },
     __esModule: true
 };
 export { dep_ts_namespace_farm_internal_ as EntryExport };

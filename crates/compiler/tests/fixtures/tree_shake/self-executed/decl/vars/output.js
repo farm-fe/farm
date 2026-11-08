@@ -25,14 +25,26 @@ initModuleSystem(__farm_internal_module_system__);
         farmRequire.o(exports, "foo4", function() {
             return foo4;
         });
+        function __farm_live_foo1() {
+            return __farm_live_foo1_cache || (__farm_live_foo1_cache = farmRequire.entryBindings.bind("[\"dep.ts\",\"foo1\"]", module, function() {
+                return foo1;
+            }, function(__FARM_NEXT__) {
+                foo1 = __FARM_NEXT__;
+            }));
+        }
+        var __farm_live_foo1_cache;
         function foo() {
             console.log('hello world');
         }
         let foo1 = 1, foo2 = 2;
-        foo1 = 2;
+        __farm_live_foo1().value = 2;
         var foo3 = foo;
         var foo4 = foo;
         foo3.create = foo;
+        __farm_live_foo1();
+        farmRequire.entryBindings.complete(module, [
+            "[\"dep.ts\",\"foo1\"]"
+        ]);
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);

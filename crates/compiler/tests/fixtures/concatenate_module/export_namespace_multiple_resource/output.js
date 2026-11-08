@@ -47,16 +47,24 @@ initModuleSystem(__farm_internal_module_system__);
         });
         var _f_dep = farmRequire("3e3af5b6");
         var reexport_js_namespace_farm_internal_ = {
-            isRef: _f_dep.isRef,
-            watch: _f_dep.watch,
+            get isRef () {
+                return _f_dep.isRef;
+            },
+            get watch () {
+                return _f_dep.watch;
+            },
             __esModule: true
         };
         function localWatch() {
             console.log("local watch");
         }
         var reexport2_js_namespace_farm_internal_ = {
-            localWatch: localWatch,
-            watch: _f_dep.watch,
+            get localWatch () {
+                return localWatch;
+            },
+            get watch () {
+                return _f_dep.watch;
+            },
             __esModule: true
         };
         reexport_js_namespace_farm_internal_.watch();

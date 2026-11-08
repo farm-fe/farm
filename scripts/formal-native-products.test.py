@@ -166,11 +166,9 @@ class FormalProducts(unittest.TestCase):
             def get(self, route):
                 if route == '/commits/main': return {'sha': source['sha']}
                 if route.startswith('/compare/'): return {'status':'identical','merge_base_commit':{'sha':source['sha']}}
-                if '/workflows/' in route: return {'workflow_runs':[{'id':10,'run_attempt':2}]}
+                if '/workflows/' in route: return {'workflow_runs':[{'id':10,'run_attempt':2},{'id':11,'run_attempt':1}]}
                 if route == '/actions/runs/10': return run
                 if '/artifacts?' in route: return {'artifacts':[artifact]}
-                if route == '/actions/artifacts/20': return artifact
-                if '/jobs?' in route: return {'jobs':[job]}
                 raise AssertionError(route)
             def archive(self, artifact_id):
                 raise AssertionError('Unsigned historical bytes must not be downloaded')
@@ -199,7 +197,9 @@ class FormalProducts(unittest.TestCase):
 const [abi,target]=process.argv.slice(1);
 console.log(JSON.stringify(captureRuntime({platform:'win32',env:{FARM_BUILD_ABI:abi,FARM_BUILD_TARGET:target,FARM_BUILD_PROFILE:'release'},
 run:exe=>({status:0,stdout:exe==='rustup'?'nightly-2026-04-10-x86_64-pc-windows-msvc':exe+' measured fixture'})})));"""
-        return json.loads(subprocess.check_output(['node', '--input-type=module', '-e', program, abi, formal.paths.TARGETS[abi]], cwd=Path(__file__).resolve().parent.parent))
+        runtime = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', program, abi, formal.paths.TARGETS[abi]], cwd=Path(__file__).resolve().parent.parent))
+        runtime['runtime']['node'] = 'v22.20.0'  # Explicit simulated runner, not host measurement.
+        return runtime
 
     def test_windows_collector_null_reaches_explicit_unavailable_producer(self):
         for abi in ['win32-arm64-msvc', 'win32-ia32-msvc']:

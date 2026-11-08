@@ -38,6 +38,7 @@ export function captureUpdateSnapshot(
   maps: Map<any, any>[],
   listeners: Map<string, ((data: any) => void | Promise<void>)[]>
 ) {
+  const restoreEntryBindings = (modules.r as typeof modules.r & { entryBindings?: { snapshot(): () => void } }).entryBindings?.snapshot();
   const restoreFactories = recordSnapshot(modules.m());
   const restoreCache = recordSnapshot(modules.c());
   const restoreHotMap = mapSnapshot(hotModules);
@@ -51,7 +52,7 @@ export function captureUpdateSnapshot(
   const restoreListeners = mapSnapshot(listeners, callbacks => [...callbacks]);
   return () => {
     const errors: unknown[] = [];
-    for (const restore of [restoreFactories, restoreCache, restoreHotMap, ...hotStates, ...restoreMaps, restoreListeners]) {
+    for (const restore of [restoreFactories, restoreCache, restoreHotMap, ...hotStates, ...restoreMaps, restoreListeners, ...(restoreEntryBindings ? [restoreEntryBindings] : [])]) {
       try { restore(); } catch (error) { errors.push(error); }
     }
     if (errors.length) throw new AggregateError(errors, 'Hot update registry restoration failed');

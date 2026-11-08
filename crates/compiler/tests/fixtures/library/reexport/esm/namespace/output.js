@@ -3,9 +3,15 @@
 const foo$1 = 'foo';
 const bar = 'bar';
 var foo_ts_namespace_farm_internal_ = {
-    bar: bar,
-    default: foo_ts_default,
-    foo: foo$1,
+    get bar () {
+        return bar;
+    },
+    get default () {
+        return foo_ts_default;
+    },
+    get foo () {
+        return foo$1;
+    },
     __esModule: true
 };
 const foo = 123;

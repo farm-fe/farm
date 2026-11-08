@@ -48,8 +48,9 @@ and such a report cannot enter history or regression comparisons. Timeout, incom
 missing source coverage or browser failure makes the report invalid. No workload
 reduction or zero substitution is allowed. Three pairs are exploratory and all
 reports retain `publishable:false`; these are not release speed thresholds. The
-stable release gate nevertheless requires complete valid reports on all three
-platforms, independently of continue-on-error workflow behavior.
+former stable release gate required complete valid reports on all three
+platforms. That historical CI requirement has been removed; this protocol is now
+local-only and does not gate CI or release acceptance.
 
 ## Same-run resource supervision
 
@@ -152,12 +153,11 @@ budget; that remains invalid evidence, not a reduced fixture or fewer valid pair
 
 Artifacts include raw/summary JSON, CSV, logs, resource traces, graph detail and
 browser evidence. All three platforms remain visible when reports are absent or
-invalid. A trusted default-branch reporter validates run, repository, attempt,
-current PR/head/base and bounded summary identities before updating one bot comment;
-old SHAs/attempts cannot overwrite newer evidence. No artifact code is executed,
-no new token is created, and `pull_request_target` is not used. The reporter must
-exist on the default branch before live comments work; source implementation is
-not proof that a comment was posted. HMR benchmarking remains outside this protocol.
+invalid in local reports. Historically, a default-branch reporter validated run,
+repository, attempt, PR/head/base and bounded summary identities before updating
+a bot comment. That automatic CI reporter has been removed. Local report generation
+does not post comments or request tokens. HMR benchmarking remains outside this
+protocol.
 
 ## CI cache scope
 

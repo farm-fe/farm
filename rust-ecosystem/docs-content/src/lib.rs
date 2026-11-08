@@ -11,6 +11,8 @@ mod references;
 mod resource_bindings;
 mod source_map;
 mod static_highlight;
+mod table_whitespace;
+pub use table_whitespace::compile_mdx;
 
 use markdown::Location;
 use mdxjs::{Options, hast};
@@ -294,6 +296,8 @@ pub fn emit_content(
   } = parsed;
   let location = Location::new(prepared_source.as_bytes());
   let mut explicit_jsxs = Default::default();
+  let mut tree = tree;
+  table_whitespace::remove_generated_table_whitespace(&mut tree);
   let mut program = mdxjs::hast_util_to_swc(&tree, &options, Some(&location), &mut explicit_jsxs)
     .map_err(|error| error.to_string())?;
   VerifyProfile::mark(&mut profile, "recmaStaticRewrite");

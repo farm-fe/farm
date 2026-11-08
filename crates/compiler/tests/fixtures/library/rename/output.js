@@ -10,13 +10,27 @@ var exportNamed_ts_default = {
     renamedC: namedC
 };
 var exportNamed_ts_namespace_farm_internal_ = {
-    default: exportNamed_ts_default,
-    namedA: namedA,
-    namedB: namedB,
-    namedC: namedC,
-    renamedA: namedA,
-    renamedB: namedB,
-    renamedC: namedC,
+    get default () {
+        return exportNamed_ts_default;
+    },
+    get namedA () {
+        return namedA;
+    },
+    get namedB () {
+        return namedB;
+    },
+    get namedC () {
+        return namedC;
+    },
+    get renamedA () {
+        return namedA;
+    },
+    get renamedB () {
+        return namedB;
+    },
+    get renamedC () {
+        return namedC;
+    },
     __esModule: true
 };
 console.log('export expr');
@@ -28,7 +42,9 @@ function say() {
     console.log('hello');
 }
 var sameNameWithFile_ts_namespace_farm_internal_ = {
-    say: say,
+    get say () {
+        return say;
+    },
     __esModule: true
 };
 console.log({

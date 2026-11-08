@@ -7,7 +7,9 @@ use farmfe_core::{
     Mark, Spanned,
     comments::{Comments, SingleThreadedComments},
   },
-  swc_ecma_ast::{Class, ClassMember, Decl, DefaultDecl, Expr, Key, Lit, ModuleItem, PropName},
+  swc_ecma_ast::{
+    Class, ClassMember, Decl, Decorator, DefaultDecl, Expr, Key, Lit, ModuleItem, PropName,
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -220,6 +222,19 @@ impl<'a> SideEffectsAnalyzer<'a> {
   }
 }
 
+impl SideEffectsAnalyzer<'_> {
+  fn analyze_class_decorators(&mut self, decorators: &[Decorator]) {
+    decorators.visit_with(self);
+    // Even a bare identifier is invoked by decorator application at class
+    // definition time. Visiting the expression alone misses this call.
+    if !decorators.is_empty() {
+      self
+        .side_effects
+        .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+    }
+  }
+}
+
 impl<'a> Visit for SideEffectsAnalyzer<'a> {
   fn visit_class(&mut self, class: &Class) {
     if !self.is_in_top_level() {
@@ -237,13 +252,14 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
           .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
       }
     }
-    class.decorators.visit_with(self);
+    self.analyze_class_decorators(&class.decorators);
 
     // Only these parts run when the class is defined. Method bodies and
     // instance field initializers are deferred until invocation/instantiation.
     for member in &class.body {
       match member {
         ClassMember::Method(method) => {
+          self.analyze_class_decorators(&method.function.decorators);
           if let PropName::Computed(key) = &method.key {
             self.analyze_class_computed_key(&key.expr);
           }
@@ -252,13 +268,13 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
           if let PropName::Computed(key) = &prop.key {
             self.analyze_class_computed_key(&key.expr);
           }
-          prop.decorators.visit_with(self);
+          self.analyze_class_decorators(&prop.decorators);
           if prop.is_static {
             self.analyze_class_static_initializer(prop.value.as_deref());
           }
         }
         ClassMember::PrivateProp(prop) => {
-          prop.decorators.visit_with(self);
+          self.analyze_class_decorators(&prop.decorators);
           if prop.is_static {
             self.analyze_class_static_initializer(prop.value.as_deref());
           }
@@ -278,15 +294,15 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
           if let Key::Public(PropName::Computed(key)) = &accessor.key {
             self.analyze_class_computed_key(&key.expr);
           }
-          accessor.decorators.visit_with(self);
+          self.analyze_class_decorators(&accessor.decorators);
           if accessor.is_static {
             self.analyze_class_static_initializer(accessor.value.as_deref());
           }
         }
-        ClassMember::Constructor(_)
-        | ClassMember::PrivateMethod(_)
-        | ClassMember::TsIndexSignature(_)
-        | ClassMember::Empty(_) => {}
+        ClassMember::PrivateMethod(method) => {
+          self.analyze_class_decorators(&method.function.decorators);
+        }
+        ClassMember::Constructor(_) | ClassMember::TsIndexSignature(_) | ClassMember::Empty(_) => {}
       }
     }
   }

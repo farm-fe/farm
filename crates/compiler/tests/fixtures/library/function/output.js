@@ -35,9 +35,15 @@ var dep_ts_default = {
     removeDom
 };
 var dep_ts_namespace_farm_internal_ = {
-    default: dep_ts_default,
-    getChartSize: getChartSize,
-    removeDom: removeDom,
+    get default () {
+        return dep_ts_default;
+    },
+    get getChartSize () {
+        return getChartSize;
+    },
+    get removeDom () {
+        return removeDom;
+    },
     __esModule: true
 };
 console.log(getChartSize, removeDom, dep_ts_namespace_farm_internal_, dep_ts_default);

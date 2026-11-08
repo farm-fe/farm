@@ -405,7 +405,19 @@ fn parse_source(file_path: Option<&str>, content: Option<&str>, syntax: Syntax) 
   let (source_map, source_file) = create_swc_source_map(&file_path.into(), Arc::new(content));
   let mut parser = Parser::new(syntax, StringInput::from(&*source_file), None);
   let parsed = parser.parse_module();
-  let mut errors = parser.take_errors();
+  // Discovery parses syntax; it must not turn this recoverable TypeScript
+  // semantic diagnostic into a build error (including @ts-ignore sources).
+  // Keep every other recovered diagnostic, including malformed syntax.
+  let mut errors = parser
+    .take_errors()
+    .into_iter()
+    .filter(|error| {
+      !matches!(
+        error.kind(),
+        farmfe_core::swc_ecma_parser::error::SyntaxError::TS4112
+      )
+    })
+    .collect::<Vec<_>>();
   let ast = match parsed {
     Ok(ast) => Some(ast),
     Err(error) => {
@@ -578,6 +590,19 @@ mod diagnostic_regression_tests {
       );
     }
   }
+  #[test]
+  fn override_semantic_diagnostic_does_not_block_discovery() {
+    for content in [
+      "export class Example { override method() {} }",
+      "export class Example { // @ts-ignore\n override method() {} }",
+    ] {
+      assert!(parse_esm_imports(Some("semantic.ts"), Some(content)).is_ok());
+      assert!(parse_esm_exports(Some("semantic.ts"), Some(content)).is_ok());
+      assert!(parse_esm_imports_exports(Some("semantic.ts"), Some(content)).is_ok());
+    }
+    assert!(parse_esm_exports(Some("syntax.ts"), Some("export const value = 1 2;")).is_err());
+  }
+
   #[test]
   fn recoverable_parser_errors_are_not_success() {
     assert!(parse_esm_imports(Some("stream.tsx"), Some("const value = 1 2;")).is_err());

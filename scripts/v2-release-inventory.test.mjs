@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { npmInventory, nativeSourceDigest, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
+import { npmInventory, nativeSourceDigest, cargoPackageInputsDigest, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -78,6 +78,7 @@ test('candidate Cargo fingerprints match the current source bytes', () => {
   const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
   for (const pkg of plan.cargo) {
     assert.equal(nativeSourceDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.sourceSha256, `Cargo candidate source drifted: ${pkg.name}`);
+    assert.equal(cargoPackageInputsDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.packageInputsSha256, `Cargo candidate package inputs drifted: ${pkg.name}`);
   }
 });
 
@@ -97,7 +98,9 @@ test('preflight rejects stale or missing Cargo source fingerprints before report
         return JSON.stringify(candidate);
       };
       await import(${JSON.stringify(preflightUrl)});`;
-    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', source], { encoding: 'utf8' });
+    const env = { ...process.env };
+    delete env.FARM_RELEASE_CANDIDATE_PLAN;
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', source], { encoding: 'utf8', env });
     assert.equal(result.status, 1, result.stdout);
     assert.match(result.stderr, /Cargo candidate source drifted/);
     assert.doesNotMatch(result.stdout, /"sourceInventory": "consistent"/);

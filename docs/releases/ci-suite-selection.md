@@ -27,9 +27,10 @@ missing manifests/directories do not establish coverage. Browser receipts includ
 that build evidence and actual terminal cases. A planned empty collection is
 `not-applicable` with zero executed cases, not a successful empty test process.
 The stable gate checks all six current-run receipt sets and counts; skipped,
-missing, failed or foreign receipts cannot satisfy it. Create-farm candidates,
-Docs release-profile reference checks and full three-platform business-2048
-local performance runs remain separate from CI.
+missing, failed or foreign receipts cannot satisfy it. The primary CI platform
+chains also run the create-farm candidate consumer. Docs release-profile
+reference checks and full three-platform business-2048 local performance runs
+remain separate from CI.
 
 A reduced execution ledger is never accepted as a complete baseline. Lookup is
 bounded to three main runs and falls back to all current suites when no complete

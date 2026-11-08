@@ -32,6 +32,27 @@ def observed(row,published=False):
 
 
 class Contracts(unittest.TestCase):
+    def test_candidate_package_inputs_do_not_change_registry_selection(self):
+        source, family = source_fixture()
+        before = {}
+        for kind in ['npm', 'cargo']:
+            rows = module.records(source, kind)
+            first = sorted(rows)[0]
+            before[kind] = module.collect(source, kind, lambda row: observed(row, row['name'] == rows[first]['name']))
+        expected = entry.source_plan(source, registry_snapshot=before['npm'])
+        updated = copy.deepcopy(family)
+        for row in updated['cargo']:
+            row['packageInputsSha256'] = 'f' * 64
+        source['files']['docs/releases/v2-candidate.json'] = json.dumps(updated).encode()
+        for kind in ['npm', 'cargo']:
+            rows = module.records(source, kind)
+            first = sorted(rows)[0]
+            actual = module.collect(source, kind, lambda row: observed(row, row['name'] == rows[first]['name']))
+            self.assertEqual(actual, before[kind])
+        actual = entry.source_plan(source, registry_snapshot=before['npm'])
+        for key in ['publish', 'build', 'versionRequired', 'registryRetained']:
+            self.assertEqual(actual[key], expected[key], key)
+
     def test_no_baseline_missing_versions_build_full_family(self):
         source,family=source_fixture();snapshot=module.collect(source,'npm',observed)
         result=entry.source_plan(source,registry_snapshot=snapshot)

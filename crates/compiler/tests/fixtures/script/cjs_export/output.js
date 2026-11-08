@@ -23,4 +23,4 @@ initModuleSystem(__farm_internal_module_system__);
         function foo() {}
     }
 });
-var __farm_ms__ = global['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");var __farm_entry_default__=__farm_entry__.default;var __farm_entry_named__=__farm_entry__.named;module.exports = __farm_entry_default__;module.exports.named = __farm_entry_named__;
+var __farm_ms__ = global['__farm_default_namespace__'].m;var __farm_entry__=__farm_ms__.r("b5d64806");module.exports=__farm_entry__.default;if(module.exports!==null&&(typeof module.exports==='object'||typeof module.exports==='function')){var __farm_descriptor__=Object.getOwnPropertyDescriptor(module.exports,"named");if(__farm_descriptor__?__farm_descriptor__.configurable:Object.isExtensible(module.exports)){Object.defineProperty(module.exports,"named",{enumerable:true,configurable:true,get:function(){return __farm_entry__["named"]}});}else{module.exports["named"]=__farm_entry__["named"];}}else{module.exports["named"]=__farm_entry__["named"];}

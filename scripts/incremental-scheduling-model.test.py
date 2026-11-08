@@ -2,6 +2,8 @@
 # cspell:words importlib
 import importlib.util
 import json
+import subprocess
+import sys
 from pathlib import Path
 import unittest
 
@@ -232,6 +234,15 @@ class SchedulingOracle(unittest.TestCase):
 
     def test_local_concurrent_publication_lock(self):
         self.local_integration().concurrent_lock()
+
+    def test_local_durable_recovery_waits_under_optimized_python(self):
+        script = Path(__file__).with_name('release-local-integration.py')
+        program = 'import runpy; runpy.run_path(' + repr(str(script)) + ')["durable_recovery"]()'
+        result = subprocess.run([sys.executable, '-O', '-c', program], capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout.strip().splitlines()[-1])
+        self.assertEqual(report['successfulRegistryWrites'], 3)
+        self.assertTrue(report['repeatUploadNoop'])
 
     def test_local_durable_partial_upload_recovery(self):
         self.local_integration().durable_recovery()
