@@ -172,7 +172,7 @@ jobs:
       actions: read
       id-token: write
       attestations: write
-    uses: farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@635190593a94836a9d601f93cbcb706303dead1a
+    uses: farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@6c67f18e94b86e071b806675f37acb7907fea10e
     with:
       scope: unit
       upload_bindings: >-

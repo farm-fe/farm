@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import test from 'node:test';
 import YAML from 'yaml';
@@ -12,20 +13,20 @@ assert.match(trust.signerSHA, /^[a-f0-9]{40}$/);
 
 for (const [scope, caller, count] of [['ci', 'ci.yaml', 8], ['unit', 'rust-test.yaml', 1]]) {
   test(`${scope} A/B template authenticates exact caller and fixed needs outputs`, () => {
-    const directory = path.join(root, 'scripts/ci-provenance-templates', scope);
-    const files = JSON.parse(fs.readFileSync(path.join(directory, 'index.json')));
+    const pinned = file => execFileSync('git', ['show', `${trust.signerSHA}:scripts/ci-provenance-templates/${scope}/${file}`], { cwd: root, encoding: 'utf8' });
+    const files = JSON.parse(pinned('index.json'));
     assert.equal(new Set(files).size, files.length);
     const callerPath = `.github/workflows/${caller}`;
     assert.ok(files.includes(callerPath));
     for (const file of files) {
-      const bytes = fs.readFileSync(path.join(directory, file), 'utf8');
+      const bytes = pinned(file);
       const current = fs.readFileSync(path.join(root, file), 'utf8');
       if (file === callerPath) {
         assert.equal(bytes.replace(marker, trust.signerSHA), current);
         assert.equal(bytes.split(marker).length, 2);
       } else assert.equal(bytes, current, file);
     }
-    const source = fs.readFileSync(path.join(directory, callerPath), 'utf8');
+    const source = pinned(callerPath);
     const workflow = YAML.parse(source.replace(marker, 'a'.repeat(40)));
     const job = workflow.jobs['sign-ci-bindings'];
     assert.equal(job.uses, `farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@${'a'.repeat(40)}`);

@@ -52,17 +52,15 @@ def primary_upload_outputs(environment):
 def explicit_upload_outputs(environment):
     """Only the current fixed workflow needs outputs may supply this inventory."""
     values = json.loads(environment['CI_E2E_UPLOADS'])
-    expected = {'planner', *[row[0] for row in CELLS]}
-    shared.check(isinstance(values, dict) and set(values) == expected, 'E2E upload output inventory differs')
-    patterns = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
-    for row in values.values():
-        shared.check(isinstance(row, dict) and set(row) == set(patterns), 'Missing or unexpected E2E upload outputs')
-        shared.check(all(isinstance(row[key], str) and re.fullmatch(pattern, row[key]) for key, pattern in patterns.items()), 'Malformed E2E upload outputs')
-    return values['planner'], {key:values[key] for key in expected if key != 'planner'}
+    shared.check(isinstance(values, dict) and 'planner' in values, 'E2E planner output missing')
+    shared.validate_upload_output(values['planner'])
+    # Do not authenticate observations before the planner. They may be absent
+    # after an upstream failure; the shared reader classifies them after plan binding.
+    return values['planner'], {key:value for key,value in values.items() if key != 'planner'}
 
 
 def resolve(transport, run, identity, *, upload_outputs=None, planner_output=None, require_explicit=False):
-    if upload_outputs is not None:
+    if upload_outputs is not None and not require_explicit:
         expected = {row[0] for row in CELLS} if require_explicit else PRIMARY_CELLS
         shared.check(set(upload_outputs) == expected, 'Shadow upload output inventory differs')
     return shared.resolve(transport, run, identity, scope='e2e', cells=CELLS,

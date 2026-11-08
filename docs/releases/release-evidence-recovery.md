@@ -1,6 +1,6 @@
 # Fixed-main evidence recovery
 
-This workflow recovers a release blocked solely by the bounded wait for main CI.
+This workflow recommends manual recovery for a release blocked solely by the bounded wait for main CI.
 It does not authorize publication, dispatch a new source, or retry general build
 failures. Registry writes remain inside the original release workflow and lock.
 
@@ -14,7 +14,7 @@ alone is not proof. The latest exact-SHA CI and Unit executions must succeed;
 old success cannot conceal a newer failure, cancellation or running attempt.
 
 A timeout produces a pending receipt, not functional acceptance. Recovery checks
-its exact current-attempt artifact, successful upload step, timestamps, ZIP and
+its exact current-attempt artifact, signed upload identity, original attempt, successful upload step, ZIP and
 digest, source tree and intent not to publish. Missing or expired proof blocks
 recovery. Large native inventories do not affect the exact-name lookup.
 
@@ -22,9 +22,10 @@ recovery. Large native inventories do not affect the exact-name lookup.
 
 Every earlier release attempt must prove that the publisher was skipped and no
 candidate freeze executed. Any candidate or seal selects the existing frozen
-recovery path instead. Other failed or cancelled jobs also block automatic
-recovery. The controller only requests `rerun-failed-jobs` for the verified
-original run. Successful native jobs are carried, not uploaded again.
+recovery path instead. Other failed or cancelled jobs also block the recommendation. The controller
+returns `manual-recovery-required` with `attempt-conditional-rerun-unavailable`,
+`requested: false`, and the verified run/source/attempt. A maintainer must inspect
+the current attempt and initiate recovery; the controller never sends a POST.
 
 The source plan's original attempt and the candidate producer's actual attempt
 are separate outputs. A candidate identity job preserves the frozen producer
@@ -34,19 +35,20 @@ plan 1 plus native 1 can feed producer 2; consumer attempt 3 still reads candida
 
 ## Races and boundaries
 
-The controller rechecks its complete decision immediately before POST. Per-SHA
-concurrency serializes events; a duplicate observing a queued or running attempt
-is a no-op. Both release completion and CI completion are wake-ups, covering the
-race where CI succeeds just after the 120-minute wait expires. Recovery is bounded
-to 20 attempts, and a new verification failure without a new pending receipt does
-not trigger a retry loop. A concurrent external rerun after the last read may
-make the POST fail; that error is not treated as acceptance or retried blindly.
+The controller rechecks its complete decision before returning a recommendation.
+This does not eliminate the last-read race: GitHub's run-ID rerun endpoint has no
+attempt compare-and-swap. A newer manual attempt may freeze or partially publish
+before a POST would run. Therefore there is no automatic mutation, even if the
+endpoint would accept it with HTTP 201. Per-SHA concurrency does not serialize
+manual reruns. Recommendations are observations, not execution authorization.
+Both release and CI completion remain wake-ups. Validation is bounded to 20
+attempts; a new failure without a pending receipt cannot authorize recovery.
 
 Main moving forward does not change the run source. Existing fixed-source, registry
 conflict, durable lock and original-byte recovery checks remain mandatory.
 Frozen partial publications never rebuild replacements through this controller.
 
-The new controller declares `actions: write` solely for the original-run retry;
-its token has read-only contents and no npm or Cargo token. Local fixtures do not
+The existing workflow token declaration is unchanged in this repair, but the
+controller has no write method or POST path. It has no npm or Cargo token. Local fixtures do not
 prove hosted permissions, upload timing, carried outputs or actual publication.
 The implementation and tests may run locally without invoking the controller CLI.

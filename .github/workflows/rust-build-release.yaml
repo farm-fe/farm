@@ -29,7 +29,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: rust-build-release-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
+  group: rust-build-release-${{ github.run_id }}-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
   cancel-in-progress: true
 
 jobs:

@@ -211,4 +211,47 @@ class Contracts(unittest.TestCase):
                 bodies[number]=out.getvalue();artifact['size_in_bytes']=len(bodies[number]);artifact['digest']='sha256:'+hashlib.sha256(bodies[number]).hexdigest()
             with self.assertRaises(ValueError):module.resolve(api,run,identity)
 
+    def test_production_current_authenticates_plan_before_observation_shapes(self):
+        for defect in [None, 'empty-cell', 'null-cell', 'missing-cell', 'extra-cell', 'wrong-digest', 'future-attempt', 'failed-producer', 'bad-planner', 'missing-planner']:
+            with self.subTest(defect=defect):
+                api,run,identity,jobs,items,bodies,calls=fixture()
+                for attempt, rows in jobs.items():
+                    for job in rows: job.update(run_attempt=attempt, head_sha=run['head_sha'])
+                values={}
+                for cell,producer,key,suffix in [('planner','Incremental CI plan (shadow only)','', ''), *module.CELLS]:
+                    artifact=next(a for a in items.values() if a['name'].startswith('impact-plan-') if cell=='planner') if cell=='planner' else next(a for a in items.values() if '-'+key+'-'+suffix+'-' in a['name'])
+                    values[cell]={'artifact_id':str(artifact['id']),'artifact_digest':artifact['digest'][7:],'run_attempt':artifact['name'].rsplit('-',1)[1]}
+                cell='native-assembly'
+                if defect=='empty-cell': values[cell]={key:'' for key in values[cell]}
+                elif defect=='null-cell': values[cell]=None
+                elif defect=='missing-cell': del values[cell]
+                elif defect=='extra-cell': values['unreviewed']=values[cell]
+                elif defect=='wrong-digest': values[cell]['artifact_digest']='0'*64
+                elif defect=='future-attempt': values[cell]['run_attempt']='3'
+                elif defect=='failed-producer':
+                    for job in jobs[2]:
+                        if job['name']=='Check declared native inputs (not ABI execution)': job['conclusion']='failure'
+                elif defect=='bad-planner': values['planner']['artifact_digest']='0'*64
+                elif defect=='missing-planner': del values['planner']
+                with tempfile.TemporaryDirectory() as tmp:
+                    event=Path(tmp)/'event.json'; event.write_text(json.dumps({'pull_request':{'head':{'sha':identity['headSHA']},'base':{'sha':identity['baseSHA']}}}))
+                    env={'GITHUB_ACTIONS':'true','GITHUB_JOB':'impact-summary','CI_IMPACT_SCOPE':'e2e','GITHUB_EVENT_PATH':str(event),'GITHUB_SHA':identity['testedSHA'],'GITHUB_RUN_ID':identity['runId'],'GITHUB_RUN_ATTEMPT':'2','GITHUB_REPOSITORY':identity['repository'],'GITHUB_REPOSITORY_ID':'1','GH_TOKEN':'fixture','CI_E2E_UPLOADS':json.dumps(values)}
+                    def git(*args): return (identity['testedTree'] if args[-1]=='HEAD^{tree}' else identity['testedSHA']).encode()
+                    with mock.patch.object(module.impact,'git',side_effect=git),mock.patch.object(module.shared.execution.evidence.transport_module,'GitHubReadOnly',return_value=api):
+                        if defect is None:
+                            plan,rows,binding=module.current(env)
+                            self.assertEqual(len(rows),24);self.assertEqual(binding['plannerAttempt'],1);self.assertEqual(binding['consumerAttempt'],2)
+                        else:
+                            with self.assertRaises(ValueError) as caught:module.current(env)
+                            authenticated=hasattr(caught.exception,'shadow_plan')
+                            self.assertEqual(authenticated,defect not in ['bad-planner','missing-planner'])
+                            if authenticated:
+                                self.assertEqual(caught.exception.shadow_plan['testedSHA'],identity['testedSHA'])
+                                self.assertEqual(caught.exception.shadow_plan['runAttempt'],'1')
+                                spec=importlib.util.spec_from_file_location('diagnostic',Path(__file__).with_name('ci-impact-receipt.py'))
+                                diagnostic=importlib.util.module_from_spec(spec);spec.loader.exec_module(diagnostic)
+                                report=diagnostic.report_error('read-observations',caught.exception)
+                                if defect in ['missing-cell','extra-cell']:
+                                    self.assertEqual(report['resolutionStep'],'validate-observation-inventory')
+
 if __name__=='__main__':unittest.main()

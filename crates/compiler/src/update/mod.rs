@@ -155,7 +155,7 @@ mod update_finished_lock_tests {
         &vec![],
         DiffResult::default(),
         HashMap::default(),
-        move || {
+        move |_| {
           callback_completed.store(true, std::sync::atomic::Ordering::SeqCst);
         },
         true,
@@ -201,13 +201,59 @@ mod update_finished_lock_tests {
         &vec![],
         DiffResult::default(),
         HashMap::default(),
-        move || {
+        move |_| {
           callback_completed.store(true, std::sync::atomic::Ordering::SeqCst);
         },
         true,
       )
       .unwrap();
     assert!(completed.load(std::sync::atomic::Ordering::SeqCst));
+  }
+
+  #[test]
+  fn asynchronous_errors_complete_exactly_once_without_panicking() {
+    for (plugin, expected) in [
+      (
+        Arc::new(RegenerationFailure) as Arc<dyn Plugin>,
+        "regeneration failure",
+      ),
+      (
+        Arc::new(FinalizeFailure) as Arc<dyn Plugin>,
+        "finalization failure",
+      ),
+      (
+        Arc::new(CompletionFailure) as Arc<dyn Plugin>,
+        "completion failure",
+      ),
+    ] {
+      let compiler = Compiler::new(Config::default(), vec![plugin]).unwrap();
+      let (sender, receiver) = std::sync::mpsc::channel();
+      let result = compiler
+        .regenerate_resources(
+          HashSet::default(),
+          HashSet::default(),
+          &vec![],
+          DiffResult::default(),
+          HashMap::default(),
+          move |result| {
+            sender
+              .send(result.map_err(|error| error.to_string()))
+              .unwrap();
+          },
+          false,
+        )
+        .unwrap();
+      assert!(result.is_none(), "must exercise the asynchronous branch");
+      let error = receiver
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .unwrap()
+        .unwrap_err();
+      assert!(error.contains(expected), "{error}");
+      assert!(matches!(
+        receiver.recv_timeout(std::time::Duration::from_secs(1)),
+        Err(std::sync::mpsc::RecvTimeoutError::Disconnected)
+      ));
+    }
   }
 
   impl Plugin for ResourceReader {
@@ -237,7 +283,7 @@ mod update_finished_lock_tests {
         &vec![],
         DiffResult::default(),
         HashMap::default(),
-        || {},
+        |_| {},
         true,
       )
       .unwrap();
@@ -333,6 +379,31 @@ impl Compiler {
   ) -> Result<UpdateResult>
   where
     F: FnOnce() + Send + Sync + 'static,
+  {
+    self.update_with_completion(
+      paths,
+      move |result| {
+        if result.is_ok() {
+          callback();
+        }
+      },
+      sync,
+      generate_update_resource,
+    )
+  }
+
+  /// Update with an error-aware completion for asynchronous resource finalization.
+  /// Early errors are returned directly; once regeneration is scheduled its
+  /// completion is delivered exactly once, after all update-finished hooks.
+  pub fn update_with_completion<F>(
+    &self,
+    paths: Vec<(String, UpdateType)>,
+    callback: F,
+    sync: bool,
+    generate_update_resource: bool,
+  ) -> Result<UpdateResult>
+  where
+    F: FnOnce(Result<()>) + Send + Sync + 'static,
   {
     self.context.source_observations.begin_generation();
     self.context.stats.add_hmr_compilation_stats();
@@ -851,7 +922,7 @@ impl Compiler {
     sync: bool,
   ) -> Result<Option<DynamicResourcesMap>>
   where
-    F: FnOnce() + Send + Sync + 'static,
+    F: FnOnce(Result<()>) + Send + Sync + 'static,
   {
     let mut dynamic_resources_map = None;
     let cloned_updated_module_ids = updated_module_ids.clone();
@@ -897,32 +968,28 @@ impl Compiler {
       drop(module_group_graph);
       self.context.plugin_driver.update_finished(&self.context)?;
       self.context.stats.set_end_time();
-      callback();
+      callback(Ok(()));
     } else {
       std::thread::spawn(move || {
-        if let Err(e) = regenerate_resources_for_affected_module_groups(
-          affected_module_groups,
-          diff_result,
-          &cloned_updated_module_ids,
-          &removed_modules,
-          &cloned_context,
-        ) {
-          println!("Failed to regenerate resources: {e}");
-          println!("modules to regenerate: {cloned_updated_module_ids:?}");
-        }
-
-        finalize_resources(&cloned_context).unwrap();
-        cloned_context
-          .plugin_driver
-          .update_finished(&cloned_context)
-          .unwrap();
+        let result = (|| {
+          regenerate_resources_for_affected_module_groups(
+            affected_module_groups,
+            diff_result,
+            &cloned_updated_module_ids,
+            &removed_modules,
+            &cloned_context,
+          )?;
+          finalize_resources(&cloned_context)?;
+          cloned_context
+            .plugin_driver
+            .update_finished(&cloned_context)?;
+          Ok(())
+        })();
         cloned_context.stats.set_end_time();
-        callback();
+        callback(result);
       });
     }
 
-    // The legacy asynchronous branch completes through its callback. Callers
-    // requiring generation errors before publishing an update must use sync.
     Ok(dynamic_resources_map)
   }
 }

@@ -128,7 +128,7 @@ class Contracts(unittest.TestCase):
             elif defect=='mac-docs-present':
                 mac.update({'docs_shadow_artifact_id':'123','docs_shadow_artifact_digest':'a'*64,'docs_shadow_run_attempt':'1'})
             env={key:json.dumps(value) for key,value in rows.items()}
-            if defect:
+            if defect == 'unknown':
                 with self.subTest(defect=defect),self.assertRaises(ValueError):module.current_upload_outputs(env)
             else:self.assertEqual(len(module.current_upload_outputs(env)),3)
 
@@ -140,13 +140,17 @@ class Contracts(unittest.TestCase):
             elif defect=='partial':del row['ts_shadow_run_attempt']
             elif defect=='null':row['ts_shadow_artifact_id']=None
             else:row['ts_shadow_'+{'id':'artifact_id','digest':'artifact_digest','attempt':'run_attempt'}[defect]]='bad'
-            with self.subTest(defect=defect),self.assertRaises(ValueError):module.current_upload_outputs({key:json.dumps(value) for key,value in rows.items()})
+            env={key:json.dumps(value) for key,value in rows.items()}
+            if defect == 'unknown':
+                with self.subTest(defect=defect),self.assertRaises(ValueError):module.current_upload_outputs(env)
+            else:
+                self.assertEqual(len(module.current_upload_outputs(env)),3)
             spec=importlib.util.spec_from_file_location('shadow_negative',Path(__file__).with_name('ci-e2e-shadow-inputs.py'))
             shadow=importlib.util.module_from_spec(spec);spec.loader.exec_module(shadow)
             with self.subTest(shadow=defect),self.assertRaises(ValueError):shadow.primary_upload_outputs({key.replace('FARM_SUITE_','CI_SHADOW_'):json.dumps(value) for key,value in rows.items()})
 
     def test_complete_workflow_outputs_drive_actual_suite_collection(self):
-        for defect in [None,'artifact_id','artifact_digest','run_attempt']:
+        for defect in [None,'shadow-empty','shadow-malformed','artifact_id','artifact_digest','run_attempt']:
             transport,run,source,jobs,artifacts,*_=fixture.fixture();trusted=outputs(artifacts);env={}
             for abi,platform in [('linux-x64-gnu','LINUX'),('darwin-arm64','MACOS'),('win32-x64-msvc','WINDOWS')]:
                 row={('ts' if kind=='ts' else 'browser')+'_'+field:value for kind,output in trusted[abi].items() for field,value in output.items()}
@@ -155,12 +159,15 @@ class Contracts(unittest.TestCase):
                 for label in ['native','docs']:
                     if label == 'docs' and abi == 'darwin-arm64': continue
                     row.update({label+'_shadow_artifact_id':'987655',label+'_shadow_artifact_digest':'b'*64,label+'_shadow_run_attempt':'1'})
-                if defect and abi=='darwin-arm64':row['ts_'+defect]={'artifact_id':'999999','artifact_digest':'0'*64,'run_attempt':'3'}[defect]
+                if defect in ['shadow-empty','shadow-malformed']:
+                    for key in list(row):
+                        if '_shadow_' in key: row[key]='' if defect=='shadow-empty' else 'forged'
+                if defect in ['artifact_id','artifact_digest','run_attempt'] and abi=='darwin-arm64':row['ts_'+defect]={'artifact_id':'999999','artifact_digest':'0'*64,'run_attempt':'3'}[defect]
                 env['FARM_SUITE_UPLOADS_'+platform]=json.dumps(row)
             for artifact in artifacts.values():artifact['created_at']='2026-10-31T01:03:01Z'
             with tempfile.TemporaryDirectory() as tmp:
                 selected=module.current_upload_outputs(env)
-                if defect:
+                if defect in ['artifact_id','artifact_digest','run_attempt']:
                     with self.assertRaises(ValueError):module.collect(transport,run,source,Path(tmp)/'out',upload_outputs=selected)
                 else:
                     proof=module.collect(transport,run,source,Path(tmp)/'out',upload_outputs=selected)

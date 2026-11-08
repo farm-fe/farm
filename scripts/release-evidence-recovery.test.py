@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 import zipfile
 
 spec = importlib.util.spec_from_file_location('recovery_tests', Path(__file__).with_name('release-evidence-recovery.py'))
@@ -31,6 +32,7 @@ class LocalActions:
         self.release = run(50, m.WORKFLOW, 'failure')
         self.ci = run(10, '.github/workflows/ci.yaml', attempt=3)
         self.unit = run(20, '.github/workflows/rust-test.yaml', attempt=2)
+        self.attempts = {1: copy.deepcopy(self.release)}
         self.rows = [self.release]; self.posts = []; self.ready = True; self.clock = None; self.ready_at = 0
         self.job = {'id': 100, 'run_id': 50, 'run_attempt': 1, 'head_sha': SHA, 'name': m.EVIDENCE_JOB,
                     'status': 'completed', 'conclusion': 'failure', 'steps': [{'name': m.UPLOAD,
@@ -62,7 +64,8 @@ class LocalActions:
         if route == '/actions/runs/50': return copy.deepcopy(self.release)
         if route == '/actions/runs/10': return copy.deepcopy(self.ci)
         if route == '/actions/runs/20': return copy.deepcopy(self.unit)
-        if route in ['/actions/runs/50/attempts/1','/actions/runs/50/attempts/2']: return copy.deepcopy(self.release)
+        if route.startswith('/actions/runs/50/attempts/') and '/jobs?' not in route:
+            return copy.deepcopy(self.attempts[int(route.rsplit('/', 1)[1])])
         if '/jobs?per_page=100' in route: return {'total_count': len(self.jobs), 'jobs': copy.deepcopy(self.jobs)}
         if route.startswith('/actions/runs/50/artifacts?'):
             name = route.split('&name=')[1]; rows = [a for a in self.artifacts if a['name'] == name]
@@ -115,22 +118,22 @@ class Recovery(unittest.TestCase):
                     # Transport uses the actual pending bytes, digest, original upload step and run.
                     transport = LocalActions(pending); event = transport.event()
                     result = recover(transport, event)
-                    self.assertTrue(result['requested']); self.assertEqual(transport.posts, [50])
+                    self.assertFalse(result['requested']); self.assertEqual(result['action'], 'manual-recovery-required'); self.assertEqual(transport.posts, [])
                     self.assertEqual(result['sourceSHA'], SHA)
-                    self.assertEqual(recover(transport, event)['action'], 'none')
-                    self.assertEqual(transport.posts, [50])
+                    self.assertEqual(recover(transport, event)['action'], 'manual-recovery-required')
+                    self.assertEqual(transport.posts, [])
 
     def test_pending_then_ci_completion_and_release_completion_race(self):
         transport = LocalActions(); transport.ready = False
         self.assertEqual(recover(transport, transport.event())['action'], 'none')
         transport.ready = True
-        self.assertTrue(recover(transport, transport.event('ci'))['requested'])
-        self.assertEqual(transport.posts, [50])
+        self.assertFalse(recover(transport, transport.event('ci'))['requested'])
+        self.assertEqual(transport.posts, [])
         # If CI finishes while release is still running, release completion wakes recovery.
         transport = LocalActions(); transport.release['status'] = 'in_progress'
         self.assertEqual(recover(transport, transport.event('ci'))['action'], 'none')
         transport.release['status'] = 'completed'
-        self.assertTrue(recover(transport, transport.event())['requested'])
+        self.assertFalse(recover(transport, transport.event())['requested'])
 
     def test_failure_cancellation_and_new_attempt_never_accept_old_success(self):
         for status in ['failure', 'cancelled']:
@@ -167,7 +170,7 @@ class Recovery(unittest.TestCase):
         transport.artifact['created_at']='2099-01-01T00:00:00+12:00'
         for step in transport.job['steps']:
             step.pop('started_at');step.pop('completed_at')
-        self.assertTrue(recover(transport,transport.event())['requested'])
+        self.assertFalse(recover(transport,transport.event())['requested'])
 
     def test_frozen_transaction_and_possible_publisher_never_rebuild(self):
         for name in ['farm-release-candidates-'+SHA+'-1', 'farm-release-seal-'+SHA+'-1']:
@@ -182,7 +185,7 @@ class Recovery(unittest.TestCase):
     def test_main_moving_does_not_change_original_transaction_source(self):
         transport = LocalActions()
         result = recover(transport, transport.event())
-        self.assertEqual(result['sourceSHA'], SHA); self.assertEqual(transport.posts, [50])
+        self.assertEqual(result['sourceSHA'], SHA); self.assertEqual(transport.posts, [])
         # No branch resolution/dispatch occurs: original run 50 determines checkout.
         self.assertNotIn('ref', result)
 
@@ -209,7 +212,7 @@ class Recovery(unittest.TestCase):
     def test_native_artifact_volume_does_not_hide_frozen_candidates(self):
         transport = LocalActions()
         transport.artifacts.extend({'id':1000+i,'name':'native-'+str(i)} for i in range(400))
-        self.assertTrue(recover(transport, transport.event())['requested'])
+        self.assertFalse(recover(transport, transport.event())['requested'])
         transport = LocalActions()
         transport.artifacts.extend({'id':1000+i,'name':'native-'+str(i)} for i in range(400))
         transport.artifacts.append({'id':2000,'name':'farm-release-candidates-'+SHA+'-1'})
@@ -218,6 +221,7 @@ class Recovery(unittest.TestCase):
     def test_retry_failure_without_current_pending_receipt_does_not_loop(self):
         transport = LocalActions()
         transport.release['run_attempt'] = 2
+        transport.attempts[2] = copy.deepcopy(transport.release)
         transport.job['run_attempt'] = 2
         # A genuine verifier error has no pending upload in the new attempt.
         transport.job['steps'] = []
@@ -230,6 +234,44 @@ class Recovery(unittest.TestCase):
             workflow=m.WORKFLOW, producer=m.functional.entry.PRODUCER, freeze_step='Freeze independent release candidates',
             publisher='Publish exact independent release archives under durable lock', events=['push'])
         self.assertEqual(proof, [{'runId':50,'attempt':1,'publisher':'skipped','freeze':'not-executed'}])
+
+    def test_post_decision_attempt_race_never_mutates_run(self):
+        for state in ['queued', 'failure', 'frozen-publisher-failure']:
+            with self.subTest(state=state):
+                transport = LocalActions(); event = transport.event(); original = m.decision; calls = 0
+                def decision(*args, **kwargs):
+                    nonlocal calls
+                    result = original(*args, **kwargs); calls += 1
+                    if calls == 2:
+                        transport.release.update(run_attempt=2, status='queued' if state == 'queued' else 'completed', conclusion=None if state == 'queued' else 'failure')
+                        transport.attempts[2] = copy.deepcopy(transport.release)
+                        if state == 'frozen-publisher-failure':
+                            transport.artifacts.append({'id': 901, 'name': 'farm-release-seal-'+SHA+'-2'})
+                    return result
+                with patch.object(m, 'decision', side_effect=decision):
+                    result = recover(transport, event)
+                self.assertEqual(calls, 2)
+                self.assertEqual(result['action'], 'manual-recovery-required')
+                self.assertEqual(result['reason'], 'attempt-conditional-rerun-unavailable')
+                self.assertFalse(result['requested']); self.assertFalse(transport.posts)
+                self.assertEqual(transport.attempts[1]['run_attempt'], 1)
+                # Model the real run-ID-only endpoint: it could accept 201 and
+                # operate on attempt 2, not the reviewed attempt 1. Never call it.
+                def unsafe_post():
+                    transport.posts.append(transport.release['run_attempt'])
+                    return 201
+                self.assertEqual(unsafe_post(), 201)
+                self.assertEqual(transport.posts, [2])
+
+    def test_real_actions_adapter_accepts_only_fixed_repository_root(self):
+        with patch.object(m.subprocess, 'check_output', return_value=b'{"id":507542208}') as request:
+            self.assertEqual(m.Actions().get('')['id'], m.REPOSITORY_ID)
+            request.assert_called_once_with(['gh', 'api', 'repos/farm-fe/farm'], timeout=60)
+        for route in ['//other', '../x', '/a/../b', 'https://example.com', '/x\\y', '/x#y']:
+            with self.subTest(route=route), patch.object(m.subprocess, 'check_output') as request:
+                with self.assertRaises(ValueError): m.Actions().get(route)
+                request.assert_not_called()
+        self.assertFalse(hasattr(m.Actions, 'rerun'))
 
 
 if __name__ == '__main__': unittest.main(verbosity=2)

@@ -1,7 +1,7 @@
-"""Resume only an unfrozen, fixed-main release stalled on functional evidence.
+"""Recommend recovery only for a verified unfrozen, fixed-main release.
 
 The completed workflow event is a wake-up, not publication authorization.
-The only write is rerun for the independently verified original run.
+No run mutation is permitted: the API cannot bind reruns to an attempt.
 """
 import importlib.util
 import json
@@ -116,23 +116,23 @@ def decision(transport, event, *, proof_provider=None):
     functional.retry.verify_unfrozen_retry(transport.get, run_id=run_id, source_sha=sha, current_attempt=attempt + 1,
         workflow=WORKFLOW, producer=functional.entry.PRODUCER, freeze_step='Freeze independent release candidates',
         publisher='Publish exact independent release archives under durable lock', events=['push'])
-    return {'action': 'rerun-failed-jobs', 'runId': run_id, 'attempt': attempt, 'sourceSHA': sha, 'functional': accepted}
+    return {'action': 'manual-recovery-required', 'reason': 'attempt-conditional-rerun-unavailable', 'requested': False, 'publicationExecuted': False, 'runId': run_id, 'attempt': attempt, 'sourceSHA': sha, 'functional': accepted}
 
 
 def recover(transport, event, *, proof_provider=None):
     first = decision(transport, event, proof_provider=proof_provider)
-    if first['action'] != 'rerun-failed-jobs': return first
-    # Re-read immediately before the only write. Concurrent/manual reruns become no-ops.
+    if first['action'] != 'manual-recovery-required': return first
+    # Re-read to avoid presenting an already stale recommendation. This is not CAS;
+    # a later manual attempt may still supersede it, so no POST follows.
     second = decision(transport, event, proof_provider=proof_provider)
     if second != first: return {'action': 'none', 'reason': 'recovery-state-changed'}
-    # YAML preserves the original plan and candidate attempt outputs across carries.
-    transport.rerun(first['runId'])
-    return {**first, 'requested': True, 'publicationExecuted': False}
+    return second
 
 
 class Actions:
     def get(self, route):
-        check(route.startswith('/') and '..' not in route, 'Unexpected recovery route')
+        check(isinstance(route, str) and (route == '' or route.startswith('/') and not route.startswith('//'))
+              and '..' not in route and not any(char in route for char in ['#', '\\', '\r', '\n']), 'Unexpected recovery route')
         return json.loads(subprocess.check_output(['gh', 'api', 'repos/' + REPOSITORY + route], timeout=60))
 
     def archive(self, artifact_id):
@@ -140,14 +140,11 @@ class Actions:
         body = subprocess.check_output(['gh', 'api', 'repos/' + REPOSITORY + '/actions/artifacts/' + str(artifact_id) + '/zip'], timeout=60)
         check(len(body) <= 65536, 'Pending archive exceeds bound'); return body
 
-    def rerun(self, run_id):
-        check(type(run_id) is int and run_id > 0, 'Invalid rerun ID')
-        subprocess.run(['gh', 'api', '--method', 'POST', 'repos/' + REPOSITORY + '/actions/runs/' + str(run_id) + '/rerun-failed-jobs'], check=True, timeout=60)
 
 
 if __name__ == '__main__':
     check(os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_EVENT_NAME') == 'workflow_run'
           and os.environ.get('GITHUB_REPOSITORY') == REPOSITORY and os.environ.get('GITHUB_REPOSITORY_ID') == str(REPOSITORY_ID)
-          and os.environ.get('GITHUB_WORKFLOW_REF') == REPOSITORY + '/' + RECOVERY + '@refs/heads/main', 'Only trusted main recovery workflow may request retries')
+          and os.environ.get('GITHUB_WORKFLOW_REF') == REPOSITORY + '/' + RECOVERY + '@refs/heads/main', 'Only trusted main recovery workflow may recommend recovery')
     check(subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == os.environ['GITHUB_WORKFLOW_SHA'], 'Recovery control checkout differs')
     print(json.dumps(recover(Actions(), json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())), sort_keys=True))

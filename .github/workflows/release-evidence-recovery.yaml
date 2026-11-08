@@ -1,4 +1,4 @@
-name: Recover fixed-main release evidence
+name: Recommend fixed-main release recovery
 on:
   workflow_run:
     workflows: [E2E Tests, Unit Tests, Independent incremental release planning and verification]
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Resume only a proven unfrozen pending release
+      - name: Recommend recovery only for a proven unfrozen pending release
         env:
           GH_TOKEN: ${{ github.token }}
         run: python -B scripts/release-evidence-recovery.py

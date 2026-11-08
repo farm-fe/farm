@@ -118,6 +118,9 @@ jobs:
 
   main-evidence:
     outputs:
+      functional_id: ${{ steps.functional-upload.outputs.artifact-id }}
+      functional_digest: ${{ steps.functional-upload.outputs.artifact-digest }}
+      functional_attempt: ${{ steps.functional-origin.outputs.attempt }}
       pending_id: ${{ steps.pending-upload.outputs.artifact-id }}
       pending_digest: ${{ steps.pending-upload.outputs.artifact-digest }}
       pending_attempt: ${{ steps.pending-origin.outputs.attempt }}
@@ -156,12 +159,18 @@ jobs:
         id: pending-origin
         if: always() && steps.pending-upload.outcome == 'success'
         run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - name: Preserve verified fixed-main functional evidence
+        id: functional-upload
+        uses: actions/upload-artifact@v4
         with:
           name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
           path: functional-evidence.json
           if-no-files-found: error
           retention-days: 90
+      - name: Bind functional evidence to its original successful upload
+        id: functional-origin
+        if: success() && steps.functional-upload.outcome == 'success'
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
 
   plan:
     needs: [source]
@@ -376,10 +385,12 @@ jobs:
         env:
           FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
         run: node scripts/incremental-release-producer.mjs pack release-work/native-assembly.json release-work/artifact-index.json release-work/npm release-work/candidate-plan.json
-      - uses: actions/download-artifact@v4
-        with:
-          name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
-          path: release-functional
+      - name: Restore exactly bound original functional evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FARM_FUNCTIONAL_UPLOAD: >-
+            {"artifact_id":"${{ needs.main-evidence.outputs.functional_id }}","artifact_digest":"${{ needs.main-evidence.outputs.functional_digest }}","run_attempt":"${{ needs.main-evidence.outputs.functional_attempt }}"}
+        run: python -B scripts/release-functional-upload.py --output release-functional/functional-evidence.json
       - name: Load verified functional bindings as data
         shell: python
         run: |
@@ -501,6 +512,7 @@ jobs:
           FARM_RELEASE_CANDIDATE_UPLOADS: ${{ toJSON(needs.candidate-consumers.outputs) }}
         run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
   public-consumers:
+    if: ${{ !cancelled() && needs.source.result == 'success' && needs.publisher.result == 'success' && needs.candidate-identity.result == 'success' }}
     name: Fixed independent release public consumers
     needs:
       - source
@@ -514,6 +526,7 @@ jobs:
       candidate_attempt: ${{ needs.candidate-identity.outputs.attempt }}
 
   public-proof:
+    if: ${{ !cancelled() && needs.source.result == 'success' && needs.public-consumers.result == 'success' && needs.candidate-identity.result == 'success' && needs.candidate-consumers.result == 'success' }}
     outputs:
       public_id: ${{ steps.public-upload.outputs.artifact-id }}
       public_digest: ${{ steps.public-upload.outputs.artifact-digest }}
@@ -563,6 +576,7 @@ jobs:
         id: public-origin
         run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
   finalize:
+    if: ${{ !cancelled() && needs.source.result == 'success' && needs.public-proof.result == 'success' && needs.candidate-identity.result == 'success' && needs.sign-public-acceptance.result == 'success' }}
     name: Finalize exact independent release and durable baseline
     needs: [source, public-proof, candidate-identity, sign-public-acceptance]
     runs-on: ubuntu-24.04
@@ -607,7 +621,7 @@ jobs:
         {"pending":{"artifact_id":"${{ needs.main-evidence.outputs.pending_id }}","artifact_digest":"${{ needs.main-evidence.outputs.pending_digest }}","run_attempt":"${{ needs.main-evidence.outputs.pending_attempt }}"}}
 
   sign-frozen-release:
-    if: needs.producer.result == 'success' && needs.producer.outputs.seal_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.producer.result == 'success' && needs.producer.outputs.seal_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [producer]
     permissions:
       contents: read
@@ -621,7 +635,7 @@ jobs:
         {"seal":{"artifact_id":"${{ needs.producer.outputs.seal_id }}","artifact_digest":"${{ needs.producer.outputs.seal_digest }}","run_attempt":"${{ needs.producer.outputs.frozen_attempt }}"},"candidates":{"artifact_id":"${{ needs.producer.outputs.candidates_id }}","artifact_digest":"${{ needs.producer.outputs.candidates_digest }}","run_attempt":"${{ needs.producer.outputs.frozen_attempt }}"}}
 
   sign-public-acceptance:
-    if: needs.public-proof.result == 'success' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.candidate-consumers.result == 'success' && needs.public-consumers.result == 'success' && needs.public-proof.result == 'success' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: [public-proof, candidate-consumers, public-consumers]
     permissions:
       contents: read

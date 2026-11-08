@@ -31,8 +31,10 @@ cannot be repacked or retrospectively certified.
   not authorize new writes or replace current public tests for an unfinished
   transaction. Missing or conflicting bytes fail closed.
 
-The code does not automatically invoke these retry operations. The only automatic
-recovery remains the separately approved, bounded pending-main-evidence controller.
+The code does not automatically invoke retry operations. The pending-main-evidence
+controller returns a verified run/attempt/source recommendation without POST.
+A maintainer must recheck current state before acting; a recommendation cannot
+authorize a later attempt.
 A workflow dispatch may read existing proof where supported; it cannot mint a new
 signature or turn unsigned data into publication authorization.
 

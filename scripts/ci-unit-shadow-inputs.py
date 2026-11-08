@@ -19,12 +19,15 @@ CELLS = [('cargo-check', 'Check', 'cargo-check', 'single'),
 def unit_upload_outputs(environment):
     """Fixed per-job needs outputs; no matrix last-writer or receipt assertions."""
     values = json.loads(environment['CI_UNIT_UPLOADS'])
-    check(isinstance(values, dict) and set(values) == {'planner', *[cell for cell, *_ in CELLS]}, 'Unit upload output inventory differs')
+    check(isinstance(values, dict) and 'planner' in values, 'Unit planner output missing')
+    validate_upload_output(values['planner'])
+    return values['planner'], {key: value for key, value in values.items() if key != 'planner'}
+
+
+def validate_upload_output(row):
     patterns = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
-    for row in values.values():
-        check(isinstance(row, dict) and set(row) == set(patterns), 'Missing or unexpected Unit upload outputs')
-        check(all(isinstance(row[field], str) and re.fullmatch(pattern, row[field]) for field, pattern in patterns.items()), 'Malformed Unit upload outputs')
-    return values['planner'], {cell: values[cell] for cell, *_ in CELLS}
+    check(isinstance(row, dict) and set(row) == set(patterns), 'Missing or unexpected shadow upload outputs')
+    check(all(isinstance(row[key], str) and re.fullmatch(pattern, row[key]) for key, pattern in patterns.items()), 'Malformed shadow upload outputs')
 
 
 def read_object(transport, run, name, member):
@@ -45,13 +48,10 @@ def resolve(transport, run, identity, *, scope="unit", cells=None, upload_output
     check(run['path'] == '.github/workflows/' + workflow and run['event'] in ['pull_request','push','workflow_dispatch'], 'Unit shadow workflow differs')
     check(run['repository']['id'] == run['head_repository']['id'] and run['repository']['full_name'] == identity['repository']
           and str(run['id']) == identity['runId'] and run['head_sha'] == identity['headSHA'], 'Unit shadow run source differs')
-    if require_explicit:
-        check(isinstance(planner_output, dict) and isinstance(upload_outputs, dict)
-              and set(upload_outputs) == {row[0] for row in cells}
-              and all(isinstance(row, dict) for row in upload_outputs.values()), 'Explicit shadow producer bindings required')
     cache = {}
     context = {'resolutionStep':'resolve-producer'}
     try:
+        if require_explicit: validate_upload_output(planner_output)
         planner_run, planner_job = (execution.explicit_producer(transport, run, planner, planner_output, cache=cache)
                                     if (scope == 'unit' or require_explicit) and planner_output is not None
                                     else execution.actual_producer(transport, run, planner, cache=cache))
@@ -88,10 +88,14 @@ def resolve(transport, run, identity, *, scope="unit", cells=None, upload_output
         error.shadow_context = context
         raise
     try:
+        context = {'resolutionStep':'validate-observation-inventory'}
+        if require_explicit:
+            check(isinstance(upload_outputs, dict) and set(upload_outputs) == {row[0] for row in cells}, 'Explicit shadow producer inventory differs')
         observations, bindings = [], {}
         for cell, producer, job_key, suffix in cells:
             context = {'cell':cell, 'resolutionStep':'resolve-producer'}
             output = None if upload_outputs is None else upload_outputs.get(cell)
+            if require_explicit: validate_upload_output(output)
             origin, job = (execution.explicit_producer(transport, run, producer, output, cache=cache)
                            if (scope == 'unit' or require_explicit) and output is not None
                            else execution.actual_producer(transport, run, producer, cache=cache))

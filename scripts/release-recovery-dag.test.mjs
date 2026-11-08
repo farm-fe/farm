@@ -52,11 +52,51 @@ test('recovery wake-up never checks out triggering code or receives publication 
  assert.equal(doc.jobs.recover.permissions.actions,'write');assert.equal(doc.jobs.recover.permissions.contents,'read');
  assert.ok(!/NPM_TOKEN|CARGO_REGISTRY_TOKEN|pull_request_target/.test(recovery));
  assert.equal(doc.concurrency['cancel-in-progress'],false);
- const script=fs.readFileSync(new URL('./release-evidence-recovery.py',import.meta.url),'utf8');assert.ok(script.includes('/rerun-failed-jobs'));assert.ok(!script.includes('/dispatches'));
+ const script=fs.readFileSync(new URL('./release-evidence-recovery.py',import.meta.url),'utf8');assert.ok(!script.includes('/rerun-failed-jobs'));assert.ok(script.includes('manual-recovery-required'));assert.ok(script.includes('attempt-conditional-rerun-unavailable'));assert.ok(!script.includes("'POST'"));assert.ok(!script.includes('/dispatches'));
 });
 test('all release needs remain acyclic and mandatory candidate checks cannot be skipped',()=>{
  const done=new Set(),active=new Set();function visit(name){assert.ok(jobs[name]);assert.ok(!active.has(name));if(done.has(name))return;active.add(name);for(const need of jobs[name].needs??[])visit(need);active.delete(name);done.add(name);}
  for(const name of Object.keys(jobs))visit(name);
  for(const name of ['candidate-consumers','publisher'])assert.ok(jobs[name].if.includes("needs.candidate-identity.result == 'success'"));
  assert.ok(identity.if.includes("needs.source.outputs.reuse == 'true'"));
+});
+
+function condition(job, { results = {}, cancelled = false, event = 'push' } = {}) {
+ const expression = job.if.replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+   .replace(/!cancelled\(\)/g, String(!cancelled))
+   .replace(/needs\.([\w-]+)\.result/g, (_, name) => JSON.stringify(results[name] ?? 'success'))
+   .replace(/needs\.producer\.outputs\.seal_id/g, JSON.stringify('90'))
+   .replace(/github\.repository/g, JSON.stringify('farm-fe/farm'))
+   .replace(/github\.event_name/g, JSON.stringify(event))
+   .replace(/github\.ref/g, JSON.stringify('refs/heads/main'));
+ // Only the fixed, reviewed boolean grammar is evaluated by this local model.
+ assert.match(expression, /^[\s\w'"!&|=()./-]+$/);
+ return Function(`return (${expression})`)();
+}
+test('actual public/recovery conditions admit carried ancestry but reject direct failure and cancellation', () => {
+ for (const name of ['public-consumers', 'public-proof', 'finalize', 'sign-public-acceptance', 'sign-frozen-release']) {
+  const job = jobs[name];
+  assert.match(job.if, /!cancelled\(\)/);
+  const carried = { plan: 'skipped', quality: 'skipped' };
+  if (!job.needs.includes('producer')) carried.producer = 'skipped';
+  assert.equal(condition(job, { results: carried }), true, name);
+  assert.equal(condition(job, { cancelled: true }), false, name);
+  for (const dependency of job.needs) for (const result of ['failure', 'cancelled', 'skipped']) {
+   assert.equal(condition(job, { results: { ...carried, [dependency]: result } }), false, `${name}/${dependency}/${result}`);
+  }
+  if (name.startsWith('sign-')) assert.equal(condition(job, { event: 'workflow_dispatch' }), false);
+ }
+});
+test('nested workflow concurrency isolates distinct caller runs while retaining platform identity', () => {
+ for (const file of ['farm-docs', 'rust-build-user', 'rust-build-release']) {
+  const workflow = parse(fs.readFileSync(new URL(`../.github/workflows/${file}.yaml`, import.meta.url), 'utf8'));
+  const groups = [workflow.concurrency, ...Object.values(workflow.jobs).map(job => job.concurrency)].filter(Boolean);
+  assert.ok(groups.length);
+  for (const { group } of groups) {
+   assert.ok(group.includes('github.run_id'), file);
+   const render = (run, platform) => group.replace(/\$\{\{\s*github.run_id\s*\}\}/g, String(run)).replace(/\$\{\{[^}]*platform[^}]*\}\}/g, platform);
+   assert.notEqual(render(10, 'linux'), render(11, 'linux'));
+   if (group.includes('platform')) assert.notEqual(render(10, 'linux'), render(10, 'windows'));
+  }
+ }
 });

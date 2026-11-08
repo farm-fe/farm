@@ -16,7 +16,7 @@
         "version": "2.0.0",
         "manifestPath": "packages/core/package.json",
         "manifestSha256": "8b4e029b6b3dfb23f2578f56dba21be1b1bde726fdba179d18728742c677e1fa",
-        "sourceSha256": "66ec615a469f242d735541a602699c62901b87a6aa997f9a8d41c1b347dacb19"
+        "sourceSha256": "d4b8b036aa5898b6b5c80213f727b4dac76131d5e5317981323833489265e5da"
       },
       {
         "name": "create-farm",
@@ -2100,8 +2100,8 @@
       "version": "2.2.0",
       "manifestPath": "crates/compiler/Cargo.toml",
       "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
-      "sourceSha256": "321ec7e59c6a6152aeead20bbb9de093e7fdd0d9f29fc96c02c0dfff19f019d9",
-      "packageInputsSha256": "cba53df19fb1eddc6daa016aed35b55430fcef84420e2bd3eb1807c8c92d7e57",
+      "sourceSha256": "4aeb933f76ca07f7a73b48479073dfd054e644c3153a128ada67fa7a4a24c724",
+      "packageInputsSha256": "0ee7be6aaea0073184ea92df65a36699be3a25db9abd31d7e147e9ae1c2ed62d",
       "publish": null
     },
     {

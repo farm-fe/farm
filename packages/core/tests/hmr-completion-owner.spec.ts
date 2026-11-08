@@ -64,19 +64,23 @@ vi.mock('../src/utils/index.js', () => ({
   cleanUrl: (value: string) => value.split('?')[0]
 }));
 
-it.each([
-  ['public', 'update-success'],
-  ['watcher', 'update-success'],
-  ['public', 'update-failure'],
-  ['watcher', 'update-failure'],
-  ['public', 'compile-success'],
-  ['watcher', 'compile-success'],
-  ['watcher', 'update-success-redundant'],
-  ['watcher', 'update-success-p-failure'],
-  ['watcher', 'update-success-redundant-p-failure']
-] as const)(
-  'retains an HMR owner after A callback consumption (%s, external B %s)',
-  async (admission, external) => {
+it.each(
+  [
+    ['public', 'update-success'],
+    ['watcher', 'update-success'],
+    ['public', 'update-failure'],
+    ['watcher', 'update-failure'],
+    ['public', 'compile-success'],
+    ['watcher', 'compile-success'],
+    ['watcher', 'update-success-redundant'],
+    ['watcher', 'update-success-p-failure'],
+    ['watcher', 'update-success-redundant-p-failure']
+  ].flatMap(([admission, external]) =>
+    [true, false].map((retained) => [admission, external, retained] as const)
+  )
+)(
+  'retains an HMR owner after A callback consumption (%s, external B %s, callback retained %s)',
+  async (admission, external, retained) => {
     native.callbacks = [];
     native.paths = [];
     native.results = [];
@@ -99,12 +103,11 @@ it.each([
     const completionRelease = new Promise<void>((resolve) => {
       unblockCompletion = resolve;
     });
-    if (redundant) {
-      compiler.onUpdateFinish(async () => {
-        completionEntered();
-        await completionRelease;
-      });
-    }
+    const blockListener = async () => {
+      completionEntered();
+      await completionRelease;
+    };
+    if (retained) compiler.onUpdateFinish(blockListener);
     const engine = new HmrEngine({
       compiler,
       config: { server: { hmr: {} } },
@@ -119,19 +122,38 @@ it.each([
       true
     );
     await aEntered;
-    // Native resource completion resolves readiness and consumes the registered
-    // HMR completion callback, while A's binding update result stays unresolved.
+    if (!retained) compiler.onUpdateFinish(blockListener);
+    // Both A signals settle, then its async success listener holds the HMR
+    // continuation while external B claims compiler readiness.
     const aCompletion = native.callbacks[0]();
-    if (redundant) await completionBlocked;
-    else await aCompletion;
+    native.results[0]();
+    await completionBlocked;
     expect(compiler.compiling).toBe(false);
     expect((compiler as any)._onUpdateFinishQueue).toHaveLength(
-      redundant ? 1 : 0
+      retained ? 1 : 0
     );
     const p = { path: '/owner-P.virtual', type: 'updated' as const };
-    await (admission === 'public'
-      ? engine.hmrUpdate(p, true)
-      : engine.queueWatchUpdate(p));
+    let prepared!: () => void;
+    let releasePreparation!: () => void;
+    const preparationDone = new Promise<void>((resolve) => {
+      prepared = resolve;
+    });
+    const preparationRelease = new Promise<void>((resolve) => {
+      releasePreparation = resolve;
+    });
+    const originalPrepare = (engine as any).prepareHmrUpdate.bind(engine);
+    vi.spyOn(engine as any, 'prepareHmrUpdate').mockImplementation(
+      async (...args) => {
+        await originalPrepare(...args);
+        prepared();
+        await preparationRelease;
+      }
+    );
+    const pendingAdmission =
+      admission === 'public'
+        ? engine.hmrUpdate(p, true)
+        : engine.queueWatchUpdate(p);
+    await preparationDone;
     expect((engine as any)._updateQueue).toContainEqual(p);
     // External B has its own readiness/result; it is not an HMR submission.
     // Attach rejection handling immediately; a rejected B is not a P attempt.
@@ -145,22 +167,28 @@ it.each([
       (error) => error
     );
     expect(compiler.compiling).toBe(true);
-    native.results[0]();
+    releasePreparation();
+    unblockCompletion();
+    await aCompletion;
     await a;
-    if (redundant) {
-      unblockCompletion();
-      await aCompletion;
-    }
+    let enteredP!: () => void;
+    const pEntered = new Promise<void>((resolve) => {
+      enteredP = resolve;
+    });
+    native.entered = () => {
+      if (native.paths.at(-1)?.some(([path]) => path === p.path)) enteredP();
+    };
     if (external.startsWith('update-success')) {
-      const completion = native.callbacks[1]();
-      if (redundant && pFails)
-        await expect(completion).rejects.toThrow('P attempted once and failed');
-      else await completion;
+      native.callbacks[1]();
+      if (redundant) native.callbacks[1]();
     }
     if (external === 'update-failure') native.failures[1](failure);
     else native.results[1]();
-    expect(await b).toBe(external === 'update-failure' ? failure : undefined);
-    if (native.callbacks[2] && !pFails) await native.callbacks[2]();
+    await pEntered;
+    if (!pFails) native.callbacks[2]();
+    const bResult = await b;
+    expect(bResult).toBe(external === 'update-failure' ? failure : undefined);
+    await pendingAdmission;
     await Promise.all(submissions.mock.results.map((result) => result.value));
     expect(
       native.paths.flat().filter(([path]) => path === p.path)
@@ -174,8 +202,13 @@ it.each([
     if (pFails) {
       // A failed P is retained, but readiness alone did not retry it.
       // Only this subsequent valid trigger may attempt it a second time.
-      await engine.hmrUpdate(p, true);
+      const retryEntered = new Promise<void>((resolve) => {
+        native.entered = resolve;
+      });
+      const retry = engine.hmrUpdate(p, true);
+      await retryEntered;
       await native.callbacks[3]();
+      await retry;
       await compiler.waitForCompileFinish();
       expect(
         native.paths.flat().filter(([path]) => path === p.path)

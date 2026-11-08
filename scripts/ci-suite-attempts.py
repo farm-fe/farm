@@ -68,30 +68,11 @@ def current_upload_outputs(environment):
         row = json.loads(environment['FARM_SUITE_UPLOADS_' + platform])
         suite_fields = {kind + '_' + field for kind in ['ts','browser'] for field in fields}
         shadow_fields = {kind + '_shadow_' + field for kind in ['ts','browser'] for field in fields}
-        # Accept only the two reviewed producer interfaces. Older carried jobs
-        # export six suite fields; current jobs additionally export all six shadow fields.
-        native_fields = {kind + '_shadow_' + field for kind in ['native','docs'] for field in fields}
-        native_only = {field for field in native_fields if field.startswith('native_')}
-        allowed = [suite_fields, suite_fields | shadow_fields, suite_fields | shadow_fields | native_fields]
-        if abi == 'darwin-arm64': allowed.append(suite_fields | shadow_fields | native_only)
-        if isinstance(row, dict) and 'native_product_upload' in row:
-            # This optional shadow output is not a functional suite prerequisite.
-            if row['native_product_upload'] != '':
-                product = current_selection_output({'FARM_SUITE_SELECTION_UPLOAD':row['native_product_upload']})
-                check(product['run_attempt'] == row.get('native_shadow_run_attempt'), 'Native proof and receipt attempts differ')
-            row = {key:value for key,value in row.items() if key != 'native_product_upload'}
-        check(isinstance(row, dict) and set(row) in allowed, 'Missing or unexpected suite upload outputs')
-        if native_only <= set(row):
-            for kind in ['native','docs']:
-                if kind == 'docs' and abi == 'darwin-arm64' and not any(key.startswith('docs_') for key in row): continue
-                value = {field: row[kind + '_shadow_' + field] for field in fields}
-                if kind == 'docs' and abi == 'darwin-arm64':
-                    check(all(item == '' for item in value.values()), 'Unexpected Mac Docs upload output')
-                else:
-                    check(all(isinstance(value[field], str) and re.fullmatch(pattern, value[field]) for field, pattern in fields.items()), 'Malformed native or Docs upload outputs')
-        if shadow_fields <= set(row):
-            check(all(isinstance(row[label + '_shadow_' + field], str) and re.fullmatch(pattern, row[label + '_shadow_' + field])
-                      for label in ['ts','browser'] for field, pattern in fields.items()), 'Malformed shadow upload outputs')
+        # This consumer requires all six functional fields. Reviewed diagnostic
+        # fields may be independently absent after a failed/skipped producer.
+        optional = shadow_fields | {kind + '_shadow_' + field for kind in ['native','docs'] for field in fields} | {'native_product_upload'}
+        check(isinstance(row, dict) and suite_fields <= set(row) and set(row) <= suite_fields | optional,
+              'Missing or unexpected suite upload outputs')
         result[abi] = {}
         for label, kind in [('ts','ts'), ('browser','examples-browser')]:
             output = {field: row[label + '_' + field] for field in fields}

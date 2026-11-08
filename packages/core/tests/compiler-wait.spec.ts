@@ -28,15 +28,17 @@ describe('resource readiness during incremental compilation', () => {
     compiler.onUpdateFinish(() => {
       void compiler.update([]);
     });
-    await compiler.update([]);
+    const active = compiler.update([]);
     let ready = false;
     const waiting = compiler.waitForCompileFinish().then(() => {
       ready = true;
     });
     await finishResources();
+    await active;
     await Promise.resolve();
     expect(ready).toBe(false);
     await finishResources();
+    await active;
     await waiting;
     expect(ready).toBe(true);
   });
@@ -44,7 +46,7 @@ describe('resource readiness during incremental compilation', () => {
     binding.callbacks = [];
     const compiler = new Compiler({ compilation: {} } as ResolvedUserConfig);
     await compiler.compile();
-    await compiler.update([]);
+    const active = compiler.update([]);
     let ready = false;
     const waiting = compiler.waitForCompileFinish().then(() => {
       ready = true;
@@ -53,6 +55,7 @@ describe('resource readiness during incremental compilation', () => {
     await Promise.resolve();
     expect(ready).toBe(false);
     await finishResources();
+    await active;
     await waiting;
     expect(ready).toBe(true);
     expect(compiler.compiling).toBe(false);
@@ -61,16 +64,18 @@ describe('resource readiness during incremental compilation', () => {
   it('keeps resource readers waiting through a queued update', async () => {
     binding.callbacks = [];
     const compiler = new Compiler({ compilation: {} } as ResolvedUserConfig);
-    await compiler.update([]);
+    const active = compiler.update([]);
     const queued = compiler.update([]);
     let ready = false;
     const waiting = compiler.waitForCompileFinish().then(() => {
       ready = true;
     });
     await finishResources();
-    await queued;
+    await active;
     expect(ready).toBe(false);
     await finishResources();
+    await active;
+    await queued;
     await waiting;
     expect(ready).toBe(true);
   });

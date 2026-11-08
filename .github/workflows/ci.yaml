@@ -215,7 +215,8 @@ jobs:
           python scripts/incremental-release-functional.test.py
           python -B scripts/release-retry-safety.test.py
           python -B scripts/release-evidence-recovery.test.py
-          node --test scripts/release-recovery-dag.test.mjs
+          python -B scripts/release-functional-upload.test.py
+          node --test scripts/release-recovery-dag.test.mjs scripts/ci-provenance-template.test.mjs scripts/release-provenance-wiring.test.mjs
           node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-chain-boundaries.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
           python scripts/ci-execution-ledger.test.py
@@ -728,7 +729,7 @@ jobs:
       actions: read
       id-token: write
       attestations: write
-    uses: farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@635190593a94836a9d601f93cbcb706303dead1a
+    uses: farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@6c67f18e94b86e071b806675f37acb7907fea10e
     with:
       scope: ci
       upload_bindings: >-

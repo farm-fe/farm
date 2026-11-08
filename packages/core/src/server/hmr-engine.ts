@@ -82,10 +82,8 @@ export class HmrEngine {
 
       // we must add callback before update
       compiler.onUpdateFinish(async () => {
-        // if there are more updates, recompile again
-        if (!this._recompileInProgress && this._updateQueue.length > 0) {
-          await this.recompileAndSendResult();
-        }
+        // Submission and the successful tail below own pending work. A delayed
+        // listener must not independently retry work admitted by another owner.
         if (this.devServer.config?.server?.writeToDisk) {
           compiler.writeResourcesToDisk();
         }

@@ -104,3 +104,14 @@ test('obsolete compatibility jobs are absent and all workflow dependencies still
   assert.ok(platform.jobs['cargo-test'].steps.some(step=>step.run?.includes('cargo test')));
   for(const key of ['linux','macos','windows'])assert.equal(unit.jobs['cargo-test-'+key].uses,'./.github/workflows/rust-test-platform.yaml');
 });
+
+
+test('real native upload failure and skipped assembly still reject the functional gate',()=>{
+  assert.ok(gate.needs.includes('call-rust-build-release'));
+  assert.ok(gate.needs.includes('check-native-candidate-assembly'));
+  for(const state of ['failure','cancelled','skipped']){
+    const rows=full();rows['call-rust-build-release'].result=state;
+    rows['check-native-candidate-assembly'].result='skipped';
+    assert.notEqual(run(rows).status,0);
+  }
+});

@@ -5,6 +5,8 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+import tempfile
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location('unit_fixture', Path(__file__).with_name('ci-unit-shadow-inputs.test.py'))
 f = importlib.util.module_from_spec(spec); spec.loader.exec_module(f)
@@ -26,7 +28,7 @@ class Contracts(unittest.TestCase):
     def resolve(self, data, values):
         api,run,identity,*_ = data
         plan, cells = m.unit_upload_outputs({'CI_UNIT_UPLOADS':json.dumps(values)})
-        return m.resolve(api,run,identity,upload_outputs=cells,planner_output=plan)
+        return m.resolve(api,run,identity,upload_outputs=cells,planner_output=plan,require_explicit=True)
 
     def test_late_metadata_and_mixed_attempts_use_exact_action_outputs(self):
         data=f.fixture(); values=outputs(data[4])
@@ -79,5 +81,26 @@ class Contracts(unittest.TestCase):
                         if original['name']=='Test - macos-latest': original['steps'][0]['conclusion']='failure'
             else: data[5][int(values['rust-tests:ci-test:darwin-arm64']['artifact_id'])]+=b'bad'
             with self.subTest(defect=defect),self.assertRaises(ValueError): self.resolve(data,values)
+
+    def test_production_current_classifies_only_authenticated_plan_observation_failures(self):
+        for defect in [None, 'missing-cell', 'extra-cell', 'bad-planner']:
+            data=f.fixture();api,run,identity,jobs,items,*_=data;values=outputs(items)
+            if defect=='missing-cell':del values['cargo-check']
+            elif defect=='extra-cell':values['unknown']=values['cargo-check']
+            elif defect=='bad-planner':values['planner']['artifact_digest']='0'*64
+            with self.subTest(defect=defect),tempfile.TemporaryDirectory() as tmp:
+                event=Path(tmp)/'event.json';event.write_text(json.dumps({'pull_request':{'head':{'sha':identity['headSHA']},'base':{'sha':identity['baseSHA']}}}))
+                env={'GITHUB_ACTIONS':'true','GITHUB_JOB':'impact-summary','CI_IMPACT_SCOPE':'unit','GITHUB_EVENT_PATH':str(event),'GITHUB_SHA':identity['testedSHA'],'GITHUB_RUN_ID':identity['runId'],'GITHUB_RUN_ATTEMPT':str(run['run_attempt']),'GITHUB_REPOSITORY':identity['repository'],'GITHUB_REPOSITORY_ID':str(run['repository']['id']),'GH_TOKEN':'fixture','CI_UNIT_UPLOADS':json.dumps(values)}
+                def git(*args):return (identity['testedTree'] if args[-1]=='HEAD^{tree}' else identity['testedSHA']).encode()
+                with mock.patch.object(m.impact,'git',side_effect=git),mock.patch.object(m.execution.evidence.transport_module,'GitHubReadOnly',return_value=api):
+                    if defect is None:self.assertEqual(len(m.current(env)[1]),4)
+                    else:
+                        with self.assertRaises(ValueError) as caught:m.current(env)
+                        self.assertEqual(hasattr(caught.exception,'shadow_plan'),defect!='bad-planner')
+                        if defect!='bad-planner':
+                            spec=importlib.util.spec_from_file_location('unit_diagnostic',Path(__file__).with_name('ci-impact-receipt.py'))
+                            diagnostic=importlib.util.module_from_spec(spec);spec.loader.exec_module(diagnostic)
+                            report=diagnostic.report_error('read-observations',caught.exception)
+                            self.assertEqual(report['resolutionStep'],'validate-observation-inventory')
 
 if __name__=='__main__': unittest.main()

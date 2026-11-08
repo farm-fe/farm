@@ -70,21 +70,22 @@ describe('queued compiler updates', () => {
 
   it('preserves each request resource-generation and scheduling options', async () => {
     const compiler = new Compiler({ compilation: {} } as ResolvedUserConfig);
-    await compiler.update([], true, false, false);
+    const active = compiler.update([], true, false, false);
     const queued = compiler.update([], false, false, true);
     await finish();
-    await queued;
+    await active;
     expect(binding.calls).toEqual([
       { sync: true, generate: false },
       { sync: false, generate: true }
     ]);
     await finish();
+    await queued;
     await compiler.waitForCompileFinish();
   });
 
   it('rejects queued callers when their native update fails', async () => {
     const compiler = new Compiler({ compilation: {} } as ResolvedUserConfig);
-    await compiler.update([]);
+    const active = compiler.update([]);
     let outcome = 'pending';
     const queued = compiler.update([]).then(
       () => {
@@ -104,6 +105,9 @@ describe('queued compiler updates', () => {
       () => undefined,
       (error: Error) => error.message
     );
+    await active;
+    await queued;
+    await tail;
     expect(outcome).toBe('Native update failed');
     expect(completion).toBeUndefined();
     expect(remaining).toBe('Native update failed');
@@ -112,8 +116,9 @@ describe('queued compiler updates', () => {
     await compiler.waitForCompileFinish();
     expect(compiler.compiling).toBe(false);
     binding.fail = false;
-    await compiler.update([]);
+    const retry = compiler.update([]);
     await finish();
+    await retry;
     expect(compiler.compiling).toBe(false);
   });
 
