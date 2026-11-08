@@ -85,7 +85,9 @@ const proxySchema = z
   .record(
     z
       .object({
-        target: z.string(),
+        // http-proxy also takes an object target, e.g. with `pfx` and
+        // `passphrase` for a client certificate.
+        target: z.union([z.string(), z.record(z.any())]),
         changeOrigin: z.boolean().optional(),
         agent: z.any().optional(),
         secure: z.boolean().optional(),
