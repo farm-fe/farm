@@ -39,7 +39,7 @@ pub struct ParsePackageSourceResult {
 
 pub fn parse_package_source(source: &str) -> Option<ParsePackageSourceResult> {
   farm_profile_function!("get_sub_path_of_source".to_string());
-  let source = source.split('?').next()?;
+  let (source, _) = farmfe_utils::split_path_query(source);
   let captures = PACKAGE_REGEX.captures(source)?;
   let package_name = captures
     .name("group1")

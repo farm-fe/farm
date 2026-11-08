@@ -58,8 +58,7 @@ impl Plugin for FarmPluginResolve {
 
     let query = parse_query(source);
     // split query from source
-    let splits: Vec<&str> = source.split('?').collect();
-    let source = splits[0];
+    let (source, _) = farmfe_utils::split_path_query(source);
 
     let basedir =
       if parse_package_source(source).is_some_and(|r| self.dedupe.contains(&r.package_name)) {
@@ -141,6 +140,68 @@ mod hmr_external_tests {
   use super::*;
   use farmfe_core::config::config_regex::ConfigRegex;
   use std::{sync::Arc, time::SystemTime};
+
+  #[cfg(windows)]
+  #[test]
+  fn canonical_windows_entries_keep_their_namespace_and_real_query() {
+    let temporary =
+      std::env::temp_dir().join(format!("farm-verbatim-query-{}", std::process::id()));
+    std::fs::create_dir_all(&temporary).unwrap();
+    let root = temporary.canonicalize().unwrap();
+    let file = root.join("entry.js");
+    std::fs::write(&file, "export const value=1;").unwrap();
+    let config = Config {
+      root: root.to_string_lossy().into_owned(),
+      ..Default::default()
+    };
+    let plugin = FarmPluginResolve::new(&config);
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    for slash in [false, true] {
+      let path = file.to_string_lossy().into_owned();
+      let path = if slash { path.replace('\\', "/") } else { path };
+      for kind in [ResolveKind::Entry("main".into()), ResolveKind::HmrUpdate] {
+        for suffix in ["", "?raw&kind=module"] {
+          let source = format!("{path}{suffix}");
+          let result = plugin
+            .resolve(
+              &PluginResolveHookParam {
+                source: source.clone(),
+                importer: None,
+                kind: kind.clone(),
+              },
+              &context,
+              &PluginHookContext::default(),
+            )
+            .unwrap()
+            .unwrap();
+          assert_eq!(std::fs::canonicalize(&result.resolved_path).unwrap(), file);
+          assert_eq!(result.query, parse_query(&source));
+          let id = context.str_to_module_id(&source);
+          assert_eq!(
+            std::fs::canonicalize(id.resolved_path(&context.config.root)).unwrap(),
+            file
+          );
+          assert_eq!(id.query_string(), suffix);
+        }
+      }
+    }
+    let missing = plugin
+      .resolve(
+        &PluginResolveHookParam {
+          source: root.join("missing.js").to_string_lossy().into_owned(),
+          importer: None,
+          kind: ResolveKind::Entry("main".into()),
+        },
+        &context,
+        &PluginHookContext::default(),
+      )
+      .unwrap();
+    assert!(
+      missing.is_none(),
+      "a valid namespace must not make a missing file resolve"
+    );
+    std::fs::remove_dir_all(temporary).unwrap();
+  }
 
   #[test]
   fn hmr_files_are_internal_even_when_their_project_path_matches_external() {

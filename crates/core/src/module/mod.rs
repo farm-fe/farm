@@ -342,7 +342,7 @@ impl ModuleId {
   }
 
   fn split_query(p: &str) -> (String, String) {
-    let (resolved_path, query) = p.split_once('?').unwrap_or((p, ""));
+    let (resolved_path, query) = farmfe_utils::split_path_query(p);
 
     if !query.is_empty() {
       return (resolved_path.to_string(), format!("?{query}"));
@@ -409,6 +409,24 @@ mod tests {
 
   use super::{Module, ModuleId, ModuleMetaData, ModuleType};
   use crate::{HashMap, HashSet};
+
+  #[test]
+  fn verbatim_module_ids_preserve_prefix_and_query() {
+    for path in [
+      r"\\?\C:\farm\main.js",
+      "//?/C:/farm/main.js",
+      r"\\?\UNC\host\share\main.js",
+      "//?/UNC/host/share/main.js",
+    ] {
+      let plain = ModuleId::from(path);
+      assert_eq!(plain.relative_path(), path);
+      assert_eq!(plain.query_string(), "");
+      let queried = ModuleId::from(format!("{path}?raw&x=1"));
+      assert_eq!(queried.relative_path(), path);
+      assert_eq!(queried.query_string(), "?raw&x=1");
+      assert_eq!(queried.to_string(), format!("{path}?raw&x=1"));
+    }
+  }
 
   #[test]
   fn runtime_module_ids_keep_their_synthetic_paths() {

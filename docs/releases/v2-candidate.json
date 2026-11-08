@@ -2109,8 +2109,8 @@
       "version": "2.2.0",
       "manifestPath": "crates/core/Cargo.toml",
       "manifestSha256": "b0728964f5fcdf61bd714c32cf0ebfc937cb3830bc9065dc8f345d71f9f94da2",
-      "sourceSha256": "93b8e880d34ad8e0bf7bfdb0f160145141d568ad3f8d3e4acd45618689fc239d",
-      "packageInputsSha256": "39f0c873c3b982a4b62fe7737376bbda99c18baaa096737a335831f5ac5037a7",
+      "sourceSha256": "31bac1555eb6d1eafd82ef467b5e9ea1627aac79a4ef7898377e381393a15763",
+      "packageInputsSha256": "e1fd3b59860dc6b19a3a3b2dc75ee4210ea2b4c687fb0ec29bd86b1a9ef27a83",
       "publish": null
     },
     {
@@ -2145,8 +2145,8 @@
       "version": "2.2.0",
       "manifestPath": "crates/plugin_css/Cargo.toml",
       "manifestSha256": "7ad72b220cf90d3901800827d8ec377ab67d2208bb73c7a7e1a97a507c123add",
-      "sourceSha256": "b541ecc0d851c6fcadb797729893bdebabeceaf9fd19348bdb5412a4a69b47ea",
-      "packageInputsSha256": "ecc35d5aee635bfd0f805f203d25cf31d65afe8c31b8f9b2d486a340a52ce2c4",
+      "sourceSha256": "775b1086585d9fdcd25a6a86ca0bf2f9649a2d471cf0b1ab82af685bcf030d30",
+      "packageInputsSha256": "2b39cf76268582f69c2fa695f04f71e575aef2cd5e57ed1b34b41f4596a0d994",
       "publish": null
     },
     {
@@ -2253,8 +2253,8 @@
       "version": "2.2.0",
       "manifestPath": "crates/plugin_resolve/Cargo.toml",
       "manifestSha256": "1b1fcf1477405f662bee42539be45b611d70956e3bbc382f17010e769d1ae291",
-      "sourceSha256": "80bc0aaac3625d4bc858234f799314de7fd299347483ab4751472dd3e738cbca",
-      "packageInputsSha256": "97f4b98929b27a6a4878df1355f23afa3cfb8183c0d2326c9d15aa34ef44f309",
+      "sourceSha256": "f595964b186f015ed28aca8b2ab907d37d1fc255ff5f4941d599814596751b96",
+      "packageInputsSha256": "fdd76b8d150992f86b7657ab99aecba098129e11ffedc7d0c148fa95810a779d",
       "publish": null
     },
     {
@@ -2343,8 +2343,8 @@
       "version": "2.1.1",
       "manifestPath": "crates/utils/Cargo.toml",
       "manifestSha256": "7d4823607fa0652c60b5c6a9e186ee163b0e0e500c5237349a028b44431774cf",
-      "sourceSha256": "bf985762ef69f24dfa712a2f9d927a9736fdf425551fd54afbec1ee6907d347c",
-      "packageInputsSha256": "53c8d6d3b6162b94010a1356d5376b240400609f82131b5b6206ac993f7f950b",
+      "sourceSha256": "69f264b41c9849ecab3a578931d33921c65c097ec221d3435e1663618778d3f8",
+      "packageInputsSha256": "bbb0c086374c6b699dfae2ab69a0ef72b4b02343e8c7526c24c8d2e3ea024d58",
       "publish": null
     }
   ],

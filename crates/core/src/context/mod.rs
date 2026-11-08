@@ -31,7 +31,6 @@ use self::log_store::LogStore;
 pub mod log_store;
 pub mod shared_resources;
 pub mod source_observation;
-pub(crate) const EMPTY_STR: &str = "";
 
 #[farmfe_macro_cache_item::cache_item]
 #[derive(Debug, Clone)]
@@ -180,7 +179,7 @@ impl CompilationContext {
   pub fn str_to_module_id(&self, id: &str) -> ModuleId {
     let is_absolute = Path::new(id).is_absolute();
     if is_absolute {
-      let (resolved_path, query) = id.split_once('?').unwrap_or((id, EMPTY_STR));
+      let (resolved_path, query) = farmfe_utils::split_path_query(id);
       let query = if query.is_empty() {
         query.to_string()
       } else {
