@@ -115,3 +115,11 @@ test('real native upload failure and skipped assembly still reject the functiona
     assert.notEqual(run(rows).status,0);
   }
 });
+
+test('immutable signer template contracts receive history rather than a shallow checkout', () => {
+  const job = workflow.jobs['release-contract-tests'];
+  const checkout = job.steps.find(step => step.uses === 'actions/checkout@v4');
+  assert.equal(checkout.with['fetch-depth'], 0);
+  assert.ok(job.steps.some(step => step.run?.includes('scripts/ci-provenance-template.test.mjs')));
+  assert.ok(job.steps.some(step => step.run?.includes('scripts/release-provenance-wiring.test.mjs')));
+});
