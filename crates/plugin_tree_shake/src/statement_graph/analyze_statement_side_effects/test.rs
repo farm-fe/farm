@@ -588,3 +588,37 @@ fn class_decorator_application_is_a_definition_time_effect() {
     }
   });
 }
+
+#[test]
+fn update_and_delete_write_top_level_var() {
+  GLOBALS.set(&Globals::new(), || {
+    let code = r#"
+    let count = 0;
+    for (let i = 0; i < 3; i++) count++;
+    const o = { a: 1, b: 2 };
+    delete o.a;
+    --count;
+  "#;
+    let (module, unresolved_mark, top_level_mark) = parse_module(code);
+
+    for (index, expected) in [(1, "count#2"), (3, "o#2"), (4, "count#2")] {
+      let side_effects = super::analyze_statement_side_effects(
+        &module.body[index],
+        unresolved_mark,
+        top_level_mark,
+        &SingleThreadedComments::default(),
+      );
+      let idents = match side_effects {
+        super::StatementSideEffects::WriteTopLevelVar(var_name) => var_name
+          .into_iter()
+          .map(|i| format!("{}{:?}", i.ident.sym, i.ident.ctxt()))
+          .collect::<Vec<_>>(),
+        other => panic!("statement {index} should write a top level var, got {other:?}"),
+      };
+      assert!(
+        idents.iter().any(|i| i == expected),
+        "statement {index} should write {expected}, got {idents:?}"
+      );
+    }
+  });
+}

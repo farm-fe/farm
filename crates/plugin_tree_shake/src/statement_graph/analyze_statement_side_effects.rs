@@ -9,6 +9,7 @@ use farmfe_core::{
   },
   swc_ecma_ast::{
     Class, ClassMember, Decl, Decorator, DefaultDecl, Expr, Key, Lit, ModuleItem, PropName,
+    UnaryExpr, UnaryOp, UpdateExpr,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
@@ -558,10 +559,20 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
           assign_expr.right.visit_with(this);
         });
       }
+      // `x++` writes `x` and `delete o.a` writes `o`, like an assignment does
+      Expr::Update(UpdateExpr { arg, .. })
+      | Expr::Unary(UnaryExpr {
+        op: UnaryOp::Delete,
+        arg,
+        ..
+      }) => {
+        let prev = self.in_assign_left.replace(HashSet::default());
+        arg.visit_with(self);
+        self.in_assign_left = prev;
+      }
       Expr::Array(_)
       | Expr::Object(_)
       | Expr::Unary(_)
-      | Expr::Update(_)
       | Expr::Seq(_)
       | Expr::Cond(_)
       | Expr::Bin(_)
