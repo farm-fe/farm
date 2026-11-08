@@ -2,13 +2,14 @@ use std::sync::Arc;
 
 use farmfe_core::{
   HashMap,
+  config::{FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE},
   context::CompilationContext,
   module::{
     ModuleId, ModuleSystem, meta_data::script::CommentsMetaData, module_graph::ModuleGraph,
   },
   resource::meta_data::js::RenderModuleResult,
-  swc_common::{Globals, Mark, SourceMap, comments::SingleThreadedComments},
-  swc_ecma_ast::{EsVersion, Expr, ExprStmt},
+  swc_common::{Globals, Mark, SourceMap, SyntaxContext, comments::SingleThreadedComments},
+  swc_ecma_ast::{EsVersion, Expr, ExprStmt, Ident},
 };
 
 use farmfe_toolkit::{
@@ -123,10 +124,36 @@ pub fn render_module(
       mode: context.config.mode,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
+
+    // `wrap_function` below declares these names as the wrapper's parameters.
+    // A module that never references one of them (e.g. `module` in an ES
+    // module) would keep a top level binding of the same name through
+    // hygiene, and that binding would then collide with the parameter. So
+    // reference all of them while hygiene runs.
+    let wrapper_params = [
+      FARM_MODULE,
+      FARM_MODULE_EXPORT,
+      FARM_REQUIRE,
+      FARM_DYNAMIC_REQUIRE,
+    ];
+    cloned_module.body.splice(
+      0..0,
+      wrapper_params.iter().map(|name| {
+        ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Ident(Ident::new(
+            (*name).into(),
+            DUMMY_SP,
+            SyntaxContext::empty().apply_mark(unresolved_mark),
+          ))),
+        }))
+      }),
+    );
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
       top_level_mark,
       ..Default::default()
     }));
+    cloned_module.body.drain(0..wrapper_params.len());
 
     if matches!(
       module_script_meta.module_system,
@@ -166,4 +193,102 @@ pub fn render_module(
     },
     external_modules,
   })
+}
+
+#[cfg(test)]
+mod tests {
+  use std::sync::Arc;
+
+  use farmfe_core::{
+    config::Config,
+    context::CompilationContext,
+    module::{
+      Module, ModuleId, ModuleMetaData, ModuleSystem, ModuleType, module_graph::ModuleGraph,
+    },
+    swc_common::{GLOBALS, Globals, Mark},
+    swc_ecma_ast::EsVersion,
+    swc_ecma_parser::Syntax,
+  };
+  use farmfe_toolkit::{
+    script::{codegen_module, parse_module},
+    swc_ecma_transforms::resolver,
+    swc_ecma_visit::VisitMutWith,
+  };
+
+  use super::{RenderModuleOptions, render_module};
+
+  fn render(code: &str) -> String {
+    let globals = Globals::new();
+    let module_id: ModuleId = "a.js".into();
+    let parsed = parse_module(
+      &module_id,
+      Arc::new(code.to_string()),
+      Syntax::Es(Default::default()),
+      EsVersion::Es2022,
+    )
+    .unwrap();
+    let cm = parsed.source_map.clone();
+
+    let (ast, unresolved_mark, top_level_mark) = GLOBALS.set(&globals, || {
+      let unresolved_mark = Mark::new();
+      let top_level_mark = Mark::new();
+      let mut ast = parsed.ast;
+      ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
+      (ast, unresolved_mark, top_level_mark)
+    });
+
+    let mut module_graph = ModuleGraph::new();
+    let mut module = Module::new(module_id.clone());
+    module.module_type = ModuleType::Js;
+    *module.meta = ModuleMetaData::Script(Default::default());
+    module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
+    module_graph.add_module(module);
+    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+
+    let result = render_module(RenderModuleOptions {
+      module_id,
+      ast,
+      comments: parsed.comments.into(),
+      hoisted_sourcemap: cm.clone(),
+      module_graph: &module_graph,
+      hoisted_external_modules: Default::default(),
+      globals: &globals,
+      unresolved_mark,
+      top_level_mark,
+      context: &context,
+    })
+    .unwrap();
+
+    let code = GLOBALS.set(&globals, || {
+      codegen_module(&result.rendered_ast, cm, None, Default::default(), None).unwrap()
+    });
+    String::from_utf8(code).unwrap()
+  }
+
+  #[test]
+  fn top_level_bindings_do_not_collide_with_wrapper_params() {
+    let code = render(
+      r#"
+const module = "m";
+let exports = 1;
+var farmRequire = 2;
+function farmDynamicRequire() {}
+export const v = [module, exports, farmRequire, farmDynamicRequire];
+"#,
+    );
+
+    for name in ["module", "exports", "farmRequire", "farmDynamicRequire"] {
+      for decl in [
+        format!("const {name} ="),
+        format!("let {name} ="),
+        format!("var {name} ="),
+        format!("function {name}("),
+      ] {
+        assert!(
+          !code.contains(&decl),
+          "`{decl}` collides with a wrapper param:\n{code}"
+        );
+      }
+    }
+  }
 }
