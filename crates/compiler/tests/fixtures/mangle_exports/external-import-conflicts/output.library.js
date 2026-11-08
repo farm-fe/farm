@@ -3,7 +3,9 @@
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
-                value: from[k],
+                get: function() {
+                    return from[k];
+                },
                 enumerable: true,
                 configurable: true
             });

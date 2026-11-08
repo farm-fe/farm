@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   swc_common::{GLOBALS, Globals, Mark, comments::SingleThreadedComments},
   swc_ecma_ast::{EsVersion, Module},
-  swc_ecma_parser::Syntax,
+  swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
   script::ParseScriptModuleResult, swc_ecma_transforms::resolver, swc_ecma_visit::VisitMutWith,
@@ -17,7 +17,10 @@ pub fn parse_module_internal(code: &str) -> (Module, SingleThreadedComments, Mar
   } = farmfe_toolkit::script::parse_module(
     &"any".into(),
     Arc::new(code.to_string()),
-    Syntax::Es(Default::default()),
+    Syntax::Es(EsSyntax {
+      auto_accessors: true,
+      ..Default::default()
+    }),
     EsVersion::Es2022,
     // None,
   )
@@ -380,4 +383,181 @@ fn object_lit_assign() {
       super::StatementSideEffects::WriteTopLevelVar(_)
     ));
   })
+}
+
+#[test]
+fn class_definition_side_effects() {
+  GLOBALS.set(&Globals::new(), || {
+    let bodies = [
+      "static { console.log('static block'); }",
+      "static field = console.log('static field');",
+      "static #field = console.log('private static field');",
+      "[console.log('computed method')]() {}",
+      "static [console.log('computed static method')]() {}",
+      "get [console.log('computed getter')]() { return 1; }",
+      "[console.log('computed field')] = 1;",
+      "static [console.log('computed static field')] = 1;",
+    ];
+    for body in bodies {
+      for code in [
+        format!("class Unused {{ {body} }}"),
+        format!("const Unused = class {{ {body} }};"),
+        format!("export const Unused = class {{ {body} }};"),
+        format!("export class Unused {{ {body} }}"),
+        format!("export default class {{ {body} }}"),
+      ] {
+        let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(&code);
+        let effects = super::analyze_statement_side_effects(
+          &module.body[0],
+          unresolved_mark,
+          top_level_mark,
+          &comments,
+        );
+        assert!(effects.is_preserved(), "{code}: {effects:?}");
+      }
+    }
+  });
+}
+
+#[test]
+fn class_deferred_bodies_have_no_side_effects() {
+  GLOBALS.set(&Globals::new(), || {
+    for body in [
+      "constructor() { console.log('constructor'); }",
+      "method() { console.log('method'); }",
+      "static method() { console.log('static method'); }",
+      "get value() { return console.log('getter'); }",
+      "field = console.log('instance field');",
+      "#field = console.log('private instance field');",
+      "static field = 1; static {} ['method']() {}",
+    ] {
+      for code in [
+        format!("class Unused {{ {body} }}"),
+        format!("const Unused = class {{ {body} }};"),
+        format!("export const Unused = class {{ {body} }};"),
+        format!("export class Unused {{ {body} }}"),
+        format!("export default class {{ {body} }}"),
+      ] {
+        let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(&code);
+        let effects = super::analyze_statement_side_effects(
+          &module.body[0],
+          unresolved_mark,
+          top_level_mark,
+          &comments,
+        );
+        assert_eq!(
+          effects,
+          super::StatementSideEffects::NoSideEffects,
+          "{code}"
+        );
+      }
+    }
+  });
+}
+
+#[test]
+fn class_definition_implicit_effects() {
+  GLOBALS.set(&Globals::new(), || {
+    for code in [
+      "class Unused { static { throw 1; } }",
+      "class Unused { static { if (true) { throw 1; } } }",
+      "const key = { toString() { console.log('key'); return 'x'; } }; class Unused { [key]() {} }",
+      "const key = { [Symbol.toPrimitive]() { throw 1; } }; class Unused { [key] = 1; }",
+      "const key = { toString() { console.log('key'); return 'x'; } }; class Unused { static [key]() {} }",
+      "class Unused { [{ toString() { console.log('key'); return 'x'; } }]() {} }",
+      "class Unused { [/key/]() {} }",
+      "class Unused extends 1 {}",
+      "const Base = 1; class Unused extends Base {}",
+      "const Base = new Proxy(class {}, { get() { throw 1; } }); class Unused extends Base {}",
+    ] {
+      let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(code);
+      let effects = super::analyze_statement_side_effects(
+        module.body.last().unwrap(), unresolved_mark, top_level_mark, &comments,
+      );
+      assert!(effects.is_preserved(), "{code}: {effects:?}");
+    }
+  });
+}
+
+#[test]
+fn class_definition_safe_primitive_keys_and_null_base() {
+  GLOBALS.set(&Globals::new(), || {
+    for code in [
+      "class Unused extends null {}",
+      "class Unused { ['key']() {} [1]() {} [true]() {} [null]() {} [1n]() {} }",
+      "class Unused { static {} }",
+    ] {
+      let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(code);
+      let effects = super::analyze_statement_side_effects(
+        &module.body[0],
+        unresolved_mark,
+        top_level_mark,
+        &comments,
+      );
+      assert_eq!(
+        effects,
+        super::StatementSideEffects::NoSideEffects,
+        "{code}"
+      );
+    }
+  });
+}
+
+#[test]
+fn class_static_initializer_implicit_effects() {
+  GLOBALS.set(&Globals::new(), || {
+    for body in [
+      "static value = object.value;",
+      "static #value = object.value;",
+      "static accessor value = object.value;",
+      "static accessor #value = object.value;",
+      "static value = 1n + 1;",
+      "static #value = 1n + 1;",
+      "static value = class { static value = object.value; };",
+    ] {
+      let code =
+        format!("const object = {{ get value() {{ throw 1; }} }}; class Unused {{ {body} }}");
+      let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(&code);
+      let effects = super::analyze_statement_side_effects(
+        module.body.last().unwrap(),
+        unresolved_mark,
+        top_level_mark,
+        &comments,
+      );
+      assert!(effects.is_preserved(), "{code}: {effects:?}");
+    }
+  });
+}
+
+#[test]
+fn class_static_initializer_inert_values() {
+  GLOBALS.set(&Globals::new(), || {
+    for value in [
+      "1",
+      "'value'",
+      "true",
+      "null",
+      "1n",
+      "/value/",
+      "function() { throw 1; }",
+      "() => { throw 1; }",
+      "class { value = object.value; }",
+    ] {
+      for field in ["value", "#value", "accessor value", "accessor #value"] {
+        let code = format!("class Unused {{ static {field} = {value}; }}");
+        let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(&code);
+        let effects = super::analyze_statement_side_effects(
+          &module.body[0],
+          unresolved_mark,
+          top_level_mark,
+          &comments,
+        );
+        assert_eq!(
+          effects,
+          super::StatementSideEffects::NoSideEffects,
+          "{code}"
+        );
+      }
+    }
+  });
 }

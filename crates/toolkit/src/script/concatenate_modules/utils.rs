@@ -13,10 +13,9 @@ use farmfe_core::{
   swc_ecma_ast::{
     BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, EmptyStmt, ExportAll,
     ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread, ExprStmt, GetterProp, Ident,
-    IdentName, ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier,
-    KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, KeyValueProp, Lit,
+    MemberExpr, MemberProp, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat,
+    Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 
@@ -102,7 +101,10 @@ pub(crate) fn create_var_namespace_item(
         ) {
         Prop::Getter(GetterProp {
           span: DUMMY_SP,
-          key: PropName::Ident(key.as_str().into()),
+          key: match ModuleExportName::from(SwcId::from(key.as_str())) {
+            ModuleExportName::Ident(ident) => PropName::Ident(ident.into()),
+            ModuleExportName::Str(name) => PropName::Str(name),
+          },
           type_ann: None,
           body: Some(BlockStmt {
             span: DUMMY_SP,
@@ -115,7 +117,10 @@ pub(crate) fn create_var_namespace_item(
         })
       } else {
         Prop::KeyValue(KeyValueProp {
-          key: PropName::Ident(key.as_str().into()),
+          key: match ModuleExportName::from(SwcId::from(key.as_str())) {
+            ModuleExportName::Ident(ident) => PropName::Ident(ident.into()),
+            ModuleExportName::Str(name) => PropName::Str(name),
+          },
           value: value_expr,
         })
       };
@@ -215,7 +220,7 @@ pub fn create_import_specifiers(idents: Vec<(SwcId, String)>) -> Vec<ImportSpeci
       ImportSpecifier::Named(ImportNamedSpecifier {
         span: DUMMY_SP,
         imported: if id.sym.as_str() != name.as_str() {
-          Some(ModuleExportName::Ident(name.into()))
+          Some(SwcId::from(name.as_str()).into())
         } else {
           None
         },
@@ -338,11 +343,7 @@ pub fn generate_export_decl_item(
     specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
       span: DUMMY_SP,
       orig: ModuleExportName::Ident(Ident::new(renamed_ident.sym, DUMMY_SP, ctxt)),
-      exported: Some(ModuleExportName::Ident(Ident::new(
-        name.as_str().into(),
-        DUMMY_SP,
-        SyntaxContext::empty(),
-      ))),
+      exported: Some(SwcId::from(name.as_str()).into()),
       is_type_only: false,
     }));
   }
@@ -402,7 +403,15 @@ pub fn create_member_expr(ident: &SwcId, prop: &str) -> Expr {
       DUMMY_SP,
       ident.ctxt(),
     ))),
-    prop: MemberProp::Ident(IdentName::new(prop.into(), DUMMY_SP)),
+    prop: match ModuleExportName::from(SwcId::from(prop)) {
+      ModuleExportName::Ident(ident) => MemberProp::Ident(ident.into()),
+      ModuleExportName::Str(name) => {
+        MemberProp::Computed(farmfe_core::swc_ecma_ast::ComputedPropName {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Lit(Lit::Str(name))),
+        })
+      }
+    },
   })
 }
 

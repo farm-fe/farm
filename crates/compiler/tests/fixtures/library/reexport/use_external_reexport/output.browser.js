@@ -129,7 +129,9 @@ function defineExportStar(to, from) {
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
-                value: from[k],
+                get: function() {
+                    return from[k];
+                },
                 enumerable: true,
                 configurable: true
             });
@@ -174,7 +176,9 @@ function interopRequireWildcard(obj, nodeInterop) {
     return newObj;
 }
 function defineExportFrom(to, to_k, from, from_k) {
-    defineExport(to, to_k, from[from_k || to_k]);
+    exportByDefineProperty(to, to_k, function() {
+        return from[from_k == null ? to_k : from_k];
+    });
 }
 function importDefault(v) {
     if (typeof v.default !== 'undefined') {

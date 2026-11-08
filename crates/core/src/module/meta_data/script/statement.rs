@@ -222,6 +222,16 @@ impl From<Ident> for SwcId {
   }
 }
 
+// Export names are property names, not necessarily JavaScript identifiers.
+impl From<&ModuleExportName> for SwcId {
+  fn from(value: &ModuleExportName) -> Self {
+    match value {
+      ModuleExportName::Ident(ident) => ident.to_id().into(),
+      ModuleExportName::Str(name) => Self::new(name.value.to_string_lossy().as_ref().into(), 0),
+    }
+  }
+}
+
 impl From<&str> for SwcId {
   fn from(value: &str) -> Self {
     Self {
@@ -240,7 +250,16 @@ impl From<SwcId> for Ident {
 
 impl From<SwcId> for ModuleExportName {
   fn from(value: SwcId) -> Self {
-    ModuleExportName::Ident(value.into())
+    let mut chars = value.sym.chars();
+    if chars.next().is_some_and(Ident::is_valid_start) && chars.all(Ident::is_valid_continue) {
+      ModuleExportName::Ident(value.into())
+    } else {
+      ModuleExportName::Str(swc_ecma_ast::Str {
+        span: DUMMY_SP,
+        value: value.sym.into(),
+        raw: None,
+      })
+    }
   }
 }
 

@@ -2,15 +2,14 @@ use farmfe_core::{
   HashMap,
   module::{
     ModuleId,
-    meta_data::script::{AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleReExportIdentType},
+    meta_data::script::{
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, ModuleReExportIdentType, statement::SwcId,
+    },
     module_graph::ModuleGraph,
   },
   plugin::ResolveKind,
-  swc_common::{DUMMY_SP, SyntaxContext},
-  swc_ecma_ast::{
-    ExportNamedSpecifier, ExportSpecifier, Ident, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport,
-  },
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{ExportNamedSpecifier, ExportSpecifier, ModuleDecl, ModuleItem, NamedExport},
 };
 
 pub fn is_reexport_all(
@@ -94,11 +93,7 @@ pub fn transform_export_all_to_export_named(module_id: ModuleId, module_graph: &
           .specifiers
           .push(ExportSpecifier::Named(ExportNamedSpecifier {
             span: DUMMY_SP,
-            orig: ModuleExportName::Ident(Ident::new(
-              export.as_str().into(),
-              DUMMY_SP,
-              SyntaxContext::empty(),
-            )),
+            orig: SwcId::from(export.as_str()).into(),
             exported: None,
             is_type_only: false,
           }));

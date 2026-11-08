@@ -217,11 +217,31 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
   let mut decls = vec![];
   let mut exports = vec![];
 
-  for (exported, _) in export_idents {
-    decls.push(format!(
-      "var __farm_entry_{exported}__=__farm_entry__.{exported};"
-    ));
-    exports.push((format!("__farm_entry_{exported}__"), exported));
+  let mut local_names = export_idents
+    .iter()
+    .map(|(name, _)| format!("__farm_entry_{name}__"))
+    .collect::<farmfe_core::HashSet<_>>();
+  for (index, (exported, _)) in export_idents.into_iter().enumerate() {
+    let export_name = farmfe_core::swc_ecma_ast::ModuleExportName::from(
+      farmfe_core::module::meta_data::script::statement::SwcId::from(exported.as_str()),
+    );
+    if matches!(
+      export_name,
+      farmfe_core::swc_ecma_ast::ModuleExportName::Ident(_)
+    ) {
+      decls.push(format!(
+        "var __farm_entry_{exported}__=__farm_entry__.{exported};"
+      ));
+      exports.push((format!("__farm_entry_{exported}__"), exported));
+    } else {
+      let mut local = format!("__farm_entry_string_{index}__");
+      while !local_names.insert(local.clone()) {
+        local.push('_');
+      }
+      let quoted = farmfe_core::serde_json::to_string(&exported).unwrap();
+      decls.push(format!("var {local}=__farm_entry__[{quoted}];"));
+      exports.push((local, quoted));
+    }
   }
 
   if !exports.is_empty() {
@@ -244,6 +264,8 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
         for (value, exported) in exports {
           if exported == "default" {
             cjs_exports.push(format!("module.exports = {};", value));
+          } else if exported.starts_with('"') {
+            cjs_exports.push(format!("module.exports[{exported}] = {value};"));
           } else {
             cjs_exports.push(format!("module.exports.{} = {};", exported, value));
           }

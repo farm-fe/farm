@@ -48,7 +48,11 @@ export function defineExportEsModule(to: any) {
 export function defineExportStar(to: any, from: any) {
   Object.keys(from).forEach(function (k) {
     if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-      Object.defineProperty(to, k, { value: from[k], enumerable: true, configurable: true });
+      Object.defineProperty(to, k, {
+        get: function () { return from[k]; },
+        enumerable: true,
+        configurable: true
+      });
     }
   });
 
@@ -100,8 +104,10 @@ export function interopRequireWildcard(obj: any, nodeInterop: any) {
 }
 
 // `export { xx } from` helper
-export function defineExportFrom(to: any, to_k: string, from: any, from_k: string) {
-  defineExport(to, to_k, from[from_k || to_k]);
+export function defineExportFrom(to: any, to_k: string, from: any, from_k?: string) {
+  exportByDefineProperty(to, to_k, function () {
+    return from[from_k == null ? to_k : from_k];
+  });
 }
 
 // minify x.default

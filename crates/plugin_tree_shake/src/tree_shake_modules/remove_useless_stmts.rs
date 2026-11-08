@@ -4,9 +4,7 @@ use farmfe_core::{
     ModuleId, ModuleSystem, meta_data::script::statement::SwcId, module_graph::ModuleGraph,
   },
   plugin::ResolveKind,
-  swc_ecma_ast::{
-    self, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
-  },
+  swc_ecma_ast::{self, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem, Stmt},
 };
 use farmfe_toolkit::{
   script::{analyze_statement::analyze_statements, idents_collector::DefinedIdentsCollector},
@@ -163,19 +161,15 @@ impl<'a> VisitMut for UselessSpecifierRemover<'a> {
     for (index, specifier) in specifiers.iter().enumerate() {
       let id = match specifier {
         farmfe_core::swc_ecma_ast::ExportSpecifier::Named(named_specifier) => {
-          match &named_specifier.orig {
-            ModuleExportName::Ident(ident) => ident.to_id(),
-            _ => unreachable!(),
-          }
+          SwcId::from(&named_specifier.orig)
         }
-        farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(ns) => match &ns.name {
-          ModuleExportName::Ident(ident) => ident.to_id(),
-          _ => unreachable!(),
-        },
-        farmfe_core::swc_ecma_ast::ExportSpecifier::Default(default) => default.exported.to_id(),
+        farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(ns) => SwcId::from(&ns.name),
+        farmfe_core::swc_ecma_ast::ExportSpecifier::Default(default) => {
+          default.exported.to_id().into()
+        }
       };
 
-      if !self.used_defined_idents.contains(&id.into()) {
+      if !self.used_defined_idents.contains(&id) {
         specifiers_to_remove.push(index);
       }
     }

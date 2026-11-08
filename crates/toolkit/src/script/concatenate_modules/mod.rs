@@ -642,11 +642,21 @@ fn handle_external_reexport_idents(
 
   // handle external module idents
   for (source_module_id, idents) in external_module_idents_map {
+    // Import synthesis must share the active rename state. In particular, reusing
+    // `import { c as i }` for `export *` records the reexport's binding as `i`.
+    std::mem::swap(
+      rename_handler,
+      &mut params.strip_context.rename_handler.borrow_mut(),
+    );
     statements_to_remove.extend(handle_external_module_idents(
       &mut params,
       &source_module_id,
       idents.clone(),
     ));
+    std::mem::swap(
+      rename_handler,
+      &mut params.strip_context.rename_handler.borrow_mut(),
+    );
 
     for (ident, _) in idents {
       let original_export_str = ident.sym.as_str();

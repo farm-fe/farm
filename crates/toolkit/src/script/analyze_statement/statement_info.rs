@@ -3,7 +3,7 @@ use farmfe_core::HashSet;
 use farmfe_core::module::meta_data::script::statement::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, Statement, StatementId, SwcId,
 };
-use farmfe_core::swc_ecma_ast::{self, Module, ModuleExportName, ModuleItem, VarDeclOrExpr};
+use farmfe_core::swc_ecma_ast::{self, Module, ModuleItem, VarDeclOrExpr};
 use swc_ecma_utils::contains_top_level_await;
 
 use crate::script::idents_collector::DefinedIdentsCollector;
@@ -49,10 +49,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
             swc_ecma_ast::ImportSpecifier::Named(named) => {
               specifiers.push(ImportSpecifierInfo::Named {
                 local: named.local.to_id().into(),
-                imported: named.imported.as_ref().map(|i| match i {
-                  ModuleExportName::Ident(i) => i.to_id().into(),
-                  _ => panic!("non-ident imported is not supported when tree shaking"),
-                }),
+                imported: named.imported.as_ref().map(SwcId::from),
               });
               defined_idents.insert(named.local.to_id().into());
             }
@@ -160,36 +157,24 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
         for specifier in &export_named.specifiers {
           match specifier {
             swc_ecma_ast::ExportSpecifier::Named(named) => {
-              let local = match &named.orig {
-                ModuleExportName::Ident(i) => i.to_id(),
-                ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
-              };
-              let exported = named.exported.as_ref().map(|i| match i {
-                ModuleExportName::Ident(i) => i.to_id(),
-                _ => panic!("non-ident exported is not supported when tree shaking"),
-              });
+              let local = SwcId::from(&named.orig);
+              let exported = named.exported.as_ref().map(SwcId::from);
 
               if let Some(exported) = &exported {
-                defined_idents.insert(exported.clone().into());
+                defined_idents.insert(exported.clone());
               } else {
-                defined_idents.insert(local.clone().into());
+                defined_idents.insert(local.clone());
               }
 
-              specifiers.push(ExportSpecifierInfo::Named {
-                local: local.into(),
-                exported: exported.map(|e| e.into()),
-              });
+              specifiers.push(ExportSpecifierInfo::Named { local, exported });
             }
             swc_ecma_ast::ExportSpecifier::Default(_) => {
               unreachable!("ExportSpecifier::Default is not valid esm syntax")
             }
             swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
-              let ident = match &ns.name {
-                ModuleExportName::Ident(ident) => ident.to_id(),
-                ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
-              };
-              defined_idents.insert(ident.clone().into());
-              specifiers.push(ExportSpecifierInfo::Namespace(ident.into()));
+              let ident = SwcId::from(&ns.name);
+              defined_idents.insert(ident.clone());
+              specifiers.push(ExportSpecifierInfo::Namespace(ident));
             }
           }
         }
