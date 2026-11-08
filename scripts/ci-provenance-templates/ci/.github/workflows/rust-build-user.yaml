@@ -32,7 +32,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: rust-build-user-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
+  group: rust-build-user-${{ github.run_id }}-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
   cancel-in-progress: true
 
 jobs:

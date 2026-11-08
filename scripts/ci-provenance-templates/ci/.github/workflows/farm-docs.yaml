@@ -27,7 +27,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: farm-docs-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platforms || 'standalone' }}
+  group: farm-docs-${{ github.run_id }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platforms || 'standalone' }}
   cancel-in-progress: true
 
 jobs:
