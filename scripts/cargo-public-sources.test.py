@@ -1,3 +1,4 @@
+# cspell:ignore Zlockfile
 # cspell:words itoa nitoa
 """Public Cargo twins: graph contracts and opt-in real Cargo/registry tests.
 
@@ -56,6 +57,64 @@ class SourceGraph(unittest.TestCase):
         with mock.patch.object(m, 'run', return_value='pinned-toolchain (overridden)'), mock.patch.object(m.subprocess, 'run', side_effect=cargo):
             m.fetch_public_sources([{'name': 'serde', 'version': '1.0.228', 'features': ['derive']}])
         self.assertEqual(seen, [['cargo', 'generate-lockfile'], ['cargo', 'fetch', '--locked']])
+
+
+class WorkspacePreparation(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix='farm-fetch-contract-')
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name).resolve()
+        (self.root / 'Cargo.toml').write_text('[workspace]\n')
+        (self.root / 'Cargo.lock').write_bytes(b'original lock\n')
+        (self.root / 'rust-toolchain.toml').write_text('[toolchain]\nchannel = "nightly-2026-04-10"\n')
+        self.scratch = self.root / 'scratch'; self.scratch.mkdir()
+        spec = importlib.util.spec_from_file_location('input_preparation_contract', Path(__file__).with_name('prepare-cargo-package-inputs.py'))
+        self.prep = importlib.util.module_from_spec(spec)
+        with mock.patch('subprocess.run') as run:
+            spec.loader.exec_module(self.prep)
+            run.assert_not_called()
+        self.patch = mock.patch.object(self.prep.tempfile, 'mkdtemp', return_value=str(self.scratch))
+        self.patch.start(); self.addCleanup(self.patch.stop)
+
+    def test_import_and_missing_opt_in_never_fetch(self):
+        with mock.patch.object(self.prep.subprocess, 'run') as run:
+            with self.assertRaisesRegex(ValueError, 'opt-in'):
+                self.prep.prepare_workspace(self.root)
+            run.assert_not_called()
+
+    def test_full_workspace_pinned_locked_fetch_keeps_inherited_home(self):
+        with mock.patch.object(self.prep.subprocess, 'run') as run:
+            result = self.prep.prepare_workspace(self.root, allow_network=True)
+        argv = run.call_args.args[0]
+        self.assertEqual(argv[:5], ['cargo', '+nightly-2026-04-10', 'fetch', '--locked', '-Zlockfile-path'])
+        self.assertEqual(argv[-2:], ['--manifest-path', str(self.root / 'Cargo.toml')])
+        self.assertIn('resolver.lockfile-path=' + json.dumps(str(self.scratch / 'Cargo.lock')), argv)
+        self.assertIn('build.target-dir=' + json.dumps(str(self.scratch / 'target')), argv)
+        self.assertNotIn('--target', argv)
+        self.assertNotIn('env', run.call_args.kwargs)
+        self.assertTrue(run.call_args.kwargs['check'])
+        self.assertEqual(result['status'], 'prepared')
+        self.assertEqual((self.root / 'Cargo.lock').read_bytes(), b'original lock\n')
+        self.assertFalse(self.scratch.exists())
+
+    def test_original_lock_mutation_rejects(self):
+        with mock.patch.object(self.prep.subprocess, 'run', side_effect=lambda *a, **kw: (self.root / 'Cargo.lock').write_bytes(b'changed')):
+            with self.assertRaisesRegex(ValueError, 'changed lock bytes'):
+                self.prep.prepare_workspace(self.root, allow_network=True)
+        self.assertTrue(self.scratch.exists())
+
+    def test_isolated_lock_mutation_rejects(self):
+        with mock.patch.object(self.prep.subprocess, 'run', side_effect=lambda *a, **kw: (self.scratch / 'Cargo.lock').write_bytes(b'changed')):
+            with self.assertRaisesRegex(ValueError, 'changed lock bytes'):
+                self.prep.prepare_workspace(self.root, allow_network=True)
+        self.assertEqual((self.root / 'Cargo.lock').read_bytes(), b'original lock\n')
+
+    def test_fetch_failure_does_not_claim_prepared(self):
+        with mock.patch.object(self.prep.subprocess, 'run', side_effect=subprocess.CalledProcessError(101, ['cargo', 'fetch'])):
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.prep.prepare_workspace(self.root, allow_network=True)
+        self.assertTrue(self.scratch.exists())
+        self.assertEqual((self.root / 'Cargo.lock').read_bytes(), b'original lock\n')
 
 
 @unittest.skipUnless(os.environ.get('FARM_CARGO_NETWORK_TESTS') == '1', 'explicit read-only registry integration opt-in')
@@ -151,4 +210,11 @@ class RealCargo(unittest.TestCase):
         self.assertEqual((self.workspace / 'Cargo.lock').read_bytes(), self.lock)
 
 
-if __name__ == '__main__': unittest.main(verbosity=2)
+if __name__ == '__main__':
+    # Prepare the actual runner Cargo home once for subsequent offline source
+    # contracts. The RealCargo cases below still use their own empty homes.
+    if os.environ.get('FARM_CARGO_NETWORK_TESTS') == '1':
+        prep_spec = importlib.util.spec_from_file_location('cargo_input_preparation', Path(__file__).with_name('prepare-cargo-package-inputs.py'))
+        prep = importlib.util.module_from_spec(prep_spec); prep_spec.loader.exec_module(prep)
+        print(json.dumps(prep.prepare_workspace(Path(__file__).resolve().parents[1], allow_network=True)), flush=True)
+    unittest.main(verbosity=2)
