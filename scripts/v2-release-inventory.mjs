@@ -89,6 +89,15 @@ export function cargoPackageInputsDigest(directory, workspaceRoot = root) {
 // may be repacked/published; unchanged immutable versions come from registries.
 export const publicationNpm = plan => plan.publication?.npm ?? plan.npm;
 export function releaseCandidatePlanPath(root, env = process.env) {
+  if (env.FARM_PR_CANDIDATE_PLAN) {
+    assert.ok(!env.FARM_RELEASE_CANDIDATE_PLAN, 'PR and publication plan overrides cannot be combined');
+    assert.equal(env.GITHUB_ACTIONS, 'true'); assert.equal(env.GITHUB_JOB, 'seal');
+    assert.ok(['pull_request', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME));
+    assert.ok(env.GITHUB_WORKFLOW_REF?.startsWith(`${env.GITHUB_REPOSITORY}/.github/workflows/ci.yaml@`));
+    const file = path.resolve(root, env.FARM_PR_CANDIDATE_PLAN);
+    assert.equal(file, path.resolve(root, '.release-work/pr-candidate-plan.json'));
+    return file;
+  }
   if (!env.FARM_RELEASE_CANDIDATE_PLAN) return path.join(root, 'docs/releases/v2-candidate.json');
   assert.equal(env.GITHUB_ACTIONS, 'true'); assert.equal(env.GITHUB_REF, 'refs/heads/main');
   assert.equal(env.FARM_BUILD_PROFILE, 'release'); assert.equal(env.GITHUB_JOB, 'producer');

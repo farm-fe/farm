@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import subprocess
 from pathlib import Path
 import unittest
 import zipfile
@@ -49,7 +50,10 @@ class Contracts(unittest.TestCase):
              for i,label in enumerate(m.PLATFORMS) for field in m.FIELDS}
         parsed=m.outputs(json.dumps(row));self.assertEqual(set(parsed),set(m.ABI))
         for path in ['release-candidate-consumers.yaml','release-public-consumers.yaml']:
-            source=(Path(__file__).parents[1]/'.github/workflows'/path).read_text()
+            # Historical transactions retain their original fixed consumer interface.
+            source=subprocess.check_output(['git','show',
+                'c3c99547eaba6624c5fce482db92fbce5995ef37:.github/workflows/'+path],
+                cwd=Path(__file__).parents[1],text=True)
             self.assertNotIn('matrix:',source)
             for label in m.PLATFORMS:
                 for field in m.FIELDS:self.assertIn('${{ jobs.'+label+'.outputs.'+field+' }}',source)
@@ -75,6 +79,23 @@ class Contracts(unittest.TestCase):
                 report,meta,origin,job=m.receipt(api,run,manifest,kind,platform,output)
                 self.assertEqual(origin['run_attempt'],1);self.assertEqual(job['id'],201)
                 self.assertEqual(meta['id'],100);self.assertEqual(report['status'],'passed')
+
+    def test_legacy_receipts_reject_byte_only_reports_even_with_valid_upload_digest(self):
+        for kind in ['candidate','public']:
+            api,run,manifest,kind,platform,output,_,artifact,state=self.fixture(kind)
+            state['report']['kind']='release-byte-integrity-v1'
+            body=api.archive(artifact['id'])
+            artifact.update(size_in_bytes=len(body),digest='sha256:'+hashlib.sha256(body).hexdigest())
+            output['artifact_digest']=artifact['digest'][7:]
+            with self.subTest(kind=kind),self.assertRaisesRegex(ValueError,'Legacy consumer receipt'):
+                m.receipt(api,run,manifest,kind,platform,output)
+
+    def test_new_manifest_cannot_select_legacy_consumer_policy(self):
+        for kind in ['candidate','public']:
+            api,run,manifest,kind,platform,output,*_=self.fixture(kind)
+            manifest['releaseValidation']='archive-integrity-v1'
+            with self.subTest(kind=kind),self.assertRaisesRegex(ValueError,'do not use legacy'):
+                m.receipt(api,run,manifest,kind,platform,output)
 
     def test_missing_or_forged_provenance_never_falls_back_to_old_success(self):
         for defect in ['missing-output','id','digest','attempt','platform','source','run','job-sha','job-duplicate',

@@ -1,3 +1,6 @@
+import { assertPrCandidateSource } from './prepare-pr-candidate-plan.mjs';
+import { npmInventory } from './v2-release-inventory.mjs';
+import { execFileSync } from 'node:child_process';
 import { resolveNpmCli } from './v2-npm-cli.mjs';
 import { publicationManifestDigest } from './incremental-release-producer.mjs';
 // cspell:words statfs bavail userconfig USERCONFIG
@@ -19,12 +22,18 @@ const sourcePlan = JSON.parse(await fs.readFile(path.join(root, 'docs/releases/v
 let plan = sourcePlan;
 try {
   plan = JSON.parse(await fs.readFile(path.join(seal, 'candidate-plan.json'), 'utf8'));
+  if (plan.preparation?.mode !== 'pr-validation') {
   assert.deepEqual(plan.npm, sourcePlan.npm, 'Portable candidate npm family differs from source');
   assert.deepEqual(plan.cargo, sourcePlan.cargo, 'Portable candidate Cargo family differs from source');
   assert.equal(plan.abi, sourcePlan.abi);
+  }
 } catch (error) { if (error.code !== 'ENOENT') throw error; }
 
 const receipt = JSON.parse(await fs.readFile(path.join(seal, 'receipt.json')));
+if (plan.preparation?.mode === 'pr-validation') {
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  assertPrCandidateSource(plan, receipt, { commit: git('rev-parse', 'HEAD'), tree: git('rev-parse', 'HEAD^{tree}'), npm: npmInventory() });
+}
 let releaseBinding = null;
 try {
   const manifest = JSON.parse(await fs.readFile(path.join(seal, 'manifest.json'), 'utf8'));

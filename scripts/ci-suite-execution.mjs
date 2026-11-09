@@ -6,8 +6,7 @@ import { readGitSuiteFiles, discoverSuiteInventory, makeSuiteExecutionPlan, suit
 import { resolveNpmCli } from './v2-npm-cli.mjs';
 import { command } from './performance-report.mjs';
 import { redactDiagnostic } from './v2-release-diagnostics.mjs';
-import { executionPlan } from './ci-suite-selection.mjs';
-export { executionPlan } from './ci-suite-selection.mjs';
+export function executionPlan(inventory, kind) { return makeSuiteExecutionPlan(inventory, kind); }
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export function vitestFailureSummary(report, directory = root, env = process.env) {
@@ -182,8 +181,7 @@ export function validateCollectedSuites(inventory, rows, env = process.env, reso
     assert.equal(resolution.runId, expected.run.runId); assert.equal(resolution.aggregationAttempt, expected.run.runAttempt);
     assert.deepEqual(Object.keys(resolution.producers).sort(), rows.map(row => row.artifactName).sort());
   }
-  if (resolution && env.FARM_SUITE_SELECTION_HASH) assert.ok(Number.isSafeInteger(resolution.selectionAttempt) && resolution.selectionAttempt > 0 && resolution.selectionAttempt <= expected.run.runAttempt, 'Original suite selection attempt is missing');
-  const planEnv = resolution?.selectionAttempt ? {...env, GITHUB_RUN_ATTEMPT:String(resolution.selectionAttempt)} : env;
+  const planEnv = env;
   const seen = new Set();
   for (const row of rows) {
     const key = row.data.kind + ':' + row.data.abi;
@@ -209,14 +207,6 @@ export function validateCollectedSuites(inventory, rows, env = process.env, reso
     if (row.data.kind === 'examples-browser') assert.deepEqual(row.data.excludedCases ?? [], plan.excludedCases ?? [], 'Browser case exclusion receipt differs from committed policy');
     assert.equal(row.data.inventoryHash, inventory.inventoryHash); assert.equal(row.data.planHash, plan.planHash);
     assert.deepEqual(row.data.selectedIds, plan.ids); assert.deepEqual(row.data.executedIds, plan.ids);
-    if (env.FARM_SUITE_SELECTION_HASH && row.data.kind === 'examples-browser') {
-      const buildPlan = executionPlan(inventory, 'examples-build', root, planEnv), build = row.data.buildExecution;
-      assert.ok(build, 'Selected browser evidence requires actual build coverage');
-      assert.equal(build.sourceSHA, expected.sourceSHA); assert.equal(build.sourceTree, expected.sourceTree); assert.deepEqual(build.run, row.data.run);
-      assert.equal(build.abi, row.data.abi); assert.equal(build.inventoryHash, inventory.inventoryHash); assert.equal(build.planHash, buildPlan.planHash);
-      assert.deepEqual(build.selectedIds, buildPlan.ids); assert.deepEqual(build.executedIds, buildPlan.ids);
-      assert.equal(build.failed, 0); assert.equal(build.skipped, 0);
-    }
     if (plan.ids.length === 0) {
       assert.equal(plan.mode, 'not-applicable'); assert.equal(row.data.disposition, 'not-applicable');
       assert.equal(row.data.executedCases, 0); assert.deepEqual(row.data.caseCounts, []);

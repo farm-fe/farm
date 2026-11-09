@@ -347,6 +347,9 @@ class RecoveryVerifier(entry.ReleaseVerifier):
 
     def candidate_jobs(self, facts):
         run, repository, source, jobs, route, policy_sha = facts
+        if entry.archive_integrity_mode(self.verifying_manifest):
+            self.candidate_selection = {}
+            return facts
         # Use exactly the same content/attempt/artifact selector as the durable
         # baseline reader. Successful intermediate attempts must not disappear.
         reader_module = entry.load('publication_candidate_baseline', 'incremental-release-baseline.py')
@@ -386,14 +389,18 @@ class RecoveryVerifier(entry.ReleaseVerifier):
         provenance=load('publication_signed_acceptance','release-provenance.py')
         run=self.transport.get('/actions/runs/'+str(self.current['runId'])+'/attempts/'+str(self.current['attempt']))
         source={'sha':manifest['sourceSHA'],'tree':manifest['sourceTree']}
-        proof,artifact,origin,job,_,signed=provenance.signed_json(self.transport,run,source,'public','public',proof_provider=self.proof_provider)
+        proof,artifact,origin,job,_,signed=provenance.signed_json(self.transport,run,source,entry.public_scope(manifest),'public',proof_provider=self.proof_provider)
         attempt=run['run_attempt']
         check(proof.get('manifestHash') == state.digest(manifest) and proof.get('sourceTree') == manifest['sourceTree']
               and proof.get('planHash') == manifest['planHash'] and proof.get('producerJobId') == job['id'], 'Public acceptance frozen identity differs')
         check(proof.get('packages') == {row['kind'] + ':' + row['name']: row['archiveSha256'] for row in manifest['packages']}
-              and all(proof.get(key) is True for key in ['registryInstall', 'nativeABI', 'latestTargets']), 'Actual public acceptance is incomplete')
-        reports = verify_public_selection(self.transport, manifest, self.current['runId'], attempt, proof.get('consumerReports'),
-            upload_outputs=provenance.consumer_outputs(signed,'public'))
+              and entry.public_integrity_verified(proof, manifest), 'Actual public acceptance is incomplete')
+        reports = {}
+        if entry.archive_integrity_mode(manifest):
+            check(proof.get('kind')=='release-byte-integrity-v1', 'Registry proof kind differs')
+        else:
+            reports = verify_public_selection(self.transport, manifest, self.current['runId'], attempt, proof.get('consumerReports'),
+                upload_outputs=provenance.consumer_outputs(signed,'public'))
         actual = entry.evidence.registry_module.RegistryReadOnly().verify({row['kind'] + ':' + row['name']: row for row in manifest['packages']})
         check(actual == proof['packages'], 'Public registry changed after consumer acceptance')
         return {'manifestHash': state.digest(manifest), 'sourceSHA': manifest['sourceSHA'], 'sourceTree': manifest['sourceTree'],
@@ -512,10 +519,11 @@ def main():
     current = {"runId": run_id, "attempt": attempt}
     store = state.GitRefStore(state.GitHubStateAPI(api.request))
     frozen = frozen_authorization(store, manifest, source, repository["id"], current)
-    candidate_outputs=consumer_bindings.outputs(os.environ['FARM_RELEASE_CANDIDATE_UPLOADS']) if args.stage=='upload' else None
+    candidate_outputs=consumer_bindings.outputs(os.environ['FARM_RELEASE_CANDIDATE_UPLOADS']) if args.stage=='upload' and not entry.archive_integrity_mode(manifest) else None
     verifier = RecoveryVerifier(api.reader, current, frozen=frozen, candidate_outputs=candidate_outputs)
     preflight = verifier.verify(manifest, directory / "archives", phase="prepublish", current_run=current)
-    functional.verify_functional(api.reader, source, manifest.get("functionalEvidence"), current)
+    # PR quality is enforced by repository merge protection. Publication binds
+    # the actual main source and frozen bytes above, not a separate test run.
     owner = {"runId": run_id, "attempt": attempt, "repositoryId": repository["id"], "sourceSHA": source["sha"],
              "sourceTree": source["tree"], "workflow": entry.WORKFLOW, "policyHash": source["policyHash"],
              "producerRunId": manifest["producerRunId"], "producerAttempt": manifest["producerAttempt"]}

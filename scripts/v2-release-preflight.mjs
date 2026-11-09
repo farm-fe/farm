@@ -1,3 +1,4 @@
+import { assertPrCandidateSource } from './prepare-pr-candidate-plan.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,6 +11,8 @@ import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
 import { checkPublishedRustClosure } from './check-published-rust-closure.mjs';
 
 const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root), 'utf8'));
+const prCandidate = plan.preparation?.mode === 'pr-validation';
+assert.ok(!prCandidate || !process.argv.includes('--publication'), 'PR candidate inventory never authorizes publication');
 assert.deepEqual(npmInventory(), plan.npm, 'Candidate manifests drifted; regenerate and review the release scope');
 if ((plan.preparation?.mode ?? 'first-stable') === 'first-stable') {
   assert.equal(plan.npm.primary.find(pkg => pkg.name === '@farmfe/js-plugin-vuetify')?.version, '0.0.2');
@@ -48,7 +51,7 @@ const preFile = path.join(root, '.changeset/pre.json');
 const pendingChangesets = fs.readdirSync(path.join(root, '.changeset')).filter(name => name.endsWith('.md') && name !== 'README.md').length;
 report.versionState = { prerelease: fs.existsSync(preFile) ? JSON.parse(fs.readFileSync(preFile))?.mode : null, pendingChangesets };
 report.stableVersionStateReady = !fs.existsSync(preFile) && pendingChangesets === 0;
-if (!report.stableVersionStateReady) report.pending.push('Review beta exit and consume pending changesets in a version PR, then regenerate and re-seal the exact stable version inventory');
+if (!prCandidate && !report.stableVersionStateReady) report.pending.push('Review beta exit and consume pending changesets in a version PR, then regenerate and re-seal the exact stable version inventory');
 const option = key => { const index = process.argv.indexOf(key); return index >= 0 ? process.argv[index + 1] : undefined; };
 const sealPath = option('--candidate-seal');
 let seal;
@@ -56,7 +59,8 @@ if (sealPath) {
   const receipt = JSON.parse(fs.readFileSync(sealPath));
   assert.equal(receipt.planSha256, planDigest, 'Seal belongs to a different release inventory');
   assert.match(receipt.sourceCommit, /^[a-f0-9]{40}$/);
-  execFileSync('git', ['diff', '--quiet', receipt.sourceCommit, 'HEAD', '--', 'Cargo.toml', 'Cargo.lock', 'crates', 'rust-ecosystem', 'packages', 'rust-plugins', 'js-plugins', 'patches', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'], { cwd: root });
+  if (prCandidate) assertPrCandidateSource(plan, receipt, { commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), tree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { cwd: root, encoding: 'utf8' }).trim(), npm: npmInventory() });
+  execFileSync('git', ['diff', '--quiet', prCandidate ? receipt.testedCommit : receipt.sourceCommit, 'HEAD', '--', 'Cargo.toml', 'Cargo.lock', 'crates', 'rust-ecosystem', 'packages', 'rust-plugins', 'js-plugins', 'patches', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'], { cwd: root });
   seal = verifyCandidateSeal(plan, receipt, path.dirname(path.resolve(sealPath)));
   report.candidateArchivesVerified = seal.candidateArchivesVerified;
   report.archiveCoverage = { inspected: seal.inspected, missing: seal.missing.length, invalid: seal.invalid.length, errors: seal.errors.length };
@@ -80,7 +84,8 @@ if (process.argv.includes('--publication') && report.candidateArchivesVerified &
   report.publishedRustCoreVerified = true;
 }
 report.publishedRustSdkVerified = report.publishedRustSdk?.verified === true;
-if (!report.publishedRustCoreVerified) report.pending.push('Before stable npm publication: live published Rust Core 2.2.0 checksum/ABI 0.5.4 and all selected SDK registry checksums');
-report.readyToPublish = report.candidateArchivesVerified && report.externalSdkVerified && report.publishedRustCoreVerified && report.publishedRustSdkVerified && report.stableVersionStateReady;
+if (!prCandidate && !report.publishedRustCoreVerified) report.pending.push('Before stable npm publication: live published Rust Core 2.2.0 checksum/ABI 0.5.4 and all selected SDK registry checksums');
+report.prCandidateVerified = prCandidate && report.candidateArchivesVerified && report.externalSdkVerified;
+report.readyToPublish = !prCandidate && report.candidateArchivesVerified && report.externalSdkVerified && report.publishedRustCoreVerified && report.publishedRustSdkVerified && report.stableVersionStateReady;
 console.log(JSON.stringify(report, null, 2));
 if ((process.argv.includes('--publication') && !report.readyToPublish) || (sealPath && !report.candidateArchivesVerified)) process.exitCode = 1;

@@ -1,3 +1,4 @@
+# cspell:words sigstore
 """Offline resolver integration tests: real source graph, synthetic API/bytes."""
 import copy
 import contextlib
@@ -129,7 +130,7 @@ class FormalProducts(unittest.TestCase):
             with self.subTest(field=field):
                 values = self.fixture(); values[1][field] = value
                 with self.assertRaises(ValueError): self.inspect(values)
-        for update in [{'conclusion': 'failure'}, {'head_repository': {'id': 9}}, {'head_branch': 'feature'}]:
+        for update in [{'head_repository': {'id': 9}}, {'head_branch': 'feature'}]:
             values = self.fixture(); values[2].update(update)
             with self.assertRaises(ValueError): self.inspect(values)
 
@@ -146,49 +147,140 @@ class FormalProducts(unittest.TestCase):
         values = self.fixture(); values[4]['formalFlagsHash'] = '0' * 64
         with self.assertRaisesRegex(ValueError, 'flags'): self.inspect(values)
 
-    def test_latest_failed_attempt_does_not_read_old_attempt(self):
-        requests = []; source = self.source
+    def test_successful_native_is_independent_of_later_publish_or_other_abi_failure(self):
+        for status, conclusion in [('completed','failure'), ('in_progress',None), ('completed','cancelled')]:
+            values=self.fixture(); values[2].update(status=status,conclusion=conclusion)
+            self.assertEqual(set(self.inspect(values)),set(self.products))
+        for conclusion in ['failure','cancelled','skipped']:
+            values=self.fixture();values[3]['conclusion']=conclusion
+            with self.assertRaisesRegex(ValueError,'Native job failed'):self.inspect(values)
+
+    def resolver_transport(self, values):
+        source=self.source; requests=[]
         class Transport:
-            def get(self, route):
+            def get(self,route):
                 requests.append(route)
-                if route == '/commits/main': return {'sha': source['sha']}
-                if '/workflows/' in route: return {'workflow_runs': [{'id': 10, 'run_attempt': 2}]}
-                if route == '/actions/runs/10': return {'status': 'completed', 'conclusion': 'failure', 'run_attempt': 2}
-                raise AssertionError('Unexpected request ' + route)
-        accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
-        self.assertEqual(accepted, {})
-        self.assertIn('latest-producer-attempt-not-successful', reasons)
-        self.assertFalse(any('/attempts/' in route for route in requests))
-
-    def test_unsigned_successful_catalog_rebuilds_without_downloading_bytes(self):
-        _, artifact, run, job, _ = self.fixture(); source = self.source
-        class Transport:
-            def get(self, route):
-                if route == '/commits/main': return {'sha': source['sha']}
-                if route.startswith('/compare/'): return {'status':'identical','merge_base_commit':{'sha':source['sha']}}
-                if '/workflows/' in route: return {'workflow_runs':[{'id':10,'run_attempt':2},{'id':11,'run_attempt':1}]}
-                if route == '/actions/runs/10': return run
-                if '/artifacts?' in route: return {'artifacts':[artifact]}
+                if route=='/commits/main':return {'sha':source['sha']}
+                if '/workflows/' in route:return {'workflow_runs':[{'id':10,'run_attempt':2}]}
+                if route=='/actions/runs/10':return values[2]
+                if route.startswith('/compare/'):return {'status':'identical','merge_base_commit':{'sha':source['sha']}}
                 raise AssertionError(route)
-            def archive(self, artifact_id):
-                raise AssertionError('Unsigned historical bytes must not be downloaded')
-        accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
+            def archive(self,identity):raise AssertionError('Unsigned bytes must not be downloaded')
+        return Transport(),requests
+
+    def test_unsigned_or_missing_proof_is_a_miss_without_catalog_download(self):
+        for reason in ['unsigned','expired','wrong signer','missing proof']:
+            transport,requests=self.resolver_transport(self.fixture())
+            def deny(*args):raise ValueError(reason)
+            accepted,reasons=formal.resolve_products(transport,self.source,ABI,self.context(),
+                read_source=lambda sha:self.source,proof_provider=deny)
+            self.assertEqual(accepted,{})
+            self.assertEqual(reasons,[reason])
+            self.assertFalse(any('/attempts/' in route for route in requests))
+
+    def test_new_attempt_never_falls_back_to_old_proof(self):
+        values=self.fixture();values[2]['run_attempt']=3
+        transport,requests=self.resolver_transport(values)
+        def denied(*args):raise AssertionError('Moved attempt must fail before verification')
+        accepted,reasons=formal.resolve_products(transport,self.source,ABI,self.context(),proof_provider=denied)
         self.assertEqual(accepted,{})
-        self.assertEqual(reasons,['unsigned-formal-catalog-build-current'])
+        self.assertEqual(reasons,['Producer attempt moved during resolution'])
 
-    def test_missing_artifact_is_build_miss(self):
-        _, _, run, _, _ = self.fixture(); source = self.source
-        class Transport:
-            def get(self, route):
-                if route == '/commits/main': return {'sha': source['sha']}
-                if route.startswith('/compare/'): return {'status': 'identical', 'merge_base_commit': {'sha': source['sha']}}
-                if '/workflows/' in route: return {'workflow_runs': [{'id': 10, 'run_attempt': 2}]}
-                if route == '/actions/runs/10': return run
-                if '/artifacts?' in route: return {'artifacts': []}
+    def test_content_key_hit_across_commit_and_misses_on_shared_inputs(self):
+        current=copy.deepcopy(self.source);current['sha']='a'*40
+        self.assertEqual(set(self.inspect(self.fixture(),current)),set(self.products))
+        for file in ['Cargo.lock','rust-toolchain.toml']:
+            current=copy.deepcopy(self.source);current['files'][file]+=b'\n# changed input\n'
+            self.assertEqual(self.inspect(self.fixture(),current),{})
+
+    def test_resolver_accumulates_partial_catalogs_with_real_artifact_validation(self):
+        # Only API and cryptographic verification are simulated. Discovery,
+        # certificate/manifest policy, producer binding and catalog validation
+        # all execute production code; no hosted signing is claimed.
+        provenance=formal.load('full_native_provenance','release-provenance.py')
+        values=[];owners=list(self.products);requests=[];downloaded=[];proofs={};certificates={}
+        for index,selected in enumerate([owners[:1],owners[1:]]):
+            body,artifact,run,job,desired=self.fixture()
+            run['id']=10+index;run['conclusion']='failure'
+            run['repository']={'id':507542208,'full_name':'farm-fe/farm'}
+            run['head_repository']={'id':507542208}
+            desired['repositoryId']=507542208
+            job.update(id=30+index,run_id=run['id'],head_sha=self.source['sha'])
+            with zipfile.ZipFile(io.BytesIO(body)) as archive:
+                manifest=json.loads(archive.read('catalog.json'));manifest['runId']=run['id']
+                manifest['records']=[row for row in manifest['records'] if row['owner'] in selected]
+                output=io.BytesIO()
+                with zipfile.ZipFile(output,'w') as target:
+                    target.writestr('catalog.json',json.dumps(manifest))
+                    for row in manifest['records']:target.writestr(row['member'],archive.read(row['member']))
+            body=output.getvalue()
+            artifact.update(id=20+index,workflow_run={'id':run['id']},size_in_bytes=len(body),digest='sha256:'+hashlib.sha256(body).hexdigest())
+            values.append((body,artifact,run,job,desired))
+            expected=provenance.expected_policy(run,self.source,'native-'+ABI,'c'*40)
+            row={'cell':'native','producer':job['name'],'jobId':job['id'],'originAttempt':2,
+                 'uploadStep':formal.UPLOAD,'artifactId':artifact['id'],'artifactDigest':artifact['digest'],'artifactName':artifact['name']}
+            subject=json.dumps({'schemaVersion':1,'kind':'fixed-workflow-upload-bindings',
+                **{key:expected[key] for key in ['repositoryId','sourceSHA','sourceTree','runId','callerWorkflow']},
+                'aggregationAttempt':2,'bindings':[row]}).encode()
+            repo='https://github.com/farm-fe/farm';signer=repo+'/'+expected['signerWorkflow']+'@'+expected['signerSHA']
+            certificate={'issuer':'https://token.actions.githubusercontent.com','subjectAlternativeName':signer,
+                'buildSignerURI':signer,'buildSignerDigest':expected['signerSHA'],'runnerEnvironment':'github-hosted',
+                'sourceRepositoryURI':repo,'sourceRepositoryIdentifier':'507542208',
+                'sourceRepositoryDigest':self.source['sha'],'sourceRepositoryRef':'refs/heads/main',
+                'buildConfigURI':repo+'/'+formal.WORKFLOW+'@refs/heads/main','buildConfigDigest':self.source['sha'],
+                'buildTrigger':'push','runInvocationURI':repo+'/actions/runs/'+str(run['id'])+'/attempts/2'}
+            statement={'_type':'https://in-toto.io/Statement/v1','predicateType':provenance.policy.PREDICATE,
+                'subject':[{'name':'ci-bindings.json','digest':{'sha256':hashlib.sha256(subject).hexdigest()}}],
+                'predicate':{'schemaVersion':1,'kind':'fixed-workflow-upload-bindings'}}
+            certificates[run['id']]=[{'verificationResult':{'signature':{'certificate':certificate},'statement':statement}}]
+            archive=io.BytesIO()
+            with zipfile.ZipFile(archive,'w') as target:
+                target.writestr('ci-bindings.json',subject)
+                target.writestr('ci-bindings.sigstore.json',b'explicit offline cryptographic boundary')
+            proof_body=archive.getvalue()
+            metadata={'id':400+index,'name':'farm-release-bindings-native-'+ABI+'-'+str(run['id'])+'-2',
+                'expired':False,'workflow_run':{'id':run['id']},'size_in_bytes':len(proof_body),
+                'digest':'sha256:'+hashlib.sha256(proof_body).hexdigest()}
+            proofs[run['id']]=(metadata,proof_body)
+        source=self.source
+        class API:
+            def get(self,route):
+                requests.append(route)
+                if '/workflows/' in route:return {'workflow_runs':[item[2] for item in values]}
+                if route=='/commits/main':return {'sha':source['sha']}
+                if route.startswith('/compare/'):return {'status':'identical','merge_base_commit':{'sha':source['sha']}}
+                for body,artifact,run,job,_ in values:
+                    prefix='/actions/runs/'+str(run['id'])
+                    if route in [prefix,prefix+'/attempts/2']:return run
+                    meta,_=proofs[run['id']]
+                    if route.startswith(prefix+'/artifacts?'):return {'total_count':1,'artifacts':[meta]}
+                    if route=='/actions/artifacts/'+str(meta['id']):return meta
+                    if route.startswith(prefix+'/attempts/2/jobs?'):return {'total_count':1,'jobs':[job]}
+                    if route=='/actions/artifacts/'+str(artifact['id']):return artifact
                 raise AssertionError(route)
-        accepted, reasons = formal.resolve_products(Transport(), self.source, ABI, self.context())
-        self.assertEqual(accepted, {})
-        self.assertIn('artifact-missing-or-expired', reasons)
+            def archive(self,identity):
+                downloaded.append(identity)
+                for meta,body in proofs.values():
+                    if meta['id']==identity:return body
+                return next(item[0] for item in values if item[1]['id']==identity)
+        def proof(api,run,source,scope):
+            def verified_crypto(subject,bundle,expected):
+                self.assertEqual(bundle.read_bytes(),b'explicit offline cryptographic boundary')
+                return provenance.policy.validate_verified_manifest(subject.read_bytes(),certificates[run['id']],expected)
+            return provenance.verified_run(api,run,source,scope,verify=verified_crypto,signer_sha='c'*40)
+        accepted,reasons=formal.resolve_products(API(),self.source,ABI,values[0][4],read_source=lambda sha:self.source,proof_provider=proof)
+        self.assertEqual(reasons,[]);self.assertEqual(set(accepted),set(self.products));self.assertEqual(downloaded,[400,20,401,21])
+        # Reusing any one successfully signed build does not imply whole-run success.
+        self.assertEqual({row['runId'] for row in accepted.values()},{10,11})
+        for field in ['buildSignerDigest','sourceRepositoryDigest','runInvocationURI']:
+            cert=certificates[11][0]['verificationResult']['signature']['certificate'];original=cert[field]
+            cert[field]='wrong'
+            accepted,reasons=formal.resolve_products(API(),self.source,ABI,values[0][4],read_source=lambda sha:self.source,proof_provider=proof)
+            self.assertEqual(set(accepted),set(owners[:1]));self.assertIn('Verified certificate identity differs or is incomplete',reasons)
+            cert[field]=original
+        values[1][1]['expired']=True
+        accepted,reasons=formal.resolve_products(API(),self.source,ABI,values[0][4],read_source=lambda sha:self.source,proof_provider=proof)
+        self.assertEqual(set(accepted),set(owners[:1]));self.assertIn('Signed artifact identity differs',reasons)
 
     def captured_windows(self, abi):
         # Execute the actual JS collector; tool output is an explicit fixture,

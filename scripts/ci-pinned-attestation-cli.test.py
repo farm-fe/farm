@@ -36,13 +36,38 @@ class Contracts(unittest.TestCase):
             forged=Path(directory)/'verified.json';forged.write_text('{"verified":true}')
             with patch.dict(os.environ,{'FARM_VERIFIED_RESULT':str(forged),'GH_ATTESTATION_VERIFIED_RESULT':str(forged)},clear=True):
                 with patch.object(m.urllib.request,'urlopen',side_effect=AssertionError('Must reject before network')):
-                    with self.assertRaisesRegex(PermissionError,'hosted Linux x64'):
+                    with self.assertRaisesRegex(PermissionError,'GitHub-hosted consumer'):
                         m.verify_on_host(forged,forged,{'verified':True})
 
     def test_production_release_pin_is_exact(self):
-        self.assertEqual(m.URL,'https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz')
-        self.assertEqual(m.SIZE,15031972)
-        self.assertEqual(m.SHA256,'4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d')
+        self.assertEqual(m.VERSION,'2.103.3')
+        self.assertEqual(m.host_asset('linux','x86_64'),('gh_2.103.3_linux_amd64.tar.gz',15031972,'4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d','gh_2.103.3_linux_amd64/bin/gh'))
+        for system,machine in [('darwin','arm64'),('darwin','x86_64'),('win32','AMD64')]:
+            name,size,digest,member=m.host_asset(system,machine)
+            self.assertTrue(name.endswith('.zip'));self.assertGreater(size,10000000)
+            self.assertEqual(len(digest),64);self.assertTrue(member.endswith('gh.exe' if system=='win32' else '/gh'))
+        for system,machine in [('linux','arm64'),('win32','arm64'),('linux','i386'),('unknown','x86_64')]:
+            with self.assertRaises(PermissionError):m.host_asset(system,machine)
+
+    def test_zip_member_digest_type_and_uniqueness(self):
+        import zipfile
+        import stat
+        import warnings
+        for kind,duplicate in [(stat.S_IFREG,False),(stat.S_IFLNK,False),(stat.S_IFREG,True)]:
+            output=io.BytesIO()
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore',UserWarning)
+                with zipfile.ZipFile(output,'w') as archive:
+                    for _ in range(2 if duplicate else 1):
+                        item=zipfile.ZipInfo('bin/gh.exe');item.external_attr=(kind|0o755)<<16
+                        archive.writestr(item,b'bytes')
+            body=output.getvalue();digest=hashlib.sha256(body).hexdigest()
+            if kind==stat.S_IFREG and not duplicate:
+                self.assertEqual(m.unpack_verified_binary(body,digest,'bin/gh.exe',zipped=True),b'bytes')
+                for sha,member in [('0'*64,'bin/gh.exe'),(digest,'wrong')]:
+                    with self.assertRaises(ValueError):m.unpack_verified_binary(body,sha,member,zipped=True)
+            else:
+                with self.assertRaises(ValueError):m.unpack_verified_binary(body,digest,'bin/gh.exe',zipped=True)
 
 
 if __name__=='__main__':unittest.main()

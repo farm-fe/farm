@@ -39,13 +39,15 @@ test('Commerce retains actual business assertions as ordinary production Example
   const assertions = read('examples/commerce-lab/benchmark/business-correctness.mjs');
   for (const feature of ['Validate in Worker', 'Generate TypeScript types', 'Import drafts', 'Publish campaign', 'MDX table', 'getComputedStyle', 'health.assertHealthy()']) assert.ok(assertions.includes(feature), feature);
 });
-test('release and recovery require functional evidence but no performance archives', () => {
+test('release preserves safety without main functional or performance evidence', () => {
   for (const name of ['incremental-release-functional.py', 'incremental-chain-runtime.py', 'v2-auto-release.mjs', 'prepare-v2-release-intent.mjs'])
     assert.doesNotMatch(read('scripts/' + name), /performanceRequired|verify_performance|Commerce Performance|performance-pr-summary/, name);
   const functional = read('scripts/incremental-release-functional.py');
   for (const value of ['Typescript Test', 'Examples Test', 'Docs /', 'Type Check', 'main_binding_proof', 'bound_artifact', 'exact_plan', 'tested functional tree']) assert.ok(functional.includes(value), value);
   const release = YAML.parse(read('.github/workflows/incremental-release.yaml'));
-  assert.ok(read('scripts/release-evidence-recovery.py').includes(release.jobs['main-evidence'].name));
+  assert.equal(release.jobs['main-evidence'], undefined);
+  assert.equal(release.jobs['sign-pending-evidence'], undefined);
+  assert.doesNotMatch(read('scripts/incremental-release-publish.py'), /functional\.verify_functional\(/);
   assert.ok(read('scripts/performance-report.mjs').includes('for (let round = -1; round < 3; round++)'));
 });
 

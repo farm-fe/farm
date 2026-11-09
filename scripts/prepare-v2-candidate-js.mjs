@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -49,7 +50,7 @@ async function main() {
   if (pool === '--check-package-manager' && process.argv.length === 3) { console.log(JSON.stringify(probePnpmCli())); return; }
   assert.ok(pool && output, 'Expected native pool and assembly output');
   const pnpm = resolvePnpmCli();
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
   const records = assembleNativeArtifacts(root, path.resolve(pool), process.env.GITHUB_SHA, plan);
   fs.writeFileSync(path.resolve(output), JSON.stringify({ schemaVersion: 1, sourceCommit: process.env.GITHUB_SHA, count: records.length, records, published: false }, null, 2), { flag: 'wx' });
   const core = records.find(row => row.owner === '@farmfe/core' && row.platform === 'linux-x64-gnu');

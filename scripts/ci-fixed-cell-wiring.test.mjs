@@ -73,31 +73,24 @@ test('native and Docs output chain ends at fixed receipt upload action', () => {
   assert.match(primary.jobs.docs.with.platforms, /^\$\{\{ format\('\[\{\{/);
 });
 
-test('selection binding reaches each actual consumer from the upload action', () => {
+test('full suite consumers do not inherit historical selection or test success', () => {
   const type = ci.jobs['type-check'];
-  assert.equal(type.steps.find(step => step.id === 'selection-upload').uses, 'actions/upload-artifact@v4');
-  const binding = type.steps.find(step => step.id === 'selection-binding');
-  assert.equal(binding.env.SELECTION_ID, '${{ steps.selection-upload.outputs.artifact-id }}');
-  assert.equal(binding.env.SELECTION_DIGEST, '${{ steps.selection-upload.outputs.artifact-digest }}');
-  assert.equal(type.outputs.suite_selection_upload, '${{ steps.selection-binding.outputs.binding }}');
+  assert.equal(type.steps.some(step => ['selection-upload', 'selection-binding'].includes(step.id)), false);
+  assert.equal(type.outputs?.suite_selection_upload, undefined);
   let callers = 0;
   for (const job of Object.values(ci.jobs)) {
     if (job.uses === './.github/workflows/ci-primary-platform.yaml') {
-      assert.equal(job.with.suite_selection_upload, '${{ needs.type-check.outputs.suite_selection_upload }}');
+      assert.equal(job.with.suite_selection_upload, undefined);
       callers++;
     }
-    for (const step of job.steps ?? []) {
-      if (step.run?.includes('ci-suite-attempts.py'))
-        assert.equal(step.env.FARM_SUITE_SELECTION_UPLOAD, '${{ needs.type-check.outputs.suite_selection_upload }}');
-    }
+    for (const step of job.steps ?? [])
+      assert.equal(step.env?.FARM_SUITE_SELECTION_UPLOAD, undefined);
   }
   assert.equal(callers, 3);
   const primary = read('ci-primary-platform.yaml');
-  for (const job of Object.values(primary.jobs)) for (const step of job.steps ?? []) {
-    if (step.run?.includes('ci-suite-attempts.py'))
-      assert.equal(step.env.FARM_SUITE_SELECTION_UPLOAD, '${{ inputs.suite_selection_upload }}');
-    else assert.equal(step.env?.FARM_SUITE_SELECTION_UPLOAD, undefined);
-  }
+  assert.equal(primary.on.workflow_call.inputs.suite_selection_upload, undefined);
+  for (const job of Object.values(primary.jobs)) for (const step of job.steps ?? [])
+    assert.equal(step.env?.FARM_SUITE_SELECTION_UPLOAD, undefined);
 });
 
 test('native audit receives nine singleton product uploads independently of cell receipts', () => {

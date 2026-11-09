@@ -96,17 +96,22 @@ class ReleaseBaselineReader:
               and seal.get('packageInputs')==evidence.package_input_hashes(source),'Completed seal or source inputs differ')
         latest=self.transport.get('/actions/runs/'+str(run_id))
         check(type(latest['run_attempt']) is int and attempt<=latest['run_attempt']<=32,'Latest release attempt differs')
-        public,_,_,job,_,signed=provenance.signed_json(self.transport,latest,source,'public','public',proof_provider=self.proof_provider)
-        self.candidates(manifest,repository,latest['run_attempt'],trusted_outputs=provenance.consumer_outputs(signed,'candidate'))
+        entry=load('baseline_release_entry','incremental-release-entry.py')
+        public,_,_,job,_,signed=provenance.signed_json(self.transport,latest,source,entry.public_scope(manifest),'public',proof_provider=self.proof_provider)
+        if entry.archive_integrity_mode(manifest):
+            check(public.get('kind')=='release-byte-integrity-v1', 'Registry proof kind differs')
+        else:
+            self.candidates(manifest,repository,latest['run_attempt'],trusted_outputs=provenance.consumer_outputs(signed,'candidate'))
         check(public.get('manifestHash')==transaction and public.get('sourceTree')==source['tree']
               and public.get('planHash')==manifest['planHash'] and public.get('producerJobId')==job['id'],
               'Completed public acceptance identity differs')
         expected={row['kind']+':'+row['name']:row['archiveSha256'] for row in manifest['packages']}
-        check(public.get('packages')==expected and all(public.get(key) is True for key in ['registryInstall','nativeABI','latestTargets']),
+        check(public.get('packages')==expected and load('baseline_release_entry','incremental-release-entry.py').public_integrity_verified(public, manifest),
               'Completed public consumer coverage differs')
         publisher=load('completed_public_consumer_validation','incremental-release-publish.py')
-        publisher.verify_public_selection(self.transport,manifest,run_id,latest['run_attempt'],public.get('consumerReports'),
-                                         upload_outputs=provenance.consumer_outputs(signed,'public'))
+        if not entry.archive_integrity_mode(manifest):
+            publisher.verify_public_selection(self.transport,manifest,run_id,latest['run_attempt'],public.get('consumerReports'),
+                                             upload_outputs=provenance.consumer_outputs(signed,'public'))
         tag=manifest.get('tag');check(isinstance(tag,str) and re.fullmatch(r'(?:v\d+\.\d+\.\d+|packages-[a-f0-9]{16})',tag),'Completed tag identity missing')
         obj=self.transport.get('/git/ref/tags/'+tag)['object']
         for _ in range(5):

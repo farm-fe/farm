@@ -1,12 +1,10 @@
-"""Isolated main CI/Unit signer preparation; signing is a pinned Action step.
+"""Historical CI/Unit proof policy; no live signer workflow or CLI.
 
-No tested-source checkout, dependency install, build, cache, or caller-selected
-policy is executed here. Producer runners remain trusted execution environments.
+Retained only for strict legacy evidence reading. Current release authority
+is independent of test evidence.
 """
 # cspell:words importlib
 import importlib.util
-import json
-import os
 from pathlib import Path
 import re
 
@@ -63,31 +61,3 @@ def prepare(transport, environment, scope, outputs, templates):
     check(source.get('sha') == expected['sourceSHA'] and re.fullmatch(r'[a-f0-9]{40}', source.get('tree', {}).get('sha', '')), 'Signer source tree is unavailable')
     expected['sourceTree'] = source['tree']['sha']
     return bindings.build_manifest_from_fixed_outputs(transport, expected, outputs, templates)
-
-
-def main():
-    scope = os.environ.get('SIGNER_SCOPE', '')
-    identity(os.environ, scope)  # Fail before constructing any API transport.
-    # These bytes are part of the pinned signer checkout, not caller inputs.
-    directory = ROOT / 'ci-provenance-templates' / scope
-    index = bindings.strict_json((directory / 'index.json').read_bytes())
-    check(isinstance(index, list) and index and len(index) == len(set(index)), 'Invalid reviewed template inventory')
-    templates = {}
-    for path in index:
-        check(isinstance(path, str) and path.startswith(('.github/', 'scripts/')) and '..' not in path.split('/'), 'Invalid reviewed template path')
-        file = directory / path
-        check(file.is_file() and not file.is_symlink(), 'Reviewed template is missing')
-        templates[path] = file.read_bytes()
-    spec = importlib.util.spec_from_file_location('signer_read_transport', ROOT / 'ci-native-evidence.py')
-    api = importlib.util.module_from_spec(spec); spec.loader.exec_module(api)
-    transport = api.GitHubReadOnly(REPOSITORY, os.environ.get('GH_TOKEN', ''))
-    outputs = bindings.strict_json(os.environ.get('SIGNER_UPLOAD_BINDINGS', '').encode())
-    body = prepare(transport, os.environ, scope, outputs, templates)
-    destination = Path('ci-provenance-output')
-    destination.mkdir()  # Never reuse a previous invocation's output directory.
-    (destination / 'ci-bindings.json').write_bytes(body)
-    (destination / 'predicate.json').write_text(json.dumps({'schemaVersion':1,'kind':'fixed-workflow-upload-bindings'}), encoding='utf-8')
-
-
-if __name__ == '__main__':
-    main()

@@ -15,6 +15,12 @@ on:
         default: ci
 
     outputs:
+      catalog_id:
+        value: ${{ jobs.build.outputs.catalog_id }}
+      catalog_digest:
+        value: ${{ jobs.build.outputs.catalog_digest }}
+      catalog_attempt:
+        value: ${{ jobs.build.outputs.catalog_attempt }}
       product_upload:
         value: ${{ jobs.build.outputs.product_upload }}
       artifact_id:
@@ -35,6 +41,9 @@ concurrency:
 jobs:
   build:
     outputs:
+      catalog_id: ${{ steps.catalog-upload.outputs.artifact-id }}
+      catalog_digest: ${{ steps.catalog-upload.outputs.artifact-digest }}
+      catalog_attempt: ${{ steps.catalog-origin.outputs.attempt }}
       product_upload: ${{ steps.product-binding.outputs.binding }}
       artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
@@ -386,6 +395,7 @@ jobs:
           FARM_BUILD_PROFILE: release
         run: python -B scripts/formal-native-products.py produce --abi ${{ matrix.settings.abi }} --capture .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output formal-native-catalog
       - name: Upload formal native product catalog
+        id: catalog-upload
         if: inputs.profile == 'release' && steps.formal-catalog.outputs.catalog_available == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -393,6 +403,12 @@ jobs:
           path: formal-native-catalog/
           if-no-files-found: error
           retention-days: 30
+      - name: Bind successful catalog to original upload attempt
+        id: catalog-origin
+        if: steps.catalog-upload.outcome == 'success'
+        shell: bash
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
       - name: Preserve bounded shadow producer context without duplicating native archives
         id: product-upload
         if: ${{ always() && inputs.profile != 'release' }}

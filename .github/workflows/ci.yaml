@@ -1,7 +1,5 @@
 name: E2E Tests
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -41,7 +39,7 @@ jobs:
       artifact_id: ${{ steps.plan-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.plan-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.plan-origin.outputs.attempt }}
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     needs: [version-classification]
     name: Incremental CI plan (shadow only)
     continue-on-error: true
@@ -95,7 +93,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [platform-contract-linux, platform-contract-macos, platform-contract-windows, version-classification, primary-linux, primary-macos, primary-windows, impact-plan, release-contract-tests, platform-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, execution-baseline]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -155,7 +153,7 @@ jobs:
       artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     needs: [version-classification]
     name: Release source contracts
     runs-on: ubuntu-24.04
@@ -200,7 +198,6 @@ jobs:
           python -B scripts/release-registry-selection.test.py
           python scripts/incremental-chain-plan.test.py
           python scripts/ci-leaf-native.test.py
-          python -B scripts/ci-suite-baseline.test.py
           node --test scripts/ci-leaf-assembly.test.mjs
           python scripts/incremental-scheduling-model.test.py
           python scripts/incremental-git-model.test.py
@@ -216,8 +213,6 @@ jobs:
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
           python -B scripts/release-retry-safety.test.py
-          python -B scripts/release-evidence-recovery.test.py
-          python -B scripts/release-functional-upload.test.py
           node --test scripts/release-recovery-dag.test.mjs scripts/ci-provenance-template.test.mjs scripts/release-provenance-wiring.test.mjs
           node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-chain-boundaries.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
@@ -234,9 +229,9 @@ jobs:
           scripts/check-pr-changesets.test.mjs
           scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
-          scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
+          scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs scripts/sdk-candidate-registry.test.mjs
           scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs scripts/ci-suite-inventory.test.mjs
-          scripts/ci-suite-execution.test.mjs scripts/ci-suite-rerun.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-selection.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
+          scripts/ci-suite-execution.test.mjs scripts/ci-suite-rerun.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
       - id: shadow-upload
         name: Preserve actual cell receipt (shadow only)
         if: always()
@@ -248,7 +243,7 @@ jobs:
           artifact-suffix: single
 
   docs-acceptance:
-    if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: always()
     name: Docs CI quality checks
     needs: [version-classification, primary-linux, primary-windows]
     runs-on: ubuntu-24.04
@@ -260,7 +255,7 @@ jobs:
         run: test "$LINUX_RESULT" = success && test "$WINDOWS_RESULT" = success
 
   platform-contract-tests:
-    if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: always()
     needs: [version-classification, platform-contract-linux, platform-contract-macos, platform-contract-windows]
     name: Platform safety contracts
     runs-on: ubuntu-24.04
@@ -271,28 +266,28 @@ jobs:
         run: python -c "import json,os; assert all(v['result']=='success' for v in json.loads(os.environ['RESULTS']).values())"
 
   platform-contract-linux:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     needs: [version-classification]
     uses: ./.github/workflows/ci-platform-safety.yaml
     with:
       os: ubuntu-24.04
 
   platform-contract-macos:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     needs: [version-classification]
     uses: ./.github/workflows/ci-platform-safety.yaml
     with:
       os: macos-latest
 
   platform-contract-windows:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     needs: [version-classification]
     uses: ./.github/workflows/ci-platform-safety.yaml
     with:
       os: windows-latest
 
   primary-linux:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     permissions:
       contents: read
       actions: read
@@ -302,12 +297,10 @@ jobs:
     with:
       os: ubuntu-24.04
       abi: linux-x64-gnu
-      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
-      suite_selection_upload: ${{ needs.type-check.outputs.suite_selection_upload }}
     secrets: inherit
 
   primary-macos:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     permissions:
       contents: read
       actions: read
@@ -317,12 +310,10 @@ jobs:
     with:
       os: macos-latest
       abi: darwin-arm64
-      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
-      suite_selection_upload: ${{ needs.type-check.outputs.suite_selection_upload }}
     secrets: inherit
 
   primary-windows:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     permissions:
       contents: read
       actions: read
@@ -332,13 +323,11 @@ jobs:
     with:
       os: windows-latest
       abi: win32-x64-msvc
-      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
-      suite_selection_upload: ${{ needs.type-check.outputs.suite_selection_upload }}
     secrets: inherit
 
   call-rust-build-user:
     name: All primary native and consumer chains
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [version-classification, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -355,7 +344,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     needs: [version-classification, release-contract-tests, platform-contract-tests]
     uses: ./.github/workflows/ci-secondary-native.yaml
     secrets: inherit
@@ -365,7 +354,7 @@ jobs:
       artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     name: Check declared native inputs (not ABI execution)
     needs: [version-classification, call-rust-build-user, call-rust-build-release, type-check, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
@@ -423,7 +412,7 @@ jobs:
 
   examples-test:
     name: All primary Examples chains
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [version-classification, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -436,6 +425,14 @@ jobs:
           WINDOWS_RESULT: ${{ needs.primary-windows.result }}
         run: test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success
 
+  candidate-packages:
+    name: Complete PR candidate package tests
+    needs: [check-native-candidate-assembly, primary-linux, primary-macos, primary-windows, type-check]
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/v2-candidate-seal.yaml
+
   execution-baseline:
     outputs:
       execution_id: ${{ steps.execution-upload.outputs.artifact-id }}
@@ -446,7 +443,7 @@ jobs:
       run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Record verified CI execution baseline
     needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows]
-    if: (always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'))
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -471,15 +468,11 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
-          FARM_SUITE_SELECTION_UPLOAD: ${{ needs.type-check.outputs.suite_selection_upload }}
           FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
           FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
         run: python -B scripts/ci-suite-attempts.py --output ci-baseline-inputs/suites
       - name: Validate complete discovered and executed suite coverage
-        env:
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
         if: success()
         run: node scripts/ci-suite-execution.mjs --collect ci-baseline-inputs/suites ci-execution-ledger/suite-coverage.json
       - name: Record candidate CI execution baseline (no build-byte authority)
@@ -514,8 +507,6 @@ jobs:
       artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
       artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
       run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
-      suite_selection_hash: ${{ steps.ci-suites.outputs.selection_hash }}
-      suite_selection_upload: ${{ steps.selection-binding.outputs.binding }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -523,67 +514,28 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@v4
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           python-version: '3.12'
       - name: Validate unified graph rules before baseline or cache lookup
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: python -B scripts/unified-impact-graph.py --validate
-      - name: Query independently verified CI baselines without omitting execution
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        continue-on-error: true
-        run: python scripts/incremental-chain-runtime.py --output chain-plans/ci.json
-      - name: Resolve independently accepted full CI suite baseline
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        id: ci-suites
-        continue-on-error: true
-        run: python -B scripts/ci-suite-baseline.py --output ci-suite-selection/selection.json
-      - name: Upload bound current suite selection
-        id: selection-upload
-        if: steps.ci-suites.outputs.selection_hash != '' && needs.version-classification.outputs.mode != 'verified-version-only'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-suite-selection/selection.json
-          if-no-files-found: error
-          retention-days: 7
-      - name: Bind selection upload action outputs
-        if: steps.selection-upload.outputs.artifact-id != ''
-        id: selection-binding
-        env:
-          SELECTION_ID: ${{ steps.selection-upload.outputs.artifact-id }}
-          SELECTION_DIGEST: ${{ steps.selection-upload.outputs.artifact-digest }}
-        run: |
-          python - <<'PYBIND'
-          import json, os
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('binding=' + json.dumps({'artifact_id':os.environ['SELECTION_ID'], 'artifact_digest':os.environ['SELECTION_DIGEST'], 'run_attempt':os.environ['GITHUB_RUN_ATTEMPT']}) + '\n')
-          PYBIND
-      - name: Preserve exact current-chain plan and baseline binding
-        if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: farm-ci-plan-${{ github.sha }}-${{ github.run_attempt }}
-          path: chain-plans/ci.json
-          if-no-files-found: warn
-          retention-days: 14
       - name: Setup pnpm
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
       - uses: actions/setup-node@v4
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           node-version: 20
       - name: Install Dependencies
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 60
@@ -591,35 +543,29 @@ jobs:
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
       - name: Build CLI and Core
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/cli run build
       - name: Build Runtime
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/runtime run build
       - name: Build Babel Plugin Types
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/js-plugin-babel exec tsc -p tsconfig.json --emitDeclarationOnly
       - name: Build Docs Public Types
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/docs run build
       - name: Type Check With Tsc
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm run --filter "@farmfe/*" type-check
       - id: shadow-upload
         name: Preserve actual cell receipt (shadow only)
-        if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
+        if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "types"
           status: ${{ job.status }}
           artifact-suffix: single
-
-      - name: Accept independently verified Changesets version-only preparation
-        if: needs.version-classification.outputs.mode == 'verified-version-only'
-        env:
-          PROOF: ${{ needs.version-classification.outputs.proof_hash }}
-        run: test "${#PROOF}" = 64 && echo 'Pure version preparation; heavy CI not applicable.'
 
   changesets-check:
     name: Changesets Check
@@ -652,7 +598,7 @@ jobs:
 
   ts-test:
     name: All primary TypeScript chains
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [version-classification, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -671,7 +617,7 @@ jobs:
       actions: read
     name: Incremental CI execution gate
     if: always()
-    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
+    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test, candidate-packages]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -682,57 +628,31 @@ jobs:
         run: |
           import json, os
           rows=json.loads(os.environ['RESULTS'])
-          expected={'version-classification','type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
+          expected={'version-classification','type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test','candidate-packages'}
           assert set(rows)==expected, 'Missing or unexpected DAG dependency'
-          version=rows['version-classification']
-          if version['result']=='success' and version['outputs'].get('mode')=='verified-version-only':
-              assert __import__('re').fullmatch('[a-f0-9]{64}',version['outputs'].get('proof_hash',''))
-              assert rows['type-check']['result']=='success'
-              assert all(row['result']=='skipped' for key,row in rows.items() if key not in ['type-check','version-classification'])
-              print('Verified Changesets metadata only; no product test acceptance emitted')
-              raise SystemExit(0)
           if set(rows)!=expected or any(row['result']!='success' for row in rows.values()):
               raise ValueError('Missing, skipped, cancelled or failed actual CI execution')
       - uses: actions/checkout@v4
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           python-version: '3.13'
       - uses: actions/setup-node@v4
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           node-version: 22.20.0
       - name: Resolve original successful suite attempts without rebuilding
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         env:
           GH_TOKEN: ${{ github.token }}
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
-          FARM_SUITE_SELECTION_UPLOAD: ${{ needs.type-check.outputs.suite_selection_upload }}
           FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
           FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
         run: python -B scripts/ci-suite-attempts.py --output ci-gate-suites
       - name: Validate actual selected suite files and case counts on every platform
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        env:
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
-        run: node scripts/ci-suite-execution.mjs --collect ci-gate-suites ci-gate-coverage/coverage.json
 
-  sign-ci-bindings:
-    name: Sign fixed ci artifact bindings
-    if: success() && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [impact-plan, primary-linux, primary-macos, primary-windows, execution-baseline, incremental-execution-gate]
-    permissions:
-      contents: read
-      actions: read
-      id-token: write
-      attestations: write
-    uses: farm-fe/farm/.github/workflows/ci-provenance-signer.yaml@d82a7226e8de0a9bbaa0fce0edd4e60dcfe49a4d
-    with:
-      scope: ci
-      upload_bindings: >-
-        {"planner":{"artifact_id":"${{ needs.impact-plan.outputs.artifact_id }}","artifact_digest":"${{ needs.impact-plan.outputs.artifact_digest }}","run_attempt":"${{ needs.impact-plan.outputs.run_attempt }}"},"execution-baseline":{"artifact_id":"${{ needs.execution-baseline.outputs.execution_id }}","artifact_digest":"${{ needs.execution-baseline.outputs.execution_digest }}","run_attempt":"${{ needs.execution-baseline.outputs.execution_attempt }}"},"ts:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.ts_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.ts_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.ts_run_attempt }}"},"browser:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.browser_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.browser_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.browser_run_attempt }}"},"ts:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.ts_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.ts_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.ts_run_attempt }}"},"browser:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.browser_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.browser_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.browser_run_attempt }}"},"ts:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.ts_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.ts_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.ts_run_attempt }}"},"browser:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.browser_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.browser_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.browser_run_attempt }}"}}
+        run: node scripts/ci-suite-execution.mjs --collect ci-gate-suites ci-gate-coverage/coverage.json

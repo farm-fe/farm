@@ -56,6 +56,8 @@ def receipt(transport,run,manifest,kind,platform,trusted_output):
           and run.get('path')=='.github/workflows/incremental-release.yaml' and run.get('head_branch')=='main'
           and run.get('event')=='push' and run.get('repository',{}).get('id')==507542208
           and run.get('head_repository',{}).get('id')==507542208,'Release consumer run or source differs')
+    entry=load('legacy_consumer_policy','incremental-release-entry.py')
+    check(not entry.archive_integrity_mode(manifest), 'New byte-only manifests do not use legacy consumer receipts')
     definition=role(kind,platform)
     origin,job=execution.explicit_producer(transport,run,definition['producer'],trusted_output)
     attempt=origin['run_attempt']
@@ -84,4 +86,5 @@ def receipt(transport,run,manifest,kind,platform,trusted_output):
               'Public receipt frozen bytes or cleanup differ')
         check({'npm-install','esm-cjs','types','docs-build','sdk'}.issubset(report.get('stages',[])),
               'Public consumer stages missing')
+    check(report.get('kind') != 'release-byte-integrity-v1', 'Legacy consumer receipt cannot use byte-only proof')
     return report,artifact,origin,job

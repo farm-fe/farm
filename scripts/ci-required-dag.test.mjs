@@ -8,7 +8,7 @@ import {spawnSync} from 'node:child_process';
 import YAML from 'yaml';
 import {fileURLToPath} from 'node:url';
 import {readGitSuiteFiles, discoverSuiteInventory, suitePolicy} from './ci-suite-inventory.mjs';
-import {executionPlan} from './ci-suite-selection.mjs';
+import {executionPlan} from './ci-suite-execution.mjs';
 const workflow=YAML.parse(fs.readFileSync(new URL('../.github/workflows/ci.yaml',import.meta.url),'utf8'));
 const gate=workflow.jobs['incremental-execution-gate'];
 const code=gate.steps[0].run;
@@ -17,7 +17,7 @@ const run=rows=>spawnSync('python3',['-c',code],{encoding:'utf8',env:{...process
 test('actual always gate accepts every completed planned platform',()=>{assert.equal(gate.if,'always()');assert.equal(run(full()).status,0);});
 for(const state of ['failure','cancelled','skipped'])for(const key of gate.needs)test(`actual gate rejects ${key} ${state}`,()=>{const rows=full();rows[key].result=state;assert.notEqual(run(rows).status,0);});
 function version(){const rows=full();for(const [key,row]of Object.entries(rows))if(!['version-classification','type-check'].includes(key))row.result='skipped';rows['version-classification'].outputs={mode:'verified-version-only',proof_hash:'a'.repeat(64)};return rows;}
-test('verified version PR has explicit lightweight success and planned skips',()=>assert.equal(run(version()).status,0));
+test('version-only PR cannot skip actual product suites',()=>assert.notEqual(run(version()).status,0));
 for(const mutation of ['missing','extra','proof','type-failed','unexpected-heavy'])test(`version gate rejects ${mutation}`,()=>{const rows=version();if(mutation==='missing')delete rows['primary-linux'];if(mutation==='extra')rows.unexpected={result:'skipped'};if(mutation==='proof')rows['version-classification'].outputs.proof_hash='z'.repeat(64);if(mutation==='type-failed')rows['type-check'].result='failure';if(mutation==='unexpected-heavy')rows['primary-linux'].result='success';assert.notEqual(run(rows).status,0);});
 test('each primary platform advances its own native and suites without other platform dependencies',()=>{for(const key of ['primary-linux','primary-macos','primary-windows'])assert.ok(!workflow.jobs[key].needs.some(name=>name.startsWith('primary-')));const primary=YAML.parse(fs.readFileSync(new URL('../.github/workflows/ci-primary-platform.yaml',import.meta.url),'utf8'));assert.ok(Object.values(primary.jobs).some(job=>job.uses?.includes('rust-build-user')));assert.ok(Object.values(primary.jobs).filter(job=>job.uses?.includes('test')).every(job=>!JSON.stringify(job.needs).includes('primary-linux')));});
 
@@ -43,7 +43,7 @@ for(const [label,typeResult,changesetResult,expected]of [
   rows['type-check'].result=typeResult;rows['changesets-check']={result:changesetResult};
   const scheduled=['primary-linux','primary-macos','primary-windows'].filter(key=>{
     const job=workflow.jobs[key];
-    assert.equal(job.if,"needs.version-classification.outputs.mode != 'verified-version-only'");
+    assert.equal(job.if,undefined);
     assert.ok(job.needs.includes('type-check'));assert.ok(!job.needs.includes('changesets-check'));
     assert.ok(!job.needs.includes('type-changesets-compatibility'));
     return job.needs.every(dependency=>rows[dependency].result==='success');
@@ -65,7 +65,7 @@ test('every real product summary is independent of policy while evidence validat
     assert.ok(!seen.has('changesets-check'),key);assert.ok(!seen.has('type-changesets-compatibility'),key);
   }
   for(const name of ['Resolve original successful suite attempts without rebuilding','Validate actual selected suite files and case counts on every platform']) {
-    const step=gate.steps.find(step=>step.name===name);assert.ok(step);assert.equal(step.if,"needs.version-classification.outputs.mode != 'verified-version-only'");assert.ok(!step['continue-on-error']);
+    const step=gate.steps.find(step=>step.name===name);assert.ok(step);assert.equal(step.if,undefined);assert.ok(!step['continue-on-error']);
   }
 });
 for(const scenario of ['policy-failure','suite-failure','missing-evidence','missing-file','wrong-case-count','type-failure'])test(`actual product gate and collection propagate ${scenario} correctly without legacy contexts`,()=>{

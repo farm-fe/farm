@@ -1,3 +1,4 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 // cspell:words statfs bavail
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -18,6 +19,12 @@ export function assertSourceLicense(directory, manifest) {
   assert.ok(typeof manifest.license === 'string', `Missing license declaration: ${manifest.name}`);
   if (manifest.license === 'MIT') assert.match(text, /MIT License|Permission is hereby granted, free of charge/);
   if (manifest.license === 'ISC') assert.ok(!text.includes('MIT License') && /permission to use, copy, modify, and\/or distribute/i.test(text), `ISC declaration differs from legal text: ${manifest.name}`);
+}
+export function assertCandidateCheckout({ testedCommit, workflowSHA, sourceCommit, eventName, parents }) {
+  for (const value of [testedCommit, workflowSHA, sourceCommit]) assert.match(value, /^[a-f0-9]{40}$/);
+  assert.equal(testedCommit, workflowSHA, 'Candidate checkout differs from actual workflow source');
+  assert.ok(testedCommit === sourceCommit || (eventName === 'pull_request' && parents.length === 2 && parents.includes(sourceCommit)),
+    'Candidate checkout is not the PR head or its tested merge');
 }
 export function assertNativeAssembly(plan, assembly, artifactIndex, sourceSHA) {
   const required = publicationNpm(plan).payloads;
@@ -109,11 +116,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   assert.ok(assemblyFile && artifactFile && destination, 'Expected assembly/index/output');
   const pnpm = resolvePnpmCli();
   const root = fileURLToPath(new URL('../', import.meta.url));
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
   const event = validationEvent();
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
-  const testedCommit = git('rev-parse', 'HEAD'); assert.equal(testedCommit, process.env.GITHUB_SHA);
-  const testedTree = git('rev-parse', 'HEAD^{tree}'); assert.equal(testedTree, git('rev-parse', `${event.pull_request.head.sha}^{tree}`));
+  const testedCommit = git('rev-parse', 'HEAD');
+  const testedTree = git('rev-parse', 'HEAD^{tree}');
+  const parents = git('rev-list', '--parents', '-n', '1', testedCommit).split(' ').slice(1);
+  assertCandidateCheckout({ testedCommit, workflowSHA: process.env.GITHUB_SHA, sourceCommit: event.pull_request.head.sha, eventName: process.env.GITHUB_EVENT_NAME, parents });
   const pages = JSON.parse(fs.readFileSync(artifactFile));
   const artifactIndex = Array.isArray(pages) ? pages.flatMap(page => page.artifacts) : pages.artifacts;
   packNpmCandidates({ root, plan, assembly: JSON.parse(fs.readFileSync(assemblyFile)), artifactIndex, sourceCommit: event.pull_request.head.sha, testedCommit, testedTree, runId: Number(process.env.GITHUB_RUN_ID), output: path.resolve(destination), pnpm });

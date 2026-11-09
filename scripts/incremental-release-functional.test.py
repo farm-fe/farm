@@ -276,26 +276,26 @@ class MeasurementContracts(unittest.TestCase):
 class OriginalArchiveContracts(unittest.TestCase):
     def test_first_attempt_without_archive_may_build(self):
         transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
-        self.assertEqual(module.original_attempt(transport,123,'a'*40,1),1)
+        self.assertEqual(module.entry.original_attempt(transport,123,'a'*40,1),1)
     def test_missing_candidate_or_seal_only_retry_requires_strict_no_freeze_proof(self):
         for rows in [[],[{'name':'farm-release-seal-'+'a'*40+'-1'}]]:
             transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
-            with mock.patch.object(module.retry,'verify_unfrozen_retry',side_effect=ValueError('prior publisher unproven')) as verify:
-                with self.assertRaisesRegex(ValueError,'unproven'):module.original_attempt(transport,123,'a'*40,2)
+            with mock.patch.object(module.entry.retry,'verify_unfrozen_retry',side_effect=ValueError('prior publisher unproven')) as verify:
+                with self.assertRaisesRegex(ValueError,'unproven'):module.entry.original_attempt(transport,123,'a'*40,2)
                 verify.assert_called_once()
     def test_proven_pre_freeze_failure_can_prepare_current_attempt(self):
         transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
-        with mock.patch.object(module.retry,'verify_unfrozen_retry',return_value=[{'attempt':1}]) as verify:
-            self.assertEqual(module.original_attempt(transport,123,'a'*40,2),2)
+        with mock.patch.object(module.entry.retry,'verify_unfrozen_retry',return_value=[{'attempt':1}]) as verify:
+            self.assertEqual(module.entry.original_attempt(transport,123,'a'*40,2),2)
             self.assertEqual(verify.call_args.kwargs['freeze_step'],'Freeze independent release candidates')
     def test_exact_lookup_cannot_assert_absence_from_an_incomplete_response(self):
         transport=mock.Mock();transport.get.return_value={'total_count':2,'artifacts':[]}
-        with self.assertRaisesRegex(ValueError,'incomplete or ambiguous'):module.original_attempt(transport,123,'a'*40,1)
+        with self.assertRaisesRegex(ValueError,'incomplete or ambiguous'):module.entry.original_attempt(transport,123,'a'*40,1)
         self.assertEqual(transport.get.call_count,1)
     def test_large_native_inventory_uses_only_exact_candidate_names(self):
         transport=mock.Mock();transport.get.return_value={'total_count':0,'artifacts':[]}
-        with mock.patch.object(module.retry,'verify_unfrozen_retry',return_value=[]):
-            self.assertEqual(module.original_attempt(transport,123,'a'*40,3),3)
+        with mock.patch.object(module.entry.retry,'verify_unfrozen_retry',return_value=[]):
+            self.assertEqual(module.entry.original_attempt(transport,123,'a'*40,3),3)
         self.assertEqual(transport.get.call_count,3)
         for call in transport.get.call_args_list:self.assertIn('per_page=2&name=farm-release-candidates-',call.args[0])
     def test_exact_lookup_preserves_original_frozen_attempt_after_later_main(self):
@@ -320,14 +320,14 @@ class OriginalArchiveContracts(unittest.TestCase):
             return expected,{'candidates':{'artifactId':800,'artifactDigest':'sha256:'+'d'*64,'artifactName':candidate['name'],
                 'originAttempt':1,'jobId':700,'producer':module.entry.PRODUCER,'uploadStep':'Freeze independent release candidates'}}
         transport=mock.Mock();transport.get.side_effect=get
-        self.assertEqual(module.original_attempt(transport,123,sha,3,proof_provider=verified_fixture),1)
+        self.assertEqual(module.entry.original_attempt(transport,123,sha,3,proof_provider=verified_fixture),1)
         run['head_sha']='c'*40
-        with self.assertRaisesRegex(ValueError,'source differs'):module.original_attempt(transport,123,sha,3,proof_provider=verified_fixture)
+        with self.assertRaisesRegex(ValueError,'source differs'):module.entry.original_attempt(transport,123,sha,3,proof_provider=verified_fixture)
 
     def test_expired_candidates_are_never_rebuilt(self):
         transport=mock.Mock();artifact={'name':'farm-release-candidates-'+'a'*40+'-1','expired':True,'workflow_run':{'id':123}}
         transport.get.side_effect=lambda route: {'total_count':1,'artifacts':[artifact]} if route.endswith(artifact['name']) else {'total_count':0,'artifacts':[]}
-        with self.assertRaisesRegex(ValueError,'do not rebuild recovery'):module.original_attempt(transport,123,'a'*40,2)
+        with self.assertRaisesRegex(ValueError,'do not rebuild recovery'):module.entry.original_attempt(transport,123,'a'*40,2)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

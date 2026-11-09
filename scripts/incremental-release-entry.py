@@ -22,11 +22,47 @@ def load(name, file):
 
 evidence = load("release_entry_evidence", "incremental-chain-evidence.py")
 execution = load("release_entry_execution", "ci-execution-evidence.py")
+retry = load("release_retry_safety", "release-retry-safety.py")
 chain = evidence.chain_plan
 check = evidence.check
 WORKFLOW = ".github/workflows/incremental-release.yaml"
 PRODUCER = "Build independent release candidates"
 CONSUMER = "Verify independent release public consumers"
+
+
+def original_attempt(transport, run_id, source_sha, current_attempt, *, proof_provider=None):
+    check(type(current_attempt) is int and 1 <= current_attempt <= 20, 'Invalid current release attempt')
+    prefix = 'farm-release-candidates-' + source_sha + '-'; matches = []
+    # Native products can exceed three artifact pages. Exact transaction names
+    # keep the search bounded independently of native owner/platform inventory.
+    for attempt in range(1, current_attempt + 1):
+        name = prefix + str(attempt)
+        response = transport.get('/actions/runs/' + str(run_id) + '/artifacts?per_page=2&name=' + name)
+        rows = response['artifacts']
+        check(response.get('total_count') == len(rows) and len(rows) <= 1 and all(row['name'] == name for row in rows),
+              'Frozen release artifact lookup is incomplete or ambiguous')
+        matches.extend(rows)
+    if not matches:
+        if current_attempt > 1:
+            proof = retry.verify_unfrozen_retry(transport.get, run_id=run_id, source_sha=source_sha, current_attempt=current_attempt,
+                workflow=WORKFLOW, producer=PRODUCER, freeze_step='Freeze independent release candidates',
+                publisher='Publish exact independent release archives under durable lock', events=['push','workflow_dispatch'])
+            print(json.dumps({'unfrozenRetryProof': proof}), flush=True)
+        return current_attempt
+    check(len(matches) == 1, 'Multiple frozen candidates cannot form one release transaction')
+    artifact = matches[0]; attempt = int(artifact['name'][len(prefix):])
+    check(artifact.get('expired') is False and 0 < attempt <= current_attempt and artifact['workflow_run']['id'] == run_id,
+          'Original frozen release archive expired or differs; do not rebuild recovery')
+    run = transport.get('/actions/runs/' + str(run_id) + '/attempts/' + str(attempt))
+    check(run['id'] == run_id and run['run_attempt'] == attempt and run['path'] == WORKFLOW
+          and run['head_sha'] == source_sha and run['head_branch'] == 'main', 'Original release producer source differs')
+    commit=transport.get('/git/commits/'+source_sha)
+    provenance=load('original_frozen_provenance','release-provenance.py')
+    metadata,origin,producer=provenance.find_frozen_binding(transport,
+        {'sha':source_sha,'tree':commit['tree']['sha']},'frozen',run_id,current_attempt,artifact['id'],'candidates',proof_provider=proof_provider)
+    check(origin['run_attempt']==attempt and metadata['id']==artifact['id'], 'Original frozen producer attempt differs')
+
+    return attempt
 
 
 def source_plan(source, baseline=None, registry_snapshot=None):
@@ -110,6 +146,25 @@ def strict_archive(directory, row):
     check(digest.hexdigest() == row.get("archiveSha256"), "Release archive bytes differ")
 
 
+def archive_integrity_mode(manifest):
+    # This value is covered by the frozen manifest hash and signed seal. It is
+    # never a substitute for verifying the source, seal and every archive byte.
+    mode = manifest.get('releaseValidation')
+    check(mode in [None, 'archive-integrity-v1'], 'Unknown frozen release validation policy')
+    return mode == 'archive-integrity-v1'
+
+
+def public_scope(manifest):
+    return 'registry' if archive_integrity_mode(manifest) else 'public'
+
+
+def public_integrity_verified(proof, manifest):
+    if archive_integrity_mode(manifest):
+        return (proof.get('kind') == 'release-byte-integrity-v1' and proof.get('registryBytesVerified') is True and proof.get('testsExecuted') is False
+                and proof.get('registryInstall') is False and proof.get('nativeABI') is False and proof.get('latestTargets') is True)
+    return proof.get('kind') != 'release-byte-integrity-v1' and all(proof.get(key) is True for key in ['registryInstall', 'nativeABI', 'latestTargets'])
+
+
 class ReleaseVerifier:
     def __init__(self, transport, read_source=evidence.source_reader, *, receipt_provider=None):
         self.transport, self.read_source = transport, read_source
@@ -120,7 +175,10 @@ class ReleaseVerifier:
         if self.receipt_provider is not None:return self.receipt_provider(scope,run,source)
         provenance=load('release_entry_provenance','release-provenance.py')
         if scope=='frozen':return provenance.frozen_json(self.transport,run,source,'seal')
-        result=provenance.signed_json(self.transport,run,source,'public','public')
+        result=provenance.signed_json(self.transport,run,source,public_scope(manifest),'public')
+        if archive_integrity_mode(manifest):
+            check(result[0].get('kind')=='release-byte-integrity-v1', 'Registry proof kind differs')
+            return result[:4]
         check(isinstance(manifest,dict),'Public proof requires the frozen manifest')
         consumers=load('release_entry_consumers','release-consumer-bindings.py')
         for platform,output in provenance.consumer_outputs(result[5],'candidate').items():
@@ -201,18 +259,21 @@ class ReleaseVerifier:
         check(receipt.get("packageInputs") == inputs, "Release input closure differs")
         # Candidate installation is completed before the first registry write.
         # This gate must not require public installation of unpublished versions.
-        for platform in ["ubuntu-24.04", "macos-latest", "windows-latest"]:
-            evidence.successful_job(jobs, "Independent release candidate consumer (" + platform + ")")
+        if not archive_integrity_mode(manifest):
+            for platform in ["ubuntu-24.04", "macos-latest", "windows-latest"]:
+                evidence.successful_job(jobs, "Independent release candidate consumer (" + platform + ")")
         if phase == "prepublish":
             check(self.transport.get(route)["commit"]["sha"] == policy_sha, "Trusted release policy moved during verification")
             return {"manifestHash": manifest_hash, "sourceSHA": source["sha"], "sourceTree": source["tree"],
                     "prepublicationVerified": True, "verified": False, "publicationExecuted": False}
         latest=self.transport.get('/actions/runs/'+str(run['id']))
         proof,artifact,_,consumer=self.receipt('public',latest,source,manifest)
+        if archive_integrity_mode(manifest):
+            check(proof.get('kind')=='release-byte-integrity-v1', 'Registry proof kind differs')
         check(proof.get("manifestHash") == manifest_hash and proof.get("producerJobId") == consumer["id"]
               and proof.get("sourceTree") == source["tree"] and proof.get("planHash") == plan["planHash"], "Public acceptance binding differs")
         check(proof.get("packages") == {key: row["archiveSha256"] for key, row in records.items()}, "Public acceptance package coverage differs")
-        check(proof.get("registryInstall") is True and proof.get("nativeABI") is True and proof.get("latestTargets") is True,
+        check(public_integrity_verified(proof, manifest),
               "Actual registry, ABI and tag acceptance missing")
         check(self.transport.get(route)["commit"]["sha"] == policy_sha, "Trusted release policy moved during verification")
         return {"manifestHash": manifest_hash, "sourceSHA": source["sha"], "sourceTree": source["tree"],

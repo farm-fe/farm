@@ -11,7 +11,7 @@ test('native matrices wait for cheap spelling, release/pack and three-platform s
   assert.match(preflight, /pnpm exec cspell "\*\*" --gitignore/);
   for (const command of ['test-native-container-node.cjs', 'test-native-artifact-flow.cjs', 'pack-v2-npm-candidates.test.mjs', 'verify-published-v2-consumers.test.mjs']) assert.ok(preflight.includes(command), command);
   for (const job of ['primary-linux', 'primary-macos', 'primary-windows', 'call-rust-build-release']) {
-    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    const block = ci.split(`  ${job}:`)[1].split(/\n  [a-z][\w-]*:\n/)[0];
     assert.match(block, job === 'call-rust-build-release' ? /needs: \[version-classification, release-contract-tests, platform-contract-tests\]/ : /needs: \[version-classification, release-contract-tests, platform-contract-tests, type-check\]/);
   }
 });
@@ -20,14 +20,14 @@ test('primary platform consumers wait only for their own successful producer', (
   const ci = read('ci.yaml'), platform = read('ci-primary-platform.yaml'), native = read('rust-build-user.yaml');
   const lanes = [['primary-linux', 'ubuntu-24.04', 'linux-x64-gnu'], ['primary-macos', 'macos-latest', 'darwin-arm64'], ['primary-windows', 'windows-latest', 'win32-x64-msvc']];
   for (const [job, os, abi] of lanes) {
-    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    const block = ci.split(`  ${job}:`)[1].split(/\n  [a-z][\w-]*:\n/)[0];
     assert.match(block, /uses: \.\/\.github\/workflows\/ci-primary-platform.yaml/);
     assert.ok(block.includes(`os: ${os}`)); assert.ok(block.includes(`abi: ${abi}`));
     assert.ok(native.includes(`inputs.platform == '${abi}'`));
   }
   assert.match(platform, /platform: \$\{\{ inputs.abi \}\}/);
   for (const job of ['examples-test', 'ts-test']) {
-    const block = platform.split(`  ${job}:`)[1].split('\n\n')[0];
+    const block = platform.split(`  ${job}:`)[1].split(/\n  [a-z][\w-]*:\n/)[0];
     assert.match(block, /needs: \[native, native-disposition\]/);
     assert.match(block, /if: always\(\) && needs.native-disposition.result == 'success'/);
     assert.doesNotMatch(block, /call-rust-build-user|call-rust-build-release|primary-linux|primary-macos|primary-windows/);
@@ -51,9 +51,9 @@ test('primary platform consumers wait only for their own successful producer', (
   assert.match(native, /inputs.platform == 'all'/);
   assert.ok(native.includes("|| '[]'"), 'Unknown platform cannot choose a successful empty execution');
   for (const job of ['call-rust-build-user', 'examples-test', 'ts-test']) {
-    const block = ci.split(`  ${job}:`)[1].split('\n\n')[0];
+    const block = ci.split(`  ${job}:`)[1].split(/\n  [a-z][\w-]*:\n/)[0];
     const actualJob=YAML.parse(ci).jobs[job];
-    assert.equal(actualJob.if, "(always()) && needs.version-classification.outputs.mode != 'verified-version-only'");
+    assert.equal(actualJob.if, "(always())");
     assert.match(block, /needs: \[version-classification, primary-linux, primary-macos, primary-windows\]/);
     assert.ok(block.includes('test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success'));
   }
@@ -79,20 +79,20 @@ test('Cargo restores cover all nine targets while only the three primary produce
   for (const target of ['linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu']) assert.ok(JSON.parse(YAML.parse(release).jobs.build.strategy.matrix.settings.match(/inputs.platform == 'all' && '([^']+)'/)[1]).some(row => row.abi === target));
 });
 
-test('three candidate consumer jobs remain internal to the fixed-main Release chain', () => {
-  const caller=YAML.parse(read('incremental-release.yaml')).jobs['candidate-consumers'];
-  assert.deepEqual(caller.needs,['source','plan','producer','candidate-identity']);
-  assert.equal(caller.uses,'./.github/workflows/release-candidate-consumers.yaml');
-  assert.equal(caller.with.candidate_attempt,'${{ needs.candidate-identity.outputs.attempt }}');
-  const source=read('release-candidate-consumers.yaml');
-  const jobs=YAML.parse(source).jobs;
-  assert.deepEqual(Object.values(jobs).map(job=>job['runs-on']),['ubuntu-24.04','macos-latest','windows-latest']);
-  for(const job of Object.values(jobs)){
-    assert.equal(job.strategy,undefined);
-    assert.ok(job.steps.some(step=>step.with?.name==='farm-release-candidates-${{ github.sha }}-${{ inputs.candidate_attempt }}'));
-    assert.ok(job.steps.some(step=>step.run==='node scripts/verify-v2-npm-consumer.mjs release-candidate candidate-results'));
-  }
-  assert.doesNotMatch(source, /pnpm install|cargo |NPM_TOKEN|secrets:/);
+test('candidate archive tests run in PR while main only verifies publication integrity', () => {
+  const ci=YAML.parse(read('ci.yaml')).jobs;
+  assert.equal(ci['candidate-packages'].uses,'./.github/workflows/v2-candidate-seal.yaml');
+  assert.ok(ci['incremental-execution-gate'].needs.includes('candidate-packages'));
+  const release=YAML.parse(read('incremental-release.yaml')).jobs;
+  assert.equal(release['candidate-consumers'],undefined);
+  assert.equal(release['public-consumers'],undefined);
+  assert.ok(release['public-proof'].needs.includes('publisher'));
+  assert.ok(release['public-proof'].steps.some(step=>step.run?.includes('incremental-release-record.py registry')));
+  assert.doesNotMatch(JSON.stringify(release),/verify-v2-npm-consumer|verify-published-v2-consumers|node --test/);
+  const candidate=YAML.parse(read('v2-candidate-seal.yaml'));
+  assert.deepEqual(candidate.jobs.consumers.strategy.matrix.os,['ubuntu-24.04','macos-latest','windows-latest']);
+  assert.ok(candidate.jobs.consumers.steps.some(step=>step.run?.includes('verify-v2-npm-consumer.mjs')));
+  assert.ok(candidate.jobs.seal.steps.some(step=>step.run?.includes('run-sdk-consumer.mjs')));
 });
 
 test('cache writers are limited while Docs stays inside CI and native assembly remains complete', () => {

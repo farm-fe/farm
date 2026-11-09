@@ -84,6 +84,25 @@ class Contracts(unittest.TestCase):
         self.assertTrue(result["verified"]); self.assertFalse(result["publicationExecuted"])
         self.assertEqual(result["producerRunId"], 10)
 
+    def test_new_signed_policy_uses_build_and_registry_proof_without_main_tests(self):
+        self.manifest['releaseValidation']='archive-integrity-v1'
+        digest=entry.chain.digest(self.manifest)
+        self.seal['manifestHash']=digest;self.public['manifestHash']=digest
+        self.public.update(kind='release-byte-integrity-v1',registryBytesVerified=True,testsExecuted=False,registryInstall=False,nativeABI=False)
+        self.jobs=[job for job in self.jobs if not job['name'].startswith('Independent release candidate consumer')]
+        self.assertTrue(self.verify()['verified'])
+        self.assertEqual(entry.public_scope(self.manifest),'registry')
+        # Changing a legacy manifest's policy without its original sealed hash
+        # cannot silently bypass the historical consumer requirement.
+        self.seal['manifestHash']='0'*64
+        with self.assertRaisesRegex(ValueError,'seal binding'):self.verify()
+        self.seal['manifestHash']=digest
+        self.public['registryBytesVerified']=False
+        with self.assertRaises(ValueError):self.verify()
+        self.public['registryBytesVerified']=True
+        self.manifest['releaseValidation']='unreviewed'
+        with self.assertRaises(ValueError):self.verify()
+
     def test_graph_hash_is_bound_to_recomputed_source(self):
         self.manifest["graphHash"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "plan or graph differs"): self.verify()

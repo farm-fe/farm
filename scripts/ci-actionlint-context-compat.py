@@ -11,9 +11,9 @@ import json
 from pathlib import Path
 import subprocess
 
-WORKFLOW = '.github/workflows/ci-provenance-signer.yaml'
+WORKFLOW = '.github/workflows/release-provenance-signer.yaml'
 QUEUE_WORKFLOWS = {'.github/workflows/cargo-source-release.yaml', '.github/workflows/incremental-release.yaml'}
-WORKFLOWS = {WORKFLOW, '.github/workflows/release-provenance-signer.yaml'}
+WORKFLOWS = {WORKFLOW}
 OBJECT = '{check_run_id: number; container: {id: string; network: string}; services: {string => {id: string; network: string; ports: {string => string}}}; status: string}'
 ALLOWED = {
     'ref: ${{ job.workflow_sha }}':'workflow_sha',

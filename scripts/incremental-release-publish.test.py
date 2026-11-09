@@ -1,3 +1,4 @@
+# cspell:words readback
 """Pure HTTP/Release finalization contracts; no real requests or registry writes."""
 # cspell:words importlib stopall finalizer postpublish nonpublishing nonbaseline
 import copy
@@ -358,7 +359,7 @@ class Contracts(unittest.TestCase):
     def test_workflow_joint_contract_keeps_source_producer_attempt_and_explicit_writes(self):
         workflow=(Path(__file__).parents[1]/'.github/workflows/incremental-release.yaml').read_text(encoding='utf-8')
         self.assertIn('group: farm-independent-release\n  cancel-in-progress: false',workflow)
-        for stage in ['publisher','public-consumers','public-proof','finalize']:
+        for stage in ['publisher','public-proof','finalize']:
             block=re.search(r'^  '+re.escape(stage)+r':\n(.*?)(?=^  [A-Za-z][A-Za-z0-9-]*:\n|\Z)',workflow,re.M|re.S).group(1)
             self.assertIn('needs.candidate-identity.outputs.attempt',block)
             self.assertRegex(block,r'needs:(?:[^\n]*candidate-identity|\n(?:      - [^\n]+\n)*      - candidate-identity)')
@@ -369,8 +370,10 @@ class Contracts(unittest.TestCase):
         self.assertIn("inputs.publish == true",workflow)
         self.assertIn('name: '+module.ROLES['upload'],workflow)
         self.assertIn('name: '+module.ROLES['finalize'],workflow)
-        self.assertIn('profile: release',workflow)
-        self.assertIn('scripts/incremental-release-functional.py --source',workflow)
+        native=(Path(__file__).parents[1]/'.github/workflows/release-native-build.yaml').read_text()
+        self.assertIn('profile: release',native)
+        self.assertNotIn('scripts/incremental-release-functional.py --source',workflow)
+        self.assertNotIn('main-evidence:',workflow)
         retired=(Path(__file__).parents[1]/'.github/workflows/v2-stable-release.yaml').read_text(encoding='utf-8')
         self.assertNotIn('pull_request:',retired);self.assertNotIn('secrets.',retired);self.assertNotIn('v2-auto-release',retired)
 
@@ -495,16 +498,16 @@ class Contracts(unittest.TestCase):
             verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:fixture.source,frozen=frozen,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
             with self.assertRaisesRegex(ValueError,'not terminal or its source differs'):verifier.verify(fixture.manifest,fixture.root)
 
-    def test_public_matrix_has_no_shared_attempt_and_uses_explicit_cross_platform_shell(self):
+    def test_registry_readback_uses_original_frozen_attempt_without_functional_consumers(self):
         workflow=(Path(__file__).parents[1]/'.github/workflows/incremental-release.yaml').read_text(encoding='utf-8')
         self.assertNotIn('consumer_attempt:',workflow);self.assertNotIn('outputs.consumer_attempt',workflow)
-        consumer=(Path(__file__).parents[1]/'.github/workflows/release-public-consumers.yaml').read_text()
-        self.assertNotIn('matrix:',consumer)
-        self.assertEqual(consumer.count('      - name: Record actual consumer attempt'),3)
-        block=consumer.split('      - name: Record actual consumer attempt',1)[1].split('      - name: Upload independent public consumer report',1)[0]
-        self.assertIn('shell: python',block);self.assertIn('publicationBinding',block)
-        self.assertIn('collect-public --candidate release-candidate',workflow)
-        self.assertIn('bind-public-proof --candidate release-candidate',workflow)
+        self.assertNotIn('  public-consumers:',workflow)
+        block=workflow.split('  public-proof:',1)[1].split('  sign-public-acceptance:',1)[0]
+        self.assertIn('needs.candidate-identity.outputs.attempt',block)
+        self.assertIn('incremental-release-record.py registry --candidate release-candidate',block)
+        self.assertNotIn('pnpm',block);self.assertNotIn('node ',block)
+        self.assertNotIn('collect-public --candidate release-candidate',workflow)
+        self.assertNotIn('bind-public-proof --candidate release-candidate',workflow)
 
     def test_plan_is_recomputed_after_acquisition_under_the_owned_fence(self):
         fixture,verifier,original,current,shared,store,owner,first=self.frozen_fixture()
@@ -595,16 +598,18 @@ class Contracts(unittest.TestCase):
                 module.verify_locked_plan(first,fixture.source,mock.Mock(),planner=lambda source,baseline: (_ for _ in ()).throw(ValueError('plan unavailable')))
         self.assertIsNotNone(read()[1]['active'])
 
-    def test_workflow_uploads_the_candidate_report_expected_by_the_baseline_reader(self):
-        workflow=(Path(__file__).parents[1]/'.github/workflows/incremental-release.yaml').read_text(encoding='utf-8')
-        block=workflow.split('  candidate-consumers:',1)[1].split('  publisher:',1)[0]
-        self.assertIn('uses: ./.github/workflows/release-candidate-consumers.yaml',block)
-        consumer=(Path(__file__).parents[1]/'.github/workflows/release-candidate-consumers.yaml').read_text()
-        self.assertNotIn('matrix:',consumer)
-        self.assertEqual(consumer.count('name: Upload independent release candidate acceptance'),3)
-        for platform in module.PUBLIC_PLATFORMS:
-            self.assertIn('name: farm-release-candidate-consumer-${{ github.sha }}-'+platform+'-${{ github.run_attempt }}',consumer)
-        self.assertEqual(consumer.count('path: candidate-results/result.json'),3)
+    def test_candidate_tests_run_on_pr_while_main_retains_frozen_seal_and_registry_proof(self):
+        root=Path(__file__).parents[1]
+        workflow=(root/'.github/workflows/incremental-release.yaml').read_text(encoding='utf-8')
+        self.assertNotIn('  candidate-consumers:',workflow)
+        self.assertIn('name: Upload independent release seal',workflow)
+        self.assertIn('name: Freeze independent release candidates',workflow)
+        self.assertIn('name: Upload independent release public acceptance',workflow)
+        ci=(root/'.github/workflows/ci.yaml').read_text()
+        self.assertIn('uses: ./.github/workflows/v2-candidate-seal.yaml',ci)
+        candidate=(root/'.github/workflows/v2-candidate-seal.yaml').read_text()
+        self.assertIn('verify-v2-npm-consumer.mjs',candidate)
+        self.assertIn('run-sdk-consumer.mjs',candidate)
 
     def test_locked_plan_hash_ignores_only_state_revision_not_baseline_content(self):
         shared=module.entry.load('joint_plan_baseline_fixture','incremental-release-baseline.test.py')

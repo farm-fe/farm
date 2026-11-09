@@ -11,7 +11,7 @@ const needs = job => typeof job.needs === 'string' ? [job.needs] : job.needs || 
 
 test('each production caller is byte-exact to its immutable reviewed signer template', () => {
   assert.match(pin, /^[a-f0-9]{40}$/);
-  for (const scope of ['pending', 'frozen', 'public', 'cargo']) {
+  for (const scope of ['frozen', 'registry', 'native', 'cargo']) {
     const root = `scripts/release-provenance-templates/${scope}`;
     const index = JSON.parse(execFileSync('git', ['show', `${pin}:${root}/index.json`], { encoding: 'utf8' }));
     for (const name of index) {
@@ -42,7 +42,7 @@ test('nested signer permissions and events stay within the approved main-push sc
 });
 
 test('real release DAGs have no dangling needs or cycles and no publication/signature cycle', () => {
-  for (const name of ['incremental-release', 'cargo-source-release', 'release-candidate-consumers', 'release-public-consumers']) {
+  for (const name of ['incremental-release', 'cargo-source-release', 'release-native-build', 'v2-candidate-seal']) {
     const { jobs } = workflow(name);
     const visited = new Set();
     const active = new Set();
@@ -60,23 +60,40 @@ test('real release DAGs have no dangling needs or cycles and no publication/sign
   assert.ok(needs(jobs.publisher).includes('sign-frozen-release'));
   assert.ok(!needs(jobs.publisher).includes('sign-public-acceptance'));
   assert.ok(needs(jobs.finalize).includes('sign-public-acceptance'));
-  assert.match(jobs['sign-pending-evidence'].if, /always\(\)/);
-  assert.match(jobs['sign-pending-evidence'].if, /needs\.main-evidence\.result == 'failure'/);
-  assert.match(jobs['sign-pending-evidence'].if, /pending_id != ''/);
-  assert.deepEqual(needs(jobs['sign-public-acceptance']), ['public-proof', 'candidate-consumers', 'public-consumers']);
+  assert.equal(jobs['sign-pending-evidence'], undefined);
+  assert.equal(jobs['main-evidence'], undefined);
+  assert.deepEqual(needs(jobs['sign-public-acceptance']), ['public-proof']);
+  assert.equal(jobs['sign-public-acceptance'].with.scope, 'registry');
+  assert.equal(jobs['candidate-consumers'], undefined);
+  assert.equal(jobs['public-consumers'], undefined);
 });
 
-test('candidate and public receipts use explicit platform jobs, never matrix last-writer outputs', () => {
-  for (const kind of ['candidate', 'public']) {
-    const doc = workflow(`release-${kind}-consumers`);
-    assert.deepEqual(Object.keys(doc.jobs), ['linux', 'macos', 'windows']);
-    assert.equal(Object.keys(doc.on.workflow_call.outputs).length, 9);
-    for (const platform of ['linux', 'macos', 'windows']) {
-      assert.equal(doc.jobs[platform].strategy, undefined);
-      for (const field of ['artifact_id', 'artifact_digest', 'run_attempt']) {
-        assert.equal(doc.on.workflow_call.outputs[`${platform}_${field}`].value,
-          `\${{ jobs.${platform}.outputs.${field} }}`);
-      }
-    }
+test('each native signer binds one fixed ABI upload without a matrix output merge', () => {
+  const doc = workflow('release-native-build');
+  assert.deepEqual(Object.keys(doc.jobs), ['primary', 'extra', 'sign']);
+  const sign = doc.jobs.sign;
+  assert.equal(sign.strategy, undefined);
+  assert.deepEqual(sign.needs, ['primary', 'extra']);
+  assert.equal(sign.with.scope, 'native-${{ inputs.abi }}');
+  assert.match(sign.if, /!cancelled\(\)/);
+  assert.match(sign.if, /github\.event_name == 'push'/);
+  assert.match(sign.if, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(sign.if, /needs\.primary\.result == 'success' && needs\.extra\.result == 'skipped'/);
+  assert.match(sign.if, /needs\.extra\.result == 'success' && needs\.primary\.result == 'skipped'/);
+  const cells = JSON.parse(sign.with.upload_bindings);
+  assert.deepEqual(Object.keys(cells), ['native']);
+  for (const [field, output] of [['artifact_id','catalog_id'],['artifact_digest','catalog_digest'],['run_attempt','catalog_attempt']]) {
+    assert.equal(cells.native[field], `\${{ needs.primary.outputs.${output} || needs.extra.outputs.${output} }}`);
   }
+  for (const [job, child] of [['primary','rust-build-user'], ['extra','rust-build-release']]) {
+    assert.equal(doc.jobs[job].with.platform, '${{ inputs.abi }}');
+    assert.equal(doc.jobs[job].with.profile, 'release');
+    const outputs = workflow(child).on.workflow_call.outputs;
+    for (const name of ['catalog_id','catalog_digest','catalog_attempt']) assert.ok(outputs[name]);
+  }
+  const release = workflow('incremental-release');
+  const parents = Object.values(release.jobs).filter(job => job.uses === './.github/workflows/release-native-build.yaml');
+  assert.equal(parents.length, 2);
+  assert.deepEqual(parents.map(job => job.strategy.matrix.abi.length).sort(), [3,6]);
+  for (const job of parents) assert.equal(job.strategy['fail-fast'], false);
 });

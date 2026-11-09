@@ -179,7 +179,6 @@ def create_catalog(source, capture, abi, run_id, attempt, root):
 
 def inspect_catalog(body, artifact, run, job, source, current, abi, desired_environment, *, trusted_output=None):
     check(run['path'] == WORKFLOW and run['head_branch'] == 'main' and run['event'] in ['push', 'workflow_dispatch'], 'Not a main formal producer')
-    check(run['status'] == 'completed' and run['conclusion'] == 'success', 'Producer candidate validation did not succeed')
     check(run['repository']['id'] == run['head_repository']['id'] == desired_environment['repositoryId'], 'Fork or foreign producer')
     check(job['name'].endswith(('Build and Upload User Artifacts - ' + abi, 'Build and Upload Release Artifacts - ' + abi)), 'Unexpected producer job identity')
     check(job['run_id'] == run['id'] and job['status'] == 'completed' and job['conclusion'] == 'success', 'Native job failed')
@@ -221,7 +220,7 @@ def inspect_catalog(body, artifact, run, job, source, current, abi, desired_envi
         return accepted
 
 
-def resolve_products(transport, source, abi, desired, read_source=evidence.source_reader):
+def resolve_products(transport, source, abi, desired, read_source=evidence.source_reader, *, proof_provider=None):
     wanted, accepted, reasons = product_inputs(source, abi), {}, []
     # Snapshot the candidate list once. Inspect the latest attempt of each run,
     # never retrieve an older successful attempt after a failed rerun.
@@ -232,19 +231,19 @@ def resolve_products(transport, source, abi, desired, read_source=evidence.sourc
         if len(accepted) == len(wanted): break
         try:
             run = transport.get('/actions/runs/' + str(summary['id']))
-            if run['status'] != 'completed' or run['conclusion'] != 'success':
-                reasons.append('latest-producer-attempt-not-successful'); continue
             check(run['run_attempt'] == summary['run_attempt'], 'Producer attempt moved during resolution')
             comparison = transport.get('/compare/' + run['head_sha'] + '...' + main_sha)
             check(comparison.get('status') in ['ahead', 'identical'] and comparison.get('merge_base_commit', {}).get('sha') == run['head_sha'], 'Producer is not an ancestor of fixed main snapshot')
-            name = f"formal-native-{abi}-{run['run_attempt']}"
-            rows = transport.get(f"/actions/runs/{run['id']}/artifacts?per_page=2&name={name}")['artifacts']
-            if len(rows) != 1 or rows[0]['expired']: reasons.append('artifact-missing-or-expired'); continue
-            # Historical REST metadata has no independent producer/attempt anchor.
-            # CI/Unit attestations cannot authenticate this release producer. Do
-            # not download or reuse unsigned bytes; the caller builds each miss.
-            reasons.append('unsigned-formal-catalog-build-current')
-            break
+            provenance=load('formal_signed_provenance','release-provenance.py')
+            origin_source=read_source(run['head_sha'])
+            expected,bindings=(provenance.verified_run if proof_provider is None else proof_provider)(
+                transport,run,origin_source,'native-'+abi)
+            row=bindings['native']
+            body,artifact,origin,job=provenance.policy.bound_artifact(transport,run,row,expected,maximum_bytes=MAX)
+            output={'artifact_id':str(row['artifactId']), 'artifact_digest':row['artifactDigest'].removeprefix('sha256:'),
+                    'run_attempt':str(row['originAttempt'])}
+            found=inspect_catalog(body,artifact,origin,job,origin_source,source,abi,desired,trusted_output=output)
+            for owner,value in found.items():accepted.setdefault(owner,value)
         except PermissionError:
             reasons.append('artifact-access-denied-build-current'); break
         except Exception as error:

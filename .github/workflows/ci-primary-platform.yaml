@@ -8,12 +8,6 @@ on:
       abi:
         required: true
         type: string
-      suite_selection_upload:
-        type: string
-        default: ''
-      suite_selection_hash:
-        type: string
-        default: ''
     outputs:
       native_product_upload:
         value: ${{ jobs.native.outputs.product_upload }}
@@ -111,17 +105,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        if: inputs.suite_selection_hash != ''
-        with:
-          python-version: '3.13'
-      - name: Restore original same-run suite selection
-        if: inputs.suite_selection_hash != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
-          FARM_SUITE_SELECTION_UPLOAD: ${{ inputs.suite_selection_upload }}
-        run: python -B scripts/ci-suite-attempts.py --selection-only
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -311,7 +294,6 @@ jobs:
           path: ./rust-plugins/docs-snippets/npm/${{ matrix.settings.abi }}
       - name: Build Examples - ${{ matrix.settings.abi }}
         env:
-          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
           FARM_EXAMPLE_ABI: ${{ matrix.settings.abi }}
           FARM_SUITE_ABI: ${{ matrix.settings.abi }}
           FARM_EXAMPLE_PREBUILT_ONLY: '1'
@@ -320,7 +302,6 @@ jobs:
       - name: E2E Test Examples - ${{ matrix.settings.abi }}
         uses: nick-fields/retry@v3
         env:
-          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
           FARM_SUITE_RESULTS_FILE: ci-suite-results/browser.json
           FARM_SUITE_ABI: ${{ matrix.settings.abi }}
         with:
@@ -399,17 +380,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        if: inputs.suite_selection_hash != ''
-        with:
-          python-version: '3.13'
-      - name: Restore original same-run suite selection
-        if: inputs.suite_selection_hash != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
-          FARM_SUITE_SELECTION_UPLOAD: ${{ inputs.suite_selection_upload }}
-        run: python -B scripts/ci-suite-attempts.py --selection-only
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -437,12 +407,10 @@ jobs:
           path: ./packages/core/binding
       - name: Prepare selected TypeScript suite dependencies
         env:
-          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
           FARM_SUITE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/ci-suite-preparation.mjs
       - name: Test - ${{ matrix.settings.abi }}
         env:
-          FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}
           FARM_SUITE_ABI: ${{ matrix.settings.abi }}
         run: node scripts/ci-suite-execution.mjs
       - name: Preserve bounded TypeScript failure diagnostics without acceptance receipts

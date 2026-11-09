@@ -13,7 +13,7 @@ spec=importlib.util.spec_from_file_location('release_proof',Path(__file__).with_
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 
-def fixture(scope='pending'):
+def fixture(scope='frozen'):
     sha='a'*40;tree='b'*40;revision='c'*40
     environment={'GITHUB_ACTIONS':'true','RUNNER_ENVIRONMENT':'github-hosted','GITHUB_JOB':'sign',
         'GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/main','GITHUB_REPOSITORY':m.REPOSITORY,
@@ -23,8 +23,7 @@ def fixture(scope='pending'):
     run={'id':42,'run_attempt':1,'head_sha':sha,'head_branch':'main','event':'push','path':m.CALLERS[scope],
          'repository':{'id':m.REPOSITORY_ID,'full_name':m.REPOSITORY},'head_repository':{'id':m.REPOSITORY_ID},
          'status':'in_progress','conclusion':None}
-    functional=m.load('pending_fixture','incremental-release-functional.py')
-    pending=functional.pending_record({'sha':sha,'tree':tree},{'runId':42,'attempt':1})
+    pending={'fixture':'ordinary artifact bytes'}
     buffer=io.BytesIO()
     with zipfile.ZipFile(buffer,'w') as archive:archive.writestr('release-functional-pending.json',json.dumps(pending))
     body=buffer.getvalue();jobs=[];artifacts={};outputs={}
@@ -54,20 +53,24 @@ def fixture(scope='pending'):
 
 
 class Contracts(unittest.TestCase):
-    def test_pending_failed_job_can_only_prove_exact_timeout_intent(self):
-        api,env,outputs,templates,run,jobs,artifacts,_=fixture()
-        body=m.prepare(api,env,'pending',outputs,templates)
-        row=json.loads(body)['bindings'][0]
-        self.assertEqual(row['artifactId'],100);self.assertEqual(jobs[0]['conclusion'],'failure')
-        self.assertEqual(set(m.cells('pending')),{'pending'})
-        self.assertNotIn('publicationAuthorized',json.loads(body))
-        for defect in ['success','cancelled','skipped','bad-upload','digest','attempt']:
-            api,env,outputs,templates,run,jobs,artifacts,_=fixture()
-            if defect in ['success','cancelled','skipped']:jobs[0]['conclusion']=defect
-            if defect=='bad-upload':jobs[0]['steps'][0]['conclusion']='failure'
-            if defect=='digest':outputs['pending']['artifact_digest']='0'*64
-            if defect=='attempt':outputs['pending']['run_attempt']='2'
-            with self.subTest(defect=defect),self.assertRaises(ValueError):m.prepare(api,env,'pending',outputs,templates)
+    def test_native_scopes_bind_single_successful_abi_not_overall_publication(self):
+        for abi in m.NATIVE_ABIS:
+            scope='native-'+abi
+            api,env,outputs,templates,run,jobs,artifacts,_=fixture(scope)
+            run.update(status='completed',conclusion='failure')
+            result=json.loads(m.prepare(api,env,scope,outputs,templates))
+            self.assertEqual([row['cell'] for row in result['bindings']],['native'])
+            self.assertEqual(result['bindings'][0]['artifactName'],'formal-native-'+abi+'-1')
+            for failure in ['failure','cancelled','skipped']:
+                jobs[0]['conclusion']=failure
+                with self.subTest(abi=abi,failure=failure),self.assertRaises(ValueError):
+                    m.prepare(api,env,scope,outputs,templates)
+            jobs[0]['conclusion']='success'
+            env['GITHUB_EVENT_NAME']='pull_request'
+            with self.assertRaises(ValueError):m.prepare(api,env,scope,outputs,templates)
+
+    def test_retired_pending_scope_cannot_be_signed(self):
+        with self.assertRaisesRegex(ValueError,'Unknown release signing scope'):m.cells('pending')
 
     def test_failure_proof_cannot_authorize_frozen_public_or_cargo(self):
         for scope in ['frozen','public','cargo']:
@@ -81,17 +84,7 @@ class Contracts(unittest.TestCase):
                             ('GITHUB_REF','refs/pull/1/merge'),('GITHUB_REPOSITORY','other/farm'),
                             ('SIGNER_WORKFLOW_SHA','main'),('GITHUB_JOB','producer')]:
             api,env,outputs,templates,*_=fixture();env[field]=value
-            with self.subTest(field=field,value=value),self.assertRaises(ValueError):m.prepare(api,env,'pending',outputs,templates)
-
-    def test_pending_contents_cannot_claim_publication_or_other_attempt(self):
-        for key,value in [('publicationAuthorized',True),('releaseAttempt',2),('reason','ordinary-job-failure')]:
-            api,env,outputs,templates,run,jobs,artifacts,pending=fixture();pending[key]=value
-            buffer=io.BytesIO()
-            with zipfile.ZipFile(buffer,'w') as archive:archive.writestr('release-functional-pending.json',json.dumps(pending))
-            body=buffer.getvalue();api.archive=lambda _:body
-            artifacts[100].update(size_in_bytes=len(body),digest='sha256:'+hashlib.sha256(body).hexdigest())
-            outputs['pending']['artifact_digest']=artifacts[100]['digest'][7:]
-            with self.subTest(key=key),self.assertRaisesRegex(ValueError,'timeout intent'):m.prepare(api,env,'pending',outputs,templates)
+            with self.subTest(field=field,value=value),self.assertRaises(ValueError):m.prepare(api,env,'frozen',outputs,templates)
 
     def test_carried_upload_can_retry_failed_signer_but_restore_requires_original_proof(self):
         api,env,outputs,templates,original,jobs,artifacts,_=fixture('cargo')
@@ -181,6 +174,50 @@ class EnvelopeContracts(unittest.TestCase):
         self.assertEqual(bundle.read_bytes(),b'explicit simulated signature')
         self.assertEqual(expected['attempt'],1)
         return {cell:{'offlineOnly':True} for cell in expected['cells']}
+
+    def test_native_discovery_and_certificate_policy_use_exact_current_scope(self):
+        # API and cryptographic CLI output are simulated. The actual envelope,
+        # verified_run and certificate/manifest policy remain in the path.
+        abi='darwin-arm64';scope='native-'+abi
+        api,run,source,state=self.fixture();state['latest']=copy.deepcopy(run)
+        expected=m.expected_policy(run,source,scope,'c'*40)
+        role=expected['cells']['native']
+        row={'cell':'native','producer':role['producer'],'uploadStep':role['uploadStep'],
+             'jobId':99,'originAttempt':1,'artifactId':100,'artifactDigest':'sha256:'+'d'*64,
+             'artifactName':'formal-native-'+abi+'-1'}
+        manifest={'schemaVersion':1,'kind':'fixed-workflow-upload-bindings',
+                  **{key:expected[key] for key in ['repositoryId','sourceSHA','sourceTree','runId','callerWorkflow']},
+                  'aggregationAttempt':1,'bindings':[row]}
+        body=json.dumps(manifest).encode()
+        repo='https://github.com/'+expected['repository'];signer=repo+'/'+expected['signerWorkflow']+'@'+expected['signerSHA']
+        certificate={'issuer':'https://token.actions.githubusercontent.com','subjectAlternativeName':signer,
+            'buildSignerURI':signer,'buildSignerDigest':expected['signerSHA'],'runnerEnvironment':'github-hosted',
+            'sourceRepositoryURI':repo,'sourceRepositoryIdentifier':str(expected['repositoryId']),
+            'sourceRepositoryDigest':source['sha'],'sourceRepositoryRef':'refs/heads/main',
+            'buildConfigURI':repo+'/'+m.NPM+'@refs/heads/main','buildConfigDigest':source['sha'],
+            'buildTrigger':'push','runInvocationURI':repo+'/actions/runs/42/attempts/1'}
+        statement={'_type':'https://in-toto.io/Statement/v1','predicateType':m.policy.PREDICATE,
+            'subject':[{'name':'ci-bindings.json','digest':{'sha256':hashlib.sha256(body).hexdigest()}}],
+            'predicate':{'schemaVersion':1,'kind':'fixed-workflow-upload-bindings'}}
+        result=[{'verificationResult':{'signature':{'certificate':certificate},'statement':statement}}]
+        output=io.BytesIO()
+        with zipfile.ZipFile(output,'w') as archive:
+            archive.writestr('ci-bindings.json',body)
+            archive.writestr('ci-bindings.sigstore.json',b'explicit offline crypto boundary')
+        state['body']=output.getvalue()
+        state['artifact'].update(name='farm-release-bindings-'+scope+'-42-1',size_in_bytes=len(state['body']),digest='sha256:'+hashlib.sha256(state['body']).hexdigest())
+        def verify(subject,bundle,policy):
+            self.assertEqual(bundle.read_bytes(),b'explicit offline crypto boundary')
+            return m.policy.validate_verified_manifest(subject.read_bytes(),result,policy)
+        actual,rows=m.verified_run(api,run,source,scope,verify=verify,signer_sha='c'*40)
+        self.assertEqual(actual,expected);self.assertEqual(rows,{'native':row})
+        for key in ['sourceRepositoryDigest','buildSignerDigest','runInvocationURI','buildConfigURI']:
+            old=certificate[key];certificate[key]='wrong'
+            with self.subTest(key=key),self.assertRaises(ValueError):m.verified_run(api,run,source,scope,verify=verify,signer_sha='c'*40)
+            certificate[key]=old
+        state['latest']['run_attempt']=2
+        with self.assertRaisesRegex(ValueError,'current authoritative attempt'):
+            m.verified_run(api,run,source,scope,verify=verify,signer_sha='c'*40)
 
     def test_original_frozen_proof_survives_later_failed_stage_without_changing_attempt(self):
         api,run,source,state=self.fixture()

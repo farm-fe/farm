@@ -197,7 +197,7 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
   });
   assert.deepEqual(packages.map(row => `${row.kind}:${row.name}`).sort(), [...selection.publish].sort(), 'Sealed publication delta differs from independent plan');
   assert.equal(new Set(packages.map(row => `${row.kind}:${row.name}`)).size, packages.length);
-  return {schemaVersion: 1, chain: 'release', profile: 'release', namespace: 'farm-release-v1', publicationScope:selection.publicationScope??'all',
+  return {schemaVersion: 1, releaseValidation: 'archive-integrity-v1', chain: 'release', profile: 'release', namespace: 'farm-release-v1', publicationScope:selection.publicationScope??'all',
     sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, graphHash: selection.graphHash, baseline: selection.baselineBinding ?? null,
     producerRunId: runId, producerAttempt: attempt, abi: plan.abi,
     tag: packages.some(row => row.kind === 'npm' && row.name === '@farmfe/core')
@@ -282,7 +282,6 @@ async function main() {
       fs.writeFileSync(path.join(candidate, 'rebuild-verification.json'), JSON.stringify(manifest, null, 2) + '\n', {flag: 'wx'});
       return manifest;
     }
-    if(process.env.FARM_FUNCTIONAL_EVIDENCE) manifest.functionalEvidence=JSON.parse(process.env.FARM_FUNCTIONAL_EVIDENCE);
     fs.writeFileSync(path.join(candidate,'manifest.json'), JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});
     const archiveDirectory = path.join(candidate,'archives'); fs.mkdirSync(archiveDirectory);
     for (const row of manifest.packages) {

@@ -19,8 +19,7 @@ cannot be repacked or retrospectively certified.
 - Cargo restored an earlier transaction: independently verify its original signed
   archive before signing a new binding. Missing proof fails closed.
 - npm publication was interrupted: restore the original signed seal and candidate
-  archives; recheck current candidate consumers, fixed-main functional evidence,
-  publication ownership and registry versions before resuming missing uploads.
+  archives; recheck original archive integrity, publication ownership and registry versions before resuming missing uploads.
 - Public signing succeeded but finalization failed: re-run
   **sign-public-acceptance and its dependent finalize job**, not only the failed
   finalize job. A carried old signature is deliberately not current public acceptance.
@@ -28,13 +27,11 @@ cannot be repacked or retrospectively certified.
 - The transaction is already complete: after current frozen-byte preflight, read
   the original tag, Release checkpoint and all checkpoint package checksums from
   the registry. Matching results permit only an already-complete no-op. This does
-  not authorize new writes or replace current public tests for an unfinished
+  not authorize new writes or replace registry byte/tag verification for an unfinished
   transaction. Missing or conflicting bytes fail closed.
 
-The code does not automatically invoke retry operations. The pending-main-evidence
-controller returns a verified run/attempt/source recommendation without POST.
-A maintainer must recheck current state before acting; a recommendation cannot
-authorize a later attempt.
+The code does not automatically invoke retry operations. The obsolete pending-main-test-evidence controller has been removed.
+A maintainer must recheck the original transaction state before acting.
 A workflow dispatch may read existing proof where supported; it cannot mint a new
 signature or turn unsigned data into publication authorization.
 
@@ -44,4 +41,5 @@ Local tests execute production selection, byte validation and recovery algorithm
 against explicit simulated API/registry/signature transports. They do not prove
 hosted OIDC, GitHub scheduling, actual registry writes or non-Mac binary execution.
 The production verifier still invokes the pinned CLI on its supported hosted
-Linux consumer; externally supplied verification JSON is not accepted.
+Linux x64, macOS arm64/x64 or Windows x64 consumer; externally supplied
+verification JSON is not accepted.

@@ -15,7 +15,7 @@ test('Unit has three independent fixed callers, never matrix last-writer outputs
   const id='cargo-test-'+key, caller=unit.jobs[id];
   assert.equal(caller.uses,'./.github/workflows/rust-test-platform.yaml');assert.deepEqual(caller.with,{os,abi});
   assert.ok(!caller.strategy);assert.ok(!platform.jobs['cargo-test'].strategy);
-  assert.ok(consumer.needs.includes(id));assert.equal(caller.if,"needs.version-classification.outputs.mode != 'verified-version-only'");
+  assert.ok(consumer.needs.includes(id));assert.equal(caller.if,undefined);
   shapes[id]={artifact_id:String(100+settings.findIndex(s=>s[0]===key)),artifact_digest:key==='linux'?'a'.repeat(64):key==='macos'?'b'.repeat(64):'c'.repeat(64),run_attempt:'1'};
  }
  shapes['impact-plan']={artifact_id:'10',artifact_digest:'d'.repeat(64),run_attempt:'1'};

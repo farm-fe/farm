@@ -28,7 +28,7 @@ test('carried plan and newly frozen candidate have independent attempt names',()
  assert.equal(plan.with.name,'independent-release-plan-${{ github.run_id }}-${{ needs.plan.outputs.plan_attempt }}');
  const store=new Set(['independent-release-plan-50-1','farm-release-candidates-source-2']);
  assert.ok(store.has(plan.with.name.replace('${{ github.run_id }}','50').replace('${{ needs.plan.outputs.plan_attempt }}','1')));
- for(const name of ['candidate-consumers','publisher','public-consumers','public-proof','finalize']){
+ for(const name of ['publisher','public-proof','finalize']){
   assert.ok(jobs[name].needs.includes('candidate-identity'));
   if(jobs[name].uses){
    assert.equal(jobs[name].with.candidate_attempt,'${{ needs.candidate-identity.outputs.attempt }}');
@@ -45,19 +45,21 @@ test('carried plan and newly frozen candidate have independent attempt names',()
   }
  }
 });
-test('recovery wake-up never checks out triggering code or receives publication tokens',()=>{
- const recovery=fs.readFileSync(new URL('../.github/workflows/release-evidence-recovery.yaml',import.meta.url),'utf8');const doc=parse(recovery);
- assert.deepEqual(doc.on.workflow_run.types,['completed']);assert.deepEqual(doc.on.workflow_run.branches,['main']);
- assert.equal(doc.jobs.recover.steps[0].with.ref,'${{ github.workflow_sha }}');assert.equal(doc.jobs.recover.steps[0].with['persist-credentials'],false);
- assert.equal(doc.jobs.recover.permissions.actions,'write');assert.equal(doc.jobs.recover.permissions.contents,'read');
- assert.ok(!/NPM_TOKEN|CARGO_REGISTRY_TOKEN|pull_request_target/.test(recovery));
- assert.equal(doc.concurrency['cancel-in-progress'],false);
- const script=fs.readFileSync(new URL('./release-evidence-recovery.py',import.meta.url),'utf8');assert.ok(!script.includes('/rerun-failed-jobs'));assert.ok(script.includes('manual-recovery-required'));assert.ok(script.includes('attempt-conditional-rerun-unavailable'));assert.ok(!script.includes("'POST'"));assert.ok(!script.includes('/dispatches'));
+test('main-test wait and its wake-up controller are absent; recovery remains in the original transaction',()=>{
+ assert.equal(jobs['main-evidence'],undefined);
+ assert.equal(jobs['sign-pending-evidence'],undefined);
+ for(const file of ['.github/workflows/release-evidence-recovery.yaml','scripts/release-evidence-recovery.py'])
+  assert.equal(fs.existsSync(new URL('../'+file,import.meta.url)),false);
+ assert.doesNotMatch(text,/workflow_run:|functional_evidence|incremental-release-functional/);
+ assert.ok(text.includes('module.original_attempt(module.actions_transport()'));
+ assert.ok(text.includes('incremental-release-entry.py'));
+ assert.ok(text.includes('incremental-release-publish.py'));
 });
+
 test('all release needs remain acyclic and mandatory candidate checks cannot be skipped',()=>{
  const done=new Set(),active=new Set();function visit(name){assert.ok(jobs[name]);assert.ok(!active.has(name));if(done.has(name))return;active.add(name);for(const need of jobs[name].needs??[])visit(need);active.delete(name);done.add(name);}
  for(const name of Object.keys(jobs))visit(name);
- for(const name of ['candidate-consumers','publisher'])assert.ok(jobs[name].if.includes("needs.candidate-identity.result == 'success'"));
+ for(const name of ['publisher'])assert.ok(jobs[name].if.includes("needs.candidate-identity.result == 'success'"));
  assert.ok(identity.if.includes("needs.source.outputs.reuse == 'true'"));
 });
 
@@ -74,7 +76,7 @@ function condition(job, { results = {}, cancelled = false, event = 'push' } = {}
  return Function(`return (${expression})`)();
 }
 test('actual public/recovery conditions admit carried ancestry but reject direct failure and cancellation', () => {
- for (const name of ['public-consumers', 'public-proof', 'finalize', 'sign-public-acceptance', 'sign-frozen-release']) {
+ for (const name of ['public-proof', 'finalize', 'sign-public-acceptance', 'sign-frozen-release']) {
   const job = jobs[name];
   assert.match(job.if, /!cancelled\(\)/);
   const carried = { plan: 'skipped', quality: 'skipped' };

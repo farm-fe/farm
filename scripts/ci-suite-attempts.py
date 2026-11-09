@@ -12,27 +12,7 @@ execution = importlib.util.module_from_spec(spec); spec.loader.exec_module(execu
 check = execution.check
 
 
-def original_selection(transport, run, source, selection_hash, trusted_output=None):
-    producer, job = (execution.explicit_producer(transport, run, 'Type Check', trusted_output) if trusted_output is not None
-                     else execution.actual_producer(transport, run, 'Type Check'))
-    attempt = producer['run_attempt']
-    selection, artifact = execution.fetch_json_artifact(transport, producer, 'ci-suite-selection-' + str(run['id']) + '-' + str(attempt), 'selection.json')
-    execution.upload_binding(job, 'Upload bound current suite selection', artifact, trusted_output)
-    import io, zipfile
-    with zipfile.ZipFile(io.BytesIO(transport.archive(artifact['id']))) as archive: body = archive.read('selection.json')
-    check(hashlib.sha256(body).hexdigest() == selection_hash, 'Original selection bytes differ from trusted output')
-    check(selection.get('sourceSHA') == source['sha'] and selection.get('sourceTree') == source['tree'] and selection.get('runId') == run['id'] and selection.get('attempt') == attempt and selection.get('repositoryId') == run['repository']['id'], 'Original selection source or attempt differs')
-    return attempt, body
-
-
-def restore_selection(transport, run, source, selection_hash, output, trusted_output=None):
-    attempt, body = original_selection(transport, run, source, selection_hash, trusted_output)
-    path = Path(output); check(not path.exists(), 'Refuse stale selection destination')
-    path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(body)
-    return attempt
-
-
-def collect(transport, run, source, output, selection_hash='', selection_output=None, upload_outputs=None, selection_upload=None):
+def collect(transport, run, source, output, *, upload_outputs=None):
     check(run['path'] == '.github/workflows/ci.yaml' and run['event'] in ['push', 'pull_request', 'workflow_dispatch'], 'Only CI receipts may be resolved')
     root = Path(output); check(not root.exists(), 'Refuse stale rerun receipt directory')
     rows = []; attempts = {}
@@ -40,12 +20,6 @@ def collect(transport, run, source, output, selection_hash='', selection_output=
         for kind in ['ts', 'examples-browser']:
             data, artifact, binding = execution.suite_receipt(transport, run, source, kind, abi, cache=attempts, trusted_output=None if upload_outputs is None else upload_outputs[abi][kind])
             rows.append((data, artifact, binding))
-    selection_attempt = None
-    selection = None
-    if selection_hash:
-        selection_attempt, body = original_selection(transport, run, source, selection_hash, selection_upload)
-        selection = True
-        check(selection_output is not None and not Path(selection_output).exists(), 'Refuse stale or absent selection destination')
     root.mkdir(parents=True)
     proofs = {}
     for data, artifact, binding in rows:
@@ -53,9 +27,7 @@ def collect(transport, run, source, output, selection_hash='', selection_output=
         filename = 'ts.json' if data['kind'] == 'ts' else 'browser.json'
         (folder / filename).write_text(json.dumps(data), encoding='utf-8')
         proofs[artifact['name']] = binding
-    if selection is not None:
-        destination = Path(selection_output); destination.parent.mkdir(parents=True, exist_ok=True); destination.write_bytes(body)
-    (root / 'producers.json').write_text(json.dumps({'schemaVersion':1, 'sourceSHA':source['sha'], 'sourceTree':source['tree'], 'runId':run['id'], 'aggregationAttempt':run['run_attempt'], 'selectionAttempt':selection_attempt, 'producers':proofs}), encoding='utf-8')
+    (root / 'producers.json').write_text(json.dumps({'schemaVersion':1, 'sourceSHA':source['sha'], 'sourceTree':source['tree'], 'runId':run['id'], 'aggregationAttempt':run['run_attempt'], 'producers':proofs}), encoding='utf-8')
     return proofs
 
 
@@ -81,16 +53,8 @@ def current_upload_outputs(environment):
     return result
 
 
-def current_selection_output(environment):
-    value = json.loads(environment['FARM_SUITE_SELECTION_UPLOAD'])
-    fields = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
-    check(isinstance(value, dict) and set(value) == set(fields), 'Selection upload binding missing or unexpected')
-    check(all(isinstance(value[key], str) and re.fullmatch(pattern, value[key]) for key, pattern in fields.items()), 'Malformed selection upload binding')
-    return value
-
-
 def main():
-    parser = argparse.ArgumentParser(); parser.add_argument('--output'); parser.add_argument('--selection-only', action='store_true'); parser.add_argument('--selection-output', default='ci-suite-selection/selection.json'); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument('--output', required=True); args = parser.parse_args()
     env = os.environ
     check(env.get('GITHUB_ACTIONS') == 'true' and env.get('GITHUB_JOB') in ['execution-baseline', 'incremental-execution-gate', 'ts-test', 'examples-test'], 'Unexpected receipt resolver job')
     transport = execution.evidence.transport_module.GitHubReadOnly(env['GITHUB_REPOSITORY'], env['GH_TOKEN'], allow_archive=True)
@@ -99,11 +63,7 @@ def main():
     source = execution.evidence.source_reader(env['GITHUB_SHA'])
     # PR Actions checkout may be a merge SHA while head_sha is its head parent.
     check(source['sha'] == run['head_sha'] or run['event'] == 'pull_request' and run['head_sha'] in source['parents'], 'Resolver source differs from fixed run')
-    if args.selection_only:
-        attempt = restore_selection(transport, run, source, env['FARM_SUITE_SELECTION_HASH'], args.selection_output, current_selection_output(env))
-        with Path(env['GITHUB_ENV']).open('a', encoding='utf-8') as stream: stream.write('CI_SUITE_SELECTION_PRODUCER_ATTEMPT=' + str(attempt) + '\n')
-        print(json.dumps({'selectionProducerAttempt':attempt, 'currentConsumerAttempt':run['run_attempt']})); return
     check(args.output is not None and env.get('GITHUB_JOB') in ['execution-baseline','incremental-execution-gate'], 'Suite collection role or output missing')
-    print(json.dumps({'cells':len(collect(transport, run, source, args.output, env.get('FARM_SUITE_SELECTION_HASH', ''), args.selection_output, current_upload_outputs(env), current_selection_output(env) if env.get('FARM_SUITE_SELECTION_HASH') else None)), 'buildExecuted':False}))
+    print(json.dumps({'cells':len(collect(transport, run, source, args.output, upload_outputs=current_upload_outputs(env))), 'buildExecuted':False}))
 
 if __name__ == '__main__': main()

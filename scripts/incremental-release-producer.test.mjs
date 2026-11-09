@@ -174,8 +174,9 @@ test('workflow routes rebuilds separately and terminal steps bind the trusted pl
     assert.ok(step.includes('FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}'));
   }
   assert.ok(workflow.includes("needs.plan.outputs.publish_required == 'false' && needs.plan.outputs.build_required == 'false'"));
-  const consumers=workflow.split('  candidate-consumers:')[1].split('  publisher:')[0];
-  assert.ok(consumers.includes("needs.plan.outputs.publish_required == 'true'"));
+  const publisher=workflow.split('  publisher:')[1].split('  public-proof:')[0];
+  assert.ok(publisher.includes("needs.plan.outputs.publish_required == 'true'"));
+  assert.ok(!workflow.includes('  candidate-consumers:'));
 });
 
 test('registry-selected publication builds without a successful baseline and retains public dependencies only for validation',()=>{

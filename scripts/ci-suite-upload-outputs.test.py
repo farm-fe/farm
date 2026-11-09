@@ -42,6 +42,20 @@ class Contracts(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'outside its fixed upload step'):
                 module.collect(transport,run,source,Path(tmp)/'historical')
 
+    def test_full_six_suite_uploads_need_no_selection_or_clock_fields(self):
+        transport,run,source,jobs,artifacts,*_=fixture.fixture()
+        trusted=outputs(artifacts)
+        for rows in jobs.values():
+            for job in rows:
+                job.pop('started_at',None);job.pop('completed_at',None)
+                for step in job['steps']:
+                    step.pop('started_at',None);step.pop('completed_at',None)
+        for artifact in artifacts.values():artifact.pop('created_at',None)
+        with tempfile.TemporaryDirectory() as tmp:
+            result=module.collect(transport,run,source,Path(tmp)/'full',upload_outputs=trusted)
+            self.assertEqual(len(result),6)
+            self.assertEqual({row['runAttempt'] for row in result.values()},{1})
+
     def test_wrong_id_digest_attempt_and_missing_cell_fail_closed(self):
         for field, value in [('artifact_id','999999'),('artifact_digest','0'*64),('run_attempt','3')]:
             transport,run,source,jobs,artifacts,*_ = fixture.fixture()

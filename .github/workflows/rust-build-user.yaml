@@ -16,6 +16,12 @@ on:
         default: all
 
     outputs:
+      catalog_id:
+        value: ${{ jobs.build.outputs.catalog_id }}
+      catalog_digest:
+        value: ${{ jobs.build.outputs.catalog_digest }}
+      catalog_attempt:
+        value: ${{ jobs.build.outputs.catalog_attempt }}
       docs_upload:
         value: ${{ jobs.build.outputs.docs_upload }}
       product_upload:
@@ -38,6 +44,9 @@ concurrency:
 jobs:
   build:
     outputs:
+      catalog_id: ${{ steps.catalog-upload.outputs.artifact-id }}
+      catalog_digest: ${{ steps.catalog-upload.outputs.artifact-digest }}
+      catalog_attempt: ${{ steps.catalog-origin.outputs.attempt }}
       docs_upload: ${{ steps.docs-binding.outputs.binding }}
       product_upload: ${{ steps.product-binding.outputs.binding }}
       artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
@@ -138,9 +147,11 @@ jobs:
         run: |
           cargo metadata --locked --all-features --format-version 1 > "$RUNNER_TEMP/farm-glob-metadata.json"
           node scripts/assert-glob-dependency-closure.mjs "$RUNNER_TEMP/farm-glob-metadata.json"
-          node --test scripts/assert-glob-dependency-closure.test.mjs
+      - name: Test glob dependency closure on PR validation
+        if: github.event_name != 'push' && matrix.settings.abi == 'linux-x64-gnu'
+        run: node --test scripts/assert-glob-dependency-closure.test.mjs
       - name: Verify native artifact build and release flow
-        if: matrix.settings.abi == 'linux-x64-gnu'
+        if: github.event_name != 'push' && matrix.settings.abi == 'linux-x64-gnu'
         run: |
           node scripts/test-native-container-node.cjs
           node scripts/test-native-artifact-flow.cjs
@@ -472,6 +483,7 @@ jobs:
           FARM_BUILD_PROFILE: release
         run: python -B scripts/formal-native-products.py produce --abi ${{ matrix.settings.abi }} --capture .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output formal-native-catalog
       - name: Upload formal native product catalog
+        id: catalog-upload
         if: inputs.profile == 'release' && steps.formal-catalog.outputs.catalog_available == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -479,6 +491,12 @@ jobs:
           path: formal-native-catalog/
           if-no-files-found: error
           retention-days: 30
+      - name: Bind successful catalog to original upload attempt
+        id: catalog-origin
+        if: steps.catalog-upload.outcome == 'success'
+        shell: bash
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
       - name: Preserve bounded shadow producer context without duplicating native archives
         id: product-upload
         if: ${{ always() && inputs.profile != 'release' }}

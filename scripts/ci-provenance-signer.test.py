@@ -1,6 +1,8 @@
 """Offline signer context and production wiring contracts; no OIDC requests."""
 # cspell:words importlib
 import importlib.util
+import json
+import subprocess
 from pathlib import Path
 import unittest
 spec = importlib.util.spec_from_file_location('signer', Path(__file__).with_name('ci-provenance-signer.py'))
@@ -38,8 +40,11 @@ class Contracts(unittest.TestCase):
         with self.assertRaises(ValueError):m.identity(environment(),'release')
         with self.assertRaises(ValueError):m.identity({**environment(),'GITHUB_RUN_ATTEMPT':'33'},'ci')
 
-    def test_isolated_workflow_permissions_and_checkout_are_narrow(self):
-        workflow=(Path(__file__).parent.parent/'.github/workflows/ci-provenance-signer.yaml').read_text()
+    def test_historical_pinned_workflow_stays_verifiable_without_live_signer(self):
+        root=Path(__file__).parent.parent
+        revision=json.loads((root/'scripts/ci-provenance-trust.json').read_text())['signerSHA']
+        workflow=subprocess.check_output(['git','show',revision+':.github/workflows/ci-provenance-signer.yaml'],cwd=root,text=True)
+        self.assertFalse((root/'.github/workflows/ci-provenance-signer.yaml').exists())
         self.assertIn('permissions: {}',workflow)
         for permission in ['id-token: write','attestations: write','contents: read','actions: read']:
             self.assertEqual(workflow.count(permission),1)

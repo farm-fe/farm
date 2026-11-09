@@ -24,8 +24,8 @@ class Contracts(unittest.TestCase):
         source,rows=self.fixture()
         release='.github/workflows/release-provenance-signer.yaml'
         renamed=[{**row,'filepath':release} for row in rows]
-        report=m.classify(rows+renamed,{m.WORKFLOW:source,release:source})
-        self.assertEqual(len(report['documentedContextCompatibility']),6)
+        report=m.classify(renamed,{release:source})
+        self.assertEqual(len(report['documentedContextCompatibility']),3)
         self.assertEqual(report['errors'],[])
         self.assertEqual(m.classify(renamed,{release:source.replace('job.workflow_sha','github.workflow_sha')})['errors'],renamed[:2])
 

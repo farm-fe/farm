@@ -31,7 +31,8 @@ test('ordinary main changes use Changesets version PRs without publication crede
   assert.ok(independent.includes("github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true'"));
   assert.ok(independent.includes("github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)"));
   assert.match(independent,/node scripts\/automatic-release-source\.mjs/);
-  assert.match(independent, /profile: release/);
+  assert.match(independent, /uses: \.\/.github\/workflows\/release-native-build.yaml/);
+  assert.match(fs.readFileSync(new URL('../.github/workflows/release-native-build.yaml', import.meta.url), 'utf8'), /profile: release/);
   assert.doesNotMatch(independent, /v2-auto-release\.mjs|uses: .*ci\.yaml/);
   assert.doesNotMatch(workflow, /uses: \.\/\.github\/workflows\/rust-build/);
   const release = fs.readFileSync(new URL('./release.mjs', import.meta.url), 'utf8');
@@ -120,8 +121,11 @@ test('independent workflow consumes actual release delta APIs and supports a nat
   assert.doesNotMatch(release,/FARM_RELEASE_CANDIDATE_PLAN|sdk-consumer|seal-v2-rust/);
   assert.match(release,/seal-npm/);
   assert.ok(release.includes("plan['planHash'] == os.environ['PLAN_HASH']"));
-  assert.ok(release.includes('uses: ./.github/workflows/release-candidate-consumers.yaml'));
-  const consumers=read('.github/workflows/release-candidate-consumers.yaml');
-  assert.equal((consumers.match(/Upload independent release candidate acceptance/g)||[]).length,3);
-  assert.equal((consumers.match(/path: candidate-results\/result.json/g)||[]).length,3);
+  assert.doesNotMatch(release,/release-candidate-consumers|release-public-consumers/);
+  assert.match(release,/incremental-release-record.py registry/);
+  const ci=read('.github/workflows/ci.yaml');
+  assert.match(ci,/uses: \.\/.github\/workflows\/v2-candidate-seal.yaml/);
+  const consumers=read('.github/workflows/v2-candidate-seal.yaml');
+  assert.match(consumers,/verify-v2-npm-consumer.mjs/);
+  assert.match(consumers,/os: \[ubuntu-24.04, macos-latest, windows-latest\]/);
 });

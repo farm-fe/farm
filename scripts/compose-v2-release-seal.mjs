@@ -10,6 +10,15 @@ import { verifySdkConsumer } from './verify-sdk-consumer.mjs';
 import { rustPublicationOrder } from './release-rust-metadata.mjs';
 import { publicationNpm } from './v2-release-inventory.mjs';
 
+export function assertSealPreflight(plan, result) {
+  assert.equal(result.candidateArchivesVerified, true);
+  assert.equal(result.externalSdkVerified, true);
+  if (plan.preparation?.mode === 'pr-validation') {
+    assert.equal(result.prCandidateVerified, true);
+    assert.equal(result.readyToPublish, false, 'PR test seal cannot grant publication');
+  } else assert.equal(result.stableVersionStateReady, true);
+}
+
 export function assertCompleteSealInputs(plan, npm, sdk) {
   assert.equal(npm.status, 'sealed', 'npm producer is incomplete');
   assert.equal(npm.planSha256, sha256(Buffer.from(JSON.stringify(plan))));
@@ -80,14 +89,14 @@ export function composeReleaseSeal({ root, npmDirectory, sdkDirectory, output })
     const bytes = Buffer.from(JSON.stringify(row.metadata)); fs.writeFileSync(path.join(output, metadataFile), bytes, { flag: 'wx' });
     const record = { name: row.name, version: row.version, file, sha256: source.sha256, metadata: metadataFile, metadataSha256: sha256(bytes), dependencies: row.dependencies };
     const reused = plan.publication?.reuseRust?.find(item => item.name === row.name && item.version === row.version);
-    const evidence = reused ? plan.preparation?.mode === 'incremental-release' ? 'release-work/release-plan.json' : 'docs/release-evidence/changesets-preparation.json' : compatibility[row.name];
+    const evidence = plan.preparation?.mode === 'pr-validation' ? null : reused ? plan.preparation?.mode === 'incremental-release' ? 'release-work/release-plan.json' : 'docs/release-evidence/changesets-preparation.json' : compatibility[row.name];
     if (evidence) record.reuseEvidence = { archiveSha256: source.sha256, compatible: true, file: evidence, sha256: sha256(Buffer.from(JSON.stringify(read(path.join(root, evidence))))) };
     receipt.rust.push(record);
   }
   fs.writeFileSync(path.join(output, 'receipt.json'), JSON.stringify(receipt, null, 2), { flag: 'wx' });
   const preflight = execFileSync(process.execPath, [path.join(root, 'scripts/v2-release-preflight.mjs'), '--candidate-seal', path.join(output, 'receipt.json'), '--sdk-proof', path.join(output, 'sdk-consumer.json')], { cwd: root, encoding: 'utf8' });
   const result = JSON.parse(preflight);
-  assert.equal(result.candidateArchivesVerified, true); assert.equal(result.externalSdkVerified, true); assert.equal(result.stableVersionStateReady, true);
+  assertSealPreflight(plan, result);
   fs.writeFileSync(path.join(output, 'prepublication.json'), preflight, { flag: 'wx' });
   return { npm: receipt.records.length, rust: receipt.rust.length, sdk: result.externalSdkVerified, publicRegistryVerified: false };
 }

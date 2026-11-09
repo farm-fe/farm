@@ -66,7 +66,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     assert.equal(mode, 'bind-candidate');
     const materialization = JSON.parse(fs.readFileSync(path.join(destination, 'materialization.json')));
     const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
-    if (['changesets', 'incremental-release'].includes(plan.preparation?.mode)) {
+    if (['changesets', 'incremental-release', 'pr-validation'].includes(plan.preparation?.mode)) {
       // New crate versions cannot inherit the first-stable frozen resolution.
       // Resolve only against the already verified isolated registry, never paths.
       fs.rmSync(path.join(destination, 'consumer/Cargo.lock'), { force: true });
