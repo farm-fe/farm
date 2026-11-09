@@ -24,3 +24,11 @@
 | 12. 审查/提交/远端 | 已实现待验证 | A/B 已本地提交并独立只读审查；固定模板/caller/trust 同步。等待最终普通推送及 exact HEAD 远端 CI，不能用旧 c3 绿色代替。用户暂停的普通 PR Changesets 失败、review/approval 等合并条件仍按实际状态保留；不合并、不发布 |
 
 完整证据摘要：`REAL-DRY-RUN-CHECKPOINT.md`。所有本轮自有重型会话均自然结束且 owner 释放共享锁。先前全局进程列表被环境拒绝，未重新查询或声称全局无其他进程。托管身份、真实签署、跨平台完整矩阵及 registry 写入只能在相应真实流程验证，本地 dry run 不保证线上不会失败。
+
+## macOS UnoCSS 测试收尾（2026-11-09）
+
+- 节点 2 / 11：已实测。旧 HEAD `602e89060305cb92c4a5ed4e9c4747a5996f3bd6` 的 macOS 用例超时后，清理会与仍在运行的写入竞争。现在等待 fixture Promise 结束才清理/恢复环境；UnoCSS 依赖初始化放入 setup，只加载同一安装中的必要 preset，默认用例超时不变，50% → 100% → 插件重启后 100% 三项语义保留。
+- 本地原用例在 Node 20.20.2 和 22.20.0 均通过，未复现 hosted 的 5 秒耗时，不能认定唯一耗时根因。清理竞争用确定性延迟写入验证：恢复旧顺序时 2 项失败，修复后成功/失败写入两项均通过。
+- Node 20.20.2（与失败 hosted 同版）和 Node 22.20.0 的完整 TypeScript 测试分别 60 文件 / 303 项通过；Core、PostCSS、Vue 示例实际构建及 PostCSS 类型检查通过。仅测试/文档及 PostCSS 当前候选摘要变化，无版本、Changesets、发布配置或 native 源码变更。
+- 节点 12：已实现待验证。修复后 exact HEAD 的 hosted macOS/全链仍待执行；旧轮成功的 9 native、三平台 Cargo/Examples 不是新 SHA 成绩。真实 OIDC/main-to-PR cache hit/公开 registry 发布仍未验。
+- 证据：本地 `unocss-macos-20261109/` 下的 baseline-node20.log、baseline.log、cleanup-red.log、verification.json 与两个 typescript-node*.log。普通 PR Changesets 失败继续不处理；不合并、不发布。

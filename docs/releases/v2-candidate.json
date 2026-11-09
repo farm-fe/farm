@@ -310,7 +310,7 @@
         "version": "2.0.0",
         "manifestPath": "js-plugins/postcss/package.json",
         "manifestSha256": "150cb793f88c78f7d9546a0f3c2cdc99d477a0a22fe25bd9ae491f456948dc03",
-        "sourceSha256": "ec8ddca34f2efa23cb92489d3f0478e988dc30769179c75f77e335a0901ab1c7"
+        "sourceSha256": "83ab7f7cf2ecb13b508fb1c83d04f3854b9b7afeef3f2a68c7bdf860b4435190"
       },
       {
         "name": "@farmfe/js-plugin-qiankun",
