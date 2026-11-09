@@ -25,19 +25,25 @@ REPOSITORY_ID=507542208
 SIGNER='.github/workflows/release-provenance-signer.yaml'
 NPM='.github/workflows/incremental-release.yaml'
 CARGO='.github/workflows/cargo-source-release.yaml'
-CALLERS={'pending':NPM,'frozen':NPM,'public':NPM,'cargo':CARGO}
+NATIVE_ABIS=['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc', 'linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu']
+CALLERS={'frozen':NPM,'public':NPM,'registry':NPM,'cargo':CARGO, **{'native-'+abi:NPM for abi in NATIVE_ABIS}}
 
 
 def cells(scope):
     check(scope in CALLERS,'Unknown release signing scope')
-    if scope=='pending':
-        return {'pending':{'producer':'Verify actual fixed-main functional evidence',
-            'producerConclusion':'failure','uploadStep':'Preserve pending fixed-main evidence for bounded recovery',
-            'artifactName':'release-functional-pending-{runId}-{originAttempt}'}}
+    if scope.startswith('native-'):
+        abi=scope.removeprefix('native-')
+        group='User' if abi in NATIVE_ABIS[:3] else 'Release'
+        return {'native':{'producer':'Build and Upload '+group+' Artifacts - '+abi,
+            'uploadStep':'Upload formal native product catalog', 'artifactName':'formal-native-'+abi+'-{originAttempt}'}}
     if scope=='frozen':
         return {name:{'producer':'Build independent release candidates','uploadStep':step,
                       'artifactName':'farm-release-'+name+'-{sourceSHA}-{originAttempt}'}
                 for name,step in [('seal','Upload independent release seal'),('candidates','Freeze independent release candidates')]}
+    if scope=='registry':
+        return {'public':{'producer':'Verify independent release public consumers',
+            'uploadStep':'Upload independent release public acceptance',
+            'artifactName':'farm-release-public-acceptance-{sourceSHA}-{originAttempt}'}}
     if scope=='public':
         receipts=load('release_signed_consumers','release-consumer-bindings.py')
         return {'public':{'producer':'Verify independent release public consumers','uploadStep':'Upload independent release public acceptance',
@@ -104,15 +110,6 @@ def prepare(transport,environment,scope,outputs,templates,*,prior_proof_provider
                 'cargo',run_id,attempt-1,row['artifactId'],'cargo',proof_provider=provider)
             check(metadata['digest']==row['artifactDigest'] and origin['run_attempt']==row['originAttempt']
                   and job['id']==row['jobId'],'Carried Cargo output differs from its original signed archive')
-    if scope=='pending':
-        # Failure alone is never a timeout authorization. Validate the original
-        # deterministic receipt too, before any signing action can run.
-        row=json.loads(body)['bindings'][0]
-        data,meta,_,_=policy.bound_artifact(transport,run,row,expected,maximum_bytes=65536,required_conclusion='failure')
-        functional=load('release_pending_policy','incremental-release-functional.py')
-        receipt=functional.exact_plan(data,meta,'release-functional-pending.json')
-        check(receipt==functional.pending_record({'sha':expected['sourceSHA'],'tree':expected['sourceTree']},
-              {'runId':run_id,'attempt':row['originAttempt']}),'Pending receipt is not the exact evidence timeout intent')
     return body
 
 
@@ -134,8 +131,8 @@ def verified_run(transport,run,source,scope,*,verify=None,signer_sha=None):
     check(all(latest.get(key)==run.get(key) for key in ['id','path','head_sha','event','head_branch','repository','head_repository'])
           and type(latest.get('run_attempt')) is int and run['run_attempt']<=latest['run_attempt']<=32,
           'Latest release run/source differs')
-    if scope=='public':
-        check(latest['run_attempt']==run['run_attempt'],'Public acceptance requires the current authoritative attempt')
+    if scope in ['public','registry'] or scope.startswith('native-'):
+        check(latest['run_attempt']==run['run_attempt'],'Public acceptance or native cache requires the current authoritative attempt')
     name='farm-release-bindings-'+scope+'-'+str(run['id'])+'-'+str(run['run_attempt'])
     response=transport.get(route+'/artifacts?per_page=2&name='+name);rows=response.get('artifacts',[])
     check(response.get('total_count')==1 and len(rows)==1,'Release binding proof missing or ambiguous; original bytes must not be rebuilt')
@@ -220,7 +217,7 @@ def consumer_outputs(rows,kind):
 
 def main():
     scope=os.environ.get('SIGNER_SCOPE','');signer_identity(os.environ,scope)
-    directory=ROOT/'release-provenance-templates'/scope
+    directory=ROOT/'release-provenance-templates'/('native' if scope.startswith('native-') else scope)
     index=policy.strict_json((directory/'index.json').read_bytes())
     check(isinstance(index,list) and index and len(index)==len(set(index)),'Invalid reviewed release template index')
     templates={}
