@@ -2,21 +2,25 @@
 
 目标：PR 完整测试；main 按实际源码构建并发布；仅构建增量和可信产物复用，不继承历史测试成功。用户自行合并，不实现通知、自动重跑或跨 registry 原子事务。
 
-状态：待实现 / 已实现待验证 / 已实测 / 阻塞。当前基线 `c3c99547eaba6624c5fce482db92fbce5995ef37`；未完成提案不得发布。
+状态：待实现 / 已实现待验证 / 已实测 / 阻塞。“已实测”以下均注明本地范围，不代表实际公开发布成功。
 
-| 节点 | 状态 | 实现与验收依据 / 剩余事项 |
+实现基线：`c3c99547eaba6624c5fce482db92fbce5995ef37`。固定模板 A：`9f93b5e5359bbf0c3d7f750f7a24469eeaab9b6d`；调用方及实现 B：`77b1cbca4bd1d7c7399a933554386b0619535388`。本轮真实构建/打包均对应 B；后续本文件的进度更新不改变产品、工作流或模板。
+
+本地证据根目录：`/Users/brightwu/Documents/Codex/2026-11-01/task-3/v2-final-flow-20261109/`。
+
+| 节点 | 状态 | 实现、实际证据与剩余边界 |
 |---|---|---|
-| 1. 现场保护 | 已实测 | 14 文件暂停补丁保存于本地 `v2-final-flow-20261109/before.patch`，SHA256 `f54135e9e8329b9ce5eff6494d8474628e8fa4c82e5771807317bc9805a77f60`；本地/远端基线一致，六组旧证据保留 |
-| 2. PR 全量测试 | 已实现待验证 | ci/rust-test/ci-primary-platform：移除 suite selection、历史测试 baseline 等待及 version-only 测试跳过；普通 Changesets 规则不改；105 项流程合同、34 项全量发现/执行合同及 12 项原 attempt 合同局部通过（pr-main-flow-3.log、full-discovery.log、full-suite-attempts.log）；候选 npm、Linux packaged SDK 与三平台 npm 消费者接入 PR；PR 专用当前 checkout inventory 已实现，允许未消费 Changesets/正常源码差异，17 项局部合同通过；最终完整合同与新 SHA 全平台执行待验 |
-| 3. 构建输入图与缓存键 | 已实现待验证 | 保留 product_inputs/preparationDeps/measured_context；验证依赖、锁、recipe/features/toolchain/ABI 失效 |
-| 4. main 成功构建上传认证 | 已实现待验证 | 固定 ABI 输出、upload ID/digest/original attempt；现有 signer 增窄 native scope，不依赖整轮发布成功 |
-| 5. PR cache hit/miss | 已实现待验证 | formal-native-products 累积可信产品命中，缺失补建；两种路径完整测试相同 |
-| 6. main 增量发布计划 | 已实现待验证 | 既有 source/registry/依赖图保留；无新版不额外预热；版本与 selection 不变 |
-| 7. main 构建打包冻结 | 已实现待验证 | 已去重复 CI/Unit 等待及 main candidate/public 三平台测试；PR 复用已有候选归档测试。release signer A 已本地冻结，B 调用方/pin 已接线，待完整验证；不可推送半套 |
-| 8. 发布事务与读回 | 已实现待验证 | 保留锁/fence/逐包冲突/响应不确定读回；单次 registry 字节/tag 读回不声称测试通过。模式只由冻结 manifest 选择，双向混用拒绝；记录 6、入口 16、基线 10、绑定 5、发布 35 项局部通过（*-policy-separated*.log） |
-| 9. 原字节恢复 | 已实现待完整验证 | 保留冻结事务及 legacy 消费者语义；27 项原 attempt/恢复合同通过（frozen-attempt-move-2.log）。main-evidence 建议控制器已移除，无自动 POST；真实部分发布恢复仍未执行 |
-| 10. 清理 | 已实现待完整验证 | 已删除 main 三平台 consumer workflows、main-evidence recovery 控制器、functional-upload、suite-selection/baseline；保留全量发现、失败传播及 legacy 读取回归；无调用 inspect-* CLI 与伪 cleanup 字段已清理。已删除无 main 生产者的 CI/Unit signer 工作流/模板、main 测试等待 CLI 和 pending 签署 scope；历史证明只读策略保留 |
-| 11. 本地合同与 dry run | 已实现待完整验证 | 实际 CI 清单第三轮 38/38 命令通过，包括 git show A 的固定模板检查；宽 Node 合同 248 通过/1 Windows-only 跳过，记录 full-contract-pass3/results.json。源码 CSpell 2491 文件零问题（排除保留的两组旧生成证据），Biome 494 文件通过，actionlint 无实际错误、5 条已明确兼容诊断。上述仅本地合同/模拟；最终完整合同、真实 cold/hot native/pack 与生产算法 dry run 尚未完成；hosted OIDC 与 registry 写入未执行 |
-| 12. 审查/提交/远端 | 待实现 | 本地 A `9f93b5e5359bbf0c3d7f750f7a24469eeaab9b6d`；生产 release trust/caller 指向 A，历史 CI trust 保留旧 revision 只读。B 已完成合同验证待本地提交，尚未推送；远端 exact HEAD 待重新验收 |
+| 1. 现场保护 | 已实测 | 原 14 文件暂停补丁 `before.patch`，SHA256 `f54135e9e8329b9ce5eff6494d8474628e8fa4c82e5771807317bc9805a77f60`；六组旧证据保留。构建生成的 create-farm loader 前后字节及 diff 独立保全，按正式独立打包 checkout 边界恢复提交版；无用户源码丢失 |
+| 2. PR 全量测试 | 已实测 | 本地真实 CI 清单 38/38 命令通过（`full-contract-pass3/results.json`）；移除选择/历史等待/version-only 测试跳过，保留完整清单、实际上传和 case-count。普通 Changesets 规则不变。PR 当前 checkout 候选模式覆盖 pending Changesets、源码修改和合法 merge；Linux packaged SDK 与三平台 npm 测试接线保留。新 SHA 的完整托管测试待执行 |
+| 3. 构建输入图与缓存键 | 已实测 | 沿用一张依赖图、product_inputs/preparationDeps/measured_context。21 项 catalog 合同及真实 30 个 native 字节的 5 项解析合同通过；包括跨 SHA 同内容命中、单产品及共享锁/toolchain 失效。实际配方重建和 compiler incremental rerun 各 30 件、摘要完全相同；使用已有 Cargo target，不是空缓存构建 |
+| 4. main 成功构建上传认证 | 已实现待验证 | 固定 ABI 输出、ID/digest/original attempt、窄 native signer scope 已接线；不依赖整轮发布成功。11 份模板经 git show A 字节比对，13 项签名合同通过；本地模拟 API/crypto，真实 main OIDC 签署未执行 |
+| 5. PR cache hit/miss | 已实现待验证 | 多份 partial catalog 累积、缺失补建、无测试继承已通过合同。`real-pack-2/native-real-byte-cache.json` 使用真实产物并执行生产 verified_run/claims/binding/catalog；外部服务和密码学仍模拟，不称真实托管 cache hit。跨平台真实消费待新 CI/main 缓存产生 |
+| 6. main 增量发布计划 | 已实测 | 保留版本/registry/既有依赖图和 selection，无新版不额外预热。`registry-current.json` 于 2026-11-09 10:09–10:10 UTC 只读观察：297 npm 精确版本缺失，28 Cargo 中 25 缺失、3 已存在。版本及历史基线未改；发布时仍须重新预检 |
+| 7. main 构建打包冻结 | 已实测 | main 无 CI/Unit 等待及消费者功能测试；构建、归档完整性和冻结保留。正式顺序配方两轮各 30 Mac native 成功（`real-formal-native/receipt.json`）；真实 JS 构建与 81 npm 归档通过；25 Cargo 归档默认编译校验通过，根锁不变。本机子集不代表全 297 跨平台产物 |
+| 8. 发布事务与读回 | 已实测 | 真实 81 npm 归档进入生产状态机、GitRefStore 和 registry 字节/tag 读回算法：首次、noop、冲突、篡改、响应丢失、最终记录失败恢复通过。`real-pack-2/npm-real-byte-recovery.json`；Git/registry/授权传输仅内存模拟，外部写入零 |
+| 9. 原字节恢复 | 已实测 | npm 部分成功与最终记录失败保持原 manifest/归档；25 个真实 Cargo 归档首次/noop/丢响应恢复/冲突/篡改通过（`real-pack-2/cargo-current-frozen-simulation/result.json`）。旧 manifest 消费者语义与新 byte 模式双向隔离；无自动 POST。实际部分公开发布恢复未执行 |
+| 10. 清理 | 已实测 | 删除 main consumer workflows、main-evidence recovery、suite selection/baseline 等死入口；删除无 main 生产者的 CI/Unit signer 工作流/模板与 pending scope；保留严格 legacy 读取和有效回归。A+B 共 101 文件，新增 1875 行、删除 4637 行；38 条真实 CI 合同均执行，无旧 workflow 死引用 |
+| 11. 本地合同与 dry run | 已实测 | 宽 Node 合同 248 通过/1 Windows-only 跳过；Biome 494 文件通过；源码 CSpell 2491 文件零问题（排除两组保留旧生成证据）；actionlint 无实际错误、5 条已核实工具兼容诊断。真实隔离安装、Core ESM/CJS/native 路径与哈希、create-farm、Docs 内容，以及 Vue/Vue JSX/SDK 编译通过。首轮嵌套 pnpm 错路径失败保留在 `real-pack/`，固定本地 PATH 后 `real-pack-2/` 全绿。未执行本机全仓 ready、全平台业务测试或公开发布 |
+| 12. 审查/提交/远端 | 已实现待验证 | A/B 已本地提交并独立只读审查；固定模板/caller/trust 同步。等待最终普通推送及 exact HEAD 远端 CI，不能用旧 c3 绿色代替。用户暂停的普通 PR Changesets 失败、review/approval 等合并条件仍按实际状态保留；不合并、不发布 |
 
-本地旧 c3 checkpoint 有独立合同/native/browser记录，但不是本方案验收。全局进程列表先前被环境拒绝，不宣称无其他进程；重型任务仍需原子锁和既有协调。
+完整证据摘要：`REAL-DRY-RUN-CHECKPOINT.md`。所有本轮自有重型会话均自然结束且 owner 释放共享锁。先前全局进程列表被环境拒绝，未重新查询或声称全局无其他进程。托管身份、真实签署、跨平台完整矩阵及 registry 写入只能在相应真实流程验证，本地 dry run 不保证线上不会失败。
