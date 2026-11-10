@@ -104,3 +104,12 @@
 | PR/真实发布 | 同一Draft #2348 | 本批本地验证完成，随本提交推送同一PR；不另开PR、不处理新生产锁、不重跑或发布。新SHA远端验证不能继承旧SHA成绩 |
 
 证据目录 registry-simplification-20261110，前后benchmark.json保留真实命令启动次数与时间。该精简降低本机重复准备开销，不减少registry请求、锁ref刷新或不可变字节核验，不保证外部网络和API配额永不失败。
+
+## npm 失败诊断（2026-11-10）
+
+- 现场：main dcc560b8f6091f19d25dfc6eae8cbe536977d689；原六组证据保留。独立分支 codex/fix-npm-failure-diagnostics-20261110，不修改生产状态。
+- 已定位：run 42815731530 / attempt 1 的 publisher 129889056361 已实际调用 npm publish，非零退出后原脚本丢弃错误输出。不能认定零上传，也不能猜认证或权限根因；采样时首包不存在不等于从未尝试上传。
+- 已实现并本地验证：publish、dist-tag、受控 CLI 解析失败报告操作、受限包身份、退出码/超时及白名单 npm 错误码的固定说明。仅解析尾部64KiB并丢弃切片首行，任意子进程文本、参数、凭据、认证头和debug日志不输出；未知码明确 withheld，不自动重试。
+- 验证：原代码红例保留；最终153项Python、165项Node以及Biome/CSpell/diff通过。假凭据原文/URL编码/Base64、控制字符、超长输出、截断码、非法身份异常上下文、真实本地子进程超时/非零退出和失去响应后的原字节恢复均覆盖。证据为本地 npm-diagnostics-20261110；传输/写入是fixture，无真实发布。
+- 复用边界：同源旧run的后续attempt可以沿既有规则复用原冻结candidate、跳过重建，但仍运行旧代码，不含此诊断修复。新main run不能直接接纳旧source/producerRunId的冻结授权；本批不迁移证明、不新增恢复协议、不重跑或清锁。原1.27GB candidate未重新下载。
+- 待验：新Draft PR及其exact HEAD托管CI；真实npm错误原因与生产恢复仍未解决。用户自行合并，本批不改版本/Changesets/权限。

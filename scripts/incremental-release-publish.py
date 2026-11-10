@@ -3,6 +3,7 @@
 Commands consume original release archives and keep a durable lock through
 public consumer verification and exact tag/Release confirmation.
 """
+# cspell:words ENEEDAUTH EOTP EPUBLISHCONFLICT EPRIVATE EINVALIDPACKAGENAME EINVALIDTAGNAME EINTEGRITY EUSAGE ENOTFOUND ECONNRESET ETIMEDOUT
 # cspell:words argparse importlib npmjs urllib USERCONFIG postpublish
 import argparse
 import hashlib
@@ -32,6 +33,62 @@ consumer_bindings = load("publication_consumer_bindings", "release-consumer-bind
 check = entry.check
 ROLES = {"upload": "Publish exact independent release archives under durable lock",
          "finalize": "Finalize exact independent release and durable baseline"}
+
+
+# Match only npm's code line; never forward arbitrary child text or debug logs.
+NPM_ERRORS = {
+    'E401': 'Registry authentication rejected',
+    'ENEEDAUTH': 'Registry authentication required',
+    'E403': 'Registry denied the operation; check package access and publication policy',
+    'E404': 'Registry resource not found',
+    'EOTP': 'Registry requires a one-time password',
+    'EPUBLISHCONFLICT': 'Package version already exists',
+    'EPRIVATE': 'Package is marked private',
+    'EINVALIDPACKAGENAME': 'Invalid package name',
+    'EINVALIDTAGNAME': 'Invalid distribution tag',
+    'EINTEGRITY': 'Package integrity check failed',
+    'EUSAGE': 'CLI usage rejected',
+    'ENOTFOUND': 'Network name lookup failed',
+    'EAI_AGAIN': 'Network name lookup temporarily failed',
+    'ECONNRESET': 'Network connection reset',
+    'ETIMEDOUT': 'Network operation timed out',
+    'E429': 'Registry rate limit reached',
+    'E500': 'Registry server error',
+    'E502': 'Registry gateway error',
+    'E503': 'Registry unavailable',
+}
+
+
+def npm_failure(operation, row, *, code=None, timed_out=False, stdout=None, stderr=None):
+    if operation not in ['publish', 'dist-tag', 'resolve-cli']: operation = 'unknown'
+    identity = 'controlled-cli'
+    if row is not None:
+        name, version = row.get('name'), row.get('version')
+        valid = (isinstance(name, str) and len(name) <= 214
+              and re.fullmatch(r'(?:@[a-z0-9._-]+/)?[a-z0-9._-]+', name)
+              and isinstance(version, str) and re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version)
+              and len(version) <= 60)
+        identity = name + '@' + version if valid else 'invalid-identity'
+    known = []
+    for output in [stderr, stdout]:
+        if not isinstance(output, (str, bytes)):
+            continue
+        text = output[-65536:]
+        if len(output) > 65536:
+            # The first retained line may start midway through arbitrary text.
+            # Discard it rather than interpreting a sliced suffix as a code.
+            newline = b'\n' if isinstance(text, bytes) else '\n'
+            text = text.partition(newline)[2]
+        if isinstance(text, bytes): text = text.decode('utf-8', errors='replace')
+        # Same ANSI removal boundary as v2-release-diagnostics; unlike a log
+        # tail, only exact allowlisted codes survive this parser.
+        text = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', text)
+        for value in re.findall(r'^npm (?:ERR!|error) code ([A-Z][A-Z0-9_]{1,31})\r?$', text, re.M):
+            if value in NPM_ERRORS and value not in known: known.append(value)
+    status = 'timeout' if timed_out else 'exit=' + (str(code) if type(code) is int else 'unavailable')
+    detail = '; '.join(value + ': ' + NPM_ERRORS[value] for value in known[:3]) or 'No recognized npm error code; raw output withheld'
+    return ValueError('npm operation=' + operation + ' package=' + identity + ' ' + status + '; ' + detail
+                      + '; outcome uncertain: inspect independent registry state before resuming')
 
 
 class GitHubWriter:
@@ -100,6 +157,20 @@ class RegistryWriter:
             self._scratch.cleanup()
             self._scratch = None
 
+    def npm_command(self, operation, row, argv, **options):
+        try:
+            result = self.command(argv, **options)
+        except subprocess.TimeoutExpired as error:
+            raise npm_failure(operation, row, timed_out=True, stdout=error.output, stderr=error.stderr) from None
+        except subprocess.CalledProcessError as error:
+            raise npm_failure(operation, row, code=error.returncode, stdout=error.stdout, stderr=error.stderr) from None
+        except OSError:
+            raise npm_failure(operation, row) from None
+        if result.returncode != 0:
+            raise npm_failure(operation, row, code=result.returncode,
+                              stdout=getattr(result, 'stdout', None), stderr=getattr(result, 'stderr', None)) from None
+        return result
+
     def npm(self):
         """Prepare the controlled CLI and token-free config once per writer."""
         check(not self._closed, 'Registry writer is closed')
@@ -107,7 +178,7 @@ class RegistryWriter:
             token = self.environment.get('NPM_TOKEN')
             check(bool(token), 'Existing npm publication credential missing')
             probe = "import {resolveNpmCli} from './scripts/v2-npm-cli.mjs';console.log(resolveNpmCli());"
-            result = self.command([self.node, '--input-type=module', '-e', probe],
+            result = self.npm_command('resolve-cli', None, [self.node, '--input-type=module', '-e', probe],
                                   capture_output=True, text=True, timeout=15, check=True)
             cli = result.stdout.strip()
             check(Path(cli).is_absolute() and Path(cli).is_file(), 'Controlled npm CLI missing')
@@ -210,9 +281,8 @@ class RegistryWriter:
                 raise ValueError("Cargo publication HTTP " + str(error.code)) from None
         else:
             node, cli, env = self.npm()
-            result = self.command([node, cli, "publish", str((self.directory / row["archive"]).resolve()), "--ignore-scripts", "--access", "public",
+            self.npm_command("publish", row, [node, cli, "publish", str((self.directory / row["archive"]).resolve()), "--ignore-scripts", "--access", "public",
                                    "--tag", "farm-release-" + row["version"], "--registry=https://registry.npmjs.org"], env=env, capture_output=True, timeout=120)
-            check(result.returncode == 0, "npm publication failed; inspect independent registry state before resuming")
 
     def confirm(self, row):
         """Repair latest after an uncertain upload without republishing bytes."""
@@ -227,9 +297,8 @@ class RegistryWriter:
         before = self.latest_order(row)
         if before is not None and before >= 0:
             return
-        result = self.command([node, cli, 'dist-tag', 'add', row['name'] + '@' + row['version'], 'latest', '--registry=https://registry.npmjs.org'],
+        self.npm_command('dist-tag', row, [node, cli, 'dist-tag', 'add', row['name'] + '@' + row['version'], 'latest', '--registry=https://registry.npmjs.org'],
                               env=env, capture_output=True, timeout=120)
-        check(result.returncode == 0, 'npm latest update failed; read back before retry')
         observed = self.latest_order(row)
         check(observed is not None and observed >= 0, 'Registry latest read-back differs')
 

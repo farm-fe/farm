@@ -1,4 +1,4 @@
-# cspell:words readback USERCONFIG
+# cspell:words readback USERCONFIG ENEEDAUTH EOTP mnpm
 """Pure HTTP/Release finalization contracts; no real requests or registry writes."""
 # cspell:words importlib stopall finalizer postpublish nonpublishing nonbaseline
 import copy
@@ -418,10 +418,109 @@ class Contracts(unittest.TestCase):
             self.assertEqual(calls.call_count, 2)
         self.assertEqual(reader.json.call_count, 3)
 
+    def test_npm_failure_diagnostics_are_bounded_and_do_not_repeat_writes(self):
+        import traceback
+        secret = 'fake-secret:/+credential'
+        variants = [secret, urllib.parse.quote(secret, safe=''), base64.b64encode(secret.encode()).decode()]
+        output = ('\n'.join(variants) + '\nAuthorization: Bearer hidden\n'
+                  + '\x1b[31m::error::injected\x00' + 'x' * 100000 + '\nnpm error code E403\n').encode()
+        row = {'kind': 'npm', 'name': '@farmfe/cli', 'version': '2.0.0', 'archive': 'a.tgz',
+               'archiveSha256': hashlib.sha256(b'frozen').hexdigest()}
+        for operation in ['publish', 'dist-tag', 'resolve-cli']:
+            for timeout in [False, True]:
+                with self.subTest(operation=operation, timeout=timeout):
+                    writer, _ = self.registry([], [])
+                    writer.environment['NPM_TOKEN'] = secret
+                    failure = module.subprocess.TimeoutExpired(['secret-argv', secret], 120, output=output, stderr=output)
+                    command = mock.Mock(side_effect=failure if timeout else None,
+                                        return_value=SimpleNamespace(returncode=1, stdout=output, stderr=output))
+                    writer.command = command
+                    writer.latest_order = mock.Mock(return_value=-1)
+                    if operation != 'resolve-cli': writer._npm = ('node', '/fixed/npm', {})
+                    with self.assertRaises(ValueError) as raised:
+                        with writer:
+                            if operation == 'publish': writer.publish(row, b'frozen')
+                            elif operation == 'dist-tag': writer.confirm(row)
+                            else: writer.npm()
+                    diagnostic = ''.join(traceback.format_exception(raised.exception))
+                    self.assertIn('operation=' + operation, diagnostic)
+                    self.assertIn('timeout' if timeout else 'exit=1', diagnostic)
+                    if operation != 'resolve-cli': self.assertIn('@farmfe/cli@2.0.0', diagnostic)
+                    if not timeout: self.assertIn('E403', diagnostic)
+                    for value in variants + ['secret-argv', 'hidden', 'injected', 'Authorization']:
+                        self.assertNotIn(value, diagnostic)
+                    self.assertLess(len(str(raised.exception)), 700)
+                    self.assertEqual(command.call_count, 1)
+                    self.assertTrue(writer._closed)
+
+    def test_npm_diagnostic_parser_rejects_arbitrary_and_truncated_codes(self):
+        row = {'name': 'a', 'version': '2.0.0'}
+        for output in ['npm error code SECRET_VALUE', 'npm error code E403 secret',
+                       'npm error code E403\x00',
+                       'x' * 70000 + 'npm error code E403\n' + '\n' * (65536 - len('npm error code E403\n'))]:
+            error = module.npm_failure('publish', row, code=1, stderr=output)
+            self.assertIn('No recognized npm error code', str(error))
+            self.assertNotIn('SECRET_VALUE', str(error))
+        self.assertIn('E403:', str(module.npm_failure('publish', row, code=1,
+                      stderr='x' * 100000 + '\nnpm error code E403\n')))
+        error = module.npm_failure('publish', row, code=1,
+                                  stderr='\x1b[31mnpm ERR! code EOTP\x1b[0m\r\n')
+        self.assertIn('EOTP: Registry requires a one-time password', str(error))
+        self.assertIn('invalid-identity', str(module.npm_failure(
+            'publish', {'name': 'a\n::error::secret', 'version': '2.0.0'})))
+
+    def test_npm_cli_exceptions_do_not_print_arguments_or_environment(self):
+        import traceback
+        for error in [module.subprocess.CalledProcessError(2, ['secret-cli', 'secret-token'],
+                       output=b'secret-token', stderr=b'npm error code ENEEDAUTH\nsecret-token'),
+                      OSError('secret-path secret-token')]:
+            writer, _ = self.registry([], [])
+            writer.environment['NPM_TOKEN'] = 'secret-token'
+            writer.command = mock.Mock(side_effect=error)
+            with self.assertRaises(ValueError) as raised:
+                with writer: writer.npm()
+            diagnostic = ''.join(traceback.format_exception(raised.exception))
+            self.assertIn('operation=resolve-cli', diagnostic)
+            self.assertNotIn('secret-', diagnostic)
+            self.assertEqual(writer.command.call_count, 1)
+
+    def test_invalid_diagnostic_identity_cannot_reveal_exception_context(self):
+        import traceback
+        for row in [{'name': 'Uppercase', 'version': '2.0.0'},
+                    {'name': 'a' * 215, 'version': '2.0.0'},
+                    {'name': 'a\nsecret-token', 'version': None}]:
+            writer, _ = self.registry([], [])
+            writer.command = mock.Mock(side_effect=module.subprocess.CalledProcessError(
+                1, ['secret-token'], stderr=b'secret-token'))
+            with self.assertRaises(ValueError) as raised:
+                writer.npm_command('publish', row, ['unused'])
+            diagnostic = ''.join(traceback.format_exception(raised.exception))
+            self.assertIn('invalid-identity', diagnostic)
+            self.assertNotIn('secret-token', diagnostic)
+            self.assertEqual(writer.command.call_count, 1)
+
+    def test_real_child_exit_and_timeout_are_sanitized(self):
+        import sys
+        import traceback
+        row = {'name': 'a', 'version': '2.0.0'}
+        for timeout in [False, True]:
+            writer, _ = self.registry([], [])
+            source = "import sys,time;sys.stderr.write('npm error code E403\\nsecret-fixture\\n');sys.stderr.flush();"
+            source += 'time.sleep(5)' if timeout else 'sys.exit(7)'
+            writer.command = mock.Mock(wraps=module.subprocess.run)
+            with self.assertRaises(ValueError) as raised:
+                writer.npm_command('publish', row, [sys.executable, '-c', source],
+                                   capture_output=True, timeout=0.2 if timeout else 5)
+            diagnostic = ''.join(traceback.format_exception(raised.exception))
+            self.assertIn('timeout' if timeout else 'exit=7', diagnostic)
+            self.assertIn('E403:', diagnostic)
+            self.assertNotIn('secret-fixture', diagnostic)
+            self.assertEqual(writer.command.call_count, 1)
+
     def test_failed_config_preparation_cleans_owned_directory(self):
         writer, _ = self.registry([], [])
         writer.environment['NPM_TOKEN'] = 'fixture-only'
-        writer.command = mock.Mock(return_value=SimpleNamespace(stdout=str(Path(__file__).resolve())))
+        writer.command = mock.Mock(return_value=SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0))
         actual = tempfile.TemporaryDirectory; paths = []
         def temporary(**options):
             directory = actual(**options); paths.append(Path(directory.name)); return directory
@@ -468,7 +567,7 @@ class Contracts(unittest.TestCase):
                                        {'name': 'a', 'version': '2.0.0-rc.1'},
                                        {'name': 'a', 'version': '2.0.0'}], [])
         writer.environment['NPM_TOKEN'] = 'fixture-only'
-        writer.command = mock.Mock(side_effect=[mock.Mock(stdout=str(Path(__file__).resolve())), mock.Mock(returncode=0)])
+        writer.command = mock.Mock(side_effect=[mock.Mock(stdout=str(Path(__file__).resolve()), returncode=0), mock.Mock(returncode=0)])
         writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
         self.assertEqual(writer.command.call_count, 2)
         self.assertIn('dist-tag', writer.command.call_args.args[0])
@@ -490,7 +589,7 @@ class Contracts(unittest.TestCase):
         writer, reader = self.registry([{'name': 'a', 'version': '2.0.0-rc.1'},
                                        {'name': 'a', 'version': '2.1.0-rc.1'}], [])
         writer.environment['NPM_TOKEN'] = 'fixture-only'
-        writer.command = mock.Mock(return_value=mock.Mock(stdout=str(Path(__file__).resolve())))
+        writer.command = mock.Mock(return_value=mock.Mock(stdout=str(Path(__file__).resolve()), returncode=0))
         writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
         self.assertEqual(writer.command.call_count, 1)  # resolve CLI only; no dist-tag mutation
         self.assertEqual(reader.json.call_count, 2)
@@ -502,7 +601,7 @@ class Contracts(unittest.TestCase):
                                                {'name': 'a', 'version': '1.0.0'},
                                                {'name': 'a', 'version': version}], [])
                 writer.environment['NPM_TOKEN'] = 'fixture-only'
-                writer.command = mock.Mock(side_effect=[mock.Mock(stdout=str(Path(__file__).resolve())), mock.Mock(returncode=0)])
+                writer.command = mock.Mock(side_effect=[mock.Mock(stdout=str(Path(__file__).resolve()), returncode=0), mock.Mock(returncode=0)])
                 with self.assertRaises(ValueError):
                     writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
 
@@ -857,7 +956,7 @@ class LatestHTTPContracts(unittest.TestCase):
         store, manifest, bodies, registry, writer, runner = self.fixture()
         first_name = manifest['packages'][0]['name']; registry.lose = first_name
         first = runner(1); first.acquire()
-        with self.assertRaisesRegex(OSError, 'response lost'):
+        with self.assertRaisesRegex(ValueError, 'outcome uncertain'):
             first.upload(lambda row: bodies[row['name']], writer)
         self.assertEqual(registry.writes, [first_name])
         self.assertEqual(store.read()[1]['active']['packages']['npm:' + first_name], 'upload-started')
