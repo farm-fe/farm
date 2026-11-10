@@ -289,6 +289,28 @@ def actions_transport(environment=os.environ):
     return evidence.transport_module.GitHubReadOnly(repository, environment.get("GH_TOKEN", ""), environment=environment, allow_archive=True)
 
 
+def require_idle_publication(transport):
+    """Early build admission only; never grants publication or recovery rights."""
+    reader = load('build_admission_state', 'incremental-release-baseline.py')
+    revision, saved = reader.ReleaseBaselineReader(transport, None).state()
+    check('active' in saved and 'baseline' in saved, 'Invalid publication state')
+    active = saved['active']
+    if active is not None:
+        state = load('build_admission_manifest', 'incremental-publication-state.py')
+        check(isinstance(active, dict), 'Invalid active publication')
+        manifest, owner = active.get('manifest', {}), active.get('owner', {})
+        check(state.frozen_manifest(manifest) == active.get('transaction'), 'Active publication manifest differs')
+        run, attempt = owner.get('runId'), owner.get('attempt')
+        check(type(run) is int and run > 0 and type(attempt) is int and attempt > 0
+              and owner.get('sourceSHA') == manifest.get('sourceSHA')
+              and owner.get('producerRunId') == manifest.get('producerRunId')
+              and active.get('phase') in ['uploading', 'public-acceptance', 'release-finalization'],
+              'Invalid active publication owner')
+        raise ValueError('publication-recovery-required: original run=' + str(run) + ' attempt=' + str(attempt)
+                         + '; new release builds stopped; no lock or registry changes')
+    return saved
+
+
 def main():
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
@@ -298,10 +320,9 @@ def main():
     if args.command == "plan":
         source = evidence.source_reader(args.source)
         check(chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Checkout and release plan source differ")
+        state = require_idle_publication(actions_transport())
         selector=load('plan_release_registry','release-registry-selection.py')
         snapshot=selector.collect(source,'npm',selector.Registry().lookup)
-        reader=load('registry_plan_publication_fence','incremental-release-baseline.py')
-        _, state=reader.ReleaseBaselineReader(actions_transport(),None).state()
         snapshot['stateBaseline']=state['baseline']
         result = source_plan(source,registry_snapshot=snapshot)
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

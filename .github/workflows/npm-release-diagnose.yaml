@@ -1,0 +1,25 @@
+name: Read-only npm release diagnostic
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    if: github.repository == 'farm-fe/farm' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Check authentication and fixed public target without publishing
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: python -B scripts/npm-release-diagnose.py
