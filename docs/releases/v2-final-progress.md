@@ -68,8 +68,8 @@
 | 现场与生产只读核查 | 已实测 | 原 Mac tracked 干净，六组旧证据保留。原锁 active owner=42766527296/1、phase=uploading、packages 为空，事务 2f86b7aa40e4683b30405d79c2c533f2140cbc78b3ba702b60f4b3ff80ad56d6；未修改锁或产物 |
 | SemVer 修复 | 局部实测 | lookup/confirm 共用完整 SemVer 比较，目标仍要求稳定精确版本。使用已验证 Node 捆绑 npm 的 SemVer，不要求 publisher 安装工作区依赖；临时发布 tag 保持不变 |
 | 回归与 dry run | 本地已实测 | 原 nightly/RC 在两个入口的红例已保留；最终 130 项 Python（含 45 项 publisher、4 项 HTTP dry run）、165 项 Node 合同全过。297 包真实只读快照预检重放全过。HTTP 读取/字节验证、生产状态机与比较器为真实代码；Git/registry 写入仅内存模拟，归档为明确 fixture |
-| 生产恢复方案 | 待单独批准 | 修复合并后、新 main publisher 尚未启动时，重新核 owner 终态/未到上传循环、297 目标仍不存在、锁 revision/fence/transaction 未变；仅以一次非强推 CAS 将 active 置空，其他字段和旧 Git 历史/冻结 artifacts 保留。不调用不符原因的 reject_unwritten，不自动接管/重跑；当前未执行 |
+| 生产恢复方案 | 待单独批准 | 修复合并后、新 main publisher 尚未启动时，重新核 owner 终态/未到上传循环、297 目标仍不存在、锁 revision/fence/transaction 未变；仅以现有 GitRefStore.swap 的一次非强推 CAS 将 active 置空，并按既有机制生成新 operationId；baseline/completed 和旧 Git 历史/冻结 artifacts 保留。不调用不符原因的 reject_unwritten，不自动接管/重跑；当前未执行 |
 | 完整合同/审查 | 本地已实测 | 独立只读审查无阻塞；14 条最终命令全过，Biome 493 文件、改动文件 CSpell/diff 检查通过。初轮旧 Python/非标准 Node、loopback 沙箱、失效 pnpm 环境错误均保留；以固定 Node 22.20.0、Python 3.13、pnpm 9.4.0 复验。本地证据目录 prerelease-latest-20261110/final |
-| 新 PR/远端 | 本地已验收，待远端 | 新分支 codex/fix-release-prerelease-latest-20261110，准备提交普通推送并开 Draft PR；未合并、未发布、不改版本/Changesets/权限。新 HEAD hosted CI 与真实发布未验 |
+| 新 PR/远端 | 已开 PR，远端验证中 | [Draft #2347](https://github.com/farm-fe/farm/pull/2347)，分支 codex/fix-release-prerelease-latest-20261110。源码修复提交 2b283aeb6f10354c419ff9ca861a20f7990426b1 已普通推送并独立 API 核对，本文补记仅更新状态。未合并、未发布、不改版本/Changesets/权限；最终 HEAD hosted CI 与真实发布未验 |
 
 竞态限制：写 tag 前重读、已观察到更高版本则不写、写后验证均保留。npm dist-tag 的读后写不具备条件 CAS，不能保证任意外部维护者并发下绝不瞬时降 tag；本批不改变发布协议或引入新权限。生产快照 297 exact-version 均为 404（41 prerelease latest / 208 stable / 48 无 latest）仅代表采样时刻，未来操作前必须重查；1.27 GB 原 candidates 未重新下载复验，artifact 元数据不等于内部字节/签名复验。
