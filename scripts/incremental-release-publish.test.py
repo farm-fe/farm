@@ -1,4 +1,4 @@
-# cspell:words readback
+# cspell:words readback USERCONFIG
 """Pure HTTP/Release finalization contracts; no real requests or registry writes."""
 # cspell:words importlib stopall finalizer postpublish nonpublishing nonbaseline
 import copy
@@ -203,6 +203,7 @@ class Contracts(unittest.TestCase):
         reader=mock.MagicMock();reader.json.side_effect=metadata;reader.archive.side_effect=bodies
         with mock.patch.object(module.entry.evidence.registry_module,'RegistryReadOnly',return_value=reader):
             writer=module.RegistryWriter({},'.')
+        self.addCleanup(writer.close)
         return writer,reader
 
     def metadata(self, checksum):
@@ -388,6 +389,79 @@ class Contracts(unittest.TestCase):
                 missing = urllib.error.HTTPError('https://registry.npmjs.org/a/2.0.0', 404, 'missing', {}, None)
                 writer, reader = self.registry([missing, {'name': 'a', 'version': version}], [])
                 self.assertIsNone(writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0'}))
+
+    def test_comparison_cache_keys_exact_inputs_but_always_reads_registry(self):
+        writer, reader = self.registry([{'name': 'a', 'version': v} for v in
+            ['1.0.0-rc.1', '1.0.0-rc.1', '3.0.0-rc.1', '1.0.0-rc.1', 'bad', 'bad']], [])
+        actual = module.subprocess.run
+        with mock.patch.object(module.subprocess, 'run', wraps=actual) as calls:
+            row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0'}
+            self.assertEqual(writer.latest_order(row), -1)
+            self.assertEqual(writer.latest_order(row), -1)
+            self.assertEqual(calls.call_count, 1)
+            self.assertEqual(writer.latest_order(row), 1)
+            self.assertEqual(writer.latest_order({**row, 'version': '1.0.0'}), -1)
+            for _ in range(2):
+                with self.assertRaisesRegex(ValueError, 'SemVer'): writer.latest_order(row)
+            self.assertEqual(calls.call_count, 5)  # bad results are never cached
+        self.assertEqual(reader.json.call_count, 6)
+
+    def test_cached_missing_latest_still_fetches_and_detects_new_version(self):
+        missing = urllib.error.HTTPError('https://registry.npmjs.org/a/latest', 404, 'absent', {}, None)
+        writer, reader = self.registry([missing, missing, {'name': 'a', 'version': '3.0.0-rc.1'}], [])
+        actual = module.subprocess.run
+        with mock.patch.object(module.subprocess, 'run', wraps=actual) as calls:
+            row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0'}
+            self.assertIsNone(writer.latest_order(row)); self.assertIsNone(writer.latest_order(row))
+            self.assertEqual(calls.call_count, 1)
+            self.assertEqual(writer.latest_order(row), 1)
+            self.assertEqual(calls.call_count, 2)
+        self.assertEqual(reader.json.call_count, 3)
+
+    def test_failed_config_preparation_cleans_owned_directory(self):
+        writer, _ = self.registry([], [])
+        writer.environment['NPM_TOKEN'] = 'fixture-only'
+        writer.command = mock.Mock(return_value=SimpleNamespace(stdout=str(Path(__file__).resolve())))
+        actual = tempfile.TemporaryDirectory; paths = []
+        def temporary(**options):
+            directory = actual(**options); paths.append(Path(directory.name)); return directory
+        with mock.patch.object(module.tempfile, 'TemporaryDirectory', side_effect=temporary):
+            with mock.patch.object(Path, 'write_text', side_effect=OSError('fixture config failure')):
+                with self.assertRaisesRegex(OSError, 'config failure'):
+                    with writer: writer.npm()
+        self.assertEqual(len(paths), 1)
+        self.assertFalse(paths[0].exists())
+
+    def test_npm_preparation_is_reused_and_cleaned_on_success_and_failure(self):
+        for fail in [False, True]:
+            writer, _ = self.registry([], [])
+            writer.environment.update(NPM_TOKEN='fixture-secret', GH_TOKEN='github-fixture')
+            commands = []; paths = []
+            def command(argv, **options):
+                commands.append(argv)
+                if '--input-type=module' in argv:
+                    return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
+                config = Path(options['env']['NPM_CONFIG_USERCONFIG']); paths.append(config)
+                self.assertNotIn('fixture-secret', config.read_text())
+                self.assertIn('${NODE_AUTH_TOKEN}', config.read_text())
+                self.assertNotIn('GH_TOKEN', options['env'])
+                self.assertNotIn('NPM_TOKEN', options['env'])
+                self.assertEqual(options['env']['NODE_AUTH_TOKEN'], 'fixture-secret')
+                return SimpleNamespace(returncode=1 if fail else 0)
+            writer.command = command
+            body = b'frozen'
+            row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0', 'archive': 'a.tgz',
+                   'archiveSha256': hashlib.sha256(body).hexdigest()}
+            try:
+                with writer:
+                    writer.publish(row, body)
+                    writer.publish(row, body)
+            except ValueError:
+                if not fail: raise
+            self.assertEqual(sum('--input-type=module' in argv for argv in commands), 1)
+            self.assertEqual(len(set(paths)), 1)
+            self.assertTrue(all(not path.parent.exists() for path in paths))
+            writer.close()
 
     def test_prerelease_confirmation_promotes_without_republishing(self):
         writer, reader = self.registry([{'name': 'a', 'version': '2.0.0-rc.1'},
@@ -773,6 +847,7 @@ class LatestHTTPContracts(unittest.TestCase):
                 registry.latest[name] = version; registry.tags.append(name)
             return SimpleNamespace(returncode=0)
         writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'NPM_TOKEN': 'fixture-only'}, root, command)
+        self.addCleanup(writer.close)
         writer.reader = module.entry.evidence.registry_module.RegistryReadOnly(environment={'GITHUB_ACTIONS': 'true'}, opener=Relay())
         def runner(attempt):
             return module.state.Publication(store, manifest, {'runId': 7, 'attempt': attempt}, lambda value: True)
@@ -847,7 +922,7 @@ class FullInventoryBudgetContracts(unittest.TestCase):
     def test_297_package_publisher_preserves_preflight_fences_and_stage_budget(self):
         shared = module.load('budget_inventory_state_fixture', 'incremental-publication-state.test.py')
         api, store, manifest, _, _ = shared.fixture()
-        now = [0.0]; reads = [0]; values = {}; writes = []; requests = []
+        now = [0.0]; reads = [0]; values = {}; writes = []; requests = []; latest = {}
         original_read = store.read
         def read():
             now[0] += 1; reads[0] += 1  # external ownership work, not registry I/O
@@ -862,7 +937,7 @@ class FullInventoryBudgetContracts(unittest.TestCase):
                 self_url = urllib.parse.urlsplit(request.full_url)
                 name, selector = self_url.path.strip('/').split('/')
                 requests.append((name, selector)); now[0] += 0.1
-                if selector == 'latest': value = {'name': name, 'version': '2.0.0'}
+                if selector == 'latest': value = {'name': name, 'version': latest.get(name, '2.0.0-rc.1')}
                 elif name not in values:
                     raise urllib.error.HTTPError(request.full_url, 404, 'absent', {}, None)
                 elif selector == 'archive.tgz': return io.BytesIO(values[name])
@@ -877,6 +952,10 @@ class FullInventoryBudgetContracts(unittest.TestCase):
             def command(argv, **options):
                 if '--input-type=module' in argv:
                     return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
+                if 'dist-tag' in argv:
+                    name, version = argv[argv.index('add') + 1].rsplit('@', 1)
+                    latest[name] = version
+                    return SimpleNamespace(returncode=0)
                 self.assertIn('publish', argv)
                 self.assertGreaterEqual(len(requests), 594)  # entire first preflight precedes every write
                 row = manifest['packages'][int(Path(argv[argv.index('publish') + 1]).stem)]
@@ -884,6 +963,7 @@ class FullInventoryBudgetContracts(unittest.TestCase):
                 values[row['name']] = body; writes.append(row['name'])
                 return SimpleNamespace(returncode=0)
             writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'NPM_TOKEN': 'fixture-only'}, root, command)
+            self.addCleanup(writer.close)
             writer.reader = module.entry.evidence.registry_module.RegistryReadOnly(
                 {'GITHUB_ACTIONS': 'true'}, Opener(), lambda: now[0])
             now[0] = 1000  # completed prior preparation cannot consume a later stage
@@ -904,6 +984,8 @@ class FullInventoryBudgetContracts(unittest.TestCase):
             self.assertEqual(set(original_read()[1]['active']['packages'].values()), {'registry-confirmed'})
             self.assertGreater(reads[0], 297)
             self.assertEqual(writer.reader.total_bytes, 297 * len(body))
+            self.assertEqual(len(latest), 297)
+            if hasattr(self, 'checkpoint'): self.checkpoint('fresh', reads[0], len(requests))
             # Reuse the same reader: cumulative bytes persist, but a new bounded
             # verification stage is not aged by an unrelated wait.
             now[0] += 1000
@@ -911,6 +993,7 @@ class FullInventoryBudgetContracts(unittest.TestCase):
                 runner.upload(lambda row: body, writer)
             self.assertEqual(len(writes), 297)
             self.assertEqual(writer.reader.total_bytes, 3 * 297 * len(body))
+            if hasattr(self, 'checkpoint'): self.checkpoint('reuse', reads[0], len(requests))
 
 
 if __name__ == '__main__':
