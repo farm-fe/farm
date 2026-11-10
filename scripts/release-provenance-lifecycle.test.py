@@ -20,12 +20,12 @@ class Contracts(unittest.TestCase):
             self.assertEqual(expected['attempt'],2)
             return {cell:{'offlineOnly':True} for cell in expected['cells']}
         with self.assertRaisesRegex(ValueError,'current authoritative attempt'):
-            m.verified_run(api,old,source,'public',verify=verified,signer_sha='c'*40)
+            m.verified_run(api,old,source,'public',verify=verified)
         # Re-executing the public signer and its dependent finalize job creates the
         # new attempt's actual envelope. This fixture models that transport only.
         current=copy.deepcopy(state['latest'])
         state['artifact']['name']='farm-release-bindings-public-42-2'
-        expected,rows=m.verified_run(api,current,source,'public',verify=verified,signer_sha='c'*40)
+        expected,rows=m.verified_run(api,current,source,'public',verify=verified)
         self.assertEqual(expected['attempt'],2)
         self.assertEqual(len(rows),7)
         self.assertNotIn('frozen',rows)

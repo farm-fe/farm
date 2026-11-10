@@ -20,6 +20,24 @@ def fixture():
     return body,[{'verificationResult':{'signature':{'certificate':cert},'statement':statement}}],e
 
 class Contracts(unittest.TestCase):
+    def test_source_bound_uri_requires_exact_source_digest_without_changing_fixed_policy(self):
+        body, verified, expected = fixture()
+        fixed = m.certificate_identity(expected)
+        self.assertTrue(fixed.endswith('@' + expected['signerSHA']))
+        relative = {**expected, 'signerSHA': expected['sourceSHA'], 'signerRef': 'refs/heads/main'}
+        certificate = verified[0]['verificationResult']['signature']['certificate']
+        certificate.update(subjectAlternativeName=m.certificate_identity(relative),
+                           buildSignerURI=m.certificate_identity(relative), buildSignerDigest=relative['sourceSHA'])
+        self.assertEqual(m.validate_verified_manifest(body, verified, relative)['planner']['originAttempt'], 1)
+        # Neither the old fixed digest nor another source is a relative signer.
+        for value in [expected['signerSHA'], 'f' * 40]:
+            certificate['buildSignerDigest'] = value
+            with self.assertRaises(ValueError): m.validate_verified_manifest(body, verified, relative)
+        with self.assertRaises(ValueError):
+            m.certificate_identity({**expected, 'signerRef': 'refs/heads/main'})
+        with self.assertRaises(ValueError):
+            m.certificate_identity({**relative, 'signerRef': 'refs/heads/other'})
+
     def test_valid_policy_preserves_origin_without_clock_claims(self):
         body,verified,e=fixture();self.assertEqual(m.validate_verified_manifest(body,verified,e)['planner']['originAttempt'],1)
     def test_each_certificate_field_missing_or_wrong_rejects(self):
@@ -126,6 +144,9 @@ class Contracts(unittest.TestCase):
             def verify(policy):
                 return m.verify_with_pinned_cli(cli, hashlib.sha256(binary).hexdigest(), manifest, bundle, policy)
             self.assertEqual(verify(expected)['cargo']['artifactId'], 13724513300)
+            # The real old pinned proof is valid, but is not a same-source proof.
+            with self.assertRaisesRegex(ValueError, 'Cryptographic'):
+                verify({**expected, 'signerSHA': expected['sourceSHA'], 'signerRef': 'refs/heads/main'})
             for field, value in [('sourceSHA', '0' * 40), ('signerSHA', '0' * 40),
                                  ('signerWorkflow', '.github/workflows/other.yaml')]:
                 with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'Cryptographic'):

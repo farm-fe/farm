@@ -1,35 +1,36 @@
 // Production workflow contracts; no hosted execution or signing is simulated here.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import YAML from 'yaml';
 const read = name => fs.readFileSync(name, 'utf8');
 const workflow = name => YAML.parse(read(`.github/workflows/${name}.yaml`));
-const pin = JSON.parse(read('scripts/release-provenance-trust.json')).signerSHA;
 const needs = job => typeof job.needs === 'string' ? [job.needs] : job.needs || [];
 
-test('each production caller is byte-exact to its immutable reviewed signer template', () => {
-  assert.match(pin, /^[a-f0-9]{40}$/);
+test('same-source release callers match their exact checkout templates without revision substitution', () => {
   for (const scope of ['frozen', 'registry', 'native', 'cargo']) {
     const root = `scripts/release-provenance-templates/${scope}`;
-    const index = JSON.parse(execFileSync('git', ['show', `${pin}:${root}/index.json`], { encoding: 'utf8' }));
+    const index = JSON.parse(read(`${root}/index.json`));
     for (const name of index) {
-      const template = execFileSync('git', ['show', `${pin}:${root}/${name}`], { encoding: 'utf8' });
-      assert.equal(read(name), template.replace('__REVIEWED_SIGNER_REVISION__', pin), name);
+      const template = read(`${root}/${name}`);
+      assert.ok(!template.includes('__REVIEWED_SIGNER_REVISION__'));
+      assert.equal(read(name), template, name);
     }
   }
   assert.equal(workflow('release-proof-call').jobs.sign.uses,
-    `farm-fe/farm/.github/workflows/release-provenance-signer.yaml@${pin}`);
+    './.github/workflows/release-provenance-signer.yaml');
+  assert.equal(fs.existsSync('scripts/release-provenance-trust.json'), false);
 });
 
-test('the immutable signer uses the same corrected verifier as release consumers', () => {
-  // Cargo restore verifies its original proof inside the pinned signer checkout.
-  // Updating only the consumer would leave that path on the rejected CLI flags.
-  for (const file of ['ci-attested-bindings.py', 'ci-pinned-attestation-cli.py', 'release-provenance.py']) {
-    assert.equal(execFileSync('git', ['show', `${pin}:scripts/${file}`], { encoding: 'utf8' }),
-      read(`scripts/${file}`), file);
-  }
+test('the relative signer checks out its exact job source and exposes both authenticated identities', () => {
+  const steps = workflow('release-provenance-signer').jobs.sign.steps;
+  const checkout = steps.find(step => step.uses?.startsWith('actions/checkout@'));
+  assert.equal(checkout.with.ref, '${{ job.workflow_sha }}');
+  assert.equal(checkout.with.repository, 'farm-fe/farm');
+  assert.equal(checkout.with['persist-credentials'], false);
+  const prepare = steps.find(step => step.run === 'python3 -B scripts/release-provenance.py');
+  assert.equal(prepare.env.SIGNER_WORKFLOW_SHA, '${{ job.workflow_sha }}');
+  assert.equal(prepare.env.SIGNER_WORKFLOW_REF, '${{ job.workflow_ref }}');
 });
 
 test('nested signer permissions and events stay within the approved main-push scope', () => {
@@ -105,4 +106,35 @@ test('each native signer binds one fixed ABI upload without a matrix output merg
   assert.equal(parents.length, 2);
   assert.deepEqual(parents.map(job => job.strategy.matrix.abi.length).sort(), [3,6]);
   for (const job of parents) assert.equal(job.strategy['fail-fast'], false);
+});
+
+// Local model of the final YAML conditions; actual Actions parsing is separate.
+// Feature dispatch is allowed only as an all-skipped, non-publishing probe.
+test('feature dispatch with publish false and empty producer skips every release job', () => {
+  const doc = workflow('incremental-release');
+  assert.deepEqual(doc.concurrency, { group: 'farm-independent-release', 'cancel-in-progress': false, queue: 'max' });
+  const results = {};
+  function evaluate(job) {
+    const dependencies = needs(job);
+    if (!/always\(\)|cancelled\(\)|success\(\)|failure\(\)/.test(job.if || '') &&
+        dependencies.some(name => results[name] !== 'success')) return false;
+    const expression = (job.if || 'true').replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+      .replace(/!cancelled\(\)|always\(\)/g, 'true')
+      .replace(/needs\.([\w-]+)\.result/g, (_, name) => JSON.stringify(results[name] || 'skipped'))
+      .replace(/needs\.[\w-]+\.outputs\.[\w-]+/g, '""')
+      .replace(/github\.ref/g, JSON.stringify('refs/heads/codex/fix-release-signer-relative-20261110'))
+      .replace(/github\.event_name/g, JSON.stringify('workflow_dispatch'))
+      .replace(/github\.repository/g, JSON.stringify('farm-fe/farm'))
+      .replace(/inputs\.publish/g, 'false').replace(/inputs\.producer_run/g, '""');
+    assert.match(expression, /^[\s\w'"!&|=()./-]+$/);
+    return Function(`return (${expression})`)();
+  }
+  function visit(name) {
+    if (name in results) return;
+    for (const dependency of needs(doc.jobs[name])) visit(dependency);
+    results[name] = evaluate(doc.jobs[name]) ? 'would-run' : 'skipped';
+    assert.equal(results[name], 'skipped', name);
+  }
+  for (const name of Object.keys(doc.jobs)) visit(name);
+  assert.equal(Object.keys(results).length, Object.keys(doc.jobs).length);
 });

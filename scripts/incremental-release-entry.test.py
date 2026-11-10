@@ -173,10 +173,13 @@ class Contracts(unittest.TestCase):
             if route=='/branches/main':return {'commit':{'sha':later['sha']}}
             if route.startswith('/compare/'):return comparison
             return original(route)
-        self.transport.get.side_effect=get
-        self.assertTrue(self.verify()['verified'])
-        comparison['merge_base_commit']['sha']='f'*40
-        with self.assertRaisesRegex(ValueError,'trusted main history'):self.verify()
+        http_fixture=load('entry_http_fixture','ci-native-evidence.test.py')
+        with http_fixture.local_api(get) as (client, seen):
+            self.verifier.transport=client
+            self.assertTrue(self.verify()['verified'])
+            self.assertIn('/compare/'+self.source['sha']+'...'+later['sha'], seen)
+            comparison['merge_base_commit']['sha']='f'*40
+            with self.assertRaisesRegex(ValueError,'trusted main history'):self.verify()
 
     def test_prepublish_uses_candidate_acceptance_without_public_registry_cycle(self):
         self.run.update({"status": "in_progress", "conclusion": None})

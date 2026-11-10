@@ -1,4 +1,4 @@
-"""Pinned main-push release binding policy; no publication or signing API here.
+"""Source-bound main-push release binding policy; no publication or signing API here.
 
 Only the isolated reusable workflow may sign. Consumers invoke the reviewed
 cryptographic CLI and never accept a caller-provided verification-result JSON.
@@ -54,8 +54,8 @@ def cells(scope):
                      'artifactName':'cargo-source-{runId}'}}
 
 
-def expected_policy(run, source, scope, signer_sha):
-    check(scope in CALLERS and re.fullmatch('[a-f0-9]{40}',signer_sha or ''),'Reviewed release signer policy required')
+def expected_policy(run, source, scope):
+    check(scope in CALLERS, 'Known release signer scope required')
     check(run.get('event')=='push' and run.get('head_branch')=='main' and run.get('path')==CALLERS[scope]
           and run.get('head_sha')==source['sha'] and run.get('repository',{}).get('id')==REPOSITORY_ID
           and run.get('head_repository',{}).get('id')==REPOSITORY_ID
@@ -65,7 +65,7 @@ def expected_policy(run, source, scope, signer_sha):
     check(re.fullmatch('[a-f0-9]{40}',source.get('sha','')) and re.fullmatch('[a-f0-9]{40}',source.get('tree','')),
           'Exact release proof source required')
     return {'repository':REPOSITORY,'repositoryId':REPOSITORY_ID,'sourceSHA':source['sha'],'sourceTree':source['tree'],
-            'signerWorkflow':SIGNER,'signerSHA':signer_sha,'callerWorkflow':CALLERS[scope],
+            'signerWorkflow':SIGNER,'signerSHA':source['sha'],'signerRef':'refs/heads/main','callerWorkflow':CALLERS[scope],
             'runId':run['id'],'attempt':run['run_attempt'],'cells':cells(scope)}
 
 
@@ -77,8 +77,9 @@ def signer_identity(environment,scope):
           and environment.get('GITHUB_EVENT_NAME')=='push' and environment.get('GITHUB_REF')=='refs/heads/main'
           and environment.get('GITHUB_REPOSITORY')==REPOSITORY and environment.get('GITHUB_REPOSITORY_ID')==str(REPOSITORY_ID)
           and environment.get('GITHUB_WORKFLOW_REF')==REPOSITORY+'/'+CALLERS[scope]+'@refs/heads/main'
-          and environment.get('SIGNER_WORKFLOW_REF')==REPOSITORY+'/'+SIGNER+'@'+revision,
-          'Only isolated pinned release main push signer may prepare a proof')
+          and environment.get('SIGNER_WORKFLOW_REF')==REPOSITORY+'/'+SIGNER+'@refs/heads/main'
+          and revision==environment.get('GITHUB_SHA')==environment.get('GITHUB_WORKFLOW_SHA'),
+          'Only isolated source-bound release main push signer may prepare a proof')
     check(all(re.fullmatch('[1-9][0-9]*',environment.get(key,'')) for key in ['GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT']),
           'Release signer run identity missing')
     return revision
@@ -95,16 +96,16 @@ def prepare(transport,environment,scope,outputs,templates,*,prior_proof_provider
           'Release signer invocation differs from API')
     commit=transport.get('/git/commits/'+run['head_sha'])
     check(commit.get('sha')==run['head_sha'],'Release signer commit differs')
-    expected=expected_policy(run,{'sha':run['head_sha'],'tree':commit['tree']['sha']},scope,revision)
+    expected=expected_policy(run,{'sha':run['head_sha'],'tree':commit['tree']['sha']},scope)
     body=policy.build_manifest_from_fixed_outputs(transport,expected,outputs,templates)
     if scope=='cargo':
         row=json.loads(body)['bindings'][0]
         if restored=='true':
             check(row['originAttempt']<attempt,'Cargo restore must retain an earlier frozen origin')
             # Restore-script outputs are not upload-action outputs. Authenticate
-            # their original signed binding independently in this pinned signer.
+            # their original signed binding independently in this same-source signer.
             def original(client,observed,source,kind):
-                return verified_run(client,observed,source,kind,signer_sha=revision)
+                return verified_run(client,observed,source,kind)
             provider=original if prior_proof_provider is None else prior_proof_provider
             metadata,origin,job=find_frozen_binding(transport,{'sha':expected['sourceSHA'],'tree':expected['sourceTree']},
                 'cargo',run_id,attempt-1,row['artifactId'],'cargo',proof_provider=provider)
@@ -113,15 +114,11 @@ def prepare(transport,environment,scope,outputs,templates,*,prior_proof_provider
     return body
 
 
-def verified_run(transport,run,source,scope,*,verify=None,signer_sha=None):
-    # Optional function arguments are offline test seams, not CLI/env inputs.
-    # Production supplies neither; it always loads the committed pin and CLI.
-    if signer_sha is None:
-        trust=policy.strict_json((ROOT/'release-provenance-trust.json').read_bytes())
-        check(isinstance(trust,dict) and set(trust)=={'schemaVersion','signerSHA'} and trust['schemaVersion']==1,
-              'Reviewed release signer trust configuration differs')
-        signer_sha=trust['signerSHA']
-    expected=expected_policy(run,source,scope,signer_sha)
+def verified_run(transport,run,source,scope,*,verify=None):
+    # API-authenticated original run/source selects the exact signer digest.
+    # Never resolve the latest main, a manifest claim or a caller-supplied pin.
+    # The optional verifier is an offline test seam, not a CLI/env input.
+    expected=expected_policy(run,source,scope)
     if verify is None:verify=load('release_pinned_verifier','ci-pinned-attestation-cli.py').verify_on_host
     # A frozen proof can outlive a failed later stage; the signed producer and
     # exact original attempt are checked independently. Latest status is captured

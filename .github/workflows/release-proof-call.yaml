@@ -20,7 +20,7 @@ jobs:
       actions: read
       id-token: write
       attestations: write
-    uses: farm-fe/farm/.github/workflows/release-provenance-signer.yaml@7bb6de8e975fdf930925397fa5e46c5a3f78ef50
+    uses: ./.github/workflows/release-provenance-signer.yaml
     with:
       scope: ${{ inputs.scope }}
       cargo_restored: ${{ inputs.cargo_restored }}
