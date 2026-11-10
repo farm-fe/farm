@@ -51,7 +51,7 @@
 | 同仓调用与信任 | 本地已实测 | 相对 reusable workflow；checkout 固定 job.workflow_sha。signer/source/caller SHA 必须等于原 API run.head_sha。证书 URI 精确 main ref 加独立 signer digest，不查询最新 main，不信任 manifest 自报身份 |
 | 恢复与反例 | 局部实测 | 原 source M 的 attempt 2 仍 signer M，新 aggregationAttempt=2，冻结行保留 attempt 1 artifact/digest/job/origin；main 前进 N 不影响。错误 source/signer/run/attempt/artifact 拒绝，API/crypto 为显式 fixture |
 | 本地 dry run | 已实测 | 9 组 Python 合同全部通过，22 项 Node 工作流合同通过；真实 CLI 11/11（含原 proof 和错误身份/篡改拒绝）。旧 proof 在新 same-source 策略下拒绝；不是新相对签名正例。日志位于本地 relative-signer-20261110 |
-| 真实 Actions 解析 | 待验证 | 仅 feature 分支 workflow_dispatch、publish=false、producer_run 为空；要求最终 YAML 全部 job 跳过，无签署/构建/发布。排队不算解析通过；不取消旧发布 |
-| 新 PR 与远端 CI | 待实现 | 普通推送独立 Draft PR，用户自行合并；真实相对调用 OIDC/签名和发布/恢复仍需合并后真实流程验证 |
+| 真实 Actions 解析 | 已实测 | [run 42741216158](https://github.com/farm-fe/farm/actions/runs/42741216158)，源码 d386a43b9d60b7c8d76fb20cdbf6dd59161d299d，2026-11-10 02:21:23 UTC 终态 skipped；13 job 全跳过、零步骤，5 个 reusable 引用均为同 SHA，无 Invalid workflow。feature dispatch publish=false、producer_run 为空，无签署/构建/发布；等待旧运行自然结束，未取消 |
+| 新 PR 与远端 CI | 已开 PR，CI 未完成 | [Draft #2346](https://github.com/farm-fe/farm/pull/2346)，分支 codex/fix-release-signer-relative-20261110。d386a43 的 hosted source contracts、三平台安全、Type Check、Changesets、Spell、标题通过，Unit/native 等仍运行。本次结果补记仅改文档；不把旧 SHA 成绩冒充后续 SHA。真实相对 OIDC/签名与发布/恢复仍待合并后验证 |
 
 官方语义：相对 workflow 来自 caller 同一提交；`job.workflow_ref` 与 `job.workflow_sha` 分别约束 URI 和实际版本。参考 https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows 和 https://docs.github.com/en/actions/reference/workflows-and-actions/contexts 。旧 b03/7ed 运行保持原代码，不自动迁移；旧 proof 并未损坏，只是不属于新的 same-source release 信任模式。
