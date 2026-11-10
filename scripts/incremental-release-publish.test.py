@@ -2,6 +2,10 @@
 """Pure HTTP/Release finalization contracts; no real requests or registry writes."""
 # cspell:words importlib stopall finalizer postpublish nonpublishing nonbaseline
 import copy
+import base64
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
+from types import SimpleNamespace
 import hashlib
 import importlib.util
 import io
@@ -377,6 +381,71 @@ class Contracts(unittest.TestCase):
         retired=(Path(__file__).parents[1]/'.github/workflows/v2-stable-release.yaml').read_text(encoding='utf-8')
         self.assertNotIn('pull_request:',retired);self.assertNotIn('secrets.',retired);self.assertNotIn('v2-auto-release',retired)
 
+    def test_existing_prerelease_latest_allows_stable_publication(self):
+        # Real registry version observed on 2026-11-10; no registry writes.
+        for version in ['1.0.0-nightly-20241024075304', '2.0.0-rc.1', '2.0.0-beta.1']:
+            with self.subTest(version=version):
+                missing = urllib.error.HTTPError('https://registry.npmjs.org/a/2.0.0', 404, 'missing', {}, None)
+                writer, reader = self.registry([missing, {'name': 'a', 'version': version}], [])
+                self.assertIsNone(writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0'}))
+
+    def test_prerelease_confirmation_promotes_without_republishing(self):
+        writer, reader = self.registry([{'name': 'a', 'version': '2.0.0-rc.1'},
+                                       {'name': 'a', 'version': '2.0.0-rc.1'},
+                                       {'name': 'a', 'version': '2.0.0'}], [])
+        writer.environment['NPM_TOKEN'] = 'fixture-only'
+        writer.command = mock.Mock(side_effect=[mock.Mock(stdout=str(Path(__file__).resolve())), mock.Mock(returncode=0)])
+        writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
+        self.assertEqual(writer.command.call_count, 2)
+        self.assertIn('dist-tag', writer.command.call_args.args[0])
+        self.assertEqual(reader.json.call_count, 3)
+
+    def test_newer_prerelease_blocks_preflight_and_never_changes_tag(self):
+        for version in ['2.1.0-rc.1', '3.0.0-rc.1', '3.0.0']:
+            with self.subTest(version=version):
+                missing = urllib.error.HTTPError('https://registry.npmjs.org/a/2.0.0', 404, 'missing', {}, None)
+                writer, reader = self.registry([missing, {'name': 'a', 'version': version}], [])
+                with self.assertRaisesRegex(ValueError, 'backwards'):
+                    writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
+                writer, reader = self.registry([{'name': 'a', 'version': version}], [])
+                writer.command = mock.Mock()
+                writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
+                writer.command.assert_not_called()
+
+    def test_tag_preparation_rereads_latest_and_preserves_a_concurrent_higher_version(self):
+        writer, reader = self.registry([{'name': 'a', 'version': '2.0.0-rc.1'},
+                                       {'name': 'a', 'version': '2.1.0-rc.1'}], [])
+        writer.environment['NPM_TOKEN'] = 'fixture-only'
+        writer.command = mock.Mock(return_value=mock.Mock(stdout=str(Path(__file__).resolve())))
+        writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
+        self.assertEqual(writer.command.call_count, 1)  # resolve CLI only; no dist-tag mutation
+        self.assertEqual(reader.json.call_count, 2)
+
+    def test_latest_readback_rejects_a_lower_or_invalid_tag_after_command(self):
+        for version in ['1.0.0', '2.0.0-rc.1', 'not-semver']:
+            with self.subTest(version=version):
+                writer, reader = self.registry([{'name': 'a', 'version': '1.0.0'},
+                                               {'name': 'a', 'version': '1.0.0'},
+                                               {'name': 'a', 'version': version}], [])
+                writer.environment['NPM_TOKEN'] = 'fixture-only'
+                writer.command = mock.Mock(side_effect=[mock.Mock(stdout=str(Path(__file__).resolve())), mock.Mock(returncode=0)])
+                with self.assertRaises(ValueError):
+                    writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
+
+    def test_missing_latest_and_invalid_identity_or_versions(self):
+        missing = urllib.error.HTTPError('https://registry.npmjs.org/a/latest', 404, 'missing', {}, None)
+        writer, reader = self.registry([missing, missing], [])
+        self.assertIsNone(writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0'}))
+        for metadata in [{'name': 'other', 'version': '1.0.0'}, {'name': 'a'},
+                         {'name': 'a', 'version': '01.0.0'}, {'name': 'a', 'version': '2.0.0-01'}]:
+            writer, reader = self.registry([missing, metadata], [])
+            with self.assertRaises(ValueError):
+                writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
+        for target in ['2.0.0-rc.1', '2.0.0+build', '02.0.0']:
+            writer, reader = self.registry([missing, missing], [])
+            with self.assertRaises(ValueError):
+                writer.lookup({'kind': 'npm', 'name': 'a', 'version': target})
+
     def test_latest_confirmation_preserves_higher_version_without_command(self):
         writer,reader=self.registry([{'name':'a','version':'3.0.0'}],[])
         writer.command=mock.Mock()
@@ -641,6 +710,137 @@ class Contracts(unittest.TestCase):
             self.assertIn('/compare/'+fixture.source['sha']+'...'+newer['sha'], seen)
             comparison['status']='diverged'
             with self.assertRaisesRegex(ValueError,'trusted main history'):verifier.verify(fixture.manifest,fixture.root)
+
+
+class LatestHTTPContracts(unittest.TestCase):
+    """Real read-only HTTP/parser + publisher/state algorithms; writes stay in memory."""
+    def fixture(self):
+        shared = module.load('latest_http_state_fixture', 'incremental-publication-state.test.py')
+        api, store, manifest, _, _ = shared.fixture()
+        names = ['@farmfe/plugin-replace-dirname-darwin-arm64', '@farmfe/plugin-dts-darwin-arm64']
+        bodies = {name: ('frozen fixture archive ' + name).encode() for name in names}
+        manifest['packages'] = [{'kind': 'npm', 'name': name, 'version': version, 'archive': str(i) + '.tgz',
+            'archiveSha256': hashlib.sha256(bodies[name]).hexdigest(), 'archiveBytes': len(bodies[name])}
+            for i, (name, version) in enumerate(zip(names, ['2.0.0', '1.0.0']))]
+        # Versions from the 2026-11-10 read-only registry snapshot. Bodies are fixtures.
+        registry = SimpleNamespace(values={}, latest=dict(zip(names, ['1.0.0-nightly-20241024075304',
+            '1.0.0-nightly-20250410022118'])), writes=[], tags=[], requests=[], hook=None, lose=None)
+        rows = {row['name']: row for row in manifest['packages']}
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args): pass
+            def do_GET(self):
+                parts = self.path.lstrip('/').split('/')
+                name = urllib.parse.unquote(parts[0]); selector = parts[1]
+                registry.requests.append((name, selector))
+                if registry.hook: registry.hook(name, selector)
+                body = None
+                if selector == 'latest' and name in registry.latest:
+                    body = json.dumps({'name': name, 'version': registry.latest[name]}).encode()
+                elif selector == '-' and name in registry.values:
+                    body = registry.values[name]
+                elif name in registry.values:
+                    body = json.dumps({'name': name, 'version': rows[name]['version'], 'dist': {
+                        'tarball': 'https://registry.npmjs.org/' + urllib.parse.quote(name, safe='') + '/-/archive.tgz',
+                        'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(registry.values[name]).digest()).decode()}}).encode()
+                self.send_response(200 if body is not None else 404); self.end_headers()
+                self.wfile.write(body or b'{}')
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+        def close(): server.shutdown(); server.server_close(); thread.join()
+        self.addCleanup(close)
+        class Relay:
+            def open(self, request, timeout):
+                parsed = urllib.parse.urlsplit(request.full_url)
+                assert parsed.hostname == 'registry.npmjs.org' and request.get_method() == 'GET'
+                return urllib.request.urlopen('http://127.0.0.1:' + str(server.server_port) + parsed.path, timeout=timeout)
+        directory = tempfile.TemporaryDirectory(); self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        for row in manifest['packages']: (root / row['archive']).write_bytes(bodies[row['name']])
+        def command(argv, **options):
+            if '--input-type=module' in argv:
+                return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
+            if 'publish' in argv:
+                filename = Path(argv[argv.index('publish') + 1])
+                row = next(row for row in rows.values() if row['archive'] == filename.name)
+                self.assertIn('farm-release-' + row['version'], argv)
+                registry.values[row['name']] = filename.read_bytes(); registry.writes.append(row['name'])
+                if registry.lose == row['name']:
+                    registry.lose = None
+                    raise OSError('fixture registry accepted bytes but response lost')
+            else:
+                self.assertIn('dist-tag', argv)
+                package = argv[argv.index('add') + 1]; name, version = package.rsplit('@', 1)
+                registry.latest[name] = version; registry.tags.append(name)
+            return SimpleNamespace(returncode=0)
+        writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'NPM_TOKEN': 'fixture-only'}, root, command)
+        writer.reader = module.entry.evidence.registry_module.RegistryReadOnly(environment={'GITHUB_ACTIONS': 'true'}, opener=Relay())
+        def runner(attempt):
+            return module.state.Publication(store, manifest, {'runId': 7, 'attempt': attempt}, lambda value: True)
+        return store, manifest, bodies, registry, writer, runner
+
+    def test_partial_upload_lost_response_resumes_exact_bytes_then_skips_existing(self):
+        store, manifest, bodies, registry, writer, runner = self.fixture()
+        first_name = manifest['packages'][0]['name']; registry.lose = first_name
+        first = runner(1); first.acquire()
+        with self.assertRaisesRegex(OSError, 'response lost'):
+            first.upload(lambda row: bodies[row['name']], writer)
+        self.assertEqual(registry.writes, [first_name])
+        self.assertEqual(store.read()[1]['active']['packages']['npm:' + first_name], 'upload-started')
+        second = runner(2); second.recover(lambda previous: previous == {'runId': 7, 'attempt': 1})
+        second.upload(lambda row: bodies[row['name']], writer)
+        self.assertEqual(registry.writes, list(bodies))
+        self.assertEqual(registry.latest, {row['name']: row['version'] for row in manifest['packages']})
+        before = list(registry.writes), list(registry.tags)
+        second.upload(lambda row: bodies[row['name']], writer)
+        self.assertEqual((registry.writes, registry.tags), before)
+        self.assertEqual(store.read()[1]['active']['manifest'], manifest)
+
+    def test_full_preflight_conflict_and_tampered_archives_write_nothing(self):
+        store, manifest, bodies, registry, writer, runner = self.fixture()
+        row = manifest['packages'][-1]; registry.values[row['name']] = b'conflicting bytes'
+        current = runner(1); current.acquire()
+        with self.assertRaisesRegex(ValueError, 'different bytes'):
+            current.upload(lambda row: bodies[row['name']], writer)
+        self.assertEqual(registry.writes, []); self.assertEqual(registry.tags, [])
+        registry.values.clear()
+        with self.assertRaisesRegex(ValueError, 'Original sealed archive differs'):
+            current.upload(lambda row: b'tampered', writer)
+        self.assertEqual(registry.writes, [])
+
+    def test_latest_advancing_after_preflight_blocks_before_any_upload(self):
+        store, manifest, bodies, registry, writer, runner = self.fixture()
+        first = manifest['packages'][0]['name']; reads = 0
+        def hook(name, selector):
+            nonlocal reads
+            if name == first and selector == '2.0.0':
+                reads += 1
+                if reads == 2: registry.latest[first] = '2.1.0-rc.1'
+        registry.hook = hook
+        current = runner(1); current.acquire()
+        with self.assertRaisesRegex(ValueError, 'backwards'):
+            current.upload(lambda row: bodies[row['name']], writer)
+        self.assertEqual(registry.writes, []); self.assertEqual(registry.tags, [])
+
+    def test_competing_same_version_rechecks_bytes_before_upload(self):
+        for identical in [True, False]:
+            with self.subTest(identical=identical):
+                store, manifest, bodies, registry, writer, runner = self.fixture()
+                first = manifest['packages'][0]['name']; reads = 0
+                def hook(name, selector):
+                    nonlocal reads
+                    if name == first and selector == '2.0.0':
+                        reads += 1
+                        if reads == 2: registry.values[first] = bodies[first] if identical else b'other producer bytes'
+                registry.hook = hook
+                current = runner(1); current.acquire()
+                if identical:
+                    current.upload(lambda row: bodies[row['name']], writer)
+                    self.assertNotIn(first, registry.writes)
+                    self.assertEqual(registry.latest[first], '2.0.0')
+                else:
+                    with self.assertRaisesRegex(ValueError, 'different bytes'):
+                        current.upload(lambda row: bodies[row['name']], writer)
+                    self.assertEqual(registry.writes, [])
 
 
 if __name__ == '__main__':

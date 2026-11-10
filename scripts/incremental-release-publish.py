@@ -83,6 +83,25 @@ class RegistryWriter:
         self.environment, self.directory, self.command = environment, Path(directory), run_command
         self.reader = entry.evidence.registry_module.RegistryReadOnly(environment=environment)
 
+    def latest_order(self, row):
+        """Read latest afresh and compare using the verified bundled npm's SemVer."""
+        try:
+            latest = self.reader.json('https://registry.npmjs.org/' + urllib.parse.quote(row['name'], safe='') + '/latest')
+            check(latest.get('name') == row['name'], 'Registry latest identity differs')
+            version = latest.get('version')
+            check(isinstance(version, str), 'Registry latest version missing')
+        except urllib.error.HTTPError as error:
+            if error.code != 404:
+                raise ValueError('Registry latest read failed') from None
+            version = None
+        node = self.environment.get('FARM_NODE_EXECUTABLE', 'node')
+        result = subprocess.run([node, str(Path(__file__).with_name('v2-npm-version-order.mjs')),
+                                 json.dumps([version, row['version']])], capture_output=True, text=True, timeout=15)
+        check(result.returncode == 0, 'Invalid registry SemVer or stable publication target')
+        order = json.loads(result.stdout)
+        check(order is None or type(order) is int and order in [-1, 0, 1], 'Invalid registry version comparison')
+        return order
+
     def lookup(self, row):
         name = urllib.parse.quote(row["name"], safe="")
         url = ("https://registry.npmjs.org/" + name + "/" + row["version"] if row["kind"] == "npm"
@@ -93,14 +112,9 @@ class RegistryWriter:
             if error.code != 404:
                 raise ValueError("Registry lookup failed with HTTP " + str(error.code)) from None
             if row["kind"] == "npm":
-                # Refuse a backfill rather than silently moving a newer latest.
-                try:
-                    latest = self.reader.json("https://registry.npmjs.org/" + name + "/latest")
-                    check(re.fullmatch(r"\d+\.\d+\.\d+", latest.get("version", "")), "Stable latest version required")
-                    check(tuple(map(int, latest["version"].split("."))) <= tuple(map(int, row["version"].split("."))), "Publishing would move latest backwards")
-                except urllib.error.HTTPError as latest_error:
-                    if latest_error.code != 404:
-                        raise ValueError("Registry latest lookup failed") from None
+                # A higher prerelease is also newer than the stable target.
+                order = self.latest_order(row)
+                check(order is None or order <= 0, "Publishing would move latest backwards")
             return None
         # Verify bytes against this response, with no second metadata fetch or
         # metadata-keyed cache that could attribute a B proof to metadata A.
@@ -160,18 +174,8 @@ class RegistryWriter:
         """Repair latest after an uncertain upload without republishing bytes."""
         if row['kind'] != 'npm':
             return
-        def latest_version():
-            try:
-                latest = self.reader.json('https://registry.npmjs.org/' + urllib.parse.quote(row['name'], safe='') + '/latest')
-            except urllib.error.HTTPError as error:
-                if error.code == 404:
-                    return None
-                raise ValueError('Registry latest read failed') from None
-            check(latest.get('name') == row['name'] and re.fullmatch(r'\d+\.\d+\.\d+', latest.get('version', '')), 'Registry latest identity differs')
-            return tuple(map(int, latest['version'].split('.')))
-        wanted = tuple(map(int, row['version'].split('.')))
-        before = latest_version()
-        if before is not None and before >= wanted:
+        before = self.latest_order(row)
+        if before is not None and before >= 0:
             return
         token = self.environment.get('NPM_TOKEN'); check(bool(token), 'Existing npm publication credential missing')
         node = self.environment.get('FARM_NODE_EXECUTABLE', 'node')
@@ -182,11 +186,16 @@ class RegistryWriter:
         config.write_text('registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n', encoding='utf-8')
         env = {key: value for key, value in self.environment.items() if key not in ['GH_TOKEN', 'GITHUB_TOKEN', 'CARGO_REGISTRY_TOKEN', 'NPM_TOKEN']}
         env.update({'NODE_AUTH_TOKEN': token, 'NPM_CONFIG_USERCONFIG': str(config), 'npm_config_cache': str(scratch / 'cache')})
+        # Recheck after CLI/config preparation. npm tags have no conditional CAS:
+        # this closes that preparation window, not arbitrary external races.
+        before = self.latest_order(row)
+        if before is not None and before >= 0:
+            return
         result = self.command([node, cli, 'dist-tag', 'add', row['name'] + '@' + row['version'], 'latest', '--registry=https://registry.npmjs.org'],
                               env=env, capture_output=True, timeout=120)
         check(result.returncode == 0, 'npm latest update failed; read back before retry')
-        observed = latest_version()
-        check(observed is not None and observed >= wanted, 'Registry latest read-back differs')
+        observed = self.latest_order(row)
+        check(observed is not None and observed >= 0, 'Registry latest read-back differs')
 
 
 def inspect_release(api, manifest):
