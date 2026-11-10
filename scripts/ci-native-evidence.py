@@ -33,7 +33,15 @@ class GitHubReadOnly:
         self.opener = urllib.request.build_opener(NoRedirect())
 
     def get(self, route):
-        if (route and not route.startswith("/")) or ".." in route or "#" in route:
+        # GitHub compare uses three literal dots between two immutable commits.
+        # This exact endpoint is not traversal; no refs, suffixes or encoded forms.
+        compare = isinstance(route, str) and re.fullmatch(r"/compare/[a-f0-9]{40}\.\.\.[a-f0-9]{40}", route)
+        decoded = route if isinstance(route, str) else ".."
+        while urllib.parse.unquote(decoded) != decoded:
+            decoded = urllib.parse.unquote(decoded)
+        if not compare and ((decoded and not decoded.startswith("/")) or decoded.startswith("//")
+                or decoded.startswith("/compare/") or ".." in decoded or "#" in decoded
+                or "\\" in decoded or any(ord(char) < 32 or ord(char) == 127 for char in decoded)):
             raise ValueError("Unsafe GitHub route")
         request = urllib.request.Request(self.prefix + route, headers={"Authorization": "Bearer " + self.token, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}, method="GET")
         try:

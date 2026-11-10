@@ -1,6 +1,9 @@
 # cspell:words importlib
 """API-shaped fixtures only; no local or remote GitHub requests."""
 import copy
+import contextlib
+import http.server
+import threading
 import importlib.util
 import io
 import json
@@ -11,6 +14,29 @@ from unittest import mock
 
 spec = importlib.util.spec_from_file_location("evidence", Path(__file__).with_name("ci-native-evidence.py"))
 evidence = importlib.util.module_from_spec(spec); spec.loader.exec_module(evidence)
+
+
+@contextlib.contextmanager
+def local_api(respond):
+    """Real HTTP transport to an owned loopback stub; never GitHub credentials."""
+    seen = []
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            prefix = '/repos/farm-fe/farm'
+            if not self.path.startswith(prefix):
+                self.send_error(404); return
+            route = self.path[len(prefix):]; seen.append(route)
+            try: body = json.dumps(respond(route)).encode()
+            except (AssertionError, KeyError):
+                self.send_error(404); return
+            self.send_response(200); self.end_headers(); self.wfile.write(body)
+        def log_message(self, *args): pass
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+    client = evidence.GitHubReadOnly('farm-fe/farm', 'offline-fixture', environment={'GITHUB_ACTIONS':'true'})
+    client.prefix = 'http://127.0.0.1:' + str(server.server_port) + '/repos/farm-fe/farm'
+    try: yield client, seen
+    finally: server.shutdown(); server.server_close(); thread.join()
 
 
 def fixture():
@@ -34,6 +60,20 @@ def fixture():
 
 
 class EvidenceContracts(unittest.TestCase):
+    def test_exact_sha_compare_uses_real_http_but_unsafe_routes_never_leave_adapter(self):
+        route = '/compare/' + 'a'*40 + '...' + 'b'*40
+        with local_api(lambda value: {'route':value}) as (client, seen):
+            self.assertEqual(client.get(route), {'route':route})
+            self.assertEqual(client.get(''), {'route':''})
+            rejected = [route+'/x', route+'?page=1', '/compare/main...main',
+                route.replace('...', '..'), route.replace('...', '%2e%2e%2e'),
+                '/../other/repo', '//evil.invalid/repos/a/b', 'https://evil.invalid',
+                '/%2e%2e/other', '/%252e%252e/other', '/a/..%2f' + 'other',
+                '/a\\..\\other', route+'#fragment', '/actions/runs/1\n']
+            for value in rejected:
+                with self.subTest(route=value), self.assertRaises(ValueError): client.get(value)
+            self.assertEqual(seen, [route, ''])
+
     def test_source_ledger_explicitly_binds_the_platform_orchestration(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); products = root / "products.json"; output = root / "source.json"

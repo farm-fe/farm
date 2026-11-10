@@ -631,11 +631,16 @@ class Contracts(unittest.TestCase):
             if route=='/branches/main':return {'commit':{'sha':newer['sha']}}
             if route=='/compare/'+fixture.source['sha']+'...'+newer['sha']:return comparison
             return get(route)
-        fixture.transport.get.side_effect=history
-        verifier=module.RecoveryVerifier(fixture.transport,{'runId':10,'attempt':3},lambda sha:newer if sha==newer['sha'] else fixture.source,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
-        self.assertTrue(verifier.verify(fixture.manifest,fixture.root)['prepublicationVerified'])
-        comparison['status']='diverged'
-        with self.assertRaisesRegex(ValueError,'trusted main history'):verifier.verify(fixture.manifest,fixture.root)
+        http_fixture=module.entry.load('restore_http_fixture','ci-native-evidence.test.py')
+        with http_fixture.local_api(history) as (client, seen):
+            # Keep the existing signed archive fixture boundary; all JSON reads,
+            # including main ancestry, use the production HTTP adapter.
+            client.archive=fixture.transport.archive
+            verifier=module.RecoveryVerifier(client,{'runId':10,'attempt':3},lambda sha:newer if sha==newer['sha'] else fixture.source,receipt_provider=fixture.receipt_fixture,candidate_outputs=fixture.candidate_outputs,proof_provider=fixture.proof_provider)
+            self.assertTrue(verifier.verify(fixture.manifest,fixture.root)['prepublicationVerified'])
+            self.assertIn('/compare/'+fixture.source['sha']+'...'+newer['sha'], seen)
+            comparison['status']='diverged'
+            with self.assertRaisesRegex(ValueError,'trusted main history'):verifier.verify(fixture.manifest,fixture.root)
 
 
 if __name__ == '__main__':

@@ -55,3 +55,5 @@
 | 新 PR 与远端 CI | 已开 PR，CI 未完成 | [Draft #2346](https://github.com/farm-fe/farm/pull/2346)，分支 codex/fix-release-signer-relative-20261110。d386a43 的 hosted source contracts、三平台安全、Type Check、Changesets、Spell、标题通过，Unit/native 等仍运行。本次结果补记仅改文档；不把旧 SHA 成绩冒充后续 SHA。真实相对 OIDC/签名与发布/恢复仍待合并后验证 |
 
 官方语义：相对 workflow 来自 caller 同一提交；`job.workflow_ref` 与 `job.workflow_sha` 分别约束 URI 和实际版本。参考 https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows 和 https://docs.github.com/en/actions/reference/workflows-and-actions/contexts 。旧 b03/7ed 运行保持原代码，不自动迁移；旧 proof 并未损坏，只是不属于新的 same-source release 信任模式。
+
+- 同批新增恢复阻塞：旧 b03 npm run 42730980259 的 publisher 在 registry 写入前因合法 `/compare/<SHA>...<SHA>` 被路径穿越守卫误拒而失败。已补真实 GitHubReadOnly + loopback HTTP 红例，只允许两个精确 40 位 SHA 的 compare 路由，其他 traversal/外域/编码变体拒绝。main 前进后的 release preflight 与原运行恢复改用真实 HTTP JSON 适配器回归；签名归档仍为显式 fixture，不宣称真实旧运行已恢复。最后一轮 110 项受影响 Python 合同和 22 项 Node 合同通过；未改动的 CLI 11 项真实 bundle/4 项固定下载合同已在本批前轮通过。旧运行不重跑。
