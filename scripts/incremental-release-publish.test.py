@@ -304,7 +304,7 @@ class Contracts(unittest.TestCase):
         def signed_provider(client,observed,source,scope):
             # Explicit offline cryptographic boundary; real ZIP/API binding follows.
             proof=module.load('fixture_public_provenance','release-provenance.py')
-            expected=proof.expected_policy(observed,source,scope,'c'*40)
+            expected=proof.expected_policy(observed,source,scope)
             bindings={}
             for cell,role in expected['cells'].items():
                 if cell in ['seal','candidates']:identity=61 if cell=='seal' else 62;origin=producer_attempt

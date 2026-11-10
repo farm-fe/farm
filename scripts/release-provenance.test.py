@@ -14,11 +14,12 @@ m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 
 def fixture(scope='frozen'):
-    sha='a'*40;tree='b'*40;revision='c'*40
+    sha='a'*40;tree='b'*40;revision=sha
     environment={'GITHUB_ACTIONS':'true','RUNNER_ENVIRONMENT':'github-hosted','GITHUB_JOB':'sign',
         'GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/main','GITHUB_REPOSITORY':m.REPOSITORY,
         'GITHUB_REPOSITORY_ID':str(m.REPOSITORY_ID),'GITHUB_WORKFLOW_REF':m.REPOSITORY+'/'+m.CALLERS[scope]+'@refs/heads/main',
-        'SIGNER_WORKFLOW_SHA':revision,'SIGNER_WORKFLOW_REF':m.REPOSITORY+'/'+m.SIGNER+'@'+revision,
+        'SIGNER_WORKFLOW_SHA':revision,'SIGNER_WORKFLOW_REF':m.REPOSITORY+'/'+m.SIGNER+'@refs/heads/main',
+        'GITHUB_WORKFLOW_SHA':sha,
         'GITHUB_RUN_ID':'42','GITHUB_RUN_ATTEMPT':'1','GITHUB_SHA':sha,'SIGNER_CARGO_RESTORED':'false'}
     run={'id':42,'run_attempt':1,'head_sha':sha,'head_branch':'main','event':'push','path':m.CALLERS[scope],
          'repository':{'id':m.REPOSITORY_ID,'full_name':m.REPOSITORY},'head_repository':{'id':m.REPOSITORY_ID},
@@ -53,6 +54,25 @@ def fixture(scope='frozen'):
 
 
 class Contracts(unittest.TestCase):
+    def test_relative_signer_binds_original_source_not_a_moving_main_or_old_pin(self):
+        api, env, _, _, run, _, _, _ = fixture('cargo')
+        env.update(SIGNER_WORKFLOW_SHA=run['head_sha'], GITHUB_WORKFLOW_SHA=run['head_sha'],
+                   SIGNER_WORKFLOW_REF=m.REPOSITORY+'/'+m.SIGNER+'@refs/heads/main')
+        source = {'sha': run['head_sha'], 'tree': 'b' * 40}
+        for attempt in [1, 2, 3]:  # first, rerun-all, failed-job/partial retry
+            observed = {**run, 'run_attempt': attempt}
+            expected = m.expected_policy(observed, source, 'cargo')
+            self.assertEqual(expected['signerSHA'], run['head_sha'])
+            self.assertEqual(expected['signerRef'], 'refs/heads/main')
+            self.assertEqual(m.signer_identity({**env, 'GITHUB_RUN_ATTEMPT': str(attempt)}, 'cargo'), source['sha'])
+        for key, value in [('SIGNER_WORKFLOW_SHA', 'c'*40), ('GITHUB_SHA', 'd'*40),
+                           ('GITHUB_WORKFLOW_SHA', 'e'*40),
+                           ('SIGNER_WORKFLOW_REF', m.REPOSITORY+'/'+m.SIGNER+'@'+source['sha'])]:
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                m.signer_identity({**env, key: value}, 'cargo')
+        with self.assertRaises(ValueError):
+            m.expected_policy({**run, 'head_sha': 'f'*40}, source, 'cargo')
+
     def test_native_scopes_bind_single_successful_abi_not_overall_publication(self):
         for abi in m.NATIVE_ABIS:
             scope='native-'+abi
@@ -114,7 +134,7 @@ class Contracts(unittest.TestCase):
         # offline seam here; artifact metadata and original job checks are real.
         without_proof=api.get
         api.get=lambda route: {'total_count':1,'artifacts':[{'id':999}]} if '/artifacts?' in route else without_proof(route)
-        original_expected=m.expected_policy(original,{'sha':original['head_sha'],'tree':'b'*40},'cargo','c'*40)
+        original_expected=m.expected_policy(original,{'sha':original['head_sha'],'tree':'b'*40},'cargo')
         signed={'cargo':copy.deepcopy(result['bindings'][0])}
         def prior(client,observed,source,scope):
             self.assertEqual(observed['run_attempt'],1)
@@ -141,10 +161,12 @@ class Contracts(unittest.TestCase):
                     'workflow_run': {'id': 42}, 'expired': False,
                     'size_in_bytes': len(proof_bytes), 'digest': 'sha256:' + hashlib.sha256(proof_bytes).hexdigest()}
         current = {**original, 'run_attempt': 2}
+        advanced_main = 'f' * 40  # Moving main is deliberately not consulted.
         current_jobs = [{**job, 'id': job['id'] + 1000, 'run_attempt': 2} for job in jobs]
         env.update(GITHUB_RUN_ATTEMPT='2', SIGNER_CARGO_RESTORED='true')
         original_get = api.get
         def get(route):
+            if route.startswith(('/branches/', '/git/ref')): raise AssertionError('Latest main must not select a signer: ' + advanced_main)
             if route == '/actions/runs/42' or route.endswith('/attempts/2'): return current
             if route.endswith('/attempts/1'): return original
             if '/jobs?' in route: return {'jobs': jobs if '/attempts/1/' in route else current_jobs}
@@ -161,7 +183,21 @@ class Contracts(unittest.TestCase):
             self.assertEqual(expected['sourceSHA'], original['head_sha'])
             self.assertEqual(subject.read_bytes(), body)
             self.assertEqual(bundle.read_bytes(), b'explicit crypto boundary')
-            return copy.deepcopy(rows)
+            repo = 'https://github.com/' + expected['repository']
+            signer = m.policy.certificate_identity(expected)
+            certificate = {'issuer': 'https://token.actions.githubusercontent.com',
+                'subjectAlternativeName': signer, 'buildSignerURI': signer,
+                'buildSignerDigest': expected['signerSHA'], 'runnerEnvironment': 'github-hosted',
+                'sourceRepositoryURI': repo, 'sourceRepositoryIdentifier': str(expected['repositoryId']),
+                'sourceRepositoryDigest': expected['sourceSHA'], 'sourceRepositoryRef': 'refs/heads/main',
+                'buildConfigURI': repo+'/'+expected['callerWorkflow']+'@refs/heads/main',
+                'buildConfigDigest': expected['sourceSHA'], 'buildTrigger': 'push',
+                'runInvocationURI': repo+'/actions/runs/42/attempts/1'}
+            statement = {'_type': 'https://in-toto.io/Statement/v1', 'predicateType': m.policy.PREDICATE,
+                'subject': [{'name': 'ci-bindings.json', 'digest': {'sha256': hashlib.sha256(body).hexdigest()}}],
+                'predicate': {'schemaVersion': 1, 'kind': 'fixed-workflow-upload-bindings'}}
+            return m.policy.validate_verified_manifest(subject.read_bytes(),
+                [{'verificationResult': {'signature': {'certificate': certificate}, 'statement': statement}}], expected)
         original_load = m.load
         def load(name, file):
             if file == 'ci-pinned-attestation-cli.py': return SimpleNamespace(verify_on_host=verify)
@@ -170,10 +206,17 @@ class Contracts(unittest.TestCase):
         # verified_run -> original producer metadata remain production code.
         with patch.object(m, 'load', side_effect=load):
             result = json.loads(m.prepare(api, env, 'cargo', outputs, templates))
-            self.assertEqual(result['bindings'][0]['originAttempt'], 1)
+            self.assertEqual(result['aggregationAttempt'], 2)
+            self.assertEqual(result['bindings'][0], rows['cargo'])
             self.assertEqual(len(calls), 1)
-            rows['cargo']['artifactDigest'] = 'sha256:' + '0' * 64
-            with self.assertRaises(ValueError): m.prepare(api, env, 'cargo', outputs, templates)
+            for field, value in [('artifact_id', '101'), ('artifact_digest', '0'*64), ('run_attempt', '3')]:
+                bad = copy.deepcopy(outputs); bad['cargo'][field] = value
+                with self.subTest(field=field), self.assertRaises((ValueError, KeyError)):
+                    m.prepare(api, env, 'cargo', bad, templates)
+            for field, value in [('GITHUB_SHA', advanced_main), ('GITHUB_RUN_ID', '43'),
+                                 ('SIGNER_WORKFLOW_SHA', advanced_main)]:
+                with self.subTest(field=field), self.assertRaises(ValueError):
+                    m.prepare(api, {**env, field: value}, 'cargo', outputs, templates)
 
     def test_reviewed_cargo_restore_origin_is_from_upload_outcome_not_script_output(self):
         root=Path(__file__).parent.parent
@@ -229,7 +272,7 @@ class EnvelopeContracts(unittest.TestCase):
         # verified_run and certificate/manifest policy remain in the path.
         abi='darwin-arm64';scope='native-'+abi
         api,run,source,state=self.fixture();state['latest']=copy.deepcopy(run)
-        expected=m.expected_policy(run,source,scope,'c'*40)
+        expected=m.expected_policy(run,source,scope)
         role=expected['cells']['native']
         row={'cell':'native','producer':role['producer'],'uploadStep':role['uploadStep'],
              'jobId':99,'originAttempt':1,'artifactId':100,'artifactDigest':'sha256:'+'d'*64,
@@ -238,7 +281,7 @@ class EnvelopeContracts(unittest.TestCase):
                   **{key:expected[key] for key in ['repositoryId','sourceSHA','sourceTree','runId','callerWorkflow']},
                   'aggregationAttempt':1,'bindings':[row]}
         body=json.dumps(manifest).encode()
-        repo='https://github.com/'+expected['repository'];signer=repo+'/'+expected['signerWorkflow']+'@'+expected['signerSHA']
+        repo='https://github.com/'+expected['repository'];signer=repo+'/'+expected['signerWorkflow']+'@'+expected['signerRef']
         certificate={'issuer':'https://token.actions.githubusercontent.com','subjectAlternativeName':signer,
             'buildSignerURI':signer,'buildSignerDigest':expected['signerSHA'],'runnerEnvironment':'github-hosted',
             'sourceRepositoryURI':repo,'sourceRepositoryIdentifier':str(expected['repositoryId']),
@@ -258,19 +301,19 @@ class EnvelopeContracts(unittest.TestCase):
         def verify(subject,bundle,policy):
             self.assertEqual(bundle.read_bytes(),b'explicit offline crypto boundary')
             return m.policy.validate_verified_manifest(subject.read_bytes(),result,policy)
-        actual,rows=m.verified_run(api,run,source,scope,verify=verify,signer_sha='c'*40)
+        actual,rows=m.verified_run(api,run,source,scope,verify=verify)
         self.assertEqual(actual,expected);self.assertEqual(rows,{'native':row})
         for key in ['sourceRepositoryDigest','buildSignerDigest','runInvocationURI','buildConfigURI']:
             old=certificate[key];certificate[key]='wrong'
-            with self.subTest(key=key),self.assertRaises(ValueError):m.verified_run(api,run,source,scope,verify=verify,signer_sha='c'*40)
+            with self.subTest(key=key),self.assertRaises(ValueError):m.verified_run(api,run,source,scope,verify=verify)
             certificate[key]=old
         state['latest']['run_attempt']=2
         with self.assertRaisesRegex(ValueError,'current authoritative attempt'):
-            m.verified_run(api,run,source,scope,verify=verify,signer_sha='c'*40)
+            m.verified_run(api,run,source,scope,verify=verify)
 
     def test_original_frozen_proof_survives_later_failed_stage_without_changing_attempt(self):
         api,run,source,state=self.fixture()
-        expected,rows=m.verified_run(api,run,source,'frozen',verify=self.verify,signer_sha='c'*40)
+        expected,rows=m.verified_run(api,run,source,'frozen',verify=self.verify)
         self.assertEqual(expected['attempt'],1)
         self.assertEqual(set(rows),{'seal','candidates'})
         self.assertEqual(state['reads'],2)
@@ -278,10 +321,10 @@ class EnvelopeContracts(unittest.TestCase):
     def test_original_frozen_proof_is_readable_while_retry_is_running_but_not_public_success(self):
         api,run,source,state=self.fixture()
         state['latest'].update(status='in_progress',conclusion=None)
-        expected,_=m.verified_run(api,run,source,'frozen',verify=self.verify,signer_sha='c'*40)
+        expected,_=m.verified_run(api,run,source,'frozen',verify=self.verify)
         self.assertEqual(expected['attempt'],1)
         with self.assertRaisesRegex(ValueError,'current authoritative attempt'):
-            m.verified_run(api,run,source,'public',verify=self.verify,signer_sha='c'*40)
+            m.verified_run(api,run,source,'public',verify=self.verify)
 
     def test_envelope_tampering_ambiguity_source_change_and_concurrent_rerun_reject(self):
         for defect in ['missing','duplicate','bytes','expired','name','run','source','during-verification','inventory']:
@@ -298,13 +341,13 @@ class EnvelopeContracts(unittest.TestCase):
                 if defect=='inventory':return {'pending':{}}
                 return rows
             with self.subTest(defect=defect),self.assertRaises(ValueError):
-                m.verified_run(api,run,source,'frozen',verify=verify,signer_sha='c'*40)
+                m.verified_run(api,run,source,'frozen',verify=verify)
 
     def test_signature_rejection_has_no_unsigned_fallback(self):
         api,run,source,_=self.fixture()
         def reject(*args):raise ValueError('cryptographic verification failed')
         with self.assertRaisesRegex(ValueError,'cryptographic verification failed'):
-            m.verified_run(api,run,source,'frozen',verify=reject,signer_sha='c'*40)
+            m.verified_run(api,run,source,'frozen',verify=reject)
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

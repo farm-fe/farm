@@ -216,13 +216,13 @@ class FormalProducts(unittest.TestCase):
             body=output.getvalue()
             artifact.update(id=20+index,workflow_run={'id':run['id']},size_in_bytes=len(body),digest='sha256:'+hashlib.sha256(body).hexdigest())
             values.append((body,artifact,run,job,desired))
-            expected=provenance.expected_policy(run,self.source,'native-'+ABI,'c'*40)
+            expected=provenance.expected_policy(run,self.source,'native-'+ABI)
             row={'cell':'native','producer':job['name'],'jobId':job['id'],'originAttempt':2,
                  'uploadStep':formal.UPLOAD,'artifactId':artifact['id'],'artifactDigest':artifact['digest'],'artifactName':artifact['name']}
             subject=json.dumps({'schemaVersion':1,'kind':'fixed-workflow-upload-bindings',
                 **{key:expected[key] for key in ['repositoryId','sourceSHA','sourceTree','runId','callerWorkflow']},
                 'aggregationAttempt':2,'bindings':[row]}).encode()
-            repo='https://github.com/farm-fe/farm';signer=repo+'/'+expected['signerWorkflow']+'@'+expected['signerSHA']
+            repo='https://github.com/farm-fe/farm';signer=repo+'/'+expected['signerWorkflow']+'@'+expected['signerRef']
             certificate={'issuer':'https://token.actions.githubusercontent.com','subjectAlternativeName':signer,
                 'buildSignerURI':signer,'buildSignerDigest':expected['signerSHA'],'runnerEnvironment':'github-hosted',
                 'sourceRepositoryURI':repo,'sourceRepositoryIdentifier':'507542208',
@@ -267,7 +267,7 @@ class FormalProducts(unittest.TestCase):
             def verified_crypto(subject,bundle,expected):
                 self.assertEqual(bundle.read_bytes(),b'explicit offline cryptographic boundary')
                 return provenance.policy.validate_verified_manifest(subject.read_bytes(),certificates[run['id']],expected)
-            return provenance.verified_run(api,run,source,scope,verify=verified_crypto,signer_sha='c'*40)
+            return provenance.verified_run(api,run,source,scope,verify=verified_crypto)
         accepted,reasons=formal.resolve_products(API(),self.source,ABI,values[0][4],read_source=lambda sha:self.source,proof_provider=proof)
         self.assertEqual(reasons,[]);self.assertEqual(set(accepted),set(self.products));self.assertEqual(downloaded,[400,20,401,21])
         # Reusing any one successfully signed build does not imply whole-run success.

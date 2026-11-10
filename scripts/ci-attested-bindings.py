@@ -40,6 +40,16 @@ def verify_caller_templates(files, templates, signer_revision):
         check(files[path] == expected, 'Caller or producer template differs: ' + path)
 
 
+def certificate_identity(expected):
+    # Fixed-revision callers retain their exact SHA URI. Source-bound release
+    # callers use the main URI AND independently require the same source digest.
+    revision = expected['signerSHA']
+    ref = expected.get('signerRef', revision)
+    check(ref == revision or (ref == 'refs/heads/main' and revision == expected['sourceSHA']),
+          'Signer ref/digest policy differs')
+    return 'https://github.com/' + expected['repository'] + '/' + expected['signerWorkflow'] + '@' + ref
+
+
 def validate_verified_manifest(body, verification, expected):
     """Additional policy AFTER cryptographic verification; no fallback claims."""
     manifest = strict_json(body)
@@ -47,7 +57,7 @@ def validate_verified_manifest(body, verification, expected):
     result = verification[0].get('verificationResult', {})
     certificate = result.get('signature', {}).get('certificate', {})
     repo = 'https://github.com/' + expected['repository']
-    signer = repo + '/' + expected['signerWorkflow'] + '@' + expected['signerSHA']
+    signer = certificate_identity(expected)
     cert = {
         'issuer':'https://token.actions.githubusercontent.com',
         'subjectAlternativeName':signer,
@@ -111,7 +121,7 @@ def verify_with_pinned_cli(cli, cli_sha256, manifest_file, bundle_file, expected
     check(manifest_file.is_file() and not manifest_file.is_symlink() and 0 < manifest_file.stat().st_size <= 4 * 1024 * 1024, 'Invalid manifest file')
     check(bundle_file.is_file() and not bundle_file.is_symlink() and 0 < bundle_file.stat().st_size <= 16 * 1024 * 1024, 'Invalid attestation bundle')
     body = manifest_file.read_bytes()
-    signer = 'https://github.com/' + expected['repository'] + '/' + expected['signerWorkflow'] + '@' + expected['signerSHA']
+    signer = certificate_identity(expected)
     # Exact identity already binds the workflow and revision; gh forbids combining
     # this selector with --signer-workflow. Keep all independent digest checks.
     command = [str(cli.resolve()), 'attestation', 'verify', str(manifest_file.resolve()), '--bundle', str(bundle_file.resolve()),

@@ -23,7 +23,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - name: Checkout only the pinned signer implementation
+      - name: Checkout the exact same-source signer implementation
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: farm-fe/farm

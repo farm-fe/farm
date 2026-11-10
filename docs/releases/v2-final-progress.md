@@ -40,3 +40,18 @@
 - 已实测：Mac 官方 checksum 固定 CLI 验证原 Cargo proof（run 42730979843 / attempt 1 / artifact 13724513300）成功；错误 source、signer URI、signer digest、篡改 manifest 均拒绝。真实 CLI 回归显式 opt-in，默认合同不联网；证据位于本地 `attestation-cli-20261110/`。
 - 已实现待远端验证：新 signer A `7bb6de8e975fdf930925397fa5e46c5a3f78ef50`，caller/trust 同步指向 A，模板内容不变且从 A 逐字节核对。Cargo 后续 attempt 仍只接受同 source/run、新 A 的原冻结证明，不新增旧 signer 信任。恢复调用链合同的 API/crypto 为模拟；旧 9f proof 的实测不代表新 A 已实际签署。
 - 阻塞边界：旧 b03 运行重跑仍固定旧代码，不能修好它；本修复不触发重跑或发布。新 A 的 hosted 签署、实际后续 attempt 恢复、npm/Cargo registry 写入仍待合并后真实流程验证。版本、Changesets、权限、冻结原字节和发布锁均未改变。
+
+## 同仓签名工作流修复（2026-11-10）
+
+本批基线 `7ed329aee81435217047e8554bd500dfc608d1ce`。用户批准 signer 信任从独立固定版本改为本次获准进入 main 的原运行提交；不改变 main 保护、权限、版本或发布范围。
+
+| 本批节点 | 状态 | 证据与边界 |
+|---|---|---|
+| 现场保护 | 已实测 | 原 Mac 工作区 tracked 干净，六组旧证据保留，新分支从确认 main 创建；本地 `relative-signer-20261110/before-*` |
+| 同仓调用与信任 | 本地已实测 | 相对 reusable workflow；checkout 固定 job.workflow_sha。signer/source/caller SHA 必须等于原 API run.head_sha。证书 URI 精确 main ref 加独立 signer digest，不查询最新 main，不信任 manifest 自报身份 |
+| 恢复与反例 | 局部实测 | 原 source M 的 attempt 2 仍 signer M，新 aggregationAttempt=2，冻结行保留 attempt 1 artifact/digest/job/origin；main 前进 N 不影响。错误 source/signer/run/attempt/artifact 拒绝，API/crypto 为显式 fixture |
+| 本地 dry run | 已实测 | 9 组 Python 合同全部通过，22 项 Node 工作流合同通过；真实 CLI 11/11（含原 proof 和错误身份/篡改拒绝）。旧 proof 在新 same-source 策略下拒绝；不是新相对签名正例。日志位于本地 relative-signer-20261110 |
+| 真实 Actions 解析 | 待验证 | 仅 feature 分支 workflow_dispatch、publish=false、producer_run 为空；要求最终 YAML 全部 job 跳过，无签署/构建/发布。排队不算解析通过；不取消旧发布 |
+| 新 PR 与远端 CI | 待实现 | 普通推送独立 Draft PR，用户自行合并；真实相对调用 OIDC/签名和发布/恢复仍需合并后真实流程验证 |
+
+官方语义：相对 workflow 来自 caller 同一提交；`job.workflow_ref` 与 `job.workflow_sha` 分别约束 URI 和实际版本。参考 https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows 和 https://docs.github.com/en/actions/reference/workflows-and-actions/contexts 。旧 b03/7ed 运行保持原代码，不自动迁移；旧 proof 并未损坏，只是不属于新的 same-source release 信任模式。
