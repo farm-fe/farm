@@ -32,3 +32,11 @@
 - Node 20.20.2（与失败 hosted 同版）和 Node 22.20.0 的完整 TypeScript 测试分别 60 文件 / 303 项通过；Core、PostCSS、Vue 示例实际构建及 PostCSS 类型检查通过。仅测试/文档及 PostCSS 当前候选摘要变化，无版本、Changesets、发布配置或 native 源码变更。
 - 节点 12：已实现待验证。修复后 exact HEAD 的 hosted macOS/全链仍待执行；旧轮成功的 9 native、三平台 Cargo/Examples 不是新 SHA 成绩。真实 OIDC/main-to-PR cache hit/公开 registry 发布仍未验。
 - 证据：本地 `unocss-macos-20261109/` 下的 baseline-node20.log、baseline.log、cleanup-red.log、verification.json 与两个 typescript-node*.log。普通 PR Changesets 失败继续不处理；不合并、不发布。
+
+## main 发布验签修复（2026-11-10）
+
+- 节点 2 / 12：#2335 已由用户合并到 `b03f831d9f0a336ef6c0121adcf4891f7bf8e959`。合并前 `f0a77754` 的三平台测试、9 native、完整候选封存/三平台消费者和最终 gate 均通过；普通 PR Changesets 未处理。
+- 节点 4 / 8 / 9：发现真实发布阻塞。固定 gh 2.103.3 不允许同时使用 `--cert-identity` 和 `--signer-workflow`。仅删除后者，保留精确 signer URI/revision、digest/source/ref/issuer、托管 runner 和全部签名后策略。
+- 已实测：Mac 官方 checksum 固定 CLI 验证原 Cargo proof（run 42730979843 / attempt 1 / artifact 13724513300）成功；错误 source、signer URI、signer digest、篡改 manifest 均拒绝。真实 CLI 回归显式 opt-in，默认合同不联网；证据位于本地 `attestation-cli-20261110/`。
+- 已实现待远端验证：新 signer A `7bb6de8e975fdf930925397fa5e46c5a3f78ef50`，caller/trust 同步指向 A，模板内容不变且从 A 逐字节核对。Cargo 后续 attempt 仍只接受同 source/run、新 A 的原冻结证明，不新增旧 signer 信任。恢复调用链合同的 API/crypto 为模拟；旧 9f proof 的实测不代表新 A 已实际签署。
+- 阻塞边界：旧 b03 运行重跑仍固定旧代码，不能修好它；本修复不触发重跑或发布。新 A 的 hosted 签署、实际后续 attempt 恢复、npm/Cargo registry 写入仍待合并后真实流程验证。版本、Changesets、权限、冻结原字节和发布锁均未改变。
