@@ -23,6 +23,15 @@ test('each production caller is byte-exact to its immutable reviewed signer temp
     `farm-fe/farm/.github/workflows/release-provenance-signer.yaml@${pin}`);
 });
 
+test('the immutable signer uses the same corrected verifier as release consumers', () => {
+  // Cargo restore verifies its original proof inside the pinned signer checkout.
+  // Updating only the consumer would leave that path on the rejected CLI flags.
+  for (const file of ['ci-attested-bindings.py', 'ci-pinned-attestation-cli.py', 'release-provenance.py']) {
+    assert.equal(execFileSync('git', ['show', `${pin}:scripts/${file}`], { encoding: 'utf8' }),
+      read(`scripts/${file}`), file);
+  }
+});
+
 test('nested signer permissions and events stay within the approved main-push scope', () => {
   for (const name of ['release-proof-call', 'release-provenance-signer']) {
     const doc = workflow(name);

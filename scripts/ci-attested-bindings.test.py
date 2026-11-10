@@ -1,9 +1,10 @@
 """Simulated verified-certificate policy tests, NOT live signature validation."""
-# cspell:words importlib
+# cspell:words importlib sigstore
 import copy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import unittest
 spec=importlib.util.spec_from_file_location('attested_policy',Path(__file__).with_name('ci-attested-bindings.py'))
@@ -71,11 +72,66 @@ class Contracts(unittest.TestCase):
             command,options=calls[0]
             self.assertEqual(command[1:3],['attestation','verify'])
             self.assertIn('--deny-self-hosted-runners',command);self.assertIn('--cert-identity',command)
+            # gh 2.103.3 accepts exactly one certificate identity selector.
+            selectors = ['--cert-identity', '--cert-identity-regex', '--signer-repo', '--signer-workflow']
+            self.assertEqual([flag for flag in selectors if flag in command], ['--cert-identity'])
+            for flag, value in {
+                '--cert-identity': 'https://github.com/' + e['repository'] + '/' + e['signerWorkflow'] + '@' + e['signerSHA'],
+                '--signer-digest': e['signerSHA'], '--source-digest': e['sourceSHA'],
+                '--source-ref': 'refs/heads/main', '--repo': e['repository'],
+                '--predicate-type': m.PREDICATE,
+                '--cert-oidc-issuer': 'https://token.actions.githubusercontent.com',
+            }.items():
+                self.assertEqual(command[command.index(flag) + 1], value)
             self.assertNotIn('GH_TOKEN',options['env']);self.assertNotIn('GITHUB_TOKEN',options['env'])
             for code in [1,2]:
                 with self.assertRaises(ValueError):
                     m.verify_with_pinned_cli(cli,digest,manifest,bundle,e,invoke=lambda *a,**k:SimpleNamespace(returncode=code,stdout=json.dumps(verified).encode()))
             with self.assertRaises(ValueError):m.verify_with_pinned_cli(cli,'0'*64,manifest,bundle,e,invoke=invoke)
+
+    @unittest.skipUnless(os.environ.get('FARM_ATTESTATION_CLI_FIXTURE'), 'Explicit real signed CLI fixture required')
+    def test_real_pinned_cli_accepts_original_cargo_proof_and_rejects_tampering(self):
+        # Opt-in local integration: existing public proof + official CLI archive.
+        # No signing, token, registry writes or fixture JSON verification bypass.
+        import tempfile
+        import zipfile
+        root = Path(os.environ['FARM_ATTESTATION_CLI_FIXTURE'])
+        archive = root / 'cargo-proof.zip'
+        self.assertEqual(hashlib.sha256(archive.read_bytes()).hexdigest(),
+                         '0475cb303c47358951387bb8478fed32cde74148e0c1d07d12595769aba64a11')
+        spec = importlib.util.spec_from_file_location('real_cli_assets', Path(__file__).with_name('ci-pinned-attestation-cli.py'))
+        assets = importlib.util.module_from_spec(spec); spec.loader.exec_module(assets)
+        import platform
+        import sys
+        name, size, digest, member = assets.host_asset(sys.platform, platform.machine())
+        cli_archive = (root / name).read_bytes()
+        self.assertEqual(len(cli_archive), size)
+        binary = assets.unpack_verified_binary(cli_archive, digest, member, zipped=name.endswith('.zip'))
+        expected = {'repository': 'farm-fe/farm', 'repositoryId': 507542208,
+                    'sourceSHA': 'b03f831d9f0a336ef6c0121adcf4891f7bf8e959',
+                    'sourceTree': '6c9a6ce3bd30d24cc82883d73fb0bf705e22c422',
+                    'runId': 42730979843, 'attempt': 1,
+                    'callerWorkflow': '.github/workflows/cargo-source-release.yaml',
+                    'signerWorkflow': '.github/workflows/release-provenance-signer.yaml',
+                    'signerSHA': '9f93b5e5359bbf0c3d7f750f7a24469eeaab9b6d',
+                    'cells': {'cargo': {'producer': 'Prepare Cargo source archives',
+                              'uploadStep': 'Freeze verified Cargo source archives',
+                              'artifactName': 'cargo-source-{runId}'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory); cli = output / ('gh.exe' if sys.platform == 'win32' else 'gh')
+            cli.write_bytes(binary); cli.chmod(0o700)
+            manifest = output / 'ci-bindings.json'; bundle = output / 'ci-bindings.sigstore.json'
+            with zipfile.ZipFile(archive) as proof:
+                manifest.write_bytes(proof.read(manifest.name)); bundle.write_bytes(proof.read(bundle.name))
+            def verify(policy):
+                return m.verify_with_pinned_cli(cli, hashlib.sha256(binary).hexdigest(), manifest, bundle, policy)
+            self.assertEqual(verify(expected)['cargo']['artifactId'], 13724513300)
+            for field, value in [('sourceSHA', '0' * 40), ('signerSHA', '0' * 40),
+                                 ('signerWorkflow', '.github/workflows/other.yaml')]:
+                with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'Cryptographic'):
+                    verify({**expected, field: value})
+            manifest.write_bytes(manifest.read_bytes() + b' ')
+            with self.assertRaisesRegex(ValueError, 'Cryptographic'): verify(expected)
 
     def test_default_process_path_rejects_forged_verified_json_on_failed_verification(self):
         import os
