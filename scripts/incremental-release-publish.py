@@ -103,6 +103,10 @@ class RegistryWriter:
         return order
 
     def lookup(self, row):
+        with self.reader.budget(600):
+            return self._lookup(row)
+
+    def _lookup(self, row):
         name = urllib.parse.quote(row["name"], safe="")
         url = ("https://registry.npmjs.org/" + name + "/" + row["version"] if row["kind"] == "npm"
                else "https://crates.io/api/v1/crates/" + name + "/" + row["version"])
@@ -548,7 +552,10 @@ def main():
         verify_locked_plan(transaction, source, api.reader)
         inspect_release(api, manifest)
         registry = RegistryWriter(os.environ, directory / "archives")
-        transaction.upload(lambda row: (directory / "archives" / row["archive"]).read_bytes(), registry)
+        # Bound this stage below the 90-minute job cap; operation deadlines do
+        # not inherit earlier source/signature verification or idle reader time.
+        with registry.reader.budget(4500):
+            transaction.upload(lambda row: (directory / "archives" / row["archive"]).read_bytes(), registry)
         transaction.handoff("public-acceptance")
     else:
         _, saved = transaction.store.read()

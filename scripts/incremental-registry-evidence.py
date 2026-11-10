@@ -1,5 +1,6 @@
 """Read public registry bytes independently; never copy checksum claims from a ledger."""
 # cspell:words urllib npmjs
+from contextlib import contextmanager
 import base64
 import hashlib
 import json
@@ -22,9 +23,33 @@ class RegistryReadOnly:
             raise PermissionError("Independent registry verification runs only in Actions")
         self.opener = opener or urllib.request.build_opener(NoRedirect())
         self.clock = clock
-        self.deadline = clock() + 600
+        self.deadline = None
         self.total_bytes = 0
         self.verifiedArchives = {}
+
+    @contextmanager
+    def budget(self, seconds):
+        """Bound an operation, not the idle lifetime of this reader.
+
+        Nested scopes can only shorten the enclosing deadline. Byte accounting
+        remains cumulative across scopes. Callers retain their Actions job cap.
+        """
+        if type(seconds) is not int or not 0 < seconds <= 4500:
+            raise ValueError("Invalid registry operation budget")
+        previous = self.deadline
+        self.deadline = min(previous, self.clock() + seconds) if previous is not None else self.clock() + seconds
+        try:
+            self.remaining()
+            yield
+            self.remaining()
+        finally:
+            self.deadline = previous
+
+    def remaining(self):
+        remaining = 30 if self.deadline is None else self.deadline - self.clock()
+        if remaining <= 0:
+            raise ValueError("Registry verification operation deadline exceeded")
+        return remaining
 
     def open(self, url):
         parsed = urllib.parse.urlsplit(url)
@@ -32,37 +57,45 @@ class RegistryReadOnly:
             raise ValueError("Untrusted registry origin")
         if parsed.username or parsed.password or parsed.port not in [None, 443] or parsed.fragment or parsed.query:
             raise ValueError("Unexpected registry URL fields")
-        remaining = self.deadline - self.clock()
-        if remaining <= 0:
-            raise ValueError("Registry verification total deadline exceeded")
+        remaining = self.remaining()
         # No authentication headers and no redirects to an unverified origin.
         return self.opener.open(urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "Farm-release-read-only-verifier"}, method="GET"), timeout=min(30, remaining))
 
     def json(self, url):
-        with self.open(url) as response:
-            body = response.read(2 * 1024 * 1024 + 1)
+        with self.budget(30):
+            with self.open(url) as response:
+                body = response.read(2 * 1024 * 1024 + 1)
         if len(body) > 2 * 1024 * 1024:
             raise ValueError("Registry metadata exceeded bound")
         return json.loads(body.decode("utf-8"))
 
     def archive(self, url):
+        with self.budget(600):
+            return self._archive(url)
+
+    def _archive(self, url):
         sha256, sha512, sha1, count = hashlib.sha256(), hashlib.sha512(), hashlib.sha1(), 0
         with self.open(url) as response:
             while True:
-                if self.clock() >= self.deadline:
-                    raise ValueError("Registry verification total deadline exceeded")
+                self.remaining()
                 body = response.read(1024 * 1024)
-                if not body:
-                    break
                 count += len(body); self.total_bytes += len(body)
                 if count > 100 * 1024 * 1024 or self.total_bytes > 3 * 1024 ** 3:
                     raise ValueError("Registry archive byte budget exceeded")
+                self.remaining()
+                if not body:
+                    break
                 sha256.update(body); sha512.update(body); sha1.update(body)
         if count <= 0:
             raise ValueError("Registry archive is empty")
         return {"sha256": sha256.hexdigest(), "sha512": base64.b64encode(sha512.digest()).decode("ascii"), "sha1": sha1.hexdigest()}
 
     def verify(self, records):
+        # Whole-inventory read-back, below the 30-minute proof/finalize job cap.
+        with self.budget(1500):
+            return self._verify(records)
+
+    def _verify(self, records):
         if not isinstance(records, dict) or not records or len(records) > 1024:
             raise ValueError("Registry package inventory missing or exceeds bound")
         result = {}

@@ -1,5 +1,9 @@
 """Actual-stage result recording contracts with a read-only fake registry."""
 # cspell:words importlib
+import base64
+import io
+import json
+import urllib.parse
 import copy
 import importlib.util
 import hashlib
@@ -18,7 +22,7 @@ class Contracts(unittest.TestCase):
         report = {"status": "passed", "publicRegistry": True, "workspacePatches": False, "cleanupConfirmed": True,
                   "stages": ["npm-install", "esm-cjs", "types", "docs-build", "sdk"]}
         reports = {platform: copy.deepcopy(report) for platform in ["ubuntu-24.04", "macos-latest", "windows-latest"]}
-        registry = mock.Mock(); registry.verify.return_value = {"npm:a": "d" * 64}
+        registry = mock.MagicMock(); registry.verify.return_value = {"npm:a": "d" * 64}
         registry.json.return_value = {"name": "a", "version": "2.0.0"}
         return manifest, reports, registry
 
@@ -84,6 +88,55 @@ class Contracts(unittest.TestCase):
         for value in [{"name": "a", "version": "1.9.0"}, {"name": "other", "version": "2.0.0"}]:
             registry.json.return_value = value
             with self.assertRaises(ValueError): module.public_record(manifest, reports, {"id": 12}, registry)
+
+
+class InventoryBudgetContracts(unittest.TestCase):
+    def fixture(self, seconds=1):
+        now = [1000.0]; calls = []
+        body = b'frozen production-algorithm test bytes'
+        rows = [{'kind': 'npm', 'name': 'package-' + str(i), 'version': '2.0.0',
+                 'archiveSha256': hashlib.sha256(body).hexdigest()} for i in range(297)]
+        class Opener:
+            def open(self, request, timeout):
+                calls.append(request.full_url); now[0] += seconds
+                name, selector = urllib.parse.urlsplit(request.full_url).path.strip('/').split('/')
+                if selector == 'archive.tgz': value = body
+                else:
+                    value = json.dumps({'name': name, 'version': '2.0.0', 'dist': {
+                        'tarball': 'https://registry.npmjs.org/' + name + '/archive.tgz',
+                        'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(body).digest()).decode()}}).encode()
+                return io.BytesIO(value)
+        client = module.entry.evidence.registry_module.RegistryReadOnly({'GITHUB_ACTIONS': 'true'}, Opener(), lambda: now[0])
+        manifest = {'releaseValidation': 'archive-integrity-v1', 'sourceTree': 'b' * 40, 'planHash': 'c' * 64, 'packages': rows}
+        now[0] += 1000  # External source/lock work must not age the reader.
+        return manifest, client, now, calls
+
+    def test_full_public_proof_covers_archives_and_latest_with_one_batch_deadline(self):
+        manifest, client, now, calls = self.fixture()
+        result = module.registry_record(manifest, {'id': 7}, client)
+        self.assertEqual(len(result['packages']), 297)
+        self.assertEqual(len(calls), 891)
+        self.assertEqual(now[0], 2891)
+        self.assertTrue(result['registryBytesVerified'])
+        self.assertFalse(result['testsExecuted'])
+
+    def test_latest_phase_cannot_restart_exhausted_public_batch(self):
+        manifest, client, _, calls = self.fixture(seconds=2)
+        with self.assertRaisesRegex(ValueError, 'deadline'):
+            module.registry_record(manifest, {'id': 7}, client)
+        self.assertGreater(len(calls), 594)  # archive loop passed; latest uses same budget
+        self.assertLess(len(calls), 891)
+
+    def test_finalize_style_full_inventory_and_recovery_retain_byte_accounting(self):
+        manifest, client, now, calls = self.fixture(seconds=2)
+        records = {'npm:' + row['name']: row for row in manifest['packages']}
+        expected = {key: row['archiveSha256'] for key, row in records.items()}
+        self.assertEqual(client.verify(records), expected)
+        count = client.total_bytes
+        now[0] += 1000
+        self.assertEqual(client.verify(records), expected)
+        self.assertEqual(client.total_bytes, 2 * count)
+        self.assertEqual(len(calls), 1188)
 
 
 if __name__ == "__main__":

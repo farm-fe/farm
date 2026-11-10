@@ -61,6 +61,11 @@ def public_record(manifest, reports, job, registry):
 
 def registry_record(manifest, job, registry, *, integrity=True):
     """Registry bytes and stable tag read-back, without installation or tests."""
+    with registry.budget(1500):
+        return _registry_record(manifest, job, registry, integrity=integrity)
+
+
+def _registry_record(manifest, job, registry, *, integrity):
     check(entry.archive_integrity_mode(manifest) == integrity, "Frozen manifest and registry proof policy differ")
     records = {row["kind"] + ":" + row["name"]: row for row in manifest["packages"]}
     actual = registry.verify(records)

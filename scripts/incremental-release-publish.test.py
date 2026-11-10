@@ -200,7 +200,7 @@ class Contracts(unittest.TestCase):
         with self.assertRaises(ValueError): writer.request('GET','/git/commits/'+'a'*40,missing=True)
 
     def registry(self, metadata, bodies):
-        reader=mock.Mock();reader.json.side_effect=metadata;reader.archive.side_effect=bodies
+        reader=mock.MagicMock();reader.json.side_effect=metadata;reader.archive.side_effect=bodies
         with mock.patch.object(module.entry.evidence.registry_module,'RegistryReadOnly',return_value=reader):
             writer=module.RegistryWriter({},'.')
         return writer,reader
@@ -841,6 +841,76 @@ class LatestHTTPContracts(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'different bytes'):
                         current.upload(lambda row: bodies[row['name']], writer)
                     self.assertEqual(registry.writes, [])
+
+
+class FullInventoryBudgetContracts(unittest.TestCase):
+    def test_297_package_publisher_preserves_preflight_fences_and_stage_budget(self):
+        shared = module.load('budget_inventory_state_fixture', 'incremental-publication-state.test.py')
+        api, store, manifest, _, _ = shared.fixture()
+        now = [0.0]; reads = [0]; values = {}; writes = []; requests = []
+        original_read = store.read
+        def read():
+            now[0] += 1; reads[0] += 1  # external ownership work, not registry I/O
+            return original_read()
+        store.read = read
+        body = b'original frozen archive model'
+        manifest['packages'] = [{'kind': 'npm', 'name': 'package-' + str(i), 'version': '2.0.0',
+            'archive': str(i) + '.tgz', 'archiveBytes': len(body), 'archiveSha256': hashlib.sha256(body).hexdigest()}
+            for i in range(297)]
+        class Opener:
+            def open(self, request, timeout):
+                self_url = urllib.parse.urlsplit(request.full_url)
+                name, selector = self_url.path.strip('/').split('/')
+                requests.append((name, selector)); now[0] += 0.1
+                if selector == 'latest': value = {'name': name, 'version': '2.0.0'}
+                elif name not in values:
+                    raise urllib.error.HTTPError(request.full_url, 404, 'absent', {}, None)
+                elif selector == 'archive.tgz': return io.BytesIO(values[name])
+                else:
+                    value = {'name': name, 'version': '2.0.0', 'dist': {
+                        'tarball': 'https://registry.npmjs.org/' + name + '/archive.tgz',
+                        'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(values[name]).digest()).decode()}}
+                return io.BytesIO(json.dumps(value).encode())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for row in manifest['packages']: (root / row['archive']).write_bytes(body)
+            def command(argv, **options):
+                if '--input-type=module' in argv:
+                    return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
+                self.assertIn('publish', argv)
+                self.assertGreaterEqual(len(requests), 594)  # entire first preflight precedes every write
+                row = manifest['packages'][int(Path(argv[argv.index('publish') + 1]).stem)]
+                self.assertEqual(original_read()[1]['active']['packages']['npm:' + row['name']], 'upload-started')
+                values[row['name']] = body; writes.append(row['name'])
+                return SimpleNamespace(returncode=0)
+            writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'NPM_TOKEN': 'fixture-only'}, root, command)
+            writer.reader = module.entry.evidence.registry_module.RegistryReadOnly(
+                {'GITHUB_ACTIONS': 'true'}, Opener(), lambda: now[0])
+            now[0] = 1000  # completed prior preparation cannot consume a later stage
+            runner = module.state.Publication(store, manifest, {'runId': 7, 'attempt': 1}, lambda value: True)
+            runner.acquire()
+            delayed = [False]
+            def slow_hash(row):
+                if not delayed[0]: now[0] += 4501; delayed[0] = True
+                return body
+            with self.assertRaisesRegex(ValueError, 'deadline'):
+                with writer.reader.budget(4500): runner.upload(slow_hash, writer)
+            self.assertEqual(writes, [])
+            self.assertEqual(requests, [])
+            with writer.reader.budget(4500):
+                runner.upload(lambda row: body, writer)
+            self.assertEqual(len(writes), 297)
+            self.assertGreater(now[0], 1600)
+            self.assertEqual(set(original_read()[1]['active']['packages'].values()), {'registry-confirmed'})
+            self.assertGreater(reads[0], 297)
+            self.assertEqual(writer.reader.total_bytes, 297 * len(body))
+            # Reuse the same reader: cumulative bytes persist, but a new bounded
+            # verification stage is not aged by an unrelated wait.
+            now[0] += 1000
+            with writer.reader.budget(4500):
+                runner.upload(lambda row: body, writer)
+            self.assertEqual(len(writes), 297)
+            self.assertEqual(writer.reader.total_bytes, 3 * 297 * len(body))
 
 
 if __name__ == '__main__':
