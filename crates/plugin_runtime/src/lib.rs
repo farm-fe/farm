@@ -359,6 +359,183 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
+    // Upgrade only the new helper ABI on an existing host. Re-running the whole
+    // bootstrap would replace its cache/registry and dynamic-loader state.
+    // Extract the already-transformed, self-contained factory from the exact
+    // helper module compiled for this bundle, rather than duplicating its code.
+    let bridge_factory = {
+      use farmfe_core::swc_ecma_ast::{
+        BindingIdent, ClassDecl, ClassExpr, Decl, FnDecl, FnExpr, Id, Ident, ImportDecl, Module,
+        ModuleDecl, ModuleItem, Stmt,
+      };
+      use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
+      #[derive(Default)]
+      struct References {
+        used: HashSet<Id>,
+        bound: HashSet<Id>,
+      }
+      impl Visit for References {
+        fn visit_ident(&mut self, ident: &Ident) {
+          self.used.insert(ident.to_id());
+        }
+        fn visit_binding_ident(&mut self, ident: &BindingIdent) {
+          self.bound.insert(ident.id.to_id());
+          ident.visit_children_with(self);
+        }
+        fn visit_fn_decl(&mut self, node: &FnDecl) {
+          self.bound.insert(node.ident.to_id());
+          node.visit_children_with(self);
+        }
+        fn visit_fn_expr(&mut self, node: &FnExpr) {
+          if let Some(ident) = &node.ident {
+            self.bound.insert(ident.to_id());
+          }
+          node.visit_children_with(self);
+        }
+        fn visit_class_decl(&mut self, node: &ClassDecl) {
+          self.bound.insert(node.ident.to_id());
+          node.visit_children_with(self);
+        }
+        fn visit_class_expr(&mut self, node: &ClassExpr) {
+          if let Some(ident) = &node.ident {
+            self.bound.insert(ident.to_id());
+          }
+          node.visit_children_with(self);
+        }
+        fn visit_import_decl(&mut self, node: &ImportDecl) {
+          for specifier in &node.specifiers {
+            self.bound.insert(specifier.local().to_id());
+          }
+          node.visit_children_with(self);
+        }
+      }
+      let graph = context.module_graph.read();
+      if farmfe_toolkit::script::entry_live_bindings::enabled(&graph, context) {
+        let id = farmfe_core::module::meta_data::script::FARM_RUNTIME_MODULE_HELPER_ID.into();
+        let mut module_bindings = HashSet::default();
+        let declarations = graph.module(&id).and_then(|module| {
+          let mut whole = References::default();
+          module.meta.as_script().ast.visit_with(&mut whole);
+          module_bindings = whole.bound;
+          // Preset-env injects same-module SWC helpers. Retain their transitive
+          // declaration closure by exact hygienic ID, never by a name prefix.
+          let functions = module
+            .meta
+            .as_script()
+            .ast
+            .body
+            .iter()
+            .filter_map(|item| {
+              let declaration = match item {
+                ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export)) => &export.decl,
+                ModuleItem::Stmt(Stmt::Decl(declaration)) => declaration,
+                _ => return None,
+              };
+              match declaration {
+                Decl::Fn(function) => Some((function.ident.to_id(), declaration.clone())),
+                _ => None,
+              }
+            })
+            .collect::<Vec<_>>();
+          let root = functions
+            .iter()
+            .find(|(id, _)| id.0 == "createEntryLiveBindings")?
+            .0
+            .clone();
+          let mut pending = vec![root];
+          let mut required = HashSet::default();
+          while let Some(id) = pending.pop() {
+            if !required.insert(id.clone()) {
+              continue;
+            }
+            let declaration = &functions
+              .iter()
+              .find(|(candidate, _)| candidate == &id)
+              .expect("queued declaration exists")
+              .1;
+            let mut references = References::default();
+            declaration.visit_with(&mut references);
+            pending.extend(
+              functions
+                .iter()
+                .filter(|(id, _)| references.used.contains(id) && !required.contains(id))
+                .map(|(id, _)| id.clone()),
+            );
+          }
+          Some(
+            functions
+              .into_iter()
+              .filter(|(id, _)| required.contains(id))
+              .map(|(_, declaration)| ModuleItem::Stmt(Stmt::Decl(declaration)))
+              .collect(),
+          )
+        });
+        declarations
+          .map(|body| {
+            let ast = Module {
+              body,
+              ..Default::default()
+            };
+            let mut references = References::default();
+            ast.visit_with(&mut references);
+            let mut unclosed = references
+              .used
+              .difference(&references.bound)
+              .filter(|id| {
+                // Only intrinsic JS globals are permitted outside this closure.
+                // A same-spelling module binding is not an intrinsic global.
+                module_bindings.contains(*id)
+                  || !matches!(
+                    id.0.as_ref(),
+                    "Array"
+                      | "Object"
+                      | "String"
+                      | "Symbol"
+                      | "Map"
+                      | "Set"
+                      | "WeakMap"
+                      | "WeakSet"
+                      | "TypeError"
+                      | "Error"
+                      | "Number"
+                      | "Boolean"
+                      | "Math"
+                      | "Reflect"
+                      | "Promise"
+                      | "undefined"
+                      | "NaN"
+                      | "Infinity"
+                      | "BigInt"
+                      | "JSON"
+                      | "RegExp"
+                      | "arguments"
+                  )
+              })
+              .map(|id| id.0.to_string())
+              .collect::<Vec<_>>();
+            unclosed.sort();
+            unclosed.dedup();
+            if !unclosed.is_empty() {
+              return Err(CompilationError::GenericError(format!(
+                "Entry bridge factory has unclosed dependencies: {}",
+                unclosed.join(", ")
+              )));
+            }
+            farmfe_toolkit::script::codegen_module(
+              &ast,
+              context.meta.get_module_source_map(&id),
+              None,
+              Default::default(),
+              None,
+            )
+            .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+            .map_err(|error| CompilationError::GenericError(error.to_string()))
+          })
+          .transpose()?
+      } else {
+        None
+      }
+    };
     let res = context
       .plugin_driver
       .generate_resources(
@@ -386,8 +563,11 @@ impl Plugin for FarmPluginRuntime {
             "window"
           };
           let runtime_code = String::from_utf8_lossy(&resource.resource.bytes);
+          let upgrade = bridge_factory.as_ref().map(|factory| format!(
+            "else if(!{farm_global_this}.{FARM_MODULE_SYSTEM}.r.entryBindings){{{factory};{farm_global_this}.{FARM_MODULE_SYSTEM}.r.entryBindings=createEntryLiveBindings({farm_global_this}.{FARM_MODULE_SYSTEM});}}"
+          )).unwrap_or_default();
           resource.resource.bytes = format!(
-            "(function(){{if(typeof {runtime_global_type}==='undefined'||!{farm_global_this}||!{farm_global_this}.{FARM_MODULE_SYSTEM}){{{runtime_code}}}}}());"
+            "(function(){{if(typeof {runtime_global_type}==='undefined'||!{farm_global_this}||!{farm_global_this}.{FARM_MODULE_SYSTEM}){{{runtime_code}}}{upgrade}}}());"
           ).into_bytes();
           resource.resource.name = transform_output_filename(TransformOutputFileNameParams {
             filename_config: context.config.output.filename.clone(),

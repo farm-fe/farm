@@ -174,8 +174,9 @@ test('workflow routes rebuilds separately and terminal steps bind the trusted pl
     assert.ok(step.includes('FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}'));
   }
   assert.ok(workflow.includes("needs.plan.outputs.publish_required == 'false' && needs.plan.outputs.build_required == 'false'"));
-  const consumers=workflow.split('  candidate-consumers:')[1].split('  publisher:')[0];
-  assert.ok(consumers.includes("needs.plan.outputs.publish_required == 'true'"));
+  const publisher=workflow.split('  publisher:')[1].split('  public-proof:')[0];
+  assert.ok(publisher.includes("needs.plan.outputs.publish_required == 'true'"));
+  assert.ok(!workflow.includes('  candidate-consumers:'));
 });
 
 test('registry-selected publication builds without a successful baseline and retains public dependencies only for validation',()=>{
@@ -190,4 +191,36 @@ test('registry-selected publication builds without a successful baseline and ret
  assert.deepEqual(makePublicationManifest(value).registrySnapshot,value.selection.registrySnapshot);
  delete value.selection.registryRetained['npm:published'].integrity;
  assert.throws(()=>candidatePlanForSelection(value.plan,value.selection));
+});
+
+
+test('actual full npm family orders hard dependencies without treating peer cycles as upload cycles', () => {
+ const root=fileURLToPath(new URL('../',import.meta.url));
+ const family=JSON.parse(fs.readFileSync(path.join(root,'docs/releases/v2-candidate.json')));
+ const entries=[...family.npm.primary,...family.npm.payloads];
+ const bodies=new Map(entries.map(row=>[row.name,Buffer.from(row.name+'@'+row.version)]));
+ const rows=entries.map((row,index)=>({name:row.name,version:row.version,file:index+'.tgz',sha256:sha256(bodies.get(row.name))}));
+ const value={...fixture(),plan:family,selection:{...fixture().selection,publicationScope:'npm',publish:rows.map(row=>'npm:'+row.name)},
+  receipt:{...fixture().receipt,records:rows},readArchive:file=>bodies.get(rows.find(row=>row.file===file).name),
+  readPackage:row=>JSON.parse(fs.readFileSync(path.join(root,entries.find(pkg=>pkg.name===row.name).manifestPath)))};
+ const result=makePublicationManifest(value),names=result.packages.map(row=>row.name);
+ assert.equal(result.packages.length,297);assert.equal(result.family.length,297);
+ assert.ok(names.indexOf('@farmfe/docs-theme-default')<names.indexOf('@farmfe/docs'));
+ for(const row of result.packages)assert.equal(row.archiveSha256,sha256(bodies.get(row.name)));
+});
+
+test('only peer upload cycles are allowed; hard and optional cycles still reject', () => {
+ const value=fixture(),original=value.receipt.records[0];
+ value.receipt.records.push({...original,name:'theme',file:'theme.tgz'});
+ value.plan.npm.primary.push({name:'theme',version:'2.0.0',manifestPath:'packages/theme/package.json'});
+ value.selection.publish.push('npm:theme');
+ for(const field of ['dependencies','optionalDependencies']) {
+  value.readPackage=row=>({[field]:{[row.name==='theme'?'@farmfe/core':'theme']:'2.0.0'}});
+  assert.throws(()=>makePublicationManifest(value),/Cyclic npm publication dependencies/);
+ }
+ value.readPackage=row=>({[row.name==='theme'?'peerDependencies':'dependencies']:{[row.name==='theme'?'@farmfe/core':'theme']:'2.0.0'}});
+ assert.deepEqual(makePublicationManifest(value).packages.map(row=>row.name),['theme','@farmfe/core']);
+ value.readPackage=row=>({peerDependencies:{[row.name==='theme'?'@farmfe/core':'theme']:'2.0.0'}});
+ assert.equal(makePublicationManifest(value).packages.length,2);
+ value.readArchive=()=>Buffer.from('tampered');assert.throws(()=>makePublicationManifest(value));
 });

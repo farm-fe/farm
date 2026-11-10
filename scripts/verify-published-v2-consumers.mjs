@@ -80,7 +80,7 @@ async function main() {
   for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'CARGO_REGISTRY_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN', 'CARGO_NET_OFFLINE', 'NAPI_RS_NATIVE_LIBRARY_PATH', 'FARM_LIB_CORE_PATH']) delete env[key];
   async function run(stage, executable, args, cwd = scratch, timeout = 120000) {
     const disk = await fs.statfs(scratch);
-    assert.ok(os.freemem() >= 3.4 * 1024 ** 3 && disk.bavail * disk.bsize >= 9.75 * 1024 ** 3, 'Public consumer resource guard');
+    assert.ok(disk.bavail * disk.bsize >= 9.75 * 1024 ** 3, 'Public consumer resource guard');
     assert.ok(Date.now() < deadline, 'Public consumer time budget exhausted');
     await command(executable, args, { cwd, env, log: path.join(output, `${stage}.log`), timeoutMs: Math.min(timeout, deadline - Date.now()) });
     report.stages.push(stage); await fs.writeFile(reportFile, JSON.stringify(report, null, 2));

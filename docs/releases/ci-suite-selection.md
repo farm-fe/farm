@@ -1,35 +1,26 @@
-# Current CI suite execution scope
+# PR suite execution scope
 
-The same-run type-check job verifies a completed main CI baseline and original
-six suite receipts with the existing read-only Actions identity. Its current
-selection file is bound by a raw-byte hash in job outputs to the current source,
-Git tree, repository, run and attempt. Consumers independently reconstruct the
-selection from committed old/new inputs before executing it.
+Every PR runs the complete Unit, TypeScript, Examples, Docs, type and candidate
+archive consumer tests, including documentation-only and version-only changes.
+Test execution does not query a main test baseline or inherit earlier results.
+The ordinary Changesets rule remains separate and unchanged.
 
-Source leaves under `examples/react/src` and `js-plugins/babel/src`, plus
-ordinary committed `docs/experiences/*.md` engineering notes, may select a smaller
-set. Engineering notes require Git blob mode `100644` on every present side of
-an addition, edit, deletion or rename. Missing metadata, executable files and
-symlinks cannot receive this exemption. A mixed change still includes every
-product path; renames are compared as deletion plus addition. No-op and notes-only
-changes select no TS/Examples cases, with explicit `not-applicable` receipts;
-create-farm, Unit, Docs quality and performance gates remain unchanged. Source/config/manifest changes outside those audited
-boundaries, unresolved workspace or npm aliases, ambiguous relevant dependencies,
-policy changes, missing or inaccessible baselines and forks execute all suites.
-The PostCSS test's dependency on the vite-adapter-vue Example manifest is explicit.
-This is not a claim that all dynamic imports in the repository have been mapped.
+Only native builds may be reused. A cache hit and a cache miss have the same
+complete test inventory and case-count requirements. Missing trusted build
+bytes cause a current build; they never cause tests to be skipped.
 
-TS passes the exact selected file filters to Vitest and checks actual file and
-assertion results. Examples record only IDs whose build commands completed;
-missing manifests/directories do not establish coverage. Browser receipts include
-that build evidence and actual terminal cases. A planned empty collection is
-`not-applicable` with zero executed cases, not a successful empty test process.
-The stable gate checks all six current-run receipt sets and counts; skipped,
-missing, failed or foreign receipts cannot satisfy it. Create-farm candidates,
-Docs release-profile reference checks and full three-platform business-2048
-performance remain separate and still run.
+The six same-run TypeScript/browser receipts are bound to fixed upload IDs,
+digests and original producer attempts. The execution gate checks actual
+current results, required build/assembly jobs, and complete case counts. Missing,
+failed, cancelled, skipped or foreign evidence cannot satisfy the gate.
+The primary chains retain create-farm tests, and the PR candidate workflow
+installs and exercises the current unpublished npm and Cargo archives.
 
-A reduced execution ledger is never accepted as a complete baseline. Lookup is
-bounded to three main runs and falls back to all current suites when no complete
-baseline can be independently verified. No prior case success is inherited.
-CI build bytes and release build bytes use separate chains and are never mixed.
+Main builds, packs and publishes from its actual fixed source. It does not wait
+for a CI/Unit test ledger or require a matching PR SHA. Frozen archive identity,
+registry conflicts, original-byte recovery and registry read-back remain release
+checks. Performance sampling and reports remain local only.
+
+The former reduced suite selection and main-baseline lookup have been removed.
+See [final progress](v2-final-progress.md) for implementation and verification
+status; the current working draft is not a completed hosted release acceptance.

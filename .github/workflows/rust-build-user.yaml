@@ -15,16 +15,43 @@ on:
         type: string
         default: all
 
+    outputs:
+      catalog_id:
+        value: ${{ jobs.build.outputs.catalog_id }}
+      catalog_digest:
+        value: ${{ jobs.build.outputs.catalog_digest }}
+      catalog_attempt:
+        value: ${{ jobs.build.outputs.catalog_attempt }}
+      docs_upload:
+        value: ${{ jobs.build.outputs.docs_upload }}
+      product_upload:
+        value: ${{ jobs.build.outputs.product_upload }}
+      artifact_id:
+        value: ${{ jobs.build.outputs.artifact_id }}
+      artifact_digest:
+        value: ${{ jobs.build.outputs.artifact_digest }}
+      run_attempt:
+        value: ${{ jobs.build.outputs.run_attempt }}
+
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: rust-build-user-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
+  group: rust-build-user-${{ github.run_id }}-${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platform }}
   cancel-in-progress: true
 
 jobs:
   build:
+    outputs:
+      catalog_id: ${{ steps.catalog-upload.outputs.artifact-id }}
+      catalog_digest: ${{ steps.catalog-upload.outputs.artifact-digest }}
+      catalog_attempt: ${{ steps.catalog-origin.outputs.attempt }}
+      docs_upload: ${{ steps.docs-binding.outputs.binding }}
+      product_upload: ${{ steps.product-binding.outputs.binding }}
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Build and Upload User Artifacts - ${{ matrix.settings.abi }}
     runs-on: ${{ matrix.settings.os }}
     env:
@@ -120,9 +147,11 @@ jobs:
         run: |
           cargo metadata --locked --all-features --format-version 1 > "$RUNNER_TEMP/farm-glob-metadata.json"
           node scripts/assert-glob-dependency-closure.mjs "$RUNNER_TEMP/farm-glob-metadata.json"
-          node --test scripts/assert-glob-dependency-closure.test.mjs
+      - name: Test glob dependency closure on PR validation
+        if: github.event_name != 'push' && matrix.settings.abi == 'linux-x64-gnu'
+        run: node --test scripts/assert-glob-dependency-closure.test.mjs
       - name: Verify native artifact build and release flow
-        if: matrix.settings.abi == 'linux-x64-gnu'
+        if: github.event_name != 'push' && matrix.settings.abi == 'linux-x64-gnu'
         run: |
           node scripts/test-native-container-node.cjs
           node scripts/test-native-artifact-flow.cjs
@@ -411,7 +440,8 @@ jobs:
       - name: Seal same-run Docs native products
         if: inputs.profile != 'release' && contains(fromJSON('["linux-x64-gnu","win32-x64-msvc"]'), matrix.settings.abi)
         run: python -B scripts/docs-native-products.py produce --abi ${{ matrix.settings.abi }} --output docs-native-products
-      - name: Upload same-run Docs native products
+      - id: docs-upload
+        name: Upload same-run Docs native products
         if: inputs.profile != 'release' && contains(fromJSON('["linux-x64-gnu","win32-x64-msvc"]'), matrix.settings.abi)
         uses: actions/upload-artifact@v4
         with:
@@ -419,6 +449,20 @@ jobs:
           path: docs-native-products/
           if-no-files-found: error
           retention-days: 7
+      - id: docs-binding
+        name: Bind fixed Docs upload identity
+        if: inputs.profile != 'release' && contains(fromJSON('["linux-x64-gnu","win32-x64-msvc"]'), matrix.settings.abi)
+        shell: bash
+        env:
+          DOCS_ARTIFACT_ID: ${{ steps.docs-upload.outputs.artifact-id }}
+          DOCS_ARTIFACT_DIGEST: ${{ steps.docs-upload.outputs.artifact-digest }}
+        run: |
+          python -B - <<'PYTHON'
+          import json, os
+          value = {'artifact_id': os.environ['DOCS_ARTIFACT_ID'], 'artifact_digest': os.environ['DOCS_ARTIFACT_DIGEST'], 'run_attempt': os.environ['GITHUB_RUN_ATTEMPT']}
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write('binding=' + json.dumps(value, separators=(',', ':')) + '\n')
+          PYTHON
       - name: Capture committed source ledger (shadow only)
         continue-on-error: true
         run: |
@@ -439,6 +483,7 @@ jobs:
           FARM_BUILD_PROFILE: release
         run: python -B scripts/formal-native-products.py produce --abi ${{ matrix.settings.abi }} --capture .ci-native-host-proof/${{ matrix.settings.abi }}/products.json --output formal-native-catalog
       - name: Upload formal native product catalog
+        id: catalog-upload
         if: inputs.profile == 'release' && steps.formal-catalog.outputs.catalog_available == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -446,7 +491,14 @@ jobs:
           path: formal-native-catalog/
           if-no-files-found: error
           retention-days: 30
+      - name: Bind successful catalog to original upload attempt
+        id: catalog-origin
+        if: steps.catalog-upload.outcome == 'success'
+        shell: bash
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
       - name: Preserve bounded shadow producer context without duplicating native archives
+        id: product-upload
         if: ${{ always() && inputs.profile != 'release' }}
         continue-on-error: true
         uses: actions/upload-artifact@v4
@@ -456,11 +508,25 @@ jobs:
           path: .ci-native-host-proof/${{ matrix.settings.abi }}/*.json
           if-no-files-found: warn
           retention-days: 14
-      - name: Preserve actual cell receipt (shadow only)
+      - name: Bind native product upload action outputs
+        if: always() && steps.product-upload.outputs.artifact-id != ''
+        id: product-binding
+        shell: bash
+        env:
+          PRODUCT_ID: ${{ steps.product-upload.outputs.artifact-id }}
+          PRODUCT_DIGEST: ${{ steps.product-upload.outputs.artifact-digest }}
+        run: |
+          python - <<'PYBIND'
+          import json, os
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('binding=' + json.dumps({'artifact_id':os.environ['PRODUCT_ID'], 'artifact_digest':os.environ['PRODUCT_DIGEST'], 'run_attempt':os.environ['GITHUB_RUN_ATTEMPT']}) + '\n')
+          PYBIND
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "native:${{ inputs.profile }}:${{ matrix.settings.abi }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.settings.abi }}

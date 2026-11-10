@@ -1,7 +1,9 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 # Incremental CI rollout
 
 The first implementation is shadow-only. No native build, test, Docs acceptance,
-Examples case, performance sample or release gate is omitted. It adds a plan and
+Examples case or functional release gate is omitted. It adds a plan and
 an informational summary to the existing workflow. This document does not grant
 publication approval.
 
@@ -80,8 +82,8 @@ Actual E2E and Unit matrix jobs now upload current-run cell receipts, including
 failed or cancelled outcomes where the runner can still finish cleanup. The
 always-run summaries check their plan and checkout identities, expected inventory
 and completeness; missing receipt artifacts are visible, not assumed successful.
-Informational performance outcomes remain informational in the shadow summary.
-The existing strict publication performance gate is unchanged.
+Performance cells are absent from the CI inventory. Publication requires actual
+functional acceptance, not local timing reports.
 
 The new summary jobs have no extra Actions API permission and cannot independently
 authenticate every final job result. They explicitly keep authoritative per-cell
@@ -103,8 +105,7 @@ the full-run failure. A future reviewed switch must not be controlled solely by
 unreviewed PR code.
 
 The existing nine native targets, two release-profile Docs references, three
-platform functional consumers, 297 npm and 28 SDK seal, and complete ARM64
-business-2048 performance requirements remain authoritative. A final candidate
+platform functional consumers, and 297 npm and 28 SDK seal remain authoritative. A final candidate
 and final merge tree require fresh acceptance evidence under the existing release
 policy. Old SHA success is not current SHA acceptance.
 
@@ -143,7 +144,7 @@ aggregate barriers for existing final consumers. Assembly still requires all nin
 native targets; seal still requires complete assembly and functional evidence.
 The primary aggregate now waits for the entire three-platform TS/Examples chains,
 so assembly waits more conservatively than its previous native-only barrier.
-Performance still waits for the existing full functional/Docs/assembly barriers
+The execution baseline records verified suite coverage after the primary chains
 and keeps the complete business-2048 workload. Those final barriers are deliberately
 conservative; this change only starts platform functional tests sooner. It neither
 omits tests nor enables cross-run reuse. Actual check names, execution timing and

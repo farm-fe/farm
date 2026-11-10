@@ -1,6 +1,7 @@
 """Verify E2E acceptance ledgers for a narrow docs-only path; never reuse build bytes."""
 # cspell:words importlib IFMT IFREG
 import hashlib
+from datetime import datetime
 import importlib.util
 import json
 import re
@@ -13,7 +14,7 @@ chain = evidence.chain_plan
 runtime = evidence.load("execution_suite_policy", "incremental-chain-runtime.py")
 check = evidence.check
 PLATFORMS = {"linux-x64-gnu": "ubuntu-24.04", "darwin-arm64": "macos-latest", "win32-x64-msvc": "windows-latest"}
-PRODUCER = "Aggregate informational performance report"
+PRODUCER = "Record verified CI execution baseline"
 UPLOAD = "Upload trusted CI execution baseline"
 
 
@@ -46,6 +47,10 @@ def fetch_json_artifact(transport, run, name, member="ledger.json"):
     check(artifact["workflow_run"]["id"] == run["id"] and artifact["expired"] is False and artifact["name"] == name, "Execution artifact origin differs")
     check(0 < artifact["size_in_bytes"] <= evidence.MAX_LEDGER_BYTES, "Execution artifact exceeds bound")
     body = transport.archive(artifact["id"])
+    return decode_json_artifact(body, artifact, member), artifact
+
+
+def decode_json_artifact(body, artifact, member="ledger.json"):
     # The existing ZIP verifier accepts exactly one canonical regular JSON file.
     # Unit/suite receipts use another fixed member, never an artifact-supplied path.
     if member == "ledger.json":
@@ -62,7 +67,7 @@ def fetch_json_artifact(transport, run, name, member="ledger.json"):
                   "Execution receipt members differ")
             check(stat.S_IFMT(entries[0].external_attr >> 16) in [0, stat.S_IFREG], "Execution receipt is not a regular file")
             data = json.loads(archive.read(member).decode("utf-8"))
-    return data, artifact
+    return data
 
 
 def upload_binding(job, step_name, artifact, trusted_output=None):
@@ -99,6 +104,75 @@ def carried_producer_diagnostic(run_id, attempt, current, prior):
                        'current':record(current),'prior':record(prior)}, sort_keys=True)
 
 
+def same_carried_execution(current, prior, run, attempt):
+    """API job IDs identify attempt views; authenticate the original execution.
+
+    Changed IDs require complete stable execution evidence from both authenticated
+    attempt inventories. Never use artifact-supplied job metadata here. The caller
+    still resolves the origin and verifies its upload, artifact digest and source.
+    """
+    if prior.get('status') != 'completed' or prior.get('conclusion') != 'success': return False
+    if current.get('id') == prior.get('id'): return True
+    def signature(job, expected_attempt):
+        if not (type(job.get('id')) is int and job['id'] > 0
+                and job.get('run_id') == run['id'] and job.get('head_sha') == run['head_sha']
+                and type(job.get('run_attempt')) is int and job['run_attempt'] == expected_attempt
+                and type(job.get('runner_id')) is int and job['runner_id'] > 0
+                and isinstance(job.get('runner_name'), str) and job['runner_name']
+                and job.get('status') == 'completed' and job.get('conclusion') == 'success'): return None
+        rows = job.get('steps')
+        if not isinstance(rows, list) or not rows: return None
+        steps = []
+        for step in rows:
+            if not isinstance(step, dict) or not all(key in step for key in ['number','name','status','conclusion','started_at','completed_at']): return None
+            if type(step['number']) is not int or step['number'] <= 0 or not isinstance(step['name'], str) or not step['name']: return None
+            if step['status'] != 'completed' or step['conclusion'] not in ['success','skipped']: return None
+            if step['conclusion'] == 'success' and not (isinstance(step['started_at'], str) and isinstance(step['completed_at'], str)
+                    and datetime.fromisoformat(job['started_at']) <= datetime.fromisoformat(step['started_at']) <= datetime.fromisoformat(step['completed_at']) <= datetime.fromisoformat(job['completed_at'])): return None
+            steps.append(tuple(step[key] for key in ['number','name','status','conclusion','started_at','completed_at']))
+        if len({step[0] for step in steps}) != len(steps) or not any(step[3] == 'success' for step in steps): return None
+        return (job.get('name'), job['runner_id'], job['runner_name'], job.get('started_at'), job.get('completed_at'), steps)
+    first, second = signature(current, attempt), signature(prior, attempt - 1)
+    return first is not None and first == second
+
+
+
+def explicit_producer(transport, run, name, trusted_output, cache=None, *, required_conclusion="success"):
+    """Validate an origin supplied by fixed needs outputs, never infer from clocks.
+
+    This entry accepts only the current workflow's external needs binding. An
+    artifact or historical manifest must not be used to manufacture this input.
+    The caller must also bind the artifact ID/digest to the successful upload.
+    """
+    patterns = {'artifact_id': r'[1-9][0-9]*', 'artifact_digest': r'[a-f0-9]{64}', 'run_attempt': r'[1-9][0-9]*'}
+    check(isinstance(trusted_output, dict) and set(trusted_output) == set(patterns), 'Explicit producer binding missing or unexpected')
+    check(all(isinstance(trusted_output[key], str) and re.fullmatch(pattern, trusted_output[key])
+              for key, pattern in patterns.items()), 'Malformed explicit producer binding')
+    check(required_conclusion in ['success', 'failure'], 'Unsupported explicit producer result policy')
+    origin_attempt = int(trusted_output['run_attempt'])
+    check(type(run['run_attempt']) is int and 0 < origin_attempt <= run['run_attempt'] <= 32, 'Explicit producer attempt differs')
+    observations = {} if cache is None else cache
+    origin = None
+    for attempt in range(run['run_attempt'], origin_attempt - 1, -1):
+        if attempt not in observations:
+            execution = transport.get('/actions/runs/' + str(run['id']) + '/attempts/' + str(attempt))
+            observations[attempt] = (execution, jobs_for(transport, execution))
+        execution, jobs = observations[attempt]
+        check(all(execution.get(key) == run.get(key) for key in ['id', 'path', 'head_sha', 'event'])
+              and execution.get('run_attempt') == attempt
+              and execution.get('repository', {}).get('id') == run['repository']['id']
+              and execution.get('head_repository', {}).get('id') == run['head_repository']['id'], 'Explicit producer run identity differs')
+        matches = [job for job in jobs if job.get('name') == name or job.get('name', '').endswith(' / ' + name)]
+        check(len(matches) == 1, 'Explicit producer missing or ambiguous')
+        job = matches[0]
+        check(type(job.get('id')) is int and job['id'] > 0 and job.get('run_id') == run['id']
+              and job.get('run_attempt') == attempt and job.get('head_sha') == run['head_sha'], 'Explicit producer job identity differs')
+        check(job.get('status') == 'completed' and job.get('conclusion') == required_conclusion, 'Latest actual suite producer result differs from fixed policy')
+        if attempt == origin_attempt:
+            origin = (execution, job)
+    return origin
+
+
 def actual_producer(transport, run, name, current_jobs=None, cache=None):
     """Newest real execution wins, including failures; carried jobs retain origin."""
     check(type(run['run_attempt']) is int and 0 < run['run_attempt'] <= 32, 'Rerun attempt exceeds bound')
@@ -122,7 +196,7 @@ def actual_producer(transport, run, name, current_jobs=None, cache=None):
         prior = [item for item in observations.get(attempt - 1, (None, []))[1] if item['name'] == name or item['name'].endswith(' / ' + name)]
         check(len(prior) <= 1, 'Ambiguous prior suite producer')
         if prior and (job['started_at'], job.get('completed_at')) == (prior[0].get('started_at'), prior[0].get('completed_at')):
-            check(job.get('id') == prior[0].get('id') and prior[0].get('status') == 'completed' and prior[0].get('conclusion') == 'success',
+            check(same_carried_execution(job, prior[0], run, attempt),
                   'Unproven carried suite producer: ' + carried_producer_diagnostic(run['id'], attempt, job, prior[0]))
             continue
         check(not prior or not prior[0].get('completed_at') or job['started_at'] >= prior[0]['completed_at'], 'Suite producer times overlap')
@@ -134,7 +208,9 @@ def actual_producer(transport, run, name, current_jobs=None, cache=None):
 def suite_receipt(transport, run, source, kind, abi, current_jobs=None, cache=None, trusted_output=None):
     label, filename, job_label, step = ('ts', 'ts.json', 'Typescript Test', 'Preserve actual TypeScript discovery and execution counts') if kind == 'ts' else ('browser', 'browser.json', 'Examples Test', 'Preserve actual browser discovery and execution counts')
     prefix = {'linux-x64-gnu':'Primary Linux', 'darwin-arm64':'Primary macOS', 'win32-x64-msvc':'Primary Windows'}[abi]
-    execution, job = actual_producer(transport, run, prefix + ' / ' + job_label + ' (' + PLATFORMS[abi] + ')', current_jobs, cache)
+    name = prefix + ' / ' + job_label + ' (' + PLATFORMS[abi] + ')'
+    execution, job = (explicit_producer(transport, run, name, trusted_output, cache) if trusted_output is not None
+                      else actual_producer(transport, run, name, current_jobs, cache))
     name = 'farm-ci-suite-' + label + '-' + source['sha'] + '-' + abi + '-' + str(execution['run_attempt'])
     actual, meta = fetch_json_artifact(transport, execution, name, filename)
     if trusted_output is not None:
@@ -149,7 +225,7 @@ def suite_receipt(transport, run, source, kind, abi, current_jobs=None, cache=No
 
 
 def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, source, trusted, required_jobs,
-                            suite_discovery=runtime.discover_source_suites):
+                            suite_discovery=runtime.discover_source_suites, signed_proof=None):
     check(run["repository"]["id"] == repository["id"] == run["head_repository"]["id"], "Execution baseline repository differs or is a fork")
     check(run["path"] == evidence.WORKFLOWS["ci"] and run["status"] == "completed" and run["conclusion"] == "success", "CI execution baseline did not complete")
     check(run["event"] in ["pull_request", "push", "workflow_dispatch"], "Unexpected CI baseline event")
@@ -170,16 +246,34 @@ def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, 
     check(ledger.get("buildByteReuseAuthorized") is False and ledger.get("publicationAuthorized") is False, "Execution ledger claims unauthorized authority")
     check(ledger.get("producerJob") == PRODUCER and ledger.get("uploadStep") == UPLOAD, "Ledger cannot choose its producer")
     attempts = {}
-    aggregation, producer = actual_producer(transport, run, PRODUCER, jobs, attempts)
+    if signed_proof is not None:
+        signed_expected, signed_rows = signed_proof
+        signed_module = evidence.load('ledger_signed_bindings', 'ci-attested-bindings.py')
+        check(run['event'] == 'push' and run['head_branch'] == 'main', 'Signed baseline requires main push')
+        check(set(signed_rows) == {'planner', 'execution-baseline', *[label + ':' + abi for label in ['ts','browser'] for abi in PLATFORMS]}, 'Signed baseline inventory differs')
+        row = signed_rows['execution-baseline']
+        check(row['producer'] == PRODUCER and row['uploadStep'] == UPLOAD, 'Signed baseline role differs')
+        body, signed_meta, aggregation, producer = signed_module.bound_artifact(transport, run, row, signed_expected)
+        check(signed_meta == artifact and decode_json_artifact(body, signed_meta) == ledger, 'Signed baseline bytes differ')
+    else:
+        aggregation, producer = actual_producer(transport, run, PRODUCER, jobs, attempts)
     check(artifact.get("name") == "farm-ci-execution-baseline-" + str(run["id"]) + "-" + str(aggregation["run_attempt"])
           and artifact["workflow_run"]["id"] == run["id"] and artifact["expired"] is False, "Execution ledger artifact origin differs")
     expected_run = {"repositoryId": repository["id"], "runId": run["id"], "runAttempt": aggregation["run_attempt"], "event": run["event"]}
     check(ledger.get("run") == expected_run, "Execution attempt differs")
     check(sorted(ledger.get("requiredJobs", [])) == sorted(required_jobs), "Trusted full acceptance inventory differs")
     for name in required_jobs:
-        _, job = actual_producer(transport, run, name, jobs, attempts)
+        if signed_proof is not None:
+            matches = [job for job in jobs if job.get('name') == name or job.get('name', '').endswith(' / ' + name)]
+            check(len(matches) == 1, 'Acceptance job missing or ambiguous')
+            job = matches[0]
+            check(job.get('status') == 'completed' and job.get('conclusion') == 'success'
+                  and job.get('head_sha') == run['head_sha'] and job.get('run_attempt') == run['run_attempt'], 'Acceptance job identity or result differs')
+        else:
+            _, job = actual_producer(transport, run, name, jobs, attempts)
         check(job["run_id"] == run["id"], "Acceptance job belongs to another run")
-    upload_binding(producer, UPLOAD, artifact)
+    if signed_proof is None:
+        upload_binding(producer, UPLOAD, artifact)
     cells = ledger.get("coverage", {}).get("cells", [])
     expected_cells = {kind + ":" + abi for kind in ["ts", "examples-browser"] for abi in PLATFORMS}
     check(len(cells) == 6 and {row["kind"] + ":" + row["abi"] for row in cells} == expected_cells, "Missing three-platform semantic coverage")
@@ -187,7 +281,19 @@ def verify_execution_ledger(transport, run, repository, ledger, artifact, jobs, 
     check(discovered["sourceIdentity"]["commit"] == source["sha"] and discovered["sourceIdentity"]["tree"] == source["tree"], "Independent suite source differs")
     for cell in cells:
         label, filename, job_label, step = ("ts", "ts.json", "Typescript Test", "Preserve actual TypeScript discovery and execution counts") if cell["kind"] == "ts" else ("browser", "browser.json", "Examples Test", "Preserve actual browser discovery and execution counts")
-        if 'producerBinding' in cell:
+        if signed_proof is not None:
+            row = signed_rows[label + ':' + cell['abi']]
+            prefix = {'linux-x64-gnu':'Primary Linux', 'darwin-arm64':'Primary macOS', 'win32-x64-msvc':'Primary Windows'}[cell['abi']]
+            check(row['producer'] == prefix + ' / ' + job_label + ' (' + PLATFORMS[cell['abi']] + ')'
+                  and row['uploadStep'] == step, 'Signed suite role differs')
+            body, meta, origin, job = signed_module.bound_artifact(transport, run, row, signed_expected)
+            actual = decode_json_artifact(body, meta, filename)
+            binding = {'runAttempt':origin['run_attempt'], 'jobId':job['id'], 'artifactId':meta['id'],
+                       'artifactDigest':meta['digest'], 'profile':'ci', 'workflowPath':run['path']}
+            check(cell.get('producerBinding') == binding and cell['artifactName'] == meta['name'], 'Suite original producer proof differs')
+            check(actual.get('run') == {'repositoryId':repository['id'], 'runId':run['id'], 'runAttempt':origin['run_attempt'], 'event':run['event']}
+                  and actual.get('chain') == 'ci' and actual.get('acceptanceInherited') is False, 'Signed suite execution identity differs')
+        elif 'producerBinding' in cell:
             actual, meta, binding = suite_receipt(transport, run, source, cell['kind'], cell['abi'], jobs, attempts)
             check(binding == cell['producerBinding'], 'Suite original producer proof differs')
             check(cell['artifactName'] == meta['name'], 'Suite original artifact name differs')

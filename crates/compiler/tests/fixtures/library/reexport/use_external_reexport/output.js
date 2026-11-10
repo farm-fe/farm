@@ -1,5 +1,5 @@
 //index.js:
- import { readFile as default$1 } from "node:fs";
+ import { readFile as __default } from "node:fs";
 import { foo } from "/external/foo";
 import { unstable_batchedUpdates as unstable_batchedUpdates$2 } from "/external/react-dom";
 ; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
@@ -51,7 +51,7 @@ console.log({
     unstable_batchedUpdates: unstable_batchedUpdates$1
 });
 console.log({
-    r1: default$1,
+    r1: __default,
     foo: foo,
     batch: unstable_batchedUpdates$2,
     unstable_batchedUpdates1: unstable_batchedUpdates

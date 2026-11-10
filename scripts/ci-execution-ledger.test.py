@@ -11,7 +11,7 @@ spec.loader.exec_module(ledger_module)
 
 
 def fixture():
-    env = {"GITHUB_ACTIONS": "true", "GITHUB_JOB": "performance-summary", "GITHUB_REPOSITORY_ID": "1",
+    env = {"GITHUB_ACTIONS": "true", "GITHUB_JOB": "execution-baseline", "GITHUB_REPOSITORY_ID": "1",
            "GITHUB_RUN_ID": "2", "GITHUB_RUN_ATTEMPT": "1", "GITHUB_EVENT_NAME": "pull_request"}
     source = {"sha": "a" * 40, "tree": "b" * 40, "files": {"source.txt": b'product', "docs/experiences/note.md": b'notes'},
               "modes": {"source.txt": "100644", "docs/experiences/note.md": "100644"}, "policyHash": "c" * 64}

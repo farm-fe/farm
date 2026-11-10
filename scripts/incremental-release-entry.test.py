@@ -53,7 +53,7 @@ class Contracts(unittest.TestCase):
         def get(route):
             if route == "": return self.repository
             if route == "/branches/main": return {"commit": {"sha": source["sha"]}}
-            if route == "/actions/runs/10/attempts/2": return self.run
+            if route in ["/actions/runs/10", "/actions/runs/10/attempts/2"]: return self.run
             raise AssertionError("Unexpected API route")
         self.transport.get.side_effect = get
         manifest_hash = entry.chain.digest(self.manifest)
@@ -63,7 +63,16 @@ class Contracts(unittest.TestCase):
                        "packages": {row["kind"] + ":" + row["name"]: row["archiveSha256"] for row in rows},
                        "registryInstall": True, "nativeABI": True, "latestTargets": True}
         self.artifact = {"created_at": "2026-01-01T00:00:30Z"}
-        self.verifier = entry.ReleaseVerifier(self.transport, lambda sha: copy.deepcopy(self.source))
+        self.verifier = entry.ReleaseVerifier(self.transport, lambda sha: copy.deepcopy(self.source), receipt_provider=self.receipt_fixture)
+
+    def receipt_fixture(self,scope,run,source):
+        # Explicit offline signature boundary; receipt bytes/content checks remain real.
+        name=entry.PRODUCER if scope=='frozen' else entry.CONSUMER
+        job=entry.evidence.successful_job(self.jobs,name)
+        step='Upload independent release seal' if scope=='frozen' else 'Upload independent release public acceptance'
+        steps=[row for row in job['steps'] if row['name']==step]
+        entry.check(len(steps)==1 and steps[0]['conclusion']=='success','Fixed upload failed')
+        return (self.seal if scope=='frozen' else self.public),self.artifact,run,job
 
     def verify(self):
         with mock.patch.object(entry.execution, "jobs_for", return_value=self.jobs), mock.patch.object(entry.execution, "fetch_json_artifact",
@@ -74,6 +83,25 @@ class Contracts(unittest.TestCase):
         result = self.verify()
         self.assertTrue(result["verified"]); self.assertFalse(result["publicationExecuted"])
         self.assertEqual(result["producerRunId"], 10)
+
+    def test_new_signed_policy_uses_build_and_registry_proof_without_main_tests(self):
+        self.manifest['releaseValidation']='archive-integrity-v1'
+        digest=entry.chain.digest(self.manifest)
+        self.seal['manifestHash']=digest;self.public['manifestHash']=digest
+        self.public.update(kind='release-byte-integrity-v1',registryBytesVerified=True,testsExecuted=False,registryInstall=False,nativeABI=False)
+        self.jobs=[job for job in self.jobs if not job['name'].startswith('Independent release candidate consumer')]
+        self.assertTrue(self.verify()['verified'])
+        self.assertEqual(entry.public_scope(self.manifest),'registry')
+        # Changing a legacy manifest's policy without its original sealed hash
+        # cannot silently bypass the historical consumer requirement.
+        self.seal['manifestHash']='0'*64
+        with self.assertRaisesRegex(ValueError,'seal binding'):self.verify()
+        self.seal['manifestHash']=digest
+        self.public['registryBytesVerified']=False
+        with self.assertRaises(ValueError):self.verify()
+        self.public['registryBytesVerified']=True
+        self.manifest['releaseValidation']='unreviewed'
+        with self.assertRaises(ValueError):self.verify()
 
     def test_graph_hash_is_bound_to_recomputed_source(self):
         self.manifest["graphHash"] = "0" * 64
@@ -157,7 +185,8 @@ class Contracts(unittest.TestCase):
                 return_value=(self.seal, self.artifact)) as fetch:
             result = self.verifier.verify(self.manifest, self.root, phase="prepublish", current_run={"runId": 10, "attempt": 2})
         self.assertTrue(result["prepublicationVerified"]); self.assertFalse(result["verified"])
-        self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(fetch.call_count, 0)
+        self.assertNotIn(entry.CONSUMER, [job["name"] for job in self.jobs])
 
     def test_running_attempt_cannot_borrow_another_current_run_identity(self):
         self.run.update({"status": "in_progress", "conclusion": None})
@@ -168,6 +197,34 @@ class Contracts(unittest.TestCase):
         self.jobs = [job for job in self.jobs if job["name"] != "Independent release candidate consumer (windows-latest)"]
         with self.assertRaisesRegex(ValueError, "Missing or ambiguous baseline job"):
             self.verify()
+
+
+class PublicReceiptContracts(unittest.TestCase):
+    def test_production_receipt_path_checks_six_original_reports_after_signature_verification(self):
+        fixtures=load('entry_public_integration_fixture','incremental-release-publish.test.py')
+        fixture,_,_,run=fixtures.Contracts().recovery_fixture(1,3,
+            {'ubuntu-24.04':2,'macos-latest':1,'windows-latest':3})
+        source=fixture.source
+        provenance=load('entry_public_signature_fixture','release-provenance.py')
+        verified=copy.deepcopy(fixture.proof_provider(fixture.transport,run,source,'public'))
+        def verifier(client,observed,identity,scope):
+            self.assertEqual(scope,'public')
+            self.assertEqual(observed['run_attempt'],3)
+            self.assertEqual(identity['sha'],source['sha'])
+            return copy.deepcopy(verified)
+        actual_load=entry.load
+        def modules(name,file):
+            return provenance if file=='release-provenance.py' else actual_load(name,file)
+        reader=entry.ReleaseVerifier(fixture.transport,lambda _:source)
+        with mock.patch.object(entry,'load',side_effect=modules),mock.patch.object(provenance,'verified_run',side_effect=verifier):
+            result=reader.receipt('public',run,source,fixture.manifest)
+            self.assertEqual(result[0]['manifestHash'],entry.chain.digest(fixture.manifest))
+            for identity in [200,201,202,400,401,402]:
+                original=fixture.candidate_bodies[identity]
+                fixture.candidate_bodies[identity]=original+b'tamper'
+                with self.subTest(artifactId=identity),self.assertRaises(ValueError):
+                    reader.receipt('public',run,source,fixture.manifest)
+                fixture.candidate_bodies[identity]=original
 
 
 if __name__ == "__main__":

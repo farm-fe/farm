@@ -22,6 +22,18 @@ fn match_json_file(file_name: &str) -> bool {
   file_name.ends_with(".json")
 }
 
+// Unlike JSON.parse, an object literal treats __proto__ as a prototype setter.
+// Check nested values too, including objects inside arrays.
+fn contains_proto_property(value: &serde_json::Value) -> bool {
+  match value {
+    serde_json::Value::Object(object) => {
+      object.contains_key("__proto__") || object.values().any(contains_proto_property)
+    }
+    serde_json::Value::Array(array) => array.iter().any(contains_proto_property),
+    _ => false,
+  }
+}
+
 impl Plugin for FarmPluginJson {
   fn name(&self) -> &str {
     "FarmPluginJson"
@@ -52,6 +64,15 @@ impl Plugin for FarmPluginJson {
     if matches!(param.module_type, ModuleType::Custom(ref suffix) if suffix == "json") {
       // if json value can not be parsed, means it's handled by other plugins
       if let Ok(json) = serde_json::from_str::<serde_json::Value>(&param.content) {
+        let json = if contains_proto_property(&json) {
+          // Serialize the JSON text as a string to escape quotes and backslashes.
+          format!(
+            "JSON.parse({})",
+            serde_json::Value::String(json.to_string())
+          )
+        } else {
+          json.to_string()
+        };
         let js = if context.config.output.format.contains_cjs()
           || !context.config.output.target_env.is_library()
         {

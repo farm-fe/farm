@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { npmInventory, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
+import { npmInventory, nativeSourceDigest, cargoPackageInputsDigest, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -72,4 +72,37 @@ test('generic CI dispatch binds an ordinary same-repository PR head and exact ba
     const copy={environment:{...environment},event:structuredClone(event),readPullRequest:()=>pr};mutate(copy);assert.throws(()=>validationEvent(copy));
   }
   const fork=structuredClone(pr);fork.head.repo.full_name='fork/farm';assert.throws(()=>validationEvent({...options,readPullRequest:()=>fork}));
+});
+
+test('candidate Cargo fingerprints match the current source bytes', () => {
+  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  for (const pkg of plan.cargo) {
+    assert.equal(nativeSourceDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.sourceSha256, `Cargo candidate source drifted: ${pkg.name}`);
+    assert.equal(cargoPackageInputsDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.packageInputsSha256, `Cargo candidate package inputs drifted: ${pkg.name}`);
+  }
+});
+
+test('preflight rejects stale or missing Cargo source fingerprints before reporting consistency', () => {
+  const candidatePath = path.join(root, 'docs/releases/v2-candidate.json');
+  const preflightUrl = new URL('./v2-release-preflight.mjs', import.meta.url).href;
+  for (const missing of [false, true]) {
+    // Alter only the child process fixture, never the checked-in candidate.
+    const source = `import fs from 'node:fs';
+      const read = fs.readFileSync;
+      fs.readFileSync = (file, ...args) => {
+        const bytes = read(file, ...args);
+        if (String(file) !== ${JSON.stringify(candidatePath)}) return bytes;
+        const candidate = JSON.parse(bytes);
+        if (${missing}) delete candidate.cargo[0].sourceSha256;
+        else candidate.cargo[0].sourceSha256 = '0'.repeat(64);
+        return JSON.stringify(candidate);
+      };
+      await import(${JSON.stringify(preflightUrl)});`;
+    const env = { ...process.env };
+    delete env.FARM_RELEASE_CANDIDATE_PLAN;
+    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', source], { encoding: 'utf8', env });
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.stderr, /Cargo candidate source drifted/);
+    assert.doesNotMatch(result.stdout, /"sourceInventory": "consistent"/);
+  }
 });

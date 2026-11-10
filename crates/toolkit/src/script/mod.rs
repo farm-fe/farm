@@ -30,6 +30,7 @@ pub use utils::ParseScriptModuleResult;
 pub mod analyze_statement;
 pub mod concatenate_modules;
 pub mod constant;
+pub mod entry_live_bindings;
 pub mod idents_collector;
 pub mod merge_swc_globals;
 pub mod minify;

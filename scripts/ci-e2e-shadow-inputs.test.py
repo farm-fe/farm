@@ -64,6 +64,8 @@ class Contracts(unittest.TestCase):
         data=json.loads(Path(__file__).with_name('fixtures').joinpath('e2e-shadow-mixed-attempt-observation.json').read_text())
         self.assertEqual(len(data['observedReceipts']),23)
         self.assertEqual(data['requestedPlan'],'impact-plan-'+data['testedSHA']+'-2')
+        data=copy.deepcopy(data)
+        data['observedReceipts']=[{**row,'name':row['name'].replace('performance-contract-tests','platform-contract-tests').replace('performance-summary','execution-baseline')} for row in data['observedReceipts'] if '-performance-report-' not in row['name']]
         api,run,identity,jobs,items,bodies,calls=fixture(data)
         plan,rows,bindings=module.resolve(api,run,identity)
         actual={name for name in items if name.startswith('impact-cell-') and name.endswith('-2')}
@@ -85,7 +87,7 @@ class Contracts(unittest.TestCase):
             loader=SimpleNamespace(exec_module=lambda _:None)
             with tempfile.TemporaryDirectory() as tmp:
                 target=Path(tmp)/'report.json'
-                keys=['impact-plan','release-contract-tests','performance-contract-tests','call-rust-build-user','call-rust-build-release','check-native-candidate-assembly','examples-test','docs-acceptance','type-check','ts-test','performance-report','performance-summary']
+                keys=['impact-plan','release-contract-tests','platform-contract-tests','call-rust-build-user','call-rust-build-release','check-native-candidate-assembly','examples-test','docs-acceptance','type-check','ts-test','execution-baseline']
                 env={'CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS':'true','CI_IMPACT_SCOPE':'e2e','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in keys})}
                 with mock.patch.dict(os.environ,env),mock.patch.object(sys,'argv',['summary','--plan','unused','--output',str(target)]),mock.patch.object(summary.importlib.util,'spec_from_file_location',return_value=SimpleNamespace(loader=loader)),mock.patch.object(summary.importlib.util,'module_from_spec',return_value=resolver):
                     if fails:
@@ -98,10 +100,78 @@ class Contracts(unittest.TestCase):
                     self.assertEqual(report['originalProducerBindings']['plannerAttempt'],1)
                     self.assertEqual(report['originalProducerBindings']['consumerAttempt'],2)
 
+    def test_observed_upload_timestamp_rejects_without_fixed_outputs(self):
+        data=json.loads(Path(__file__).with_name('fixtures').joinpath('shadow-upload-timestamp-observation.json').read_text())
+        bind=module.shared.execution.upload_binding
+        with self.assertRaisesRegex(ValueError,'outside its fixed upload'):
+            bind(data['job'],'Preserve actual cell receipt (shadow only)',data['artifact'])
+        bind(data['job'],'Preserve actual cell receipt (shadow only)',data['artifact'],data['uploadLog'])
+        for field in ['artifact_id','artifact_digest']:
+            wrong=dict(data['uploadLog']);wrong[field]='wrong'
+            with self.assertRaises(ValueError):bind(data['job'],'Preserve actual cell receipt (shadow only)',data['artifact'],wrong)
+
+    def test_fixed_primary_upload_outputs_bind_delayed_artifact(self):
+        api,run,identity,jobs,items,*_=fixture()
+        outputs={}
+        for abi,platform in [('linux-x64-gnu','LINUX'),('darwin-arm64','MACOS'),('win32-x64-msvc','WINDOWS')]:
+            row={}
+            for label,key in [('ts','ts-test'),('browser','examples-test')]:
+                artifact=next(a for a in items.values() if ('-'+key+'-'+abi+'-') in a['name'])
+                row.update({label+'_shadow_artifact_id':str(artifact['id']),label+'_shadow_artifact_digest':artifact['digest'][7:],label+'_shadow_run_attempt':artifact['name'].rsplit('-',1)[1]})
+                row.update({label+'_artifact_id':str(artifact['id']+1000),label+'_artifact_digest':'a'*64,label+'_run_attempt':artifact['name'].rsplit('-',1)[1]})
+            outputs['CI_SHADOW_UPLOADS_'+platform]=json.dumps(row)
+        bindings=module.primary_upload_outputs(outputs)
+        target=next(a for a in items.values() if '-ts-test-darwin-arm64-' in a['name'])
+        target['created_at']='2026-11-05T05:06:04Z'
+        for attempt in jobs.values():
+            for job in attempt:
+                if job['name']=='Primary macOS / Typescript Test (macos-latest)':
+                    job['steps'][0].update(started_at='2026-11-05T05:06:02Z',completed_at='2026-11-05T05:06:03Z')
+        with self.assertRaisesRegex(ValueError,'outside its fixed upload'):module.resolve(api,run,identity)
+        _,_,proof=module.resolve(api,run,identity,upload_outputs=bindings)
+        self.assertEqual(proof['cells']['ts-tests:darwin-arm64']['artifactId'],target['id'])
+        for field,value in [('artifact_id','999999'),('artifact_digest','0'*64),('run_attempt','99')]:
+            invalid=copy.deepcopy(bindings);invalid['ts-tests:darwin-arm64'][field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):module.resolve(api,run,identity,upload_outputs=invalid)
+        for invalid in [{}, {'CI_SHADOW_UPLOADS_MACOS':'not-json'}, {**outputs,'CI_SHADOW_UPLOADS_MACOS':'{}'}]:
+            with self.assertRaises((ValueError,KeyError)):module.primary_upload_outputs(invalid)
+        invalid=copy.deepcopy(bindings);del invalid['ts-tests:darwin-arm64']
+        with self.assertRaises(ValueError):module.resolve(api,run,identity,upload_outputs=invalid)
+        for field in ['artifact_id','artifact_digest','run_attempt']:
+            invalid=copy.deepcopy(outputs);row=json.loads(invalid['CI_SHADOW_UPLOADS_MACOS']);row['ts_shadow_'+field]='forged';invalid['CI_SHADOW_UPLOADS_MACOS']=json.dumps(row)
+            with self.subTest(malformed=field),self.assertRaises(ValueError):module.primary_upload_outputs(invalid)
+        saved=copy.deepcopy(jobs)
+        for attempt in jobs.values():
+            for job in attempt:
+                if job['name']=='Primary macOS / Typescript Test (macos-latest)':job['name']='Untrusted job'
+        with self.assertRaises(ValueError):module.resolve(api,run,identity,upload_outputs=bindings)
+        jobs.clear();jobs.update(saved)
+        for attempt in jobs.values():
+            for job in attempt:
+                if job['name']=='Primary macOS / Typescript Test (macos-latest)':job['steps'][0]['conclusion']='failure'
+        with self.assertRaisesRegex(ValueError,'upload did not succeed'):module.resolve(api,run,identity,upload_outputs=bindings)
+
+    def test_primary_upload_wiring_uses_fixed_action_outputs(self):
+        # Planner runs these Python contracts before installing JS dependencies.
+        root=Path(__file__).resolve().parents[1]
+        action=(root/'.github/actions/ci-impact-cell/action.yml').read_text()
+        self.assertIn('id: receipt-upload\n      uses: actions/upload-artifact@v4',action)
+        for field in ['artifact-id','artifact-digest']:
+            self.assertIn('value: ${{ steps.receipt-upload.outputs.'+field+' }}',action)
+        primary=(root/'.github/workflows/ci-primary-platform.yaml').read_text()
+        caller=(root/'.github/workflows/ci.yaml').read_text().split('  impact-summary:',1)[1].split('  release-contract-tests:',1)[0]
+        for label,job in [('ts','ts-test'),('browser','examples-test')]:
+            for field in ['artifact_id','artifact_digest','run_attempt']:
+                self.assertIn(label+'_shadow_'+field+':\n        value: ${{ jobs.'+job+'.outputs.shadow_'+field+' }}',primary)
+        self.assertEqual(primary.count('id: shadow-upload\n'),2)
+        for platform in ['linux','macos','windows']:
+            self.assertIn('primary-'+platform,caller.split('needs: [',1)[1].split(']',1)[0])
+            self.assertIn('CI_SHADOW_UPLOADS_'+platform.upper()+': ${{ toJSON(needs.primary-'+platform+'.outputs) }}',caller)
+
     def test_complete_mixed_attempt_inventory(self):
         api,run,identity,jobs,items,bodies,calls=fixture()
         plan,rows,bindings=module.resolve(api,run,identity)
-        self.assertEqual(len(rows),27)
+        self.assertEqual(len(rows),24)
         self.assertEqual(plan['runAttempt'],'1')
         self.assertEqual(bindings['plannerAttempt'],1)
         self.assertEqual({row['runAttempt'] for row in rows},{'1','2'})
@@ -117,7 +187,7 @@ class Contracts(unittest.TestCase):
             with self.assertRaises(ValueError):module.resolve(api,run,identity)
 
     def test_missing_each_artifact_rejects(self):
-        for index in range(28):
+        for index in range(len(module.CELLS) + 1):
             api,run,identity,jobs,items,*_=fixture()
             del items[list(items)[index]]
             with self.assertRaises(ValueError) as error:module.resolve(api,run,identity)
@@ -140,5 +210,48 @@ class Contracts(unittest.TestCase):
                 with zipfile.ZipFile(out,'w') as archive:archive.writestr('receipt.json',json.dumps(row))
                 bodies[number]=out.getvalue();artifact['size_in_bytes']=len(bodies[number]);artifact['digest']='sha256:'+hashlib.sha256(bodies[number]).hexdigest()
             with self.assertRaises(ValueError):module.resolve(api,run,identity)
+
+    def test_production_current_authenticates_plan_before_observation_shapes(self):
+        for defect in [None, 'empty-cell', 'null-cell', 'missing-cell', 'extra-cell', 'wrong-digest', 'future-attempt', 'failed-producer', 'bad-planner', 'missing-planner']:
+            with self.subTest(defect=defect):
+                api,run,identity,jobs,items,bodies,calls=fixture()
+                for attempt, rows in jobs.items():
+                    for job in rows: job.update(run_attempt=attempt, head_sha=run['head_sha'])
+                values={}
+                for cell,producer,key,suffix in [('planner','Incremental CI plan (shadow only)','', ''), *module.CELLS]:
+                    artifact=next(a for a in items.values() if a['name'].startswith('impact-plan-') if cell=='planner') if cell=='planner' else next(a for a in items.values() if '-'+key+'-'+suffix+'-' in a['name'])
+                    values[cell]={'artifact_id':str(artifact['id']),'artifact_digest':artifact['digest'][7:],'run_attempt':artifact['name'].rsplit('-',1)[1]}
+                cell='native-assembly'
+                if defect=='empty-cell': values[cell]={key:'' for key in values[cell]}
+                elif defect=='null-cell': values[cell]=None
+                elif defect=='missing-cell': del values[cell]
+                elif defect=='extra-cell': values['unreviewed']=values[cell]
+                elif defect=='wrong-digest': values[cell]['artifact_digest']='0'*64
+                elif defect=='future-attempt': values[cell]['run_attempt']='3'
+                elif defect=='failed-producer':
+                    for job in jobs[2]:
+                        if job['name']=='Check declared native inputs (not ABI execution)': job['conclusion']='failure'
+                elif defect=='bad-planner': values['planner']['artifact_digest']='0'*64
+                elif defect=='missing-planner': del values['planner']
+                with tempfile.TemporaryDirectory() as tmp:
+                    event=Path(tmp)/'event.json'; event.write_text(json.dumps({'pull_request':{'head':{'sha':identity['headSHA']},'base':{'sha':identity['baseSHA']}}}))
+                    env={'GITHUB_ACTIONS':'true','GITHUB_JOB':'impact-summary','CI_IMPACT_SCOPE':'e2e','GITHUB_EVENT_PATH':str(event),'GITHUB_SHA':identity['testedSHA'],'GITHUB_RUN_ID':identity['runId'],'GITHUB_RUN_ATTEMPT':'2','GITHUB_REPOSITORY':identity['repository'],'GITHUB_REPOSITORY_ID':'1','GH_TOKEN':'fixture','CI_E2E_UPLOADS':json.dumps(values)}
+                    def git(*args): return (identity['testedTree'] if args[-1]=='HEAD^{tree}' else identity['testedSHA']).encode()
+                    with mock.patch.object(module.impact,'git',side_effect=git),mock.patch.object(module.shared.execution.evidence.transport_module,'GitHubReadOnly',return_value=api):
+                        if defect is None:
+                            plan,rows,binding=module.current(env)
+                            self.assertEqual(len(rows),24);self.assertEqual(binding['plannerAttempt'],1);self.assertEqual(binding['consumerAttempt'],2)
+                        else:
+                            with self.assertRaises(ValueError) as caught:module.current(env)
+                            authenticated=hasattr(caught.exception,'shadow_plan')
+                            self.assertEqual(authenticated,defect not in ['bad-planner','missing-planner'])
+                            if authenticated:
+                                self.assertEqual(caught.exception.shadow_plan['testedSHA'],identity['testedSHA'])
+                                self.assertEqual(caught.exception.shadow_plan['runAttempt'],'1')
+                                spec=importlib.util.spec_from_file_location('diagnostic',Path(__file__).with_name('ci-impact-receipt.py'))
+                                diagnostic=importlib.util.module_from_spec(spec);spec.loader.exec_module(diagnostic)
+                                report=diagnostic.report_error('read-observations',caught.exception)
+                                if defect in ['missing-cell','extra-cell']:
+                                    self.assertEqual(report['resolutionStep'],'validate-observation-inventory')
 
 if __name__=='__main__':unittest.main()

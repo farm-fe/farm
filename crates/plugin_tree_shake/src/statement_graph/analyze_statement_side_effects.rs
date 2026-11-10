@@ -7,7 +7,9 @@ use farmfe_core::{
     Mark, Spanned,
     comments::{Comments, SingleThreadedComments},
   },
-  swc_ecma_ast::{Expr, ModuleItem},
+  swc_ecma_ast::{
+    Class, ClassMember, Decl, Decorator, DefaultDecl, Expr, Key, Lit, ModuleItem, PropName,
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -32,11 +34,24 @@ pub fn analyze_statement_side_effects(
 
           analyzer.side_effects
         }
+        Decl::Class(class_decl) => {
+          let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
+          analyzer.set_in_top_level(true);
+          analyzer.analyze(|this| class_decl.class.visit_with(this));
+          analyzer.side_effects
+        }
         _ => StatementSideEffects::NoSideEffects,
       },
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportNamed(_) => StatementSideEffects::NoSideEffects,
-      farmfe_core::swc_ecma_ast::ModuleDecl::ExportDefaultDecl(_) => {
-        StatementSideEffects::NoSideEffects
+      farmfe_core::swc_ecma_ast::ModuleDecl::ExportDefaultDecl(default_decl) => {
+        if let DefaultDecl::Class(class_expr) = &default_decl.decl {
+          let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
+          analyzer.set_in_top_level(true);
+          analyzer.analyze(|this| class_expr.class.visit_with(this));
+          analyzer.side_effects
+        } else {
+          StatementSideEffects::NoSideEffects
+        }
       }
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportDefaultExpr(default_expr) => {
         let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
@@ -161,6 +176,38 @@ impl<'a> SideEffectsAnalyzer<'a> {
     self.in_assign_right = prev;
   }
 
+  fn analyze_class_static_initializer(&mut self, value: Option<&Expr>) {
+    let Some(value) = value else {
+      return;
+    };
+    value.visit_with(self);
+    // Unknown values may invoke getters/coercion or throw while evaluating.
+    // Creating functions and literals is inert; nested classes are handled by
+    // visit_class, which analyzes their own definition-time effects.
+    if !matches!(
+      value,
+      Expr::Lit(_) | Expr::Fn(_) | Expr::Arrow(_) | Expr::Class(_)
+    ) {
+      self
+        .side_effects
+        .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+    }
+  }
+
+  fn analyze_class_computed_key(&mut self, key: &Expr) {
+    key.visit_with(self);
+    // ToPropertyKey can invoke user-defined coercion for objects, including
+    // identifiers whose values are not known here. RegExp literals are objects.
+    if !matches!(
+      key,
+      Expr::Lit(Lit::Str(_) | Lit::Bool(_) | Lit::Num(_) | Lit::Null(_) | Lit::BigInt(_))
+    ) {
+      self
+        .side_effects
+        .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+    }
+  }
+
   pub fn analyze<F: FnOnce(&mut Self)>(&mut self, visitor: F) {
     visitor(self);
 
@@ -175,7 +222,91 @@ impl<'a> SideEffectsAnalyzer<'a> {
   }
 }
 
+impl SideEffectsAnalyzer<'_> {
+  fn analyze_class_decorators(&mut self, decorators: &[Decorator]) {
+    decorators.visit_with(self);
+    // Even a bare identifier is invoked by decorator application at class
+    // definition time. Visiting the expression alone misses this call.
+    if !decorators.is_empty() {
+      self
+        .side_effects
+        .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+    }
+  }
+}
+
 impl<'a> Visit for SideEffectsAnalyzer<'a> {
+  fn visit_class(&mut self, class: &Class) {
+    if !self.is_in_top_level() {
+      return;
+    }
+
+    if let Some(super_class) = &class.super_class {
+      super_class.visit_with(self);
+      // Besides evaluating the expression, extends checks whether the base is a
+      // constructor and reads its prototype (possibly through a proxy). Only null is
+      // known to avoid both operations without resolving the base's value.
+      if !matches!(&**super_class, Expr::Lit(Lit::Null(_))) {
+        self
+          .side_effects
+          .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+      }
+    }
+    self.analyze_class_decorators(&class.decorators);
+
+    // Only these parts run when the class is defined. Method bodies and
+    // instance field initializers are deferred until invocation/instantiation.
+    for member in &class.body {
+      match member {
+        ClassMember::Method(method) => {
+          self.analyze_class_decorators(&method.function.decorators);
+          if let PropName::Computed(key) = &method.key {
+            self.analyze_class_computed_key(&key.expr);
+          }
+        }
+        ClassMember::ClassProp(prop) => {
+          if let PropName::Computed(key) = &prop.key {
+            self.analyze_class_computed_key(&key.expr);
+          }
+          self.analyze_class_decorators(&prop.decorators);
+          if prop.is_static {
+            self.analyze_class_static_initializer(prop.value.as_deref());
+          }
+        }
+        ClassMember::PrivateProp(prop) => {
+          self.analyze_class_decorators(&prop.decorators);
+          if prop.is_static {
+            self.analyze_class_static_initializer(prop.value.as_deref());
+          }
+        }
+        ClassMember::StaticBlock(block) => {
+          // The general statement analyzer does not model all abrupt completion
+          // or implicit effects. Keep nonempty blocks conservatively, including
+          // throws and property getters, even if their children look pure.
+          if !block.body.stmts.is_empty() {
+            self
+              .side_effects
+              .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+          }
+          block.body.visit_with(self);
+        }
+        ClassMember::AutoAccessor(accessor) => {
+          if let Key::Public(PropName::Computed(key)) = &accessor.key {
+            self.analyze_class_computed_key(&key.expr);
+          }
+          self.analyze_class_decorators(&accessor.decorators);
+          if accessor.is_static {
+            self.analyze_class_static_initializer(accessor.value.as_deref());
+          }
+        }
+        ClassMember::PrivateMethod(method) => {
+          self.analyze_class_decorators(&method.function.decorators);
+        }
+        ClassMember::Constructor(_) | ClassMember::TsIndexSignature(_) | ClassMember::Empty(_) => {}
+      }
+    }
+  }
+
   fn visit_arrow_expr(&mut self, n: &farmfe_core::swc_ecma_ast::ArrowExpr) {
     let pre = self.is_in_top_level();
     self.set_in_top_level(false);
@@ -244,11 +375,11 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       | farmfe_core::swc_ecma_ast::Stmt::For(_)
       | farmfe_core::swc_ecma_ast::Stmt::ForIn(_)
       | farmfe_core::swc_ecma_ast::Stmt::ForOf(_) => n.visit_children_with(self),
-      farmfe_core::swc_ecma_ast::Stmt::Decl(decl) => {
-        if let farmfe_core::swc_ecma_ast::Decl::Var(var_decl) = decl {
-          var_decl.visit_with(self);
-        }
-      }
+      farmfe_core::swc_ecma_ast::Stmt::Decl(decl) => match decl {
+        Decl::Var(var_decl) => var_decl.visit_with(self),
+        Decl::Class(class_decl) => class_decl.class.visit_with(self),
+        _ => {}
+      },
       farmfe_core::swc_ecma_ast::Stmt::Expr(expr) => {
         expr.visit_children_with(self);
       }
@@ -312,7 +443,8 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
     }
 
     match expr {
-      Expr::Fn(_) | Expr::Class(_) | Expr::Lit(_) | Expr::Arrow(_) => self
+      Expr::Class(class_expr) => class_expr.class.visit_with(self),
+      Expr::Fn(_) | Expr::Lit(_) | Expr::Arrow(_) => self
         .side_effects
         .merge_side_effects(StatementSideEffects::NoSideEffects),
       Expr::Call(_) | Expr::New(_) | Expr::This(_) | Expr::SuperProp(_) => {

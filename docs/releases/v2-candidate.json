@@ -16,7 +16,7 @@
         "version": "2.0.0",
         "manifestPath": "packages/core/package.json",
         "manifestSha256": "8b4e029b6b3dfb23f2578f56dba21be1b1bde726fdba179d18728742c677e1fa",
-        "sourceSha256": "280b030ff4f84f047353bfc8ba77b18cfd2301bc21d73e0d291d2646949dd7b6"
+        "sourceSha256": "d4b8b036aa5898b6b5c80213f727b4dac76131d5e5317981323833489265e5da"
       },
       {
         "name": "create-farm",
@@ -58,14 +58,14 @@
         "version": "2.0.0",
         "manifestPath": "packages/runtime/package.json",
         "manifestSha256": "7dbeb7b65cbbed87599e50de17e28003665b36a648885b6d1538d132af56dc6e",
-        "sourceSha256": "f4f79528db0eeb3f1c7bb4cb6054f00bd40812ecb32251896efcd8f91b85aa12"
+        "sourceSha256": "a1c3918dfef9f9727e159483c47dd424369af15261d0cdf8e978b8ae607a914f"
       },
       {
         "name": "@farmfe/runtime-plugin-hmr",
         "version": "4.0.0",
         "manifestPath": "packages/runtime-plugin-hmr/package.json",
         "manifestSha256": "6695579f7236ad312bbde4cafa1860e1c29ffa83414008feb13511a3bedd029c",
-        "sourceSha256": "10d5bf1bba716ea6d205caa16d2f76220696db4a3f574f1213570ca5641dc38a"
+        "sourceSha256": "815b062bec1b3d90c249f58f6c8c965959b18155003d4e788a1ddff66b62f6b6"
       },
       {
         "name": "@farmfe/runtime-plugin-import-meta",
@@ -86,7 +86,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/auto-import/package.json",
         "manifestSha256": "8b61e12d1c077c69d49a0723083324af114b505c2c1bf2a1d42db37b787ff0c2",
-        "sourceSha256": "48a2ac1b8ed5c07a3a9526556f9787fa893e3d06c313a8456eaf4d537dc63517"
+        "sourceSha256": "67533ee413c10e08e6f816006d52c2f21c63b6e6fc39e8b2aa41a4ad99de5b0c"
       },
       {
         "name": "@farmfe/plugin-compress",
@@ -156,7 +156,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/mdx/package.json",
         "manifestSha256": "e11cca0704b4b098b43d2993df5d70738b6b77c848f8abbec546abb3338210f3",
-        "sourceSha256": "88ed38e5a6d43a6e3f95100745e298df7222126458e213bbddf76f27fc3a57c9"
+        "sourceSha256": "83bd9caa52bbebac70ecad9e0229ef0ffaa3ac0d58569ffce70f098f2aaa507f"
       },
       {
         "name": "@farmfe/plugin-modular-import",
@@ -310,7 +310,7 @@
         "version": "2.0.0",
         "manifestPath": "js-plugins/postcss/package.json",
         "manifestSha256": "150cb793f88c78f7d9546a0f3c2cdc99d477a0a22fe25bd9ae491f456948dc03",
-        "sourceSha256": "ec8ddca34f2efa23cb92489d3f0478e988dc30769179c75f77e335a0901ab1c7"
+        "sourceSha256": "83ab7f7cf2ecb13b508fb1c83d04f3854b9b7afeef3f2a68c7bdf860b4435190"
       },
       {
         "name": "@farmfe/js-plugin-qiankun",
@@ -2100,224 +2100,252 @@
       "version": "2.2.0",
       "manifestPath": "crates/compiler/Cargo.toml",
       "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
-      "publish": null,
-      "sourceSha256": "f475b11f63079d142d6c3008dedf22f893bd7afd335b27a0c2715a15811fdf09"
+      "sourceSha256": "4aeb933f76ca07f7a73b48479073dfd054e644c3153a128ada67fa7a4a24c724",
+      "packageInputsSha256": "0ee7be6aaea0073184ea92df65a36699be3a25db9abd31d7e147e9ae1c2ed62d",
+      "publish": null
     },
     {
       "name": "farmfe_core",
       "version": "2.2.0",
       "manifestPath": "crates/core/Cargo.toml",
       "manifestSha256": "b0728964f5fcdf61bd714c32cf0ebfc937cb3830bc9065dc8f345d71f9f94da2",
-      "publish": null,
-      "sourceSha256": "b21f717459187c7741d1d892db3bb30888855876f3bd7f35cd2459a88c086fbe"
+      "sourceSha256": "31bac1555eb6d1eafd82ef467b5e9ea1627aac79a4ef7898377e381393a15763",
+      "packageInputsSha256": "e1fd3b59860dc6b19a3a3b2dc75ee4210ea2b4c687fb0ec29bd86b1a9ef27a83",
+      "publish": null
     },
     {
       "name": "farmfe_ecosystem_glob",
       "version": "0.1.0",
       "manifestPath": "rust-ecosystem/glob/Cargo.toml",
       "manifestSha256": "dc931bf4252f67daa281b854986ae879dfa045f71b6e2d6ed92d1d522cac6f4c",
-      "publish": null,
-      "sourceSha256": "cd3b13fe13518132a3042d302b94e22e4d2777cc4252ffb7fa16af488d258869"
+      "sourceSha256": "cd3b13fe13518132a3042d302b94e22e4d2777cc4252ffb7fa16af488d258869",
+      "packageInputsSha256": "2222ffabd45c55ee5a1e3a561e7343ee66a275caa32a45fbebbe7df4ec23f5f7",
+      "publish": null
     },
     {
       "name": "farmfe_macro_cache_item",
       "version": "2.1.0",
       "manifestPath": "crates/macro_cache_item/Cargo.toml",
       "manifestSha256": "72b73f56f476c152a7dafada2b5c69c4b5aef0f3dde9e29085b129b5448afe4c",
-      "publish": null,
-      "sourceSha256": "980c87ac2b1f60afe2b2cc2ae7407836ee6e666ffc7a86332fad7c2659012ebe"
+      "sourceSha256": "980c87ac2b1f60afe2b2cc2ae7407836ee6e666ffc7a86332fad7c2659012ebe",
+      "packageInputsSha256": "a4e78bedcebc8592eb65a1489d1b9116d8834b38dbcb5a08eac4bb3987564960",
+      "publish": null
     },
     {
       "name": "farmfe_macro_plugin",
       "version": "2.0.0",
       "manifestPath": "crates/macro_plugin/Cargo.toml",
       "manifestSha256": "3e1253c663acf1419f0ba669c6dc0c5123dc0d860e0412da78aa9387c8ed0b45",
-      "publish": null,
-      "sourceSha256": "4109baeebf43d2a94bf82e843f5a9533de8a0db63e45dab599103ae6c9a57913"
+      "sourceSha256": "4109baeebf43d2a94bf82e843f5a9533de8a0db63e45dab599103ae6c9a57913",
+      "packageInputsSha256": "ef8fbebf4a4e866fd8bc89ccbf67b9afbd58e68b54fdef036a1e155bede3c824",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_css",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_css/Cargo.toml",
       "manifestSha256": "7ad72b220cf90d3901800827d8ec377ab67d2208bb73c7a7e1a97a507c123add",
-      "publish": null,
-      "sourceSha256": "b541ecc0d851c6fcadb797729893bdebabeceaf9fd19348bdb5412a4a69b47ea"
+      "sourceSha256": "775b1086585d9fdcd25a6a86ca0bf2f9649a2d471cf0b1ab82af685bcf030d30",
+      "packageInputsSha256": "2b39cf76268582f69c2fa695f04f71e575aef2cd5e57ed1b34b41f4596a0d994",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_define",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_define/Cargo.toml",
       "manifestSha256": "ba5ddc106fba7a11b05636ffde1e69437117f5fb5137c2e9e8a4b9a600f1abe3",
-      "publish": null,
-      "sourceSha256": "d0ea5bdb9a1afe963e653678ac17de8debc0b6236b12c1ce4dd3059d05ca9625"
+      "sourceSha256": "d0ea5bdb9a1afe963e653678ac17de8debc0b6236b12c1ce4dd3059d05ca9625",
+      "packageInputsSha256": "8c830e69efa4241bdc78b917b6b58dcad8b181c859f9c02f5f3a8120d2e20c1b",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_file_size",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_file_size/Cargo.toml",
       "manifestSha256": "dda59ce69de124a1a9e218e77a6ff39991eee2f0adcbf9aafd5966df39cc76eb",
-      "publish": null,
-      "sourceSha256": "a7dbad7ae6f84ef640019823c5f8f51e37b0426f93eba7ae419393968fbdc7ca"
+      "sourceSha256": "a7dbad7ae6f84ef640019823c5f8f51e37b0426f93eba7ae419393968fbdc7ca",
+      "packageInputsSha256": "853b5b93ad69ee17f3709157a81782f5837f427f57048b902ef79138c4f5326a",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_html",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_html/Cargo.toml",
       "manifestSha256": "177dd64dad12a74e6d1b1bfcc48a02b732c5807aae08c0788b33b4cf3510b7ca",
-      "publish": null,
-      "sourceSha256": "c97f0d020e9dc83f28f1d02c50f8378cb5365e87319584d578a4156f66b67882"
+      "sourceSha256": "c97f0d020e9dc83f28f1d02c50f8378cb5365e87319584d578a4156f66b67882",
+      "packageInputsSha256": "cd7dbd53a1e969a6573529ab4a4d83f23d2d50d5660a5b5ac2545a4d8155a9b0",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_json",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_json/Cargo.toml",
       "manifestSha256": "15f7b39df0fc2ad4138dcf735a213e6d319c854e04460fb10d40e239a46ccfb9",
-      "publish": null,
-      "sourceSha256": "45e6a2555263e14c0058aa04e3deecd941545b80f13f573c7cb7de72c6c4a908"
+      "sourceSha256": "6f52c3d27ee134873eca92430e2a4d2e684f95ea383982102ff9f8e4e09c1fec",
+      "packageInputsSha256": "a630937423dcaa902bdd28111a2ffb2fca448748b604099081c32c707ff3fa20",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_lazy_compilation",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_lazy_compilation/Cargo.toml",
       "manifestSha256": "c27b1cbb6653cf6957e4a905d60be0e2fab49297438e41080d63845fa20e5546",
-      "publish": null,
-      "sourceSha256": "7f9d3cd54702c72fcc3f3f9e3254b46a41d4acd89cbdf73b52095d403c4bf66a"
+      "sourceSha256": "7f9d3cd54702c72fcc3f3f9e3254b46a41d4acd89cbdf73b52095d403c4bf66a",
+      "packageInputsSha256": "90cbca55f50ca57c7cde6a227c0d606cd9d1dd1a991dee39df631eae34896b00",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_library",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_library/Cargo.toml",
       "manifestSha256": "fac2d56945907d02655e3cac06f7ed5815e13548fa3d152ccffaec0bee2da286",
-      "publish": null,
-      "sourceSha256": "b00f187f7f465f76eaa4b90bf461b9f1a3768b6a2d1ab35b35e23985ec14418c"
+      "sourceSha256": "b00f187f7f465f76eaa4b90bf461b9f1a3768b6a2d1ab35b35e23985ec14418c",
+      "packageInputsSha256": "fc40c72dc9fa11543a2c3cf155e133110d403cd762fb6a777971c88b1864d665",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_mangle_exports",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_mangle_exports/Cargo.toml",
       "manifestSha256": "090b5fb93f6b49ad24345d19353fcf64ad6c0109eb3a4f0b6a5f193cd71c555f",
-      "publish": null,
-      "sourceSha256": "d49069c37d5aa661804a9cb4e9d6fecabd25ab6c73cc744cf9c7888e952f22bb"
+      "sourceSha256": "101843a543f899c7fc7312c03215613d23637a353c488fd98c6e66ff35df11af",
+      "packageInputsSha256": "c5eaabbd70cb4ef164ad6452be2d08b40d6b932efbc204c3beca4f1ed24dc0dc",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_minify",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_minify/Cargo.toml",
       "manifestSha256": "fef18bc12b845c6a3e9a55247ebf34674939818dbd6da9d9914f4d78b9d5a71c",
-      "publish": null,
-      "sourceSha256": "6c56f89930d4787aff66cf5e26c860abf3093c6f129fac8883b40f12fbddaed5"
+      "sourceSha256": "6c56f89930d4787aff66cf5e26c860abf3093c6f129fac8883b40f12fbddaed5",
+      "packageInputsSha256": "483f7ed68e139e9823d9e105496ad928f18a52290eded932185bf816de62160f",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_partial_bundling",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_partial_bundling/Cargo.toml",
       "manifestSha256": "0d2d6bb3c0a6c94110bc1d37873fc3469b7fbfbe3d1e81f7cd4e235d2bdbb77a",
-      "publish": null,
-      "sourceSha256": "16bc236d4d8800561c7e1d0ed7ae08cd471d42ad3f51a1ae1d87c5f37de7f21a"
+      "sourceSha256": "16bc236d4d8800561c7e1d0ed7ae08cd471d42ad3f51a1ae1d87c5f37de7f21a",
+      "packageInputsSha256": "a8caf531f434cdcb85cd568dad7b710ced43fea577ce98fb71e8181d35febee9",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_polyfill",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_polyfill/Cargo.toml",
       "manifestSha256": "2d17a72c47d09bcfcb062977bd4ca0c73c50eb12e5b36cadc14cc3e2c9d5174c",
-      "publish": null,
-      "sourceSha256": "f60e3c75ff6334a77f70b0d469eb3e8341427718d716bc99684d6ae954c3199b"
+      "sourceSha256": "f60e3c75ff6334a77f70b0d469eb3e8341427718d716bc99684d6ae954c3199b",
+      "packageInputsSha256": "c7263ba4b26dde64635e54d50b1b9c34d308b592c032d1b50214616c3af53cc0",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_progress",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_progress/Cargo.toml",
       "manifestSha256": "28557685e96af0f12ff07271947fee09bddba32084feefb779e807c3fb63a2c7",
-      "publish": null,
-      "sourceSha256": "98b7dd01579992b3115d5a1fdf3e6d7bb3663b9dbd83a542639f37f6d18d1ce9"
+      "sourceSha256": "98b7dd01579992b3115d5a1fdf3e6d7bb3663b9dbd83a542639f37f6d18d1ce9",
+      "packageInputsSha256": "eb9c73d7d012020a2ae81c8ee0e98dec455a70b582ad4694e4a6734d0f99ce4d",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_resolve",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_resolve/Cargo.toml",
       "manifestSha256": "1b1fcf1477405f662bee42539be45b611d70956e3bbc382f17010e769d1ae291",
-      "publish": null,
-      "sourceSha256": "80bc0aaac3625d4bc858234f799314de7fd299347483ab4751472dd3e738cbca"
+      "sourceSha256": "f595964b186f015ed28aca8b2ab907d37d1fc255ff5f4941d599814596751b96",
+      "packageInputsSha256": "fdd76b8d150992f86b7657ab99aecba098129e11ffedc7d0c148fa95810a779d",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_runtime",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_runtime/Cargo.toml",
       "manifestSha256": "531ded255cb4d8872f27dd30163b4d94bd0e9e9b497e9ecbfd489c2121b7aaf3",
-      "publish": null,
-      "sourceSha256": "3ebc59386ac5b843d9b81000cd82d6d4218fd5f1a84fe9ea9a31f49396aa0323"
+      "sourceSha256": "639c785453ec846dd602b4555b8ad550165f5ecf81546a7d26a3bb1cca26402f",
+      "packageInputsSha256": "80faa234392838a8351f4bd6b8b78dfd41687f330ba1628ff26caec1bed16270",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_script",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_script/Cargo.toml",
       "manifestSha256": "f7562fcd80b2171d42dd657e502183dac5b002a120a807744b85d07e29afa284",
-      "publish": null,
-      "sourceSha256": "fdae8bd1aaa599bab6b50c40b8360c8fa34eee2b5d2de211e8222faa33b6220a"
+      "sourceSha256": "fdae8bd1aaa599bab6b50c40b8360c8fa34eee2b5d2de211e8222faa33b6220a",
+      "packageInputsSha256": "97350fdb7a05f765d2572d7fed8380e6e1e764ba574ad1a7dce624803ef71f4b",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_script_meta",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_script_meta/Cargo.toml",
       "manifestSha256": "7d65e29a07006ca45c7d94798f1efa840055d0c49f764e61ec7dcda89e33721a",
-      "publish": null,
-      "sourceSha256": "dde9f0be15e46502413f20199e390c7335e37ef50c4956bc377954672057614e"
+      "sourceSha256": "dde9f0be15e46502413f20199e390c7335e37ef50c4956bc377954672057614e",
+      "packageInputsSha256": "09de7c4b9b02c37167623a8eae344b83cc0ca2700949a8e2a21a485d493cb93f",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_static_assets",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_static_assets/Cargo.toml",
       "manifestSha256": "edc87efdc6becbf5ea50295ba6cc5040672e669cb83df7ef5048881f973331f5",
-      "publish": null,
-      "sourceSha256": "d1f1a9669b26b93a1af3b244fa838ad77fd71c16b8fc1cffb1a18ded1afacd04"
+      "sourceSha256": "d1f1a9669b26b93a1af3b244fa838ad77fd71c16b8fc1cffb1a18ded1afacd04",
+      "packageInputsSha256": "e86fd46a396dc8ccb7e7f3bf2cbc7393ebaf2808a392c1de3419a2e92b3d69e3",
+      "publish": null
     },
     {
       "name": "farmfe_plugin_tree_shake",
       "version": "2.2.0",
       "manifestPath": "crates/plugin_tree_shake/Cargo.toml",
       "manifestSha256": "c5eddfabe9e968f9b6ffde52cf5728251a10b0b05d559b3be973ea48fac2c02c",
-      "publish": null,
-      "sourceSha256": "d061b5a83b80f41b9ff0561cfc10849081abf115b922463a6df2709043fe143c"
+      "sourceSha256": "5ae771ece1b3473c503e8d338497934f9807728f01ea1a74957fab154dd681c8",
+      "packageInputsSha256": "dcc5ca8d6c143f6b3e7e4f7a5b312186c41412c48c329aa2532109b7c4c1ea21",
+      "publish": null
     },
     {
       "name": "farmfe_swc_transformer_import_glob",
       "version": "2.2.0",
       "manifestPath": "crates/swc_transformer_import_glob/Cargo.toml",
       "manifestSha256": "775f6e9fdbdf46be7e61783fd387205b3969f228864e5c47526f6bc3af6c4583",
-      "publish": null,
-      "sourceSha256": "bcb1f787f4d331a339e7a207d069fda48b9f49a6da690b6225c74838561fdc0c"
+      "sourceSha256": "bcb1f787f4d331a339e7a207d069fda48b9f49a6da690b6225c74838561fdc0c",
+      "packageInputsSha256": "f55ce16ca9db193cf391acdc170d18d9239f54955d380850025ddf5756160869",
+      "publish": null
     },
     {
       "name": "farmfe_testing",
       "version": "2.0.0",
       "manifestPath": "crates/macro_testing/Cargo.toml",
       "manifestSha256": "fbffa073f7b2ab38c98b9648525366628790c70359c270f06cb87c2379392994",
-      "publish": null,
-      "sourceSha256": "089948a1fb97d41488bf71f049a5cae10c3ba5d621e1c25de2d61a35a57db347"
+      "sourceSha256": "089948a1fb97d41488bf71f049a5cae10c3ba5d621e1c25de2d61a35a57db347",
+      "packageInputsSha256": "1441eae12ea6a032b5df2d888c2324c428fa11945d459f1c91aaec24b679d3e8",
+      "publish": null
     },
     {
       "name": "farmfe_testing_helpers",
       "version": "2.2.0",
       "manifestPath": "crates/testing_helpers/Cargo.toml",
       "manifestSha256": "cf726f9b9a16e0e0f21946c365efa5dbc008dc9076490958e1316784a5553d5d",
-      "publish": null,
-      "sourceSha256": "10e3f029596d6f1d91f9fc0da6736fa4aeeae14aa42863bb75d67a4904b5235c"
+      "sourceSha256": "10e3f029596d6f1d91f9fc0da6736fa4aeeae14aa42863bb75d67a4904b5235c",
+      "packageInputsSha256": "9fb9ed6dd5757beb874cf6a90ac0f65389b8d8eb5d7e4254dd7c5c35a5e25487",
+      "publish": null
     },
     {
       "name": "farmfe_toolkit",
       "version": "2.2.0",
       "manifestPath": "crates/toolkit/Cargo.toml",
       "manifestSha256": "d4584b3f2f4e63e5bf7d7f2289c07aa0284a82427746af0b673aada73d622a4d",
-      "publish": null,
-      "sourceSha256": "64d542a6917b07508c71ad13ddea40862e0c77edac873bd465e4ef85c427173a"
+      "sourceSha256": "14c47105fd714cb9bcb70794fa8518da847d4880dae96ebe533f863c44e30a06",
+      "packageInputsSha256": "1314510055287642ce8a8c5ddda1c9c82e8c2bb6d72acad2efa853b9fab25788",
+      "publish": null
     },
     {
       "name": "farmfe_utils",
       "version": "2.1.1",
       "manifestPath": "crates/utils/Cargo.toml",
       "manifestSha256": "7d4823607fa0652c60b5c6a9e186ee163b0e0e500c5237349a028b44431774cf",
-      "publish": null,
-      "sourceSha256": "bf985762ef69f24dfa712a2f9d927a9736fdf425551fd54afbec1ee6907d347c"
+      "sourceSha256": "69f264b41c9849ecab3a578931d33921c65c097ec221d3435e1663618778d3f8",
+      "packageInputsSha256": "bbb0c086374c6b699dfae2ab69a0ef72b4b02343e8c7526c24c8d2e3ea024d58",
+      "publish": null
     }
   ],
   "counts": {

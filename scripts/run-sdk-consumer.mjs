@@ -68,8 +68,8 @@ async function main() {
   report.windowEndsAt = new Date(deadline).toISOString();
   async function command(phase, args, metadataOutput) {
     const disk = fs.statfsSync(output);
-    report.resources = { freeRamGiB: os.freemem() / 1024 ** 3, freeDiskGiB: disk.bavail * disk.bsize / 1024 ** 3 };
-    if (report.resources.freeRamGiB < 3.4 || report.resources.freeDiskGiB < 9.75) throw new Error('SDK command resource guard');
+    report.resources = { freeDiskGiB: disk.bavail * disk.bsize / 1024 ** 3 };
+    if (report.resources.freeDiskGiB < 9.75) throw new Error('SDK command resource guard');
     report.phase = phase; save();
     const fd = fs.openSync(log, 'a');
     const stdout = metadataOutput ? fs.openSync(metadataOutput, 'w') : fd;

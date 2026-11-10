@@ -365,42 +365,50 @@ export class Server extends httpServer {
     }
 
     this.watcher.on('add', async (file: string) => {
-      if (!this.compiler) return;
-      const currentAddedItem: CompilerUpdateItem = {
-        path: normalizePath(file),
-        type: 'added'
-      };
+      try {
+        if (!this.compiler) return;
+        const currentAddedItem: CompilerUpdateItem = {
+          path: normalizePath(file),
+          type: 'added'
+        };
 
-      if (this.hmrEngine) {
-        await this.hmrEngine.hmrUpdate(currentAddedItem);
-      } else {
-        await this.compiler.update([currentAddedItem]);
+        if (this.hmrEngine) {
+          await this.hmrEngine.queueWatchUpdate(currentAddedItem);
+        } else {
+          await this.compiler.update([currentAddedItem]);
+        }
+      } catch (error) {
+        this.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
 
     this.watcher.on('unlink', async (file: string) => {
-      if (!this.compiler) return;
-      const currentRemovedItem: CompilerUpdateItem = {
-        path: normalizePath(file),
-        type: 'removed'
-      };
-      await this.compiler.waitForCompileFinish();
-      // Capture importers before updating: the removed module can disappear
-      // from the graph while glob importers are being rebuilt.
-      const parentFiles = this.compiler.hasModule(file)
-        ? this.compiler.getParentFiles(file)
-        : [];
-      const paths: CompilerUpdateItem[] = [
-        currentRemovedItem,
-        ...parentFiles.map((parent) => ({
-          path: normalizePath(parent),
-          type: 'updated' as const
-        }))
-      ];
-      if (this.hmrEngine) {
-        await this.hmrEngine.hmrUpdate(paths, true);
-      } else {
+      try {
+        if (!this.compiler) return;
+        if (this.hmrEngine) {
+          await this.hmrEngine.queueWatchRemove(normalizePath(file));
+          return;
+        }
+        const currentRemovedItem: CompilerUpdateItem = {
+          path: normalizePath(file),
+          type: 'removed'
+        };
+        await this.compiler.waitForCompileFinish();
+        // Capture importers before updating: the removed module can disappear
+        // from the graph while glob importers are being rebuilt.
+        const parentFiles = this.compiler.hasModule(file)
+          ? this.compiler.getParentFiles(file)
+          : [];
+        const paths: CompilerUpdateItem[] = [
+          currentRemovedItem,
+          ...parentFiles.map((parent) => ({
+            path: normalizePath(parent),
+            type: 'updated' as const
+          }))
+        ];
         await this.compiler.update(paths);
+      } catch (error) {
+        this.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
 
@@ -422,7 +430,11 @@ export class Server extends httpServer {
           path: normalizePath(file),
           type: 'updated'
         };
-        this.hmrEngine?.hmrUpdate(currentRemovedItem);
+        void this.hmrEngine
+          ?.queueWatchUpdate(currentRemovedItem)
+          .catch((error) => {
+            this.logger.error(`Farm Hmr Update Error: ${error}`);
+          });
       } catch (error: any) {
         this.logger.error(`Farm Hmr Update Error: ${error}`);
       }

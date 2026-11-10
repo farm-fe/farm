@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 # Incremental CI and Release handoff
 
 Snapshot: 2026-11-01. PR [#2330](https://github.com/farm-fe/farm/pull/2330)

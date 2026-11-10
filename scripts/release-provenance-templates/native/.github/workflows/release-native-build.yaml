@@ -1,0 +1,45 @@
+name: Build and authenticate one native ABI
+on:
+  workflow_call:
+    inputs:
+      abi:
+        required: true
+        type: string
+      native_owners:
+        type: string
+        default: ''
+permissions: {}
+jobs:
+  primary:
+    if: contains(fromJSON('["linux-x64-gnu","darwin-arm64","win32-x64-msvc"]'), inputs.abi)
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/rust-build-user.yaml
+    with:
+      platform: ${{ inputs.abi }}
+      profile: release
+      native_owners: ${{ inputs.native_owners }}
+  extra:
+    if: contains(fromJSON('["linux-x64-musl","darwin-x64","win32-ia32-msvc","win32-arm64-msvc","linux-arm64-musl","linux-arm64-gnu"]'), inputs.abi)
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: ${{ inputs.abi }}
+      profile: release
+      native_owners: ${{ inputs.native_owners }}
+  sign:
+    if: ${{ !cancelled() && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' && ((needs.primary.result == 'success' && needs.extra.result == 'skipped' && needs.primary.outputs.catalog_id != '') || (needs.extra.result == 'success' && needs.primary.result == 'skipped' && needs.extra.outputs.catalog_id != '')) }}
+    needs: [primary, extra]
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release-proof-call.yaml
+    with:
+      scope: native-${{ inputs.abi }}
+      upload_bindings: >-
+        {"native":{"artifact_id":"${{ needs.primary.outputs.catalog_id || needs.extra.outputs.catalog_id }}","artifact_digest":"${{ needs.primary.outputs.catalog_digest || needs.extra.outputs.catalog_digest }}","run_attempt":"${{ needs.primary.outputs.catalog_attempt || needs.extra.outputs.catalog_attempt }}"}}

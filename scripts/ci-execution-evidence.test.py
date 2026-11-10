@@ -38,7 +38,7 @@ def fixture():
                           "inventoryHash": discovered["inventoryHash"], "planHash": expected["planHash"],
                           "artifactName": "farm-ci-suite-" + label + "-" + source["sha"] + "-" + abi + "-1"})
     coverage = {"kind": "complete-ci-suite-counts-not-build-bytes", "run": run_identity, "sourceSHA": source["sha"], "sourceTree": source["tree"], "cells": cells}
-    env = {"GITHUB_ACTIONS": "true", "GITHUB_JOB": "performance-summary", "GITHUB_REPOSITORY_ID": "1", "GITHUB_RUN_ID": "2",
+    env = {"GITHUB_ACTIONS": "true", "GITHUB_JOB": "execution-baseline", "GITHUB_REPOSITORY_ID": "1", "GITHUB_RUN_ID": "2",
            "GITHUB_RUN_ATTEMPT": "1", "GITHUB_EVENT_NAME": "push"}
     ledger = producer.create_ledger(source, coverage, env)
     run = {"id": 2, "run_attempt": 1, "repository": {"id": 1}, "head_repository": {"id": 1}, "path": ".github/workflows/ci.yaml",
@@ -72,7 +72,7 @@ def fixture():
                 identity = index + 100; name = cell["artifactName"]
                 body = io.BytesIO()
                 with zipfile.ZipFile(body, "w") as archive:
-                    archive.writestr("ts.json" if cell["kind"] == "ts" else "browser.json", json.dumps({key: value for key, value in cell.items() if key != "artifactName"}))
+                    archive.writestr("ts.json" if cell["kind"] == "ts" else "browser.json", json.dumps({key: value for key, value in cell.items() if key not in ["artifactName", "producerBinding"]}))
                 data = body.getvalue()
                 self.bytes[identity] = data
                 self.rows[name] = {**artifact, "id": identity, "name": name, "size_in_bytes": len(data), "digest": "sha256:" + hashlib.sha256(data).hexdigest()}
@@ -85,7 +85,9 @@ def fixture():
             identity = int(route.rsplit("/", 1)[1])
             if identity == artifact["id"]:
                 return artifact
-            return next(row for row in self.rows.values() if row["id"] == identity)
+            matches = [row for row in self.rows.values() if row["id"] == identity]
+            if not matches: raise KeyError("Fixture artifact missing")
+            return matches[0]
         def archive(self, identity):
             return self.bytes[identity]
     transport = Transport(); transport.pack()

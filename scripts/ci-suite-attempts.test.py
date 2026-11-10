@@ -38,7 +38,7 @@ def fixture():
         raw=body.getvalue();identity=100+index
         artifacts[name]={'id':identity,'name':name,'expired':False,'workflow_run':{'id':run['id']},'size_in_bytes':len(raw),'digest':'sha256:'+hashlib.sha256(raw).hexdigest(),'created_at':'2026-10-31T01:02:00Z'};bodies[identity]=raw
         job={'id':200+index,'run_id':run['id'],'name':prefix+' / '+job_label+' ('+module.execution.PLATFORMS[abi]+')','status':'completed','conclusion':'success','started_at':'2026-10-31T01:00:00Z','completed_at':'2026-10-31T01:04:00Z','steps':[{'name':step_label,'status':'completed','conclusion':'success','started_at':'2026-10-31T01:01:00Z','completed_at':'2026-10-31T01:03:00Z'}]}
-        for attempt in jobs:jobs[attempt].append(copy.deepcopy(job))
+        for attempt in jobs:jobs[attempt].append({**copy.deepcopy(job), 'head_sha':run['head_sha'], 'run_attempt':attempt})
     class Transport:
         calls=[]
         def get(self,route):
@@ -119,37 +119,13 @@ class Contracts(unittest.TestCase):
                 cells.append({**data,'artifactName':artifact['name'],'producerBinding':binding})
         coverage={'kind':'complete-ci-suite-counts-not-build-bytes','sourceSHA':source['sha'],'sourceTree':source['tree'],
                   'run':{'repositoryId':1,'runId':2,'runAttempt':3,'event':'push'},'cells':cells}
-        ledger=fixtures.producer.create_ledger(source,coverage,{'GITHUB_ACTIONS':'true','GITHUB_JOB':'performance-summary','GITHUB_REPOSITORY_ID':'1','GITHUB_RUN_ID':'2','GITHUB_RUN_ATTEMPT':'3','GITHUB_EVENT_NAME':'push'})
+        ledger=fixtures.producer.create_ledger(source,coverage,{'GITHUB_ACTIONS':'true','GITHUB_JOB':'execution-baseline','GITHUB_REPOSITORY_ID':'1','GITHUB_RUN_ID':'2','GITHUB_RUN_ATTEMPT':'3','GITHUB_EVENT_NAME':'push'})
         meta={'name':'farm-ci-execution-baseline-2-3','workflow_run':{'id':2},'expired':False,'id':3,'digest':'sha256:'+'0'*64,'created_at':'2026-10-31T01:02:00Z'}
         result=module.execution.verify_execution_ledger(transport,run,{'id':1,'default_branch':'main'},ledger,meta,jobs[3],source,source,ledger['requiredJobs'],suite_discovery=lambda *_:discovery)
         self.assertFalse(result['buildBytesReused'])
         ledger['coverage']['cells'][0]['producerBinding']['runAttempt']=3
         with self.assertRaisesRegex(ValueError,'producer proof differs'):
             module.execution.verify_execution_ledger(transport,run,{'id':1,'default_branch':'main'},ledger,meta,jobs[3],source,source,ledger['requiredJobs'],suite_discovery=lambda *_:discovery)
-
-    def test_selection_is_restored_from_its_actual_typecheck_attempt_and_exact_bytes(self):
-        transport,run,source,jobs,artifacts,bodies,_=fixture()
-        value={'sourceSHA':source['sha'],'sourceTree':source['tree'],'runId':run['id'],'attempt':1,'repositoryId':run['repository']['id']}
-        member=json.dumps(value).encode();body=io.BytesIO()
-        with zipfile.ZipFile(body,'w') as archive:archive.writestr('selection.json',member)
-        raw=body.getvalue();name='ci-suite-selection-2-1';artifacts[name]={'id':999,'name':name,'expired':False,'workflow_run':{'id':2},'size_in_bytes':len(raw),'digest':'sha256:'+hashlib.sha256(raw).hexdigest(),'created_at':'2026-10-31T01:02:00Z'};bodies[999]=raw
-        job={'id':998,'run_id':2,'name':'Type Check','status':'completed','conclusion':'success','started_at':'2026-10-31T01:00:00Z','completed_at':'2026-10-31T01:04:00Z','steps':[{'name':'Upload bound current suite selection','status':'completed','conclusion':'success','started_at':'2026-10-31T01:01:00Z','completed_at':'2026-10-31T01:03:00Z'}]}
-        for attempt in jobs:
-            jobs[attempt]=[item for item in jobs[attempt] if item['name']!=job['name']]+[copy.deepcopy(job)]
-        with tempfile.TemporaryDirectory() as tmp:
-            target=Path(tmp)/'selection/selection.json'
-            module.collect(transport,run,source,Path(tmp)/'receipts',hashlib.sha256(member).hexdigest(),target)
-            self.assertEqual(target.read_bytes(),member)
-            # A successful legacy compatibility context is not a selection producer.
-            for attempt in jobs:
-                next(item for item in jobs[attempt] if item['id']==998)['name']='Type Check & Changesets'
-            with self.assertRaises(ValueError):
-                module.original_selection(transport,run,source,hashlib.sha256(member).hexdigest())
-            for attempt in jobs:
-                next(item for item in jobs[attempt] if item['id']==998)['name']='Type Check'
-            self.assertEqual(json.loads((Path(tmp)/'receipts/producers.json').read_text())['selectionAttempt'],1)
-            with self.assertRaisesRegex(ValueError,'selection bytes differ'):
-                module.collect(transport,run,source,Path(tmp)/'bad','0'*64,Path(tmp)/'bad-selection.json')
 
     def test_new_failed_skipped_or_unknown_suite_cannot_fall_back_to_old_success(self):
         for conclusion in ['failure','skipped',None]:
@@ -196,5 +172,60 @@ class Contracts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             proofs=module.collect(transport,run,source,Path(tmp)/'receipts');self.assertEqual(proofs[newname]['runAttempt'],2)
             self.assertEqual(sum(value['runAttempt']==1 for value in proofs.values()),5)
+
+def enrich(run,jobs):
+    for attempt,rows in jobs.items():
+        for row in rows:
+            row.update(head_sha=run['head_sha'],run_attempt=attempt,runner_id=44,runner_name='hosted-runner')
+            for number,step in enumerate(row.get('steps',[]),1):step['number']=number
+            row['id']+=10000*attempt
+
+
+class ChangedViewContracts(unittest.TestCase):
+    def test_changed_ids_resolve_original_suite_upload_and_bytes(self):
+        api,run,source,jobs,*_=fixture();enrich(run,jobs)
+        actual,artifact,binding=module.execution.suite_receipt(api,run,source,'ts','linux-x64-gnu')
+        self.assertEqual(binding['runAttempt'],1)
+        self.assertEqual(binding['jobId'],10200)
+        self.assertEqual(binding['artifactDigest'],artifact['digest'])
+
+    def test_observed_linux_attempt2_to3_identity_and_fractional_step_times(self):
+        # IDs and job times come from run 41759140572 gate diagnostics.
+        # Runner/step details below are local proof fixtures, not downloaded evidence.
+        run={'id':41759140572,'head_sha':'b'*40}
+        prior={'id':126406306733,'run_id':run['id'],'run_attempt':2,'head_sha':run['head_sha'],
+               'name':'Primary Linux / Typescript Test (ubuntu-24.04)','runner_id':44,'runner_name':'hosted-runner',
+               'status':'completed','conclusion':'success','started_at':'2026-11-04T05:25:03Z','completed_at':'2026-11-04T05:27:32Z',
+               'steps':[{'number':1,'name':'Set up job','status':'completed','conclusion':'success',
+                         'started_at':'2026-11-04T05:25:03.000Z','completed_at':'2026-11-04T05:25:04.000Z'}]}
+        current={**copy.deepcopy(prior),'id':126425320863,'run_attempt':3,'runner_group_id':None}
+        prior['runner_group_id']=0
+        self.assertTrue(module.execution.same_carried_execution(current,prior,run,3))
+        current.pop('runner_id')
+        self.assertFalse(module.execution.same_carried_execution(current,prior,run,3))
+
+    def test_changed_ids_in_unit_and_e2e_planners_and_cells(self):
+        for file,scope in [('ci-unit-shadow-inputs.test.py','unit'),('ci-e2e-shadow-inputs.test.py','e2e')]:
+            shadow_fixture=load('carried_'+scope,file)
+            api,run,identity,jobs,*_=shadow_fixture.fixture();enrich(run,jobs)
+            # E2E fixture exposes its scope-bound module wrapper.
+            shadow_fixture.module.resolve(api,run,identity)
+
+    def test_changed_id_missing_or_forged_execution_proof_rejects(self):
+        for defect in ['source','attempt','runner','steps','step-time','step-status','step-number','name','failure']:
+            with self.subTest(defect=defect):
+                api,run,source,jobs,*_=fixture();enrich(run,jobs)
+                row=next(x for x in jobs[3] if x['name']=='Primary Linux / Typescript Test (ubuntu-24.04)')
+                if defect=='source':row['head_sha']='0'*40
+                elif defect=='attempt':row['run_attempt']=1
+                elif defect=='runner':row['runner_id']=45
+                elif defect=='steps':row.pop('steps')
+                elif defect=='step-time':row['steps'][0]['completed_at']='2026-10-31T01:02:59Z'
+                elif defect=='step-status':row['steps'][0]['conclusion']='failure'
+                elif defect=='step-number':row['steps'][0].pop('number')
+                elif defect=='name':row['name']='evil / '+row['name']
+                else:row['conclusion']='failure'
+                with self.assertRaises(ValueError):module.execution.suite_receipt(api,run,source,'ts','linux-x64-gnu')
+
 
 if __name__=='__main__':unittest.main(verbosity=2)

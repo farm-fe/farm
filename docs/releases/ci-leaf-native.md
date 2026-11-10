@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 # First live CI native reuse scope
 
 `ci-leaf-native.py` is an actual execution policy, separate from the generic
@@ -29,7 +31,7 @@ every original byte, source tree, requested image and unchanged build inputs.
 Release workflows/namespaces, fork producers, partial or cancelled producers,
 legacy artifacts, unknown input changes and inaccessible evidence build again.
 An aggregate failure may leave a valid successful producer's bytes, but grants
-no acceptance inheritance: current TS/Examples and performance still run.
+no acceptance inheritance: current TS/Examples still run.
 
 Consumer materialization has its own name and hash commitment. It records both
 `originBuildSHA` and `consumerSHA`; it is not uploaded as a new native build.

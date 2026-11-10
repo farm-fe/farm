@@ -120,8 +120,12 @@ pub fn handle_entry_resources(
   let entry_resource_code = create_entry_resource_code(&mut params.resource);
 
   // 5. export code
-  let export_info_code =
-    create_export_info_code(entry_module, &context.config.output.format.as_single());
+  let export_info_code = create_export_info_code(
+    entry_module,
+    &context.config.output.format.as_single(),
+    module_graph,
+    context,
+  );
 
   let mut entry_bundle = MagicString::new(&entry_resource_code, None);
 
@@ -212,16 +216,95 @@ fn create_load_dep_resources_code(
 /// var __farm_entry_default = __farm_entry__.default;
 /// export { __farm_entry_default as default };
 /// ```
-fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> String {
+fn create_export_info_code(
+  entry_module: &Module,
+  format: &ModuleFormat,
+  graph: &farmfe_core::module::module_graph::ModuleGraph,
+  context: &CompilationContext,
+) -> String {
   let export_idents = entry_module.meta.as_script().get_export_idents();
+  if matches!(format, ModuleFormat::CommonJs) && !export_idents.is_empty() {
+    let mut code = String::new();
+    // Preserve Farm's existing CommonJS default-value interop. Install named
+    // getters afterwards so their ownership does not depend on export ordering.
+    if export_idents.iter().any(|(name, _)| name == "default") {
+      code.push_str("module.exports=__farm_entry__.default;");
+    }
+    for (name, _) in &export_idents {
+      if name == "default" {
+        continue;
+      }
+      let key = farmfe_core::serde_json::to_string(name).unwrap();
+      // A primitive default must remain the raw CommonJS value. A callable
+      // default can also own non-configurable properties (such as prototype).
+      // Retain the old assignment semantics for those properties; replacing
+      // the default with a namespace/proxy would change public interop.
+      code.push_str(&format!("if(module.exports!==null&&(typeof module.exports==='object'||typeof module.exports==='function')){{var __farm_descriptor__=Object.getOwnPropertyDescriptor(module.exports,{key});if(__farm_descriptor__?__farm_descriptor__.configurable:Object.isExtensible(module.exports)){{Object.defineProperty(module.exports,{key},{{enumerable:true,configurable:true,get:function(){{return __farm_entry__[{key}]}}}});}}else{{module.exports[{key}]=__farm_entry__[{key}];}}}}else{{module.exports[{key}]=__farm_entry__[{key}];}}"));
+    }
+    return code;
+  }
   let mut decls = vec![];
   let mut exports = vec![];
+  let mut subscriptions = vec![];
+  let mut origin_plans = farmfe_core::HashMap::default();
 
-  for (exported, _) in export_idents {
-    decls.push(format!(
-      "var __farm_entry_{exported}__=__farm_entry__.{exported};"
-    ));
-    exports.push((format!("__farm_entry_{exported}__"), exported));
+  let mut local_names = export_idents
+    .iter()
+    .map(|(name, _)| format!("__farm_entry_{name}__"))
+    .collect::<farmfe_core::HashSet<_>>();
+  for (index, (exported, origin)) in export_idents.into_iter().enumerate() {
+    let origin = origin.as_internal();
+    let resolved = farmfe_toolkit::script::entry_live_bindings::resolve_origin(
+      graph,
+      &entry_module.id,
+      &exported,
+    );
+    let subscribe = resolved.as_ref().is_some_and(|(module, ident)| {
+      origin_plans
+        .entry(module.clone())
+        .or_insert_with(|| {
+          farmfe_toolkit::script::entry_live_bindings::remember_origins(module, graph, context)
+            .into_iter()
+            .collect::<farmfe_core::HashSet<_>>()
+        })
+        .contains(&ident.sym.to_string())
+    });
+    let (origin_module, origin_ident) = resolved
+      .as_ref()
+      .map(|(module, ident)| (module, ident))
+      .unwrap_or((&origin.module_id, &origin.ident));
+    let key = farmfe_core::serde_json::to_string(
+      &farmfe_toolkit::script::entry_live_bindings::origin_key(origin_module, origin_ident),
+    )
+    .unwrap();
+    let export_name = farmfe_core::swc_ecma_ast::ModuleExportName::from(
+      farmfe_core::module::meta_data::script::statement::SwcId::from(exported.as_str()),
+    );
+    if matches!(
+      export_name,
+      farmfe_core::swc_ecma_ast::ModuleExportName::Ident(_)
+    ) {
+      decls.push(format!(
+        "var __farm_entry_{exported}__=__farm_entry__.{exported};"
+      ));
+      if subscribe {
+        subscriptions.push(format!("__farm_ms__.r.entryBindings.subscribe({key},function(value){{__farm_entry_{exported}__=value;}},__farm_entry_{exported}__);"));
+      }
+      exports.push((format!("__farm_entry_{exported}__"), exported));
+    } else {
+      let mut local = format!("__farm_entry_string_{index}__");
+      while !local_names.insert(local.clone()) {
+        local.push('_');
+      }
+      let quoted = farmfe_core::serde_json::to_string(&exported).unwrap();
+      decls.push(format!("var {local}=__farm_entry__[{quoted}];"));
+      if subscribe {
+        subscriptions.push(format!(
+          "__farm_ms__.r.entryBindings.subscribe({key},function(value){{{local}=value;}},{local});"
+        ));
+      }
+      exports.push((local, quoted));
+    }
   }
 
   if !exports.is_empty() {
@@ -233,8 +316,9 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
           .collect::<Vec<_>>();
 
         format!(
-          "{}export {{{}}};",
+          "{}{}export {{{}}};",
           decls.join(""),
+          subscriptions.join(""),
           exported_fields.join(",")
         )
       }
@@ -244,6 +328,8 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
         for (value, exported) in exports {
           if exported == "default" {
             cjs_exports.push(format!("module.exports = {};", value));
+          } else if exported.starts_with('"') {
+            cjs_exports.push(format!("module.exports[{exported}] = {value};"));
           } else {
             cjs_exports.push(format!("module.exports.{} = {};", exported, value));
           }

@@ -1,9 +1,18 @@
-<!-- cspell:words pageout microbenchmark errno -->
-# Commerce CI performance report
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
 
-The non-blocking PR job for three OS platforms follows Examples and Docs acceptance, uses
-its own exact-SHA native artifacts, and never rebuilds Rust. macOS remains the
-standard ARM64 cohort. No local measurement is implied by the implementation.
+<!-- cspell:words pageout microbenchmark errno -->
+# Local Commerce performance report
+
+Run locally with the repository toolchain and built native dependencies:
+
+```sh
+node scripts/performance-report.mjs
+```
+
+This performs actual compilation, graph and browser checks and writes
+`performance-results/`. It is not invoked by Actions or required for publication.
+Optional historical CI evidence readers are retained for local analysis; no new
+performance artifacts or PR comments are produced by workflows.
 
 ## Complete workload and timing
 
@@ -27,7 +36,7 @@ the measured child. Gzip sidecars use level 6 and threshold 1,024 without deleti
 originals; normalized size accounting uses Node gzip level 9 on raw JS/CSS only.
 
 Farm warm samples reuse the successful cold cache directory, without asserting
-an independently proven cache hit. CI measures Farm only: no Vite dependency
+an independently proven cache hit. The local protocol measures Farm only: no Vite dependency
 preparation, warmup, measured build, graph compilation or browser run is scheduled.
 Every enabled Farm cohort must have exactly three valid cold and three valid warm
 samples; missing samples cannot pass through an empty-array success check.
@@ -39,8 +48,9 @@ and such a report cannot enter history or regression comparisons. Timeout, incom
 missing source coverage or browser failure makes the report invalid. No workload
 reduction or zero substitution is allowed. Three pairs are exploratory and all
 reports retain `publishable:false`; these are not release speed thresholds. The
-stable release gate nevertheless requires complete valid reports on all three
-platforms, independently of continue-on-error workflow behavior.
+former stable release gate required complete valid reports on all three
+platforms. That historical CI requirement has been removed; this protocol is now
+local-only and does not gate CI or release acceptance.
 
 ## Same-run resource supervision
 
@@ -143,12 +153,11 @@ budget; that remains invalid evidence, not a reduced fixture or fewer valid pair
 
 Artifacts include raw/summary JSON, CSV, logs, resource traces, graph detail and
 browser evidence. All three platforms remain visible when reports are absent or
-invalid. A trusted default-branch reporter validates run, repository, attempt,
-current PR/head/base and bounded summary identities before updating one bot comment;
-old SHAs/attempts cannot overwrite newer evidence. No artifact code is executed,
-no new token is created, and `pull_request_target` is not used. The reporter must
-exist on the default branch before live comments work; source implementation is
-not proof that a comment was posted. HMR benchmarking remains outside this protocol.
+invalid in local reports. Historically, a default-branch reporter validated run,
+repository, attempt, PR/head/base and bounded summary identities before updating
+a bot comment. That automatic CI reporter has been removed. Local report generation
+does not post comments or request tokens. HMR benchmarking remains outside this
+protocol.
 
 ## CI cache scope
 

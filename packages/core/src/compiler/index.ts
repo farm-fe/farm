@@ -148,52 +148,99 @@ export class Compiler {
     }
     this.compiling = true;
 
+    let complete: (error?: Error | null) => void = () => {};
+    const completion = new Promise<void>((resolve, reject) => {
+      complete = (error) => (error ? reject(error) : resolve());
+    });
+    // Install rejection handling before native can call back inline. The callback
+    // only settles its signal; it never waits for the native return value.
+    void completion.catch(() => {});
+    let res: JsUpdateResult;
     try {
-      const res = await this._bindingCompiler.update(
-        paths.map((item) => [item.path, item.type]),
-        async () => {
-          const next = this._updateQueue.shift();
-
-          if (next) {
-            await this.update(
-              next.paths,
-              next.sync,
-              true,
-              next.generateUpdateResource
-            ).then(next.resolve, next.reject);
-          } else {
-            this.compiling = false;
-            this._resolveCompileFinishPromise();
-            while (this._onUpdateFinishQueue.length) {
-              if (this.compiling) {
-                break;
-              }
-              const cb = this._onUpdateFinishQueue.shift();
-              if (cb) {
-                await cb();
-              }
-            }
-          }
-        },
+      const nativeResult = this._bindingCompiler.update(
+        paths.map((item) => [this.existingUpdateIdentity(item), item.type]),
+        complete,
         sync,
         generateUpdateResource
       );
-
-      return res as JsUpdateResult;
-    } catch (e: any) {
-      // A failed native update may never invoke its completion callback. Settle
-      // every waiting caller instead of leaving requests pending indefinitely.
-      for (const queued of this._updateQueue.splice(0)) {
-        queued.reject(e);
-      }
+      [res] = (await Promise.all([nativeResult, completion])) as [
+        JsUpdateResult,
+        void
+      ];
+    } catch (error) {
+      // A rejected native result need not produce a completion callback. Failed
+      // attempts must not leak queued callers or success listeners into a retry.
+      for (const queued of this._updateQueue.splice(0)) queued.reject(error);
+      this._onUpdateFinishQueue.splice(0);
       this.compiling = false;
       this._resolveCompileFinishPromise();
-      throw e;
+      throw error;
+    }
+    const next = this._updateQueue.shift();
+    if (next) {
+      void this.update(
+        next.paths,
+        next.sync,
+        true,
+        next.generateUpdateResource
+      ).then(next.resolve, next.reject);
+    } else {
+      this.compiling = false;
+      this._resolveCompileFinishPromise();
+      // Listener work is not this native attempt's result. A listener may await
+      // this update or initiate a newer attempt; neither may own its settlement.
+      void this.drainUpdateFinishListeners();
+    }
+    return res;
+  }
+
+  private async drainUpdateFinishListeners(): Promise<void> {
+    while (this._onUpdateFinishQueue.length && !this.compiling) {
+      const cb = this._onUpdateFinishQueue.shift();
+      try {
+        if (cb) await cb();
+      } catch (error) {
+        const diagnostic =
+          error instanceof Error ? error : new Error(String(error));
+        if (this.config.logger)
+          this.config.logger.error(diagnostic, { exit: false });
+        else console.error(diagnostic);
+      }
     }
   }
 
   private isCompilingAndCheckIgnored(ignoreCompilingCheck: boolean): boolean {
     return this.compiling && !ignoreCompilingCheck;
+  }
+
+  private existingUpdateIdentity(item: CompilerUpdateItem): string {
+    // Preserve membership notifications, virtual identities and symlinks:false.
+    // Only redirect an update to a physical identity already in this graph.
+    if (
+      item.type !== 'updated' ||
+      this.config.compilation?.resolve?.symlinks === false
+    )
+      return item.path;
+    const filename = cleanUrl(item.path);
+    const root =
+      this.config.compilation?.root ?? this.config.root ?? process.cwd();
+    const absolute = path.resolve(root, filename);
+    if (!existsSync(absolute)) return item.path;
+    // Native hasModule accepts a filename and also finds its query variants.
+    if (this._bindingCompiler.hasModule(filename)) return item.path;
+    let physical: string;
+    try {
+      physical = realpathSync(absolute);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      // The file can disappear after existsSync. Preserve the original event
+      // and let native update/error handling decide, without dropping siblings.
+      if (code === 'ENOENT' || code === 'ENOTDIR') return item.path;
+      throw error;
+    }
+    return this._bindingCompiler.hasModule(physical)
+      ? physical + item.path.slice(filename.length)
+      : item.path;
   }
 
   hasModule(resolvedPath: string): boolean {

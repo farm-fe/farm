@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
@@ -24,10 +25,79 @@ export function nativeSourceDigest(directory, entries = ['src', 'Cargo.toml', 'b
   return digest(rows);
 }
 
+// This is candidate package completeness evidence, separate from sourceSha256's
+// existing version-policy semantics. Cargo's pinned JSON oracle supplies actual
+// source paths, including workspace-inherited README/license and generated lock.
+export function cargoPackageInputsDigest(directory, workspaceRoot = root) {
+  directory = path.resolve(directory); workspaceRoot = path.resolve(workspaceRoot);
+  const relative = path.relative(workspaceRoot, directory);
+  assert.ok(!relative.startsWith('..') && !path.isAbsolute(relative), 'Cargo source outside workspace');
+  const toolchain = fs.readFileSync(path.join(root, 'rust-toolchain.toml'), 'utf8');
+  const channel = toolchain.match(/^channel\s*=\s*"(nightly-[0-9-]+)"/m)?.[1];
+  assert.ok(channel, 'Pinned Cargo package oracle required');
+  const lockPath = path.join(workspaceRoot, 'Cargo.lock');
+  const originalLock = fs.readFileSync(lockPath);
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-cargo-input-oracle-'));
+  const isolatedLock = path.join(scratch, 'Cargo.lock');
+  let output, canonicalIsolatedLock, oracleSucceeded = false;
+  try {
+    fs.writeFileSync(isolatedLock, originalLock);
+    canonicalIsolatedLock = fs.realpathSync(isolatedLock);
+    output = execFileSync('cargo', ['+' + channel, 'package', '--list', '--message-format=json', '-Z', 'unstable-options', '-Z', 'lockfile-path', '--config', 'resolver.lockfile-path=' + JSON.stringify(isolatedLock), '--config', 'build.build-dir=' + JSON.stringify(path.join(scratch, 'build')), '--target-dir', path.join(scratch, 'target'), '--offline', '--locked', '--allow-dirty', '--manifest-path', path.join(directory, 'Cargo.toml')], {
+      cwd: workspaceRoot, encoding: 'utf8', timeout: 60000, maxBuffer: 32 * 1024 * 1024
+    });
+    fs.writeFileSync(path.join(scratch, 'package-list.json'), output);
+    assert.deepEqual(fs.readFileSync(isolatedLock), originalLock, 'Cargo package oracle changed its locked input');
+    assert.deepEqual(fs.readFileSync(lockPath), originalLock, 'Cargo package oracle changed the lockfile');
+    oracleSucceeded = true;
+  } catch (error) {
+    error.message += '\nCargo oracle diagnostics retained at ' + scratch;
+    throw error;
+  } finally { if (oracleSucceeded) fs.rmSync(scratch, { recursive: true, force: true }); }
+  const records = output.trim().split(/\r?\n/).map(line => JSON.parse(line));
+  assert.equal(records.length, 1, 'Ambiguous Cargo package oracle');
+  const files = records[0].files;
+  assert.ok(files && files['Cargo.toml'] && files['Cargo.toml.orig'], 'Incomplete Cargo package oracle');
+  const rows = [];
+  for (const [name, entry] of Object.entries(files).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) {
+    assert.ok(!path.isAbsolute(name) && !name.split(/[\\/]/).includes('..'), 'Unsafe Cargo archive member');
+    assert.ok(entry.kind === 'copy' || entry.kind === 'generate', 'Unknown Cargo package input kind');
+    if (entry.kind === 'generate') assert.ok(['.cargo_vcs_info.json', 'Cargo.toml', 'Cargo.lock'].includes(name), 'Unknown generated Cargo archive member');
+    if (name === '.cargo_vcs_info.json') { assert.equal(entry.kind, 'generate'); continue; }
+    assert.equal(typeof entry.path, 'string', 'Cargo generated input lacks a source path');
+    if (name === 'Cargo.lock') {
+      assert.equal(entry.kind, 'generate');
+      assert.ok([isolatedLock, canonicalIsolatedLock].includes(path.resolve(entry.path)), 'Cargo oracle did not isolate its lockfile');
+    }
+    const file = name === 'Cargo.lock' ? lockPath : path.resolve(entry.path);
+    const relativeFile = path.relative(workspaceRoot, file);
+    assert.ok(!relativeFile.startsWith('..') && !path.isAbsolute(relativeFile), 'Cargo input outside workspace');
+    let current = workspaceRoot;
+    for (const part of relativeFile.split(path.sep)) {
+      current = path.join(current, part);
+      assert.ok(!fs.lstatSync(current).isSymbolicLink(), 'Cargo source symlink requires review');
+    }
+    assert.ok(fs.statSync(file).isFile(), 'Missing regular Cargo source: ' + name);
+    rows.push([name, entry.kind, relativeFile.replaceAll('\\', '/'), nativeSourceDigest(path.dirname(file), [path.basename(file)])]);
+  }
+  rows.push(['workspace-manifest', nativeSourceDigest(workspaceRoot, ['Cargo.toml'])]);
+  rows.push(['toolchain', crypto.createHash('sha256').update(toolchain.replaceAll('\r\n', '\n')).digest('hex')]);
+  return digest(rows);
+}
+
 // The family remains complete for consumers and SDK validation. Only this delta
 // may be repacked/published; unchanged immutable versions come from registries.
 export const publicationNpm = plan => plan.publication?.npm ?? plan.npm;
 export function releaseCandidatePlanPath(root, env = process.env) {
+  if (env.FARM_PR_CANDIDATE_PLAN) {
+    assert.ok(!env.FARM_RELEASE_CANDIDATE_PLAN, 'PR and publication plan overrides cannot be combined');
+    assert.equal(env.GITHUB_ACTIONS, 'true'); assert.equal(env.GITHUB_JOB, 'seal');
+    assert.ok(['pull_request', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME));
+    assert.ok(env.GITHUB_WORKFLOW_REF?.startsWith(`${env.GITHUB_REPOSITORY}/.github/workflows/ci.yaml@`));
+    const file = path.resolve(root, env.FARM_PR_CANDIDATE_PLAN);
+    assert.equal(file, path.resolve(root, '.release-work/pr-candidate-plan.json'));
+    return file;
+  }
   if (!env.FARM_RELEASE_CANDIDATE_PLAN) return path.join(root, 'docs/releases/v2-candidate.json');
   assert.equal(env.GITHUB_ACTIONS, 'true'); assert.equal(env.GITHUB_REF, 'refs/heads/main');
   assert.equal(env.FARM_BUILD_PROFILE, 'release'); assert.equal(env.GITHUB_JOB, 'producer');
@@ -142,7 +212,7 @@ export function cargoInventory(metadata) {
     if (!pkg) throw new Error(`Missing SDK root: ${name}`);
     visit(pkg);
   }
-  return [...selected.values()].map(pkg => ({ name: pkg.name, version: pkg.version, manifestPath: path.relative(root, pkg.manifest_path).replaceAll('\\', '/'), manifestSha256: crypto.createHash('sha256').update(fs.readFileSync(pkg.manifest_path, 'utf8').replaceAll('\r\n', '\n')).digest('hex'), sourceSha256: nativeSourceDigest(path.dirname(pkg.manifest_path)), publish: pkg.publish })).sort((a, b) => a.name.localeCompare(b.name));
+  return [...selected.values()].map(pkg => ({ name: pkg.name, version: pkg.version, manifestPath: path.relative(root, pkg.manifest_path).replaceAll('\\', '/'), manifestSha256: crypto.createHash('sha256').update(fs.readFileSync(pkg.manifest_path, 'utf8').replaceAll('\r\n', '\n')).digest('hex'), sourceSha256: nativeSourceDigest(path.dirname(pkg.manifest_path)), packageInputsSha256: cargoPackageInputsDigest(path.dirname(pkg.manifest_path)), publish: pkg.publish })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

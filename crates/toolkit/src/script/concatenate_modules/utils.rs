@@ -13,10 +13,9 @@ use farmfe_core::{
   swc_ecma_ast::{
     BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, EmptyStmt, ExportAll,
     ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread, ExprStmt, GetterProp, Ident,
-    IdentName, ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier,
-    KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, KeyValueProp, Lit,
+    MemberExpr, MemberProp, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat,
+    Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 
@@ -63,16 +62,11 @@ pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) ->
 pub(crate) fn create_var_namespace_item(
   module_id: &ModuleId,
   export_ident_map: &HashMap<String, ModuleExportIdent>,
-  cyclic_idents: &HashSet<(Option<SwcId>, ModuleExportIdent)>,
+  _cyclic_idents: &HashSet<(Option<SwcId>, ModuleExportIdent)>,
   rename_handler: &TopLevelIdentsRenameHandler,
 ) -> ModuleItem {
   let mut key_ident_vec = export_ident_map.iter().collect::<Vec<_>>();
   key_ident_vec.sort_by_key(|a| a.0);
-
-  let cyclic_idents = cyclic_idents
-    .iter()
-    .map(|(_, module_export_ident)| module_export_ident)
-    .collect::<HashSet<_>>();
 
   let mut props: Vec<PropOrSpread> = key_ident_vec
     .into_iter()
@@ -94,31 +88,24 @@ pub(crate) fn create_var_namespace_item(
 
       let value_expr = Box::new(Expr::Ident(renamed_ident.into()));
 
-      // External import bindings remain live even without an internal cycle.
-      let prop = if cyclic_idents.contains(&org_module_export_ident)
-        || matches!(
-          module_export_ident.export_type,
-          ModuleExportIdentType::External
-        ) {
-        Prop::Getter(GetterProp {
+      // Every materialized module namespace must observe the current binding,
+      // including mutable declarations in ordinary acyclic internal modules.
+      let prop = Prop::Getter(GetterProp {
+        span: DUMMY_SP,
+        key: match ModuleExportName::from(SwcId::from(key.as_str())) {
+          ModuleExportName::Ident(ident) => PropName::Ident(ident.into()),
+          ModuleExportName::Str(name) => PropName::Str(name),
+        },
+        type_ann: None,
+        body: Some(BlockStmt {
           span: DUMMY_SP,
-          key: PropName::Ident(key.as_str().into()),
-          type_ann: None,
-          body: Some(BlockStmt {
+          stmts: vec![Stmt::Return(ReturnStmt {
             span: DUMMY_SP,
-            stmts: vec![Stmt::Return(ReturnStmt {
-              span: DUMMY_SP,
-              arg: Some(value_expr),
-            })],
-            ctxt: SyntaxContext::empty(),
-          }),
-        })
-      } else {
-        Prop::KeyValue(KeyValueProp {
-          key: PropName::Ident(key.as_str().into()),
-          value: value_expr,
-        })
-      };
+            arg: Some(value_expr),
+          })],
+          ctxt: SyntaxContext::empty(),
+        }),
+      });
 
       PropOrSpread::Prop(Box::new(prop))
     })
@@ -215,7 +202,7 @@ pub fn create_import_specifiers(idents: Vec<(SwcId, String)>) -> Vec<ImportSpeci
       ImportSpecifier::Named(ImportNamedSpecifier {
         span: DUMMY_SP,
         imported: if id.sym.as_str() != name.as_str() {
-          Some(ModuleExportName::Ident(name.into()))
+          Some(SwcId::from(name.as_str()).into())
         } else {
           None
         },
@@ -338,11 +325,7 @@ pub fn generate_export_decl_item(
     specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
       span: DUMMY_SP,
       orig: ModuleExportName::Ident(Ident::new(renamed_ident.sym, DUMMY_SP, ctxt)),
-      exported: Some(ModuleExportName::Ident(Ident::new(
-        name.as_str().into(),
-        DUMMY_SP,
-        SyntaxContext::empty(),
-      ))),
+      exported: Some(SwcId::from(name.as_str()).into()),
       is_type_only: false,
     }));
   }
@@ -402,7 +385,15 @@ pub fn create_member_expr(ident: &SwcId, prop: &str) -> Expr {
       DUMMY_SP,
       ident.ctxt(),
     ))),
-    prop: MemberProp::Ident(IdentName::new(prop.into(), DUMMY_SP)),
+    prop: match ModuleExportName::from(SwcId::from(prop)) {
+      ModuleExportName::Ident(ident) => MemberProp::Ident(ident.into()),
+      ModuleExportName::Str(name) => {
+        MemberProp::Computed(farmfe_core::swc_ecma_ast::ComputedPropName {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Lit(Lit::Str(name))),
+        })
+      }
+    },
   })
 }
 

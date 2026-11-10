@@ -40,7 +40,7 @@ def safe_error_fields(source):
         "code": ["operation-failed", "invalid-text-encoding", "invalid-json", "git-command-failed", "git-command-timeout", "file-operation-failed", "validation-failed", *BINDING_CODES],
         "encoding": ["utf-8", "utf8", "ascii", "charmap", "cp1252", "cp936"],
     }
-    allowed["resolutionStep"] = ["resolve-producer", "read-artifact", "bind-upload", "validate-digest", "validate-source", "validate-cell", "validate-workflow"]
+    allowed["resolutionStep"] = ["resolve-producer", "read-artifact", "bind-upload", "validate-digest", "validate-source", "validate-cell", "validate-workflow", "validate-observation-inventory"]
     allowed["resolutionReason"] = ["upload-time-window", "upload-step-unsuccessful", "artifact-missing-or-ambiguous", "artifact-bytes-differ", "artifact-members-differ", "latest-producer-unsuccessful", "carried-producer-unproven", "validation-rejected"]
     result = {key: source[key] if source.get(key) in values else "unknown" for key, values in allowed.items() if key in source}
     if source.get("identityField") in IDENTITY_FIELDS:

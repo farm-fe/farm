@@ -8,6 +8,7 @@ const path = require('path');
 /** @type {import('@electron-forge/shared-types').ForgeConfig} */
 const config = {
   packagerConfig: {
+    ...require('./electron-download.cjs'),
     // Ignore all files, including `node_modules`.
     ignore: /.*/,
     beforeCopy: [(

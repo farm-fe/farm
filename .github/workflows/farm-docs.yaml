@@ -7,20 +7,35 @@ on:
       platforms:
         type: string
         default: '[{"os":"windows-latest","abi":"win32-x64-msvc"},{"os":"ubuntu-24.04","abi":"linux-x64-gnu"}]'
+      native_upload:
+        type: string
+        default: ''
       consume_native:
         type: boolean
         default: false
+
+    outputs:
+      artifact_id:
+        value: ${{ jobs.docs.outputs.artifact_id }}
+      artifact_digest:
+        value: ${{ jobs.docs.outputs.artifact_digest }}
+      run_attempt:
+        value: ${{ jobs.docs.outputs.run_attempt }}
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: farm-docs-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platforms || 'standalone' }}
+  group: farm-docs-${{ github.run_id }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}-${{ inputs.platforms || 'standalone' }}
   cancel-in-progress: true
 
 jobs:
   docs:
+    outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Docs / ${{ matrix.settings.os }}
     runs-on: ${{ matrix.settings.os }}
     timeout-minutes: 120
@@ -81,6 +96,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_DOCS_CONSUME_NATIVE: ${{ inputs.consume_native }}
+          FARM_DOCS_NATIVE_UPLOAD: ${{ inputs.native_upload }}
         run: python -B scripts/docs-native-products.py consume --abi ${{ matrix.settings.abi }} --output docs-native-plan.json
       - name: Build only unavailable Docs native products
         env:
@@ -171,7 +187,8 @@ jobs:
             docs/farm-docs/evidence/p10/ci
             ${{ runner.temp }}/farm-docs-native
             docs-native-plan.json
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell

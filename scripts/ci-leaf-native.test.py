@@ -261,7 +261,7 @@ class Contracts(unittest.TestCase):
         self.assertIn('scripts/formal-native-products.py produce',producer)
         self.assertIn("steps.formal-catalog.outputs.catalog_available == 'true'",producer)
         gate=workflow.split('  incremental-execution-gate:',1)[1]
-        self.assertIn('needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]',gate)
+        self.assertIn('needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test, candidate-packages]',gate)
         self.assertIn('scripts/ci-suite-attempts.py --output ci-gate-suites',gate)
         self.assertIn('scripts/ci-suite-execution.mjs --collect ci-gate-suites',gate)
         self.assertNotIn('required-examples-compatibility:',workflow)

@@ -20,18 +20,18 @@ test('actual Farm env source exposes harness variables unless the TS child is is
   const code = stripTypeScriptTypes(source).replace(/^import[\s\S]*?;[ \t]*(?:\r?\n)?/gm, '').replace(/^export /gm, '');
   const create = new Function('fs', 'path', 'parse', 'expand', 'arraify', 'normalizePath', 'tryStatSync', 'process', code + '\nreturn loadEnv;');
   const load = env => create({}, path, () => ({}), () => {}, value => Array.isArray(value) ? value : [value], value => value, () => null, {env})('development', '/empty-fixture');
-  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: '', FARM_SUITE_RESULTS_FILE: 'ci-suite-results/ts.json', FARM_DISABLE_CACHE: ''};
+  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: '', FARM_SUITE_SELECTION_UPLOAD: '{"artifact_id":"123"}', FARM_SUITE_RESULTS_FILE: 'ci-suite-results/ts.json', FARM_DISABLE_CACHE: ''};
   assert.deepEqual(load(parent), parent);
   assert.deepEqual(load(typeScriptChildEnvironment(parent)), {FARM_DISABLE_CACHE: ''});
   assert.equal(parent.FARM_SUITE_ABI, 'linux-x64-gnu');
 });
 
 test('actual TS child invocation keeps product env and parent evidence while removing only harness controls', async () => {
-  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: 'bound hash', FARM_DISABLE_CACHE: 'true', VITE_FEATURE: 'kept'};
+  const parent = {FARM_SUITE_ABI: 'linux-x64-gnu', FARM_SUITE_SELECTION_HASH: 'bound hash', FARM_SUITE_SELECTION_UPLOAD: '{"artifact_id":"123"}', FARM_DISABLE_CACHE: 'true', VITE_FEATURE: 'kept'};
   let observed;
   await runVitestCommand({run: async (_file, _args, options) => {observed = options.env;}, npm: 'npm-cli.js', filters: [],
     raw: 'not-written.json', directory: '.', env: parent, log: 'not-written.log'});
-  assert.equal(observed.FARM_SUITE_ABI, undefined); assert.equal(observed.FARM_SUITE_SELECTION_HASH, undefined);
+  assert.equal(observed.FARM_SUITE_SELECTION_UPLOAD, undefined); assert.equal(observed.FARM_SUITE_ABI, undefined); assert.equal(observed.FARM_SUITE_SELECTION_HASH, undefined);
   assert.equal(observed.FARM_DISABLE_CACHE, 'true'); assert.equal(observed.VITE_FEATURE, 'kept');
   assert.equal(parent.FARM_SUITE_SELECTION_HASH, 'bound hash');
 });
@@ -119,7 +119,7 @@ test('complete collection requires every platform and original per-file case cou
   original.items.push({ id: 'examples-browser:examples/react', kind: 'examples-browser', requiresActualCases: true });
   const combined = { ...original, inventoryHash: crypto.createHash('sha256').update(JSON.stringify(original)).digest('hex') };
   const env = { GITHUB_ACTIONS: 'true', GITHUB_RUN_ID: '1', GITHUB_RUN_ATTEMPT: '2', GITHUB_REPOSITORY_ID: '3',
-    GITHUB_SHA: 'a'.repeat(40), GITHUB_JOB: 'performance-summary', GITHUB_WORKFLOW_REF: 'farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge',
+    GITHUB_SHA: 'a'.repeat(40), GITHUB_JOB: 'execution-baseline', GITHUB_WORKFLOW_REF: 'farm-fe/farm/.github/workflows/ci.yaml@refs/pull/2330/merge',
     GITHUB_EVENT_NAME: 'pull_request' };
   const rows = ['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc'].flatMap(abi => ['ts', 'examples-browser'].map(kind => {
     const plan = makeSuiteExecutionPlan(combined, kind);

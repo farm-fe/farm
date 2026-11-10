@@ -4,10 +4,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { calculateSelection, executionPlan } from './ci-suite-selection.mjs';
+import { executionPlan } from './ci-suite-execution.mjs';
 import { readGitSuiteFiles, discoverSuiteInventory, suitePolicy } from './ci-suite-inventory.mjs';
 import { checkBrowserExecution, checkVitestExecution } from './ci-suite-execution.mjs';
 
@@ -39,50 +38,35 @@ function model() {
   return { directory, git, write, baselineSHA, baselineTree, close: () => fs.rmSync(directory, { recursive: true, force: true }) };
 }
 
-test('real isolated Git leaf change selects actual runner files and proves empty TS explicitly', () => {
+test('leaf changes still execute all discovered tests and reject empty success', () => {
   const fixture = model();
   try {
     fixture.write('examples/react/src/main.ts', 'changed'); fixture.git('add', '.'); fixture.git('commit', '--quiet', '-m', 'leaf');
-    const identity = { kind: 'independently-verified-ci-suite-baseline', sourceSHA: fixture.git('rev-parse', 'HEAD').trim(),
-      sourceTree: fixture.git('rev-parse', 'HEAD^{tree}').trim(), baselineSHA: fixture.baselineSHA, baselineTree: fixture.baselineTree,
-      repositoryId: 1, runId: 2, attempt: 1, baselineEvidence: { artifactId: 7 } };
-    const selection = calculateSelection(identity, fixture.directory);
-    assert.equal(selection.decision.full, false);
-    assert.deepEqual(selection.decision.sets['examples-browser'].ids, ['examples-browser:examples/react']);
-    const folder = path.join(fixture.directory, 'ci-suite-selection'); fs.mkdirSync(folder);
-    const bytes = Buffer.from(JSON.stringify(selection)); fs.writeFileSync(path.join(folder, 'selection.json'), bytes);
-    const env = { FARM_SUITE_SELECTION_HASH: crypto.createHash('sha256').update(bytes).digest('hex'), GITHUB_SHA: identity.sourceSHA,
-      GITHUB_RUN_ID: '2', GITHUB_RUN_ATTEMPT: '1', GITHUB_REPOSITORY_ID: '1' };
-    const data = readGitSuiteFiles(fixture.directory), inventory = discoverSuiteInventory(data.files, suitePolicy, data.sourceIdentity, data.exampleDirectories);
-    const browser = executionPlan(inventory, 'examples-browser', fixture.directory, env);
-    const receipt = checkBrowserExecution(inventory, new Map([['react', [{ passed: true, skipped: false }]]]), ['react'], browser);
-    assert.deepEqual(receipt.executedIds, ['examples-browser:examples/react']); assert.equal(receipt.executedCases, 1);
-    assert.throws(() => checkBrowserExecution(inventory, new Map(), [], browser));
-    const ts = executionPlan(inventory, 'ts', fixture.directory, env);
-    assert.equal(ts.mode, 'not-applicable');
-    assert.equal(checkVitestExecution(inventory, { success: true, testResults: [], numTotalTests: 0, numPassedTests: 0 }, fixture.directory, value => value, ts).disposition, 'not-applicable');
-    assert.throws(() => executionPlan(inventory, 'ts', fixture.directory, { ...env, GITHUB_RUN_ATTEMPT: '2' }));
-    assert.deepEqual(executionPlan(inventory, 'examples-browser', fixture.directory, {...env,GITHUB_RUN_ATTEMPT:'3',CI_SUITE_SELECTION_PRODUCER_ATTEMPT:'1'}),browser);
-    assert.throws(()=>executionPlan(inventory,'ts',fixture.directory,{...env,GITHUB_RUN_ATTEMPT:'3',CI_SUITE_SELECTION_PRODUCER_ATTEMPT:'4'}));
-    fs.writeFileSync(path.join(folder, 'selection.json'), '{}');
-    assert.throws(() => executionPlan(inventory, 'ts', fixture.directory, env));
+    const data = readGitSuiteFiles(fixture.directory);
+    const inventory = discoverSuiteInventory(data.files, suitePolicy, data.sourceIdentity, data.exampleDirectories);
+    for (const cache of ['hit', 'miss']) {
+      const browser = executionPlan(inventory, 'examples-browser', fixture.directory, { FARM_NATIVE_CACHE: cache });
+      assert.deepEqual(browser.ids, ['examples-browser:examples/react', 'examples-browser:examples/two']);
+      assert.throws(() => checkBrowserExecution(inventory, new Map([['react', [{passed:true}]]]), ['react'], browser));
+      const ts = executionPlan(inventory, 'ts', fixture.directory, { FARM_NATIVE_CACHE: cache });
+      assert.deepEqual(ts.ids, ['ts:packages/a/a.spec.ts']);
+      assert.throws(() => checkVitestExecution(inventory, {success:true,testResults:[],numTotalTests:0,numPassedTests:0}, fixture.directory, value=>value, ts));
+    }
   } finally { fixture.close(); }
 });
 
-test('actual workflow binds selection to all platforms and stable suite-count gate', () => {
+test('actual workflow executes full suites without historical selection', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci.yaml'), 'utf8');
   const primary = fs.readFileSync(path.join(root, '.github/workflows/ci-primary-platform.yaml'), 'utf8');
-  assert.equal(workflow.split('suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}').length - 1, 3);
-  assert.ok(workflow.includes('ci-suite-baseline.py --output ci-suite-selection/selection.json'));
+  assert.doesNotMatch(workflow, /suite_selection_hash|ci-suite-baseline.py --output/);
   assert.ok(workflow.includes('ci-suite-execution.mjs --collect ci-gate-suites'));
-  assert.ok(primary.includes('scripts/ci-suite-attempts.py --selection-only'));
-  assert.ok(primary.includes('FARM_SUITE_SELECTION_HASH: ${{ inputs.suite_selection_hash }}'));
+  assert.doesNotMatch(primary, /selection-only|FARM_SUITE_SELECTION_HASH/);
 });
 
-// Exercise the actual Git -> selection boundary, including mode-only changes.
+// Exercise real Git discovery, including mode-only changes; all tests run.
 for (const scenario of ['noop', 'add', 'edit', 'delete', 'rename', 'executable', 'symlink',
   'rename-to-product', 'rename-from-product', 'lockfile', 'cargo-lock', 'workflow', 'public-docs', 'mdx', 'config', 'runtime', 'hmr', 'import-meta', 'mixed-react']) {
-  test(`committed engineering Markdown selection: ${scenario}`, () => {
+  test(`committed full-test discovery: ${scenario}`, () => {
     const fixture = model();
     const note = 'docs/experiences/notes.md';
     const commit = message => { fixture.git('add', '-A'); fixture.git('commit', '--quiet', '-m', message); };
@@ -105,21 +89,13 @@ for (const scenario of ['noop', 'add', 'edit', 'delete', 'rename', 'executable',
         hmr: 'packages/runtime-plugin-hmr/src/index.ts', 'import-meta': 'packages/runtime-plugin-import-meta/src/index.ts'}[scenario], 'changed\n');
       if (scenario === 'executable') fixture.git('commit', '--quiet', '-m', scenario);
       else if (scenario !== 'noop') commit(scenario);
-      const identity = { kind: 'independently-verified-ci-suite-baseline', sourceSHA: fixture.git('rev-parse', 'HEAD').trim(),
-        sourceTree: fixture.git('rev-parse', 'HEAD^{tree}').trim(), baselineSHA, baselineTree, repositoryId: 1, runId: 2, attempt: 1 };
-      const selection = calculateSelection(identity, fixture.directory);
-      const reduced = ['noop', 'add', 'edit', 'delete', 'rename', 'mixed-react', 'rename-from-product', 'config'].includes(scenario);
-      assert.equal(selection.decision.full, !reduced);
-      if (reduced) {
-        assert.deepEqual(selection.decision.sets.ts.ids, []);
-        const react = ['mixed-react', 'rename-from-product', 'config'].includes(scenario);
-        for (const kind of ['examples-build', 'examples-browser']) assert.deepEqual(selection.decision.sets[kind].ids, react ? [`${kind}:examples/react`] : []);
-      } else for (const kind of ['ts', 'examples-build', 'examples-browser']) assert.equal(selection.decision.sets[kind].mode, 'all');
-      assert.equal(selection.acceptanceInherited, false);
-      // A selection file never grants execution without its trusted job hash.
       const data = readGitSuiteFiles(fixture.directory);
       const inventory = discoverSuiteInventory(data.files, suitePolicy, data.sourceIdentity, data.exampleDirectories);
-      assert.equal(executionPlan(inventory, 'ts', fixture.directory, {}).mode, 'all');
+      for (const kind of ['ts', 'examples-build', 'examples-browser']) {
+        const cold=executionPlan(inventory,kind,fixture.directory,{});
+        const warm=executionPlan(inventory,kind,fixture.directory,{FARM_SUITE_SELECTION_HASH:'old-proof',FARM_NATIVE_CACHE:'hit'});
+        assert.equal(cold.mode,'all');assert.deepEqual(warm,cold);assert.ok(cold.ids.length>0);
+      }
     } finally { fixture.close(); }
   });
 }

@@ -1,4 +1,4 @@
-name: Seal reviewed stable candidate
+name: Test current PR candidate archives
 on:
   workflow_call:
 permissions:
@@ -11,6 +11,7 @@ jobs:
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: 1
+      FARM_PR_CANDIDATE_PLAN: .release-work/pr-candidate-plan.json
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +31,13 @@ jobs:
           version: 9.4.0
           run_install: false
       - run: pnpm install --frozen-lockfile
-      - run: node scripts/check-pr-changesets.mjs --verify-prepared
       - run: mkdir .release-work
+      - name: Install pinned toolchain and prepare locked source dependencies
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          cargo +nightly-2026-04-10 fetch --locked
+      - name: Inventory the actual PR checkout without preparing release versions
+        run: node scripts/prepare-pr-candidate-plan.mjs
       - uses: actions/download-artifact@v4
         with:
           pattern: ${{ github.sha }}-*
@@ -48,11 +54,8 @@ jobs:
         env:
           FARM_PNPM_CLI: ${{ steps.pnpm-setup.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
         run: pnpm exec node scripts/pack-v2-npm-candidates.mjs .release-work/native-assembly.json .release-work/artifact-index.json .release-work/npm
-      - name: Install the pinned SDK validation toolchain
-        run: rustup toolchain install nightly-2026-04-10 --profile minimal
       - name: Fetch locked public dependencies, without compiling native products
         run: |
-          cargo +nightly-2026-04-10 fetch --locked
           node scripts/prepare-sdk-frozen-lock.mjs fetch-recipe .release-work/public-fetch
           cargo +nightly-2026-04-10 fetch --manifest-path .release-work/public-fetch/Cargo.toml
       - name: Package selected Cargo SDK candidates without publishing or native rebuilding
@@ -95,7 +98,7 @@ jobs:
         with:
           cell: "seal"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   consumers:
     name: Candidate registry consumer (${{ matrix.os }})
@@ -142,4 +145,4 @@ jobs:
         with:
           cell: "consumers:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: ${{ matrix.os }}

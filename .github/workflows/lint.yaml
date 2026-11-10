@@ -15,7 +15,7 @@ jobs:
     name: Rust Code Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
 
@@ -27,13 +27,13 @@ jobs:
     name: TS Code Lint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 

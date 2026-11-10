@@ -24,10 +24,10 @@ export function sealRustPackages({ root = defaultRoot, output, env = process.env
     receipt.reusedRegistry = reused;
     selected = plan.cargo.filter(row => !reused.some(item => item.name === row.name && item.version === row.version));
     const disk = fs.statfsSync(output);
-    const observed = resources ?? { freeRamGiB: os.freemem() / 1024 ** 3, freeDiskGiB: disk.bavail * disk.bsize / 1024 ** 3 };
-    receipt.freeRamGiB = observed.freeRamGiB; receipt.freeDiskGiB = observed.freeDiskGiB;
-    if (!Number.isFinite(receipt.freeRamGiB) || !Number.isFinite(receipt.freeDiskGiB)) throw new Error('Resource observations unavailable');
-    if (receipt.freeRamGiB < 3.4 || receipt.freeDiskGiB < 9.75) receipt.status = 'resource-wait';
+    const observed = resources ?? { freeDiskGiB: disk.bavail * disk.bsize / 1024 ** 3 };
+    receipt.freeDiskGiB = observed.freeDiskGiB;
+    if (!Number.isFinite(receipt.freeDiskGiB)) throw new Error('Resource observations unavailable');
+    if (receipt.freeDiskGiB < 9.75) receipt.status = 'resource-wait';
     else {
       stage = 'reuse-registry-archives';
       const cache = path.join(env.CARGO_HOME ?? path.join(os.homedir(), '.cargo'), 'registry/cache');

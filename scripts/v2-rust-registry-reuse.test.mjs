@@ -35,7 +35,7 @@ function fixture() {
   const cargoHome = path.join(root, 'cargo-home'), cache = path.join(cargoHome, 'registry/cache/index.crates.io-fixture');
   return { root, cargoHome, cache };
 }
-const options = f => ({ root: f.root, env: { CARGO_HOME: f.cargoHome }, sourceCommit: 'a'.repeat(40), resources: { freeRamGiB: 8, freeDiskGiB: 20 } });
+const options = f => ({ root: f.root, env: { CARGO_HOME: f.cargoHome }, sourceCommit: 'a'.repeat(40), resources: { freeDiskGiB: 20 } });
 
 test('cold or corrupt registry cache writes a failed receipt without running Cargo or repackaging a macro', () => {
   const f = fixture();
@@ -108,4 +108,31 @@ test('locked prefetch precedes archive preparation and isolated frozen SDK valid
   const registryScript = fs.readFileSync(new URL('./sdk-candidate-registry.mjs', import.meta.url), 'utf8');
   assert.ok(registryScript.includes('target/package/tmp-registry/index'));
   assert.ok(registryScript.includes('metadata.cksum !== record.sha256'));
+});
+
+
+test('archive preparation checks disk without estimating available memory', () => {
+  const f = fixture();
+  try {
+    const lowDisk = sealRustPackages({ ...options(f), resources: { freeDiskGiB: 1 }, output: path.join(f.root, 'disk-low') });
+    assert.equal(lowDisk.status, 'resource-wait');
+    const noDisk = sealRustPackages({ ...options(f), resources: { freeDiskGiB: NaN }, output: path.join(f.root, 'disk-unknown') });
+    assert.equal(noDisk.status, 'package-failed');
+    const enoughDisk = sealRustPackages({ ...options(f), output: path.join(f.root, 'disk-ok') });
+    assert.equal(enoughDisk.failureStage, 'reuse-registry-archives');
+    assert.equal(Object.hasOwn(enoughDisk, 'freeRamGiB'), false);
+    assert.doesNotMatch(fs.readFileSync(new URL('./seal-v2-rust-packages.mjs', import.meta.url), 'utf8'), /freemem|freeRamGiB/);
+  } finally { fs.rmSync(f.root, { recursive: true }); }
+});
+
+
+test('release packing and consumer entries retain disk checks without RAM estimates', () => {
+  for (const name of ['prepare-v2-candidate-js.mjs', 'sdk-candidate-registry.mjs',
+    'verify-published-v2-consumers.mjs', 'seal-v2-primary-packages.mjs',
+    'seal-v2-platform-packages.mjs', 'run-sdk-consumer.mjs']) {
+    const source = fs.readFileSync(new URL(name, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /freemem|freeRamGiB|candidate-resources/, name);
+    assert.match(source, /statfs/, name);
+    assert.match(source, /9\.75/, name);
+  }
 });

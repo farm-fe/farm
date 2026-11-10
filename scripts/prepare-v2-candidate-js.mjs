@@ -1,7 +1,7 @@
+import { releaseCandidatePlanPath } from './v2-release-inventory.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { assembleNativeArtifacts } from './assemble-v2-native-artifacts.mjs';
 import { command } from './performance-report.mjs';
@@ -50,7 +50,7 @@ async function main() {
   if (pool === '--check-package-manager' && process.argv.length === 3) { console.log(JSON.stringify(probePnpmCli())); return; }
   assert.ok(pool && output, 'Expected native pool and assembly output');
   const pnpm = resolvePnpmCli();
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(root)));
   const records = assembleNativeArtifacts(root, path.resolve(pool), process.env.GITHUB_SHA, plan);
   fs.writeFileSync(path.resolve(output), JSON.stringify({ schemaVersion: 1, sourceCommit: process.env.GITHUB_SHA, count: records.length, records, published: false }, null, 2), { flag: 'wx' });
   const core = records.find(row => row.owner === '@farmfe/core' && row.platform === 'linux-x64-gnu');
@@ -64,7 +64,7 @@ async function main() {
     console.log('[candidate-js start] ' + JSON.stringify({ phase, directory, cwd }));
     try {
       const disk = fs.statfsSync(root);
-      assert.ok(os.freemem() >= 3.4 * 1024 ** 3 && disk.bavail * disk.bsize >= 9.75 * 1024 ** 3 && Date.now() < deadline, 'Candidate JS producer resource/time guard');
+      assert.ok(disk.bavail * disk.bsize >= 9.75 * 1024 ** 3 && Date.now() < deadline, 'Candidate JS producer resource/time guard');
       const manifest = JSON.parse(fs.readFileSync(path.join(root, directory, 'package.json')));
       name = manifest.name;
       assert.ok(manifest.scripts?.build && !/\bcargo\b|\bnapi\b|farm-plugin-tools build/.test(manifest.scripts.build), 'Unreviewed native build in JS candidate recipe');

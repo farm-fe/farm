@@ -1,0 +1,71 @@
+name: Sign fixed release artifact bindings
+on:
+  workflow_call:
+    inputs:
+      scope:
+        required: true
+        type: string
+      cargo_restored:
+        type: boolean
+        default: false
+      upload_bindings:
+        required: true
+        type: string
+permissions: {}
+jobs:
+  sign:
+    if: github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout only the pinned signer implementation
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: farm-fe/farm
+          ref: ${{ job.workflow_sha }}
+          persist-credentials: false
+      - name: Validate exact caller templates and fixed upload bindings
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNER_WORKFLOW_SHA: ${{ job.workflow_sha }}
+          SIGNER_WORKFLOW_REF: ${{ job.workflow_ref }}
+          SIGNER_SCOPE: ${{ inputs.scope }}
+          SIGNER_CARGO_RESTORED: ${{ inputs.cargo_restored }}
+          SIGNER_UPLOAD_BINDINGS: ${{ inputs.upload_bindings }}
+        run: python3 -B scripts/release-provenance.py
+      - name: Attest only the validated binding manifest
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ci-provenance-output/ci-bindings.json
+          predicate-type: https://farmfe.org/attestations/ci-bindings/v1
+          predicate-path: ci-provenance-output/predicate.json
+          push-to-registry: false
+          create-storage-record: false
+      - name: Place the signing bundle beside its immutable subject
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          python3 -B - <<'PYTHON'
+          import os
+          from pathlib import Path
+          source = Path(os.environ['ATTESTATION_BUNDLE'])
+          if not source.is_file() or source.is_symlink() or not 0 < source.stat().st_size <= 16 * 1024 * 1024:
+              raise ValueError('Missing or invalid signing bundle')
+          with Path('ci-provenance-output/ci-bindings.sigstore.json').open('xb') as destination:
+              destination.write(source.read_bytes())
+          PYTHON
+      - name: Preserve manifest and verified-signing bundle for read-only consumers
+        uses: actions/upload-artifact@v4
+        with:
+          name: farm-release-bindings-${{ inputs.scope }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ci-provenance-output/ci-bindings.json
+            ci-provenance-output/ci-bindings.sigstore.json
+          if-no-files-found: error
+          retention-days: 90

@@ -33,7 +33,7 @@ fn maybe_has_new_or_removed_imports(
       .any(|import| !old_imports.contains(import))
 }
 
-pub fn finish_imports(params: FinishImportsParams) {
+pub fn finish_imports(params: FinishImportsParams) -> farmfe_core::error::Result<()> {
   let FinishImportsParams {
     root_path,
     presets,
@@ -48,7 +48,7 @@ pub fn finish_imports(params: FinishImportsParams) {
     .filter(|import| !ignore.iter().any(|ignore| ignore.is_match(&import.name)))
     .collect::<Vec<_>>();
   let local_imports = if !dirs.is_empty() {
-    scan_dirs_exports(&root_path, &dirs.clone())
+    scan_dirs_exports(&root_path, &dirs.clone())?
       .into_iter()
       .filter(|import| !ignore.iter().any(|ignore| ignore.is_match(&import.name)))
       .collect::<Vec<_>>()
@@ -91,4 +91,5 @@ pub fn finish_imports(params: FinishImportsParams) {
     }
     *context_imports_guard = new_imports;
   }
+  Ok(())
 }

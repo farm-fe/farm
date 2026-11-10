@@ -55,7 +55,7 @@ test('all local reusable workflow edges preserve the caller permission ceiling',
 test('original additional-native caller without actions read is rejected', () => {
   const broken = structuredClone(actual);
   delete broken['ci.yaml'].jobs['call-rust-build-release'].permissions;
-  assert.throws(() => checkWorkflows(broken), /rust-build-release.yaml: actions permission exceeds caller/);
+  assert.throws(() => checkWorkflows(broken), /ci-secondary-native.yaml: actions permission exceeds caller/);
 });
 test('explicit caller read permission permits artifact-reading callee', () => {
   assert.doesNotThrow(() => checkWorkflows(fixture({ permissions: { contents: 'read', actions: 'read' } })));

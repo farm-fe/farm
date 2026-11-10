@@ -1,6 +1,8 @@
+import { unlinkSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import fse from 'fs-extra';
 import { afterEach, expect, it, vi } from 'vitest';
 
 const fixtureState = vi.hoisted(() => ({
@@ -145,7 +147,9 @@ it('watcher removals capture importers before the compiler removes their source'
   const { source, importer, compiler, watcher, send } = await fixture();
   await fs.rm(source);
   await watcher.handlers.get('unlink')(source);
-  expect(compiler.getParentFiles).toHaveBeenCalledWith(source);
+  expect(compiler.getParentFiles).toHaveBeenCalledWith(
+    source.replaceAll('\\', '/')
+  );
   expect(compiler.update).toHaveBeenCalledTimes(1);
   expect(compiler.update.mock.calls[0][0]).toEqual(
     expect.arrayContaining([
@@ -161,5 +165,42 @@ it('watcher events retain the compiler-only fallback when HMR is disabled', asyn
   const { server, source, compiler, watcher } = await fixture();
   server.hmrEngine = undefined;
   await watcher.handlers.get('add')(source);
+  expect(compiler.update).toHaveBeenCalledTimes(1);
+});
+
+for (const event of ['add', 'unlink']) {
+  for (const fallback of [false, true]) {
+    it(`${event} reports queue failure once and accepts the next event (fallback=${fallback})`, async () => {
+      const { server, source, compiler, watcher } = await fixture();
+      server.logger.error = vi.fn();
+      if (fallback) server.hmrEngine = undefined;
+      compiler.update.mockRejectedValueOnce(
+        new Error('expected update failure')
+      );
+      await expect(
+        watcher.handlers.get(event)(source)
+      ).resolves.toBeUndefined();
+      expect(server.logger.error).toHaveBeenCalledTimes(1);
+      await expect(
+        watcher.handlers.get(event)(source)
+      ).resolves.toBeUndefined();
+      expect(compiler.update).toHaveBeenCalledTimes(2);
+      expect(server.logger.error).toHaveBeenCalledTimes(1);
+    });
+  }
+}
+
+it('add handles a file disappearing between existence and stat, then continues', async () => {
+  const { server, source, compiler, watcher } = await fixture();
+  server.logger.error = vi.fn();
+  vi.spyOn(fse, 'existsSync').mockImplementationOnce((file) => {
+    expect(file).toBe(source.replaceAll('\\', '/'));
+    unlinkSync(source);
+    return true;
+  });
+  await expect(watcher.handlers.get('add')(source)).resolves.toBeUndefined();
+  expect(server.logger.error).toHaveBeenCalledTimes(1);
+  await fs.writeFile(source, 'export default 2;');
+  await expect(watcher.handlers.get('add')(source)).resolves.toBeUndefined();
   expect(compiler.update).toHaveBeenCalledTimes(1);
 });

@@ -3,7 +3,9 @@
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
-                value: from[k],
+                get: function() {
+                    return from[k];
+                },
                 enumerable: true,
                 configurable: true
             });
@@ -16,7 +18,9 @@ import * as node_module_ambiguous_export_all_farm_internal_ from "node:module";
 ; // module_id: bar.ts
 const bar = 'bar';
 var bar_ts_namespace_farm_internal_ = {
-    bar: bar,
+    get bar () {
+        return bar;
+    },
     __esModule: true
 };
 defineExportStar(bar_ts_namespace_farm_internal_, fs_ambiguous_export_all_farm_internal_);

@@ -185,7 +185,7 @@ impl Plugin for FarmPluginMdx {
         (result.code, result.source_map)
       })
     } else {
-      mdxjs::compile(&param.content, &options)
+      farmfe_docs_content::compile_mdx(&param.content, &options)
         .map(|code| (code, None))
         .map_err(|error| error.to_string())
     }

@@ -2,6 +2,8 @@
 # cspell:words importlib
 import copy
 import importlib.util
+import hashlib
+import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -19,6 +21,43 @@ class Contracts(unittest.TestCase):
         registry = mock.Mock(); registry.verify.return_value = {"npm:a": "d" * 64}
         registry.json.return_value = {"name": "a", "version": "2.0.0"}
         return manifest, reports, registry
+
+    def test_byte_integrity_does_not_claim_or_require_tests(self):
+        manifest,_,registry=self.fixture()
+        manifest.update(sourceSHA='a'*40,chain='release',namespace='farm-release-v1',releaseValidation='archive-integrity-v1')
+        body=b'original sealed archive fixture'
+        row=manifest['packages'][0]
+        row.update(archive='a.tgz',archiveBytes=len(body),archiveSha256=hashlib.sha256(body).hexdigest())
+        registry.verify.return_value={'npm:a':row['archiveSha256']}
+        with tempfile.TemporaryDirectory() as directory:
+            archives=Path(directory)/'archives';archives.mkdir();file=archives/'a.tgz';file.write_bytes(body)
+            self.assertIsNone(module.check_archives(manifest,directory,'a'*40))
+            proof=module.registry_record(manifest,{'id':12},registry)
+            self.assertTrue(module.entry.public_integrity_verified(proof,manifest))
+            self.assertFalse(proof['registryInstall']);self.assertFalse(proof['nativeABI']);self.assertFalse(proof['testsExecuted'])
+            self.assertNotIn('scratchRemoved',proof);self.assertNotIn('cleanupConfirmed',proof)
+            for field,value in [('testsExecuted',True),('registryBytesVerified',False),('registryInstall',True),('latestTargets',False)]:
+                self.assertFalse(module.entry.public_integrity_verified({**proof,field:value},manifest))
+            with self.assertRaisesRegex(ValueError,'source differs'):module.check_archives(manifest,directory,'f'*40)
+            registry.verify.return_value={'npm:a':'0'*64}
+            with self.assertRaisesRegex(ValueError,'registry bytes'):module.registry_record(manifest,{'id':12},registry)
+            file.write_bytes(body.replace(b'original',b'modified'))
+            with self.assertRaisesRegex(ValueError,'bytes differ'):module.check_archives(manifest,directory,'a'*40)
+            file.unlink()
+            with self.assertRaises(FileNotFoundError):module.check_archives(manifest,directory,'a'*40)
+
+    def test_frozen_manifest_alone_selects_old_or_new_proof_semantics(self):
+        legacy,reports,registry=self.fixture();current={**legacy,'releaseValidation':'archive-integrity-v1'}
+        old=module.public_record(legacy,reports,{'id':12},registry)
+        new=module.registry_record(current,{'id':12},registry)
+        self.assertTrue(module.entry.public_integrity_verified(old,legacy))
+        self.assertTrue(module.entry.public_integrity_verified(new,current))
+        self.assertFalse(module.entry.public_integrity_verified(new,legacy))
+        self.assertFalse(module.entry.public_integrity_verified(old,current))
+        with self.assertRaisesRegex(ValueError,'policy'):module.public_record(current,reports,{'id':12},registry)
+        with self.assertRaisesRegex(ValueError,'policy'):module.registry_record(legacy,{'id':12},registry)
+        reports['windows-latest']['kind']='release-byte-integrity-v1'
+        with self.assertRaisesRegex(ValueError,'byte-only'):module.public_record(legacy,reports,{'id':12},registry)
 
     def test_public_proof_requires_actual_stages_all_platforms_registry_bytes_and_latest(self):
         manifest, reports, registry = self.fixture()

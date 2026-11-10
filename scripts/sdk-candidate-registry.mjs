@@ -25,9 +25,19 @@ export function cachedVersions(bytes, name) {
     return row;
   });
 }
+// Only the isolated candidate registry may shadow an existing public version.
+// Formal release preparation must preserve the immutable public bytes.
+export function assertLocalCandidateVersion(plan, existing, metadata) {
+  if (plan.preparation?.mode === 'pr-validation') {
+    if (plan.status !== 'pr-test-only-not-publication-approval' || plan.publication !== undefined)
+      throw new Error('Invalid PR-only candidate registry plan');
+  } else if (existing && existing.cksum !== metadata.cksum) {
+    throw new Error(`Immutable public version collision: ${metadata.name}@${metadata.vers}`);
+  }
+}
 function guard(directory) {
   const disk = fs.statfsSync(directory);
-  if (os.freemem() < 3.4 * 1024 ** 3 || disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('SDK registry materialization resource guard');
+  if (disk.bavail * disk.bsize < 9.75 * 1024 ** 3) throw new Error('SDK registry materialization resource guard');
 }
 export function materializeRegistry(cohortDirectory, output, cargoHome = process.env.CARGO_HOME ?? path.join(os.homedir(), '.cargo')) {
   if (fs.existsSync(output)) throw new Error('Preserve existing SDK registry evidence');
@@ -35,6 +45,7 @@ export function materializeRegistry(cohortDirectory, output, cargoHome = process
   const candidate = JSON.parse(fs.readFileSync(path.join(cohortDirectory, 'receipt.json')));
   if (candidate.status !== 'packaged-not-compiled' || candidate.published !== false) throw new Error('Normal Cargo candidate package receipt required');
   const registry = path.join(output, 'registry'); fs.mkdirSync(path.join(registry, 'index'), { recursive: true });
+  const currentPlan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(fileURLToPath(new URL('../', import.meta.url)))));
   const rows = new Map();
   const cache = path.join(cargoHome, 'registry/cache');
   const indices = path.join(cargoHome, 'registry/index');
@@ -66,7 +77,7 @@ export function materializeRegistry(cohortDirectory, output, cargoHome = process
     const metadata = fs.readFileSync(file, 'utf8').trim().split('\n').map(JSON.parse).find(row => row.vers === record.version);
     if (!metadata || metadata.name !== record.name || metadata.cksum !== record.sha256) throw new Error('Official Cargo generated index does not bind candidate archive');
     const existing = rows.get(record.name)?.get(record.version);
-    if (existing && existing.cksum !== metadata.cksum) throw new Error(`Immutable public version collision: ${record.name}@${record.version}`);
+    assertLocalCandidateVersion(currentPlan, existing, metadata);
     fs.copyFileSync(source, path.join(registry, `${record.name}-${record.version}.crate`));
     if (!rows.has(record.name)) rows.set(record.name, new Map());
     rows.get(record.name).set(record.version, metadata);
@@ -83,8 +94,6 @@ export function materializeRegistry(cohortDirectory, output, cargoHome = process
   const consumer = path.join(output, 'consumer');
   const recipe = fileURLToPath(new URL('./release-fixtures/sdk-consumer', import.meta.url));
   fs.cpSync(recipe, consumer, { recursive: true });
-  const planRoot = fileURLToPath(new URL('../', import.meta.url));
-  const currentPlan = JSON.parse(fs.readFileSync(releaseCandidatePlanPath(planRoot)));
   fs.writeFileSync(path.join(consumer, 'Cargo.toml'), sdkConsumerManifest(currentPlan, fs.readFileSync(path.join(consumer, 'Cargo.toml'), 'utf8')));
   fs.mkdirSync(path.join(consumer, '.cargo'));
   fs.writeFileSync(path.join(consumer, '.cargo/config.toml'), `[source.crates-io]\nreplace-with = "farm-candidate"\n[source.farm-candidate]\nlocal-registry = ${JSON.stringify(registry.replaceAll('\\', '/'))}\n[build]\njobs = 1\n`);

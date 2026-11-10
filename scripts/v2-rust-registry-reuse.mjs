@@ -21,6 +21,7 @@ export function sdkConsumerManifest(plan, text) {
 }
 export function rustRegistryReuse(plan, { readEvidence = file => JSON.parse(fs.readFileSync(path.join(root, 'docs/release-evidence', file), 'utf8')) } = {}) {
   let records;
+  if (plan.preparation?.mode === 'pr-validation') return []; // Test current source archives, including unchanged versions.
   if (['changesets', 'incremental-release'].includes(plan.preparation?.mode)) {
     assert.ok(Array.isArray(plan.publication?.reuseRust), 'Reviewed Changesets Rust reuse set required');
     records = plan.publication.reuseRust;

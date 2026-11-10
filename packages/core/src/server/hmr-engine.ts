@@ -5,13 +5,24 @@ import fse from 'fs-extra';
 import { HmrOptions } from '../config/index.js';
 import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
-import { bold, cyan, green } from '../utils/index.js';
+import { bold, cyan, green, normalizePath } from '../utils/index.js';
 import { Server as FarmDevServer } from './index.js';
 
+interface PendingWatchUpdate {
+  item: CompilerUpdateItem;
+  captureImporters: boolean;
+  resolve: () => void;
+  reject: (error: unknown) => void;
+}
+
 export class HmrEngine {
+  private _pendingWatchUpdates: PendingWatchUpdate[] = [];
+  private _watchDrainRunning = false;
+
   private _updateQueue: CompilerUpdateItem[] = [];
 
   private _recompileInProgress = false;
+  private _updateAttempt = 0;
 
   private _onUpdates!: ((result: JsUpdateResult) => void)[];
 
@@ -46,6 +57,7 @@ export class HmrEngine {
       (item) => !queue.includes(item)
     );
     this._recompileInProgress = true;
+    this._updateAttempt++;
     let result: JsUpdateResult;
     try {
       const compilerRoot = compiler.config.root ?? '';
@@ -70,10 +82,8 @@ export class HmrEngine {
 
       // we must add callback before update
       compiler.onUpdateFinish(async () => {
-        // if there are more updates, recompile again
-        if (!this._recompileInProgress && this._updateQueue.length > 0) {
-          await this.recompileAndSendResult();
-        }
+        // Submission and the successful tail below own pending work. A delayed
+        // listener must not independently retry work admitted by another owner.
         if (this.devServer.config?.server?.writeToDisk) {
           compiler.writeResourcesToDisk();
         }
@@ -100,8 +110,20 @@ export class HmrEngine {
     } finally {
       this._recompileInProgress = false;
     }
-    if (!compiler.compiling && this._updateQueue.length > 0) {
-      await this.recompileAndSendResult();
+    if (this._updateQueue.length > 0) {
+      if (!compiler.compiling) {
+        await this.recompileAndSendResult();
+      } else {
+        // Readiness is released by success, failed updates and full compilation.
+        // Unlike onUpdateFinish it is not limited to successful update callbacks.
+        // Attempt the pending work once; a failed HMR attempt does not reach this
+        // successful tail and therefore cannot schedule its own automatic retry.
+        void this.submitHmrUpdate(this._updateAttempt).catch((error) => {
+          this.devServer.logger.error(
+            `HMR pending submission failed: ${error}`
+          );
+        });
+      }
     }
     return result;
   };
@@ -153,17 +175,132 @@ export class HmrEngine {
     });
   }
 
+  /** Watcher-only admission. Public/plugin hmrUpdate keeps its existing contract. */
+  queueWatchUpdate(item: CompilerUpdateItem): Promise<void> {
+    return this.enqueueWatchUpdate(item, false);
+  }
+
+  queueWatchRemove(path: string): Promise<void> {
+    return this.enqueueWatchUpdate({ path, type: 'removed' }, true);
+  }
+
+  private enqueueWatchUpdate(
+    item: CompilerUpdateItem,
+    captureImporters: boolean
+  ): Promise<void> {
+    if (!this.devServer.compiler) return Promise.resolve();
+    const promise = new Promise<void>((resolve, reject) => {
+      this._pendingWatchUpdates.push({
+        item: { ...item },
+        captureImporters,
+        resolve,
+        reject
+      });
+    });
+    if (!this._watchDrainRunning) void this.drainWatchUpdates();
+    return promise;
+  }
+
+  private async drainWatchUpdates(): Promise<void> {
+    if (this._watchDrainRunning) return;
+    this._watchDrainRunning = true;
+    try {
+      while (this._pendingWatchUpdates.length) {
+        const compiler = this.devServer.compiler;
+        if (!compiler) {
+          for (const request of this._pendingWatchUpdates.splice(0))
+            request.resolve();
+          return;
+        }
+        await compiler.waitForCompileFinish();
+        const first = this._pendingWatchUpdates.shift();
+        if (!first) continue;
+        const batch = [first];
+        // Only consecutive ordinary changes are coalesced. Membership admission
+        // stays ordered; the compiler's retained failure queue is not isolated.
+        if (batch[0].item.type === 'updated') {
+          while (this._pendingWatchUpdates[0]?.item.type === 'updated') {
+            const next = this._pendingWatchUpdates.shift();
+            if (next) batch.push(next);
+          }
+        }
+        if (batch[0].item.type === 'updated') {
+          const prepared: PendingWatchUpdate[] = [];
+          for (const request of batch) {
+            try {
+              // Independent watcher requests must not inherit the public array
+              // API's fail-fast preparation semantics.
+              await this.prepareHmrUpdate([request.item], false);
+              prepared.push(request);
+            } catch (error) {
+              request.reject(error);
+            }
+          }
+          if (prepared.length) {
+            try {
+              await this.submitHmrUpdate();
+              for (const request of prepared) request.resolve();
+            } catch (error) {
+              for (const request of prepared) request.reject(error);
+            }
+          }
+          continue;
+        }
+        try {
+          const paths = batch.map((request) => request.item);
+          if (batch[0].captureImporters) {
+            // A resolved readiness Promise does not reserve the graph.
+            while (compiler.compiling) await compiler.waitForCompileFinish();
+            const file = paths[0].path;
+            const parents = compiler.hasModule(file)
+              ? compiler.getParentFiles(file)
+              : [];
+            paths.push(
+              ...parents.map((path) => ({
+                path: normalizePath(path),
+                type: 'updated' as const
+              }))
+            );
+          }
+          await this.hmrUpdate(paths, batch[0].captureImporters);
+          for (const request of batch) request.resolve();
+        } catch (error) {
+          for (const request of batch) request.reject(error);
+        }
+      }
+    } catch (error) {
+      for (const request of this._pendingWatchUpdates.splice(0))
+        request.reject(error);
+    } finally {
+      this._watchDrainRunning = false;
+    }
+  }
+
   async hmrUpdate(
     absPath: CompilerUpdateItem | CompilerUpdateItem[],
     force = false
+  ) {
+    // Keep the public array API fail-fast: no submission after preparation rejects.
+    await this.prepareHmrUpdate(
+      Array.isArray(absPath) ? absPath : [absPath],
+      force
+    );
+    await this.submitHmrUpdate();
+  }
+
+  private async prepareHmrUpdate(
+    pathItems: CompilerUpdateItem[],
+    force: boolean
   ) {
     const compiler = this.devServer.compiler;
     if (!compiler) return;
     // Native compilation may hold the module graph while waiting for JS hooks.
     // Yield until it finishes before making synchronous graph queries.
     await compiler.waitForCompileFinish();
-    const pathItems = Array.isArray(absPath) ? absPath : [absPath];
     for (const item of pathItems) {
+      // A preceding item's stat may have yielded to a lazy/manual update.
+      // Do not yield between the final check and synchronous graph queries.
+      while (compiler.compiling) await compiler.waitForCompileFinish();
       const queuedIndex = this._updateQueue.findIndex(
         (pending) => pending.path === item.path
       );
@@ -200,7 +337,28 @@ export class HmrEngine {
         }
       }
     }
+  }
 
+  private async submitHmrUpdate(expectedAttempt?: number) {
+    const compiler = this.devServer.compiler;
+    if (!compiler) return;
+    // Only automatic tail wakes carry a token. A different callback may have
+    // attempted this work while readiness was pending, including a failed
+    // attempt: that transfers ownership and invalidates this stale wake.
+    // Explicit public/watcher submissions retain their normal retry authority.
+    const staleWake = () =>
+      expectedAttempt !== undefined && expectedAttempt !== this._updateAttempt;
+    if (staleWake()) return;
+    // An active HMR recompile already owns the completion callback. Preserve
+    // admission-only return for reentrant callers instead of awaiting ourselves.
+    if (this._recompileInProgress) return;
+    // Preparation yields. An unrelated lazy/manual compile can start in that
+    // gap without installing an HMR wake-up callback; retain responsibility here.
+    while (compiler.compiling) {
+      await compiler.waitForCompileFinish();
+      if (staleWake()) return;
+      if (this._recompileInProgress) return;
+    }
     if (
       !compiler.compiling &&
       !this._recompileInProgress &&

@@ -37,6 +37,7 @@ use super::{
 
 pub struct RenderModuleOptions<'a> {
   pub module_id: ModuleId,
+  pub is_concatenated: bool,
   pub ast: SwcModule,
   pub comments: CommentsMetaData,
   pub hoisted_sourcemap: Arc<SourceMap>,
@@ -53,6 +54,7 @@ pub fn render_module(
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module_id,
+    is_concatenated,
     ast: mut cloned_module,
     hoisted_sourcemap: cm,
     comments,
@@ -78,6 +80,16 @@ pub fn render_module(
   let mut external_modules = vec![];
   let mut func_expr = Expr::default();
 
+  if !is_concatenated {
+    farmfe_core::swc_common::GLOBALS.set(globals, || {
+      farmfe_toolkit::script::entry_live_bindings::instrument(
+        &module_id,
+        &mut cloned_module,
+        module_graph,
+        context,
+      )
+    })?;
+  }
   try_with(cm.clone(), globals, || {
     // replace commonjs require('./xxx') to require('./xxx', true)
     if matches!(

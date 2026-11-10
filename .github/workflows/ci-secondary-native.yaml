@@ -1,0 +1,86 @@
+name: Fixed secondary native cells
+on:
+  workflow_call:
+    outputs:
+      linux_x64_musl_product_upload:
+        value: ${{ jobs.linux_x64_musl.outputs.product_upload }}
+      darwin_x64_product_upload:
+        value: ${{ jobs.darwin_x64.outputs.product_upload }}
+      win32_ia32_msvc_product_upload:
+        value: ${{ jobs.win32_ia32_msvc.outputs.product_upload }}
+      win32_arm64_msvc_product_upload:
+        value: ${{ jobs.win32_arm64_msvc.outputs.product_upload }}
+      linux_arm64_musl_product_upload:
+        value: ${{ jobs.linux_arm64_musl.outputs.product_upload }}
+      linux_arm64_gnu_product_upload:
+        value: ${{ jobs.linux_arm64_gnu.outputs.product_upload }}
+      linux_x64_musl_artifact_id:
+        value: ${{ jobs.linux_x64_musl.outputs.artifact_id }}
+      linux_x64_musl_artifact_digest:
+        value: ${{ jobs.linux_x64_musl.outputs.artifact_digest }}
+      linux_x64_musl_run_attempt:
+        value: ${{ jobs.linux_x64_musl.outputs.run_attempt }}
+      darwin_x64_artifact_id:
+        value: ${{ jobs.darwin_x64.outputs.artifact_id }}
+      darwin_x64_artifact_digest:
+        value: ${{ jobs.darwin_x64.outputs.artifact_digest }}
+      darwin_x64_run_attempt:
+        value: ${{ jobs.darwin_x64.outputs.run_attempt }}
+      win32_ia32_msvc_artifact_id:
+        value: ${{ jobs.win32_ia32_msvc.outputs.artifact_id }}
+      win32_ia32_msvc_artifact_digest:
+        value: ${{ jobs.win32_ia32_msvc.outputs.artifact_digest }}
+      win32_ia32_msvc_run_attempt:
+        value: ${{ jobs.win32_ia32_msvc.outputs.run_attempt }}
+      win32_arm64_msvc_artifact_id:
+        value: ${{ jobs.win32_arm64_msvc.outputs.artifact_id }}
+      win32_arm64_msvc_artifact_digest:
+        value: ${{ jobs.win32_arm64_msvc.outputs.artifact_digest }}
+      win32_arm64_msvc_run_attempt:
+        value: ${{ jobs.win32_arm64_msvc.outputs.run_attempt }}
+      linux_arm64_musl_artifact_id:
+        value: ${{ jobs.linux_arm64_musl.outputs.artifact_id }}
+      linux_arm64_musl_artifact_digest:
+        value: ${{ jobs.linux_arm64_musl.outputs.artifact_digest }}
+      linux_arm64_musl_run_attempt:
+        value: ${{ jobs.linux_arm64_musl.outputs.run_attempt }}
+      linux_arm64_gnu_artifact_id:
+        value: ${{ jobs.linux_arm64_gnu.outputs.artifact_id }}
+      linux_arm64_gnu_artifact_digest:
+        value: ${{ jobs.linux_arm64_gnu.outputs.artifact_digest }}
+      linux_arm64_gnu_run_attempt:
+        value: ${{ jobs.linux_arm64_gnu.outputs.run_attempt }}
+permissions:
+  contents: read
+  actions: read
+jobs:
+  linux_x64_musl:
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: linux-x64-musl
+    secrets: inherit
+  darwin_x64:
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: darwin-x64
+    secrets: inherit
+  win32_ia32_msvc:
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: win32-ia32-msvc
+    secrets: inherit
+  win32_arm64_msvc:
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: win32-arm64-msvc
+    secrets: inherit
+  linux_arm64_musl:
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: linux-arm64-musl
+    secrets: inherit
+  linux_arm64_gnu:
+    uses: ./.github/workflows/rust-build-release.yaml
+    with:
+      platform: linux-arm64-gnu
+    secrets: inherit

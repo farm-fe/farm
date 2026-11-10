@@ -74,13 +74,15 @@ test('fixed main event rejects spoofed/forced events and unrelated associations'
  const duplicate=await resolveAutomaticRelease({...input,readApi:route=>route.includes('/commits/')?[f.pr,f.pr]:repository});assert.equal(duplicate.releaseReady,false);
 });
 
-test('automatic publisher stays bound to main provenance and successful consumers',()=>{
+test('automatic publisher stays bound to main provenance, frozen identity and build success',()=>{
  const release=fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml',import.meta.url),'utf8').replaceAll('\r\n','\n');
  const publisher=release.split('  publisher:')[1].split('    runs-on:')[0];
  assert.ok(publisher.includes("github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true'"));
  assert.ok(publisher.includes("(github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true))"));
  assert.ok(publisher.includes("inputs.producer_run == ''"));
- assert.ok(publisher.includes("needs.candidate-consumers.result == 'success'"));
+ assert.ok(publisher.includes("needs.candidate-identity.result == 'success'"));
+ assert.ok(publisher.includes("needs.sign-frozen-release.result == 'success'"));
+ assert.ok(!publisher.includes("candidate-consumers"));
  assert.ok(publisher.includes("needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true'"));
  for(const name of ['ci.yaml','rust-test.yaml','rust-build.yaml','rust-build-user.yaml','rust-build-release.yaml','farm-docs.yaml']) {
   const source=fs.readFileSync(new URL('../.github/workflows/'+name,import.meta.url),'utf8');

@@ -113,7 +113,7 @@ mod tests {
     let current_dir = env::current_dir().unwrap();
     let binding = current_dir.join("playground-vue");
     let root_path = binding.to_str().unwrap();
-    let imports = scan_dir_exports(root_path);
+    let imports = scan_dir_exports(root_path).unwrap();
     println!("imports: {imports:#?}");
 
     let presets_imports = resolve_presets(&[PresetItem::String("react-router".to_string())]);

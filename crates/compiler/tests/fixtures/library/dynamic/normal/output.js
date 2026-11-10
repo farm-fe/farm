@@ -3,14 +3,18 @@
     console.log('foo');
 }
 var dynamic_ts_namespace_farm_internal_ = {
-    default: foo$1,
+    get default () {
+        return foo$1;
+    },
     __esModule: true
 };
 function sameNameDynamic() {
     console.log('sameNameDynamic');
 }
 var dynamic_ts_namespace_farm_internal_$1 = {
-    default: sameNameDynamic,
+    get default () {
+        return sameNameDynamic;
+    },
     __esModule: true
 };
 Promise.resolve(dynamic_ts_namespace_farm_internal_).then((res)=>res.default());

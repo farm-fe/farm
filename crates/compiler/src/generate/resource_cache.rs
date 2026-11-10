@@ -135,7 +135,12 @@ pub fn get_resource_cache_key(
   context: &Arc<CompilationContext>,
 ) -> String {
   let module_graph = context.module_graph.read();
-  let mut code = resource_pot.id.to_string();
+  let entry_live_enabled =
+    farmfe_toolkit::script::entry_live_bindings::enabled(&module_graph, context);
+  let mut code = format!(
+    "entry-live-cells-v2:{entry_live_enabled}:{}",
+    resource_pot.id
+  );
 
   for module_id in &resource_pot.modules() {
     let module = module_graph
@@ -144,6 +149,14 @@ pub fn get_resource_cache_key(
 
     // make sure cache is correct when tree shaking is enabled
     code.push_str(&module.content_hash);
+    if entry_live_enabled {
+      let origins = farmfe_toolkit::script::entry_live_bindings::remember_origins(
+        module_id,
+        &module_graph,
+        context,
+      );
+      code.push_str(&farmfe_core::serde_json::to_string(&origins).expect("origin names serialize"));
+    }
 
     // Mangling can change imports in an unchanged module when a dependency's
     // exports change. Source hashes alone must not reuse the old generated AST.

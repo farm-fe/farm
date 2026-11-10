@@ -59,8 +59,12 @@ function bundle2() {
 }
 var bundle2_ts_default = 'default bundle2';
 var bundle2_ts_namespace_farm_internal_ = {
-    bundle2: bundle2,
-    default: bundle2_ts_default,
+    get bundle2 () {
+        return bundle2;
+    },
+    get default () {
+        return bundle2_ts_default;
+    },
     __esModule: true
 };
 ; // module_id: logger.ts
@@ -76,8 +80,12 @@ function bundle3() {
 }
 var bundle3_ts_default = 'default bundle3';
 var bundle3_ts_namespace_farm_internal_ = {
-    bundle3: bundle3,
-    default: bundle3_ts_default,
+    get bundle3 () {
+        return bundle3;
+    },
+    get default () {
+        return bundle3_ts_default;
+    },
     __esModule: true
 };
 ; // module_id: index.ts

@@ -13,15 +13,25 @@ var dep_ts_default = {
     c
 };
 var dep_ts_namespace_farm_internal_ = {
-    a: a$1,
-    b: b$1,
-    default: dep_ts_default,
+    get a () {
+        return a$1;
+    },
+    get b () {
+        return b$1;
+    },
+    get default () {
+        return dep_ts_default;
+    },
     __esModule: true
 };
 var importNamespace_ts_default = dep_ts_namespace_farm_internal_;
 var exportAll_ts_namespace_farm_internal_ = {
-    a: a$1,
-    b: b$1,
+    get a () {
+        return a$1;
+    },
+    get b () {
+        return b$1;
+    },
     __esModule: true
 };
 console.log({

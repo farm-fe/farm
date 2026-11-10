@@ -20,7 +20,17 @@ for(const file of ['scripts/ci-build-rust-artifacts.sh','.github/workflows/rust-
 for(const dir of ['packages/core','packages/create-farm',...plugins.map(p=>'rust-plugins/'+p)])for(const abi of abis)fs.mkdirSync(path.join(fixture,dir,'npm',abi),{recursive:true});
 const realNode=unix(process.execPath);
 const stub=`set -eu
-node() { test "$*" = "./scripts/check-native-build-node.mjs"; "${realNode}" "${unix(path.join(root,'scripts/check-native-build-node.mjs'))}"; }
+node() {
+  case "$1" in
+    ./scripts/check-native-build-node.mjs)
+      if [ "\${PROBE_ENGINE_FAILURE:-false}" = true ]; then return 23; fi
+      "${realNode}" "${unix(path.join(root,'scripts/check-native-build-node.mjs'))}" ;;
+    scripts/release-native-scope.mjs)
+      shift
+      "${realNode}" "${unix(path.join(root,'scripts/release-native-scope.mjs'))}" "$@" ;;
+    *) printf 'Unexpected probe node command\\n' >&2; return 93 ;;
+  esac
+}
 cargo() { printf 'cargo|%s\\n' "$*" >> "$TRACE"; }
 npm() {
   here="$(pwd)"
@@ -40,6 +50,8 @@ npm() {
 fs.writeFileSync(path.join(fixture,'build-probe.sh'),stub);
 const sha='0123456789012345678901234567890123456789';
 const env={...process.env,TRACE:unix(trace),ARTIFACT_POOL:unix(pool),PROBE_SHA:sha,FARM_BUILD_PROFILE:'ci'};
+// Scenario controls belong to this fixture, never to its invoking producer.
+for (const key of ['FARM_RELEASE_NATIVE_OWNERS','FARM_FORMAL_RESOLUTION_HASH','FARM_NATIVE_PREPARE_ONLY','FARM_NATIVE_PROOF_MODE','FARM_BUILD_TARGET','FARM_BUILD_ZIG','PROBE_ENGINE_FAILURE']) delete env[key];
 const receipts=[];
 for(const abi of abis){cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:{...env,FARM_BUILD_ABI:abi},windowsHide:true,encoding:'utf8',timeout:30000});const names=fs.readdirSync(pool).filter(n=>n.startsWith(sha+'-'+abi+'-plugin-')).map(n=>n.slice((sha+'-'+abi+'-plugin-').length)).sort();const expected=[...base,...(supported.has(abi)?docs:[])].sort();assert.deepEqual(names,expected);receipts.push({abi,plugins:names.length,expected:names.length});}
 // Compare actual shell commands for both execution roles on every target.
@@ -48,6 +60,30 @@ fs.writeFileSync(trace,'');
 for(const abi of abis) cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:{...env,FARM_BUILD_PROFILE:'release',FARM_BUILD_ABI:abi},windowsHide:true,encoding:'utf8',timeout:30000});
 assert.equal(fs.readFileSync(trace,'utf8'),ciTrace,'PR and main formal native commands must be identical per target');
 assert.doesNotMatch(ciTrace,/build:rs:ci|build:ci|--profile ci(?:\s|$)/);
+// Execute the real scope resolver; only npm/cargo and output bytes are fixtures.
+fs.writeFileSync(trace,'');
+const selectedEnv={...env,FARM_BUILD_ABI:'linux-x64-gnu',FARM_BUILD_PROFILE:'release',FARM_RELEASE_NATIVE_OWNERS:JSON.stringify(['@farmfe/core','@farmfe/plugin-react'])};
+cp.execFileSync(bash,['build-probe.sh'],{cwd:fixture,env:selectedEnv,encoding:'utf8',windowsHide:true,timeout:30000});
+const selectedTrace=fs.readFileSync(trace,'utf8').trim().split('\n');
+assert.equal(selectedTrace.length,2);
+assert.ok(selectedTrace[0].includes('/packages/core|'));
+assert.ok(selectedTrace[1].includes('/rust-plugins/react|'));
+for(const changes of [{FARM_BUILD_PROFILE:'ci'},{FARM_RELEASE_NATIVE_OWNERS:'invalid-json'},{FARM_RELEASE_NATIVE_OWNERS:'["unknown-owner"]'},{PROBE_ENGINE_FAILURE:'true'}]){
+  fs.writeFileSync(trace,'');
+  const failed=cp.spawnSync(bash,['build-probe.sh'],{cwd:fixture,env:{...selectedEnv,...changes},encoding:'utf8',windowsHide:true,timeout:30000});
+  assert.equal(failed.error,undefined);
+  assert.equal(failed.signal,null);
+  assert.ok(Number.isInteger(failed.status) && failed.status > 0);
+  if(changes.PROBE_ENGINE_FAILURE) assert.equal(failed.status,23);
+  assert.equal(fs.readFileSync(trace,'utf8'),'','Rejected guard/scope must not build');
+  assert.doesNotMatch(failed.stderr,/cd:.*satisfiesInstalledRanges/);
+}
+// Unknown node commands must fail even inside a command substitution.
+const definitions=stub.slice(0,stub.indexOf('cargo()'));
+fs.writeFileSync(path.join(fixture,'unknown-probe.sh'),definitions+'\nvalue=$(node unexpected-command)\nprintf "unreachable"\n');
+const unknown=cp.spawnSync(bash,['unknown-probe.sh'],{cwd:fixture,env,encoding:'utf8',windowsHide:true,timeout:30000});
+assert.equal(unknown.status,93);assert.equal(unknown.stdout,'');
+
 const inventoryUrl=require('node:url').pathToFileURL(path.join(root,'scripts/native-artifact-inventory.mjs')).href;
 const plan=JSON.parse(cp.execFileSync(process.execPath,['--input-type=module','-e',`import {nativeArtifactInventory} from ${JSON.stringify(inventoryUrl)};process.stdout.write(JSON.stringify(nativeArtifactInventory(${JSON.stringify(root)})));`],{encoding:'utf8',windowsHide:true,timeout:30000}));
 assert.deepEqual([...new Set(plan.npm.payloads.map(pkg=>pkg.platform))].sort(),[...abis].sort(),'Assembly inventory must include all nine native ABIs');
@@ -75,4 +111,4 @@ const out={utc:new Date().toISOString(),status:'passed',fixture,receipts,movedAr
 assert.equal(path.dirname(fixture),temporaryRoot);
 assert.ok(path.basename(fixture).startsWith('farm-native-flow-'));
 fs.rmSync(fixture,{recursive:true,force:true});
-console.log(JSON.stringify({status:out.status,targets:receipts.length,movedArtifacts:moved.length,missingArtifactRejected:true,uploads}));
+console.log(JSON.stringify({status:out.status,targets:receipts.length,movedArtifacts:moved.length,missingArtifactRejected:true,releaseScopeVerified:true,probeFailuresRejected:true,uploads}));

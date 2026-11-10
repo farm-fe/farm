@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 > Main publication selection is being updated to [fixed-main registry version selection](registry-version-release.md). That document supersedes the code-diff and version-PR-history publication preconditions below. CI impact analysis and artifact provenance requirements remain in force. Implementation is under local validation.
 
 <!-- cspell:words codegen debuginfo rustflags rustup cdylib rlib napi libloading plz serde lto sse crt -->
@@ -469,7 +471,7 @@ The user approved removing obsolete required-name compatibility jobs. Removed:
 - `Test - ubuntu-latest` (the compatibility wrapper around the Rust matrix).
 
 Actual TypeScript/Examples leaf jobs under each primary platform, native builds,
-Docs acceptance, Rust check/test matrix, performance sampling/aggregation, and
+Docs acceptance, Rust check/test matrix, suite evidence collection, and
 `Incremental CI execution gate` remain. Meaningful primary-chain summaries remain
 because consumers depend on their actual completion; they are not old-name aliases.
 
@@ -483,7 +485,7 @@ Suggested future required checks (recommendation only; not configured here):
 | Scope | Current real check names |
 | --- | --- |
 | Product execution and selected suite evidence | `Type Check`; `Incremental CI execution gate` |
-| Docs and performance acceptance | `Docs CI quality checks`; `Aggregate informational performance report` |
+| Docs and suite evidence acceptance | `Docs CI quality checks`; `Record verified CI execution baseline` |
 | Rust checks and tests | `Check`; `Test - ubuntu-24.04`; `Test - macos-latest`; `Test - windows-latest` |
 | Static quality | `Rust Code Lint`; `TS Code Lint`; `Spell`; `Validating PR title` |
 | Changesets policy, separately reviewed | `Changesets Check` (keep #2330's approved consumed-version exception explicit) |

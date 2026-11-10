@@ -76,8 +76,11 @@ fn get_filename_by_path(file_path: &str) -> String {
   to_pascal_case(&filename)
 }
 
-pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
-  let exports = parse_esm_exports(Some(file_path), content);
+pub fn scan_exports(
+  file_path: &str,
+  content: Option<&str>,
+) -> farmfe_core::error::Result<Vec<Import>> {
+  let exports = parse_esm_exports(Some(file_path), content)?;
   let filename = get_filename_by_path(file_path);
   let mut exports_names = Vec::new();
   for export in exports {
@@ -172,30 +175,14 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
         if let Some(parent_dir_path) = file_path.parent() {
           let specifier_path = parent_dir_path.join(specifier.unwrap());
           let specifier_path = normalize_path(specifier_path.to_str().unwrap());
-          let file_exts = FILE_EXTENSION_LOOKUP.to_vec();
-          if metadata(&specifier_path).unwrap().is_dir() {
-            // check if specifier_path has index.tsx ...
-            for ext in &file_exts {
-              let index_path = format!("{specifier_path}/index{ext}");
-              if metadata(&index_path).is_ok() {
-                let index_content = read_to_string(&index_path).unwrap();
-                let index_exports = scan_exports(&index_path, Some(&index_content));
-                exports_names.extend(index_exports);
-                break;
-              }
+          let index_path = resolve_export_path(&specifier_path)?;
+          let index_content = read_to_string(&index_path).map_err(|error| {
+            farmfe_core::error::CompilationError::LoadError {
+              resolved_path: index_path.clone(),
+              source: Some(Box::new(error)),
             }
-          } else {
-            // check if specifier_path is a file
-            for ext in &file_exts {
-              let index_path = format!("{specifier_path}{ext}");
-              if metadata(&index_path).is_ok() {
-                let index_content = read_to_string(&index_path).unwrap();
-                let index_exports = scan_exports(&index_path, Some(&index_content));
-                exports_names.extend(index_exports);
-                break;
-              }
-            }
-          }
+          })?;
+          exports_names.extend(scan_exports(&index_path, Some(&index_content))?);
         }
       }
       _ => {
@@ -203,5 +190,75 @@ pub fn scan_exports(file_path: &str, content: Option<&str>) -> Vec<Import> {
       }
     }
   }
-  exports_names
+  Ok(exports_names)
+}
+
+fn resolve_export_path(specifier_path: &str) -> farmfe_core::error::Result<String> {
+  use std::io::{Error, ErrorKind};
+  let load_error = |path: &str, error: Error| farmfe_core::error::CompilationError::LoadError {
+    resolved_path: path.to_owned(),
+    source: Some(Box::new(error)),
+  };
+  let directory = match metadata(specifier_path) {
+    Ok(meta) if meta.is_file() => return Ok(specifier_path.to_owned()),
+    Ok(meta) => meta.is_dir(),
+    Err(error) if error.kind() == ErrorKind::NotFound => false,
+    Err(error) => return Err(load_error(specifier_path, error)),
+  };
+  for extension in FILE_EXTENSION_LOOKUP {
+    let candidate = if directory {
+      format!("{specifier_path}/index{extension}")
+    } else {
+      format!("{specifier_path}{extension}")
+    };
+    match metadata(&candidate) {
+      Ok(meta) if meta.is_file() => return Ok(candidate),
+      Ok(_) => {}
+      Err(error) if error.kind() == ErrorKind::NotFound => {}
+      Err(error) => return Err(load_error(&candidate, error)),
+    }
+  }
+  Err(load_error(
+    specifier_path,
+    Error::new(ErrorKind::NotFound, "Re-export source not found"),
+  ))
+}
+
+#[cfg(test)]
+mod export_path_tests {
+  use super::*;
+  use std::sync::atomic::{AtomicUsize, Ordering};
+  static NEXT: AtomicUsize = AtomicUsize::new(0);
+
+  #[test]
+  fn extensionless_directory_and_retry_keep_errors_visible() {
+    let root = std::env::temp_dir().join(format!(
+      "farm-export-path-{}-{}",
+      std::process::id(),
+      NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let entry = root.join("entry.ts");
+    std::fs::write(&entry, "export * from './foo';").unwrap();
+    std::fs::write(root.join("foo.ts"), "export const first = 1;").unwrap();
+    let exports = scan_exports(entry.to_str().unwrap(), None).unwrap();
+    assert!(exports.iter().any(|item| item.name == "first"));
+    std::fs::write(root.join("foo.ts"), "export const second = 2;").unwrap();
+    let exports = scan_exports(entry.to_str().unwrap(), None).unwrap();
+    assert!(exports.iter().any(|item| item.name == "second"));
+    assert!(!exports.iter().any(|item| item.name == "first"));
+    std::fs::remove_file(root.join("foo.ts")).unwrap();
+    assert!(scan_exports(entry.to_str().unwrap(), None).is_err());
+    std::fs::create_dir(root.join("foo")).unwrap();
+    std::fs::write(root.join("foo/index.ts"), "export const nested = 3;").unwrap();
+    assert!(
+      scan_exports(entry.to_str().unwrap(), None)
+        .unwrap()
+        .iter()
+        .any(|item| item.name == "nested")
+    );
+    // A file used as a directory produces an I/O error, never an empty success.
+    assert!(resolve_export_path(entry.join("child").to_str().unwrap()).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+  }
 }

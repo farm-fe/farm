@@ -1,7 +1,5 @@
 name: E2E Tests
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -37,7 +35,11 @@ jobs:
       pr_number: ${{ inputs.pr_number || '' }}
 
   impact-plan:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    outputs:
+      artifact_id: ${{ steps.plan-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.plan-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.plan-origin.outputs.attempt }}
+
     needs: [version-classification]
     name: Incremental CI plan (shadow only)
     continue-on-error: true
@@ -62,7 +64,10 @@ jobs:
           python scripts/ci-impact-receipt.test.py
       - name: Compute committed base and head impact without changing execution
         run: python scripts/ci-impact-plan.py --output impact-plan/plan.json
-      - name: Upload fixed source impact plan
+      - id: plan-origin
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - id: plan-upload
+        name: Upload fixed source impact plan
         uses: actions/upload-artifact@v4
         with:
           name: impact-plan-${{ github.sha }}-${{ github.run_attempt }}
@@ -88,8 +93,8 @@ jobs:
     permissions:
       contents: read
       actions: read
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
-    needs: [version-classification, impact-plan, release-contract-tests, performance-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, performance-report, performance-summary]
+    if: (always())
+    needs: [platform-contract-linux, platform-contract-macos, platform-contract-windows, version-classification, primary-linux, primary-macos, primary-windows, impact-plan, release-contract-tests, platform-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, execution-baseline]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -103,7 +108,36 @@ jobs:
         if: always()
         env:
           CI_E2E_RESOLVE_ORIGINAL_ATTEMPTS: 'true'
+          CI_E2E_UPLOADS: >-
+            {"planner":{"artifact_id":"${{ needs.impact-plan.outputs.artifact_id }}","artifact_digest":"${{ needs.impact-plan.outputs.artifact_digest }}","run_attempt":"${{ needs.impact-plan.outputs.run_attempt }}"},
+             "native:ci:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.native_shadow_run_attempt }}"},
+             "ts-tests:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.ts_shadow_run_attempt }}"},
+             "examples:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.browser_shadow_run_attempt }}"},
+             "docs:ci:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.docs_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.docs_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.docs_shadow_run_attempt }}"},
+             "platform-contracts:linux-x64-gnu":{"artifact_id":"${{ needs.platform-contract-linux.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-linux.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-linux.outputs.run_attempt }}"},
+             "native:ci:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.native_shadow_run_attempt }}"},
+             "ts-tests:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.ts_shadow_run_attempt }}"},
+             "examples:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.browser_shadow_run_attempt }}"},
+             "platform-contracts:darwin-arm64":{"artifact_id":"${{ needs.platform-contract-macos.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-macos.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-macos.outputs.run_attempt }}"},
+             "native:ci:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.native_shadow_run_attempt }}"},
+             "ts-tests:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.ts_shadow_run_attempt }}"},
+             "examples:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.browser_shadow_run_attempt }}"},
+             "docs:ci:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.docs_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.docs_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.docs_shadow_run_attempt }}"},
+             "platform-contracts:win32-x64-msvc":{"artifact_id":"${{ needs.platform-contract-windows.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-windows.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-windows.outputs.run_attempt }}"},
+             "native:ci:linux-x64-musl":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_run_attempt }}"},
+             "native:ci:darwin-x64":{"artifact_id":"${{ needs.call-rust-build-release.outputs.darwin_x64_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.darwin_x64_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.darwin_x64_run_attempt }}"},
+             "native:ci:win32-ia32-msvc":{"artifact_id":"${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_run_attempt }}"},
+             "native:ci:win32-arm64-msvc":{"artifact_id":"${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_run_attempt }}"},
+             "native:ci:linux-arm64-musl":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_arm64_musl_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_arm64_musl_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_arm64_musl_run_attempt }}"},
+             "native:ci:linux-arm64-gnu":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_run_attempt }}"},
+             "types":{"artifact_id":"${{ needs.type-check.outputs.artifact_id }}","artifact_digest":"${{ needs.type-check.outputs.artifact_digest }}","run_attempt":"${{ needs.type-check.outputs.run_attempt }}"},
+             "contracts":{"artifact_id":"${{ needs.release-contract-tests.outputs.artifact_id }}","artifact_digest":"${{ needs.release-contract-tests.outputs.artifact_digest }}","run_attempt":"${{ needs.release-contract-tests.outputs.run_attempt }}"},
+             "native-assembly":{"artifact_id":"${{ needs.check-native-candidate-assembly.outputs.artifact_id }}","artifact_digest":"${{ needs.check-native-candidate-assembly.outputs.artifact_digest }}","run_attempt":"${{ needs.check-native-candidate-assembly.outputs.run_attempt }}"},
+             "execution-baseline":{"artifact_id":"${{ needs.execution-baseline.outputs.artifact_id }}","artifact_digest":"${{ needs.execution-baseline.outputs.artifact_digest }}","run_attempt":"${{ needs.execution-baseline.outputs.run_attempt }}"}}
           CI_IMPACT_SCOPE: e2e
+          CI_SHADOW_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
+          CI_SHADOW_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
+          CI_SHADOW_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
           CI_IMPACT_NEEDS: ${{ toJSON(needs) }}
         run: python scripts/ci-impact-summary.py --plan impact-plan/plan.json --receipts impact-cell-receipts --output impact-summary/summary.json
       - uses: actions/upload-artifact@v4
@@ -115,7 +149,11 @@ jobs:
           retention-days: 14
 
   release-contract-tests:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
+
     needs: [version-classification]
     name: Release source contracts
     runs-on: ubuntu-24.04
@@ -124,6 +162,8 @@ jobs:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
@@ -142,16 +182,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Check cold-cache Cargo packaging against public dependency sources
+        env:
+          FARM_CARGO_NETWORK_TESTS: '1'
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          python -B scripts/cargo-public-sources.test.py
       - name: Check independent CI and release selection contracts
         run: |
-          node --test scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs scripts/native-checkout-contract.test.mjs scripts/formal-native-scope.test.mjs
+          node --test scripts/ci-local-performance-policy.test.mjs scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs scripts/native-checkout-contract.test.mjs scripts/formal-native-scope.test.mjs
           node --test scripts/automatic-release-source.test.mjs scripts/main-registry-source.test.mjs
+          python -B scripts/formal-native-products.test.py
           python -B scripts/cargo-prepared-family.test.py
           python -B scripts/cargo-source-release.test.py
           python -B scripts/release-registry-selection.test.py
           python scripts/incremental-chain-plan.test.py
           python scripts/ci-leaf-native.test.py
-          python -B scripts/ci-suite-baseline.test.py
           node --test scripts/ci-leaf-assembly.test.mjs
           python scripts/incremental-scheduling-model.test.py
           python scripts/incremental-git-model.test.py
@@ -167,6 +213,7 @@ jobs:
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
           python -B scripts/release-retry-safety.test.py
+          node --test scripts/release-recovery-dag.test.mjs scripts/ci-provenance-template.test.mjs scripts/release-provenance-wiring.test.mjs
           node --test scripts/incremental-release-producer.test.mjs scripts/release-native-scope.test.mjs scripts/release-chain-boundaries.test.mjs
           node --test e2e/worker-finish.test.mjs e2e/worker-outcome.test.mjs
           python scripts/ci-execution-ledger.test.py
@@ -182,20 +229,21 @@ jobs:
           scripts/check-pr-changesets.test.mjs
           scripts/release-rust-metadata.test.mjs scripts/compose-v2-release-seal.test.mjs
           scripts/pack-v2-npm-candidates.test.mjs scripts/prepare-v2-candidate-js.test.mjs
-          scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs
+          scripts/check-published-rust-closure.test.mjs scripts/prepare-sdk-frozen-lock.test.mjs scripts/sdk-candidate-registry.test.mjs
           scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/create-farm-pack.test.mjs scripts/ci-suite-inventory.test.mjs
-          scripts/ci-suite-execution.test.mjs scripts/ci-suite-rerun.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-selection.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
-      - name: Preserve actual cell receipt (shadow only)
+          scripts/ci-suite-execution.test.mjs scripts/ci-suite-rerun.test.mjs scripts/ci-suite-impact.test.mjs scripts/ci-suite-real-repo.test.mjs scripts/ci-examples-build-counts.test.mjs
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "contracts"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   docs-acceptance:
-    if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: always()
     name: Docs CI quality checks
     needs: [version-classification, primary-linux, primary-windows]
     runs-on: ubuntu-24.04
@@ -206,83 +254,80 @@ jobs:
           WINDOWS_RESULT: ${{ needs.primary-windows.result }}
         run: test "$LINUX_RESULT" = success && test "$WINDOWS_RESULT" = success
 
-  performance-contract-tests:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
-    needs: [version-classification]
-    name: Performance report contract (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
+  platform-contract-tests:
+    if: always()
+    needs: [version-classification, platform-contract-linux, platform-contract-macos, platform-contract-windows]
+    name: Platform safety contracts
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - uses: actions/setup-python@v5
-        id: contract-python
-        with:
-          python-version: '3.12'
-      - name: Validate report, trust, cleanup and comparison contracts
+      - name: Require all platform safety executions
         env:
-          FARM_PERFORMANCE_PYTHON: ${{ steps.contract-python.outputs.python-path }}
-        run: node --test scripts/performance*.test.mjs scripts/aggregate-performance-reports.test.mjs scripts/v2-cargo-cache-command.test.mjs scripts/verify-published-v2-consumers.test.mjs scripts/ci-native-capture.test.mjs scripts/unified-impact-graph.test.mjs
-      - name: Preserve actual cell receipt (shadow only)
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/ci-impact-cell
-        with:
-          cell: "performance-contracts:${{ matrix.os == 'ubuntu-24.04' && 'linux-x64-gnu' || matrix.os == 'macos-latest' && 'darwin-arm64' || 'win32-x64-msvc' }}"
-          status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          RESULTS: ${{ toJSON(needs) }}
+        run: python -c "import json,os; assert all(v['result']=='success' for v in json.loads(os.environ['RESULTS']).values())"
+
+  platform-contract-linux:
+
+    needs: [version-classification]
+    uses: ./.github/workflows/ci-platform-safety.yaml
+    with:
+      os: ubuntu-24.04
+
+  platform-contract-macos:
+
+    needs: [version-classification]
+    uses: ./.github/workflows/ci-platform-safety.yaml
+    with:
+      os: macos-latest
+
+  platform-contract-windows:
+
+    needs: [version-classification]
+    uses: ./.github/workflows/ci-platform-safety.yaml
+    with:
+      os: windows-latest
 
   primary-linux:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     permissions:
       contents: read
       actions: read
     name: Primary Linux
-    needs: [version-classification, release-contract-tests, performance-contract-tests, type-check]
+    needs: [version-classification, release-contract-tests, platform-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
     with:
       os: ubuntu-24.04
       abi: linux-x64-gnu
-      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
     secrets: inherit
 
   primary-macos:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     permissions:
       contents: read
       actions: read
     name: Primary macOS
-    needs: [version-classification, release-contract-tests, performance-contract-tests, type-check]
+    needs: [version-classification, release-contract-tests, platform-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
     with:
       os: macos-latest
       abi: darwin-arm64
-      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
     secrets: inherit
 
   primary-windows:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+
     permissions:
       contents: read
       actions: read
     name: Primary Windows
-    needs: [version-classification, release-contract-tests, performance-contract-tests, type-check]
+    needs: [version-classification, release-contract-tests, platform-contract-tests, type-check]
     uses: ./.github/workflows/ci-primary-platform.yaml
     with:
       os: windows-latest
       abi: win32-x64-msvc
-      suite_selection_hash: ${{ needs.type-check.outputs.suite_selection_hash }}
     secrets: inherit
 
   call-rust-build-user:
     name: All primary native and consumer chains
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [version-classification, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -299,15 +344,19 @@ jobs:
     permissions:
       contents: read
       actions: read
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
-    needs: [version-classification, release-contract-tests, performance-contract-tests]
-    uses: ./.github/workflows/rust-build-release.yaml
+
+    needs: [version-classification, release-contract-tests, platform-contract-tests]
+    uses: ./.github/workflows/ci-secondary-native.yaml
     secrets: inherit
 
   check-native-candidate-assembly:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
+    outputs:
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
+
     name: Check declared native inputs (not ABI execution)
-    needs: [version-classification, call-rust-build-user, call-rust-build-release, type-check]
+    needs: [version-classification, call-rust-build-user, call-rust-build-release, type-check, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -334,6 +383,9 @@ jobs:
           python-version: '3.12'
       - name: Bind shadow producer identities using existing read-only access (no ZIP download)
         continue-on-error: true
+        env:
+          CI_NATIVE_UPLOADS: >-
+            {"linux-x64-musl":${{ needs.call-rust-build-release.outputs.linux_x64_musl_product_upload }},"darwin-x64":${{ needs.call-rust-build-release.outputs.darwin_x64_product_upload }},"win32-ia32-msvc":${{ needs.call-rust-build-release.outputs.win32_ia32_msvc_product_upload }},"win32-arm64-msvc":${{ needs.call-rust-build-release.outputs.win32_arm64_msvc_product_upload }},"linux-arm64-musl":${{ needs.call-rust-build-release.outputs.linux_arm64_musl_product_upload }},"linux-arm64-gnu":${{ needs.call-rust-build-release.outputs.linux_arm64_gnu_product_upload }},"linux-x64-gnu":${{ needs.primary-linux.outputs.native_product_upload }},"darwin-arm64":${{ needs.primary-macos.outputs.native_product_upload }},"win32-x64-msvc":${{ needs.primary-windows.outputs.native_product_upload }}}
         run: python scripts/ci-native-evidence.py --audit-current-run --output native-shadow-identities.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -348,18 +400,19 @@ jobs:
           name: native-assembly-${{ github.sha }}
           path: native-assembly.json
           if-no-files-found: error
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "native-assembly"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   examples-test:
     name: All primary Examples chains
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [version-classification, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -372,236 +425,25 @@ jobs:
           WINDOWS_RESULT: ${{ needs.primary-windows.result }}
         run: test "$LINUX_RESULT" = success && test "$MACOS_RESULT" = success && test "$WINDOWS_RESULT" = success
 
-  performance-report:
-    if: needs.version-classification.outputs.mode != 'verified-version-only'
-    name: Commerce Performance (${{ matrix.settings.os }})
-    needs: [version-classification, examples-test, docs-acceptance, ts-test, type-check, check-native-candidate-assembly]
-    continue-on-error: true
-    timeout-minutes: 90
-    runs-on: ${{ matrix.settings.os }}
+  candidate-packages:
+    name: Complete PR candidate package tests
+    needs: [check-native-candidate-assembly, primary-linux, primary-macos, primary-windows, type-check]
     permissions:
       contents: read
       actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          - os: ubuntu-24.04
-            abi: linux-x64-gnu
-          - os: macos-latest
-            abi: darwin-arm64
-          - os: windows-latest
-            abi: win32-x64-msvc
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-      - uses: pnpm/action-setup@v4
-        id: performance-pnpm
-        with:
-          version: 9.4.0
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - name: Initialize performance evidence
-        run: node scripts/performance-evidence.mjs init
-      - uses: actions/setup-python@v5
-        id: performance-python
-        with:
-          python-version: '3.12'
-      - name: Install locked dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Install Farm correctness browser (outside measured samples)
-        run: node node_modules/playwright-chromium/cli.js install --with-deps chromium
-      - uses: actions/download-artifact@v4.1.3
-        id: download
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/core/binding
+    uses: ./.github/workflows/v2-candidate-seal.yaml
 
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-sass
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
-          path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-react
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
-          path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-replace-dirname
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
-          path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-vue
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue
-          path: ./rust-plugins/vue/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-vue-jsx
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-vue-jsx
-          path: ./rust-plugins/vue-jsx/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-auto-import
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-auto-import
-          path: ./rust-plugins/auto-import/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-compress
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-compress
-          path: ./rust-plugins/compress/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-dsv
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dsv
-          path: ./rust-plugins/dsv/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-dts
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-dts
-          path: ./rust-plugins/dts/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-icons
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-icons
-          path: ./rust-plugins/icons/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-image
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-image
-          path: ./rust-plugins/image/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-mdx
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-mdx
-          path: ./rust-plugins/mdx/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-modular-import
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-modular-import
-          path: ./rust-plugins/modular-import/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-react-components
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react-components
-          path: ./rust-plugins/react-components/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-strip
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-strip
-          path: ./rust-plugins/strip/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-svgr
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-svgr
-          path: ./rust-plugins/svgr/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-url
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-url
-          path: ./rust-plugins/url/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-virtual
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-virtual
-          path: ./rust-plugins/virtual/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-wasm
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-wasm
-          path: ./rust-plugins/wasm/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-worker
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-worker
-          path: ./rust-plugins/worker/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-yaml
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-yaml
-          path: ./rust-plugins/yaml/npm/${{ matrix.settings.abi }}
-
-      - uses: actions/download-artifact@v4.1.3
-        id: download-plugin-tailwindcss
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-tailwindcss
-          path: ./rust-plugins/tailwindcss/npm/${{ matrix.settings.abi }}
-
-
-      - name: Prepare JavaScript consumers (no Rust rebuild)
-        run: node --input-type=module -e "const b = await import('./scripts/build.mjs'); await b.buildCli(); await b.buildRuntime(); await b.buildCoreCjs();"
-      - name: Check out exact base separately
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha || inputs.base_sha || github.event.before }}
-          path: .performance-base
-          persist-credentials: false
-      - name: Prepare compatible exact-base native consumer
-        env:
-          FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
-          FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
-          GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha || github.event.before }}
-          FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
-        run: node scripts/prepare-performance-base.mjs
-      - name: Sample isolated Commerce baseline
-        env:
-          FARM_PERFORMANCE_PYTHON: ${{ steps.performance-python.outputs.python-path }}
-          FARM_PNPM_CLI: ${{ steps.performance-pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
-          GITHUB_TOKEN: ${{ github.token }}
-          FARM_BASE_SHA: ${{ github.event.pull_request.base.sha || inputs.base_sha || github.event.before }}
-          FARM_PERFORMANCE_ABI: ${{ matrix.settings.abi }}
-        run: node scripts/performance-report.mjs
-      - name: Finalize incomplete performance evidence
-        if: always()
-        run: node scripts/performance-evidence.mjs finalize
-      - name: Preserve performance evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-${{ github.sha }}-${{ matrix.settings.abi }}-attempt-${{ github.run_attempt }}
-          path: performance-results/
-          if-no-files-found: warn
-          retention-days: 14
-      - name: Preserve actual cell receipt (shadow only)
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/ci-impact-cell
-        with:
-          cell: "performance:${{ matrix.settings.abi }}"
-          status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
-
-  performance-summary:
-    name: Aggregate informational performance report
-    needs: [version-classification, performance-report, type-check, primary-linux, primary-macos, primary-windows]
-    if: (always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push')) && needs.version-classification.outputs.mode != 'verified-version-only'
+  execution-baseline:
+    outputs:
+      execution_id: ${{ steps.execution-upload.outputs.artifact-id }}
+      execution_digest: ${{ steps.execution-upload.outputs.artifact-digest }}
+      execution_attempt: ${{ steps.execution-origin.outputs.attempt }}
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
+    name: Record verified CI execution baseline
+    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows]
+    if: (always() && (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push'))
     continue-on-error: true
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -614,19 +456,6 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate and compact independently verified platform measurements
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          PERFORMANCE_SAMPLING_RESULT: ${{ needs.performance-report.result }}
-        run: node scripts/aggregate-performance-reports.mjs
-      - name: Upload current CI consumer native materialization
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: performance-pr-summary-${{ github.run_attempt }}
-          path: performance-pr-summary/summary.json
-          if-no-files-found: warn
-          retention-days: 14
       - uses: actions/setup-node@v4
         if: success()
         with:
@@ -639,20 +468,21 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
           FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
           FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
         run: python -B scripts/ci-suite-attempts.py --output ci-baseline-inputs/suites
       - name: Validate complete discovered and executed suite coverage
-        env:
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
         if: success()
         run: node scripts/ci-suite-execution.mjs --collect ci-baseline-inputs/suites ci-execution-ledger/suite-coverage.json
       - name: Record candidate CI execution baseline (no build-byte authority)
         if: success()
         run: python scripts/ci-execution-ledger.py --coverage ci-execution-ledger/suite-coverage.json --output ci-execution-ledger/ledger.json
-      - name: Upload trusted CI execution baseline
+      - id: execution-origin
+        if: success()
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - id: execution-upload
+        name: Upload trusted CI execution baseline
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -660,75 +490,52 @@ jobs:
           path: ci-execution-ledger/ledger.json
           if-no-files-found: error
           retention-days: 14
-      - name: Preserve actual cell receipt (shadow only)
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
         if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
-          cell: "performance-summary"
+          cell: "execution-baseline"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
+          artifact-suffix: single
 
   type-check:
     needs: [version-classification]
     name: Type Check
     outputs:
-      suite_selection_hash: ${{ steps.ci-suites.outputs.selection_hash }}
+      artifact_id: ${{ steps.shadow-upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.shadow-upload.outputs.artifact-digest }}
+      run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       actions: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v3
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+      - uses: actions/checkout@v4
+
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           python-version: '3.12'
       - name: Validate unified graph rules before baseline or cache lookup
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: python -B scripts/unified-impact-graph.py --validate
-      - name: Query independently verified CI baselines without omitting execution
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        continue-on-error: true
-        run: python scripts/incremental-chain-runtime.py --output chain-plans/ci.json
-      - name: Resolve independently accepted full CI suite baseline
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        id: ci-suites
-        continue-on-error: true
-        run: python -B scripts/ci-suite-baseline.py --output ci-suite-selection/selection.json
-      - name: Upload bound current suite selection
-        if: steps.ci-suites.outputs.selection_hash != '' && needs.version-classification.outputs.mode != 'verified-version-only'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-suite-selection-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ci-suite-selection/selection.json
-          if-no-files-found: error
-          retention-days: 7
-      - name: Preserve exact current-chain plan and baseline binding
-        if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: farm-ci-plan-${{ github.sha }}-${{ github.run_attempt }}
-          path: chain-plans/ci.json
-          if-no-files-found: warn
-          retention-days: 14
       - name: Setup pnpm
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
-      - uses: actions/setup-node@v3
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+      - uses: actions/setup-node@v4
+
         with:
           node-version: 20
       - name: Install Dependencies
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 60
@@ -736,34 +543,29 @@ jobs:
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
       - name: Build CLI and Core
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/cli run build
       - name: Build Runtime
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/runtime run build
       - name: Build Babel Plugin Types
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/js-plugin-babel exec tsc -p tsconfig.json --emitDeclarationOnly
       - name: Build Docs Public Types
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm --filter @farmfe/docs run build
       - name: Type Check With Tsc
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         run: pnpm run --filter "@farmfe/*" type-check
-      - name: Preserve actual cell receipt (shadow only)
-        if: always() && needs.version-classification.outputs.mode != 'verified-version-only'
+      - id: shadow-upload
+        name: Preserve actual cell receipt (shadow only)
+        if: always()
         continue-on-error: true
         uses: ./.github/actions/ci-impact-cell
         with:
           cell: "types"
           status: ${{ job.status }}
-          artifact-suffix: ${{ matrix.settings.abi || matrix.os || 'single' }}
-
-      - name: Accept independently verified Changesets version-only preparation
-        if: needs.version-classification.outputs.mode == 'verified-version-only'
-        env:
-          PROOF: ${{ needs.version-classification.outputs.proof_hash }}
-        run: test "${#PROOF}" = 64 && echo 'Pure version preparation; heavy CI not applicable.'
+          artifact-suffix: single
 
   changesets-check:
     name: Changesets Check
@@ -796,7 +598,7 @@ jobs:
 
   ts-test:
     name: All primary TypeScript chains
-    if: (always()) && needs.version-classification.outputs.mode != 'verified-version-only'
+    if: (always())
     needs: [version-classification, primary-linux, primary-macos, primary-windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -815,7 +617,7 @@ jobs:
       actions: read
     name: Incremental CI execution gate
     if: always()
-    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test]
+    needs: [version-classification, type-check, primary-linux, primary-macos, primary-windows, call-rust-build-release, check-native-candidate-assembly, examples-test, ts-test, candidate-packages]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -826,41 +628,31 @@ jobs:
         run: |
           import json, os
           rows=json.loads(os.environ['RESULTS'])
-          expected={'version-classification','type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test'}
+          expected={'version-classification','type-check','primary-linux','primary-macos','primary-windows','call-rust-build-release','check-native-candidate-assembly','examples-test','ts-test','candidate-packages'}
           assert set(rows)==expected, 'Missing or unexpected DAG dependency'
-          version=rows['version-classification']
-          if version['result']=='success' and version['outputs'].get('mode')=='verified-version-only':
-              assert __import__('re').fullmatch('[a-f0-9]{64}',version['outputs'].get('proof_hash',''))
-              assert rows['type-check']['result']=='success'
-              assert all(row['result']=='skipped' for key,row in rows.items() if key not in ['type-check','version-classification'])
-              print('Verified Changesets metadata only; no product test acceptance emitted')
-              raise SystemExit(0)
           if set(rows)!=expected or any(row['result']!='success' for row in rows.values()):
               raise ValueError('Missing, skipped, cancelled or failed actual CI execution')
       - uses: actions/checkout@v4
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-python@v5
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           python-version: '3.13'
       - uses: actions/setup-node@v4
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         with:
           node-version: 22.20.0
       - name: Resolve original successful suite attempts without rebuilding
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
+
         env:
           GH_TOKEN: ${{ github.token }}
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
           FARM_SUITE_UPLOADS_LINUX: ${{ toJSON(needs.primary-linux.outputs) }}
           FARM_SUITE_UPLOADS_MACOS: ${{ toJSON(needs.primary-macos.outputs) }}
           FARM_SUITE_UPLOADS_WINDOWS: ${{ toJSON(needs.primary-windows.outputs) }}
         run: python -B scripts/ci-suite-attempts.py --output ci-gate-suites
       - name: Validate actual selected suite files and case counts on every platform
-        if: needs.version-classification.outputs.mode != 'verified-version-only'
-        env:
-          FARM_SUITE_SELECTION_HASH: ${{ needs.type-check.outputs.suite_selection_hash }}
+
         run: node scripts/ci-suite-execution.mjs --collect ci-gate-suites ci-gate-coverage/coverage.json

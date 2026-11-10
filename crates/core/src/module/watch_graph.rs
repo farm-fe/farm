@@ -1,9 +1,9 @@
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::hash::Hash;
 
 use petgraph::{
   EdgeDirection,
-  graph::{DefaultIx, NodeIndex},
+  graph::{DefaultIx, EdgeIndex, NodeIndex},
   stable_graph::StableDiGraph,
 };
 
@@ -39,6 +39,11 @@ impl EdgeMode {
 pub struct WatchGraph {
   g: StableDiGraph<ModuleId, EdgeMode>,
   id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
+  // Keep type queries and existing-edge updates independent of watch fan-out.
+  root_edges: HashMap<NodeIndex, BTreeMap<usize, NodeIndex>>,
+  edge_orders: HashMap<EdgeIndex, usize>,
+  next_edge_order: usize,
+  edge_indices: HashMap<(NodeIndex, NodeIndex), EdgeIndex>,
 }
 
 impl WatchGraph {
@@ -46,6 +51,10 @@ impl WatchGraph {
     Self {
       g: StableDiGraph::new(),
       id_index_map: HashMap::default(),
+      root_edges: HashMap::default(),
+      edge_orders: HashMap::default(),
+      next_edge_order: 0,
+      edge_indices: HashMap::default(),
     }
   }
 
@@ -57,14 +66,14 @@ impl WatchGraph {
   }
 
   pub fn add_edge(&mut self, from: &ModuleId, to: &ModuleId) -> Result<()> {
-    let from_index = self.id_index_map.get(from).ok_or_else(|| {
+    let from_index = *self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"from node "{}" does not exist in the module graph when add edge"#,
         from.to_string()
       ))
     })?;
 
-    let to_index = self.id_index_map.get(to).ok_or_else(|| {
+    let to_index = *self.id_index_map.get(to).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"to node "{}" does not exist in the module graph when add edge"#,
         to.to_string()
@@ -94,16 +103,11 @@ impl WatchGraph {
     let roots: Vec<ModuleId> = [roots, vec![from.clone()]].concat();
 
     for root in roots.into_iter() {
-      let root_id = self.id_index_map.get(&root).unwrap();
-
-      self
-        .g
-        .update_edge(*to_index, *root_id, EdgeMode::RootImport);
+      let root_id = self.id_index_map[&root];
+      self.set_edge(to_index, root_id, EdgeMode::RootImport);
     }
 
-    self
-      .g
-      .update_edge(*from_index, *to_index, EdgeMode::WatchImport);
+    self.set_edge(from_index, to_index, EdgeMode::WatchImport);
 
     Ok(())
   }
@@ -123,24 +127,41 @@ impl WatchGraph {
   }
 
   pub fn relation_roots(&self, dep: &ModuleId) -> Vec<&ModuleId> {
-    let mut result = HashSet::default();
-
-    if let Some(index) = self.id_index_map.get(dep) {
-      let mut edges = self
-        .g
-        .neighbors_directed(*index, EdgeDirection::Outgoing)
-        .detach();
-
-      while let Some((edge, node)) = edges.next(&self.g) {
-        if !self.g.edge_weight(edge).is_some_and(|e| e.is_root_import()) {
-          continue;
-        };
-
-        result.insert(self.g.node_weight(node).unwrap());
+    // Preserve the old outgoing-adjacency insertion order before collecting
+    // roots. Root iteration can affect later edge-type overwrites and therefore
+    // the order of dependencies/relation_dependencies.
+    let mut roots = HashSet::default();
+    if let Some(index) = self.id_index_map.get(dep)
+      && let Some(edges) = self.root_edges.get(index)
+    {
+      for target in edges.values().rev() {
+        roots.insert(&self.g[*target]);
       }
-    };
+    }
+    roots.into_iter().collect()
+  }
 
-    result.into_iter().collect()
+  // All edge writes must update both indexes, including changes of edge type.
+  fn set_edge(&mut self, from: NodeIndex, to: NodeIndex, mode: EdgeMode) {
+    let index = if let Some(index) = self.edge_indices.get(&(from, to)) {
+      *index
+    } else {
+      let index = self.g.add_edge(from, to, EdgeMode::WatchImport);
+      self.edge_indices.insert((from, to), index);
+      self.edge_orders.insert(index, self.next_edge_order);
+      self.next_edge_order += 1;
+      index
+    };
+    let order = self.edge_orders[&index];
+    if mode.is_root_import() {
+      self.root_edges.entry(from).or_default().insert(order, to);
+    } else if let Some(roots) = self.root_edges.get_mut(&from) {
+      roots.remove(&order);
+      if roots.is_empty() {
+        self.root_edges.remove(&from);
+      }
+    }
+    self.g[index] = mode;
   }
 
   pub fn dependencies(&self, module_id: &ModuleId) -> Vec<&ModuleId> {
@@ -204,10 +225,24 @@ impl WatchGraph {
 
     let mut walk = self.g.neighbors_undirected(index).detach();
 
+    let mut edges = HashSet::default();
     while let Some((edge, _)) = walk.next(&self.g) {
+      edges.insert(edge);
+    }
+    for edge in edges {
+      if let Some((from, to)) = self.g.edge_endpoints(edge) {
+        self.edge_indices.remove(&(from, to));
+        if let Some(roots) = self.root_edges.get_mut(&from) {
+          roots.remove(&self.edge_orders[&edge]);
+          if roots.is_empty() {
+            self.root_edges.remove(&from);
+          }
+        }
+      }
+      self.edge_orders.remove(&edge);
       self.g.remove_edge(edge);
     }
-
+    self.root_edges.remove(&index);
     self.g.remove_node(index);
   }
 }
@@ -346,7 +381,7 @@ mod tests {
     // Construct the WatchImport topology directly: add_edge also maintains
     // reverse RootImport shortcuts, which are separate from this traversal.
     for (from, to) in [(0, 1), (1, 2), (2, 0)] {
-      graph.g.add_edge(
+      graph.set_edge(
         graph.id_index_map[&ids[from]],
         graph.id_index_map[&ids[to]],
         super::EdgeMode::WatchImport,
@@ -370,4 +405,5 @@ mod tests {
     r.sort();
     assert_eq!(r, [&"v_c".into(), &"v_d".into()])
   }
+  include!("watch_graph_reference_tests.rs");
 }

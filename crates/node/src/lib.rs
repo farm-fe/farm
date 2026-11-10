@@ -320,13 +320,15 @@ impl JsCompiler {
     let compiler = self.compiler.clone();
     self.compiler.context().thread_pool.spawn(move || {
       match compiler
-        .update(
+        .update_with_completion(
           paths
             .into_iter()
             .map(|(path, ty)| (path, ty.into()))
             .collect(),
-          move || {
-            thread_safe_callback.call(Ok(()), ThreadsafeFunctionCallMode::Blocking);
+          move |completion| {
+            let completion = completion
+              .map_err(|error| napi::Error::new(Status::GenericFailure, format!("{error}")));
+            thread_safe_callback.call(completion, ThreadsafeFunctionCallMode::Blocking);
           },
           sync,
           generate_update_resource,

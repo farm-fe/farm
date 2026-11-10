@@ -2,13 +2,17 @@
  ; // module_id: esm.mjs
 var esm_mjs_default = "esm.mjs";
 var esm_mjs_namespace_farm_internal_ = {
-    default: esm_mjs_default,
+    get default () {
+        return esm_mjs_default;
+    },
     __esModule: true
 };
 ; // module_id: foo/esm.mjs
 var esm_mjs_default$1 = "cur_esm.mjs";
 var esm_mjs_namespace_farm_internal_$1 = {
-    default: esm_mjs_default$1,
+    get default () {
+        return esm_mjs_default$1;
+    },
     __esModule: true
 };
 ; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime

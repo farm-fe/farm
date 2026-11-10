@@ -168,7 +168,7 @@ class PlannerContracts(unittest.TestCase):
 
     def test_consumer_and_performance_drivers_select_their_acceptance(self):
         files = fixture()
-        for name, suite in [("scripts/verify-v2-npm-consumer.mjs", "consumers"), ("scripts/performance-report.mjs", "performance")]:
+        for name, suite in [("scripts/verify-v2-npm-consumer.mjs", "consumers"), ("scripts/performance-report.mjs", "contracts")]:
             plan = impact.plan_changes(files, files, [{"status": "M", "paths": [name]}])
             self.assertFalse(plan["fullRequired"]); self.assertIn(suite, plan["proposedSuites"])
             self.assertNotIn("native", plan["proposedSuites"])
@@ -227,21 +227,21 @@ class PlannerContracts(unittest.TestCase):
 
     def test_failed_ci_native_and_suite_remain_required_cell_failures(self):
         rows = [{"cell": "native:ci:linux-x64-gnu", "status": "executed-failure"}, {"cell": "ts-tests:win32-x64-msvc", "status": "executed-cancelled"},
-                {"cell": "performance:darwin-arm64", "status": "executed-failure"}, {"cell": "contracts", "status": "executed-success"}]
+                {"cell": "platform-contracts:darwin-arm64", "status": "executed-failure"}, {"cell": "contracts", "status": "executed-success"}]
         outcomes, failures = summary.cell_outcomes(rows)
         self.assertEqual(len(outcomes), 4)
-        self.assertEqual([row["cell"] for row in failures], ["native:ci:linux-x64-gnu", "ts-tests:win32-x64-msvc"])
+        self.assertEqual([row["cell"] for row in failures], ["native:ci:linux-x64-gnu", "ts-tests:win32-x64-msvc", "platform-contracts:darwin-arm64"])
         plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False}
         report = summary.summarize(plan, {"incremental-execution-gate": {"result": "failure"}}, ["incremental-execution-gate"])
         self.assertFalse(report["allExpectedJobsSuccessful"])
         self.assertFalse(report["publicationAuthorized"])
 
-    def test_shadow_performance_remains_informational_without_relaxing_release_policy(self):
+    def test_baseline_failure_is_not_hidden_by_removed_performance_policy(self):
         plan = {"mode": "shadow", "skipAuthorized": False, "reuseAuthorized": False}
-        report = summary.summarize(plan, {"native": {"result": "success"}, "performance-report": {"result": "failure"}}, ["native", "performance-report"])
-        self.assertTrue(report["allExpectedJobsSuccessful"])
-        self.assertEqual(report["requiredFailures"], [])
-        self.assertEqual(report["informationalOutcomes"][0]["result"], "failure")
+        report = summary.summarize(plan, {"native": {"result": "success"}, "execution-baseline": {"result": "failure"}}, ["native", "execution-baseline"])
+        self.assertFalse(report["allExpectedJobsSuccessful"])
+        self.assertEqual(len(report["requiredFailures"]), 1)
+        self.assertEqual(report["informationalOutcomes"], [])
 
     def test_proposed_dag_is_closed_and_platform_downstream_is_independent(self):
         proposal = impact.proposed_dag(impact.ALL, ["examples/demo"])
@@ -250,7 +250,7 @@ class PlannerContracts(unittest.TestCase):
         for dependencies in tasks.values():
             self.assertTrue(set(dependencies).issubset(set(tasks)))
         self.assertEqual(tasks["examples:linux-x64-gnu"], ["native:ci:linux-x64-gnu"])
-        self.assertNotIn("native-assembly", tasks["performance:linux-x64-gnu"])
+        self.assertFalse(any(key.startswith("performance:") for key in tasks))
         self.assertEqual(len(tasks["native-assembly"]), 9)
 
 

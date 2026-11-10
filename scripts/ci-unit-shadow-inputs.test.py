@@ -40,6 +40,8 @@ def fixture():
         value={**identity,'runAttempt':str(attempt),'cell':cell,'jobKey':key,'workflowRef':'farm-fe/farm/.github/workflows/rust-test.yaml@refs/pull/2330/merge','schemaVersion':2,'planBound':False,'status':'executed-success','acceptanceInherited':False,'authoritativeJobIdentityVerified':False}
         value['observationHash']=module.impact.digest(value)
         add(i+2,'impact-cell-'+identity['testedSHA']+'-'+key+'-'+suffix+'-'+str(attempt),attempt,value,'receipt.json','Preserve actual cell receipt (shadow only)',name)
+    for attempt, rows in jobs.items():
+        for job in rows: job.update(head_sha=run['head_sha'], run_attempt=attempt)
     class API:
         def get(self,route):
             calls.append(route)
@@ -55,6 +57,54 @@ def fixture():
 
 
 class Contracts(unittest.TestCase):
+    def test_planner_diagnostics_preserve_rejections_in_both_workflows(self):
+        spec = importlib.util.spec_from_file_location('e2e_fixture', Path(__file__).with_name('ci-e2e-shadow-inputs.test.py'))
+        e2e = importlib.util.module_from_spec(spec); spec.loader.exec_module(e2e)
+        spec = importlib.util.spec_from_file_location('diagnostic_receipt', Path(__file__).with_name('ci-impact-receipt.py'))
+        receipt = importlib.util.module_from_spec(spec); spec.loader.exec_module(receipt)
+        for build, resolver in [(fixture, module.resolve), (e2e.fixture, e2e.module.resolve)]:
+            for defect, stage in [('carried', 'resolve-producer'), ('missing', 'read-artifact'), ('bytes', 'read-artifact'), ('upload', 'bind-upload'), ('digest', 'validate-digest'), ('source', 'validate-source')]:
+                with self.subTest(workflow=build.__module__, defect=defect):
+                    api, run, identity, jobs, items, bodies, _ = build()
+                    artifact = next(iter(items.values()))
+                    if defect == 'carried': jobs[2][0]['id'] += 1000
+                    elif defect == 'missing': del items[artifact['name']]
+                    elif defect == 'bytes': bodies[1] += b'corrupt'
+                    elif defect == 'upload': artifact['created_at'] = '2026-11-02T01:05:00Z'
+                    else:
+                        with zipfile.ZipFile(io.BytesIO(bodies[1])) as archive: plan = json.loads(archive.read('plan.json'))
+                        if defect == 'digest': plan['planHash'] = 'wrong'
+                        else:
+                            plan['testedTree'] = 'wrong'
+                            plan['planHash'] = module.impact.digest({k:v for k,v in plan.items() if k != 'planHash'})
+                        out = io.BytesIO()
+                        with zipfile.ZipFile(out, 'w') as archive: archive.writestr('plan.json', json.dumps(plan))
+                        bodies[1] = out.getvalue(); artifact['size_in_bytes'] = len(bodies[1]); artifact['digest'] = 'sha256:' + hashlib.sha256(bodies[1]).hexdigest()
+                    with self.assertRaises(ValueError) as caught: resolver(api, run, identity)
+                    error = caught.exception
+                    self.assertFalse(hasattr(error, 'shadow_plan'))
+                    self.assertEqual(error.shadow_context['resolutionStep'], stage)
+                    if defect == 'source': self.assertEqual(error.shadow_context['identityField'], 'testedTree')
+                    with mock.patch('sys.stderr', new_callable=io.StringIO) as output:
+                        detail = receipt.report_error('read-plan', error)
+                    self.assertEqual(detail['stage'], 'read-plan')
+                    self.assertEqual(detail['resolutionStep'], stage)
+                    self.assertNotIn('wrong', output.getvalue())
+                    self.assertNotIn('corrupt', output.getvalue())
+                    self.assertNotIn('shadow_plan', detail)
+
+    def test_planner_diagnostic_never_logs_untrusted_exception_text(self):
+        spec = importlib.util.spec_from_file_location('diagnostic_receipt', Path(__file__).with_name('ci-impact-receipt.py'))
+        receipt = importlib.util.module_from_spec(spec); spec.loader.exec_module(receipt)
+        api, run, identity, *_ = fixture()
+        with mock.patch.object(module.execution, 'actual_producer', side_effect=ValueError('sensitive-payload-not-for-logs')):
+            with self.assertRaises(ValueError) as caught: module.resolve(api, run, identity)
+        with mock.patch('sys.stderr', new_callable=io.StringIO) as output:
+            detail = receipt.report_error('read-plan', caught.exception)
+        self.assertEqual(detail['resolutionReason'], 'validation-rejected')
+        self.assertNotIn('sensitive-payload', output.getvalue())
+        self.assertFalse(hasattr(caught.exception, 'shadow_plan'))
+
     def test_observed_run_replay_preserves_names_without_guessing_api_times(self):
         data=json.loads(Path(__file__).with_name('fixtures').joinpath('unit-shadow-mixed-attempt-observation.json').read_text())
         sha=data['testedSHA']
@@ -153,7 +203,7 @@ class Contracts(unittest.TestCase):
             loader=SimpleNamespace(exec_module=lambda _:None)
             with tempfile.TemporaryDirectory() as tmp:
                 target=Path(tmp)/'report.json'
-                env={'CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS':'true','CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test']})}
+                env={'CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS':'true','CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test-linux','cargo-test-macos','cargo-test-windows']})}
                 with mock.patch.dict(os.environ,env), mock.patch.object(sys,'argv',['summary','--plan','unused','--output',str(target)]), mock.patch.object(summary.importlib.util,'spec_from_file_location',return_value=SimpleNamespace(loader=loader)), mock.patch.object(summary.importlib.util,'module_from_spec',return_value=resolver):
                     if fails:
                         with self.assertRaises(SystemExit):summary.main()
@@ -172,7 +222,7 @@ class Contracts(unittest.TestCase):
     def test_missing_plan_reports_unavailable_without_false_sha_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:
             output=Path(tmp)/'report.json'
-            env={**os.environ,'CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test']})}
+            env={**os.environ,'CI_IMPACT_SCOPE':'unit','CI_IMPACT_NEEDS':json.dumps({key:{'result':'success'} for key in ['impact-plan','cargo-check','cargo-test-linux','cargo-test-macos','cargo-test-windows']})}
             env.pop('CI_UNIT_RESOLVE_ORIGINAL_ATTEMPTS',None)
             result=subprocess.run([sys.executable,'-B',str(Path(__file__).with_name('ci-impact-summary.py')),'--plan',str(Path(tmp)/'missing'),'--output',str(output)],env=env,capture_output=True,text=True)
             self.assertEqual(result.returncode,1)

@@ -43,7 +43,7 @@ export async function browserFailureEvidence(page, health, { timeoutMs = 1500 } 
 }
 
 /** Full Farm assertions for each enabled cohort, outside measured build processes. */
-export async function verifyBusinessBrowser(page, url) {
+export async function verifyBusinessBrowser(page, url, { expectedCategories = 2048, categoryIds = ['category-001', 'category-1024', 'category-2048'] } = {}) {
   const health = monitorBrowserHealth(page);
   const diagnostics = [];
   const diagnostic = message => { if (message.text().includes('__COMMERCE_DIAGNOSTIC__')) diagnostics.push(message.text()); };
@@ -53,8 +53,8 @@ export async function verifyBusinessBrowser(page, url) {
     await page.getByTestId('workspace-ready').waitFor();
     await page.getByRole('button', { name: 'Reset demo' }).click();
     await page.getByRole('link', { name: 'Components', exact: true }).click();
-    const category = await waitForExtensionCategories(page, health);
-    for (const id of ['category-001', 'category-1024', 'category-2048']) {
+    const category = await waitForExtensionCategories(page, health, { expected: expectedCategories });
+    for (const id of categoryIds) {
       await category.selectOption(id);
       const section = page.locator(`.extension-${id}`);
       await section.waitFor();
@@ -112,7 +112,7 @@ export async function verifyBusinessBrowser(page, url) {
     }
     health.assertHealthy(); assert.deepEqual(diagnostics, []);
     return { protocol: BUSINESS_CORRECTNESS_PROTOCOL, functional: true, browserHealth: health.evidence,
-      checks: ['2048-options', 'first-middle-last-category-interaction', 'required-field', 'SCSS-border', 'Tailwind-grid', 'MDX-table', 'SVG', 'YAML-discount-reservation', 'CSV-tier', 'TSV-shipping', 'image-DOM-auto-component', 'worker-CSV-validation', 'WASM-TypeScript-generation', 'virtual-channels-icons', 'production-strip-during-mock-publication', 'lazy-pages'],
+      checks: [`${expectedCategories}-options`, 'first-middle-last-category-interaction', 'required-field', 'SCSS-border', 'Tailwind-grid', 'MDX-table', 'SVG', 'YAML-discount-reservation', 'CSV-tier', 'TSV-shipping', 'image-DOM-auto-component', 'worker-CSV-validation', 'WASM-TypeScript-generation', 'virtual-channels-icons', 'production-strip-during-mock-publication', 'lazy-pages'],
       limitation: 'Three representative category interactions; complete compilation is proven separately by generated source coverage. No real orders or payments.' };
   } catch (original) {
     const error = original instanceof Error ? original : new Error(String(original));

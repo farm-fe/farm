@@ -1,3 +1,5 @@
+import assert from 'node:assert/strict';
+import { realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
@@ -51,6 +53,15 @@ export async function getCompiler(
     resolvedUserConfig,
     'production'
   );
+  if (!compilation?.runtime?.path) {
+    const runtimePath = compilationConfig.runtime?.path;
+    assert.ok(runtimePath, 'Missing normalized runtime path');
+    assert.equal(
+      realpathSync(runtimePath),
+      realpathSync(fileURLToPath(new URL('../../runtime', import.meta.url))),
+      'Core tests must resolve the runtime from this checkout'
+    );
+  }
   await resolveConfigResolvedHook(resolvedUserConfig, plugins);
 
   return new Compiler({

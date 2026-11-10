@@ -65,3 +65,62 @@ fn transform_json() {
     }
   );
 }
+
+#[test]
+fn transform_preserves_proto_properties() {
+  use farmfe_core::config::{ModuleFormat, ModuleFormatConfig, TargetEnv};
+
+  for format in [ModuleFormat::CommonJs, ModuleFormat::EsModule] {
+    let mut config = Config::default();
+    config.output.target_env = TargetEnv::Library;
+    config.output.format = ModuleFormatConfig::Single(format);
+    let plugin = farmfe_plugin_json::FarmPluginJson::new(&config);
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+
+    for content in [
+      r#"{"__proto__":{"x":1},"a":2}"#,
+      r#"{"nested":{"__proto__":{"x":1}}}"#,
+      r#"[{"__proto__":{"x":1}},[{"__proto__":null}]]"#,
+      r#"{"__proto__":null}"#,
+      r#"{"__proto__":42}"#,
+      r#"{"__pr\u006fto__":{"x":1}}"#,
+      r#"{"__proto__":{"__proto__":{"x":1}},"text":"quote\" backslash\\ newline\n"}"#,
+      r#"{"constructor":{"prototype":{"x":1}},"text":"__proto__"}"#,
+    ] {
+      let param = PluginTransformHookParam {
+        module_id: "proto.json".into(),
+        content: content.into(),
+        module_type: ModuleType::Custom("json".into()),
+        resolved_path: "proto.json",
+        query: vec![],
+        meta: HashMap::default(),
+        source_map_chain: vec![],
+      };
+      let result = plugin.transform(&param, &context).unwrap().unwrap();
+      assert_eq!(result.module_type, Some(ModuleType::Js));
+      let source = if format == ModuleFormat::CommonJs {
+        format!(
+          "const module = {{ exports: {{}} }}; {}; export default module.exports;",
+          result.content
+        )
+      } else {
+        result.content
+      };
+      let output = std::process::Command::new("node")
+        .args([
+          "--input-type=module",
+          "-e",
+          include_str!("fixtures/transform/assert_json_semantics.mjs"),
+          &source,
+          content,
+        ])
+        .output()
+        .expect("Node.js is required to verify generated JSON module semantics");
+      assert!(
+        output.status.success(),
+        "{format:?}: {content}\n{}",
+        String::from_utf8_lossy(&output.stderr)
+      );
+    }
+  }
+}

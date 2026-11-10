@@ -299,6 +299,7 @@ fn strip_modules_asts(
     let module = module_graph.module(&module_id).unwrap();
     let cm = context.meta.get_module_source_map(&module_id);
 
+    let mut instrumentation_error = None;
     try_with(cm, context.meta.get_globals(&module_id).value(), || {
       let export_ident_map = &module.meta.as_script().export_ident_map;
       // rename module_namespace if there are conflicts
@@ -318,7 +319,7 @@ fn strip_modules_asts(
           .insert(module_id.clone());
       }
 
-      let result = strip_module_decl(
+      let mut result = strip_module_decl(
         &module_id,
         module_ids,
         module_id == *entry_module_id,
@@ -326,9 +327,26 @@ fn strip_modules_asts(
         &mut strip_context,
       );
 
+      match crate::script::entry_live_bindings::instrument(
+        &module_id,
+        &mut result.ast,
+        module_graph,
+        context,
+      ) {
+        Ok(generated) => {
+          let mut rename = strip_context.rename_handler.borrow_mut();
+          for ident in generated {
+            rename.rename_ident_if_conflict(&module_id, &ident);
+          }
+        }
+        Err(error) => instrumentation_error = Some(error.to_string()),
+      }
       strip_module_results.push((module_id, result));
     })
     .unwrap();
+    if let Some(error) = instrumentation_error {
+      return Err(error);
+    }
   }
 
   let mut rename_handler = strip_context
@@ -642,11 +660,21 @@ fn handle_external_reexport_idents(
 
   // handle external module idents
   for (source_module_id, idents) in external_module_idents_map {
+    // Import synthesis must share the active rename state. In particular, reusing
+    // `import { c as i }` for `export *` records the reexport's binding as `i`.
+    std::mem::swap(
+      rename_handler,
+      &mut params.strip_context.rename_handler.borrow_mut(),
+    );
     statements_to_remove.extend(handle_external_module_idents(
       &mut params,
       &source_module_id,
       idents.clone(),
     ));
+    std::mem::swap(
+      rename_handler,
+      &mut params.strip_context.rename_handler.borrow_mut(),
+    );
 
     for (ident, _) in idents {
       let original_export_str = ident.sym.as_str();

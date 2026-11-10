@@ -76,10 +76,12 @@ it.each([true, false])(
         path.join(physical, 'dep.js'),
         "export const value='alias-after';"
       );
-      await compiler.update(
-        [{ path: path.join(identityRoot, 'dep.js'), type: 'updated' }],
+      const result = await compiler.update(
+        [{ path: path.join(alias, 'dep.js') + '?variant', type: 'updated' }],
         true
       );
+      await compiler.waitForCompileFinish();
+      expect(result.added).toEqual([]);
       expect(
         Object.values(compiler.resources()).some((bytes) =>
           bytes.toString().includes('alias-after')

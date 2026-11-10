@@ -20,9 +20,9 @@ def ci_required_jobs():
     primary = ["Build and Upload User Artifacts - " + abi for abi in chain.impact.PRIMARY]
     extra = ["Build and Upload Release Artifacts - " + abi for abi in chain.impact.TARGETS if abi not in chain.impact.PRIMARY]
     return ["Release source contracts", "Type Check", "Check declared native inputs (not ABI execution)",
-            *primary, *extra, *[name + " (" + platform + ")" for name in ["Examples Test", "Typescript Test", "Commerce Performance"]
+            *primary, *extra, *[name + " (" + platform + ")" for name in ["Examples Test", "Typescript Test"]
                               for platform in ["ubuntu-24.04", "macos-latest", "windows-latest"]],
-            "Docs / windows-latest", "Docs / ubuntu-24.04", "Aggregate informational performance report"]
+            "Docs / windows-latest", "Docs / ubuntu-24.04", "Record verified CI execution baseline"]
 
 
 def actions_identity(environment, read_git=chain.impact.git):

@@ -36,7 +36,7 @@ mod tests {
     let current_dir = env::current_dir().unwrap();
     let binding = current_dir.join("playground-vue");
     let root_path = binding.to_str().unwrap();
-    let imports = scan_dir_exports(root_path);
+    let imports = scan_dir_exports(root_path).unwrap();
     let mut content = String::from(
       r#"
     function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {

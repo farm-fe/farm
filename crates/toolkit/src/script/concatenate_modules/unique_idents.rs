@@ -5,8 +5,8 @@ use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
     AssignExpr, AssignOp, AssignTarget, BindingIdent, ExportSpecifier, Expr, Ident, IdentName,
-    ImportSpecifier, KeyValuePatProp, KeyValueProp, MemberProp, ModuleExportName, ObjectPat,
-    ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
+    ImportSpecifier, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat,
+    Prop, PropName, PropOrSpread, SimpleAssignTarget,
   },
 };
 use swc_atoms::Atom;
@@ -99,8 +99,14 @@ impl TopLevelIdentsRenameHandler {
   }
 
   pub fn get_unique_ident(&mut self, ident: &SwcId) -> Option<SwcId> {
-    self.top_level_idents.add_ident(ident.sym.clone());
-    let unique_ident = self.top_level_idents.get_unique_ident(&ident.sym);
+    // Reexports may supply arbitrary string names; synthesized local bindings
+    // must still be legal identifiers.
+    let symbol = Ident::verify_symbol(&ident.sym)
+      .err()
+      .map(|symbol| format!("_{symbol}").into())
+      .unwrap_or_else(|| ident.sym.clone());
+    self.top_level_idents.add_ident(symbol.clone());
+    let unique_ident = self.top_level_idents.get_unique_ident(&symbol);
 
     if unique_ident != *ident.sym {
       let mut cloned = ident.clone();
@@ -178,11 +184,7 @@ impl<'a> VisitMut for RenameVisitor<'a> {
       if named.imported.is_some() {
         named.local.visit_mut_with(self);
       } else if let Some(renamed_ident) = self.get_renamed_ident(&named.local) {
-        named.imported = Some(ModuleExportName::Ident(Ident::new(
-          named.local.sym.clone(),
-          DUMMY_SP,
-          named.local.ctxt,
-        )));
+        named.imported = Some(SwcId::from(named.local.to_id()).into());
         let ctxt = renamed_ident.ctxt();
         // import { a } to import { a as a1 }
         named.local = Ident::new(renamed_ident.sym, DUMMY_SP, ctxt);

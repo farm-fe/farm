@@ -140,21 +140,15 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
                 local: Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
                 imported: imported
                   .as_ref()
-                  .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt())))
-                  .or(Some(ModuleExportName::Ident(Ident::new(
-                    local.sym.clone(),
-                    DUMMY_SP,
-                    local.ctxt(),
-                  )))),
+                  .map(|i| ModuleExportName::from(i.clone()))
+                  .or(Some(local.clone().into())),
                 is_type_only: false,
               })
             } else {
               ImportSpecifier::Named(ImportNamedSpecifier {
                 span: DUMMY_SP,
                 local: Ident::new(local.sym.clone(), DUMMY_SP, local.ctxt()),
-                imported: imported
-                  .as_ref()
-                  .map(|i| ModuleExportName::Ident(Ident::new(i.sym.clone(), DUMMY_SP, i.ctxt()))),
+                imported: imported.as_ref().map(|i| ModuleExportName::from(i.clone())),
                 is_type_only: false,
               })
             }

@@ -10,6 +10,16 @@ inputs:
   artifact-suffix:
     required: true
     description: Distinguish matrix artifacts without changing source identity
+outputs:
+  artifact-id:
+    description: ID returned by the fixed receipt upload action
+    value: ${{ steps.receipt-upload.outputs.artifact-id }}
+  artifact-digest:
+    description: ZIP digest returned by the fixed receipt upload action
+    value: ${{ steps.receipt-upload.outputs.artifact-digest }}
+  run-attempt:
+    description: Actual attempt executing this receipt upload
+    value: ${{ steps.receipt-origin.outputs.attempt }}
 runs:
   using: composite
   steps:
@@ -26,7 +36,12 @@ runs:
         CI_IMPACT_CELL: ${{ inputs.cell }}
         CI_IMPACT_JOB_STATUS: ${{ inputs.status }}
       run: python scripts/ci-impact-receipt.py --output "${{ runner.temp }}/ci-impact-receipt/receipt.json"
-    - uses: actions/upload-artifact@v4
+    - id: receipt-origin
+      if: always()
+      shell: bash
+      run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+    - id: receipt-upload
+      uses: actions/upload-artifact@v4
       if: always()
       continue-on-error: true
       with:

@@ -429,11 +429,19 @@ fn transform_import_decl(
         // 2. push var specifier.local = val_name.imported;
         let specifier_ident = specifier.local;
         let init = if let Some(imported) = specifier.imported {
-          let imported_ident = get_ident_from_module_export_name(imported);
+          let prop = match imported {
+            ModuleExportName::Ident(ident) => MemberProp::Ident(ident.into()),
+            ModuleExportName::Str(name) => {
+              MemberProp::Computed(farmfe_core::swc_ecma_ast::ComputedPropName {
+                span: DUMMY_SP,
+                expr: Box::new(Expr::Lit(Lit::Str(name))),
+              })
+            }
+          };
           MemberExpr {
             span: DUMMY_SP,
             obj: Box::new(Expr::Ident(val_name_ident.clone())),
-            prop: MemberProp::Ident(IdentName::new(imported_ident.sym, imported_ident.span)),
+            prop,
           }
         } else {
           MemberExpr {
@@ -584,10 +592,19 @@ fn transform_export_named(
   for export_specifier in named_export.specifiers {
     match export_specifier {
       farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(specifier) => {
-        let ident = get_ident_from_module_export_name(specifier.name);
+        let exported = SwcId::from(&specifier.name);
+        // A string export name cannot be used as a local variable name.
+        let ident = match specifier.name {
+          ModuleExportName::Ident(ident) => ident,
+          ModuleExportName::Str(_) => Ident::new(
+            "_namespace".into(),
+            DUMMY_SP,
+            SyntaxContext::empty().apply_mark(Mark::new()),
+          ),
+        };
         // module.o(exports, ident, () => ident)
         let call_expr = create_define_export_property_ident_call_expr(
-          Some(ident.to_id().into()),
+          Some(exported),
           ident.to_id().into(),
           callee_allocator,
           unresolved_mark,
@@ -604,11 +621,11 @@ fn transform_export_named(
       }
       farmfe_core::swc_ecma_ast::ExportSpecifier::Named(specifier) => {
         let (exported_ident, local_ident) = if let Some(exported) = specifier.exported {
-          let exported_ident = get_ident_from_module_export_name(exported);
-          let local_ident = get_ident_from_module_export_name(specifier.orig);
+          let exported_ident = SwcId::from(&exported);
+          let local_ident = SwcId::from(&specifier.orig);
           (exported_ident, local_ident)
         } else {
-          let orig_ident = get_ident_from_module_export_name(specifier.orig);
+          let orig_ident = SwcId::from(&specifier.orig);
           (orig_ident.clone(), orig_ident)
         };
 
@@ -625,7 +642,7 @@ fn transform_export_named(
               .unwrap_or(create_require_val_ident(
                 src.value.as_str().expect("non-UTF-8 string literal"),
               ));
-          let is_equal = exported_ident.to_id() == local_ident.to_id();
+          let is_equal = exported_ident == local_ident;
           let mut args = vec![
             ExprOrSpread {
               spread: None,
@@ -663,8 +680,8 @@ fn transform_export_named(
           extra_items.push(create_module_item_from_call_expr(call_expr));
         } else {
           let call_expr = create_define_export_property_ident_call_expr(
-            Some(exported_ident.to_id().into()),
-            local_ident.to_id().into(),
+            Some(exported_ident),
+            local_ident,
             callee_allocator,
             unresolved_mark,
             options.is_target_legacy,
@@ -1128,13 +1145,6 @@ fn create_module_item_from_call_expr(call_expr: CallExpr) -> ModuleItem {
     span: DUMMY_SP,
     expr: Box::new(Expr::Call(call_expr)),
   }))
-}
-
-fn get_ident_from_module_export_name(name: ModuleExportName) -> Ident {
-  match name {
-    ModuleExportName::Ident(ident) => ident,
-    ModuleExportName::Str(_) => unreachable!("invalid `str` export as"),
-  }
 }
 
 struct ImportBindingsHandler {

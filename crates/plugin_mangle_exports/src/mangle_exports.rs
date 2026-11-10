@@ -400,7 +400,10 @@ pub fn update_exports_meta_and_module_decl(
                             ModuleExportName::Ident(ident) => {
                               ident.sym = mangled_ident.as_str().into();
                             }
-                            ModuleExportName::Str(_) => unreachable!(),
+                            ModuleExportName::Str(name) => {
+                              name.value = mangled_ident.as_str().into();
+                              name.raw = None;
+                            }
                           }
                         }
                       }
@@ -412,7 +415,10 @@ pub fn update_exports_meta_and_module_decl(
                             ModuleExportName::Ident(ident) => {
                               ident.sym = mangled_ident.as_str().into();
                             }
-                            ModuleExportName::Str(_) => unreachable!(),
+                            ModuleExportName::Str(name) => {
+                              name.value = mangled_ident.as_str().into();
+                              name.raw = None;
+                            }
                           }
                         } else {
                           named.exported = Some(ModuleExportName::Ident(Ident::new(
@@ -431,7 +437,17 @@ pub fn update_exports_meta_and_module_decl(
                           ModuleExportName::Ident(ident) => {
                             ident.sym = mangled_ident.as_str().into();
                           }
-                          ModuleExportName::Str(_) => unreachable!(),
+                          ModuleExportName::Str(name) => {
+                            name.value = mangled_ident.as_str().into();
+                            name.raw = None;
+                          }
+                        }
+                        // Namespace exports use their public name as a synthetic
+                        // binding identity. Keep that identity in sync so module
+                        // concatenation does not resolve imports to the old name.
+                        if let Some(export_ident) = meta.export_ident_map.get(mangled_ident) {
+                          export_ident.as_internal_mut().ident =
+                            (&export_namespace_specifier.name).into();
                         }
                       }
                     }
@@ -460,7 +476,10 @@ pub fn update_exports_meta_and_module_decl(
                             ModuleExportName::Ident(ident) => {
                               ident.sym = mangled_ident.as_str().into();
                             }
-                            ModuleExportName::Str(_) => unreachable!(),
+                            ModuleExportName::Str(name) => {
+                              name.value = mangled_ident.as_str().into();
+                              name.raw = None;
+                            }
                           },
                           None => {
                             import_named_specifier.imported =

@@ -93,8 +93,8 @@ impl Plugin for FarmPluginCssResolve {
     }
 
     if is_farm_css_modules(&param.source) {
-      let split = param.source.split('?').collect::<Vec<&str>>();
-      let strip_query_path = split[0].to_string();
+      let (path, _) = farmfe_utils::split_path_query(&param.source);
+      let strip_query_path = path.to_string();
       let query = parse_query(&param.source);
 
       return Ok(Some(farmfe_core::plugin::PluginResolveHookResult {
@@ -789,4 +789,59 @@ pub fn source_replace(
     alias,
   );
   stylesheet.visit_mut_with(&mut source_replacer);
+}
+
+#[cfg(test)]
+mod verbatim_query_tests {
+  use super::*;
+
+  #[test]
+  fn css_modules_preserve_namespace_path_and_module_query() {
+    let config = Config::default();
+    let plugin = FarmPluginCssResolve::new(&config);
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+    for path in [
+      r"\\?\C:\farm\style.css",
+      "//?/C:/farm/style.css",
+      r"\\?\UNC\host\share\style.css",
+      "/farm/style.css",
+    ] {
+      let source = format!("{path}?farm_css_modules&theme=dark");
+      let result = plugin
+        .resolve(
+          &PluginResolveHookParam {
+            source: source.clone(),
+            importer: None,
+            kind: ResolveKind::Import,
+          },
+          &context,
+          &PluginHookContext::default(),
+        )
+        .unwrap()
+        .unwrap();
+      assert_eq!(result.resolved_path, path);
+      assert_eq!(
+        result.query,
+        vec![
+          (FARM_CSS_MODULES.into(), "".into()),
+          ("theme".into(), "dark".into())
+        ]
+      );
+      let plain = plugin
+        .resolve(
+          &PluginResolveHookParam {
+            source: path.into(),
+            importer: None,
+            kind: ResolveKind::Import,
+          },
+          &context,
+          &PluginHookContext::default(),
+        )
+        .unwrap();
+      assert!(
+        plain.is_none(),
+        "namespace marker alone is not a CSS-module query"
+      );
+    }
+  }
 }

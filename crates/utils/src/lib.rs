@@ -30,13 +30,28 @@ pub fn is_skip_action_by_comment(comment: &str) -> bool {
   false
 }
 
+/// Split a module query without treating the question mark in a Windows
+/// verbatim path prefix as a query delimiter. Keep the path bytes unchanged.
+pub fn split_path_query(path: &str) -> (&str, &str) {
+  let start = if path.starts_with(r"\\?\") || path.starts_with("//?/") {
+    4
+  } else {
+    0
+  };
+  match path[start..].find('?') {
+    Some(index) => (&path[..start + index], &path[start + index + 1..]),
+    None => (path, ""),
+  }
+}
+
 /// parse `?a=b` to `HashMap { a: b }`, `?a` to `HashMap { a: "" }`
 pub fn parse_query(path: &str) -> Vec<(String, String)> {
-  if !path.contains('?') {
+  let (resolved_path, query_str) = split_path_query(path);
+  if resolved_path.len() == path.len() {
     return vec![];
   }
-
-  let query_str = path.split('?').next_back().unwrap();
+  // Preserve the existing interpretation of repeated query delimiters.
+  let query_str = query_str.rsplit('?').next().unwrap_or(query_str);
   let pairs = query_str.split('&');
 
   let mut query = vec![];
@@ -176,7 +191,56 @@ pub fn transform_string_to_static_str(s: String) -> &'static str {
 mod tests {
   use crate::{PARSE_QUERY_TRUE, relative, stringify_query};
 
-  use super::{file_url_to_path, parse_query};
+  use super::{file_url_to_path, parse_query, split_path_query};
+
+  #[test]
+  fn module_query_split_preserves_path_identity() {
+    for path in [
+      r"\\?\C:\farm\main.js",
+      "//?/C:/farm/main.js",
+      r"\\?\UNC\host\share\main.js",
+      "//?/UNC/host/share/main.js",
+      r"C:\farm\main.js",
+      r"\\host\share\main.js",
+      "/farm/main.js",
+      "virtual:module",
+    ] {
+      assert_eq!(split_path_query(path), (path, ""));
+      assert_eq!(
+        split_path_query(&format!("{path}?raw&x=1")),
+        (path, "raw&x=1")
+      );
+      assert_eq!(split_path_query(&format!("{path}?")), (path, ""));
+    }
+    assert_eq!(
+      split_path_query("/not-prefix?/file.js"),
+      ("/not-prefix", "/file.js")
+    );
+    assert_eq!(
+      split_path_query("relative?one?two"),
+      ("relative", "one?two")
+    );
+    assert_eq!(
+      parse_query("relative?one?two"),
+      vec![("two".into(), "".into())]
+    );
+  }
+
+  #[test]
+  fn verbatim_path_prefix_is_not_a_query() {
+    for path in [
+      r"\\?\C:\farm\main.js",
+      "//?/C:/farm/main.js",
+      r"\\?\UNC\host\share\main.js",
+      "//?/UNC/host/share/main.js",
+    ] {
+      assert!(parse_query(path).is_empty(), "{path}");
+      assert_eq!(
+        parse_query(&format!("{path}?raw&kind=module")),
+        vec![("raw".into(), "".into()), ("kind".into(), "module".into())]
+      );
+    }
+  }
 
   #[cfg(windows)]
   #[test]

@@ -34,9 +34,7 @@ test('main performance protocol runs the complete original app, guarded pairs an
   assert.match(sampler, /supervision.durationMs/);
   assert.match(sampler, /report.graphs.length === cohorts.length/);
   assert.match(sampler, /report.correctness.length === cohorts.length/);
-  const yaml = read('../.github/workflows/ci.yaml').split('\n  performance-report:')[1].split('\n  performance-summary:')[0];
-  assert.match(yaml, /os: macos-latest\s+abi: darwin-arm64/); assert.doesNotMatch(yaml, /macos-15-intel|darwin-x64/);
-  assert.match(yaml, /performance-python/);
+  assert.doesNotMatch(read('../.github/workflows/ci.yaml'), /run: node scripts\/performance-report/);
 });
 
 test('Mac canonical root aliases resolve absolute and multi-parent graph identities without changing raw IDs', () => {

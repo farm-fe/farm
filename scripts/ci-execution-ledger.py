@@ -14,7 +14,7 @@ chain = runtime.chain
 
 
 def create_ledger(source, coverage, environment):
-    if environment.get("GITHUB_ACTIONS") != "true" or environment.get("GITHUB_JOB") != "performance-summary":
+    if environment.get("GITHUB_ACTIONS") != "true" or environment.get("GITHUB_JOB") != "execution-baseline":
         raise PermissionError("Only the fixed CI baseline producer can record this ledger")
     expected_run = {"repositoryId": int(environment["GITHUB_REPOSITORY_ID"]), "runId": int(environment["GITHUB_RUN_ID"]),
                     "runAttempt": int(environment["GITHUB_RUN_ATTEMPT"]), "event": environment["GITHUB_EVENT_NAME"]}
@@ -46,7 +46,7 @@ def create_ledger(source, coverage, environment):
               "scope": "e2e-only", "unitExecutionRequired": True,
               "sourceSnapshotHash": chain.digest(records), "acceptanceInputsHash": chain.digest(execution_inputs),
               "policyHash": source["policyHash"], "policy": chain.POLICY, "run": expected_run,
-              "requiredJobs": runtime.ci_required_jobs(), "producerJob": "Aggregate informational performance report",
+              "requiredJobs": runtime.ci_required_jobs(), "producerJob": "Record verified CI execution baseline",
               "uploadStep": "Upload trusted CI execution baseline", "coverage": coverage,
               "coverageSha256": hashlib.sha256(json.dumps(coverage, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
               "status": "candidate-requires-independent-completed-job-and-unit-verification",

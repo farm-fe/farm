@@ -1,3 +1,5 @@
+> Current policy: performance sampling, comparisons and automatic reports run locally only. CI and release do not require performance artifacts. Commerce business correctness runs in ordinary Examples E2E with the four-category `business-smoke` fixture. Suite coverage and source/attempt evidence remain required in `Record verified CI execution baseline`. Historical measurements below are not current CI or publication requirements.
+
 # Actual suite receipts and candidate ledger
 
 > Historical staged implementation notes below. Current live entrypoints are
@@ -24,7 +26,7 @@ counts. No test body, arbitrary assertion message, environment dump or raw
 Vitest report is uploaded as a receipt. Original process execution retains the
 bounded command helper; no local process or test has been started.
 
-The existing performance summary uses its current read-only permissions to
+The existing execution baseline uses its current read-only permissions to
 download the exact six current-run suite artifacts, validates their namespace,
 source identity and nonempty counts, and uploads a candidate execution ledger.
 The final shadow outcome now occurs after this upload so later failures are
