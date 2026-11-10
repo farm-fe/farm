@@ -80,8 +80,50 @@ class GitHubWriter:
 
 class RegistryWriter:
     def __init__(self, environment, directory, run_command=subprocess.run):
-        self.environment, self.directory, self.command = environment, Path(directory), run_command
+        self.environment, self.directory, self.command = dict(environment), Path(directory), run_command
         self.reader = entry.evidence.registry_module.RegistryReadOnly(environment=environment)
+        self.node = self.environment.get('FARM_NODE_EXECUTABLE', 'node')
+        self._orders, self._npm, self._scratch = {}, None, None
+        self._closed = False
+
+    def __enter__(self):
+        check(not self._closed, 'Registry writer is closed')
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def close(self):
+        self._closed = True
+        self._npm = None
+        if self._scratch is not None:
+            self._scratch.cleanup()
+            self._scratch = None
+
+    def npm(self):
+        """Prepare the controlled CLI and token-free config once per writer."""
+        check(not self._closed, 'Registry writer is closed')
+        if self._npm is None:
+            token = self.environment.get('NPM_TOKEN')
+            check(bool(token), 'Existing npm publication credential missing')
+            probe = "import {resolveNpmCli} from './scripts/v2-npm-cli.mjs';console.log(resolveNpmCli());"
+            result = self.command([self.node, '--input-type=module', '-e', probe],
+                                  capture_output=True, text=True, timeout=15, check=True)
+            cli = result.stdout.strip()
+            check(Path(cli).is_absolute() and Path(cli).is_file(), 'Controlled npm CLI missing')
+            self._scratch = tempfile.TemporaryDirectory(prefix='farm-release-npm-')
+            scratch = Path(self._scratch.name); config = scratch / 'user.npmrc'
+            try:
+                config.write_text('registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n', encoding='utf-8')
+                config.chmod(0o600)
+                env = {key: value for key, value in self.environment.items()
+                       if key not in ['GH_TOKEN', 'GITHUB_TOKEN', 'CARGO_REGISTRY_TOKEN', 'NPM_TOKEN']}
+                env.update(NODE_AUTH_TOKEN=token, NPM_CONFIG_USERCONFIG=str(config), npm_config_cache=str(scratch / 'cache'))
+                self._npm = (self.node, cli, env)
+            except BaseException:
+                self.close()
+                raise
+        return self._npm
 
     def latest_order(self, row):
         """Read latest afresh and compare using the verified bundled npm's SemVer."""
@@ -94,15 +136,27 @@ class RegistryWriter:
             if error.code != 404:
                 raise ValueError('Registry latest read failed') from None
             version = None
-        node = self.environment.get('FARM_NODE_EXECUTABLE', 'node')
-        result = subprocess.run([node, str(Path(__file__).with_name('v2-npm-version-order.mjs')),
-                                 json.dumps([version, row['version']])], capture_output=True, text=True, timeout=15)
+        target = row['version']
+        check(isinstance(target, str), 'Invalid stable publication target')
+        key = (version, target)
+        # Cache only the pure, validated comparison under this fixed Node/code.
+        # Registry identity and latest are always freshly fetched above.
+        if key in self._orders:
+            return self._orders[key]
+        result = subprocess.run([self.node, str(Path(__file__).with_name('v2-npm-version-order.mjs')),
+                                 json.dumps([version, target])], capture_output=True, text=True, timeout=15)
         check(result.returncode == 0, 'Invalid registry SemVer or stable publication target')
         order = json.loads(result.stdout)
         check(order is None or type(order) is int and order in [-1, 0, 1], 'Invalid registry version comparison')
+        if len(self._orders) < 4096:
+            self._orders[key] = order
         return order
 
     def lookup(self, row):
+        with self.reader.budget(600):
+            return self._lookup(row)
+
+    def _lookup(self, row):
         name = urllib.parse.quote(row["name"], safe="")
         url = ("https://registry.npmjs.org/" + name + "/" + row["version"] if row["kind"] == "npm"
                else "https://crates.io/api/v1/crates/" + name + "/" + row["version"])
@@ -155,17 +209,7 @@ class RegistryWriter:
             except urllib.error.HTTPError as error:
                 raise ValueError("Cargo publication HTTP " + str(error.code)) from None
         else:
-            token = self.environment.get("NPM_TOKEN")
-            check(bool(token), "Existing npm publication credential missing")
-            node = self.environment.get("FARM_NODE_EXECUTABLE", "node")
-            probe = "import {resolveNpmCli} from './scripts/v2-npm-cli.mjs';console.log(resolveNpmCli());"
-            resolved = self.command([node, "--input-type=module", "-e", probe], capture_output=True, text=True, timeout=15, check=True)
-            cli = resolved.stdout.strip(); check(Path(cli).is_absolute() and Path(cli).is_file(), "Controlled npm CLI missing")
-            scratch = Path(tempfile.mkdtemp(prefix="farm-release-npm-"))
-            config = scratch / "user.npmrc"
-            config.write_text("registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n", encoding="utf-8")
-            env = {key: value for key, value in self.environment.items() if key not in ["GH_TOKEN", "GITHUB_TOKEN", "CARGO_REGISTRY_TOKEN", "NPM_TOKEN"]}
-            env.update({"NODE_AUTH_TOKEN": token, "NPM_CONFIG_USERCONFIG": str(config), "npm_config_cache": str(scratch / "cache")})
+            node, cli, env = self.npm()
             result = self.command([node, cli, "publish", str((self.directory / row["archive"]).resolve()), "--ignore-scripts", "--access", "public",
                                    "--tag", "farm-release-" + row["version"], "--registry=https://registry.npmjs.org"], env=env, capture_output=True, timeout=120)
             check(result.returncode == 0, "npm publication failed; inspect independent registry state before resuming")
@@ -177,15 +221,7 @@ class RegistryWriter:
         before = self.latest_order(row)
         if before is not None and before >= 0:
             return
-        token = self.environment.get('NPM_TOKEN'); check(bool(token), 'Existing npm publication credential missing')
-        node = self.environment.get('FARM_NODE_EXECUTABLE', 'node')
-        result = self.command([node, '--input-type=module', '-e', "import {resolveNpmCli} from './scripts/v2-npm-cli.mjs';console.log(resolveNpmCli());"],
-                              capture_output=True, text=True, timeout=15, check=True)
-        cli = result.stdout.strip(); check(Path(cli).is_absolute() and Path(cli).is_file(), 'Controlled npm CLI missing')
-        scratch = Path(tempfile.mkdtemp(prefix='farm-release-npm-tag-')); config = scratch / 'user.npmrc'
-        config.write_text('registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n', encoding='utf-8')
-        env = {key: value for key, value in self.environment.items() if key not in ['GH_TOKEN', 'GITHUB_TOKEN', 'CARGO_REGISTRY_TOKEN', 'NPM_TOKEN']}
-        env.update({'NODE_AUTH_TOKEN': token, 'NPM_CONFIG_USERCONFIG': str(config), 'npm_config_cache': str(scratch / 'cache')})
+        node, cli, env = self.npm()
         # Recheck after CLI/config preparation. npm tags have no conditional CAS:
         # this closes that preparation window, not arbitrary external races.
         before = self.latest_order(row)
@@ -547,8 +583,11 @@ def main():
             print(json.dumps({'stage': args.stage, 'transaction': transaction.transaction, 'alreadyComplete': True})); return
         verify_locked_plan(transaction, source, api.reader)
         inspect_release(api, manifest)
-        registry = RegistryWriter(os.environ, directory / "archives")
-        transaction.upload(lambda row: (directory / "archives" / row["archive"]).read_bytes(), registry)
+        with RegistryWriter(os.environ, directory / "archives") as registry:
+            # Bound this stage below the 90-minute job cap; operation deadlines
+            # do not inherit earlier source verification or idle reader time.
+            with registry.reader.budget(4500):
+                transaction.upload(lambda row: (directory / "archives" / row["archive"]).read_bytes(), registry)
         transaction.handoff("public-acceptance")
     else:
         _, saved = transaction.store.read()

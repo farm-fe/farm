@@ -73,3 +73,34 @@
 | 新 PR/远端 | 已开 PR，远端验证中 | [Draft #2347](https://github.com/farm-fe/farm/pull/2347)，分支 codex/fix-release-prerelease-latest-20261110。源码修复提交 2b283aeb6f10354c419ff9ca861a20f7990426b1 已普通推送并独立 API 核对，本文补记仅更新状态。未合并、未发布、不改版本/Changesets/权限；最终 HEAD hosted CI 与真实发布未验 |
 
 竞态限制：写 tag 前重读、已观察到更高版本则不写、写后验证均保留。npm dist-tag 的读后写不具备条件 CAS，不能保证任意外部维护者并发下绝不瞬时降 tag；本批不改变发布协议或引入新权限。生产快照 297 exact-version 均为 404（41 prerelease latest / 208 stable / 48 无 latest）仅代表采样时刻，未来操作前必须重查；1.27 GB 原 candidates 未重新下载复验，artifact 元数据不等于内部字节/签名复验。
+
+
+## Registry 预算生命周期修复（2026-11-10）
+
+基线 main `4e722af51789be073bb377a9c1d57f185bfdc26a`。npm run `42785304608` / attempt 1 的 9 个 native、候选和冻结签名成功，publisher 在首轮全量预检超过 reader 从构造累计的 600 秒预算，未进入 npm publish。旧单次解锁授权不覆盖本次新锁；当前只修代码，不执行生产恢复。
+
+| 本批节点 | 状态 | 实际覆盖与边界 |
+|---|---|---|
+| 现场/证据保护 | 已实测 | 原 Mac tracked 干净开始，六组旧证据保留；独立分支 codex/fix-registry-budget-20261110。生产新事务 fe6d5f2d40339f811c26d6406fb6a37d95a403c4d2c6706986ab7d7ba8a91267 保留 |
+| 操作及批次预算 | 本地已实测 | reader 空闲不耗操作预算；metadata 30 秒、单包核验/流式归档 600 秒、完整读回（含 latest）1500 秒、publisher 阶段4500秒。嵌套不能续期；90/30分钟 Actions 上限不改。3GiB累计及100MiB单归档不重置/放宽 |
+| 状态读取开销 | 局部实测 | 仅缓存完整验证后的精确commit SHA内容，防变异拷贝；每次仍新读ref并校验owner/fence，拒绝新commit沿用旧缓存。298次读取由1192个GET降至301个；不缓存registry/404，不并发上传/状态写入 |
+| 红绿与297包模型 | 本地已实测 | 原reader红例已复现；297包真实生产状态机、比较器、预检/读回模型，外部传输/写入为明确fixture；非网络等待、慢请求/流、整批截止、字节累计和恢复不重发均覆盖。不是生产发布验收 |
+| 完整合同/独立审查 | 本地已实测 | 144项Python、165项Node通过；Biome/CSpell/diff通过。独立审查无阻塞，超时字节计数已修；既有ZIP夹具时间引起的摘要失败已保留证据并固定夹具时间。证据目录 registry-budget-20261110/final |
+| 新PR/生产恢复 | 已开Draft，恢复待单独批准 | [Draft #2348](https://github.com/farm-fe/farm/pull/2348)，代码提交1c30d43b67cd977f5d608d346157bf4e4a7531f4已普通推送并独立API核对。Hosted CI及真实发布待验。本批不重跑、不解锁、不修改registry；旧run仍是旧代码，新run所需处理新锁另行批准 |
+
+测量证据：deadline-budget-evidence-20261110T104513Z.json（SHA256 bc52172c3934f2b7b7bf9fe643c2dbfe15ccb90ff340207ca9ac63fb656572c2）。Mac首轮594请求193.189秒包含16个超时，唯一一次低并发重读16项均404；并发耗时不等于Hosted串行耗时。冻结归档合计639350827bytes，两遍1278701654bytes，当前不需要放宽3GiB。现有不可变读取缓存不保证GitHub配额或所有网络条件下必然发版；预算是协作式检查而非抢占式取消，真实新main发布仍待验证。
+
+
+### #2348 后续精简：重复准备工作（2026-11-10）
+
+此项是在预算修复之后按用户新要求实施，不能用上一批结果替代。
+
+| 节点 | 状态 | 证据/边界 |
+|---|---|---|
+| 纯比较去重 | 本地模型已实测 | 固定Node/代码下只缓存精确(latestVersion,targetVersion)的成功SemVer结果，最多4096项；registry identity/latest仍每次新读，非法结果不缓存 |
+| npm准备与清理 | 本地定向已实测 | 本次writer仅解析一次受控CLI、准备一个私有临时目录与0600占位符npmrc；token仅在子进程环境，正常/异常退出清理。写入及安全检查仍串行 |
+| 297包前后实测 | 本地已实测 | 同一模型首次发布SemVer启动1485→2、CLI解析594→1、临时目录594→1；registry请求2673、ownership读取1787（含超时负例）及297publish/297tag均不变。Mac真实Node22比较器/CLI启动，墙钟46.40→2.06秒；传输和写入是内存fixture，不是Hosted网络性能 |
+| 恢复/完整回归/审查 | 本地已实测 | 最终148项Python、165项Node通过；同reader第二遍不重发、累计字节保留。错key/非法输入、404变新版本、changed bytes、tag变化及配置异常清理均覆盖；独立审查无阻塞，Biome/CSpell/diff通过 |
+| PR/真实发布 | 同一Draft #2348 | 本批本地验证完成，随本提交推送同一PR；不另开PR、不处理新生产锁、不重跑或发布。新SHA远端验证不能继承旧SHA成绩 |
+
+证据目录 registry-simplification-20261110，前后benchmark.json保留真实命令启动次数与时间。该精简降低本机重复准备开销，不减少registry请求、锁ref刷新或不可变字节核验，不保证外部网络和API配额永不失败。

@@ -323,5 +323,56 @@ class Contracts(unittest.TestCase):
             api.read_ref("heads/main")
 
 
+class StateCacheContracts(unittest.TestCase):
+    def fixture(self):
+        calls = []; current = ['a' * 40]
+        value = {'baseline': None, 'active': {'owner': {'runId': 7}, 'fence': 'f'}}
+        body = json.dumps(value).encode()
+        identity = hashlib.sha1(b'blob ' + str(len(body)).encode() + b'\0' + body).hexdigest()
+        corrupt = [False]
+        def request(method, route, data, **options):
+            calls.append(route)
+            if '/git/ref/' in route: return {'object': {'type': 'commit', 'sha': current[0]}}
+            if '/git/commits/' in route: return {'tree': {'sha': 'b' * 40}}
+            if '/git/trees/' in route:
+                return {'truncated': False, 'tree': [{'path': 'publication-state.json', 'mode': '100644', 'type': 'blob', 'sha': identity}]}
+            return {'encoding': 'base64', 'size': len(body), 'content': base64.b64encode(b'x' * len(body) if corrupt[0] else body).decode()}
+        return module.GitRefStore(module.GitHubStateAPI(request)), current, calls, corrupt
+
+    def test_297_ownership_reads_keep_ref_fresh_and_cache_only_exact_verified_commit(self):
+        store, current, calls, _ = self.fixture()
+        for _ in range(298):
+            revision, value = store.read()
+            self.assertEqual(revision, 'a' * 40)
+            self.assertEqual(value['active']['owner']['runId'], 7)
+            value['active']['owner']['runId'] = 99
+        self.assertEqual(len(calls), 298 + 3)
+        current[0] = 'c' * 40
+        self.assertEqual(store.read()[0], 'c' * 40)
+        self.assertEqual(len(calls), 298 + 3 + 4)
+        with self.assertRaisesRegex(ValueError, 'Git object'):
+            store.api.read_state('heads/farm-release-state')
+
+    def test_failed_validation_never_populates_cache(self):
+        store, _, calls, corrupt = self.fixture()
+        corrupt[0] = True
+        with self.assertRaisesRegex(ValueError, 'Git identity'): store.read()
+        corrupt[0] = False
+        self.assertEqual(store.read()[1]['active']['owner']['runId'], 7)
+        self.assertEqual(len(calls), 8)
+
+    def test_fresh_ref_still_detects_changed_fence(self):
+        store, current, _, _ = self.fixture()
+        store.read()
+        # A new commit cannot borrow the validated bytes of the old commit.
+        current[0] = 'c' * 40
+        old = store.api.request
+        def request(method, route, data, **options):
+            if route == '/git/commits/' + current[0]: raise ValueError('new state unavailable')
+            return old(method, route, data, **options)
+        store.api.request = request
+        with self.assertRaisesRegex(ValueError, 'new state unavailable'): store.read()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

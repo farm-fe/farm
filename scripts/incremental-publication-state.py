@@ -274,6 +274,7 @@ class GitHubStateAPI:
 
     def __init__(self, request):
         self.request = request
+        self._verified_state = None
 
     def read_ref(self, reference):
         require(reference == self.REF, "Unexpected publication state ref")
@@ -289,6 +290,11 @@ class GitHubStateAPI:
         return value
 
     def read_state(self, commit):
+        commit = self.sha(commit)
+        # Only immutable, fully verified contents are cached. read_ref remains
+        # fresh on every ownership check; caller mutations cannot change cache.
+        if self._verified_state is not None and self._verified_state[0] == commit:
+            return copy.deepcopy(self._verified_state[1])
         source = self.request("GET", "/git/commits/" + self.sha(commit), None)
         tree = self.request("GET", "/git/trees/" + self.sha(source["tree"]["sha"]), None)
         require(tree.get("truncated") is False and len(tree.get("tree", [])) == 1, "Unexpected publication tree")
@@ -304,7 +310,10 @@ class GitHubStateAPI:
         require(len(body) == blob["size"], "Publication blob size differs")
         actual = hashlib.sha1(b"blob " + str(len(body)).encode() + b"\0" + body).hexdigest()
         require(actual == entry["sha"], "Publication blob Git identity differs")
-        return json.loads(body.decode("utf-8"))
+        state = json.loads(body.decode("utf-8"))
+        require(isinstance(state, dict) and "baseline" in state and "active" in state, "Invalid durable publication state")
+        self._verified_state = (commit, copy.deepcopy(state))
+        return state
 
     def create_state_commit(self, state, parents):
         require(len(parents) <= 1, "Publication state has at most one parent")

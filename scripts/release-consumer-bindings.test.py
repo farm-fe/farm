@@ -8,6 +8,7 @@ import json
 import subprocess
 from pathlib import Path
 import unittest
+from unittest import mock
 import zipfile
 spec=importlib.util.spec_from_file_location('receipts',Path(__file__).with_name('release-consumer-bindings.py'))
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
@@ -25,7 +26,7 @@ class Contracts(unittest.TestCase):
         state={'report':report}
         def archive():
             output=io.BytesIO()
-            with zipfile.ZipFile(output,'w') as z:z.writestr('result.json',json.dumps(state['report']))
+            with zipfile.ZipFile(output,'w') as z:z.writestr(zipfile.ZipInfo('result.json', (2020, 1, 1, 0, 0, 0)), json.dumps(state['report']))
             return output.getvalue()
         body=archive();definition=m.role(kind,platform)
         artifact={'id':100,'name':definition['artifactName'].format(sourceSHA=manifest['sourceSHA'],originAttempt=1),
@@ -44,6 +45,12 @@ class Contracts(unittest.TestCase):
             def archive(self,identity):return archive()
         output={'artifact_id':'100','artifact_digest':artifact['digest'][7:],'run_attempt':'1'}
         return API(),run,manifest,kind,platform,output,jobs,artifact,state
+
+    def test_fixture_archive_identity_does_not_depend_on_generation_time(self):
+        api, _, _, _, _, _, _, artifact, _ = self.fixture()
+        with mock.patch.object(zipfile.time, 'localtime', return_value=(2030, 2, 3, 4, 5, 6, 0, 0, 0)):
+            body = api.archive(artifact['id'])
+        self.assertEqual(artifact['digest'], 'sha256:' + hashlib.sha256(body).hexdigest())
 
     def test_fixed_workflow_outputs_are_distinct_for_all_three_platforms(self):
         row={label+'_'+field:(str(100+i) if field=='artifact_id' else 'a'*64 if field=='artifact_digest' else '1')
