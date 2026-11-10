@@ -112,8 +112,10 @@ def verify_with_pinned_cli(cli, cli_sha256, manifest_file, bundle_file, expected
     check(bundle_file.is_file() and not bundle_file.is_symlink() and 0 < bundle_file.stat().st_size <= 16 * 1024 * 1024, 'Invalid attestation bundle')
     body = manifest_file.read_bytes()
     signer = 'https://github.com/' + expected['repository'] + '/' + expected['signerWorkflow'] + '@' + expected['signerSHA']
+    # Exact identity already binds the workflow and revision; gh forbids combining
+    # this selector with --signer-workflow. Keep all independent digest checks.
     command = [str(cli.resolve()), 'attestation', 'verify', str(manifest_file.resolve()), '--bundle', str(bundle_file.resolve()),
-               '--repo', expected['repository'], '--cert-identity', signer, '--signer-workflow', expected['repository'] + '/' + expected['signerWorkflow'],
+               '--repo', expected['repository'], '--cert-identity', signer,
                '--signer-digest', expected['signerSHA'], '--source-digest', expected['sourceSHA'], '--source-ref', 'refs/heads/main',
                '--predicate-type', PREDICATE, '--cert-oidc-issuer', 'https://token.actions.githubusercontent.com', '--deny-self-hosted-runners', '--format', 'json']
     # The verifier reads local files and public trust material, never signs or publishes.

@@ -126,6 +126,55 @@ class Contracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'restore mode'):
             m.prepare(api,env,'cargo',outputs,templates)
 
+    def test_restore_reaches_verified_run_with_the_signer_revision_not_consumer_trust(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        api, env, outputs, templates, original, jobs, artifacts, _ = fixture('cargo')
+        body = m.prepare(api, env, 'cargo', outputs, templates)
+        rows = {'cargo': json.loads(body)['bindings'][0]}
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, 'w') as proof:
+            proof.writestr('ci-bindings.json', body)
+            proof.writestr('ci-bindings.sigstore.json', b'explicit crypto boundary')
+        proof_bytes = archive.getvalue()
+        metadata = {'id': 999, 'name': 'farm-release-bindings-cargo-42-1',
+                    'workflow_run': {'id': 42}, 'expired': False,
+                    'size_in_bytes': len(proof_bytes), 'digest': 'sha256:' + hashlib.sha256(proof_bytes).hexdigest()}
+        current = {**original, 'run_attempt': 2}
+        current_jobs = [{**job, 'id': job['id'] + 1000, 'run_attempt': 2} for job in jobs]
+        env.update(GITHUB_RUN_ATTEMPT='2', SIGNER_CARGO_RESTORED='true')
+        original_get = api.get
+        def get(route):
+            if route == '/actions/runs/42' or route.endswith('/attempts/2'): return current
+            if route.endswith('/attempts/1'): return original
+            if '/jobs?' in route: return {'jobs': jobs if '/attempts/1/' in route else current_jobs}
+            if '/artifacts?' in route: return {'total_count': 1, 'artifacts': [metadata]}
+            if route == '/actions/artifacts/999': return metadata
+            return original_get(route)
+        api.get = get
+        api.archive = lambda identity: proof_bytes if identity == 999 else b'unexpected archive'
+        calls = []
+        def verify(subject, bundle, expected):
+            calls.append(expected)
+            self.assertEqual(expected['signerSHA'], env['SIGNER_WORKFLOW_SHA'])
+            self.assertEqual(expected['attempt'], 1)
+            self.assertEqual(expected['sourceSHA'], original['head_sha'])
+            self.assertEqual(subject.read_bytes(), body)
+            self.assertEqual(bundle.read_bytes(), b'explicit crypto boundary')
+            return copy.deepcopy(rows)
+        original_load = m.load
+        def load(name, file):
+            if file == 'ci-pinned-attestation-cli.py': return SimpleNamespace(verify_on_host=verify)
+            return original_load(name, file)
+        # Only external crypto is substituted: prepare -> discovery -> envelope ->
+        # verified_run -> original producer metadata remain production code.
+        with patch.object(m, 'load', side_effect=load):
+            result = json.loads(m.prepare(api, env, 'cargo', outputs, templates))
+            self.assertEqual(result['bindings'][0]['originAttempt'], 1)
+            self.assertEqual(len(calls), 1)
+            rows['cargo']['artifactDigest'] = 'sha256:' + '0' * 64
+            with self.assertRaises(ValueError): m.prepare(api, env, 'cargo', outputs, templates)
+
     def test_reviewed_cargo_restore_origin_is_from_upload_outcome_not_script_output(self):
         root=Path(__file__).parent.parent
         name='.github/workflows/cargo-source-release.yaml'
