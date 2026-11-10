@@ -517,6 +517,71 @@ class Contracts(unittest.TestCase):
             self.assertNotIn('secret-fixture', diagnostic)
             self.assertEqual(writer.command.call_count, 1)
 
+    def test_manual_diagnostic_only_reads_fixed_target_and_hides_username(self):
+        diagnostic = module.load('manual_npm_diagnostic_test', 'npm-release-diagnose.py')
+        env = {'GITHUB_ACTIONS': 'true', 'GITHUB_REPOSITORY': 'farm-fe/farm',
+               'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
+               'GITHUB_WORKFLOW_REF': 'farm-fe/farm/.github/workflows/npm-release-diagnose.yaml@refs/heads/main',
+               'GITHUB_SHA': 'a' * 40, 'GITHUB_WORKFLOW_SHA': 'a' * 40, 'NPM_TOKEN': 'fake-secret'}
+        writer = mock.MagicMock(); writer.__enter__.return_value = writer
+        writer.npm.return_value = ('node', '/fixed/npm', {})
+        writer.npm_command.return_value = SimpleNamespace(stdout=b'"private-username"')
+        writer.reader.json.side_effect = urllib.error.HTTPError('fixed', 404, 'absent', {}, None)
+        factory = mock.Mock(return_value=writer)
+        report = diagnostic.diagnose(env, factory)
+        self.assertTrue(report['authenticated']); self.assertFalse(report['targetExists'])
+        self.assertFalse(report['publicationPermissionVerified']); self.assertFalse(report['publicationExecuted'])
+        self.assertNotIn('private-username', json.dumps(report)); self.assertNotIn('fake-secret', json.dumps(report))
+        self.assertEqual(writer.npm_command.call_args.args[0], 'whoami')
+        self.assertEqual(writer.npm_command.call_args.args[2], ['node', '/fixed/npm', 'whoami', '--json', '--registry=https://registry.npmjs.org'])
+        writer.reader.json.assert_called_once_with('https://registry.npmjs.org/%40farmfe%2Fcli/2.0.0')
+        writer.publish.assert_not_called(); writer.confirm.assert_not_called()
+        for key, value in [('GITHUB_REF', 'refs/heads/topic'), ('GITHUB_EVENT_NAME', 'push'),
+                           ('GITHUB_REPOSITORY', 'other/farm'), ('GITHUB_WORKFLOW_SHA', 'b' * 40)]:
+            factory.reset_mock()
+            with self.assertRaises(ValueError): diagnostic.diagnose({**env, key: value}, factory)
+            factory.assert_not_called()
+        writer.npm_command.side_effect = diagnostic.publisher.npm_failure('whoami', diagnostic.PACKAGE, code=1, stderr='npm error code E401')
+        report = diagnostic.diagnose(env, factory)
+        self.assertFalse(report['authenticated']); self.assertIn('E401', report['authenticationError'])
+        writer.npm_command.side_effect = ValueError('private-username fake-secret')
+        report = diagnostic.diagnose(env, factory)
+        self.assertEqual(report['authenticationError'], 'Authentication response invalid')
+
+    def test_diagnostic_public_target_and_timeout_remain_bounded(self):
+        diagnostic = module.load('manual_npm_diagnostic_edges', 'npm-release-diagnose.py')
+        env = {'GITHUB_ACTIONS': 'true', 'GITHUB_REPOSITORY': 'farm-fe/farm',
+               'GITHUB_REF': 'refs/heads/main', 'GITHUB_EVENT_NAME': 'workflow_dispatch',
+               'GITHUB_WORKFLOW_REF': 'farm-fe/farm/.github/workflows/npm-release-diagnose.yaml@refs/heads/main',
+               'GITHUB_SHA': 'a' * 40, 'GITHUB_WORKFLOW_SHA': 'a' * 40, 'NPM_TOKEN': 'fake-secret'}
+        writer = mock.MagicMock(); writer.__enter__.return_value = writer
+        writer.npm.return_value = ('node', '/fixed/npm', {})
+        writer.npm_command.side_effect = diagnostic.publisher.npm_failure(
+            'whoami', diagnostic.PACKAGE, timed_out=True, stderr=b'Authorization: fake-secret')
+        factory = mock.Mock(return_value=writer)
+        for value in [{'name': '@farmfe/cli', 'version': '2.0.0'}, {'name': 'wrong', 'version': '2.0.0'},
+                      urllib.error.HTTPError('fixed', 403, 'private-secret', {}, None)]:
+            writer.reader.json.side_effect = value if isinstance(value, Exception) else None
+            writer.reader.json.return_value = value
+            report = diagnostic.diagnose(env, factory)
+            self.assertFalse(report['authenticated']); self.assertIn('timeout', report['authenticationError'])
+            self.assertFalse(report['publicationPermissionVerified'])
+            self.assertNotIn('secret', json.dumps(report))
+            if isinstance(value, dict) and value['name'] == '@farmfe/cli': self.assertTrue(report['targetExists'])
+            else: self.assertIsNone(report['targetExists']); self.assertIn('registryError', report)
+        factory.reset_mock()
+        with self.assertRaises(ValueError): diagnostic.diagnose({**env, 'GITHUB_WORKFLOW_REF': 'wrong'}, factory)
+        factory.assert_not_called()
+
+    def test_diagnostic_workflow_is_manual_read_only_and_has_no_package_input(self):
+        workflow = (Path(__file__).parents[1] / '.github/workflows/npm-release-diagnose.yaml').read_text()
+        self.assertIn('workflow_dispatch:', workflow)
+        self.assertIn("github.ref == 'refs/heads/main'", workflow)
+        self.assertIn('ref: ${{ github.sha }}', workflow)
+        self.assertIn('contents: read', workflow)
+        for forbidden in ['write', 'inputs:', 'publish', 'dist-tag', 'pull_request:', 'push:', 'npm install', 'pnpm install']:
+            self.assertNotIn(forbidden, workflow.replace('without publishing', ''))
+
     def test_failed_config_preparation_cleans_owned_directory(self):
         writer, _ = self.registry([], [])
         writer.environment['NPM_TOKEN'] = 'fixture-only'

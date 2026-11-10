@@ -59,8 +59,12 @@ NPM_ERRORS = {
 }
 
 
+class NpmCommandFailure(ValueError):
+    """Only bounded, allowlisted npm diagnostics may use this exception."""
+
+
 def npm_failure(operation, row, *, code=None, timed_out=False, stdout=None, stderr=None):
-    if operation not in ['publish', 'dist-tag', 'resolve-cli']: operation = 'unknown'
+    if operation not in ['publish', 'dist-tag', 'resolve-cli', 'whoami']: operation = 'unknown'
     identity = 'controlled-cli'
     if row is not None:
         name, version = row.get('name'), row.get('version')
@@ -87,7 +91,7 @@ def npm_failure(operation, row, *, code=None, timed_out=False, stdout=None, stde
             if value in NPM_ERRORS and value not in known: known.append(value)
     status = 'timeout' if timed_out else 'exit=' + (str(code) if type(code) is int else 'unavailable')
     detail = '; '.join(value + ': ' + NPM_ERRORS[value] for value in known[:3]) or 'No recognized npm error code; raw output withheld'
-    return ValueError('npm operation=' + operation + ' package=' + identity + ' ' + status + '; ' + detail
+    return NpmCommandFailure('npm operation=' + operation + ' package=' + identity + ' ' + status + '; ' + detail
                       + '; outcome uncertain: inspect independent registry state before resuming')
 
 

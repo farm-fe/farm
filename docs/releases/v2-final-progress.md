@@ -113,3 +113,12 @@
 - 验证：原代码红例保留；最终153项Python、165项Node以及Biome/CSpell/diff通过。假凭据原文/URL编码/Base64、控制字符、超长输出、截断码、非法身份异常上下文、真实本地子进程超时/非零退出和失去响应后的原字节恢复均覆盖。证据为本地 npm-diagnostics-20261110；传输/写入是fixture，无真实发布。
 - 复用边界：同源旧run的后续attempt可以沿既有规则复用原冻结candidate、跳过重建，但仍运行旧代码，不含此诊断修复。新main run不能直接接纳旧source/producerRunId的冻结授权；本批不迁移证明、不新增恢复协议、不重跑或清锁。原1.27GB candidate未重新下载。
 - 待验：新Draft PR及其exact HEAD托管CI；真实npm错误原因与生产恢复仍未解决。用户自行合并，本批不改版本/Changesets/权限。
+
+### #2349 恢复准备：只读诊断与构建前事务检查
+
+- 方案：沿用同run原冻结产物恢复，不建立跨run接管。新增手动main诊断只执行受控npm `whoami --json`与固定公开目标 `@farmfe/cli@2.0.0` 的GET；不查询私人包列表、不输出用户名/凭据、不执行publish/dist-tag。认证成功不证明发布权限、2FA要求或原失败原因。
+- 新main plan在registry collect及native调度之前读取既有已校验Git状态。有active事务即明确 `publication-recovery-required` 失败，保留原锁/字节/owner；这是预期阻止重复构建，不是发布成功。同run已冻结的rerun仍由原source复用逻辑跳过plan；现有publisher继续独立fresh owner/fence/registry验证，早期检查不授予写权。
+- 调用计划（未执行，待单独确认）：合并后先核main精确SHA，再手动运行 `gh workflow run npm-release-diagnose.yaml --repo farm-fe/farm --ref main`，独立核新run的head_sha与预期一致。入口仅使用既有NPM_TOKEN做认证GET，权限仅contents:read，5分钟上限，固定目标且无用户可控命令输入。失败诊断退出非零；既有发布不自动重跑。
+- 恢复计划（未执行，待单独确认）：再次核原run终态、当前锁owner/source/transaction/fence、目标版本真实状态，并完整验证原artifact字节/签名；外部原因被证据澄清且恢复获批后，使用原run的Re-run failed jobs。它可复用原candidate而不重建native，但继续执行旧代码，不会加载新诊断补丁。只读producer_run入口不授权发布；不能修改GITHUB身份或将旧manifest改成新source。
+- 本地验证：新增回归放入现有publisher/entry Python合同，由现有CI release-contract-tests调用。生产plan原代码在active事务下仍进入registry collect，修复后在任何registry扫描前拒绝（admission-red-green.log）；无active首次计划与既有frozen跳过条件保留。诊断认证成功/失败/超时、404/非404、身份guard与无发布操作均有fixture；真实带凭据诊断和恢复均未运行。
+- 本批最终适用验证：159项Python、165项Node、Biome/CSpell/diff全部通过；新工作流另经YAML结构解析核对，仅manual、contents:read及固定命令。独立只读复审无阻塞。源码证据位于 npm-recovery-admission-20261110；真实Actions解析、带凭据诊断、原事务恢复未执行，不能以本地fixture代替。

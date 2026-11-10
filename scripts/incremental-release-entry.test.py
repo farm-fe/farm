@@ -22,6 +22,63 @@ fixtures = load("release_entry_fixture", "incremental-chain-plan.test.py")
 
 
 class Contracts(unittest.TestCase):
+    def test_build_admission_blocks_active_transaction_without_mutation(self):
+        state_module = entry.load('admission_test_state', 'incremental-publication-state.py')
+        owner = {'runId': self.manifest['producerRunId'], 'attempt': 1,
+                 'producerRunId': self.manifest['producerRunId'], 'sourceSHA': self.manifest['sourceSHA']}
+        active = {'manifest': self.manifest, 'transaction': state_module.digest(self.manifest),
+                  'owner': owner, 'phase': 'uploading'}
+        saved = {'active': active, 'baseline': None, 'completed': {}}
+        original = copy.deepcopy(saved); loader = entry.load
+        reader = mock.Mock(); reader.ReleaseBaselineReader.return_value.state.return_value = ('a' * 40, saved)
+        with mock.patch.object(entry, 'load', side_effect=lambda name, file: reader if file == 'incremental-release-baseline.py' else loader(name, file)):
+            for phase in ['uploading', 'public-acceptance', 'release-finalization']:
+                active['phase'] = phase
+                with self.assertRaisesRegex(ValueError, 'publication-recovery-required'):
+                    entry.require_idle_publication(mock.Mock())
+            active['phase'] = 'uploading'
+            self.assertEqual(saved, original)
+            active['transaction'] = 'f' * 64
+            with self.assertRaisesRegex(ValueError, 'manifest differs'): entry.require_idle_publication(mock.Mock())
+            saved['active'] = None
+            self.assertEqual(entry.require_idle_publication(mock.Mock()), saved)
+            del saved['active']
+            with self.assertRaisesRegex(ValueError, 'Invalid publication state'): entry.require_idle_publication(mock.Mock())
+
+    def test_plan_checks_transaction_before_registry_scan(self):
+        import sys
+        selector = mock.Mock(); loader = entry.load
+        with mock.patch.object(sys, 'argv', ['entry', 'plan', '--source', self.source['sha'], '--output', str(self.root / 'blocked.json')]), \
+             mock.patch.object(entry.evidence, 'source_reader', return_value=self.source), \
+             mock.patch.object(entry.chain.impact, 'git', return_value=self.source['sha'].encode()), \
+             mock.patch.object(entry, 'require_idle_publication', side_effect=ValueError('publication-recovery-required')) as guard, \
+             mock.patch.object(entry, 'load', side_effect=lambda name, file: selector if file == 'release-registry-selection.py' else loader(name, file)):
+            with self.assertRaisesRegex(ValueError, 'publication-recovery-required'):
+                with mock.patch.object(entry, 'actions_transport', return_value=mock.Mock()): entry.main()
+        guard.assert_called_once(); selector.collect.assert_not_called()
+        self.assertFalse((self.root / 'blocked.json').exists())
+
+    def test_idle_plan_keeps_registry_selection_and_frozen_reruns_skip_plan(self):
+        import sys
+        selector = mock.Mock(); selector.collect.return_value = {}; loader = entry.load
+        destination = self.root / 'idle.json'
+        with mock.patch.object(sys, 'argv', ['entry', 'plan', '--source', self.source['sha'], '--output', str(destination)]), \
+             mock.patch.dict(os.environ, {}, clear=True), \
+             mock.patch.object(entry.evidence, 'source_reader', return_value=self.source), \
+             mock.patch.object(entry.chain.impact, 'git', return_value=self.source['sha'].encode()), \
+             mock.patch.object(entry, 'actions_transport', return_value=mock.Mock()), \
+             mock.patch.object(entry, 'require_idle_publication', return_value={'active': None, 'baseline': None}), \
+             mock.patch.object(entry, 'source_plan', return_value={'build': []}) as plan, \
+             mock.patch.object(entry, 'load', side_effect=lambda name, file: selector if file == 'release-registry-selection.py' else loader(name, file)):
+            entry.main()
+        selector.collect.assert_called_once()
+        self.assertEqual(plan.call_args.kwargs['registry_snapshot'], {'stateBaseline': None})
+        self.assertEqual(json.loads(destination.read_text()), {'build': []})
+        workflow = (Path(__file__).parents[1] / '.github/workflows/incremental-release.yaml').read_text()
+        self.assertIn("if: needs.source.outputs.reuse != 'true' && needs.source.outputs.version_ready == 'true'", workflow)
+        self.assertIn('original = module.original_attempt(', workflow)
+        self.assertIn("needs.source.outputs.reuse == 'true'", workflow)
+
     def setUp(self):
         files, family, source = fixtures.fixture()
         files["packages/core/package.json"] = json.dumps({"name":"@farmfe/core", "version":"1.0.0", "private":True}).encode()
