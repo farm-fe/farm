@@ -12,6 +12,50 @@ import { verifyCandidateSeal } from './verify-v2-candidate-seal.mjs';
 import { publicationNpm, validationEvent } from './v2-release-inventory.mjs';
 import { resolvePnpmCli, probePnpmCli } from './v2-pnpm-cli.mjs';
 
+// Match the publisher's accepted repository roots. Do not silently correct a
+// different repository, an npm metadata alias, or a primary package tree URL.
+const repositoryRoot = 'https://github.com/farm-fe/farm';
+const repositoryUrls = new Set([repositoryRoot, repositoryRoot + '.git', 'git+' + repositoryRoot, 'git+' + repositoryRoot + '.git']);
+function repositoryUrl(manifest) {
+  assert.ok(!Object.hasOwn(manifest, 'repositories'), `Ambiguous repository metadata: ${manifest.name}`);
+  const repository = manifest.repository;
+  if (repository && typeof repository === 'object' && !Array.isArray(repository)) {
+    assert.ok(repository.type === undefined || repository.type === 'git', `Unsupported repository type: ${manifest.name}`);
+    return repository.url;
+  }
+  return repository;
+}
+export function assertProvenanceRepository(manifest) {
+  assert.ok(repositoryUrls.has(repositoryUrl(manifest)), `Provenance repository must identify farm-fe/farm at its root: ${manifest.name}`);
+}
+
+// Enrich only the disposable native pack staging manifest, before archive bytes
+// are frozen. Never modify the source manifest or a sealed/public archive.
+export function nativePackManifest(manifest, ownerManifest, pkg, owner) {
+  assert.ok(owner, `Missing native source owner: ${pkg.name}`);
+  assert.equal(ownerManifest.name, owner.name); assert.equal(pkg.owner, owner.name);
+  assert.equal(ownerManifest.version, owner.version); assert.equal(pkg.version, owner.version);
+  assert.equal(manifest.name, pkg.name); assert.equal(manifest.version, pkg.version);
+  assert.equal(ownerManifest.optionalDependencies?.[pkg.name], pkg.version, 'Native payload differs from source owner dependency');
+  assert.match(owner.manifestPath, /^(?:packages|rust-plugins)\/[a-zA-Z0-9_.-]+\/package\.json$/);
+  assert.match(pkg.platform, /^[a-z0-9]+(?:-[a-z0-9]+)+$/);
+  const ownerDirectory = path.posix.dirname(owner.manifestPath);
+  assert.equal(pkg.manifestPath, `${ownerDirectory}/npm/${pkg.platform}/package.json`, 'Native manifest differs from source owner directory');
+  assertProvenanceRepository(ownerManifest);
+  if (ownerManifest.repository?.directory !== undefined) assert.equal(ownerManifest.repository.directory, ownerDirectory, 'Source repository directory differs');
+  const existing = repositoryUrl(manifest);
+  if (Object.hasOwn(manifest, 'repository')) {
+    // The nine historical create-farm source manifests use this exact tree URL.
+    // Permit its deterministic conversion, not arbitrary subpaths or branches.
+    const legacyGenerator = owner.name === 'create-farm' && ownerDirectory === 'packages/create-farm'
+      && existing === repositoryRoot + '/tree/main/packages/create-farm';
+    assert.ok(repositoryUrls.has(existing) || legacyGenerator, `Native repository differs from source owner: ${pkg.name}`);
+  }
+  const directory = path.posix.dirname(pkg.manifestPath);
+  if (manifest.repository?.directory !== undefined) assert.ok([ownerDirectory, directory].includes(manifest.repository.directory), 'Native repository directory differs');
+  return { ...manifest, repository: { type: 'git', url: repositoryRoot, directory } };
+}
+
 export function assertSourceLicense(directory, manifest) {
   verifyLicenseComponents(directory, manifest, fileURLToPath(new URL('../', import.meta.url)));
   const text = fs.readFileSync(path.join(directory, 'LICENSE'), 'utf8');
@@ -64,6 +108,7 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
     const source = path.join(stage, files[0]), bytes = fs.readFileSync(source);
     const manifest = JSON.parse(archiveFiles(bytes).get('package/package.json'));
     assert.equal(manifest.name, pkg.name); assert.equal(manifest.version, pkg.version);
+    assertProvenanceRepository(manifest);
     const inspection = inspectNpmArchive(bytes, pkg);
     assert.deepEqual(inspection.issues, [], `Packed candidate contract failed: ${pkg.name}`);
     verifyWorkspaceConversion(JSON.parse(fs.readFileSync(path.join(directory, 'package.json'))), manifest,
@@ -73,13 +118,20 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
     receipt.records.push({ name: pkg.name, version: pkg.version, file, sha256: sha256(bytes), ...extra }); save();
   }
   try {
+    const nativeManifests = new Map();
     // Fail all source/legal/native prerequisites before starting normal packing.
     for (const pkg of selected.primary) {
       const directory = path.dirname(path.join(root, pkg.manifestPath));
       const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'package.json')));
+      assertProvenanceRepository(manifest);
       assertSourceLicense(directory, manifest); assertReviewedCandidatePackHooks(directory, manifest);
     }
     for (const pkg of selected.payloads) {
+      const owner = plan.npm.primary.find(item => item.name === pkg.owner);
+      assert.ok(owner, `Missing native source owner: ${pkg.name}`);
+      const ownerManifest = JSON.parse(fs.readFileSync(path.join(root, owner.manifestPath)));
+      const manifest = JSON.parse(fs.readFileSync(path.join(root, pkg.manifestPath)));
+      nativeManifests.set(pkg.name, nativePackManifest(manifest, ownerManifest, pkg, owner));
       const row = assembly.records.find(item => item.name === pkg.name);
       const bytes = fs.readFileSync(path.join(root, row.file));
       assert.equal(sha256(bytes), row.sha256); assert.ok(nativePlatformMatches(bytes, pkg.platform), `Wrong platform: ${pkg.name}`);
@@ -89,9 +141,8 @@ export function packNpmCandidates({ root, plan, assembly, artifactIndex, sourceC
       const row = assembly.records.find(item => item.name === pkg.name);
       const owner = plan.npm.primary.find(item => item.name === pkg.owner);
       const directory = path.dirname(path.join(root, owner.manifestPath));
-      const manifest = JSON.parse(fs.readFileSync(path.join(root, pkg.manifestPath)));
-      assert.equal(manifest.name, pkg.name); assert.equal(path.basename(manifest.main), manifest.main);
-      manifest.version = pkg.version;
+      const manifest = nativeManifests.get(pkg.name);
+      assert.equal(path.basename(manifest.main), manifest.main);
       if (pkg.platform.endsWith('-gnu')) manifest.libc = ['glibc'];
       if (pkg.platform.endsWith('-musl')) manifest.libc = ['musl'];
       const stage = path.join(output, `platform-${receipt.records.length}`); fs.mkdirSync(stage);

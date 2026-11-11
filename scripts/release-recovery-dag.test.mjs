@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {parse} from 'yaml';
+// cspell:words finalizer prepublish postpublish
 const text=fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml',import.meta.url),'utf8');
 const jobs=parse(text).jobs;
 const identity=jobs['candidate-identity'];
@@ -45,7 +46,7 @@ test('carried plan and newly frozen candidate have independent attempt names',()
   }
  }
 });
-test('main-test wait and its wake-up controller are absent; recovery remains in the original transaction',()=>{
+test('main-test wait and its wake-up controller are absent; retries retain the original frozen producer',()=>{
  assert.equal(jobs['main-evidence'],undefined);
  assert.equal(jobs['sign-pending-evidence'],undefined);
  for(const file of ['.github/workflows/release-evidence-recovery.yaml','scripts/release-evidence-recovery.py'])
@@ -53,7 +54,57 @@ test('main-test wait and its wake-up controller are absent; recovery remains in 
  assert.doesNotMatch(text,/workflow_run:|functional_evidence|incremental-release-functional/);
  assert.ok(text.includes('module.original_attempt(module.actions_transport()'));
  assert.ok(text.includes('incremental-release-entry.py'));
- assert.ok(text.includes('incremental-release-publish.py'));
+ assert.doesNotMatch(text,/incremental-release-publish\.py/);
+ assert.ok(text.includes('release-npm-best-effort.py'));
+});
+
+test('actual YAML selects the full source family and fails partial publication without a durable lock',()=>{
+ const plan=jobs.plan.steps.find(step=>step.id==='release-plan');
+ assert.equal(plan.run,'python -B scripts/incremental-release-entry.py plan --full-source --source "$SOURCE_SHA" --output release-plan.json');
+ const publish=jobs.publisher.steps.find(step=>step.id==='publish-packages');
+ assert.equal(publish.run,'python -B scripts/release-npm-best-effort.py --candidate release-candidate --output publication-results/results.json');
+ assert.equal(publish.env.FARM_EXPLICIT_PUBLICATION,'true');
+ assert.deepEqual(jobs.publisher.permissions,{contents:'read',actions:'read','id-token':'write'});
+ assert.equal(jobs.publisher['continue-on-error'],undefined);
+ assert.equal(publish['continue-on-error'],undefined);
+ const outcomes=jobs.publisher.steps.find(step=>step.uses==='actions/upload-artifact@v4');
+ assert.equal(outcomes.if,'always()');
+ assert.equal(outcomes.with.path,'publication-results/results.json');
+ assert.equal(outcomes.with.name,'npm-publication-results-${{ github.run_id }}-${{ github.run_attempt }}');
+ assert.equal(outcomes.with['if-no-files-found'],'error');
+ const workflow=parse(text);
+ assert.equal(workflow.concurrency.group,'farm-independent-release');
+ assert.equal(workflow.concurrency['cancel-in-progress'],false);
+ const publisher=fs.readFileSync(new URL('./release-npm-best-effort.py',import.meta.url),'utf8');
+ assert.doesNotMatch(publisher,/GitRefStore\(|GitHubStateAPI\(|state\.Publication\(|frozen_authorization\(|\.recover\(|\.handoff\(/);
+ assert.match(publisher,/return 0 if report\['complete'\] and report\['success'\] else 1/);
+});
+
+test('publisher and finalizer retain distinct original-byte and complete public-proof gates',()=>{
+ const publisher=fs.readFileSync(new URL('./release-npm-best-effort.py',import.meta.url),'utf8');
+ const publish=publisher.slice(publisher.indexOf('def main():'));
+ const authorization=publish.indexOf('authorize(manifest, directory, os.environ)');
+ const writer=publish.indexOf('with publisher.RegistryWriter(');
+ assert.ok(authorization>=0&&writer>authorization);
+ assert.match(publisher,/SourceProofVerifier\(transport, current\)\.verify\(manifest, directory \/ 'archives', phase='prepublish'\)/);
+ assert.match(publisher,/proof\.get\('sourceAndSealVerified'\) is True/);
+ assert.match(publisher,/entry\.strict_archive\(directory, row\)/);
+ assert.match(publisher,/publisher\.npm_tarball\.validate\(row, body\)/);
+ assert.match(publisher,/registry\.lookup\(row\)/);
+ assert.match(publisher,/actual is None or actual == row\['archiveSha256'\]/);
+ assert.match(publisher,/entry\.evidence\.successful_job\(jobs, entry\.PUBLISHER\)/);
+ assert.match(publisher,/publisher\.RecoveryVerifier\(transport, current\)\.verify\(manifest, directory \/ 'archives', phase='postpublish'\)/);
+ assert.match(publisher,/proof\.get\('verified'\) is True/);
+ assert.match(publisher,/proof = authorize\(manifest, directory, environment, finalize=True\)/);
+ assert.match(publisher,/publisher\.confirm_release\(publisher\.GitHubWriter\(environment, 'finalize'\), manifest, proof\)/);
+ const finalize=jobs.finalize.steps.find(step=>step.run?.includes(' --finalize '));
+ assert.equal(finalize.run,'python -B scripts/release-npm-best-effort.py --finalize --candidate release-candidate');
+ assert.equal(finalize.env.FARM_EXPLICIT_PUBLICATION,'true');
+ assert.deepEqual(jobs.finalize.permissions,{contents:'write',actions:'read'});
+ for(const dependency of ['publisher','public-proof','sign-public-acceptance','candidate-identity']){
+  assert.ok(jobs.finalize.needs.includes(dependency));
+  assert.ok(jobs.finalize.if.includes(`needs.${dependency}.result == 'success'`));
+ }
 });
 
 test('all release needs remain acyclic and mandatory candidate checks cannot be skipped',()=>{

@@ -1,6 +1,11 @@
 {
   "name": "@farmfe/plugin-docs-seo",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "rust-plugins/docs-seo"
+  },
   "type": "module",
   "license": "MIT",
   "main": "scripts/index.js",

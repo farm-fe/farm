@@ -1,6 +1,11 @@
 {
   "name": "@farmfe/plugin-replace-dirname",
   "version": "2.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "rust-plugins/replace-dirname"
+  },
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",

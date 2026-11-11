@@ -22,8 +22,8 @@
         "name": "create-farm",
         "version": "2.0.0",
         "manifestPath": "packages/create-farm/package.json",
-        "manifestSha256": "1150ee8a1b6ac555f240ca5d3e370a7d1c41e55f237ba72621db51e278ee2886",
-        "sourceSha256": "c4e4d3efdd584b923c9a87cb0e79680e988bdfcb4596f48d484c0194f078c280"
+        "manifestSha256": "9213bedc0d5c0ff9860ef688347c42f9c9cf82ff7581ee43498ecba31d7fba1b",
+        "sourceSha256": "395278cac4eae715a0a54782456824762dc80e9af88d23aecdb83352c216e8dc"
       },
       {
         "name": "create-farm-plugin",
@@ -36,15 +36,15 @@
         "name": "@farmfe/docs",
         "version": "0.0.1",
         "manifestPath": "packages/docs/package.json",
-        "manifestSha256": "5406f8dd62267bd4d4cb172cb059f790989a4d3217fb83126a00016a18b58543",
-        "sourceSha256": "203f01108de2e1930cd78842c80d5352b688bac2d2b7c7ffae2887a3c4c77edf"
+        "manifestSha256": "c7815aea91715f02b619b6c03e451466f06d12c4c289a6a8bf660b618eeb84e4",
+        "sourceSha256": "77af43174c9411fabefff809219aab857bb3611fc6df7f01eabf5f75bdd8c19f"
       },
       {
         "name": "@farmfe/docs-theme-default",
         "version": "0.0.1",
         "manifestPath": "packages/docs-theme-default/package.json",
-        "manifestSha256": "3c317b50a60bfb0b65cf03d47f3a83ed8d1ada0e6906a0ea7904784d481d8d15",
-        "sourceSha256": "4e50af3bc13f98edc06b54af34d544bd694202f5dc63bf2ac064c18603a3260c"
+        "manifestSha256": "838047e0cf2010544b4d3e5133a87e5a5152ad7e236d0191dc006db96d3a3c29",
+        "sourceSha256": "b3c51a62bbec3f99f8b7f2103a39547bbea240fcca8f49c3033f36cc097a6a06"
       },
       {
         "name": "@farmfe/plugin-tools",
@@ -99,29 +99,29 @@
         "name": "@farmfe/plugin-docs",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/docs/package.json",
-        "manifestSha256": "63be2ffc07578f5f06dc39f5949910d0023a94981370d12d80443acda2d0c12c",
-        "sourceSha256": "9f9784c94fd07a98b06fa448a3a0617b7636fca1c23bda967906478627419757"
+        "manifestSha256": "2dd89d89f05bb6b885f95c5c70ca10e944fcce50877edf2727ea1d4f4f61db12",
+        "sourceSha256": "6365a129bef5bf76fce7fc47e6bb8f9133b8026ae0b7a6b64543cd397b07c75d"
       },
       {
         "name": "@farmfe/plugin-docs-seo",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/docs-seo/package.json",
-        "manifestSha256": "3bb9f72d3e362631749b378c350806889f47f524511cf4a0f754bbfd6ee42838",
-        "sourceSha256": "074da153fb884582ca0e2f96d09bd7066b2453b27e300c68405adab907f29f9d"
+        "manifestSha256": "6ff1f0b67303cd9afab0ef0badf750286f812994d771daaa10ba261b60936c68",
+        "sourceSha256": "6f02eec446f199ae959ac30b535ff1042eb77593218442276206dc9411fd634f"
       },
       {
         "name": "@farmfe/plugin-docs-snapshot",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/docs-snapshot/package.json",
-        "manifestSha256": "f17cdc97934c700b555711fdd9cafe55bd66b81b7458c360b77c25e2d04a2ce1",
-        "sourceSha256": "0b0cb73a4d938b03d770f05484a6079063f66f95c4cd453f7d82f934f870938f"
+        "manifestSha256": "82337a377154aa59158f945be7eb2f6dcbc9b8e689f2d3763e61518e03ce7a78",
+        "sourceSha256": "84027a184cc3d1f8f43e5fa7dbf8692be80330404a5f6866ee4e738ffb3436bc"
       },
       {
         "name": "@farmfe/plugin-docs-snippets",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/docs-snippets/package.json",
-        "manifestSha256": "cf9c0d522d43edd7a33d3e287e4a4d7b38c242a8748beaaea8196a733003cb9e",
-        "sourceSha256": "5ae791129bd5603f0f957f79f1bcb775c136c4714835a9c83353756deb012f0a"
+        "manifestSha256": "574378b149a4b6ab2feb514c9a3a24864428ec5cadab4a1b625d264994872639",
+        "sourceSha256": "e79bdabb176e17bf5a010efaec21dc4cdcbde80a3ecdfc77723d0db752976724"
       },
       {
         "name": "@farmfe/plugin-dsv",
@@ -134,8 +134,8 @@
         "name": "@farmfe/plugin-dts",
         "version": "1.0.0",
         "manifestPath": "rust-plugins/dts/package.json",
-        "manifestSha256": "c7515ba68c409212fcf48cb929dfcdcc4424bdbea6a8bc41875d7930721a1aeb",
-        "sourceSha256": "905abbfb550f8850a77531513e052ab56c5c14acee5ea66e8912b40ca484aab1"
+        "manifestSha256": "d32d385a357cecf59a6cd39ed992124ccdd168772f3e74688391366694d8117a",
+        "sourceSha256": "640592da49095d980c61f51e5108b88eda6f4eeb52fa5ea30f26fb8547d40e52"
       },
       {
         "name": "@farmfe/plugin-icons",
@@ -169,8 +169,8 @@
         "name": "@farmfe/plugin-react",
         "version": "2.0.0",
         "manifestPath": "rust-plugins/react/package.json",
-        "manifestSha256": "d4c365f2d8f1f83b54e8ea7d445adaad5620d4fdb581cb0cb83fd1a6b9929536",
-        "sourceSha256": "1e28bd517f87ad0d30af3a332c91d4c1236886dc709f54e3aeab9ad2126cf217"
+        "manifestSha256": "037d270584b80c54a1c0a85b6dcafa4c0389e154c20e4c0fe76ab77387a65f37",
+        "sourceSha256": "b1ccd4efa9397c981e980b2e3a8dce78a7447053e587cb0d15ccd26df163f1c8"
       },
       {
         "name": "@farmfe/plugin-react-components",
@@ -183,22 +183,22 @@
         "name": "@farmfe/plugin-replace-dirname",
         "version": "2.0.0",
         "manifestPath": "rust-plugins/replace-dirname/package.json",
-        "manifestSha256": "ead569bcd1f6241b63b0cc508591c66e23a4946d48ea5a79b4efab37f3c97ff8",
-        "sourceSha256": "a3b8dcf44b39a027b2e11e2ccafc73c46b8de6969ca0c41fafdd448a06fab7c4"
+        "manifestSha256": "612241684abe6e85a2f16674f499343f817a0e437285ad9c39bf2f11efbf86df",
+        "sourceSha256": "ad5fab50e13fcb2fb4caa14f2fcb87ee10f10c11b28ab6929371f4b6854b121f"
       },
       {
         "name": "@farmfe/plugin-sass",
         "version": "2.0.0",
         "manifestPath": "rust-plugins/sass/package.json",
-        "manifestSha256": "250e06dcb33c852ba862e1524112cc5e193391f4f740496598093f77804d500c",
-        "sourceSha256": "e9d1aa631a9c4b7ffc588341653e7c969751a3fccdde0dfa442b2135fc00ec86"
+        "manifestSha256": "7a590609533cd278a6ec7c548d9842ed8c01f92b66468819b82218cb1d3cfd74",
+        "sourceSha256": "5a9979e81096e09e2d5f312bb1e81ec72ae9ab8e9b15520178cd477c0759e2ff"
       },
       {
         "name": "@farmfe/plugin-ssr-css",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/ssr-css/package.json",
-        "manifestSha256": "e2ee3226839f59e02b5d12141f70593c187d54cf6629303e7c1c0fc8af82ec74",
-        "sourceSha256": "87e337743bf2778edfa77c335538eedbc0d095e72ed1ad9504606ffcb683e911"
+        "manifestSha256": "b25b6b829d569e3a69f0eb57b887b282421f368811d1c60909876e2585c96344",
+        "sourceSha256": "89e31499409fb78a6f0103c19abe42f7595f3cb5a2d9241767bf3b00ef4d9b05"
       },
       {
         "name": "@farmfe/plugin-strip",
@@ -218,15 +218,15 @@
         "name": "@farmfe/plugin-syntax-highlight",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/syntax-highlight/package.json",
-        "manifestSha256": "cfef46ebdbe790ab06c84b41ab2046d8e1a4983f348b587fdd77b3abb3399d5d",
-        "sourceSha256": "b4e39f289fd601d4f77e15adad7b26107691670a2742b7047f44a93328062064"
+        "manifestSha256": "bae378724f693c788365be5e55f232270ad11d4dd75513096876791ff5972530",
+        "sourceSha256": "fe28767dc45d202fd4775a28279b778eb822bb0474bc909f3d940c45308aaca4"
       },
       {
         "name": "@farmfe/plugin-tailwindcss",
         "version": "2.0.0",
         "manifestPath": "rust-plugins/tailwindcss/package.json",
-        "manifestSha256": "b08d5d976841ee18162837cb790dcbe49d85c1d63abae71a558aa390377d0a7a",
-        "sourceSha256": "363b0d5400206562f77ce54a54653d2487ce44fad51e95cb1e09b35a78194c13"
+        "manifestSha256": "605fcb8e8dfab3343e0368aa115af4dc710aa0ae9a53f0b48e4684643d2925dc",
+        "sourceSha256": "5755e44db38d42b4e99c0be68456f1107760c2ccc6f38642c40d4b957303df4f"
       },
       {
         "name": "@farmfe/plugin-url",
@@ -246,15 +246,15 @@
         "name": "@farmfe/plugin-vue",
         "version": "2.0.0",
         "manifestPath": "rust-plugins/vue/package.json",
-        "manifestSha256": "f7c4d06d9a3e8d62b89fb790ad98eb7884aa135a22466ca9abf3001794e86f63",
-        "sourceSha256": "13b422e9dcbb32c2d2d6ef075f55f98f1a7aa511f1cf78033b55e2f258d2ce91"
+        "manifestSha256": "7ba4a5923f7c76829dadf16f9163d9f9f39b5d3594d76ce3ef23a26f3ec05ddd",
+        "sourceSha256": "1820914071548901fba51f7772ac25b03655fa5c3aa8e3a6c54f142665bb75b1"
       },
       {
         "name": "@farmfe/plugin-vue-jsx",
         "version": "0.0.1",
         "manifestPath": "rust-plugins/vue-jsx/package.json",
-        "manifestSha256": "babd8bb4a4e17683480f66da91db51757ac2de2f0b5d8826b4877cc712b902d2",
-        "sourceSha256": "7c7526060b0fa944f4a276aecdddf41c48610067265e8ba77746c2a99d403951"
+        "manifestSha256": "287c05906aa8afe4b5423947976c77437d4da803763d6b43c6f5b4223d52453d",
+        "sourceSha256": "8dc1f9704fa3895c57f07f6f1eefabc99de3869c065d56c9b0a8df66be1de475"
       },
       {
         "name": "@farmfe/plugin-wasm",
@@ -288,8 +288,8 @@
         "name": "@farmfe/js-plugin-dts",
         "version": "2.0.0",
         "manifestPath": "js-plugins/dts/package.json",
-        "manifestSha256": "37986ec57550ffae5a1fa20091405dec98efd529469180d22818e071dedd90a0",
-        "sourceSha256": "2bb69eb6bd59d21052a019eaaba6428aaa86ab4182ddc7037003ccca01565f66"
+        "manifestSha256": "93aaec3ba4e2f628a7a34820debd3d4c51e82248957943eb477cf756d0bb8c2c",
+        "sourceSha256": "49c0eda16408f268021d2e0948f2fe1740cbddc4b97aee73b2e88c4041f8afa4"
       },
       {
         "name": "@farmfe/js-plugin-electron",
@@ -316,8 +316,8 @@
         "name": "@farmfe/js-plugin-qiankun",
         "version": "1.0.0",
         "manifestPath": "js-plugins/qiankun/package.json",
-        "manifestSha256": "276a1a4e8ce84a159fbb098817db9b30cc2889117002d5c143bf86a977a8dfb0",
-        "sourceSha256": "c23a540f2820364ec40fddea1ea28dd198daa79f26af75a463b10605d3c38924"
+        "manifestSha256": "7663a7fb3645ca94ee430a449490682981b68b9667fdbb21715b3bfa5e79fbf3",
+        "sourceSha256": "78eed840df93aa8e5860fe024c68d09b5dd9905b7130307b1bb94f4e053ff165"
       },
       {
         "name": "@farmfe/js-plugin-react-compiler",
@@ -344,15 +344,15 @@
         "name": "@farmfe/js-plugin-tailwindcss",
         "version": "2.0.0",
         "manifestPath": "js-plugins/tailwindcss/package.json",
-        "manifestSha256": "b3734ad3c34feabdf4c4ec9c75c705941d12f5247ee20465e920ab7794645587",
-        "sourceSha256": "e4547978abb8a1a9177c14c0d5ddcff5700bfb6496d0df0ab3f2b21133b7f745"
+        "manifestSha256": "99ce6470643f4f66cdc04fadb194b105e6d51dc4a71167e5332310c4961a9e34",
+        "sourceSha256": "3f842fb798f93d6430d244e5cd8d149c8613bb0446d81d4c49c0589ec8099d25"
       },
       {
         "name": "@farmfe/js-plugin-visualizer",
         "version": "2.0.0",
         "manifestPath": "js-plugins/visualizer/package.json",
-        "manifestSha256": "59b32cc94ac675c9bde1aff01f6c6c30bce50b49c437ec5abc18271281ece76a",
-        "sourceSha256": "3e14287a2cc147b2c6b9e924f8aecef309870974bd20fa55db33d06969e50fa4"
+        "manifestSha256": "ffb907f4fea347e32dcdbc00f162ee559ecdddd524fdb9c054ce53ceb5e9f51e",
+        "sourceSha256": "08e3b24ad118ac6977faa5573718ade8d032486b6631ee1570af574a89c50663"
       },
       {
         "name": "@farmfe/js-plugin-vuetify",

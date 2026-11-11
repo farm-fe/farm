@@ -28,6 +28,7 @@ check = evidence.check
 WORKFLOW = ".github/workflows/incremental-release.yaml"
 PRODUCER = "Build independent release candidates"
 CONSUMER = "Verify independent release public consumers"
+PUBLISHER = "Publish original npm archives and record every result"
 
 
 def original_attempt(transport, run_id, source_sha, current_attempt, *, proof_provider=None):
@@ -46,7 +47,7 @@ def original_attempt(transport, run_id, source_sha, current_attempt, *, proof_pr
         if current_attempt > 1:
             proof = retry.verify_unfrozen_retry(transport.get, run_id=run_id, source_sha=source_sha, current_attempt=current_attempt,
                 workflow=WORKFLOW, producer=PRODUCER, freeze_step='Freeze independent release candidates',
-                publisher='Publish exact independent release archives under durable lock', events=['push','workflow_dispatch'])
+                publisher=PUBLISHER, events=['push','workflow_dispatch'])
             print(json.dumps({'unfrozenRetryProof': proof}), flush=True)
         return current_attempt
     check(len(matches) == 1, 'Multiple frozen candidates cannot form one release transaction')
@@ -171,6 +172,10 @@ class ReleaseVerifier:
         # Explicit Python-only offline seam. Production CLI never supplies it.
         self.receipt_provider=receipt_provider
 
+    def verify_archive(self, directory, row):
+        strict_archive(directory, row)
+        return True
+
     def receipt(self, scope, run, source, manifest=None):
         if self.receipt_provider is not None:return self.receipt_provider(scope,run,source)
         provenance=load('release_entry_provenance','release-provenance.py')
@@ -245,9 +250,11 @@ class ReleaseVerifier:
         check(isinstance(rows, list) and rows, "Complete release package inventory required")
         records = {row["kind"] + ":" + row["name"]: row for row in rows}
         check(len(records) == len(rows) and set(records) == set(plan["publish"]), "Release publication inventory is missing, duplicated or extra")
+        archive_failures = []
         for identity, row in records.items():
             check(row["version"] == family[identity]["version"], "Release version differs from actual manifest")
-            strict_archive(archive_directory, row)
+            if self.verify_archive(archive_directory, row) is not True:
+                archive_failures.append(identity)
         receipt,artifact,origin,producer=self.receipt('frozen',run,source)
         check(origin['run_attempt']==manifest['producerAttempt'],'Frozen seal original attempt differs')
         manifest_hash = chain.digest(manifest)
@@ -265,7 +272,9 @@ class ReleaseVerifier:
         if phase == "prepublish":
             check(self.transport.get(route)["commit"]["sha"] == policy_sha, "Trusted release policy moved during verification")
             return {"manifestHash": manifest_hash, "sourceSHA": source["sha"], "sourceTree": source["tree"],
-                    "prepublicationVerified": True, "verified": False, "publicationExecuted": False}
+                    "sourceAndSealVerified": True, "archiveFailures": archive_failures,
+                    "prepublicationVerified": not archive_failures, "verified": False, "publicationExecuted": False}
+        check(not archive_failures, 'Complete release proof requires every original archive')
         latest=self.transport.get('/actions/runs/'+str(run['id']))
         proof,artifact,_,consumer=self.receipt('public',latest,source,manifest)
         if archive_integrity_mode(manifest):
@@ -315,16 +324,24 @@ def main():
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
     plan = commands.add_parser("plan"); plan.add_argument("--source", required=True); plan.add_argument("--output", required=True)
+    plan.add_argument('--full-source', action='store_true', help='Build every source npm package without reading historical release state')
     verify = commands.add_parser("verify"); verify.add_argument("--manifest", required=True); verify.add_argument("--archives", required=True)
     args = parser.parse_args()
     if args.command == "plan":
         source = evidence.source_reader(args.source)
         check(chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Checkout and release plan source differ")
-        state = require_idle_publication(actions_transport())
-        selector=load('plan_release_registry','release-registry-selection.py')
-        snapshot=selector.collect(source,'npm',selector.Registry().lookup)
-        snapshot['stateBaseline']=state['baseline']
-        result = source_plan(source,registry_snapshot=snapshot)
+        if args.full_source:
+            # A new source release is independent of historical transactions.
+            # Registry absence is not an admission gate; each package is checked
+            # at its exact-byte publication boundary and failures are recorded.
+            actions_transport()
+            result = source_plan(source)
+        else:
+            state = require_idle_publication(actions_transport())
+            selector=load('plan_release_registry','release-registry-selection.py')
+            snapshot=selector.collect(source,'npm',selector.Registry().lookup)
+            snapshot['stateBaseline']=state['baseline']
+            result = source_plan(source,registry_snapshot=snapshot)
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         if os.environ.get('GITHUB_OUTPUT'):
             records={row['kind']+':'+row['name']:row for row in result['fullFamily']}
