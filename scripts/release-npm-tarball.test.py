@@ -283,7 +283,10 @@ class Contracts(unittest.TestCase):
                            'NPM_CONFIG_GLOBALCONFIG': str(global_config),
                            'NPM_CONFIG_CACHE': str(root / 'cache'),
                            'NPM_CONFIG_AUDIT': 'false', 'NPM_CONFIG_FUND': 'false'}
-            value = manifest(scripts={key: 'exit 99' for key in ['prepack', 'prepare', 'postpack']})
+            # npm 10 may run a directory package's prepare hook even with
+            # --ignore-scripts. This fixture tests archive parsing, not hooks,
+            # so it contains no lifecycle commands on either npm version.
+            value = manifest()
             (package / 'package.json').write_text(json.dumps(value))
             (package / 'index.js').write_text('export default 42;')
             for kind in ['ordinary', 'ustar', 'pax']:
