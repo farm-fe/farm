@@ -1,5 +1,5 @@
 """Persistent repository receipts survive Actions expiry without claiming attestation."""
-# cspell:words importlib
+# cspell:words importlib reencoded
 import copy
 import importlib.util
 from pathlib import Path

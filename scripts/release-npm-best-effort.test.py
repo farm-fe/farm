@@ -1,5 +1,5 @@
 """Offline full-family publication contracts. No real registry writes."""
-# cspell:words importlib readback USTAR ENEEDAUTH
+# cspell:words importlib readback USTAR ENEEDAUTH finalizer
 import copy
 import gzip
 import hashlib

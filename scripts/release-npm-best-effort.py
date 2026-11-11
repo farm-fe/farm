@@ -5,7 +5,7 @@ concurrency serializes writers. Full verified success may confirm the exact
 tag and GitHub Release. Frozen producer proof and original bytes remain
 mandatory; npm versions are never overwritten.
 """
-# cspell:words argparse importlib readback postpublish setitimer SIGALRM SIGTERM ITIMER rpartition
+# cspell:words argparse importlib readback postpublish setitimer SIGALRM SIGTERM ITIMER rpartition FINALIZER
 import argparse
 from contextlib import contextmanager
 import hashlib
