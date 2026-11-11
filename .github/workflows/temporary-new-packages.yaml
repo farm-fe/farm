@@ -1,0 +1,67 @@
+name: Temporary manual new npm packages
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_publication:
+        description: Publish only package names absent from npm
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: farm-independent-release
+  cancel-in-progress: false
+  queue: max
+jobs:
+  publish-new:
+    if: github.repository == 'farm-fe/farm' && github.ref == 'refs/heads/main' && inputs.confirm_publication == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Initialize per-package result report
+        shell: python
+        run: |
+          import importlib.util, json
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location('manual', 'scripts/temporary-new-packages.py')
+          module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+          module.best.write_report(Path('publication-results/results.json'), {
+              'kind': 'temporary-new-package-publication', 'complete': False, 'success': False,
+              'packages': [{'name': name, 'version': '0.0.1', 'status': 'not-attempted', 'uploadAttempted': False}
+                           for name in sorted(module.ALLOWLIST)]})
+      - uses: actions/download-artifact@v4
+        timeout-minutes: 20
+        with:
+          github-token: ${{ github.token }}
+          run-id: 42964546726
+          artifact-ids: 13834104358
+          merge-multiple: true
+          path: release-candidate
+      - name: Verify original signed producer and publish absent names
+        timeout-minutes: 75
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NPM_BYPASS_2FA_TOKEN: ${{ secrets.NPM_BYPASS_2FA_TOKEN }}
+          CONFIRM_PUBLICATION: ${{ inputs.confirm_publication }}
+        run: python -B scripts/temporary-new-packages.py --candidate release-candidate --output publication-results/results.json
+      - name: Preserve per-package outcomes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-new-package-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: publication-results/results.json
+          if-no-files-found: warn
+          retention-days: 90
