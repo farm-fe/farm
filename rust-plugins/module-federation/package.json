@@ -1,0 +1,22 @@
+{
+  "name": "@farmfe/plugin-module-federation",
+  "version": "0.0.0-experimental",
+  "private": true,
+  "type": "module",
+  "exports": "./scripts/index.mjs",
+  "napi": {
+    "binaryName": "farm_plugin_module_federation",
+    "targets": [
+      "aarch64-apple-darwin"
+    ]
+  },
+  "dependencies": {
+    "@module-federation/runtime": "2.9.2"
+  },
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "scripts": {
+    "build": "node scripts/build-native.mjs"
+  }
+}

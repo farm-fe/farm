@@ -1,0 +1,16 @@
+{
+  "name": "@farmfe/js-plugin-module-federation",
+  "version": "0.0.0-experimental",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node --check src/index.mjs"
+  },
+  "dependencies": {
+    "@module-federation/runtime": "2.9.2",
+    "magic-string": "0.30.18",
+    "typescript": "5.6.3"
+  }
+}
