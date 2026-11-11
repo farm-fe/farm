@@ -1,8 +1,11 @@
 import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { nativeBuildOptions } from "./native-platform.mjs";
+
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
+const options = nativeBuildOptions(process.argv.slice(2));
 const child = spawn(
   "cargo",
   [
@@ -10,9 +13,11 @@ const child = spawn(
     "-p",
     "farmfe_plugin_module_federation",
     "--profile",
-    "ci",
+    options.profile,
+    "--target",
+    options.target,
     "--message-format=json",
-    ...process.argv.slice(2),
+    ...options.cargoArgs,
   ],
   {
     cwd: path.resolve(packageRoot, "../.."),
@@ -22,16 +27,21 @@ const child = spawn(
 let pending = "",
   artifact;
 const line = (value) => {
+  let message;
   try {
-    const message = JSON.parse(value);
-    if (
-      message.reason === "compiler-artifact" &&
-      message.target?.name === "farmfe_plugin_module_federation"
-    )
-      artifact = message.filenames.find((f) => /\.(dylib|so|dll)$/.test(f));
-    if (message.reason === "compiler-message" && message.message?.rendered)
-      process.stderr.write(message.message.rendered);
-  } catch {}
+    message = JSON.parse(value);
+  } catch {
+    return;
+  }
+  if (
+    message.reason === "compiler-artifact" &&
+    message.target?.name === "farmfe_plugin_module_federation"
+  ) {
+    const library = message.filenames?.find((file) => file.endsWith(options.extension));
+    if (library) artifact = library;
+  }
+  if (message.reason === "compiler-message" && message.message?.rendered)
+    process.stderr.write(message.message.rendered);
 };
 child.stdout.setEncoding("utf8");
 child.stdout.on("data", (chunk) => {
@@ -44,19 +54,15 @@ child.stdout.on("data", (chunk) => {
 });
 await new Promise((resolve, reject) => {
   child.once("error", reject);
-  child.once("exit", (code) =>
-    code === 0 ? resolve() : reject(new Error(`cargo exited ${code}`)),
+  // close follows stdout draining; exit can precede the final artifact message.
+  child.once("close", (code, signal) =>
+    code === 0 ? resolve() : reject(new Error(`cargo exited ${code ?? signal}`)),
   );
 });
 if (pending) line(pending);
 if (!artifact)
-  throw new Error("Cargo did not emit a Federation dynamic library");
-const destination = path.join(
-  packageRoot,
-  "npm",
-  `${process.platform}-${process.arch}`,
-  "index.farm",
-);
+  throw new Error(`Cargo did not emit a Federation dynamic library for ${options.target}`);
+const destination = path.join(packageRoot, "npm", options.abi, "index.farm");
 await fs.mkdir(path.dirname(destination), { recursive: true });
 await fs.copyFile(artifact, destination);
-console.log(`Native Federation plugin: ${destination}`);
+console.log(`Native Federation plugin (${options.profile}): ${destination}`);

@@ -10,7 +10,7 @@ Build the repository's core JS/native packages using the existing source-build i
 node rust-plugins/module-federation/scripts/build-native.mjs
 ```
 
-The build script accepts additional Cargo arguments such as `--target-dir /absolute/path`. It reads Cargo's emitted artifact paths, including paths containing spaces, and stages the dynamic library as `npm/<platform>-<arch>/index.farm`. Cross-compilation is not supported by this staging script. Only macOS arm64 execution has been verified; other platforms require their own native build and acceptance run.
+The build script defaults to the local `ci` profile and accepts `--profile`, `--target`, and an optional `--abi` consistency check, plus Cargo arguments such as `--target-dir /absolute/path`. Target-specific output is staged under `npm/darwin-arm64`, `npm/linux-x64-gnu`, or `npm/win32-x64-msvc` as `index.farm`, using Cargo's emitted artifact path. Build the core and plugin from the same checkout, locked dependencies and pinned Rust toolchain, with compatible target/ABI settings. Local `ci` verification uses a `ci`-built core and plugin. Formal CI follows the existing core `release-publish` recipe and plugin `release` recipe; their profile names intentionally differ. For this private plugin, CI uses `--profile release --target <Rust target> --abi <ABI> --locked`. An explicit target still requires the appropriate Rust target and linker. Only macOS arm64 native execution has been verified locally; Linux and Windows require their own native build and acceptance run.
 
 In a COW-managed checkout, keep pnpm/Cargo/browser caches and builds in that checkout’s overlay. Use its tool wrappers and point `PLAYWRIGHT_BROWSERS_PATH` at its matching Playwright browser cache.
 
@@ -41,15 +41,23 @@ Production preview serves the built artifacts on independent static HTTP origins
 
 A blocked remote entry prevents application bootstrap from becoming ready. Restoring the endpoint and fully reloading the document must recover and render the remote React component. Same-page automatic retry is not asserted or promised: failed Farm module/ESM loader state is not reset by this test. This describes failed initial loading. Separate hot-update groups now cover already-running applications without reloading.
 
-Each subprocess has a 120-second limit; dev readiness has a 20-second limit. Owned process groups are stopped in finally and on SIGTERM/SIGINT. Cleanup restores the remote source used by the refresh test, releases the suite lock, and never kills unrelated processes.
+Each subprocess has a 120-second limit; dev readiness has a 20-second limit. Cleanup stops owned POSIX process groups or, on Windows, the tree of a still-running owned child PID. Graceful suite shutdown restores the edited remote source and releases the suite lock. Once shutdown starts, no further tests or child launches are allowed, including when the repository runner catches a test failure. Cleanup does not search for or kill unrelated processes.
 
-The separately executable interruption check starts the actual suite, waits for its real dev server, sends SIGTERM and verifies all reserved ports are free, the original source is restored and the lock is gone:
+**Windows limitation:** if a direct child exits or crashes before cleanup, its descendants may remain running. The helper does not target an exited PID, which may have been reused, and does not guarantee orphan-tree cleanup. Reliable recovery of that case requires a retained supervisor or Windows Job Object. The simulated Windows tests cover live owned-PID tree termination and graceful IPC shutdown, not recovery of orphaned descendants.
+
+The separately executable interruption check starts the actual suite, waits for its real dev server, requests shutdown using SIGTERM on POSIX or IPC on Windows, and verifies all reserved ports are free, the original source is restored and the lock is gone:
 
 ```sh
 node examples/module-federation-native-probe/e2e-cleanup-check.mjs
 ```
 
 Its result is `evidence-e2e-cleanup.json`. It must not run concurrently with the suite.
+
+The lightweight process regressions use real fixture subprocesses, catch-and-continue runner behavior, and an interruption during asynchronous log opening. Run them without native builds:
+
+```sh
+node --test examples/module-federation-native-probe/e2e-processes.test.mjs
+```
 
 ## Locked interoperability matrix
 
