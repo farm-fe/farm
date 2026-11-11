@@ -8,7 +8,7 @@ publish = false
 
 [dependencies]
 farmfe_core = "=2.2.0"
-farmfe_compiler = "=2.2.0"
+farmfe_compiler = "=2.2.1"
 farmfe_toolkit = "=2.2.0"
 farmfe_ecosystem_glob = "=0.1.0"
 farmfe_macro_cache_item = "=2.1.0"

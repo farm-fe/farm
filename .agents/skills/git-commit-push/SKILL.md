@@ -26,7 +26,7 @@ Safely commit and push changes for the current branch.
 
 4. Create commit
    - Use user-provided commit message.
-   - If none is provided, draft a concise conventional message and ask for confirmation.
+   - If none is provided, draft and use a concise conventional message without asking for confirmation.
    - Run `git commit -m "<message>"`.
 
 5. Push changes

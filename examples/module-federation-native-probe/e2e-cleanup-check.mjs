@@ -1,4 +1,8 @@
-import { spawn } from "node:child_process";
+import {
+  spawnOwnedProcess,
+  shutdownOwnedSuite,
+  stopOwnedProcess,
+} from "./e2e-processes.mjs";
 import fs from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
@@ -8,21 +12,19 @@ const base = path.dirname(fileURLToPath(import.meta.url));
 const original = await fs.readFile(path.join(base, "remote-a/lazy.js"));
 const started = Date.now();
 const log = await fs.open(path.join(base, "cleanup-check.log"), "w");
-const child = spawn(process.execPath, ["e2e.mjs"], {
+const child = spawnOwnedProcess(process.execPath, ["e2e.mjs"], {
   cwd: base,
   env: process.env,
-  detached: true,
-  stdio: ["ignore", log.fd, log.fd],
+  stdio: ["ignore", log.fd, log.fd, "ipc"],
 });
-const exited = new Promise((resolve, reject) => {
-  child.once("error", reject);
-  child.once("exit", (code, signal) => resolve({ code, signal }));
-});
+let spawnError;
+child.on("error", (error) => { spawnError = error; });
 await log.close();
 const evidence = { passed: false };
 try {
   let ready = false;
   while (Date.now() - started < 20000) {
+    if (spawnError) throw spawnError;
     if (child.exitCode !== null || child.signalCode !== null)
       throw new Error("Suite exited before interruption check");
     try {
@@ -43,21 +45,7 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   assert.equal(ready, true, "Did not observe real dev server");
-  child.kill("SIGTERM");
-  let timer;
-  try {
-    evidence.exit = await Promise.race([
-      exited,
-      new Promise((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error("Signal cleanup exceeded 5 seconds")),
-          5000,
-        );
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
+  evidence.exit = await shutdownOwnedSuite(child);
   for (const port of [4100, 4101, 4102, 4190, 4200, 4201, 4202]) {
     const server = net.createServer();
     await new Promise((resolve, reject) => {
@@ -82,8 +70,22 @@ try {
   evidence.error = error.stack;
   process.exitCode = 1;
 } finally {
-  if (child.exitCode === null && child.signalCode === null)
-    child.kill("SIGTERM");
+  try {
+    if (child.exitCode === null && child.signalCode === null)
+      await shutdownOwnedSuite(child);
+  } catch (error) {
+    evidence.error ??= error.stack;
+    evidence.passed = false;
+    process.exitCode = 1;
+  } finally {
+    try {
+      await stopOwnedProcess(child);
+    } catch (error) {
+      evidence.error ??= error.stack;
+      evidence.passed = false;
+      process.exitCode = 1;
+    }
+  }
   await fs.writeFile(
     path.join(base, "evidence-e2e-cleanup.json"),
     JSON.stringify(evidence, null, 2),

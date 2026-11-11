@@ -28,7 +28,9 @@ test('primary platform consumers wait only for their own successful producer', (
   assert.match(platform, /platform: \$\{\{ inputs.abi \}\}/);
   for (const job of ['examples-test', 'ts-test']) {
     const block = platform.split(`  ${job}:`)[1].split(/\n  [a-z][\w-]*:\n/)[0];
-    assert.match(block, /needs: \[native, native-disposition\]/);
+    const expectedNeeds = job === 'examples-test' ? ['native', 'native-disposition', 'mf-native'] : ['native', 'native-disposition'];
+    assert.deepEqual(YAML.parse(platform).jobs[job].needs, expectedNeeds);
+    if (job === 'examples-test') assert.match(block, /needs\.mf-native\.result == 'success'/);
     assert.match(block, /if: always\(\) && needs.native-disposition.result == 'success'/);
     assert.doesNotMatch(block, /call-rust-build-user|call-rust-build-release|primary-linux|primary-macos|primary-windows/);
   }

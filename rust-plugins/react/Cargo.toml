@@ -16,4 +16,4 @@ lazy_static = "1.4.0"
 
 [dev-dependencies]
 farmfe_testing_helpers = { version = "=2.2.0", path = "../../crates/testing_helpers" }
-farmfe_compiler = { version = "=2.2.0", path = "../../crates/compiler" }
+farmfe_compiler = { version = "=2.2.1", path = "../../crates/compiler" }

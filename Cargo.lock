@@ -2134,7 +2134,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_compiler"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "enhanced-magic-string",
  "farmfe_core",
@@ -2401,7 +2401,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
@@ -2578,7 +2578,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2733,7 +2733,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "enhanced-magic-string",
  "farmfe_core",

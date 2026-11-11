@@ -3769,7 +3769,7 @@ importers:
         version: 5.2.8(@types/node@22.19.15)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.51.2)
       ws:
         specifier: ^8.21.0
-        version: 8.21.3(bufferutil@4.0.8)(utf-8-validate@6.0.3)
+        version: 8.22.2(bufferutil@4.0.8)(utf-8-validate@6.0.3)
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -13223,8 +13223,8 @@ packages:
     resolution: {integrity: sha512-5T6P4xPgpp0YDFvSWwEZ4NoE3aM4QBQXDzmVbraCkFj8zHM+mba8SyqB5DbZWyR7mYHo6Y7BdQo3MoA4m0TeQg==}
     engines: {node: '>=0.10.0'}
 
-  baseline-browser-mapping@2.11.35:
-    resolution: {integrity: sha512-GNk8KX52CHqeNKGk8+7tZnQab/2k1t/BgrUHPKNdijzpEhF1saPQZHVKb6m5loSAxB39gyrTYw34Qf9CQ3u1qQ==}
+  baseline-browser-mapping@2.11.36:
+    resolution: {integrity: sha512-AbPFGS4K9S3meMRCLTM0Zas+e9X7b5ygUBOboDT5zevCZt9ByKSbMtKhwyVqW+oL8WemPVsbP7X3rdZcIyOa0w==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -13453,8 +13453,8 @@ packages:
   caniuse-lite@1.0.30001684:
     resolution: {integrity: sha512-G1LRwLIQjBQoyq0ZJGqGIJUXzJ8irpbjHLpVRXDvBEScFJ9b17sgK6vlx0GAJFE21okD7zXl08rRRUfq6HdoEQ==}
 
-  caniuse-lite@1.0.30001820:
-    resolution: {integrity: sha512-gfWD6MxqVCqAOwmODfZf7DchWvlrA+SRdNX7ceLfg3xRqe5ssjjpF7EgslC/0tiLiNTajdaNN/q8c/5u/7Gz8w==}
+  caniuse-lite@1.0.30001826:
+    resolution: {integrity: sha512-wTB+9tIbLro/BCXwLuNV1meHE4L9dS6dArMDwgYfNBPMYScqClHyGunhkCSDtHhe/69Xl0sHlKgBVZ+fNsYtWA==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -15105,8 +15105,8 @@ packages:
   electron-to-chromium@1.5.33:
     resolution: {integrity: sha512-+cYTcFB1QqD4j4LegwLfpCNxifb6dDFUAwk6RsLusCwIaZI6or2f+q8rs5tTB2YC53HhOlIbEaqHMAAC8IOIwA==}
 
-  electron-to-chromium@1.5.477:
-    resolution: {integrity: sha512-PN++F4zWZoVDGWinxMnSCpVqKhqFOJfLXxdU8bYJKudAEsHL/XKVITOKWVbfMt1r276Mi9RDLU9VHx9uKJ4RMQ==}
+  electron-to-chromium@1.5.482:
+    resolution: {integrity: sha512-CAj2EpyffocZkpJA1yUDSA/wgoo+JkSFkx5ywA00X5biWrmBGecoFyKlyZw2Tlt0mZFFfHqP9S4PMLwtXXeHXg==}
 
   electron-winstaller@5.3.1:
     resolution: {integrity: sha512-oM8BW3a8NEqG0XW+Vx3xywhk0DyDV4T0jT0zZfWt0IczNT3jHAAvQWBorF8osQDplSsCyXXyxrsrQ8cY0Slb/A==}
@@ -15182,8 +15182,8 @@ packages:
     resolution: {integrity: sha512-d4lC8xfavMeBjzGr2vECC3fsGXziXZQyJxD868h2M/mBI3PwAuODxAkLkq5HYuvrPYcUtiLzsTo8U3PgX3Ocww==}
     engines: {node: '>=10.13.0'}
 
-  enhanced-resolve@5.26.0:
-    resolution: {integrity: sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw==}
+  enhanced-resolve@5.26.1:
+    resolution: {integrity: sha512-PPnnSJq3azKOIewXR/uppBV/6h98dprBJ/WaQ9Qgj10xX1lJLNfg+XShpbsrSqcDSy2yYYyhfXM1wWhftqgyzw==}
     engines: {node: '>=10.13.0'}
 
   enquirer@2.4.1:
@@ -16433,6 +16433,7 @@ packages:
   image-size@0.5.5:
     resolution: {integrity: sha512-6TDAlDPZxUFCv+fuOkIoXT/V/f3Qbq8e37p+YOiYrUv3v9cc3/6x78VdfPgFVaB9dZYeLUfKgHRebpkm/oP2VQ==}
     engines: {node: '>=0.10.0'}
+    deprecated: Please migrate to image-size@2.x
     hasBin: true
 
   immediate@3.0.6:
@@ -17610,6 +17611,12 @@ packages:
 
   magic-string@0.30.10:
     resolution: {integrity: sha512-iIRwTIf0QKV3UAnYK4PU8uiEc4SRh5jX0mwpIwETPpHdhVM4f53RSwS/vXvN1JhGX+Cs7B8qIq3d6AH49O5fAQ==}
+
+  magic-string@0.30.11:
+    resolution: {integrity: sha512-+Wri9p0QHMy+545hKww7YAu5NyzF8iomPL/RQazugQ9+Ez4Ic3mERMd8ZTX5rfK944j+560ZJi8iAwgak1Ac7A==}
+
+  magic-string@0.30.12:
+    resolution: {integrity: sha512-Ea8I3sQMVXr8JhN4z+H/d8zwo+tYDgHE9+5G4Wnrwhs0gaK9fXTKx0Tw5Xwsd/bCPTTZNRAdpyzvoeORe9LYpw==}
 
   magic-string@0.30.18:
     resolution: {integrity: sha512-yi8swmWbO17qHhwIBNeeZxTceJMeBvWJaId6dyvTSOwTipqeHhMhOrz6513r1sOKnpvQ7zkhlG8tPrpilwTxHQ==}
@@ -19319,8 +19326,8 @@ packages:
     resolution: {integrity: sha512-UMz42UD0UY0EApS0ZL9o1XnLhSTtvvvLe5Dc2H2O56fvRZi+KulDyf5ctDhhtYJBGKStV2FL1fy6253cmLgqVQ==}
     engines: {node: '>=4'}
 
-  postcss-selector-parser@7.1.7:
-    resolution: {integrity: sha512-wWBro/7hJ40ye6TPiXkUQoXKCw23xSsjriUvqd7Uls9Sso3oLiON1flc18cCdnjgCRXw4fBVqUJJeOdDTh3P3g==}
+  postcss-selector-parser@7.2.0:
+    resolution: {integrity: sha512-Khh/tERVBn0I1499dvBSHY0pWJloMJWUxDsOBM0CCDPAcVZ10Jl2L1qy1f19uEX22spa8Mv7DCdEQJc0cGwBhQ==}
     engines: {node: '>=4'}
 
   postcss-url@10.1.3:
@@ -20779,12 +20786,12 @@ packages:
     resolution: {integrity: sha512-Gf9qqc58SpCA/xdziiHz35F4GNIWYWZrEshUc/G/r5BnLph6xpKuLeoJoQuj5WfBIx/eQLf+hmVPYHaxJu7V2g==}
     engines: {node: '>= 10.13.0'}
 
-  schema-utils@4.8.2:
-    resolution: {integrity: sha512-iKlak3OFHF0dgD1nZRvgWQzG+P1TiEcMnLSBtIVBg937z5Jd6WE1c3SyZkXIyCfPHowL35yMsVvIjotm1c1qiw==}
+  schema-utils@4.8.3:
+    resolution: {integrity: sha512-qIfo3f+lRNqnMPgpXSKvUhsT3pY5U+ppmgGr4j8LanFP3W/Ze+xj8DY/dPb5qVu3m6qFIMyMWKVRLNKxrNhxWg==}
     engines: {node: '>= 10.13.0'}
     hasBin: true
     peerDependencies:
-      webpack: ^5.112.0
+      webpack: ^5.0.0
     peerDependenciesMeta:
       webpack:
         optional: true
@@ -22737,8 +22744,8 @@ packages:
     resolution: {integrity: sha512-8wrBCMtVhqcXP2Sup1ctSkga6uc2Bx0IIvKyT7yTFier5AXHooSI+QyQQAtTb7+E0IUCCKyTFmXqdqgum2XWGg==}
     engines: {node: '>=10.13.0'}
 
-  watchpack@2.6.3:
-    resolution: {integrity: sha512-s3NZy0QpTY9qGqzc0wtz4qI28z3+5qKbbAec4MV4G9N3CfgZ9wgvQRr0cl2jh/tqkWG1NWHkmVMHZpCamev5Wg==}
+  watchpack@2.6.4:
+    resolution: {integrity: sha512-5H3Tce2GfzWbcr9VnSqyak2whFaONw4BdmI5BDnMXold4qSlCFd64XaMQESRh2vkDKmdUkv6rUo17UvZ9f9nXw==}
     engines: {node: '>=10.13.0'}
 
   wcwidth@1.0.1:
@@ -22904,6 +22911,18 @@ packages:
 
   ws@8.21.3:
     resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
+  ws@8.22.2:
+    resolution: {integrity: sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -27343,7 +27362,7 @@ snapshots:
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
       defu: 6.1.4
       estree-walker: 2.0.2
-      magic-string: 0.30.18
+      magic-string: 0.30.11
       pathe: 1.1.2
       vitest: 2.1.2(@types/node@22.19.15)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.51.2)
     transitivePeerDependencies:
@@ -31203,7 +31222,7 @@ snapshots:
       debug: 4.3.7
       deepmerge: 4.3.1
       kleur: 4.1.5
-      magic-string: 0.30.18
+      magic-string: 0.30.12
       svelte: 5.2.1
       vite: 5.2.8(@types/node@22.19.15)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.51.2)
       vitefu: 1.0.3(vite@5.2.8(@types/node@22.19.15)(less@4.2.2)(lightningcss@1.30.1)(sass@1.85.1)(terser@5.51.2))
@@ -33221,7 +33240,7 @@ snapshots:
       '@unocss/core': 0.62.2
       '@unocss/rule-utils': 0.62.2
       css-tree: 2.3.1
-      magic-string: 0.30.18
+      magic-string: 0.30.11
       postcss: 8.4.32
       tinyglobby: 0.2.2
     transitivePeerDependencies:
@@ -33233,7 +33252,7 @@ snapshots:
       '@unocss/core': 0.62.2
       '@unocss/rule-utils': 0.62.2
       css-tree: 2.3.1
-      magic-string: 0.30.18
+      magic-string: 0.30.11
       postcss: 8.5.6
       tinyglobby: 0.2.2
     transitivePeerDependencies:
@@ -35587,7 +35606,7 @@ snapshots:
       mixin-deep: 1.3.2
       pascalcase: 0.1.1
 
-  baseline-browser-mapping@2.11.35: {}
+  baseline-browser-mapping@2.11.36: {}
 
   bcryptjs@2.4.3: {}
 
@@ -35740,9 +35759,9 @@ snapshots:
 
   browserslist@4.29.5:
     dependencies:
-      baseline-browser-mapping: 2.11.35
-      caniuse-lite: 1.0.30001820
-      electron-to-chromium: 1.5.477
+      baseline-browser-mapping: 2.11.36
+      caniuse-lite: 1.0.30001826
+      electron-to-chromium: 1.5.482
       node-releases: 2.0.63
       update-browserslist-db: 1.3.4(browserslist@4.29.5)
 
@@ -35923,7 +35942,7 @@ snapshots:
 
   caniuse-lite@1.0.30001684: {}
 
-  caniuse-lite@1.0.30001820: {}
+  caniuse-lite@1.0.30001826: {}
 
   ccount@2.0.1: {}
 
@@ -37350,7 +37369,7 @@ snapshots:
 
   electron-to-chromium@1.5.33: {}
 
-  electron-to-chromium@1.5.477: {}
+  electron-to-chromium@1.5.482: {}
 
   electron-winstaller@5.3.1:
     dependencies:
@@ -37449,7 +37468,7 @@ snapshots:
       graceful-fs: 4.2.11
       tapable: 2.2.1
 
-  enhanced-resolve@5.26.0:
+  enhanced-resolve@5.26.1:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3
@@ -40405,6 +40424,14 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  magic-string@0.30.11:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+
+  magic-string@0.30.12:
+    dependencies:
+      '@jridgewell/sourcemap-codec': 1.5.5
+
   magic-string@0.30.18:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -41457,7 +41484,7 @@ snapshots:
   minimizer-webpack-plugin@5.14.0(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)):
     dependencies:
       jest-worker: 27.5.1
-      schema-utils: 4.8.2(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6))
+      schema-utils: 4.8.3(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6))
       terser: 5.51.2
       webpack: 5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)
     optionalDependencies:
@@ -41468,7 +41495,7 @@ snapshots:
   minimizer-webpack-plugin@5.14.0(@swc/core@1.7.26)(lightningcss@1.30.1)(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1)):
     dependencies:
       jest-worker: 27.5.1
-      schema-utils: 4.8.2(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1))
+      schema-utils: 4.8.3(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1))
       terser: 5.51.2
       webpack: 5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1)
     optionalDependencies:
@@ -42475,13 +42502,13 @@ snapshots:
     dependencies:
       icss-utils: 5.1.0(postcss@8.5.6)
       postcss: 8.5.6
-      postcss-selector-parser: 7.1.7
+      postcss-selector-parser: 7.2.0
       postcss-value-parser: 4.2.0
 
   postcss-modules-scope@3.2.1(postcss@8.5.6):
     dependencies:
       postcss: 8.5.6
-      postcss-selector-parser: 7.1.7
+      postcss-selector-parser: 7.2.0
 
   postcss-modules-values@4.0.0(postcss@8.5.6):
     dependencies:
@@ -42633,9 +42660,8 @@ snapshots:
       cssesc: 3.0.0
       util-deprecate: 1.0.2
 
-  postcss-selector-parser@7.1.7:
+  postcss-selector-parser@7.2.0:
     dependencies:
-      cssesc: 3.0.0
       util-deprecate: 1.0.2
 
   postcss-url@10.1.3(postcss@8.4.31):
@@ -44545,7 +44571,7 @@ snapshots:
       ajv-formats: 2.1.1
       ajv-keywords: 5.1.0(ajv@8.12.0)
 
-  schema-utils@4.8.2(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)):
+  schema-utils@4.8.3(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)):
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
@@ -44554,7 +44580,7 @@ snapshots:
     optionalDependencies:
       webpack: 5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)
 
-  schema-utils@4.8.2(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1)):
+  schema-utils@4.8.3(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1)):
     dependencies:
       '@types/json-schema': 7.0.15
       ajv: 8.20.0
@@ -45249,7 +45275,7 @@ snapshots:
       esrap: 1.2.2
       is-reference: 3.0.3
       locate-character: 3.0.0
-      magic-string: 0.30.18
+      magic-string: 0.30.12
       zimmerframe: 1.1.2
 
   svg-baker@1.7.0:
@@ -45895,7 +45921,7 @@ snapshots:
   tsconfig-paths-webpack-plugin@4.1.0:
     dependencies:
       chalk: 4.1.2
-      enhanced-resolve: 5.18.3
+      enhanced-resolve: 5.17.0
       tsconfig-paths: 4.2.0
 
   tsconfig-paths@4.2.0:
@@ -46341,7 +46367,7 @@ snapshots:
       debug: 4.3.4
       fast-glob: 3.3.2
       local-pkg: 0.4.3
-      magic-string: 0.30.18
+      magic-string: 0.30.10
       minimatch: 9.0.5
       resolve: 1.22.8
       unplugin: 1.10.1
@@ -47318,7 +47344,7 @@ snapshots:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
 
-  watchpack@2.6.3:
+  watchpack@2.6.4:
     dependencies:
       graceful-fs: 4.2.11
 
@@ -47355,15 +47381,15 @@ snapshots:
       '@webassemblyjs/wasm-parser': 1.14.1
       browserslist: 4.29.5
       chrome-trace-event: 1.0.3
-      enhanced-resolve: 5.26.0
+      enhanced-resolve: 5.26.1
       es-module-lexer: 2.3.2
       events: 3.3.0
       graceful-fs: 4.2.11
       mime-db: 1.54.0
       minimizer-webpack-plugin: 5.14.0(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6)(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6))
-      schema-utils: 4.8.2(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6))
+      schema-utils: 4.8.3(webpack@5.112.2(@swc/core@1.7.26(@swc/helpers@0.5.17))(lightningcss@1.30.1)(postcss@8.5.6))
       tapable: 2.3.3
-      watchpack: 2.6.3
+      watchpack: 2.6.4
       webpack-sources: 3.7.0
     transitivePeerDependencies:
       - '@minify-html/node'
@@ -47392,15 +47418,15 @@ snapshots:
       '@webassemblyjs/wasm-parser': 1.14.1
       browserslist: 4.29.5
       chrome-trace-event: 1.0.3
-      enhanced-resolve: 5.26.0
+      enhanced-resolve: 5.26.1
       es-module-lexer: 2.3.2
       events: 3.3.0
       graceful-fs: 4.2.11
       mime-db: 1.54.0
       minimizer-webpack-plugin: 5.14.0(@swc/core@1.7.26)(lightningcss@1.30.1)(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1))
-      schema-utils: 4.8.2(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1))
+      schema-utils: 4.8.3(webpack@5.112.2(@swc/core@1.7.26)(lightningcss@1.30.1))
       tapable: 2.3.3
-      watchpack: 2.6.3
+      watchpack: 2.6.4
       webpack-sources: 3.7.0
     transitivePeerDependencies:
       - '@minify-html/node'
@@ -47431,7 +47457,7 @@ snapshots:
       acorn-import-attributes: 1.9.5(acorn@8.15.0)
       browserslist: 4.24.0
       chrome-trace-event: 1.0.3
-      enhanced-resolve: 5.18.3
+      enhanced-resolve: 5.17.0
       es-module-lexer: 1.5.4
       eslint-scope: 5.1.1
       events: 3.3.0
@@ -47556,6 +47582,11 @@ snapshots:
       utf-8-validate: 6.0.3
 
   ws@8.21.3(bufferutil@4.0.8)(utf-8-validate@6.0.3):
+    optionalDependencies:
+      bufferutil: 4.0.8
+      utf-8-validate: 6.0.3
+
+  ws@8.22.2(bufferutil@4.0.8)(utf-8-validate@6.0.3):
     optionalDependencies:
       bufferutil: 4.0.8
       utf-8-validate: 6.0.3

@@ -27,11 +27,11 @@ pnpm exec playwright install chromium
 pnpm run test-e2e -- --example module-federation-native-probe
 ```
 
-原生构建命令将当前机器的动态库放入 `npm/<platform>-<arch>/index.farm`，可追加 `--target-dir` 等 Cargo 参数；它不是交叉编译安装器。当前执行验收在 macOS arm64 上完成，其他系统需要自行构建并验收。在 cows 工作区中，pnpm、Cargo 和浏览器缓存应继续使用 overlay。
+原生构建命令默认使用本地 `ci` profile，支持 `--profile`、`--target`、可选且必须匹配的 `--abi`，以及 `--target-dir` 等 Cargo 参数。产物放入 `npm/<abi>/index.farm`，支持 `darwin-arm64`、`linux-x64-gnu` 和 `win32-x64-msvc`；应与 core 使用同一份源码和固定版本的 Rust 工具链，并保持 target/ABI 设置兼容。本地 `ci` 验证使用按 `ci` 配方构建的 core 和插件；正式 CI 沿用 core 的 `release-publish` 与插件的 `release` 构建配方，不要求 profile 名称相同。显式指定 target 仍需准备相应的 Rust 工具链和链接器。本地原生执行验收已在 macOS arm64 上完成，Linux 和 Windows 仍需各自的验收运行。在 cows 工作区中，pnpm、Cargo 和浏览器缓存应继续使用 overlay。
 
 示例位于 `examples/module-federation-native-probe`。其 `config.mjs` 定义 host 4100、remote A 4101 的 `/deploy/a/` 和 remote B 4102 的 `/deploy/b/`。README 记录了原生产物前置条件、保留端口、日志和清理方式。准备好产物后运行 `pnpm --filter @farmfe-examples/module-federation-native-probe start`，浏览器打开 `http://127.0.0.1:4100`。
 
-仓库 E2E 命令会自行构建并启动独立生产静态站点和真实开发服务器，渲染远端 React hooks 组件，验证 singleton 身份、资源、失败后刷新恢复以及 Rspack/Webpack 矩阵。它设置了超时并清理自己启动的进程，无需手动提前启动服务。先安装 Chromium，或将 `PLAYWRIGHT_BROWSERS_PATH` 指向已有的匹配版本。
+仓库 E2E 命令会自行构建并启动独立生产静态站点和真实开发服务器，渲染远端 React hooks 组件，验证 singleton 身份、资源、失败后刷新恢复以及 Rspack/Webpack 矩阵。它设置了超时并清理自己启动的进程，无需手动提前启动服务。Windows 清理仅针对仍在运行的自有子进程及其后代，套件通过 IPC 请求正常退出。如果该子进程在清理前已经退出或崩溃，其孤立后代可能继续运行；当前不保证回收这种情况。先安装 Chromium，或将 `PLAYWRIGHT_BROWSERS_PATH` 指向已有的匹配版本。
 
 ## 最小 host 与 remote
 
