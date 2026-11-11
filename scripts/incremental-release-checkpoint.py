@@ -77,6 +77,11 @@ def decode(release,manifest,source,repository_id):
     check(set(records)==set(family) and all(row.get('version')==family[key]['version'] and row.get('identity')==key
           and re.fullmatch('[a-f0-9]{64}',row.get('archiveSha256','')) for key,row in records.items()),'Persistent checkpoint family differs')
     chain.exact(value.get('publicAcceptanceHash'),64)
+    for row in manifest['packages']:
+        identity = row['kind'] + ':' + row['name']
+        expected_record = {**row, 'identity': identity, 'originSourceSHA': source['sha'],
+                           'originRunId': manifest['producerRunId'], 'originAttempt': manifest['producerAttempt']}
+        check(records.get(identity) == expected_record, 'Published checkpoint row differs from frozen archive or producer')
     for identity,row in records.items():
         if row.get('originKind')=='independently-verified-registry':
             snapshot=manifest.get('registrySnapshot',{})

@@ -1,5 +1,5 @@
 """Default diagnostic path with mocked process/HTTP boundaries; no registry access."""
-# cspell:words whoami importlib npmjs USERCONFIG GLOBALCONFIG
+# cspell:words whoami importlib npmjs USERCONFIG GLOBALCONFIG execpath
 import importlib.util
 import io
 import json

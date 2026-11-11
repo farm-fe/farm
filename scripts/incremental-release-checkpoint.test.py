@@ -25,6 +25,17 @@ class Contracts(unittest.TestCase):
     def test_complete_receipt_roundtrip_binds_source_family_and_origin(self):
         self.assertEqual(module.decode(self.release,self.manifest,self.source,1),self.value)
         self.assertEqual(self.value['kind'],'repository-release-checkpoint-not-actions-attestation')
+    def test_reencoded_receipt_cannot_forge_published_bytes_or_original_producer(self):
+        for key, replacement in [('archiveSha256', 'f' * 64), ('originRunId', 999),
+                                 ('originAttempt', 999), ('originSourceSHA', 'e' * 40),
+                                 ('archiveBytes', 999), ('archive', 'other.tgz')]:
+            with self.subTest(field=key):
+                value = copy.deepcopy(self.value)
+                identity = self.manifest['packages'][0]['kind'] + ':' + self.manifest['packages'][0]['name']
+                value['packages'][identity][key] = replacement
+                release = {**self.release, 'body': '<!-- farm-release-manifest:' + self.transaction + ' -->\n' + module.encode(value)}
+                with self.assertRaisesRegex(ValueError, 'Published checkpoint row'):
+                    module.decode(release, self.manifest, self.source, 1)
     def test_registry_retained_family_has_no_invented_build_origin(self):
         registry=load('checkpoint_registry_tests','release-registry-selection.test.py')
         selector=registry.module

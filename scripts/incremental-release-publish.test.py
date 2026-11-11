@@ -375,8 +375,9 @@ class Contracts(unittest.TestCase):
         self.assertIn("needs.producer.result == 'success' || needs.source.outputs.reuse == 'true'",identity)
         self.assertIn("int(attempt) <= int(os.environ['GITHUB_RUN_ATTEMPT'])",identity)
         self.assertIn("inputs.publish == true",workflow)
-        self.assertIn('name: '+module.ROLES['upload'],workflow)
-        self.assertIn('name: '+module.ROLES['finalize'],workflow)
+        best_effort = module.load('workflow_best_effort_roles', 'release-npm-best-effort.py')
+        self.assertIn('name: '+module.entry.PUBLISHER,workflow)
+        self.assertIn('name: '+best_effort.FINALIZER,workflow)
         native=(Path(__file__).parents[1]/'.github/workflows/release-native-build.yaml').read_text()
         self.assertIn('profile: release',native)
         self.assertNotIn('scripts/incremental-release-functional.py --source',workflow)
@@ -1254,6 +1255,9 @@ class FullInventoryBudgetContracts(unittest.TestCase):
             self.assertEqual(writer.reader.total_bytes, 3 * 297 * len(body))
             if hasattr(self, 'checkpoint'): self.checkpoint('reuse', reads[0], len(requests))
 
+
+# Keep the best-effort contracts in the existing CI aggregate invocation.
+BestEffortContracts = module.load('best_effort_contract_suite', 'release-npm-best-effort.test.py').Contracts
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

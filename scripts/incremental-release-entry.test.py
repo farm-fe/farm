@@ -22,6 +22,42 @@ fixtures = load("release_entry_fixture", "incremental-chain-plan.test.py")
 
 
 class Contracts(unittest.TestCase):
+    def test_full_source_plan_never_reads_historical_state_or_registry_selection(self):
+        import sys
+        destination = self.root / 'full.json'
+        with mock.patch.object(sys, 'argv', ['entry', 'plan', '--full-source', '--source', self.source['sha'], '--output', str(destination)]), \
+             mock.patch.dict(os.environ, {}, clear=True), \
+             mock.patch.object(entry.evidence, 'source_reader', return_value=self.source), \
+             mock.patch.object(entry.chain.impact, 'git', return_value=self.source['sha'].encode()), \
+             mock.patch.object(entry, 'actions_transport', return_value=mock.Mock()), \
+             mock.patch.object(entry, 'require_idle_publication', side_effect=AssertionError('old state read')) as state, \
+             mock.patch.object(entry, 'published_baseline', side_effect=AssertionError('old baseline read')) as baseline:
+            entry.main()
+        state.assert_not_called(); baseline.assert_not_called()
+        result = json.loads(destination.read_text())
+        self.assertEqual(result, entry.source_plan(self.source))
+        self.assertEqual(set(result['build']), set(result['publish']))
+        self.assertEqual(set(result['publish']), {row['kind'] + ':' + row['name'] for row in result['fullFamily']})
+        self.assertNotIn('registrySnapshot', result); self.assertNotIn('baselineBinding', result)
+
+    def test_archive_isolation_cannot_bypass_source_plan_or_signed_seal(self):
+        best = load('full_source_proof', 'release-npm-best-effort.py')
+        self.manifest['releaseValidation'] = 'archive-integrity-v1'
+        self.seal['manifestHash'] = entry.chain.digest(self.manifest)
+        verifier = best.SourceProofVerifier(self.transport, {'runId': 10, 'attempt': 2},
+            read_source=lambda sha: copy.deepcopy(self.source), receipt_provider=self.receipt_fixture)
+        jobs_patch = mock.patch.object(best.entry.execution, 'jobs_for', return_value=self.jobs)
+        jobs_patch.start(); self.addCleanup(jobs_patch.stop)
+        broken = self.manifest['packages'][0]; (self.root / broken['archive']).write_bytes(b'corrupted')
+        proof = verifier.verify(self.manifest, self.root)
+        self.assertTrue(proof['sourceAndSealVerified']); self.assertFalse(proof['prepublicationVerified'])
+        self.assertEqual(proof['archiveFailures'], [broken['kind'] + ':' + broken['name']])
+        for field in ['sourceTree', 'planHash', 'graphHash']:
+            changed = copy.deepcopy(self.manifest); changed[field] = 'f' * len(changed[field])
+            with self.assertRaises(ValueError): verifier.verify(changed, self.root)
+        self.seal['manifestHash'] = 'e' * 64
+        with self.assertRaisesRegex(ValueError, 'seal binding'): verifier.verify(self.manifest, self.root)
+
     def test_build_admission_blocks_active_transaction_without_mutation(self):
         state_module = entry.load('admission_test_state', 'incremental-publication-state.py')
         owner = {'runId': self.manifest['producerRunId'], 'attempt': 1,

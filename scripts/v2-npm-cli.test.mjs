@@ -223,17 +223,17 @@ test('bootstrap failures and timeouts withhold child output and remove isolated 
 test('incremental publisher alone gains npm OIDC permissions and bootstraps before receiving candidate data', async () => {
   const workflow = await fs.readFile(new URL('../.github/workflows/incremental-release.yaml', import.meta.url), 'utf8');
   const publisher = workflow.split('\n  publisher:\n')[1].split('\n  public-proof:\n')[0];
-  assert.match(publisher, /permissions:\n      contents: write\n      actions: read\n      id-token: write/);
+  assert.match(publisher, /permissions:\n      contents: read\n      actions: read\n      id-token: write/);
   assert.match(publisher, /node-version: 22\.20\.0/);
   assert.doesNotMatch(publisher, /NPM_TOKEN|NODE_AUTH_TOKEN|registry-url|npm install|npx /);
   assert.match(publisher, /ACTIONS_ID_TOKEN_REQUEST_URL: ''\n          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ''/);
   assert.match(publisher, /FARM_NODE_EXECUTABLE: \$\{\{ steps\.publisher-npm\.outputs\.node-executable \}\}/);
   assert.match(publisher, /\/usr\/bin\/env -i GITHUB_OUTPUT="\$GITHUB_OUTPUT" "\$node_executable" "\$GITHUB_WORKSPACE\/scripts\/v2-npm-bootstrap\.mjs"/);
   assert.ok(publisher.indexOf('scripts/v2-npm-bootstrap.mjs') < publisher.indexOf('uses: actions/download-artifact@v4'));
-  assert.ok(publisher.indexOf('scripts/v2-npm-bootstrap.mjs') < publisher.indexOf('incremental-release-publish.py upload'));
+  assert.ok(publisher.indexOf('scripts/v2-npm-bootstrap.mjs') < publisher.indexOf('release-npm-best-effort.py --candidate'));
   assert.equal((publisher.match(/id-token: write/g) ?? []).length, 1);
   assert.doesNotMatch(workflow.split('\njobs:\n')[0], /id-token:/);
-  for (const name of ['source', 'verify', 'producer', 'public-proof', 'finalize']) {
+  for (const name of ['source', 'verify', 'producer', 'public-proof']) {
     const section = workflow.split(`\n  ${name}:\n`)[1].split(/\n  [a-z][a-z-]*:\n/)[0];
     assert.doesNotMatch(section, /id-token:/);
   }

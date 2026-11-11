@@ -1,17 +1,13 @@
-name: Independent incremental release planning and verification
+name: Independent full npm release and per-package results
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
       publish:
-        description: Authorize registry writes from this fixed main execution
+        description: Manual publication is unsupported; trusted main pushes publish automatically
         type: boolean
         default: false
-      functional_evidence:
-        description: Exact CI/Unit testedSHA and five workflow run/attempt bindings as JSON (required to publish)
-        type: string
-        default: ''
       producer_run:
         description: Completed producer for read-only verification; empty builds this fixed main snapshot
         type: string
@@ -45,6 +41,11 @@ jobs:
       reuse: ${{ steps.frozen.outputs.reuse }}
       version_ready: ${{ steps.frozen.outputs.reuse == 'true' || steps.version.outputs.release_ready == 'true' }}
     steps:
+      - name: Reject manual publication outside the trusted main push signer
+        if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+        run: |
+          echo '::error::Manual publication is not supported by the source-bound signer. Use a trusted main push; manual runs with publish=false are read-only.'
+          exit 1
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -62,12 +63,12 @@ jobs:
           import importlib.util, os
           from pathlib import Path
           assert os.environ['GITHUB_WORKFLOW_SHA'] == os.environ['GITHUB_SHA'], 'Workflow/source snapshot differs'
-          spec = importlib.util.spec_from_file_location('functional', 'scripts/incremental-release-functional.py')
+          spec = importlib.util.spec_from_file_location('release_entry', 'scripts/incremental-release-entry.py')
           module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
           attempt = int(os.environ['GITHUB_RUN_ATTEMPT'])
           original = attempt
           if os.environ['GITHUB_REF'] == 'refs/heads/main':
-              original = module.original_attempt(module.entry.actions_transport(), int(os.environ['GITHUB_RUN_ID']), os.environ['GITHUB_SHA'], attempt)
+              original = module.original_attempt(module.actions_transport(), int(os.environ['GITHUB_RUN_ID']), os.environ['GITHUB_SHA'], attempt)
           with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as stream:
               stream.write('producer_attempt=' + str(original) + '\nreuse=' + ('true' if original < attempt else 'false') + '\n')
       - uses: pnpm/action-setup@v4
@@ -87,90 +88,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/automatic-release-source.mjs
-
-  quality:
-    name: Release quality checks
-    needs: [source, plan]
-    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.build_required == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.4.0
-          run_install: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Check release Rust formatting
-        run: cargo fmt --check
-      - name: Check release Rust lint
-        run: cargo clippy --locked
-      - name: Check release TS lint
-        run: pnpm exec biome check --no-errors-on-unmatched --files-ignore-unknown=true
-      - name: Check release spelling
-        run: pnpm exec cspell "**" --gitignore
-
-  main-evidence:
-    outputs:
-      functional_id: ${{ steps.functional-upload.outputs.artifact-id }}
-      functional_digest: ${{ steps.functional-upload.outputs.artifact-digest }}
-      functional_attempt: ${{ steps.functional-origin.outputs.attempt }}
-      pending_id: ${{ steps.pending-upload.outputs.artifact-id }}
-      pending_digest: ${{ steps.pending-upload.outputs.artifact-digest }}
-      pending_attempt: ${{ steps.pending-origin.outputs.attempt }}
-    name: Verify actual fixed-main functional evidence
-    needs: [source, plan, quality]
-    if: github.ref == 'refs/heads/main' && inputs.producer_run == '' && needs.source.outputs.reuse != 'true' && needs.plan.outputs.build_required == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 130
-    permissions:
-      contents: read
-      actions: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Bind completed main CI and Unit functional acceptance
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FARM_FUNCTIONAL_EVIDENCE: ${{ inputs.functional_evidence }}
-        run: python -B scripts/incremental-release-functional.py --source "$GITHUB_SHA" --output functional-evidence.json --wait
-      - name: Preserve pending fixed-main evidence for bounded recovery
-        id: pending-upload
-        if: failure() && hashFiles('release-functional-pending.json') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-functional-pending-${{ github.run_id }}-${{ github.run_attempt }}
-          path: release-functional-pending.json
-          if-no-files-found: error
-          retention-days: 14
-      - name: Bind the pending upload to its executing attempt
-        id: pending-origin
-        if: always() && steps.pending-upload.outcome == 'success'
-        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
-      - name: Preserve verified fixed-main functional evidence
-        id: functional-upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-functional-${{ github.run_id }}-${{ github.run_attempt }}
-          path: functional-evidence.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Bind functional evidence to its original successful upload
-        id: functional-origin
-        if: success() && steps.functional-upload.outcome == 'success'
-        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
 
   plan:
     needs: [source]
@@ -202,7 +119,7 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
-        run: python -B scripts/incremental-release-entry.py plan --source "$SOURCE_SHA" --output release-plan.json
+        run: python -B scripts/incremental-release-entry.py plan --full-source --source "$SOURCE_SHA" --output release-plan.json
       - name: Require prepared versions before scheduling release producers
         shell: python
         run: |
@@ -294,21 +211,33 @@ jobs:
     permissions:
       contents: read
       actions: read
+      id-token: write
+      attestations: write
     needs: [source, plan]
     if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
-    uses: ./.github/workflows/rust-build-user.yaml
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: ["linux-x64-gnu", "darwin-arm64", "win32-x64-msvc"]
+    uses: ./.github/workflows/release-native-build.yaml
     with:
-      profile: release
+      abi: ${{ matrix.abi }}
       native_owners: ${{ needs.plan.outputs.native_owners }}
   release-native-extra:
     permissions:
       contents: read
       actions: read
+      id-token: write
+      attestations: write
     needs: [source, plan]
     if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
-    uses: ./.github/workflows/rust-build-release.yaml
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: ["linux-x64-musl", "darwin-x64", "win32-ia32-msvc", "win32-arm64-msvc", "linux-arm64-musl", "linux-arm64-gnu"]
+    uses: ./.github/workflows/release-native-build.yaml
     with:
-      profile: release
+      abi: ${{ matrix.abi }}
       native_owners: ${{ needs.plan.outputs.native_owners }}
   producer:
     name: Build independent release candidates
@@ -319,8 +248,8 @@ jobs:
       candidates_id: ${{ steps.candidates-upload.outputs.artifact-id }}
       candidates_digest: ${{ steps.candidates-upload.outputs.artifact-digest }}
       frozen_attempt: ${{ steps.frozen-origin.outputs.attempt }}
-    needs: [source, plan, main-evidence, release-native-primary, release-native-extra]
-    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && needs.main-evidence.result == 'success' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
+    needs: [source, plan, release-native-primary, release-native-extra]
+    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     permissions:
@@ -373,7 +302,7 @@ jobs:
         with:
           pattern: ${{ github.sha }}-*
           path: release-native
-      - name: Build the release delta and required prerequisites from fixed source
+      - name: Build the complete npm source family and required prerequisites
         env:
           FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
           FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
@@ -385,20 +314,6 @@ jobs:
         env:
           FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
         run: node scripts/incremental-release-producer.mjs pack release-work/native-assembly.json release-work/artifact-index.json release-work/npm release-work/candidate-plan.json
-      - name: Restore exactly bound original functional evidence
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FARM_FUNCTIONAL_UPLOAD: >-
-            {"artifact_id":"${{ needs.main-evidence.outputs.functional_id }}","artifact_digest":"${{ needs.main-evidence.outputs.functional_digest }}","run_attempt":"${{ needs.main-evidence.outputs.functional_attempt }}"}
-        run: python -B scripts/release-functional-upload.py --output release-functional/functional-evidence.json
-      - name: Load verified functional bindings as data
-        shell: python
-        run: |
-          import json, os
-          from pathlib import Path
-          bindings = json.loads(Path('release-functional/functional-evidence.json').read_text(encoding='utf-8'))
-          with Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as stream:
-              stream.write('FARM_FUNCTIONAL_EVIDENCE=' + json.dumps(bindings, separators=(',', ':')) + '\n')
       - name: Seal source-built npm archives and exact source manifest
         run: node scripts/incremental-release-producer.mjs seal-npm release-work/npm release-candidate release-work/candidate-plan.json
       - name: Verify recipe-only rebuild against original release archive bytes
@@ -464,75 +379,108 @@ jobs:
           assert re.fullmatch(r'[1-9][0-9]*', attempt) and int(attempt) <= int(os.environ['GITHUB_RUN_ATTEMPT'])
           with Path(os.environ['GITHUB_OUTPUT']).open('a') as stream:
               stream.write('attempt=' + attempt + '\n')
-  candidate-consumers:
-    name: Fixed independent release candidate consumers
-    needs:
-      - source
-      - plan
-      - producer
-      - candidate-identity
-    if: always() && needs.candidate-identity.result == 'success' && needs.source.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
-    permissions:
-      contents: read
-      actions: read
-    uses: ./.github/workflows/release-candidate-consumers.yaml
-    with:
-      candidate_attempt: ${{ needs.candidate-identity.outputs.attempt }}
-
   publisher:
-    name: Publish exact independent release archives under durable lock
-    needs: [source, plan, producer, candidate-identity, candidate-consumers, sign-frozen-release]
-    if: always() && (needs.sign-frozen-release.result == 'success' || needs.source.outputs.reuse == 'true') && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && needs.candidate-consumers.result == 'success' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
+    name: Publish original npm archives and record every result
+    needs: [source, plan, producer, candidate-identity, sign-frozen-release]
+    if: always() && (needs.sign-frozen-release.result == 'success' || needs.source.outputs.reuse == 'true') && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
-      contents: write
+      contents: read
       actions: read
+      id-token: write
     steps:
+      - name: Reserve time to record and upload every outcome
+        shell: python
+        run: |
+          import os, time
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('FARM_PUBLICATION_DEADLINE=' + str(time.monotonic() + 75 * 60) + '\n')
       - uses: actions/checkout@v4
+        timeout-minutes: 5
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
+        timeout-minutes: 5
         with:
           node-version: 22.20.0
+      - name: Bootstrap exact OIDC-capable npm without publication credentials
+        id: publisher-npm
+        timeout-minutes: 5
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_URL: ''
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ''
+        shell: bash
+        run: |
+          # The runner may inject OIDC after step env is evaluated. Strip all
+          # ambient credentials and Node loader options before bootstrap starts.
+          node_executable="$(command -v node)"
+          /usr/bin/env -i GITHUB_OUTPUT="$GITHUB_OUTPUT" "$node_executable" "$GITHUB_WORKSPACE/scripts/v2-npm-bootstrap.mjs"
       - uses: actions/setup-python@v5
+        timeout-minutes: 5
         with:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
+        id: publication-candidates
+        timeout-minutes: 5
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
-      - name: Acquire exact source lock, preflight all packages and upload originals
+      - name: Verify producer proof and attempt every independent package
+        id: publish-packages
+        timeout-minutes: 75
         env:
           GH_TOKEN: ${{ github.token }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          FARM_NODE_EXECUTABLE: ${{ steps.publisher-npm.outputs.node-executable }}
           FARM_EXPLICIT_PUBLICATION: 'true'
-          FARM_RELEASE_CANDIDATE_UPLOADS: ${{ toJSON(needs.candidate-consumers.outputs) }}
-        run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
-  public-consumers:
-    if: ${{ !cancelled() && needs.source.result == 'success' && needs.publisher.result == 'success' && needs.candidate-identity.result == 'success' }}
-    name: Fixed independent release public consumers
-    needs:
-      - source
-      - publisher
-      - candidate-identity
-    permissions:
-      contents: read
-      actions: read
-    uses: ./.github/workflows/release-public-consumers.yaml
-    with:
-      candidate_attempt: ${{ needs.candidate-identity.outputs.attempt }}
+        run: python -B scripts/release-npm-best-effort.py --candidate release-candidate --output publication-results/results.json
+      - name: Preserve preparation failure when publication could not start
+        if: always()
+        env:
+          NPM_PREPARATION: ${{ steps.publisher-npm.outcome }}
+          CANDIDATE_DOWNLOAD: ${{ steps.publication-candidates.outcome }}
+          PACKAGE_EXECUTION: ${{ steps.publish-packages.outcome }}
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          output = Path('publication-results/results.json')
+          if not output.exists():
+              family = Path('docs/releases/v2-candidate.json')
+              packages = []
+              if family.is_file():
+                  npm = json.loads(family.read_text(encoding='utf-8'))['npm']
+                  packages = [{'name': row['name'], 'version': row['version'], 'status': 'not-attempted', 'uploadAttempted': False}
+                              for row in npm['primary'] + npm['payloads']]
+              report = {'kind': 'npm-publication-preparation-failure', 'complete': False, 'success': False,
+                        'baselineAdvanced': False, 'releaseCreatedByThisStage': False, 'inventoryVerified': False,
+                        'runId': os.environ['GITHUB_RUN_ID'], 'attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+                        'stages': {key: os.environ.get(key, '') for key in ['NPM_PREPARATION', 'CANDIDATE_DOWNLOAD', 'PACKAGE_EXECUTION']},
+                        'packages': packages}
+              output.parent.mkdir(parents=True, exist_ok=True)
+              output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+              with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as stream:
+                  stream.write('Npm publication did not complete preparation. Package uploads were not started by this command.\n')
+                  stream.write('Preparation stage outcomes: ' + json.dumps(report['stages']) + '\n')
+      - name: Upload all package outcomes even when publication fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-publication-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: publication-results/results.json
+          if-no-files-found: error
+          retention-days: 90
 
   public-proof:
-    if: ${{ !cancelled() && needs.source.result == 'success' && needs.public-consumers.result == 'success' && needs.candidate-identity.result == 'success' && needs.candidate-consumers.result == 'success' }}
+    if: ${{ !cancelled() && needs.source.result == 'success' && needs.publisher.result == 'success' && needs.candidate-identity.result == 'success' }}
     outputs:
       public_id: ${{ steps.public-upload.outputs.artifact-id }}
       public_digest: ${{ steps.public-upload.outputs.artifact-digest }}
       public_attempt: ${{ steps.public-origin.outputs.attempt }}
     name: Verify independent release public consumers
-    needs: [source, public-consumers, candidate-identity, candidate-consumers]
+    needs: [source, publisher, candidate-identity]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -551,19 +499,10 @@ jobs:
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
-      - name: Select each successful OS report independently across attempts
+      - name: Read back every original archive digest, registry checksum and stable tag
         env:
           GH_TOKEN: ${{ github.token }}
-          FARM_RELEASE_PUBLIC_UPLOADS: ${{ toJSON(needs.public-consumers.outputs) }}
-        run: python -B scripts/incremental-release-publish.py collect-public --candidate release-candidate --reports release-public-results
-      - name: Read back every registry checksum and stable tag after real consumers
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FARM_RELEASE_PUBLIC_UPLOADS: ${{ toJSON(needs.public-consumers.outputs) }}
-          FARM_RELEASE_CANDIDATE_UPLOADS: ${{ toJSON(needs.candidate-consumers.outputs) }}
-        run: |
-          python -B scripts/incremental-release-record.py public --candidate release-candidate --reports release-public-results --output release-public-proof/ledger.json
-          python -B scripts/incremental-release-publish.py bind-public-proof --candidate release-candidate --reports release-public-results --proof release-public-proof/ledger.json
+        run: python -B scripts/incremental-release-record.py registry --candidate release-candidate --output release-public-proof/ledger.json
       - name: Upload independent release public acceptance
         id: public-upload
         uses: actions/upload-artifact@v4
@@ -576,9 +515,9 @@ jobs:
         id: public-origin
         run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
   finalize:
-    if: ${{ !cancelled() && needs.source.result == 'success' && needs.public-proof.result == 'success' && needs.candidate-identity.result == 'success' && needs.sign-public-acceptance.result == 'success' }}
-    name: Finalize exact independent release and durable baseline
-    needs: [source, public-proof, candidate-identity, sign-public-acceptance]
+    if: ${{ !cancelled() && needs.source.result == 'success' && needs.publisher.result == 'success' && needs.public-proof.result == 'success' && needs.candidate-identity.result == 'success' && needs.sign-public-acceptance.result == 'success' }}
+    name: Confirm fully verified npm release without durable state
+    needs: [source, publisher, public-proof, candidate-identity, sign-public-acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -597,28 +536,17 @@ jobs:
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
-      - name: Claim explicit handoff, verify public proof, confirm Release then advance baseline
+      - name: Reverify full public acceptance and confirm the exact tag and Release
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_EXPLICIT_PUBLICATION: 'true'
-        run: python -B scripts/incremental-release-publish.py finalize --candidate release-candidate
-# Publication never invokes the legacy CI-candidate publisher. Read-only plans
-# and dry runs cannot authorize writes. Later-baseline selection and original
-# recovery keeps the original producer archives; no rerun rebuild supplies recovery bytes.
+        run: python -B scripts/release-npm-best-effort.py --finalize --candidate release-candidate
 
-  sign-pending-evidence:
-    if: always() && needs.main-evidence.result == 'failure' && needs.main-evidence.outputs.pending_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [main-evidence]
-    permissions:
-      contents: read
-      actions: read
-      id-token: write
-      attestations: write
-    uses: ./.github/workflows/release-proof-call.yaml
-    with:
-      scope: pending
-      upload_bindings: >-
-        {"pending":{"artifact_id":"${{ needs.main-evidence.outputs.pending_id }}","artifact_digest":"${{ needs.main-evidence.outputs.pending_digest }}","run_attempt":"${{ needs.main-evidence.outputs.pending_attempt }}"}}
+# Publication never reads or writes a durable lock or previous baseline. Every
+# new run builds the complete source family. Same-run retries retain the original
+# signed producer bytes; registry reads, never saved success, decide each package.
+# Workflow concurrency above is temporary runner serialization, not release state.
+# A partial failure fails publisher, skips public proof and never creates a Release.
 
   sign-frozen-release:
     if: ${{ !cancelled() && needs.producer.result == 'success' && needs.producer.outputs.seal_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -635,8 +563,8 @@ jobs:
         {"seal":{"artifact_id":"${{ needs.producer.outputs.seal_id }}","artifact_digest":"${{ needs.producer.outputs.seal_digest }}","run_attempt":"${{ needs.producer.outputs.frozen_attempt }}"},"candidates":{"artifact_id":"${{ needs.producer.outputs.candidates_id }}","artifact_digest":"${{ needs.producer.outputs.candidates_digest }}","run_attempt":"${{ needs.producer.outputs.frozen_attempt }}"}}
 
   sign-public-acceptance:
-    if: ${{ !cancelled() && needs.candidate-consumers.result == 'success' && needs.public-consumers.result == 'success' && needs.public-proof.result == 'success' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [public-proof, candidate-consumers, public-consumers]
+    if: ${{ !cancelled() && needs.public-proof.result == 'success' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [public-proof]
     permissions:
       contents: read
       actions: read
@@ -644,6 +572,6 @@ jobs:
       attestations: write
     uses: ./.github/workflows/release-proof-call.yaml
     with:
-      scope: public
+      scope: registry
       upload_bindings: >-
-        {"public":{"artifact_id":"${{ needs.public-proof.outputs.public_id }}","artifact_digest":"${{ needs.public-proof.outputs.public_digest }}","run_attempt":"${{ needs.public-proof.outputs.public_attempt }}"},"candidate:ubuntu-24.04":{"artifact_id":"${{ needs.candidate-consumers.outputs.linux_artifact_id }}","artifact_digest":"${{ needs.candidate-consumers.outputs.linux_artifact_digest }}","run_attempt":"${{ needs.candidate-consumers.outputs.linux_run_attempt }}"},"candidate:macos-latest":{"artifact_id":"${{ needs.candidate-consumers.outputs.macos_artifact_id }}","artifact_digest":"${{ needs.candidate-consumers.outputs.macos_artifact_digest }}","run_attempt":"${{ needs.candidate-consumers.outputs.macos_run_attempt }}"},"candidate:windows-latest":{"artifact_id":"${{ needs.candidate-consumers.outputs.windows_artifact_id }}","artifact_digest":"${{ needs.candidate-consumers.outputs.windows_artifact_digest }}","run_attempt":"${{ needs.candidate-consumers.outputs.windows_run_attempt }}"},"public:ubuntu-24.04":{"artifact_id":"${{ needs.public-consumers.outputs.linux_artifact_id }}","artifact_digest":"${{ needs.public-consumers.outputs.linux_artifact_digest }}","run_attempt":"${{ needs.public-consumers.outputs.linux_run_attempt }}"},"public:macos-latest":{"artifact_id":"${{ needs.public-consumers.outputs.macos_artifact_id }}","artifact_digest":"${{ needs.public-consumers.outputs.macos_artifact_digest }}","run_attempt":"${{ needs.public-consumers.outputs.macos_run_attempt }}"},"public:windows-latest":{"artifact_id":"${{ needs.public-consumers.outputs.windows_artifact_id }}","artifact_digest":"${{ needs.public-consumers.outputs.windows_artifact_digest }}","run_attempt":"${{ needs.public-consumers.outputs.windows_run_attempt }}"}}
+        {"public":{"artifact_id":"${{ needs.public-proof.outputs.public_id }}","artifact_digest":"${{ needs.public-proof.outputs.public_digest }}","run_attempt":"${{ needs.public-proof.outputs.public_attempt }}"}}

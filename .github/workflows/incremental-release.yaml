@@ -1,11 +1,11 @@
-name: Independent incremental release planning and verification
+name: Independent full npm release and per-package results
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
       publish:
-        description: Authorize registry writes from this fixed main execution
+        description: Manual publication is unsupported; trusted main pushes publish automatically
         type: boolean
         default: false
       producer_run:
@@ -41,6 +41,11 @@ jobs:
       reuse: ${{ steps.frozen.outputs.reuse }}
       version_ready: ${{ steps.frozen.outputs.reuse == 'true' || steps.version.outputs.release_ready == 'true' }}
     steps:
+      - name: Reject manual publication outside the trusted main push signer
+        if: github.event_name == 'workflow_dispatch' && inputs.publish == true
+        run: |
+          echo '::error::Manual publication is not supported by the source-bound signer. Use a trusted main push; manual runs with publish=false are read-only.'
+          exit 1
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
@@ -114,7 +119,7 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
-        run: python -B scripts/incremental-release-entry.py plan --source "$SOURCE_SHA" --output release-plan.json
+        run: python -B scripts/incremental-release-entry.py plan --full-source --source "$SOURCE_SHA" --output release-plan.json
       - name: Require prepared versions before scheduling release producers
         shell: python
         run: |
@@ -297,7 +302,7 @@ jobs:
         with:
           pattern: ${{ github.sha }}-*
           path: release-native
-      - name: Build the release delta and required prerequisites from fixed source
+      - name: Build the complete npm source family and required prerequisites
         env:
           FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
           FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
@@ -375,26 +380,35 @@ jobs:
           with Path(os.environ['GITHUB_OUTPUT']).open('a') as stream:
               stream.write('attempt=' + attempt + '\n')
   publisher:
-    name: Publish exact independent release archives under durable lock
+    name: Publish original npm archives and record every result
     needs: [source, plan, producer, candidate-identity, sign-frozen-release]
     if: always() && (needs.sign-frozen-release.result == 'success' || needs.source.outputs.reuse == 'true') && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
-      contents: write
+      contents: read
       actions: read
       id-token: write
     steps:
+      - name: Reserve time to record and upload every outcome
+        shell: python
+        run: |
+          import os, time
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as stream:
+              stream.write('FARM_PUBLICATION_DEADLINE=' + str(time.monotonic() + 75 * 60) + '\n')
       - uses: actions/checkout@v4
+        timeout-minutes: 5
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
+        timeout-minutes: 5
         with:
           node-version: 22.20.0
       - name: Bootstrap exact OIDC-capable npm without publication credentials
         id: publisher-npm
+        timeout-minutes: 5
         env:
           ACTIONS_ID_TOKEN_REQUEST_URL: ''
           ACTIONS_ID_TOKEN_REQUEST_TOKEN: ''
@@ -405,18 +419,60 @@ jobs:
           node_executable="$(command -v node)"
           /usr/bin/env -i GITHUB_OUTPUT="$GITHUB_OUTPUT" "$node_executable" "$GITHUB_WORKSPACE/scripts/v2-npm-bootstrap.mjs"
       - uses: actions/setup-python@v5
+        timeout-minutes: 5
         with:
           python-version: '3.13'
       - uses: actions/download-artifact@v4
+        id: publication-candidates
+        timeout-minutes: 5
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
-      - name: Acquire exact source lock, preflight all packages and upload originals
+      - name: Verify producer proof and attempt every independent package
+        id: publish-packages
+        timeout-minutes: 75
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_NODE_EXECUTABLE: ${{ steps.publisher-npm.outputs.node-executable }}
           FARM_EXPLICIT_PUBLICATION: 'true'
-        run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
+        run: python -B scripts/release-npm-best-effort.py --candidate release-candidate --output publication-results/results.json
+      - name: Preserve preparation failure when publication could not start
+        if: always()
+        env:
+          NPM_PREPARATION: ${{ steps.publisher-npm.outcome }}
+          CANDIDATE_DOWNLOAD: ${{ steps.publication-candidates.outcome }}
+          PACKAGE_EXECUTION: ${{ steps.publish-packages.outcome }}
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          output = Path('publication-results/results.json')
+          if not output.exists():
+              family = Path('docs/releases/v2-candidate.json')
+              packages = []
+              if family.is_file():
+                  npm = json.loads(family.read_text(encoding='utf-8'))['npm']
+                  packages = [{'name': row['name'], 'version': row['version'], 'status': 'not-attempted', 'uploadAttempted': False}
+                              for row in npm['primary'] + npm['payloads']]
+              report = {'kind': 'npm-publication-preparation-failure', 'complete': False, 'success': False,
+                        'baselineAdvanced': False, 'releaseCreatedByThisStage': False, 'inventoryVerified': False,
+                        'runId': os.environ['GITHUB_RUN_ID'], 'attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+                        'stages': {key: os.environ.get(key, '') for key in ['NPM_PREPARATION', 'CANDIDATE_DOWNLOAD', 'PACKAGE_EXECUTION']},
+                        'packages': packages}
+              output.parent.mkdir(parents=True, exist_ok=True)
+              output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+              with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as stream:
+                  stream.write('Npm publication did not complete preparation. Package uploads were not started by this command.\n')
+                  stream.write('Preparation stage outcomes: ' + json.dumps(report['stages']) + '\n')
+      - name: Upload all package outcomes even when publication fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-publication-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: publication-results/results.json
+          if-no-files-found: error
+          retention-days: 90
+
   public-proof:
     if: ${{ !cancelled() && needs.source.result == 'success' && needs.publisher.result == 'success' && needs.candidate-identity.result == 'success' }}
     outputs:
@@ -459,9 +515,9 @@ jobs:
         id: public-origin
         run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
   finalize:
-    if: ${{ !cancelled() && needs.source.result == 'success' && needs.public-proof.result == 'success' && needs.candidate-identity.result == 'success' && needs.sign-public-acceptance.result == 'success' }}
-    name: Finalize exact independent release and durable baseline
-    needs: [source, public-proof, candidate-identity, sign-public-acceptance]
+    if: ${{ !cancelled() && needs.source.result == 'success' && needs.publisher.result == 'success' && needs.public-proof.result == 'success' && needs.candidate-identity.result == 'success' && needs.sign-public-acceptance.result == 'success' }}
+    name: Confirm fully verified npm release without durable state
+    needs: [source, publisher, public-proof, candidate-identity, sign-public-acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -480,14 +536,17 @@ jobs:
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
-      - name: Claim explicit handoff, verify public proof, confirm Release then advance baseline
+      - name: Reverify full public acceptance and confirm the exact tag and Release
         env:
           GH_TOKEN: ${{ github.token }}
           FARM_EXPLICIT_PUBLICATION: 'true'
-        run: python -B scripts/incremental-release-publish.py finalize --candidate release-candidate
-# Publication never invokes the legacy CI-candidate publisher. Read-only plans
-# and dry runs cannot authorize writes. Later-baseline selection and original
-# recovery keeps the original producer archives; no rerun rebuild supplies recovery bytes.
+        run: python -B scripts/release-npm-best-effort.py --finalize --candidate release-candidate
+
+# Publication never reads or writes a durable lock or previous baseline. Every
+# new run builds the complete source family. Same-run retries retain the original
+# signed producer bytes; registry reads, never saved success, decide each package.
+# Workflow concurrency above is temporary runner serialization, not release state.
+# A partial failure fails publisher, skips public proof and never creates a Release.
 
   sign-frozen-release:
     if: ${{ !cancelled() && needs.producer.result == 'success' && needs.producer.outputs.seal_id != '' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}

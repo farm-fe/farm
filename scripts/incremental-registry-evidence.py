@@ -17,7 +17,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class RegistryReadOnly:
-    def __init__(self, environment=None, opener=None, clock=time.monotonic):
+    def __init__(self, environment=None, opener=None, clock=time.monotonic, *, total_byte_limit=3 * 1024 ** 3):
         environment = os.environ if environment is None else environment
         if environment.get("GITHUB_ACTIONS") != "true":
             raise PermissionError("Independent registry verification runs only in Actions")
@@ -25,6 +25,9 @@ class RegistryReadOnly:
         self.clock = clock
         self.deadline = None
         self.total_bytes = 0
+        if type(total_byte_limit) is not int or not 0 < total_byte_limit <= 1024 * 1024 ** 3:
+            raise ValueError('Invalid registry total byte limit')
+        self.total_byte_limit = total_byte_limit
         self.verifiedArchives = {}
 
     @contextmanager
@@ -80,7 +83,7 @@ class RegistryReadOnly:
                 self.remaining()
                 body = response.read(1024 * 1024)
                 count += len(body); self.total_bytes += len(body)
-                if count > 100 * 1024 * 1024 or self.total_bytes > 3 * 1024 ** 3:
+                if count > 100 * 1024 * 1024 or self.total_bytes > self.total_byte_limit:
                     raise ValueError("Registry archive byte budget exceeded")
                 self.remaining()
                 if not body:
