@@ -1,6 +1,11 @@
 {
   "name": "@farmfe/js-plugin-dts",
   "version": "2.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "js-plugins/dts"
+  },
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",

@@ -1,6 +1,11 @@
 {
   "name": "@farmfe/plugin-docs-snippets",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "rust-plugins/docs-snippets"
+  },
   "description": "Rust compilation of explicit Farm Docs code and command snippets",
   "type": "module",
   "license": "MIT",

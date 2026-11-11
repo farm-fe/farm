@@ -383,6 +383,7 @@ jobs:
     permissions:
       contents: write
       actions: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -392,6 +393,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
+      - name: Bootstrap exact OIDC-capable npm without publication credentials
+        id: publisher-npm
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_URL: ''
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ''
+        shell: bash
+        run: |
+          # The runner may inject OIDC after step env is evaluated. Strip all
+          # ambient credentials and Node loader options before bootstrap starts.
+          node_executable="$(command -v node)"
+          /usr/bin/env -i GITHUB_OUTPUT="$GITHUB_OUTPUT" "$node_executable" "$GITHUB_WORKSPACE/scripts/v2-npm-bootstrap.mjs"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -402,7 +414,7 @@ jobs:
       - name: Acquire exact source lock, preflight all packages and upload originals
         env:
           GH_TOKEN: ${{ github.token }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          FARM_NODE_EXECUTABLE: ${{ steps.publisher-npm.outputs.node-executable }}
           FARM_EXPLICIT_PUBLICATION: 'true'
         run: python -B scripts/incremental-release-publish.py upload --candidate release-candidate
   public-proof:

@@ -202,7 +202,8 @@ class Contracts(unittest.TestCase):
     def registry(self, metadata, bodies):
         reader=mock.MagicMock();reader.json.side_effect=metadata;reader.archive.side_effect=bodies
         with mock.patch.object(module.entry.evidence.registry_module,'RegistryReadOnly',return_value=reader):
-            writer=module.RegistryWriter({},'.')
+            writer=module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'ACTIONS_ID_TOKEN_REQUEST_URL': 'https://oidc.invalid/', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN': 'oidc-fixture'},'.')
+        writer.validate_archive = mock.Mock()  # synthetic bytes in registry-model tests
         self.addCleanup(writer.close)
         return writer,reader
 
@@ -436,7 +437,7 @@ class Contracts(unittest.TestCase):
                                         return_value=SimpleNamespace(returncode=1, stdout=output, stderr=output))
                     writer.command = command
                     writer.latest_order = mock.Mock(return_value=-1)
-                    if operation != 'resolve-cli': writer._npm = ('node', '/fixed/npm', {})
+                    if operation != 'resolve-cli': writer._npm = ('node', '/fixed/npm', {'HOME': '/tmp'})
                     with self.assertRaises(ValueError) as raised:
                         with writer:
                             if operation == 'publish': writer.publish(row, b'frozen')
@@ -607,10 +608,13 @@ class Contracts(unittest.TestCase):
                     return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
                 config = Path(options['env']['NPM_CONFIG_USERCONFIG']); paths.append(config)
                 self.assertNotIn('fixture-secret', config.read_text())
-                self.assertIn('${NODE_AUTH_TOKEN}', config.read_text())
+                self.assertNotIn('_auth', config.read_text())
+                self.assertEqual(Path(options['env']['NPM_CONFIG_GLOBALCONFIG']).read_text(), '')
                 self.assertNotIn('GH_TOKEN', options['env'])
                 self.assertNotIn('NPM_TOKEN', options['env'])
-                self.assertEqual(options['env']['NODE_AUTH_TOKEN'], 'fixture-secret')
+                self.assertNotIn('NODE_AUTH_TOKEN', options['env'])
+                self.assertEqual(options['env']['ACTIONS_ID_TOKEN_REQUEST_TOKEN'], 'oidc-fixture')
+                self.assertEqual(options['cwd'], str(config.parent))
                 return SimpleNamespace(returncode=1 if fail else 0)
             writer.command = command
             body = b'frozen'
@@ -626,6 +630,94 @@ class Contracts(unittest.TestCase):
             self.assertEqual(len(set(paths)), 1)
             self.assertTrue(all(not path.parent.exists() for path in paths))
             writer.close()
+
+    def test_oidc_credentials_are_detached_from_parent_environment(self):
+        environment = {'ACTIONS_ID_TOKEN_REQUEST_URL': 'https://oidc.invalid/',
+                       'ACTIONS_ID_TOKEN_REQUEST_TOKEN': 'secret', 'GH_TOKEN': 'github'}
+        saved = module.detach_oidc_credentials(environment)
+        self.assertEqual(set(saved), {'ACTIONS_ID_TOKEN_REQUEST_URL', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN'})
+        self.assertEqual(environment, {'GH_TOKEN': 'github'})
+        self.assertEqual(module.detach_oidc_credentials(environment), {})
+
+    def test_oidc_is_required_and_ambient_credentials_never_reach_npm(self):
+        writer, _ = self.registry([], [])
+        writer.environment.pop('ACTIONS_ID_TOKEN_REQUEST_TOKEN')
+        writer.command = mock.Mock()
+        with self.assertRaisesRegex(ValueError, 'OIDC credentials missing'): writer.npm()
+        writer.command.assert_not_called()
+        writer, _ = self.registry([], [])
+        writer.environment.update(NPM_TOKEN='legacy', NODE_AUTH_TOKEN='legacy', NPM_ID_TOKEN='legacy',
+                                  npm_config_registry='https://attacker.invalid', NODE_OPTIONS='--require evil',
+                                  GH_TOKEN='github-secret', GITHUB_TOKEN='github-secret', HOME='/unsafe',
+                                  GITHUB_SHA='a' * 40)
+        calls = []
+        def command(argv, **options):
+            calls.append((argv, options))
+            return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
+        writer.command = command
+        _, _, env = writer.npm()
+        for key in ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_ID_TOKEN', 'npm_config_registry',
+                    'NODE_OPTIONS', 'GH_TOKEN', 'GITHUB_TOKEN']:
+            self.assertNotIn(key, env)
+        self.assertNotIn('ACTIONS_ID_TOKEN_REQUEST_TOKEN', calls[0][1]['env'])
+        self.assertEqual(env['ACTIONS_ID_TOKEN_REQUEST_TOKEN'], 'oidc-fixture')
+        self.assertEqual(env['GITHUB_SHA'], 'a' * 40)
+        self.assertNotEqual(env['HOME'], '/unsafe')
+        self.assertIn('resolvePublisherNpmCli', calls[0][0][-1])
+        writer.close()
+
+    def test_all_archive_metadata_is_checked_before_publication(self):
+        fixtures = module.entry.load('npm_tarball_test_fixtures', 'release-npm-tarball.test.py')
+        good = fixtures.archive()
+        bad = fixtures.archive(fixtures.manifest(repository='https://example.invalid/repo'))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            rows = []
+            for index, body in enumerate([good, bad]):
+                name = str(index) + '.tgz'
+                (root / name).write_bytes(body)
+                rows.append({'kind': 'npm', 'name': '@farmfe/core', 'version': '2.0.0',
+                             'archive': name, 'archiveBytes': len(body),
+                             'archiveSha256': hashlib.sha256(body).hexdigest()})
+            with self.assertRaisesRegex(ValueError, 'provenance repository'):
+                module.validate_npm_archives({'packages': rows}, root)
+            (root / '1.tgz').write_bytes(good)
+            rows[1].update(archiveBytes=len(good), archiveSha256=hashlib.sha256(good).hexdigest())
+            module.validate_npm_archives({'packages': rows}, root)
+
+    def test_publish_uses_validated_snapshot_even_if_candidate_changes(self):
+        writer, _ = self.registry([], [])
+        body = b'validated frozen bytes'
+        row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0', 'archive': 'a.tgz',
+               'archiveSha256': hashlib.sha256(body).hexdigest()}
+        with tempfile.TemporaryDirectory() as directory:
+            writer.directory = Path(directory)
+            original = writer.directory / row['archive']
+            original.write_bytes(body)
+            seen = []
+            def command(argv, **options):
+                if '--input-type=module' in argv:
+                    original.write_bytes(b'replaced after verification')
+                    return SimpleNamespace(stdout=str(Path(__file__).resolve()), returncode=0)
+                target = Path(argv[argv.index('publish') + 1])
+                seen.append((target.read_bytes(), target, options['cwd']))
+                self.assertNotEqual(target, original)
+                return SimpleNamespace(returncode=0)
+            writer.command = command
+            writer.publish(row, body)
+            self.assertEqual(seen[0][0], body)
+            self.assertFalse(seen[0][1].exists())
+
+    def test_invalid_archive_is_rejected_before_oidc_or_write(self):
+        writer, _ = self.registry([], [])
+        # Restore the real validator; model fixtures otherwise use synthetic bytes.
+        writer.validate_archive = lambda row, body: module.npm_tarball.validate(row, body)
+        writer.command = mock.Mock()
+        body = b'not a tarball'
+        row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0', 'archive': 'a.tgz',
+               'archiveSha256': hashlib.sha256(body).hexdigest()}
+        with self.assertRaises(ValueError): writer.publish(row, body)
+        writer.command.assert_not_called()
 
     def test_prerelease_confirmation_promotes_without_republishing(self):
         writer, reader = self.registry([{'name': 'a', 'version': '2.0.0-rc.1'},
@@ -1010,7 +1102,8 @@ class LatestHTTPContracts(unittest.TestCase):
                 package = argv[argv.index('add') + 1]; name, version = package.rsplit('@', 1)
                 registry.latest[name] = version; registry.tags.append(name)
             return SimpleNamespace(returncode=0)
-        writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'NPM_TOKEN': 'fixture-only'}, root, command)
+        writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'ACTIONS_ID_TOKEN_REQUEST_URL': 'https://oidc.invalid/', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN': 'oidc-fixture', 'NPM_TOKEN': 'fixture-only'}, root, command)
+        writer.validate_archive = mock.Mock()  # synthetic bytes in registry-model tests
         self.addCleanup(writer.close)
         writer.reader = module.entry.evidence.registry_module.RegistryReadOnly(environment={'GITHUB_ACTIONS': 'true'}, opener=Relay())
         def runner(attempt):
@@ -1126,7 +1219,8 @@ class FullInventoryBudgetContracts(unittest.TestCase):
                 self.assertEqual(original_read()[1]['active']['packages']['npm:' + row['name']], 'upload-started')
                 values[row['name']] = body; writes.append(row['name'])
                 return SimpleNamespace(returncode=0)
-            writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'NPM_TOKEN': 'fixture-only'}, root, command)
+            writer = module.RegistryWriter({'GITHUB_ACTIONS': 'true', 'ACTIONS_ID_TOKEN_REQUEST_URL': 'https://oidc.invalid/', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN': 'oidc-fixture', 'NPM_TOKEN': 'fixture-only'}, root, command)
+            writer.validate_archive = mock.Mock()  # synthetic bytes in registry-model tests
             self.addCleanup(writer.close)
             writer.reader = module.entry.evidence.registry_module.RegistryReadOnly(
                 {'GITHUB_ACTIONS': 'true'}, Opener(), lambda: now[0])

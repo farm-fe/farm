@@ -1,6 +1,11 @@
 {
   "name": "@farmfe/plugin-sass",
   "version": "2.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "rust-plugins/sass"
+  },
   "main": "scripts/index.js",
   "types": "scripts/index.d.ts",
   "type": "module",

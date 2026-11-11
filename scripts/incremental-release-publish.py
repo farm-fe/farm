@@ -30,6 +30,7 @@ entry = load("publication_entry", "incremental-release-entry.py")
 state = load("publication_state", "incremental-publication-state.py")
 functional = load("publication_functional", "incremental-release-functional.py")
 consumer_bindings = load("publication_consumer_bindings", "release-consumer-bindings.py")
+npm_tarball = load("publication_npm_tarball", "release-npm-tarball.py")
 check = entry.check
 ROLES = {"upload": "Publish exact independent release archives under durable lock",
          "finalize": "Finalize exact independent release and durable baseline"}
@@ -139,6 +140,20 @@ class GitHubWriter:
         return json.loads(raw.decode("utf-8"))
 
 
+def detach_oidc_credentials(environment):
+    """Keep Actions OIDC secrets away from source and evidence subprocesses."""
+    return {key: environment.pop(key) for key in
+            ['ACTIONS_ID_TOKEN_REQUEST_URL', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN'] if key in environment}
+
+
+def validate_npm_archives(manifest, directory):
+    """Validate every frozen manifest before acquiring a publication transaction."""
+    for row in manifest['packages']:
+        check(row.get('kind') == 'npm', 'Only npm archives may enter OIDC publication')
+        entry.strict_archive(directory, row)
+        npm_tarball.validate(row, (Path(directory) / row['archive']).read_bytes())
+
+
 class RegistryWriter:
     def __init__(self, environment, directory, run_command=subprocess.run):
         self.environment, self.directory, self.command = dict(environment), Path(directory), run_command
@@ -179,21 +194,38 @@ class RegistryWriter:
         """Prepare the controlled CLI and token-free config once per writer."""
         check(not self._closed, 'Registry writer is closed')
         if self._npm is None:
-            token = self.environment.get('NPM_TOKEN')
-            check(bool(token), 'Existing npm publication credential missing')
-            probe = "import {resolveNpmCli} from './scripts/v2-npm-cli.mjs';console.log(resolveNpmCli());"
-            result = self.npm_command('resolve-cli', None, [self.node, '--input-type=module', '-e', probe],
-                                  capture_output=True, text=True, timeout=15, check=True)
-            cli = result.stdout.strip()
-            check(Path(cli).is_absolute() and Path(cli).is_file(), 'Controlled npm CLI missing')
+            check(self.environment.get('GITHUB_ACTIONS') == 'true'
+                  and self.environment.get('ACTIONS_ID_TOKEN_REQUEST_URL')
+                  and self.environment.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN'),
+                  'GitHub Actions OIDC credentials missing')
             self._scratch = tempfile.TemporaryDirectory(prefix='farm-release-npm-')
-            scratch = Path(self._scratch.name); config = scratch / 'user.npmrc'
+            scratch = Path(self._scratch.name)
             try:
-                config.write_text('registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n', encoding='utf-8')
+                config = scratch / 'user.npmrc'
+                config.write_text('registry=https://registry.npmjs.org/\n', encoding='utf-8')
                 config.chmod(0o600)
-                env = {key: value for key, value in self.environment.items()
-                       if key not in ['GH_TOKEN', 'GITHUB_TOKEN', 'CARGO_REGISTRY_TOKEN', 'NPM_TOKEN']}
-                env.update(NODE_AUTH_TOKEN=token, NPM_CONFIG_USERCONFIG=str(config), npm_config_cache=str(scratch / 'cache'))
+                global_config = scratch / 'global.npmrc'
+                global_config.write_text('', encoding='utf-8')
+                global_config.chmod(0o600)
+                # Never pass ambient npm auth, NODE_OPTIONS, or npm configuration.
+                # A fresh HOME, cwd and two config files prevent credential fallback.
+                base = {'PATH': self.environment.get('PATH', os.environ.get('PATH', os.defpath)),
+                        'HOME': str(scratch), 'NPM_CONFIG_USERCONFIG': str(config),
+                        'NPM_CONFIG_GLOBALCONFIG': str(global_config),
+                        'npm_config_cache': str(scratch / 'cache')}
+                probe = "import {resolvePublisherNpmCli} from './scripts/v2-npm-cli.mjs';console.log(resolvePublisherNpmCli());"
+                result = self.npm_command('resolve-cli', None, [self.node, '--input-type=module', '-e', probe],
+                                      env=base, capture_output=True, text=True, timeout=15, check=True)
+                cli = result.stdout.strip()
+                check(Path(cli).is_absolute() and Path(cli).is_file(), 'Controlled npm CLI missing')
+                # OIDC request credentials are available only to npm's publish/tag
+                # subprocess, together with provenance metadata, not helper probes.
+                permitted = ['CI', 'GITHUB_ACTIONS', 'GITHUB_SERVER_URL', 'GITHUB_REPOSITORY',
+                             'GITHUB_REPOSITORY_ID', 'GITHUB_REPOSITORY_OWNER_ID', 'GITHUB_EVENT_NAME',
+                             'GITHUB_REF', 'GITHUB_SHA', 'GITHUB_WORKFLOW_REF', 'GITHUB_RUN_ID',
+                             'GITHUB_RUN_ATTEMPT', 'RUNNER_ENVIRONMENT',
+                             'ACTIONS_ID_TOKEN_REQUEST_URL', 'ACTIONS_ID_TOKEN_REQUEST_TOKEN']
+                env = {**base, **{key: self.environment[key] for key in permitted if key in self.environment}}
                 self._npm = (self.node, cli, env)
             except BaseException:
                 self.close()
@@ -219,7 +251,8 @@ class RegistryWriter:
         if key in self._orders:
             return self._orders[key]
         result = subprocess.run([self.node, str(Path(__file__).with_name('v2-npm-version-order.mjs')),
-                                 json.dumps([version, target])], capture_output=True, text=True, timeout=15)
+                                 json.dumps([version, target])], env={'PATH': self.environment.get('PATH', os.environ.get('PATH', os.defpath))},
+                                capture_output=True, text=True, timeout=15)
         check(result.returncode == 0, 'Invalid registry SemVer or stable publication target')
         order = json.loads(result.stdout)
         check(order is None or type(order) is int and order in [-1, 0, 1], 'Invalid registry version comparison')
@@ -263,9 +296,13 @@ class RegistryWriter:
         check(actual['sha256'] == row['archiveSha256'], 'Immutable registry version has different bytes')
         return actual['sha256']
 
+    def validate_archive(self, row, body):
+        npm_tarball.validate(row, body)
+
     def publish(self, row, body):
         check(row.get("kind") == "npm", "Cargo publication remains outside the new npm incremental publisher")
         check(hashlib.sha256(body).hexdigest() == row["archiveSha256"], "Upload bytes differ from frozen archive")
+        self.validate_archive(row, body)
         if row["kind"] == "cargo":
             token = self.environment.get("CARGO_REGISTRY_TOKEN")
             check(bool(token), "Existing Cargo publication credential missing")
@@ -285,8 +322,19 @@ class RegistryWriter:
                 raise ValueError("Cargo publication HTTP " + str(error.code)) from None
         else:
             node, cli, env = self.npm()
-            self.npm_command("publish", row, [node, cli, "publish", str((self.directory / row["archive"]).resolve()), "--ignore-scripts", "--access", "public",
-                                   "--tag", "farm-release-" + row["version"], "--registry=https://registry.npmjs.org"], env=env, capture_output=True, timeout=120)
+            name = row.get('archive')
+            check(isinstance(name, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,179}', name),
+                  'Archive must be a canonical basename')
+            # npm opens a private byte-for-byte snapshot, never the path that
+            # could have changed after our validated read. Do not repack it.
+            with tempfile.TemporaryDirectory(prefix='sealed-', dir=env['HOME']) as directory:
+                archive = Path(directory) / name
+                with archive.open('xb') as stream:
+                    os.chmod(archive, 0o600)
+                    stream.write(body)
+                self.npm_command("publish", row, [node, cli, "publish", str(archive), "--ignore-scripts", "--access", "public",
+                                       "--tag", "farm-release-" + row["version"], "--registry=https://registry.npmjs.org", "--provenance"],
+                                       env=env, cwd=env["HOME"], capture_output=True, timeout=120)
 
     def confirm(self, row):
         """Repair latest after an uncertain upload without republishing bytes."""
@@ -302,7 +350,7 @@ class RegistryWriter:
         if before is not None and before >= 0:
             return
         self.npm_command('dist-tag', row, [node, cli, 'dist-tag', 'add', row['name'] + '@' + row['version'], 'latest', '--registry=https://registry.npmjs.org'],
-                              env=env, capture_output=True, timeout=120)
+                              env=env, cwd=env['HOME'], capture_output=True, timeout=120)
         observed = self.latest_order(row)
         check(observed is not None and observed >= 0, 'Registry latest read-back differs')
 
@@ -592,6 +640,7 @@ def terminal_owner(reader, current, source, owner):
 
 
 def main():
+    oidc_credentials = detach_oidc_credentials(os.environ)
     parser = argparse.ArgumentParser(); parser.add_argument("stage", choices=[*ROLES, "collect-public", "bind-public-proof"]); parser.add_argument("--candidate", required=True)
     parser.add_argument("--reports"); parser.add_argument("--proof")
     args = parser.parse_args(); directory = Path(args.candidate)
@@ -640,6 +689,8 @@ def main():
     candidate_outputs=consumer_bindings.outputs(os.environ['FARM_RELEASE_CANDIDATE_UPLOADS']) if args.stage=='upload' and not entry.archive_integrity_mode(manifest) else None
     verifier = RecoveryVerifier(api.reader, current, frozen=frozen, candidate_outputs=candidate_outputs)
     preflight = verifier.verify(manifest, directory / "archives", phase="prepublish", current_run=current)
+    if args.stage == "upload":
+        validate_npm_archives(manifest, directory / "archives")
     # PR quality is enforced by repository merge protection. Publication binds
     # the actual main source and frozen bytes above, not a separate test run.
     owner = {"runId": run_id, "attempt": attempt, "repositoryId": repository["id"], "sourceSHA": source["sha"],
@@ -656,7 +707,7 @@ def main():
             print(json.dumps({'stage': args.stage, 'transaction': transaction.transaction, 'alreadyComplete': True})); return
         verify_locked_plan(transaction, source, api.reader)
         inspect_release(api, manifest)
-        with RegistryWriter(os.environ, directory / "archives") as registry:
+        with RegistryWriter({**os.environ, **oidc_credentials}, directory / "archives") as registry:
             # Bound this stage below the 90-minute job cap; operation deadlines
             # do not inherit earlier source verification or idle reader time.
             with registry.reader.budget(4500):

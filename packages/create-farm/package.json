@@ -2,7 +2,11 @@
   "name": "create-farm",
   "version": "2.0.0",
   "description": "Rapidly create a new farm project.",
-  "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/farm-fe/farm",
+    "directory": "packages/create-farm"
+  },
   "bugs": {
     "url": "https://github.com/farm-fe/farm/issues"
   },
