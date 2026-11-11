@@ -71,11 +71,12 @@ pub fn transform_css_to_script_modules(
           name: module_id.to_string() + "-transform_css_to_script_modules",
           key: sha256(
             format!(
-              "transform_css_to_script_modules_{}_{}_{}_{}",
+              "transform_css_to_script_modules_{}_{}_{}_{}_{}",
               content_hash,
               module_id.to_string(),
               generated_css,
-              watch_hash
+              watch_hash,
+              context.config.runtime.namespace
             )
             .as_bytes(),
             32,
@@ -166,7 +167,10 @@ pub fn transform_css_to_script_modules(
 
       let css_code = wrapper_style_load(
         &css_code,
-        module_id.id(context.config.mode),
+        namespaced_style_id(
+          &context.config.runtime.namespace,
+          &module_id.id(context.config.mode),
+        ),
         &css_deps,
         src_map,
       );
@@ -325,6 +329,23 @@ pub fn transform_css_deps(module_id: &ModuleId, context: &Arc<CompilationContext
   drop(module_graph);
 
   load_statements.join(" ")
+}
+
+// DOM style nodes are page-global even when Farm module systems are isolated.
+fn namespaced_style_id(namespace: &str, module_id: &str) -> String {
+  format!("{}:{}", sha256(namespace.as_bytes(), 16), module_id)
+}
+
+#[test]
+fn style_identity_is_stable_and_isolated_across_runtimes() {
+  assert_eq!(
+    namespaced_style_id("app-a", "button.css"),
+    namespaced_style_id("app-a", "button.css")
+  );
+  assert_ne!(
+    namespaced_style_id("app-a", "button.css"),
+    namespaced_style_id("app-b", "button.css")
+  );
 }
 
 pub fn wrapper_style_load(

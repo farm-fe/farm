@@ -152,6 +152,10 @@
       "items": [
         {
           "type": "doc",
+          "id": "advanced/module-federation"
+        },
+        {
+          "type": "doc",
           "id": "advanced/minification"
         },
         {

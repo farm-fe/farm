@@ -1,0 +1,6 @@
+evidence*.json
+evidence*.png
+verification-index.json
+e2e-results/
+.e2e-running
+cleanup-check.log

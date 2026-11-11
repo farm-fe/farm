@@ -24,6 +24,7 @@ mod render_module;
 mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
+mod transform_async_require;
 
 pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,

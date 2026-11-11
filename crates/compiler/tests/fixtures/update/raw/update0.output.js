@@ -15,7 +15,7 @@ window['__farm_default_namespace__'].m._rg=true;(function(moduleSystem, modules)
   color: red;
 }
 `;
-        const farmId = 'index.module.css?farm_css_modules';
+        const farmId = '28079a3b9739ce05:index.module.css?farm_css_modules';
         const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
         const style = document.createElement('style');
         style.setAttribute('data-farm-id', farmId);

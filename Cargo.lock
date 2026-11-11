@@ -2641,6 +2641,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_module_federation"
+version = "0.0.0"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_toolkit",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "farmfe_plugin_partial_bundling"
 version = "2.2.0"
 dependencies = [

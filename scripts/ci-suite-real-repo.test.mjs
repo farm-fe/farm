@@ -51,11 +51,11 @@ test('real repository impact sets equal independent Examples and JS expectations
   }
 });
 
-test('actual repository discovery reproduces 147 passed and 21 excluded rows without accepting unknown skips', () => {
+test('actual repository discovery reproduces 149 passed and 22 excluded rows without accepting unknown skips', () => {
   const {inventory} = realFixture();
   const selected = inventory.items.filter(row => row.kind === 'examples-browser').map(row => row.directory.slice('examples/'.length));
   const excluded = inventory.excluded.filter(row => row.kind === 'examples-browser');
-  assert.equal(selected.length, 72); assert.equal(excluded.length, 20);
+  assert.equal(selected.length, 73); assert.equal(excluded.length, 21);
   const results = new Map(selected.map(name => [name, name === 'arcgis'
     ? [{fullName: 'run start', passed: true, skipped: false}, {fullName: 'run preview', passed: true, skipped: true}]
     : [{fullName: 'case one', passed: true, skipped: false}, {fullName: 'case two', passed: true, skipped: false}]]));
@@ -63,9 +63,9 @@ test('actual repository discovery reproduces 147 passed and 21 excluded rows wit
   for (let i = 0; i < 4; i++) results.get(ordinary).push({fullName: 'extra case ' + i, passed: true, skipped: false});
   for (const row of excluded) results.set(row.directory.slice('examples/'.length), [{fullName: row.reason, passed: true, skipped: true}]);
   const rows = [...results.values()].flat();
-  assert.equal(rows.filter(row => !row.skipped).length, 147); assert.equal(rows.filter(row => row.skipped).length, 21);
+  assert.equal(rows.filter(row => !row.skipped).length, 149); assert.equal(rows.filter(row => row.skipped).length, 22);
   const receipt = checkBrowserExecution(inventory, results, selected);
-  assert.equal(receipt.executedCases, 147); assert.equal(receipt.excludedCases.length, 1); assert.equal(receipt.skipped, 0);
+  assert.equal(receipt.executedCases, 149); assert.equal(receipt.excludedCases.length, 1); assert.equal(receipt.skipped, 0);
   results.get(ordinary)[0].skipped = true;
   assert.throws(() => checkBrowserExecution(inventory, results, selected), /reviewed exclusion/);
 });

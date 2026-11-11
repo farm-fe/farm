@@ -33,7 +33,7 @@ initModuleSystem$2(__farm_internal_module_system__);
         farmRequire("style/b.css");
         const cssCode = `
 `;
-        const farmId = 'style/a.css';
+        const farmId = '28079a3b9739ce05:style/a.css';
         const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
         const style = document.createElement('style');
         style.setAttribute('data-farm-id', farmId);
@@ -57,7 +57,7 @@ initModuleSystem$2(__farm_internal_module_system__);
   background: url("/logo-73d4a8.png");
 }
 `;
-        const farmId = 'style/b.css';
+        const farmId = '28079a3b9739ce05:style/b.css';
         const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
         const style = document.createElement('style');
         style.setAttribute('data-farm-id', farmId);
