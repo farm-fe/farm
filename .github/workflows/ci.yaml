@@ -215,6 +215,7 @@ jobs:
           python -B scripts/incremental-release-materialize.test.py
           python scripts/incremental-release-publish.test.py
           python -B scripts/npm-release-diagnose.test.py
+          python -B scripts/temporary-new-packages.test.py
           python -B scripts/release-npm-tarball.test.py
           python scripts/incremental-release-record.test.py
           python scripts/incremental-release-functional.test.py
