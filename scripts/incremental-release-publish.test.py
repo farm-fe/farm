@@ -230,6 +230,32 @@ class Contracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'different bytes'):writer.lookup(row)
         self.assertEqual(reader.archive.call_count,2)
 
+    def test_registry_metadata_failures_keep_only_bounded_http_status(self):
+        import traceback
+        row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0'}
+        for operation in ['lookup', 'latest_order']:
+            for status in [401, 403, 429, 500, 502, 503, 504, 599, 600, 'secret', True]:
+                with self.subTest(operation=operation, status=status):
+                    error = urllib.error.HTTPError('https://secret.invalid', status, 'secret', {'secret': 'secret'}, io.BytesIO(b'secret'))
+                    writer, reader = self.registry([error], [])
+                    with self.assertRaises(module.RegistryReadFailure) as raised:
+                        getattr(writer, operation)(row)
+                    expected = status if type(status) is int and 100 <= status <= 599 else None
+                    self.assertEqual(raised.exception.status, expected)
+                    diagnostic = ''.join(traceback.format_exception(raised.exception))
+                    self.assertNotIn('secret', diagnostic)
+                    self.assertLess(len(str(raised.exception)), 100)
+                    reader.archive.assert_not_called()
+
+    def test_archive_missing_stays_a_read_failure_and_does_not_publish(self):
+        missing = urllib.error.HTTPError('https://registry.npmjs.org/a/-/a-2.0.0.tgz', 404, 'missing', {}, None)
+        writer, reader = self.registry([self.metadata('A')], [missing])
+        writer.command = mock.Mock()
+        with self.assertRaises(urllib.error.HTTPError) as raised:
+            writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0', 'archiveSha256': 'd'*64})
+        self.assertIs(raised.exception, missing)
+        writer.command.assert_not_called()
+
     def test_terminal_owner_requires_same_run_earlier_attempt_and_exact_source(self):
         source={'sha':'a'*40};current={'runId':7,'attempt':2};owner={'runId':7,'attempt':1,'repositoryId':5}
         run={'id':7,'run_attempt':1,'status':'completed','path':module.entry.WORKFLOW,'head_sha':source['sha'],
@@ -450,6 +476,9 @@ class Contracts(unittest.TestCase):
                     self.assertIn('timeout' if timeout else 'exit=1', diagnostic)
                     if operation != 'resolve-cli': self.assertIn('@farmfe/cli@2.0.0', diagnostic)
                     if not timeout: self.assertIn('E403', diagnostic)
+                    self.assertEqual(raised.exception.npm_codes, ('E403',))
+                    self.assertEqual(raised.exception.timed_out, timeout)
+                    self.assertEqual(raised.exception.returncode, None if timeout else 1)
                     for value in variants + ['secret-argv', 'hidden', 'injected', 'Authorization']:
                         self.assertNotIn(value, diagnostic)
                     self.assertLess(len(str(raised.exception)), 700)
@@ -469,6 +498,17 @@ class Contracts(unittest.TestCase):
         error = module.npm_failure('publish', row, code=1,
                                   stderr='\x1b[31mnpm ERR! code EOTP\x1b[0m\r\n')
         self.assertIn('EOTP: Registry requires a one-time password', str(error))
+        self.assertEqual(error.npm_codes, ('EOTP',))
+        error = module.npm_failure('publish', row, code=1, stderr='\n'.join(
+            'npm error code ' + code for code in ['SECRET_VALUE', 'E403', 'E403', 'E401', 'EOTP', 'E429']))
+        self.assertEqual(error.npm_codes, ('E403', 'E401', 'EOTP'))
+        self.assertEqual(module.npm_failure('publish', row).npm_codes, ())
+        for code in [1, -9, 0, 2 ** 32 - 1, None, True, 'secret', 2 ** 32, -(2 ** 31) - 1]:
+            error = module.npm_failure('publish', row, code=code)
+            expected = code if type(code) is int and -(2 ** 31) <= code < 2 ** 32 else None
+            self.assertEqual(error.returncode, expected)
+            self.assertIs(error.timed_out, False)
+            self.assertNotIn('secret', str(error))
         self.assertIn('invalid-identity', str(module.npm_failure(
             'publish', {'name': 'a\n::error::secret', 'version': '2.0.0'})))
 
@@ -732,6 +772,68 @@ class Contracts(unittest.TestCase):
         self.assertIn('dist-tag', writer.command.call_args.args[0])
         self.assertEqual(reader.json.call_count, 3)
 
+    def test_latest_promotion_does_not_require_immediate_visibility(self):
+        writer, reader = self.registry([{'name': 'a', 'version': '1.0.0'},
+                                       {'name': 'a', 'version': '1.0.0'},
+                                       {'name': 'a', 'version': '1.0.0'},
+                                       {'name': 'a', 'version': '2.0.0'}], [])
+        writer._npm = ('node', '/fixed/npm', {'HOME': '/tmp'})
+        writer.command = mock.Mock(return_value=SimpleNamespace(returncode=0))
+        row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0'}
+        self.assertEqual(writer.promote_latest(row), 'submitted')
+        self.assertEqual(reader.json.call_count, 2)
+        self.assertFalse(writer.latest_visible(row))
+        self.assertTrue(writer.latest_visible(row))
+        self.assertEqual(reader.json.call_count, 4)
+        writer.command.assert_called_once()
+        self.assertIn('dist-tag', writer.command.call_args.args[0])
+
+    def test_latest_visibility_is_fresh_read_only_and_accepts_newer_versions(self):
+        missing = urllib.error.HTTPError('https://registry.npmjs.org/a/latest', 404, 'missing', {}, None)
+        writer, reader = self.registry([missing] + [{'name': 'a', 'version': version} for version in
+                                       ['2.0.0-rc.1', '2.0.0', '3.0.0-rc.1', '3.0.0', '1.0.0']], [])
+        writer.environment = {}
+        writer.npm = mock.Mock(side_effect=AssertionError('read-only verification requested credentials'))
+        writer.command = mock.Mock()
+        row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0'}
+        self.assertEqual([writer.latest_visible(row) for _ in range(6)], [False, False, True, True, True, False])
+        self.assertEqual(reader.json.call_count, 6)
+        writer.npm.assert_not_called()
+        writer.command.assert_not_called()
+
+    def test_uncertain_latest_promotion_can_be_read_without_another_write(self):
+        writer, reader = self.registry([{'name': 'a', 'version': '1.0.0'},
+                                       {'name': 'a', 'version': '1.0.0'},
+                                       {'name': 'a', 'version': '2.0.0'}], [])
+        writer._npm = ('node', '/fixed/npm', {'HOME': '/tmp'})
+        writer.command = mock.Mock(side_effect=module.subprocess.TimeoutExpired(['node'], 120))
+        row = {'kind': 'npm', 'name': 'a', 'version': '2.0.0'}
+        with self.assertRaises(module.NpmCommandFailure): writer.promote_latest(row)
+        self.assertEqual(reader.json.call_count, 2)
+        self.assertTrue(writer.latest_visible(row))
+        writer.command.assert_called_once()
+
+    def test_latest_promotion_retains_current_or_concurrently_newer_tag(self):
+        for versions in [['2.0.0'], ['3.0.0'], ['1.0.0', '3.0.0-rc.1']]:
+            with self.subTest(versions=versions):
+                writer, reader = self.registry([{'name': 'a', 'version': version} for version in versions], [])
+                writer.npm = mock.Mock(return_value=('node', '/fixed/npm', {'HOME': '/tmp'}))
+                writer.command = mock.Mock()
+                self.assertEqual(writer.promote_latest({'kind': 'npm', 'name': 'a', 'version': '2.0.0'}), 'retained')
+                self.assertEqual(reader.json.call_count, len(versions))
+                self.assertEqual(writer.npm.call_count, len(versions) - 1)
+                writer.command.assert_not_called()
+
+    def test_non_npm_latest_operations_remain_no_operations(self):
+        writer, reader = self.registry([], [])
+        writer.command = mock.Mock()
+        row = {'kind': 'cargo', 'name': 'a', 'version': '2.0.0'}
+        self.assertEqual(writer.promote_latest(row), 'retained')
+        self.assertTrue(writer.latest_visible(row))
+        self.assertIsNone(writer.confirm(row))
+        reader.json.assert_not_called()
+        writer.command.assert_not_called()
+
     def test_newer_prerelease_blocks_preflight_and_never_changes_tag(self):
         for version in ['2.1.0-rc.1', '3.0.0-rc.1', '3.0.0']:
             with self.subTest(version=version):
@@ -739,19 +841,20 @@ class Contracts(unittest.TestCase):
                 writer, reader = self.registry([missing, {'name': 'a', 'version': version}], [])
                 with self.assertRaisesRegex(ValueError, 'backwards'):
                     writer.lookup({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
-                writer, reader = self.registry([{'name': 'a', 'version': version}], [])
+                writer, reader = self.registry([{'name': 'a', 'version': version}] * 2, [])
                 writer.command = mock.Mock()
                 writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
                 writer.command.assert_not_called()
 
     def test_tag_preparation_rereads_latest_and_preserves_a_concurrent_higher_version(self):
         writer, reader = self.registry([{'name': 'a', 'version': '2.0.0-rc.1'},
+                                       {'name': 'a', 'version': '2.1.0-rc.1'},
                                        {'name': 'a', 'version': '2.1.0-rc.1'}], [])
         writer.environment['NPM_TOKEN'] = 'fixture-only'
         writer.command = mock.Mock(return_value=mock.Mock(stdout=str(Path(__file__).resolve()), returncode=0))
         writer.confirm({'kind': 'npm', 'name': 'a', 'version': '2.0.0'})
         self.assertEqual(writer.command.call_count, 1)  # resolve CLI only; no dist-tag mutation
-        self.assertEqual(reader.json.call_count, 2)
+        self.assertEqual(reader.json.call_count, 3)
 
     def test_latest_readback_rejects_a_lower_or_invalid_tag_after_command(self):
         for version in ['1.0.0', '2.0.0-rc.1', 'not-semver']:
@@ -779,7 +882,7 @@ class Contracts(unittest.TestCase):
                 writer.lookup({'kind': 'npm', 'name': 'a', 'version': target})
 
     def test_latest_confirmation_preserves_higher_version_without_command(self):
-        writer,reader=self.registry([{'name':'a','version':'3.0.0'}],[])
+        writer,reader=self.registry([{'name':'a','version':'3.0.0'}] * 2,[])
         writer.command=mock.Mock()
         writer.confirm({'kind':'npm','name':'a','version':'2.0.0'})
         writer.command.assert_not_called()

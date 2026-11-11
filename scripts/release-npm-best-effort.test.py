@@ -11,6 +11,7 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+import urllib.error
 from unittest import mock
 
 spec = importlib.util.spec_from_file_location('best_effort_tests', Path(__file__).with_name('release-npm-best-effort.py'))
@@ -43,6 +44,18 @@ class Registry:
     def confirm(self, row):
         if row['name'] in self.tag_fail: raise OSError('private bearer sentinel')
         self.tags.append(row['name'])
+    def promote_latest(self, row):
+        return self.confirm(row)
+    def latest_visible(self, row):
+        return row['name'] in self.tags
+
+
+class Clock:
+    def __init__(self): self.now = 0; self.sleeps = []
+    def __call__(self): return self.now
+    def sleep(self, seconds):
+        assert 0 <= seconds <= 30
+        self.sleeps.append(seconds); self.now += seconds
 
 
 class Contracts(unittest.TestCase):
@@ -59,10 +72,13 @@ class Contracts(unittest.TestCase):
                     'producerRunId': 10, 'producerAttempt': 1, 'publish': names, 'rebuild': names,
                     'family': [{'kind': row['kind'], 'name': row['name']} for row in rows], 'packages': rows}
         return manifest, bodies, Registry()
-    def run_fixture(self, manifest, bodies, registry):
+    def run_fixture(self, manifest, bodies, registry, **options):
         report = module.new_report(manifest); history = []
+        clock = options.pop('clock', Clock())
         module.publish_packages(manifest, lambda row: bodies[row['name']], registry, report,
-                                lambda value: history.append(copy.deepcopy(value)))
+                                lambda value: history.append({key: value[key] for key in
+                                    ['success', 'baselineAdvanced', 'releaseCreatedByThisStage']}),
+                                clock=clock, sleep=clock.sleep, **options)
         self.assertFalse(any(item['success'] for item in history[:-1]))
         self.assertTrue(all(item['baselineAdvanced'] is False and item['releaseCreatedByThisStage'] is False for item in history))
         self.assertEqual(len(report['packages']), len(manifest['packages']))
@@ -283,6 +299,308 @@ class Contracts(unittest.TestCase):
             report = json.loads(output.read_text()); self.assertFalse(report['complete']); self.assertFalse(report['success'])
             self.assertEqual([row['uploadAttempted'] for row in report['packages']], [True, False])
             self.assertEqual(len(registry.writes), 1)
+    def test_scanning_more_than_fifteen_minutes_releases_dependencies_without_resending(self):
+        manifest, bodies, registry = self.fixture(); clock = Clock(); submitted = {}
+        original_publish, original_lookup = registry.publish, registry.lookup
+        def publish(row, body):
+            submitted[row['name']] = clock(); original_publish(row, body)
+        def lookup(row):
+            if row['name'] in submitted and clock() < submitted[row['name']] + 901:
+                return None
+            return original_lookup(row)
+        registry.publish, registry.lookup = publish, lookup
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertTrue(report['success'])
+        self.assertEqual([name for name, _ in registry.writes], ['dependency', 'independent', 'consumer'])
+        self.assertEqual(submitted['independent'], 0)
+        self.assertGreaterEqual(submitted['consumer'], 901)
+        self.assertLess(clock(), 2000)
+        self.assertTrue(all(row['registry-readbackChecks'] > 1 for row in rows.values()))
+        self.assertEqual({row['outcome'] for row in rows.values()}, {'published'})
+    def test_all_297_targets_share_wait_budget_and_auth_errors_do_not_wait(self):
+        manifest, bodies, registry = self.fixture([('package-' + str(i), {}) for i in range(297)])
+        registry.fail = {'package-' + str(i) for i in range(48)}
+        clock = Clock(); original = registry.lookup
+        def lookup(row):
+            return None if row['name'] in registry.bytes and clock() < 901 else original(row)
+        registry.lookup = lookup
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertEqual(report['counts'], {'total': 297, 'success': 249, 'failed': 48})
+        self.assertEqual(len(registry.writes), 297)
+        self.assertGreaterEqual(clock(), 901); self.assertLess(clock(), 1000)
+        self.assertTrue(all(rows[name]['registry-readbackChecks'] == 1 for name in registry.fail))
+    def test_slow_submissions_do_not_starve_earlier_visibility_checks(self):
+        manifest, bodies, registry = self.fixture([('package-' + str(i), {}) for i in range(30)])
+        clock = Clock(); submitted = {}; original_publish, original_lookup = registry.publish, registry.lookup
+        def publish(row, body):
+            clock.now += 60; submitted[row['name']] = clock(); original_publish(row, body)
+        def lookup(row):
+            if row['name'] in submitted and clock() < submitted[row['name']] + 121:
+                return None
+            return original_lookup(row)
+        registry.publish, registry.lookup = publish, lookup
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock, visibility_seconds=300)
+        self.assertTrue(report['success']); self.assertEqual(len(registry.writes), 30)
+        self.assertGreater(clock(), 1800); self.assertLess(clock(), 2100)
+    def test_definite_tag_rejection_reads_once_and_does_not_wait(self):
+        manifest, bodies, registry = self.fixture(); clock = Clock(); original = registry.confirm
+        def confirm(row):
+            if row['name'] == 'dependency':
+                raise module.publisher.npm_failure('dist-tag', row, code=1, stderr='npm error code E403')
+            original(row)
+        registry.confirm = confirm
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertFalse(report['success']); self.assertEqual(clock(), 0)
+        self.assertEqual(rows['dependency']['latest-readbackChecks'], 1)
+        self.assertTrue(rows['dependency']['registryBytesVerified'])
+        self.assertEqual(rows['consumer']['status'], 'success')
+    def test_visibility_deadline_keeps_unknown_outcome_and_original_bytes(self):
+        manifest, bodies, registry = self.fixture([('a', {}), ('b', {})]); clock = Clock()
+        registry.lookup = lambda row: None
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock, visibility_seconds=120)
+        self.assertEqual(clock(), 120); self.assertEqual(len(registry.writes), 2)
+        self.assertFalse(report['success']); self.assertTrue(report['complete'])
+        self.assertTrue(all(row['outcomeUncertain'] for row in rows.values()))
+        self.assertTrue(all(row['publishCommandSucceeded'] for row in rows.values()))
+        self.assertEqual(registry.tags, [])
+        self.assertTrue(all(row['errors'][-1]['stage'] == 'registry-readback-timeout' for row in rows.values()))
+    def test_delayed_latest_readback_never_resubmits_tags(self):
+        manifest, bodies, registry = self.fixture(); clock = Clock()
+        registry.latest_visible = lambda row: row['name'] in registry.tags and clock() >= 901
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertTrue(report['success']); self.assertEqual(len(registry.tags), 3)
+        self.assertGreaterEqual(clock(), 901); self.assertLess(clock(), 1000)
+        self.assertTrue(all(row['latest-readbackChecks'] > 1 for row in rows.values()))
+        self.assertTrue(all(row['latestOutcomeUncertain'] is False for row in rows.values()))
+    def test_lost_tag_response_is_read_only_reconciled_but_error_still_fails(self):
+        manifest, bodies, registry = self.fixture(); clock = Clock(); original = registry.confirm
+        def confirm(row):
+            original(row)
+            if row['name'] == 'dependency': raise TimeoutError('private bearer sentinel')
+        registry.confirm = confirm
+        registry.latest_visible = lambda row: row['name'] in registry.tags and clock() >= 61
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertFalse(report['success']); self.assertEqual(len(registry.tags), 3)
+        self.assertTrue(rows['dependency']['latestVerified'])
+        self.assertEqual(rows['dependency']['status'], 'failed')
+        self.assertEqual(rows['consumer']['status'], 'success')
+    def test_timeout_with_auth_text_still_waits_without_republishing(self):
+        manifest, bodies, registry = self.fixture(); clock = Clock(); original = registry.publish
+        def publish(row, body):
+            original(row, body)
+            if row['name'] == 'dependency':
+                raise module.publisher.npm_failure('publish', row, timed_out=True, stderr='npm error code E403')
+        old_lookup = registry.lookup
+        registry.publish = publish
+        registry.lookup = lambda row: None if row['name'] in registry.bytes and clock() < 61 else old_lookup(row)
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertEqual(len(registry.writes), 3); self.assertFalse(report['success'])
+        self.assertTrue(rows['dependency']['registryBytesVerified'])
+        self.assertEqual(rows['consumer']['status'], 'success')
+    def test_transient_read_errors_are_bounded_but_permission_and_conflict_are_terminal(self):
+        for status in [404, 429, 503, 401]:
+            with self.subTest(status=status):
+                manifest, bodies, registry = self.fixture([('a', {}), ('independent', {})]); clock = Clock()
+                original = registry.lookup
+                def lookup(row):
+                    if row['name'] == 'a' and 'a' in registry.bytes and clock() < 61:
+                        if status == 404:
+                            raise urllib.error.HTTPError('https://registry.npmjs.org/a.tgz', 404, 'missing', {}, None)
+                        raise module.publisher.RegistryReadFailure('lookup', status)
+                    return original(row)
+                registry.lookup = lookup
+                report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+                self.assertEqual(len(registry.writes), 2)
+                self.assertEqual(rows['independent']['status'], 'success')
+                self.assertEqual(rows['a']['status'], 'failed' if status == 401 else 'success')
+                if status == 401: self.assertEqual(clock(), 0)
+                else: self.assertGreater(rows['a']['registry-readbackTransientErrors'], 0)
+        manifest, bodies, registry = self.fixture([('a', {}), ('independent', {})]); clock = Clock()
+        old = registry.lookup
+        def conflict(row):
+            if row['name'] == 'a' and 'a' in registry.bytes: return 'f' * 64
+            return old(row)
+        registry.lookup = conflict
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertEqual(clock(), 0); self.assertEqual(len(registry.writes), 2)
+        self.assertEqual(rows['a']['errors'][0]['code'], 'immutable-version-conflict')
+        self.assertNotIn('a', registry.tags)
+    def test_real_registry_reader_observes_delayed_metadata_and_exact_tarball(self):
+        manifest, bodies, _ = self.fixture([('a', {})]); row = manifest['packages'][0]; clock = Clock()
+        metadata = {'name': 'a', 'version': '2.0.0', 'dist': {
+            'tarball': 'https://registry.npmjs.org/a/-/a-2.0.0.tgz',
+            'shasum': hashlib.sha1(bodies['a']).hexdigest()}}
+        submitted, tags, calls = [], [], []
+        class Opener:
+            def open(self, request, timeout):
+                self_request = request.full_url; calls.append(self_request)
+                assert request.get_method() == 'GET'
+                assert not request.has_header('Authorization')
+                if self_request.endswith('/2.0.0'):
+                    if not submitted or clock() < 901:
+                        raise urllib.error.HTTPError(self_request, 404, 'missing', {}, None)
+                    return io.BytesIO(json.dumps(metadata).encode())
+                assert self_request == metadata['dist']['tarball']
+                return io.BytesIO(bodies['a'])
+        registry = module.publisher.RegistryWriter({'GITHUB_ACTIONS': 'true'}, Path('.'))
+        registry.reader = module.entry.evidence.registry_module.RegistryReadOnly(
+            environment={'GITHUB_ACTIONS': 'true'}, opener=Opener(), clock=clock)
+        registry.latest_order = lambda row: 0 if tags else None
+        registry.publish = lambda row, body: submitted.append(body)
+        registry.promote_latest = lambda row: tags.append(row['name'])
+        with registry.reader.budget(1500):
+            report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertTrue(report['success']); self.assertEqual(submitted, [bodies['a']])
+        self.assertEqual(tags, ['a']); self.assertGreater(len(calls), 3)
+        self.assertEqual(registry.reader.total_bytes, 2 * len(bodies['a']))
+    def test_interruption_while_waiting_preserves_unknown_result_before_exit(self):
+        manifest, bodies, registry = self.fixture([('a', {}), ('b', {})]); clock = Clock()
+        registry.lookup = lambda row: None
+        report = module.new_report(manifest); history = []
+        def remaining():
+            if clock() >= 6: raise module.PublicationInterrupted('deadline')
+            return 6 - clock()
+        with self.assertRaises(module.PublicationInterrupted):
+            module.publish_packages(manifest, lambda row: bodies[row['name']], registry, report,
+                lambda value: history.append(copy.deepcopy(value)), clock=clock, sleep=clock.sleep, remaining=remaining)
+        self.assertEqual(clock(), 6); self.assertEqual(len(registry.writes), 2)
+        self.assertFalse(history[-1]['success']); self.assertFalse(history[-1]['complete'])
+        self.assertTrue(all(row['outcomeUncertain'] for row in history[-1]['packages']))
+    def test_ready_independent_package_finishes_before_unrelated_global_timeout(self):
+        manifest, bodies, registry = self.fixture([('slow', {}), ('ready', {})]); clock = Clock()
+        deadline = module.Deadline(seconds=900, clock=clock)
+        original_lookup, original_scheduler = registry.lookup, module.publish_packages
+        registry.lookup = lambda row: None if row['name'] == 'slow' else original_lookup(row)
+        def scheduler(*args, **kwargs):
+            return original_scheduler(*args, **kwargs, clock=clock, sleep=clock.sleep)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); (root / 'archives').mkdir()
+            (root / 'manifest.json').write_text(json.dumps(manifest))
+            for row in manifest['packages']: (root / 'archives' / row['archive']).write_bytes(bodies[row['name']])
+            registry.reader = module.entry.evidence.registry_module.RegistryReadOnly(
+                environment={'GITHUB_ACTIONS': 'true'}, clock=clock)
+            context = mock.MagicMock(); context.__enter__.return_value = registry; output = root / 'result.json'
+            with mock.patch.object(module.sys, 'argv', ['publisher', '--candidate', str(root), '--output', str(output)]), \
+                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '2'}, clear=True), \
+                 mock.patch.object(module, 'authorize'), mock.patch.object(module, 'Deadline', return_value=deadline), \
+                 mock.patch.object(module, 'publish_packages', side_effect=scheduler), \
+                 mock.patch.object(module.publisher, 'RegistryWriter', return_value=context):
+                self.assertEqual(module.main(), 1)
+            report = json.loads(output.read_text()); outcomes = {row['name']: row for row in report['packages']}
+        self.assertEqual(clock(), 900); self.assertEqual(registry.tags, ['ready'])
+        self.assertEqual(len(registry.writes), 2)
+        self.assertEqual(outcomes['ready']['status'], 'success'); self.assertTrue(outcomes['ready']['latestVerified'])
+        self.assertEqual(outcomes['slow']['status'], 'failed'); self.assertTrue(outcomes['slow']['outcomeUncertain'])
+        self.assertFalse(report['complete']); self.assertFalse(report['success'])
+        self.assertEqual(report['counts'], {'total': 2, 'success': 1, 'failed': 1})
+    def test_delayed_peer_cycle_does_not_hold_an_unrelated_latest(self):
+        manifest, bodies, registry = self.fixture([('a', {'peerDependencies': {'b': '2.0.0'}}),
+            ('b', {'dependencies': {'a': '2.0.0'}}), ('independent', {})])
+        clock = Clock(); submitted = {}; promoted = {}
+        original_publish, original_lookup, original_confirm = registry.publish, registry.lookup, registry.confirm
+        def publish(row, body):
+            submitted[row['name']] = clock(); original_publish(row, body)
+        def lookup(row):
+            if row['name'] in ['a', 'b'] and row['name'] in submitted and clock() < submitted[row['name']] + 901:
+                return None
+            return original_lookup(row)
+        def confirm(row):
+            promoted[row['name']] = clock(); original_confirm(row)
+        registry.publish, registry.lookup, registry.confirm = publish, lookup, confirm
+        report, rows = self.run_fixture(manifest, bodies, registry, clock=clock)
+        self.assertTrue(report['success']); self.assertEqual(promoted['independent'], 0)
+        self.assertGreaterEqual(promoted['a'], 1802); self.assertEqual(promoted['a'], promoted['b'])
+        self.assertEqual(len(registry.writes), 3); self.assertEqual(len(registry.tags), 3)
+    def test_partial_tarball_timeouts_exhaust_only_the_faulty_package_budget(self):
+        manifest, bodies, _ = self.fixture([('broken', {}), ('ready', {})]); clock = Clock()
+        submitted, tags, totals = set(), [], []
+        metadata = {row['name']: {'name': row['name'], 'version': row['version'], 'dist': {
+            'tarball': 'https://registry.npmjs.org/' + row['name'] + '/-/package.tgz',
+            'shasum': hashlib.sha1(bodies[row['name']]).hexdigest()}} for row in manifest['packages']}
+        class PartialStream:
+            def __enter__(self): self.reads = 0; return self
+            def __exit__(self, *args): pass
+            def read(self, size):
+                self.reads += 1
+                if self.reads == 1: return bodies['broken'][:len(bodies['broken']) // 2]
+                raise TimeoutError('private bearer sentinel')
+        class Opener:
+            def open(self, request, timeout):
+                url = request.full_url; name = url.split('/')[3]
+                assert request.get_method() == 'GET' and not request.has_header('Authorization')
+                if url.endswith('/2.0.0'):
+                    if name not in submitted or name == 'ready' and clock() < 1000:
+                        raise urllib.error.HTTPError(url, 404, 'missing', {}, None)
+                    return io.BytesIO(json.dumps(metadata[name]).encode())
+                if name == 'broken': return PartialStream()
+                return io.BytesIO(bodies[name])
+        registry = module.publisher.RegistryWriter({'GITHUB_ACTIONS': 'true'}, Path('.'))
+        registry.reader = module.entry.evidence.registry_module.RegistryReadOnly(
+            environment={'GITHUB_ACTIONS': 'true'}, opener=Opener(), clock=clock)
+        registry.latest_order = lambda row: 0 if row['name'] in tags else None
+        registry.publish = lambda row, body: submitted.add(row['name'])
+        registry.promote_latest = lambda row: tags.append(row['name'])
+        report = module.new_report(manifest)
+        def save(value): totals.append(registry.reader.total_bytes)
+        with registry.reader.budget(1500):
+            module.publish_packages(manifest, lambda row: bodies[row['name']], registry, report, save,
+                clock=clock, sleep=clock.sleep)
+        rows = {row['name']: row for row in report['packages']}
+        self.assertEqual(rows['broken']['status'], 'failed'); self.assertEqual(rows['ready']['status'], 'success')
+        self.assertEqual(tags, ['ready']); self.assertEqual(submitted, {'broken', 'ready'})
+        self.assertEqual(rows['broken']['errors'][-1]['code'], 'registry-package-byte-budget-exceeded')
+        self.assertGreater(rows['broken']['registryReadBytes'], len(bodies['broken']) * 6)
+        self.assertLessEqual(rows['broken']['registryReadBytes'], len(bodies['broken']) * 7)
+        self.assertEqual(rows['ready']['registryReadBytes'], 2 * len(bodies['ready']))
+        self.assertEqual(registry.reader.total_bytes, sum(row['registryReadBytes'] for row in rows.values()))
+        self.assertEqual(totals, sorted(totals)); self.assertLess(registry.reader.total_bytes, registry.reader.total_byte_limit)
+        self.assertNotIn('private bearer sentinel', json.dumps(report)); self.assertFalse(report['success'])
+    def test_real_reader_requests_are_limited_by_remaining_visibility_window(self):
+        manifest, bodies, _ = self.fixture([('a', {})]); clock = Clock(); requests = []; submitted = []
+        class Opener:
+            def open(self, request, timeout):
+                requests.append((clock(), timeout, bool(submitted)))
+                raise urllib.error.HTTPError(request.full_url, 404, 'missing', {}, None)
+        registry = module.publisher.RegistryWriter({'GITHUB_ACTIONS': 'true'}, Path('.'))
+        registry.reader = module.entry.evidence.registry_module.RegistryReadOnly(
+            environment={'GITHUB_ACTIONS': 'true'}, opener=Opener(), clock=clock)
+        registry.latest_order = lambda row: None
+        registry.publish = lambda row, body: submitted.append(body)
+        with registry.reader.budget(20):
+            report, rows = self.run_fixture(manifest, bodies, registry, clock=clock, visibility_seconds=5)
+        self.assertFalse(report['success']); self.assertEqual(len(submitted), 1)
+        self.assertEqual([(at, timeout) for at, timeout, sent in requests if sent], [(0, 5), (2, 3)])
+        self.assertEqual(clock(), 5)
+    def test_real_reader_cannot_verify_bytes_after_visibility_deadline(self):
+        manifest, bodies, _ = self.fixture([('a', {})]); clock = Clock(); submitted = []; tags = []
+        metadata = {'name': 'a', 'version': '2.0.0', 'dist': {
+            'tarball': 'https://registry.npmjs.org/a/-/a-2.0.0.tgz',
+            'shasum': hashlib.sha1(bodies['a']).hexdigest()}}
+        class SlowArchive(io.BytesIO):
+            def read(self, size):
+                clock.now += 4
+                return super().read(size)
+        class Opener:
+            def open(self, request, timeout):
+                if request.full_url.endswith('/2.0.0'):
+                    if not submitted or clock() < 2:
+                        raise urllib.error.HTTPError(request.full_url, 404, 'missing', {}, None)
+                    return io.BytesIO(json.dumps(metadata).encode())
+                assert timeout == 3
+                return SlowArchive(bodies['a'])
+        registry = module.publisher.RegistryWriter({'GITHUB_ACTIONS': 'true'}, Path('.'))
+        registry.reader = module.entry.evidence.registry_module.RegistryReadOnly(
+            environment={'GITHUB_ACTIONS': 'true'}, opener=Opener(), clock=clock)
+        registry.latest_order = lambda row: None
+        registry.publish = lambda row, body: submitted.append(body)
+        registry.promote_latest = lambda row: tags.append(row['name'])
+        with registry.reader.budget(20):
+            report, rows = self.run_fixture(manifest, bodies, registry, clock=clock, visibility_seconds=5)
+        self.assertFalse(report['success']); self.assertTrue(report['complete'])
+        self.assertEqual(clock(), 6); self.assertEqual(len(submitted), 1); self.assertEqual(tags, [])
+        self.assertEqual(rows['a']['status'], 'failed'); self.assertTrue(rows['a']['outcomeUncertain'])
+        self.assertFalse(rows['a']['registryBytesVerified'])
+        self.assertEqual(rows['a']['registryReadBytes'], len(bodies['a']))
     def test_finalizer_requires_complete_proof_and_never_opens_state_store(self):
         manifest, _, _ = self.fixture(); proof = {'verified': True}
         with mock.patch.object(module, 'authorize', return_value=proof) as authorize, \

@@ -6,8 +6,10 @@ tag and GitHub Release. Frozen producer proof and original bytes remain
 mandatory; npm versions are never overwritten.
 """
 # cspell:words argparse importlib readback postpublish setitimer SIGALRM SIGTERM ITIMER rpartition FINALIZER
+# cspell:words retryable ENEEDAUTH EOTP EPRIVATE EINVALIDPACKAGENAME EINVALIDTAGNAME EUSAGE
 import argparse
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -18,6 +20,7 @@ import signal
 import subprocess
 import sys
 import time
+import urllib.error
 
 
 def load(name, file):
@@ -99,6 +102,7 @@ def diagnostic(stage, error):
     # Only the existing bounded allowlisted npm diagnostic is safe to retain.
     safe = {'Immutable registry version has different bytes': 'immutable-version-conflict',
             'Registry byte confirmation missing': 'registry-bytes-not-confirmed',
+            'Registry package byte budget exceeded': 'registry-package-byte-budget-exceeded',
             'Frozen upload bytes changed': 'frozen-upload-bytes-changed',
             'GitHub Actions OIDC credentials missing': 'oidc-credentials-missing'}
     return {'stage': stage, 'code': safe.get(str(error), stage + '-failed'),
@@ -139,21 +143,60 @@ def required_dependencies(rows, metadata, *, peers_only=False):
     return result
 
 
-def publish_packages(manifest, archive_reader, registry, report, save, *, remaining=lambda: 4200):
+def retryable_read(error):
+    """Retry only read-side absence, overload or transport interruption."""
+    if isinstance(error, (urllib.error.HTTPError, publisher.RegistryReadFailure)):
+        return getattr(error, 'code', getattr(error, 'status', None)) in [404, 408, 429, 500, 502, 503, 504]
+    return isinstance(error, (TimeoutError, ConnectionError, urllib.error.URLError))
+
+
+def definite_rejection(error):
+    return (getattr(error, 'timed_out', True) is False
+            and type(getattr(error, 'returncode', None)) is int and error.returncode != 0
+            and bool(set(getattr(error, 'npm_codes', ())).intersection({
+                'ENEEDAUTH', 'E401', 'E403', 'EOTP', 'EPRIVATE',
+                'EINVALIDPACKAGENAME', 'EINVALIDTAGNAME', 'EUSAGE'})))
+
+
+def publish_packages(manifest, archive_reader, registry, report, save, *, remaining=lambda: 4200,
+                     clock=time.monotonic, sleep=time.sleep, visibility_seconds=1200):
+    check(type(visibility_seconds) is int and 0 < visibility_seconds <= 1800,
+          'Invalid registry visibility budget')
     rows = manifest['packages']; by_name = {row['name']: row for row in rows}
     outcomes = {row['name']: row for row in report['packages']}
     available = set()
+    byte_limits, bytes_read = {}, {}
 
     def failure(name, stage, error=None, blocked=None):
         outcome = outcomes[name]
         outcome['status'] = 'failed'
-        outcome['errors'].append(diagnostic(stage, error) if error is not None
-                                 else {'stage': stage, 'dependencies': sorted(blocked)})
+        outcome['errors'].append(diagnostic(stage, error) if error is not None else
+                                 {'stage': stage, **({'dependencies': sorted(blocked)} if blocked is not None else {})})
         save(report)
 
     def lookup(row):
         remaining()
-        actual = registry.lookup(row)
+        reader = getattr(registry, 'reader', None)
+        if reader is None:
+            actual = registry.lookup(row)
+        else:
+            name = row['name']
+            allowance = byte_limits[name] - bytes_read.get(name, 0)
+            check(allowance > 0, 'Registry package byte budget exceeded')
+            before, global_limit = reader.total_bytes, reader.total_byte_limit
+            reader.total_byte_limit = min(global_limit, before + allowance)
+            try:
+                actual = registry.lookup(row)
+            except ValueError:
+                if before + allowance <= global_limit and reader.total_bytes > before + allowance:
+                    raise ValueError('Registry package byte budget exceeded') from None
+                raise
+            finally:
+                # Failed/partial downloads count too. Never reset the shared
+                # counter or let one package consume another package's reserve.
+                bytes_read[name] = bytes_read.get(name, 0) + reader.total_bytes - before
+                outcomes[name]['registryReadBytes'] = bytes_read[name]
+                reader.total_byte_limit = global_limit
         check(actual is None or actual == row['archiveSha256'], 'Immutable registry version has different bytes')
         return actual is not None
 
@@ -188,13 +231,16 @@ def publish_packages(manifest, archive_reader, registry, report, save, *, remain
     # times. Bound aggregate downloads by the authenticated inventory and exact
     # dependency edges rather than a fixed 3 GiB shared across all packages.
     # Individual archive (100 MiB), request and whole-job bounds still apply.
-    reads = {row['name']: 4 for row in rows}
+    reads = {row['name']: 6 for row in rows}  # Four normal reads, two retry copies.
     for name in metadata:
         for dependency in dependencies[name]: reads[dependency] += 1
         for dependency in closures[name]: reads[dependency] += 1
+    byte_limits = {row['name']: row['archiveBytes'] * reads[row['name']] for row in rows}
     if hasattr(registry, 'reader'):
+        # The reader checks its counter after each <=1 MiB chunk. Reserve that
+        # possible final overrun once per package; exhausted packages stop.
         registry.reader.total_byte_limit = min(1024 * 1024 ** 3, max(3 * 1024 ** 3,
-            sum(row['archiveBytes'] * reads[row['name']] for row in rows)))
+            sum(byte_limits.values()) + len(rows) * 1024 ** 2))
     # One package's conflict/read failure never prevents independent attempts.
     for row in rows:
         name = row['name']
@@ -205,12 +251,136 @@ def publish_packages(manifest, archive_reader, registry, report, save, *, remain
         except Exception as error:
             failure(name, 'registry-preflight', error)
     pending = [row['name'] for row in rows if outcomes[row['name']]['status'] == 'pending']
-    while pending:
+    waiting = {}
+
+    def timestamp():
+        return datetime.now(timezone.utc).isoformat()
+
+    def enqueue(name, phase):
+        waiting[name] = {'phase': phase, 'end': clock() + visibility_seconds,
+                         'next': clock(), 'delay': 2}
+        outcomes[name][phase + 'Checks'] = 0
+        save(report)
+
+    def observe(name):
+        wait = waiting[name]; outcome = outcomes[name]; row = by_name[name]
+        phase = wait['phase']
+        if clock() < wait['next']:
+            return False
+        remaining()
+        if clock() >= wait['end']:
+            waiting.pop(name)
+            failure(name, phase + '-timeout')
+            return True
+        outcome[phase + 'Checks'] += 1
+        outcome[phase + 'CheckedAt'] = timestamp()
+        try:
+            reader = getattr(registry, 'reader', None)
+            scope = reader.budget(max(1, math.ceil(wait['end'] - clock()))) if reader is not None else nullcontext()
+            with scope:
+                verified = lookup(row) if phase == 'registry-readback' else registry.latest_visible(row)
+                if verified and phase == 'latest-readback':
+                    verified = lookup(row)
+            if verified:
+                # The public tag is never sufficient evidence for archive bytes.
+                waiting.pop(name)
+                if phase == 'registry-readback':
+                    available.add(name)
+                    outcome['registryBytesVerified'] = True
+                    outcome['outcomeUncertain'] = False
+                    outcome['registryVerifiedAt'] = timestamp()
+                    if outcome.get('outcome') == 'submitted':
+                        outcome['outcome'] = 'published'
+                    if not outcome['errors']:
+                        outcome['status'] = 'registry-verified'
+                else:
+                    outcome['latestVerified'] = True
+                    outcome['latestOutcomeUncertain'] = False
+                    outcome['latestVerifiedAt'] = timestamp()
+                    if not outcome['errors']:
+                        outcome['status'] = 'success'
+                save(report)
+                return True
+            outcome[phase + 'AbsentReads'] = outcome.get(phase + 'AbsentReads', 0) + 1
+        except Exception as error:
+            if not retryable_read(error):
+                waiting.pop(name)
+                failure(name, phase, error)
+                return True
+            outcome[phase + 'TransientErrors'] = outcome.get(phase + 'TransientErrors', 0) + 1
+            outcome[phase + 'LastHttpStatus'] = getattr(error, 'code', getattr(error, 'status', None))
+        wait['next'] = min(wait['end'], clock() + wait['delay'])
+        wait['delay'] = min(30, wait['delay'] * 2)
+        save(report)
+        return False
+
+    def pause():
+        # One shared queue, not a separate multi-minute sleep for every package.
+        delay = max(0, min(value['next'] for value in waiting.values()) - clock())
+        sleep(min(delay, remaining()))
+
+    def promote_ready():
         progressed = False
+        future = set(pending) | {name for name, wait in waiting.items() if wait['phase'] == 'registry-readback'}
+        for row in rows:
+            name = row['name']; outcome = outcomes[name]
+            if outcome['status'] != 'registry-verified':
+                continue
+            # Peers may form cycles. Wait for their exact bytes, never their
+            # tags, and never wait for an unrelated package to finish scanning.
+            unavailable = closures[name] - available
+            invalid = closures[name] - set(metadata)
+            if invalid or unavailable - future:
+                failure(name, 'required-dependency-unverified', blocked=invalid | (unavailable - future))
+                progressed = True
+                continue
+            if unavailable:
+                continue
+            blocked = []
+            for dependency in sorted(closures[name]):
+                try:
+                    if not lookup(by_name[dependency]): blocked.append(dependency)
+                except Exception:
+                    blocked.append(dependency)
+            if blocked:
+                failure(name, 'required-dependency-unverified', blocked=blocked)
+                progressed = True
+                continue
+            rejected = False
+            try:
+                remaining()
+                outcome['status'] = 'awaiting-latest'
+                outcome['latestConfirmationStartedAt'] = timestamp()
+                outcome['latestOutcomeUncertain'] = True
+                save(report)
+                registry.promote_latest(row)
+            except Exception as error:
+                rejected = definite_rejection(error)
+                failure(name, 'latest-confirmation', error)
+            # A lost response is resolved only by reads, never another write.
+            enqueue(name, 'latest-readback')
+            observe(name)
+            if name in waiting and rejected:
+                waiting.pop(name)
+            progressed = True
+        return progressed
+
+    # npm accepts uploads before its publish-time scan makes versions public.
+    # Submit each eligible package once, then poll only immutable public reads.
+    # Keep consumers pending while a required dependency is awaiting visibility.
+    while pending or waiting or any(row['status'] == 'registry-verified' for row in outcomes.values()):
+        progressed = False
+        for name in list(waiting):
+            progressed = observe(name) or progressed
+        progressed = promote_ready() or progressed
         for name in pending[:]:
-            # Only hard dependencies determine upload order. Peers constrain
-            # completed public availability and may form valid cycles.
-            if (dependencies[name] - available).intersection(pending):
+            # Slow npm commands must not starve earlier accepted uploads until
+            # the entire family has been submitted.
+            for waiting_name in list(waiting):
+                progressed = observe(waiting_name) or progressed
+            progressed = promote_ready() or progressed
+            unresolved = dependencies[name] - available
+            if unresolved.intersection(set(pending) | set(waiting)):
                 continue
             pending.remove(name); progressed = True
             row = by_name[name]; outcome = outcomes[name]
@@ -228,6 +398,8 @@ def publish_packages(manifest, archive_reader, registry, report, save, *, remain
             except Exception as error:
                 failure(name, 'registry-before-upload', error)
                 continue
+            outcome['outcome'] = 'already-published' if exists else 'submitted'
+            rejected = False
             if not exists:
                 try:
                     remaining()
@@ -237,55 +409,34 @@ def publish_packages(manifest, archive_reader, registry, report, save, *, remain
                     publisher.npm_tarball.validate(row, body)
                     outcome['uploadAttempted'] = True
                     outcome['outcomeUncertain'] = True
+                    outcome['uploadStartedAt'] = timestamp()
                     outcome['status'] = 'upload-started'
                     save(report)
                     remaining()
                     registry.publish(row, body)
+                    outcome['publishCommandSucceeded'] = True
+                    outcome['publishCommandCompletedAt'] = timestamp()
+                    outcome['status'] = 'awaiting-registry'
                 except Exception as error:
-                    # Never blindly retry an uncertain upload, including a
-                    # timeout/auth error. Read immutable registry bytes first.
+                    # A command error remains a failure even if its bytes appear.
+                    # Definite authorization/validation rejection gets one read,
+                    # not a long scan wait. Ambiguous outcomes are never resent.
+                    rejected = definite_rejection(error)
                     failure(name, 'publish', error)
-            try:
-                check(lookup(row), 'Registry byte confirmation missing')
-                outcome['registryBytesVerified'] = True
-                outcome['outcomeUncertain'] = False
-                available.add(name)
-            except Exception as error:
-                available.discard(name)
-                failure(name, 'registry-readback', error)
-                continue
-            if not outcome['errors']:
-                outcome['status'] = 'registry-verified'
-                outcome['outcome'] = 'already-published' if exists else 'published'
-            save(report)
-        if not progressed:
+                    if not outcome['uploadAttempted']:
+                        continue
+            enqueue(name, 'registry-readback')
+            observe(name)
+            if name in waiting and rejected:
+                waiting.pop(name)
+            progressed = promote_ready() or progressed
+        if not progressed and not waiting and pending:
             for name in pending:
                 failure(name, 'required-dependency-cycle', blocked=dependencies[name] - available)
             pending.clear()
-    # Resolve required peers after all independent uploads. This supports the
-    # Docs/theme peer cycle without promoting a package whose peer failed.
-    for row in rows:
-        name = row['name']; outcome = outcomes[name]
-        if outcome['status'] != 'registry-verified':
-            continue
-        blocked = []
-        for dependency in sorted(closures[name]):
-            try:
-                if dependency not in metadata or not lookup(by_name[dependency]): blocked.append(dependency)
-            except Exception:
-                blocked.append(dependency)
-        if blocked:
-            failure(name, 'required-dependency-unverified', blocked=blocked)
-            continue
-        try:
-            remaining()
-            registry.confirm(row)
-            check(lookup(row), 'Registry byte confirmation missing')
-            outcome['latestVerified'] = True
-            outcome['status'] = 'success'
-        except Exception as error:
-            failure(name, 'latest-confirmation', error)
-        save(report)
+        elif not progressed and waiting:
+            pause()
+
     report['complete'] = True
     report['success'] = all(row['status'] == 'success' for row in report['packages'])
     report['counts'] = {'total': len(rows), 'success': sum(row['status'] == 'success' for row in report['packages']),
