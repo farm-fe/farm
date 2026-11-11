@@ -1,3 +1,4 @@
+# cspell:words userconfig globalconfig cafile ustar postpack
 """Original-byte npm manifest security contracts; no network or npm writes."""
 # cspell:words importlib subtests gzip PAX SCHILY npmjs
 import copy

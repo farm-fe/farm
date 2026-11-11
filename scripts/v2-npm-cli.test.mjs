@@ -1,3 +1,4 @@
+// cspell:words nonpublisher userconfig globalconfig
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';

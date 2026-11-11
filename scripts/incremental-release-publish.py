@@ -1,3 +1,4 @@
+# cspell:words GLOBALCONFIG
 """Trusted main-only release writer. Never invoked by PR validation.
 
 Commands consume original release archives and keep a durable lock through

@@ -1,3 +1,4 @@
+# cspell:words noncanonical keepends gname nlink npmcli
 """Fail-closed inspection of the original npm archive before OIDC is exposed.
 
 No extraction, npm invocation, normalization or repacking is performed. Call

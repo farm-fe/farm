@@ -1,3 +1,4 @@
+# cspell:words GLOBALCONFIG
 # cspell:words readback USERCONFIG ENEEDAUTH EOTP mnpm
 """Pure HTTP/Release finalization contracts; no real requests or registry writes."""
 # cspell:words importlib stopall finalizer postpublish nonpublishing nonbaseline
