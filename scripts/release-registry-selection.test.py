@@ -239,7 +239,7 @@ class Contracts(unittest.TestCase):
         result = entry.source_plan(source, registry_snapshot=snapshot)
         self.assertEqual(result['nativeBuildCells'], [{'owner': '@farmfe/core', 'platform': 'darwin-arm64', 'package': 'npm:@farmfe/core-darwin-arm64'}])
         self.assertEqual(result['preparationNativeCells'], [])
-        self.assertEqual(set(result['registryBuildInputs']), {'npm:@farmfe/core-linux-x64-gnu'})
+        self.assertEqual(set(result['registryBuildInputs']), {'npm:@farmfe/core-linux-x64-gnu', 'npm:@farmfe/plugin-replace-dirname-linux-x64-gnu'})
         self.assertEqual(result['registryBuildInputs']['npm:@farmfe/core-linux-x64-gnu']['origin'], 'registry-present')
         self.assertEqual(result['buildBlocked'], {})
         self.assertNotIn('npm:packages/core/npm/linux-x64-gnu', result['buildNodes'])
@@ -257,7 +257,7 @@ class Contracts(unittest.TestCase):
         result = entry.source_plan(source, registry_snapshot=snapshot)
         host = 'npm:@farmfe/core-linux-x64-gnu'
         self.assertEqual(result['preparationNativeCells'], [{'owner': '@farmfe/core', 'platform': 'linux-x64-gnu', 'package': host}])
-        self.assertEqual(result['registryBuildInputs'], {})
+        self.assertEqual(set(result['registryBuildInputs']), {'npm:@farmfe/plugin-replace-dirname-linux-x64-gnu'})
         snapshot['packages'][host] = module.unknown(module.records(source, 'npm')[host], TimeoutError())
         result = entry.source_plan(source, registry_snapshot=snapshot)
         self.assertEqual(result['preparationNativeCells'], [])
@@ -278,6 +278,39 @@ class Contracts(unittest.TestCase):
             bad = {**metadata, field: value}
             with self.assertRaises(ValueError):
                 module.validate_observed(row, bad, 2)
+
+    def test_native_plugin_host_closure_tracks_real_build_recipes_only(self):
+        sha = entry.chain.impact.git('rev-parse', 'HEAD').decode().strip()
+        source = entry.evidence.source_reader(sha)
+        for target, owners in [('@farmfe/core', {'@farmfe/core', '@farmfe/plugin-replace-dirname'}),
+                               ('@farmfe/js-plugin-visualizer', {'@farmfe/core', '@farmfe/plugin-replace-dirname', '@farmfe/plugin-worker'})]:
+            with self.subTest(target=target):
+                snapshot = module.collect(source, 'npm', lambda row: observed(row, row['name'] != target))
+                result = entry.source_plan(source, registry_snapshot=snapshot)
+                self.assertEqual({row['owner'] for row in result['registryBuildInputs'].values()}, owners)
+                self.assertEqual(result['nativeBuildCells'], [])
+                self.assertEqual(result['preparationNativeCells'], [])
+                self.assertEqual(result['publish'], ['npm:' + target])
+                self.assertFalse(any('plugin-react' in key or 'plugin-docs' in key for key in result['registryBuildInputs']))
+
+    def test_plugin_host_missing_and_unknown_preserve_exact_cell_isolation(self):
+        sha = entry.chain.impact.git('rev-parse', 'HEAD').decode().strip()
+        source = entry.evidence.source_reader(sha)
+        worker = 'npm:@farmfe/plugin-worker-linux-x64-gnu'
+        missing = {'@farmfe/js-plugin-visualizer', '@farmfe/js-plugin-less', worker.removeprefix('npm:')}
+        snapshot = module.collect(source, 'npm', lambda row: observed(row, row['name'] not in missing))
+        result = entry.source_plan(source, registry_snapshot=snapshot)
+        cell = {'owner': '@farmfe/plugin-worker', 'platform': 'linux-x64-gnu', 'package': worker}
+        self.assertEqual(result['nativeBuildCells'], [cell])
+        self.assertEqual(result['preparationNativeCells'], [cell])
+        self.assertNotIn(worker, result['registryBuildInputs'])
+        snapshot['packages'][worker] = module.unknown(module.records(source, 'npm')[worker], TimeoutError())
+        result = entry.source_plan(source, registry_snapshot=snapshot)
+        self.assertEqual(result['nativeBuildCells'], [])
+        self.assertEqual(result['preparationNativeCells'], [])
+        self.assertEqual(set(result['buildBlocked']), {'npm:@farmfe/js-plugin-visualizer'})
+        self.assertNotIn('npm:@farmfe/js-plugin-less', result['buildBlocked'])
+        self.assertEqual(result['buildBlocked']['npm:@farmfe/js-plugin-visualizer']['dependencies'], [worker])
 
     def test_collection_deadline_preserves_verified_rows_and_marks_remaining_unknown(self):
         source, _ = source_fixture()

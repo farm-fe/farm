@@ -355,3 +355,54 @@ test('registry host material binds measured execution bytes without a planned ar
   assert.throws(()=>verifyRegistryHostMaterial({...material,...change},selection,()=>binary));
  assert.throws(()=>verifyRegistryHostMaterial(material,selection,()=>Buffer.from('changed')));
 });
+
+test('host plugin closure follows execution recipes rather than runtime imports',async()=>{
+ const {releaseHostPlugins}=await import('./incremental-release-producer.mjs');
+ assert.deepEqual(releaseHostPlugins('packages/core'),['@farmfe/plugin-replace-dirname']);
+ assert.deepEqual(releaseHostPlugins('js-plugins/visualizer'),['@farmfe/plugin-replace-dirname','@farmfe/plugin-worker']);
+ for(const directory of ['packages/docs','packages/docs-theme-default','packages/runtime','packages/cli'])assert.deepEqual(releaseHostPlugins(directory),[]);
+});
+
+test('failed worker host blocks visualizer without preventing an independent JS build',async()=>{
+ const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'farm-plugin-isolation-')));
+ try {
+  const rows=[...['visualizer','less'].map(slug=>({name:'@farmfe/js-plugin-'+slug,version:'2.0.0',manifestPath:`js-plugins/${slug}/package.json`})),{name:'@farmfe/docs',version:'2.0.0',manifestPath:'packages/docs/package.json'}];
+  const contents={};
+  for(const row of rows){const file=row.manifestPath;contents[file]=JSON.stringify({name:row.name,scripts:{build:'farm build'}});fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});fs.writeFileSync(path.join(root,file),contents[file]);}
+  const selection={build:rows.map(row=>'npm:'+row.name),buildNodes:rows.map(row=>'npm:'+path.dirname(row.manifestPath)),buildEdges:{'npm:js-plugins/visualizer':[],'npm:js-plugins/less':[],'npm:packages/docs':[]}};
+  const calls=[];
+  const result=await runReleaseJsBuilds({npm:{primary:rows,payloads:[]}},selection,{root,pnpm:'fixture',bestEffort:true,unavailableHostPlugins:['@farmfe/plugin-worker'],verifyManifest:file=>contents[file],execute:async(_,__,options)=>calls.push(path.basename(options.cwd))});
+  assert.deepEqual(calls,['less','docs']);assert.deepEqual(result.completed,['js-plugins/less','packages/docs']);
+  assert.equal(result.failures['npm:js-plugins/visualizer'],'js-build-or-prerequisite-failed');
+  calls.length=0;
+  const noReplace=await runReleaseJsBuilds({npm:{primary:rows,payloads:[]}},selection,{root,pnpm:'fixture',bestEffort:true,unavailableHostPlugins:['@farmfe/plugin-replace-dirname'],verifyManifest:file=>contents[file],execute:async(_,__,options)=>calls.push(path.basename(options.cwd))});
+  assert.deepEqual(calls,['docs']);assert.deepEqual(noReplace.completed,['packages/docs']);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
+
+test('registry plugin material binds exact tool, ABI smoke and unchanged core binary',async()=>{
+ const {verifyRegistryHostMaterial}=await import('./incremental-release-producer.mjs');
+ for(const slug of ['replace-dirname','worker']){
+  const selection=presenceFixture().selection;
+  const input={name:`@farmfe/plugin-${slug}-linux-x64-gnu`,version:'2.0.0',platform:'linux-x64-gnu',origin:'registry-present',evidenceKind:'registry-metadata',integrity:'sha512-'+Buffer.alloc(64).toString('base64'),tarballURL:'https://registry.npmjs.org/host.tgz'};
+  selection.registryBuildInputs={['npm:'+input.name]:input,'npm:@farmfe/core-linux-x64-gnu':{name:'@farmfe/core-linux-x64-gnu',platform:'linux-x64-gnu',origin:'registry-present',evidenceKind:'registry-metadata'}};
+  const binary=Buffer.from('plugin fixture'),core=Buffer.from('core fixture');
+  const material={schemaVersion:1,kind:'registry-native-host-build-material',...input,owner:'@farmfe/plugin-'+slug,sourceSHA:sha,sourceTree:tree,planHash:selection.planHash,
+   evidenceKind:'registry-archive',registryBytesVerified:true,sourceNativeArtifact:false,publicationCandidate:false,
+   destination:`rust-plugins/${slug}/npm/linux-x64-gnu/index.farm`,archiveSha256:'a'.repeat(64),archiveBytes:100,binarySha256:sha256(binary),binaryBytes:binary.length,coreBinarySha256:sha256(core),
+   compiler:{name:'@farmfe/core-linux-x64-gnu',origin:'registry-present',destination:'packages/core/binding/farm.linux-x64-gnu.node',binarySha256:sha256(core),binaryBytes:core.length},
+   wrapperResolution:{path:`rust-plugins/${slug}/node_modules/@farmfe/plugin-${slug}-linux-x64-gnu`,destination:`rust-plugins/${slug}/npm/linux-x64-gnu`,workspacePlatformVerified:true},
+   smoke:{node:'v22.20.0',platform:'linux',arch:'x64',libc:'glibc',napi:'10',requiredExports:['Compiler','DocsSnapshot','OutputDirectoryLock','Resolver'],resolver:true,compile:true,tsTransformed:true,outputExecuted:true,plugin:input.name,rustPluginLoaded:true,pluginFixture:true}};
+  const read=file=>file.endsWith('.node')?core:binary;
+  assert.equal(verifyRegistryHostMaterial(material,selection,read),material);
+  for(const change of [{coreBinarySha256:'0'.repeat(64)},{owner:'@farmfe/plugin-other'},{destination:'../../escape'},{smoke:{...material.smoke,rustPluginLoaded:false}},{smoke:{...material.smoke,pluginFixture:false}},{smoke:{...material.smoke,plugin:'@farmfe/plugin-other-linux-x64-gnu'}},{wrapperResolution:{...material.wrapperResolution,workspacePlatformVerified:false}},{wrapperResolution:{...material.wrapperResolution,path:'wrong'}},{compiler:{...material.compiler,origin:'source-build'}},{compiler:{...material.compiler,binarySha256:'0'.repeat(64)}}])assert.throws(()=>verifyRegistryHostMaterial({...material,...change},selection,read));
+  delete selection.registryBuildInputs['npm:@farmfe/core-linux-x64-gnu'];
+  selection.registrySnapshot.packages['npm:@farmfe/core-linux-x64-gnu']={status:'missing'};
+  const cell={package:'npm:@farmfe/core-linux-x64-gnu',owner:'@farmfe/core',platform:'linux-x64-gnu'};
+  selection.nativeBuildCells=[cell];selection.preparationNativeCells=[cell];
+  const sourceMaterial={...material,compiler:{...material.compiler,origin:'source-build'}};
+  assert.equal(verifyRegistryHostMaterial(sourceMaterial,selection,read),sourceMaterial);
+  selection.preparationNativeCells=[{...cell,platform:'darwin-arm64'}];
+  assert.throws(()=>verifyRegistryHostMaterial(sourceMaterial,selection,read));
+ }
+});
