@@ -23,15 +23,25 @@ export function publicationManifestDigest(value) {
   return sha256(Buffer.from(JSON.stringify(ordered(value)).replace(/[\u007f-\uffff]/g,character=>'\\u'+character.charCodeAt(0).toString(16).padStart(4,'0'))));
 }
 
+export function versionPresenceMode(selection) {
+  return selection.selectionPolicy === 'registry-exact-version-v2' && selection.registrySnapshot?.schemaVersion === 2;
+}
+
 export function candidatePlanForSelection(family, selection) {
   assert.equal(selection.chain,'release');assert.equal(selection.profile,'release');assert.notEqual(selection.publicationBlocked,true);
   assert.equal((selection.versionRequired??[]).length,0);
   const required=new Set(selection.build),prior=selection.registryRetained??selection.baselinePackages??{};
-  const dependencies = (rows,kind) => rows.filter(row=>!required.has(kind+':'+row.name)).map(row=>{
+  const presence = versionPresenceMode(selection);
+  const dependencies = (rows,kind) => rows.filter(row=>!required.has(kind+':'+row.name) && (!presence || prior[kind+':'+row.name])).map(row=>{
     const original=prior[kind+':'+row.name];
     assert.ok(original&&original.version===row.version,'Unchanged validation dependency lacks verified registry evidence');
-    assert.match(original.archiveSha256,/^[a-f0-9]{64}$/);
     if(kind==='npm')assert.match(original.integrity??'',/^sha512-[A-Za-z0-9+/]+={0,2}$/);
+    if (presence) {
+      assert.equal(kind,'npm');assert.equal(original.evidenceKind,'registry-metadata');
+      assert.equal(original.archiveSha256,undefined);assert.equal(original.archiveBytes,undefined);
+      return {name:row.name,version:row.version,integrity:original.integrity,evidenceKind:'registry-metadata',origin:'registry-present'};
+    }
+    assert.match(original.archiveSha256,/^[a-f0-9]{64}$/);
     return {name:row.name,version:row.version,sha256:original.archiveSha256,...(kind==='npm'?{integrity:original.integrity}:{})};
   });
   return {...family,preparation:{...family.preparation,mode:selection.publicationScope==='npm'?'incremental-npm-source-release':'incremental-source-release'},publication:{
@@ -43,11 +53,15 @@ export function candidatePlanForSelection(family, selection) {
     validationDependencies:{npm:dependencies([...family.npm.primary,...family.npm.payloads],'npm'),cargo:selection.publicationScope==='npm'?[]:dependencies(family.cargo,'cargo')},
     incremental:{sourceSHA:selection.sourceSHA,sourceTree:selection.sourceTree,planHash:selection.planHash,graphHash:selection.graphHash,
       publicationScope:selection.publicationScope??'all',build:[...selection.build],publish:[...selection.publish],preparationNodes:selection.buildNodes??[],
-      preparationNativeOwners:selection.preparationNativeOwners??[],baselineBinding:selection.baselineBinding??null}};
+      preparationNativeOwners:selection.preparationNativeOwners??[],baselineBinding:selection.baselineBinding??null,
+      ...(presence ? {selectionPolicy:selection.selectionPolicy,registrySnapshot:selection.registrySnapshot,
+        nativeBuildCells:selection.nativeBuildCells??[],preparationNativeCells:selection.preparationNativeCells??[],
+        registryBuildInputs:selection.registryBuildInputs??{},buildFailures:Object.fromEntries(Object.keys(selection.buildBlocked??{}).map(key=>[key,'source-input-unknown'])),registryBuildMaterials:[]} : {})}};
 }
 
 export function releaseBuildDirectories(family, selection, root) {
   const wanted = new Set(selection.build);
+  if (versionPresenceMode(selection) && !family.npm.primary.some(row=>wanted.has('npm:'+row.name) && row.name!=='create-farm' && !row.manifestPath.startsWith('rust-plugins/'))) return [];
   const publicDirectories = new Map(family.npm.primary.map(row => [path.dirname(row.manifestPath).replaceAll('\\', '/'), row]));
   const selected = candidateJsBuilds(family, {root}).filter(directory => publicDirectories.has(directory) && (wanted.has('npm:' + publicDirectories.get(directory).name) || selection.buildNodes?.includes('npm:' + directory)));
   const privateDirectories = new Set();
@@ -94,20 +108,123 @@ export function releaseBuildDirectories(family, selection, root) {
   return ordered;
 }
 
-export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = process.env, execute = command, verifyManifest} = {}) {
+export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = process.env, execute = command, verifyManifest, bestEffort = false, hostAvailable = true} = {}) {
   const directories = releaseBuildDirectories(family, selection, root), deadline = Date.now() + 30 * 60 * 1000;
+  const failures = {}, completed = [];
+  const dependsOnFailure = (node, seen = new Set()) => {
+    if (failures[node]) return true;
+    if (seen.has(node)) return false;
+    seen.add(node);
+    return (selection.buildEdges?.[node] ?? []).some(dependency=>dependsOnFailure(dependency,seen));
+  };
   for (const directory of directories) {
-    const file = directory + '/package.json', bytes = fs.readFileSync(path.join(root, file));
-    const committed = verifyManifest ? verifyManifest(file) : execFileSync('git', ['show', 'HEAD:' + file], {cwd: root});
-    assert.ok(bytes.equals(Buffer.from(committed)), 'Release build manifest differs from committed source');
-    const manifest = JSON.parse(bytes);
-    assert.ok(manifest.scripts?.build && !/\bcargo\b|\bnapi\b|farm-plugin-tools build/.test(manifest.scripts.build), 'Unexpected native command in JS release recipe');
-    assert.ok(Date.now() < deadline, 'Release JS build deadline exceeded');
-    await execute(process.execPath, [pnpm, 'run', 'build'], {cwd: path.join(root, directory), env,
-      log: path.join(root, 'release-work', directory.replaceAll('/', '-') + '.log'), phase: 'release-js/' + manifest.name,
-      timeoutMs: Math.min(300000, deadline - Date.now())});
+    const node = 'npm:' + directory;
+    try {
+      assert.ok(hostAvailable, 'Validated GNU Core prerequisite missing');
+      assert.ok(!dependsOnFailure(node), 'Release build prerequisite failed');
+      const file = directory + '/package.json', bytes = fs.readFileSync(path.join(root, file));
+      const committed = verifyManifest ? verifyManifest(file) : execFileSync('git', ['show', 'HEAD:' + file], {cwd: root});
+      assert.ok(bytes.equals(Buffer.from(committed)), 'Release build manifest differs from committed source');
+      const manifest = JSON.parse(bytes);
+      assert.ok(manifest.scripts?.build && !/\bcargo\b|\bnapi\b|farm-plugin-tools build/.test(manifest.scripts.build), 'Unexpected native command in JS release recipe');
+      assert.ok(Date.now() < deadline, 'Release JS build deadline exceeded');
+      await execute(process.execPath, [pnpm, 'run', 'build'], {cwd: path.join(root, directory), env,
+        log: path.join(root, 'release-work', directory.replaceAll('/', '-') + '.log'), phase: 'release-js/' + manifest.name,
+        timeoutMs: Math.min(300000, deadline - Date.now())});
+      completed.push(directory);
+    } catch (error) {
+      if (!bestEffort) throw error;
+      // Logs stay local to the build. Signed outcomes use bounded reason codes,
+      // never arbitrary command output or environment-bearing diagnostics.
+      failures[node] = hostAvailable ? 'js-build-or-prerequisite-failed' : 'registry-or-source-host-tool-unavailable';
+    }
   }
-  return directories;
+  if (!bestEffort) return directories;
+  // Joint bootstrap recipes resolve project-reference/peer cycles as a cohort.
+  // A later failure also invalidates an earlier member's partial output.
+  const bootstrap = new Set(['packages/cli','packages/core','packages/runtime','packages/runtime-plugin-hmr','packages/runtime-plugin-import-meta','packages/plugin-tools','packages/utils']);
+  for (const cohort of [bootstrap,new Set(['packages/docs','packages/docs-theme-default'])]) {
+    if (directories.some(directory=>cohort.has(directory)&&failures['npm:'+directory]))
+      for (const directory of directories) if (cohort.has(directory)) failures['npm:'+directory]='js-bootstrap-cohort-failed';
+  }
+  for (const directory of directories) if (dependsOnFailure('npm:'+directory)) failures['npm:'+directory] ??= 'js-build-prerequisite-failed';
+  return {completed:completed.filter(directory=>!failures['npm:'+directory]),failures};
+}
+
+export function verifyRegistryHostMaterial(material, selection, readBinary) {
+  const input=selection.registryBuildInputs?.['npm:@farmfe/core-linux-x64-gnu'];
+  assert.ok(input && input.origin==='registry-present' && input.evidenceKind==='registry-metadata','Registry host input must be a retained version observation');
+  assert.equal(material.schemaVersion,1);assert.equal(material.kind,'registry-native-host-build-material');
+  for (const field of ['sourceSHA','sourceTree','planHash']) assert.equal(material[field],selection[field]);
+  for (const field of ['name','version','platform','integrity','tarballURL']) assert.equal(material[field],input[field]);
+  assert.equal(material.name,'@farmfe/core-linux-x64-gnu');assert.equal(material.platform,'linux-x64-gnu');
+  assert.equal(material.origin,'registry-present');assert.equal(material.evidenceKind,'registry-archive');
+  assert.equal(material.registryBytesVerified,true);assert.equal(material.sourceNativeArtifact,false);assert.equal(material.publicationCandidate,false);
+  assert.equal(material.destination,'packages/core/binding/farm.linux-x64-gnu.node');
+  for (const field of ['archiveSha256','binarySha256']) assert.match(material[field]??'',/^[a-f0-9]{64}$/);
+  for (const field of ['archiveBytes','binaryBytes']) assert.ok(Number.isSafeInteger(material[field]) && material[field]>0 && material[field]<=100*1024**2,'Registry host material size invalid');
+  assert.equal(material.smoke?.node,'v22.20.0');assert.equal(material.smoke.platform,'linux');assert.equal(material.smoke.arch,'x64');assert.equal(material.smoke.libc,'glibc');
+  assert.match(material.smoke.napi??'',/^[1-9][0-9]*$/);
+  assert.deepEqual(material.smoke.requiredExports,['Compiler','DocsSnapshot','OutputDirectoryLock','Resolver']);
+  for (const field of ['resolver','compile','tsTransformed','outputExecuted']) assert.equal(material.smoke[field],true);
+  const bytes=readBinary(material.destination);
+  assert.equal(bytes.length,material.binaryBytes);assert.equal(sha256(bytes),material.binarySha256,'Registry host changed after its isolated smoke');
+  return material;
+}
+
+export function presenceNativePayloads(family, selection) {
+  assert.ok(versionPresenceMode(selection), 'Version-presence selection required');
+  const cells = [...(selection.nativeBuildCells??[]),...(selection.preparationNativeCells??[])];
+  const selected = new Map();
+  for (const cell of cells) {
+    const pkg = family.npm.payloads.find(row=>'npm:'+row.name===cell.package);
+    assert.ok(pkg && pkg.owner===cell.owner && pkg.platform===cell.platform, 'Native cell differs from the source family');
+    assert.equal(selection.registrySnapshot.packages[cell.package]?.status,'missing','Published or unknown native cells cannot be rebuilt');
+    selected.set(pkg.name,pkg);
+  }
+  return [...selected.values()];
+}
+
+export function assemblePresenceNative(family, selection, {root,pool,sourceSHA,assemble=assembleNativeArtifacts}) {
+  const records=[], failures={};
+  for (const pkg of presenceNativePayloads(family,selection)) {
+    try { records.push(...assemble(root,pool,sourceSHA,{...family,npm:{...family.npm,payloads:[pkg]}})); }
+    catch { failures['npm:'+pkg.name]='native-build-or-artifact-unavailable'; }
+  }
+  return {records,failures};
+}
+
+export function packPresenceCandidates({root,candidate,assembly,artifacts,identity,output,pnpm,pack=packNpmCandidates,verify=verifyCandidateSeal}) {
+  assert.equal(candidate.incremental.selectionPolicy,'registry-exact-version-v2');
+  fs.mkdirSync(output);
+  const failures={...candidate.incremental.buildFailures},records=[];
+  const selected=[...candidate.publication.npm.primary,...candidate.publication.npm.payloads];
+  for (const [index,pkg] of selected.entries()) {
+    const key='npm:'+pkg.name;
+    if (failures[key]) continue;
+    const one={...candidate,publication:{npm:{primary:pkg.platform?[]:[pkg],payloads:pkg.platform?[pkg]:[]},cargo:[]}};
+    const native=assembly.records.filter(row=>row.name===pkg.name);
+    const part=path.join(output,'part-'+index);
+    try {
+      const receipt=pack({root,plan:one,assembly:{...assembly,count:native.length,records:native},artifactIndex:artifacts,...identity,output:part,pnpm});
+      assert.equal(receipt.status,'sealed');assert.equal(receipt.records.length,1);
+      const row=receipt.records[0];assert.equal(row.name,pkg.name);assert.equal(path.basename(row.file),row.file);
+      fs.copyFileSync(path.join(part,row.file),path.join(output,row.file),fs.constants.COPYFILE_EXCL);
+      records.push(row);
+    } catch { failures[key]='package-pack-or-seal-failed'; }
+  }
+  const successful=new Set(records.map(row=>row.name));
+  candidate.publication.npm={primary:candidate.publication.npm.primary.filter(row=>successful.has(row.name)),payloads:candidate.publication.npm.payloads.filter(row=>successful.has(row.name))};
+  candidate.incremental.buildFailures=failures;
+  assert.deepEqual(Object.keys(failures).sort(),candidate.incremental.publish.filter(key=>!successful.has(key.slice(4))).sort(),'Missing source package outcome');
+  const receipt={schemaVersion:1,sourceCommit:identity.sourceCommit,testedCommit:identity.testedCommit,testedTree:identity.testedTree,
+    planSha256:sha256(Buffer.from(JSON.stringify(candidate))),published:false,status:'sealed',records,errors:[],buildFailures:failures,
+    registryBuildMaterials:candidate.incremental.registryBuildMaterials};
+  const verified=verify(candidate,receipt,output,root);
+  assert.equal(verified.candidateArchivesVerified,true,'Successful source subset failed final verification');
+  fs.writeFileSync(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});
+  fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify(verified,null,2)+'\n',{flag:'wx'});
+  return receipt;
 }
 
 export function verifyReleaseSelection(selection, source, expectedPlanHash) {
@@ -153,6 +270,7 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
     assert.deepEqual(actual,fullFamily,'Source family differs from independent plan');
   }
   const completeRows = [...receipt.rust.map(row => ({...row, kind: 'cargo'})), ...receipt.records.map(row => ({...row, kind: 'npm'}))];
+  if (versionPresenceMode(selection)) for (const row of completeRows) assert.ok(selection.publish.includes(row.kind+':'+row.name),'Registry-present package was sealed as a source build');
   for(const row of completeRows) assert.ok(fullFamily.some(item=>item.kind===row.kind&&item.name===row.name&&item.version===row.version),'Sealed record is outside the exact source family');
   for(const key of selection.build ?? []) {
     if(selection.publish.includes(key))continue;
@@ -172,7 +290,8 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
       rebuilt: [...selection.build], producerRunId: runId, producerAttempt: attempt, originalBytesEqual: true,
       publicationExecuted: false, baselineAdvanced: false};
   }
-  assert.ok(selection.publish.length>0,'No publication delta; no publisher transaction is needed');
+  const presence = versionPresenceMode(selection);
+  assert.ok(presence || selection.publish.length>0,'No publication delta; no publisher transaction is needed');
   const rows = completeRows
     .filter(row=>selection.publish.includes(row.kind+':'+row.name));
   const byName=new Map(rows.filter(row=>row.kind==='npm').map(row=>[row.name,row]));
@@ -195,7 +314,15 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
       archiveBytes: bytes.length, archiveSha256: row.sha256,
       ...(row.kind === 'cargo' ? {metadata: row.metadata, metadataSha256: row.metadataSha256} : {})};
   });
-  assert.deepEqual(packages.map(row => `${row.kind}:${row.name}`).sort(), [...selection.publish].sort(), 'Sealed publication delta differs from independent plan');
+  const buildFailures = receipt.buildFailures ?? {};
+  if (presence) {
+    assert.equal(selection.baselineBinding ?? null, null, 'Version presence cannot use a historical baseline');
+    assert.deepEqual([...selection.build].sort(), [...selection.publish].sort());
+    const sealed = new Set(packages.map(row => `${row.kind}:${row.name}`));
+    assert.deepEqual(Object.keys(buildFailures).sort(), selection.publish.filter(key=>!sealed.has(key)).sort(), 'Build failures must account for every unsealed missing version');
+    for (const [key, reason] of Object.entries(buildFailures)) assert.ok(selection.publish.includes(key) && typeof reason === 'string' && /^[a-z0-9-]{1,100}$/.test(reason), 'Invalid package build failure');
+    for (const key of Object.keys(selection.buildBlocked ?? {})) assert.ok(Object.hasOwn(buildFailures,key), 'Blocked source input was published');
+  } else assert.deepEqual(packages.map(row => `${row.kind}:${row.name}`).sort(), [...selection.publish].sort(), 'Sealed publication delta differs from independent plan');
   assert.equal(new Set(packages.map(row => `${row.kind}:${row.name}`)).size, packages.length);
   return {schemaVersion: 1, releaseValidation: 'archive-integrity-v1', chain: 'release', profile: 'release', namespace: 'farm-release-v1', publicationScope:selection.publicationScope??'all',
     sourceSHA: source.sha, sourceTree: source.tree, planHash: selection.planHash, graphHash: selection.graphHash, baseline: selection.baselineBinding ?? null,
@@ -204,7 +331,10 @@ export function makePublicationManifest({plan, selection, receipt, source, runId
       ? `v${packages.find(row => row.kind === 'npm' && row.name === '@farmfe/core').version}` : `packages-${selection.planHash.slice(0,16)}`,
     family:fullFamily, rebuild:[...(selection.build ?? selection.publish)], versionRequired:[...(selection.versionRequired ?? [])],
     publish:[...selection.publish], buildDependencyClosure:[...(selection.buildDependencyClosure ?? [])],
-    validationRequired:[...(selection.validationRequired ?? [])], ...(selection.registrySnapshot ? {registrySnapshot:selection.registrySnapshot} : {}), packages};
+    validationRequired:[...(selection.validationRequired ?? [])], ...(selection.registrySnapshot ? {registrySnapshot:selection.registrySnapshot} : {}),
+    ...(presence ? {selectionPolicy:selection.selectionPolicy,registryRetained:selection.registryRetained??{},registryUnknown:selection.registryUnknown??{},
+      nativeBuildCells:selection.nativeBuildCells??[],preparationNativeCells:selection.preparationNativeCells??[],registryBuildInputs:selection.registryBuildInputs??{},
+      registryBuildMaterials:receipt.registryBuildMaterials??[],buildFailures} : {}), packages};
 }
 
 async function main() {
@@ -222,6 +352,45 @@ async function main() {
     fs.writeFileSync(candidateFile,JSON.stringify(candidate,null,2)+'\n',{flag:'wx'});
     fs.mkdirSync(pool,{recursive:true});
     const selectedNative=(candidate.publication?.npm??candidate.npm).payloads;
+    if (versionPresenceMode(selection)) {
+      const {records,failures}=assemblePresenceNative(plan,selection,{root,pool:path.resolve(pool),sourceSHA:source.sha});
+      for (const [key,reason] of Object.entries(failures)) if (selection.publish.includes(key)) candidate.incremental.buildFailures[key]=reason;
+      const directories=releaseBuildDirectories(plan,selection,root);
+      let hostAvailable=directories.length===0;
+      if (directories.length) {
+        try {
+          assert.equal(process.platform,'linux');assert.equal(process.arch,'x64');
+          const core=records.find(row=>row.owner==='@farmfe/core'&&row.platform==='linux-x64-gnu');
+          const inputs=Object.values(selection.registryBuildInputs??{});
+          const registered=inputs.find(row=>row.owner==='@farmfe/core'&&row.platform==='linux-x64-gnu');
+          assert.ok(!(core&&registered),'Native host cannot have source and registry origins');
+          if (registered) {
+            const material=path.join(root,'release-work/registry-host-material.json');
+            execFileSync(process.env.FARM_RELEASE_PYTHON??'python3',['-B',path.join(root,'scripts/release-registry-host-tool.py'),
+              '--selection',path.resolve(selectionFile),'--output',material,'--destination',path.join(root,'packages/core/binding/farm.linux-x64-gnu.node'),'--node',process.execPath],
+              {cwd:root,env:{PATH:process.env.PATH??'/usr/bin:/bin',FARM_RELEASE_PLAN_HASH:selection.planHash},timeout:180000,stdio:['ignore','pipe','pipe']});
+            candidate.incremental.registryBuildMaterials.push(verifyRegistryHostMaterial(JSON.parse(fs.readFileSync(material)),selection,file=>fs.readFileSync(path.join(root,file))));
+          } else {
+            assert.ok(core,'Missing exact source GNU Core prerequisite');
+            fs.copyFileSync(path.join(root,core.file),path.join(root,'packages/core/binding',path.basename(core.file)),fs.constants.COPYFILE_EXCL);
+            const native=createRequire(import.meta.url)(path.join(root,'packages/core/binding/farm.linux-x64-gnu.node'));
+            assert.equal(typeof native.Compiler,'function');assert.equal(typeof native.Resolver,'function');
+          }
+          hostAvailable=true;
+        } catch { hostAvailable=false; }
+      }
+      const js=await runReleaseJsBuilds(plan,selection,{root,pnpm:directories.length?resolvePnpmCli():null,bestEffort:true,hostAvailable});
+      for (const pkg of candidate.publication.npm.primary) {
+        const failure=js.failures['npm:'+path.posix.dirname(pkg.manifestPath)];
+        if (failure) candidate.incremental.buildFailures['npm:'+pkg.name]=failure;
+      }
+      fs.writeFileSync(candidateFile,JSON.stringify(candidate,null,2)+'\n');
+      fs.writeFileSync(assemblyFile,JSON.stringify({schemaVersion:1,sourceCommit:source.sha,
+        count:records.filter(row=>selectedNative.some(pkg=>pkg.name===row.name)).length,
+        records:records.filter(row=>selectedNative.some(pkg=>pkg.name===row.name)),
+        preparationRecords:records.filter(row=>!selectedNative.some(pkg=>pkg.name===row.name)),published:false},null,2)+'\n',{flag:'wx'});
+      return {rebuiltNative:records.length,rebuiltJs:js.completed,buildFailures:candidate.incremental.buildFailures,profile:'release'};
+    }
     const preparationNative=plan.npm.payloads.filter(row=>(selection.preparationNativeOwners??[]).includes(row.owner));
     const nativePlan={...plan,npm:{...plan.npm,payloads:[...new Map([...selectedNative,...preparationNative].map(row=>[row.name,row])).values()]}};
     const records=assembleNativeArtifacts(root,path.resolve(pool),source.sha,nativePlan);
@@ -244,6 +413,12 @@ async function main() {
     const pages = JSON.parse(fs.readFileSync(index));
     const artifacts = Array.isArray(pages) ? pages.flatMap(page => page.artifacts) : pages.artifacts;
     assert.ok(artifacts.every(row => row.workflow_run?.id === identity.runId), 'Cross-run artifacts cannot enter a release build');
+    if (candidate.incremental?.selectionPolicy==='registry-exact-version-v2') {
+      const receipt=packPresenceCandidates({root,candidate,assembly:JSON.parse(fs.readFileSync(assembly)),artifacts,identity,
+        output:path.resolve(output),pnpm:candidate.publication.npm.primary.length+candidate.publication.npm.payloads.length?resolvePnpmCli():null});
+      fs.writeFileSync(candidateFile,JSON.stringify(candidate,null,2)+'\n');
+      return receipt;
+    }
     return packNpmCandidates({root, plan:candidate, assembly: JSON.parse(fs.readFileSync(assembly)), artifactIndex: artifacts,
       ...identity, output: path.resolve(output), pnpm: resolvePnpmCli()});
   }

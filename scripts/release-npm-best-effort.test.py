@@ -200,7 +200,7 @@ class Contracts(unittest.TestCase):
             context = mock.MagicMock(); context.__enter__.return_value = registry
             output = root / 'result.json'; output.write_text('{"success": true}')
             with mock.patch.object(module.sys, 'argv', ['publisher', '--candidate', str(root), '--output', str(output)]), \
-                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '2'}, clear=True), \
+                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '1'}, clear=True), \
                  mock.patch.object(module, 'authorize') as authorization, \
                  mock.patch.object(module.publisher, 'RegistryWriter', return_value=context):
                 self.assertEqual(module.main(), 1)
@@ -221,9 +221,11 @@ class Contracts(unittest.TestCase):
             self.assertFalse(report['complete']); self.assertFalse(report['success'])
             self.assertTrue(all(row['uploadAttempted'] is False for row in report['packages']))
             self.assertNotIn('private bearer sentinel', output.read_text())
-    def test_workflow_uses_full_source_without_durable_state_and_always_uploads(self):
+    def test_workflow_uses_version_presence_without_durable_state_and_always_uploads(self):
         workflow = (Path(__file__).parents[1] / '.github/workflows/incremental-release.yaml').read_text()
-        self.assertIn('plan --full-source --source', workflow)
+        self.assertIn('plan --version-presence --source', workflow)
+        self.assertNotIn('plan --full-source --source', workflow)
+        self.assertNotIn('incremental-publication-state.py', workflow)
         self.assertIn('group: farm-independent-release\n  cancel-in-progress: false', workflow)
         finalizer = workflow.split('\n  finalize:\n')[1].split('\n  sign-frozen-release:')[0]
         self.assertIn('release-npm-best-effort.py --finalize', finalizer)
@@ -233,7 +235,7 @@ class Contracts(unittest.TestCase):
         self.assertNotIn('incremental-release-publish.py upload', workflow)
         block = workflow.split('\n  publisher:\n')[1].split('\n  public-proof:')[0]
         self.assertIn('contents: read\n      actions: read\n      id-token: write', block)
-        self.assertIn('Upload all package outcomes even when publication fails\n        if: always()', block)
+        self.assertIn('Upload all package outcomes even when publication fails\n        id: results-upload\n        if: always()', block)
         self.assertIn('Preserve preparation failure when publication could not start\n        if: always()', block)
         self.assertNotIn('continue-on-error:', block)
         self.assertIn('time.monotonic() + 75 * 60', block)
@@ -293,7 +295,7 @@ class Contracts(unittest.TestCase):
             registry.reader = module.entry.evidence.registry_module.RegistryReadOnly(environment={'GITHUB_ACTIONS': 'true'})
             context = mock.MagicMock(); context.__enter__.return_value = registry; output = root / 'result.json'
             with mock.patch.object(module.sys, 'argv', ['publisher', '--candidate', str(root), '--output', str(output)]), \
-                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '2'}, clear=True), \
+                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '1'}, clear=True), \
                  mock.patch.object(module, 'authorize'), mock.patch.object(module.publisher, 'RegistryWriter', return_value=context):
                 self.assertEqual(module.main(), 1)
             report = json.loads(output.read_text()); self.assertFalse(report['complete']); self.assertFalse(report['success'])
@@ -481,7 +483,7 @@ class Contracts(unittest.TestCase):
                 environment={'GITHUB_ACTIONS': 'true'}, clock=clock)
             context = mock.MagicMock(); context.__enter__.return_value = registry; output = root / 'result.json'
             with mock.patch.object(module.sys, 'argv', ['publisher', '--candidate', str(root), '--output', str(output)]), \
-                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '2'}, clear=True), \
+                 mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '10', 'GITHUB_RUN_ATTEMPT': '1'}, clear=True), \
                  mock.patch.object(module, 'authorize'), mock.patch.object(module, 'Deadline', return_value=deadline), \
                  mock.patch.object(module, 'publish_packages', side_effect=scheduler), \
                  mock.patch.object(module.publisher, 'RegistryWriter', return_value=context):

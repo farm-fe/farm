@@ -1,9 +1,10 @@
-"""Publish a complete source release independently, recording every outcome.
+"""Confirm exact npm versions and independently publish missing source archives.
 
 No durable lock or previous baseline is read or written here. Actions workflow
 concurrency serializes writers. Full verified success may confirm the exact
-tag and GitHub Release. Frozen producer proof and original bytes remain
-mandatory; npm versions are never overwritten.
+tag and GitHub Release. New source uploads require frozen producer proof and
+original bytes. Retained versions use registry metadata evidence, never a claim
+that they were rebuilt from this source. npm versions are never overwritten.
 """
 # cspell:words argparse importlib readback postpublish setitimer SIGALRM SIGTERM ITIMER rpartition FINALIZER
 # cspell:words retryable ENEEDAUTH EOTP EPRIVATE EINVALIDPACKAGENAME EINVALIDTAGNAME EUSAGE
@@ -20,6 +21,7 @@ import signal
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 import urllib.error
 
 
@@ -74,7 +76,17 @@ class Deadline:
             for kind, handler in previous.items(): signal.signal(kind, handler)
 
 
+def presence_module():
+    return load('version_presence_publisher', 'release-npm-version-presence.py')
+
+
+def context():
+    return SimpleNamespace(**globals())
+
+
 def new_report(manifest):
+    if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+        return presence_module().report(manifest, context())
     publisher.state.frozen_manifest(manifest)
     check(len(manifest['packages']) <= 1024 and manifest.get('publicationScope') == 'npm'
           and all(row.get('kind') == 'npm' for row in manifest['packages']), 'Only npm packages may be published')
@@ -151,15 +163,19 @@ def retryable_read(error):
 
 
 def definite_rejection(error):
+    codes = set(getattr(error, 'npm_codes', ()))
     return (getattr(error, 'timed_out', True) is False
             and type(getattr(error, 'returncode', None)) is int and error.returncode != 0
-            and bool(set(getattr(error, 'npm_codes', ())).intersection({
+            and bool(codes) and codes.issubset({
                 'ENEEDAUTH', 'E401', 'E403', 'EOTP', 'EPRIVATE',
-                'EINVALIDPACKAGENAME', 'EINVALIDTAGNAME', 'EUSAGE'})))
+                'EINVALIDPACKAGENAME', 'EINVALIDTAGNAME', 'EUSAGE'}))
 
 
 def publish_packages(manifest, archive_reader, registry, report, save, *, remaining=lambda: 4200,
                      clock=time.monotonic, sleep=time.sleep, visibility_seconds=1200):
+    if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+        return presence_module().publish(manifest, archive_reader, registry, report, save, context(),
+            remaining=remaining, clock=clock, sleep=sleep, visibility_seconds=visibility_seconds)
     check(type(visibility_seconds) is int and 0 < visibility_seconds <= 1800,
           'Invalid registry visibility budget')
     rows = manifest['packages']; by_name = {row['name']: row for row in rows}
@@ -446,6 +462,12 @@ def publish_packages(manifest, archive_reader, registry, report, save, *, remain
 
 
 class SourceProofVerifier(publisher.RecoveryVerifier):
+    def verify(self, manifest, archive_directory, phase='prepublish', current_run=None):
+        if manifest.get('selectionPolicy') == 'registry-exact-version-v2' and phase in ['postpublish', 'complete']:
+            self.verifying_manifest = manifest
+            return entry.ReleaseVerifier.verify(self, manifest, archive_directory, phase='postpublish', current_run=self.current)
+        return super().verify(manifest, archive_directory, phase=phase, current_run=current_run)
+
     def verify_archive(self, directory, row):
         # A signed manifest binds every expected byte digest. Retain global
         # source/plan/family/seal verification even if one local file is bad;
@@ -460,6 +482,7 @@ class SourceProofVerifier(publisher.RecoveryVerifier):
 def authorize(manifest, directory, environment, *, finalize=False):
     check(environment.get('FARM_EXPLICIT_PUBLICATION') == 'true'
           and environment.get('GITHUB_JOB') == ('finalize' if finalize else 'publisher'), 'Explicit publisher authority required')
+    check(finalize or environment.get('GITHUB_RUN_ATTEMPT') == '1', 'Repeated publication attempts are disabled')
     transport = entry.actions_transport(environment)
     source = entry.evidence.source_reader(environment['GITHUB_SHA'])
     check(source['sha'] == manifest['sourceSHA'] and source['tree'] == manifest['sourceTree']
@@ -483,7 +506,7 @@ def authorize(manifest, directory, environment, *, finalize=False):
     # durable store, no transaction recovery, and no old baseline authorization.
     if finalize:
         entry.evidence.successful_job(jobs, entry.PUBLISHER)
-        proof = publisher.RecoveryVerifier(transport, current).verify(manifest, directory / 'archives', phase='postpublish')
+        proof = (SourceProofVerifier if manifest.get('selectionPolicy') == 'registry-exact-version-v2' else publisher.RecoveryVerifier)(transport, current).verify(manifest, directory / 'archives', phase='postpublish')
         check(proof.get('verified') is True, 'Complete signed public acceptance required')
     else:
         proof = SourceProofVerifier(transport, current).verify(manifest, directory / 'archives', phase='prepublish')
@@ -494,6 +517,9 @@ def authorize(manifest, directory, environment, *, finalize=False):
 def finalize_release(manifest, directory, environment):
     new_report(manifest)  # Full independent source inventory, never old state.
     proof = authorize(manifest, directory, environment, finalize=True)
+    if manifest.get('selectionPolicy') == 'registry-exact-version-v2' and not any(
+            row.get('originKind') == 'source' for row in proof.get('dispositions', {}).values()):
+        return {'verified': True, 'releaseCreated': False, 'reason': 'registry-only-confirmation'}
     return publisher.confirm_release(publisher.GitHubWriter(environment, 'finalize'), manifest, proof)
 
 
@@ -527,6 +553,23 @@ def main():
     report.update(runId=int(os.environ['GITHUB_RUN_ID']), attempt=int(os.environ['GITHUB_RUN_ATTEMPT']))
     save = lambda value: write_report(output, value)
     save(report)  # No previous result can authorize or imply this attempt's success.
+    if report['attempt'] != 1:
+        # A previous submission may still be scanning while GET returns 404.
+        # Reruns reuse the frozen plan and cannot re-enter its upload decisions.
+        report.update(complete=False, success=False, inventoryVerified=False,
+                      publicationExecuted=False, previousAttemptUnreconciled=True,
+                      fatal={'stage': 'publication-rerun', 'code': 'rerun-publication-disabled',
+                             'message': 'Repeated publication is disabled because prior submissions may still be pending. No registry writes were attempted in this attempt.'})
+        for row in report['packages']:
+            row.update(status='failed', uploadAttempted=False, outcomeUncertain=False)
+            row['errors'].append({'stage': 'publication-rerun', 'code': 'rerun-publication-disabled'})
+        report['counts'] = {'total': len(report['packages']), 'success': 0, 'failed': len(report['packages'])}
+        save(report)
+        if os.environ.get('GITHUB_STEP_SUMMARY'):
+            with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as stream:
+                stream.write('Publication reruns are disabled. Prior submissions may still be pending; this attempt made no registry writes.\n')
+        print(json.dumps({'complete': False, 'success': False, 'reason': 'rerun-publication-disabled'}))
+        return 1
     try:
         # The first workflow step sets a 75-minute job-relative cutoff, leaving
         # 15 minutes for cleanup and artifact upload under the 90-minute cap.
@@ -536,6 +579,9 @@ def main():
         with deadline.guard():
             authorize(manifest, directory, os.environ)
             with publisher.RegistryWriter({**os.environ, **oidc}, directory / 'archives', run_command=deadline.command) as registry:
+                if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+                    registry.reader = selector.ExactRegistryReadOnly(environment=os.environ)
+                    registry.observe = selector.Registry(registry.reader).lookup
                 with registry.reader.budget(deadline.registry_seconds()):
                     publish_packages(manifest, lambda row: read_archive(directory / 'archives', row), registry, report, save,
                                      remaining=deadline.remaining)

@@ -1,5 +1,6 @@
 """Read-only GitHub evidence adapter. Live byte reuse remains disabled by policy."""
 # cspell:words importlib urllib
+from datetime import datetime
 import hashlib
 import importlib.util
 import json
@@ -39,7 +40,19 @@ class GitHubReadOnly:
         decoded = route if isinstance(route, str) else ".."
         while urllib.parse.unquote(decoded) != decoded:
             decoded = urllib.parse.unquote(decoded)
-        if not compare and ((decoded and not decoded.startswith("/")) or decoded.startswith("//")
+        # This fixed release-history query uses '..' as GitHub's date-range
+        # operator, never a path segment. Admit only its exact bounded shape.
+        history = re.fullmatch(r'/actions/workflows/incremental-release\.yaml/runs\?branch=main&created=(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\.\.(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)&per_page=100&page=([1-9]|10)', decoded)
+        if history:
+            start, end = [datetime.fromisoformat(value.replace('Z', '+00:00')) for value in history.groups()[:2]]
+            if start > end:
+                raise ValueError('Invalid history date interval')
+            canonical = ('/actions/workflows/incremental-release.yaml/runs?branch=main&created='
+                         + urllib.parse.quote(history[1] + '..' + history[2], safe='')
+                         + '&per_page=100&page=' + history[3])
+            if route != canonical:
+                raise ValueError('Non-canonical history date query')
+        if not (compare or history) and ((decoded and not decoded.startswith("/")) or decoded.startswith("//")
                 or decoded.startswith("/compare/") or ".." in decoded or "#" in decoded
                 or "\\" in decoded or any(ord(char) < 32 or ord(char) == 127 for char in decoded)):
             raise ValueError("Unsafe GitHub route")

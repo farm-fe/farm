@@ -1,4 +1,4 @@
-name: Independent full npm release and per-package results
+name: Independent npm version-presence release and per-package results
 on:
   push:
     branches: [main]
@@ -97,6 +97,11 @@ jobs:
       plan_attempt: ${{ github.run_attempt }}
       native_required: ${{ steps.release-plan.outputs.native_required }}
       native_owners: ${{ steps.release-plan.outputs.native_owners }}
+      native_primary_matrix: ${{ steps.release-plan.outputs.native_primary_matrix }}
+      native_primary_required: ${{ steps.release-plan.outputs.native_primary_required }}
+      native_extra_matrix: ${{ steps.release-plan.outputs.native_extra_matrix }}
+      native_extra_required: ${{ steps.release-plan.outputs.native_extra_required }}
+      transaction_required: ${{ steps.release-plan.outputs.transaction_required }}
       publish_required: ${{ steps.release-plan.outputs.publish_required }}
       build_required: ${{ steps.release-plan.outputs.build_required }}
       plan_hash: ${{ steps.release-plan.outputs.plan_hash }}
@@ -119,7 +124,7 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
-        run: python -B scripts/incremental-release-entry.py plan --full-source --source "$SOURCE_SHA" --output release-plan.json
+        run: python -B scripts/incremental-release-entry.py plan --version-presence --source "$SOURCE_SHA" --output release-plan.json
       - name: Require prepared versions before scheduling release producers
         shell: python
         run: |
@@ -136,7 +141,7 @@ jobs:
   no-publication:
     name: No new release versions selected
     needs: [source, plan]
-    if: github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.plan.outputs.publish_required == 'false' && needs.plan.outputs.build_required == 'false'
+    if: github.ref == 'refs/heads/main' && needs.plan.result == 'success' && needs.plan.outputs.transaction_required != 'true' && needs.plan.outputs.publish_required == 'false' && needs.plan.outputs.build_required == 'false'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -214,15 +219,14 @@ jobs:
       id-token: write
       attestations: write
     needs: [source, plan]
-    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
+    if: needs.plan.outputs.native_primary_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
     strategy:
       fail-fast: false
-      matrix:
-        abi: ["linux-x64-gnu", "darwin-arm64", "win32-x64-msvc"]
+      matrix: ${{ fromJSON(needs.plan.outputs.native_primary_matrix) }}
     uses: ./.github/workflows/release-native-build.yaml
     with:
       abi: ${{ matrix.abi }}
-      native_owners: ${{ needs.plan.outputs.native_owners }}
+      native_owners: ${{ matrix.native_owners }}
   release-native-extra:
     permissions:
       contents: read
@@ -230,15 +234,14 @@ jobs:
       id-token: write
       attestations: write
     needs: [source, plan]
-    if: needs.plan.outputs.native_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
+    if: needs.plan.outputs.native_extra_required == 'true' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && github.ref == 'refs/heads/main' && inputs.producer_run == ''
     strategy:
       fail-fast: false
-      matrix:
-        abi: ["linux-x64-musl", "darwin-x64", "win32-ia32-msvc", "win32-arm64-msvc", "linux-arm64-musl", "linux-arm64-gnu"]
+      matrix: ${{ fromJSON(needs.plan.outputs.native_extra_matrix) }}
     uses: ./.github/workflows/release-native-build.yaml
     with:
       abi: ${{ matrix.abi }}
-      native_owners: ${{ needs.plan.outputs.native_owners }}
+      native_owners: ${{ matrix.native_owners }}
   producer:
     name: Build independent release candidates
     outputs:
@@ -249,7 +252,7 @@ jobs:
       candidates_digest: ${{ steps.candidates-upload.outputs.artifact-digest }}
       frozen_attempt: ${{ steps.frozen-origin.outputs.attempt }}
     needs: [source, plan, release-native-primary, release-native-extra]
-    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.build_required == 'true' && needs.source.outputs.reuse != 'true' && ((needs.plan.outputs.native_required == 'true' && needs.release-native-primary.result == 'success' && needs.release-native-extra.result == 'success') || (needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'))
+    if: always() && needs.source.result == 'success' && needs.plan.result == 'success' && (needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.build_required == 'true') && needs.source.outputs.reuse != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     permissions:
@@ -278,7 +281,9 @@ jobs:
           version: 9.4.0
           run_install: false
       - run: node scripts/audit-v2-source-licenses.mjs
+        if: needs.plan.outputs.build_required == 'true'
       - run: pnpm install --frozen-lockfile
+        if: needs.plan.outputs.build_required == 'true'
       - uses: actions/download-artifact@v4
         with:
           name: independent-release-plan-${{ github.run_id }}-${{ needs.plan.outputs.plan_attempt }}
@@ -294,15 +299,16 @@ jobs:
           plan = json.loads(Path('release-work/release-plan.json').read_text(encoding='utf-8'))
           assert plan['sourceSHA'] == os.environ['GITHUB_SHA'] and plan['planHash'] == os.environ['PLAN_HASH']
           assert re.fullmatch('[a-f0-9]{64}', plan['planHash']) and plan['chain'] == 'release' and plan['profile'] == 'release'
-          assert plan['build'] and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
+          assert (plan['build'] or plan.get('selectionPolicy') == 'registry-exact-version-v2') and plan['versionRequired'] == [] and plan['publicationBlocked'] is False
           owners = json.loads(os.environ['NATIVE_OWNERS'])
           assert isinstance(owners, list) and len(owners) == len(set(owners)) and all(isinstance(owner, str) for owner in owners)
       - uses: actions/download-artifact@v4
         if: needs.plan.outputs.native_required == 'true'
+        continue-on-error: true
         with:
           pattern: ${{ github.sha }}-*
           path: release-native
-      - name: Build the complete npm source family and required prerequisites
+      - name: Build missing native cells and source JS prerequisites independently
         env:
           FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
           FARM_PNPM_CLI: ${{ steps.pnpm.outputs.dest }}/node_modules/pnpm/bin/pnpm.cjs
@@ -317,19 +323,19 @@ jobs:
       - name: Seal source-built npm archives and exact source manifest
         run: node scripts/incremental-release-producer.mjs seal-npm release-work/npm release-candidate release-work/candidate-plan.json
       - name: Verify recipe-only rebuild against original release archive bytes
-        if: needs.plan.outputs.publish_required == 'false'
+        if: needs.plan.outputs.transaction_required != 'true' && needs.plan.outputs.publish_required == 'false'
         env:
           FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
         run: node scripts/incremental-release-producer.mjs verify-rebuild release-candidate release-work/release-plan.json
       - name: Bind actual publication delta to the original archives
-        if: needs.plan.outputs.publish_required == 'true'
+        if: needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.publish_required == 'true'
         env:
           FARM_RELEASE_PLAN_HASH: ${{ needs.plan.outputs.plan_hash }}
         run: |
           node scripts/incremental-release-producer.mjs manifest release-candidate release-work/release-plan.json
           python -B scripts/incremental-release-record.py build --candidate release-candidate --output release-build-proof/ledger.json
       - name: Preserve nonpublishing rebuild verification
-        if: needs.plan.outputs.publish_required == 'false'
+        if: needs.plan.outputs.transaction_required != 'true' && needs.plan.outputs.publish_required == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: farm-release-rebuild-check-${{ github.sha }}-${{ github.run_attempt }}
@@ -338,7 +344,7 @@ jobs:
           retention-days: 90
       - name: Upload independent release seal
         id: seal-upload
-        if: needs.plan.outputs.publish_required == 'true'
+        if: needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.publish_required == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: farm-release-seal-${{ github.sha }}-${{ github.run_attempt }}
@@ -348,7 +354,7 @@ jobs:
       - name: Freeze independent release candidates
         id: candidates-upload
         uses: actions/upload-artifact@v4
-        if: needs.plan.outputs.publish_required == 'true'
+        if: needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.publish_required == 'true'
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ github.run_attempt }}
           path: release-candidate/
@@ -380,9 +386,12 @@ jobs:
           with Path(os.environ['GITHUB_OUTPUT']).open('a') as stream:
               stream.write('attempt=' + attempt + '\n')
   publisher:
+    outputs:
+      results_id: ${{ steps.results-upload.outputs.artifact-id }}
+      results_digest: ${{ steps.results-upload.outputs.artifact-digest }}
     name: Publish original npm archives and record every result
     needs: [source, plan, producer, candidate-identity, sign-frozen-release]
-    if: always() && (needs.sign-frozen-release.result == 'success' || needs.source.outputs.reuse == 'true') && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && ((needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true') || needs.source.outputs.reuse == 'true')
+    if: always() && (needs.sign-frozen-release.result == 'success' || needs.source.outputs.reuse == 'true') && needs.candidate-identity.result == 'success' && github.ref == 'refs/heads/main' && needs.source.outputs.version_ready == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) && inputs.producer_run == '' && ((needs.producer.result == 'success' && (needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.publish_required == 'true')) || needs.source.outputs.reuse == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
@@ -448,13 +457,17 @@ jobs:
           from pathlib import Path
           output = Path('publication-results/results.json')
           if not output.exists():
+              not_started = os.environ.get('PACKAGE_EXECUTION', '') == 'skipped'
               family = Path('docs/releases/v2-candidate.json')
               packages = []
               if family.is_file():
                   npm = json.loads(family.read_text(encoding='utf-8'))['npm']
-                  packages = [{'name': row['name'], 'version': row['version'], 'status': 'not-attempted', 'uploadAttempted': False}
+                  packages = [{'name': row['name'], 'version': row['version'],
+                               'status': 'not-attempted' if not_started else 'unknown',
+                               'uploadAttempted': False if not_started else None, 'outcomeUncertain': not not_started}
                               for row in npm['primary'] + npm['payloads']]
-              report = {'kind': 'npm-publication-preparation-failure', 'complete': False, 'success': False,
+              report = {'kind': 'npm-publication-fallback-report', 'complete': False, 'success': False,
+                        'stage': 'package-execution-skipped' if not_started else 'publication-outcome-unknown',
                         'baselineAdvanced': False, 'releaseCreatedByThisStage': False, 'inventoryVerified': False,
                         'runId': os.environ['GITHUB_RUN_ID'], 'attempt': os.environ['GITHUB_RUN_ATTEMPT'],
                         'stages': {key: os.environ.get(key, '') for key in ['NPM_PREPARATION', 'CANDIDATE_DOWNLOAD', 'PACKAGE_EXECUTION']},
@@ -462,13 +475,83 @@ jobs:
               output.parent.mkdir(parents=True, exist_ok=True)
               output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
               with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as stream:
-                  stream.write('Npm publication did not complete preparation. Package uploads were not started by this command.\n')
-                  stream.write('Preparation stage outcomes: ' + json.dumps(report['stages']) + '\n')
+                  stream.write('Npm publication results are missing. ' + ('Package execution was skipped.' if not_started else 'Package upload outcomes are unknown.') + '\n')
+                  stream.write('Publication stage outcomes: ' + json.dumps(report['stages']) + '\n')
       - name: Upload all package outcomes even when publication fails
+        id: results-upload
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: npm-publication-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: publication-results/results.json
+          if-no-files-found: error
+          retention-days: 90
+
+  release-report:
+    name: Report the complete npm family for every outcome
+    needs: [source, plan, release-native-primary, release-native-extra, producer, publisher]
+    if: always() && github.ref == 'refs/heads/main' && inputs.producer_run == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@v4
+        if: needs.publisher.outputs.results_id != ''
+        with:
+          artifact-ids: ${{ needs.publisher.outputs.results_id }}
+          path: publication-results
+      - name: Preserve the full source inventory even if production never started
+        if: always()
+        env:
+          SOURCE_RESULT: ${{ needs.source.result }}
+          PLAN_RESULT: ${{ needs.plan.result }}
+          NATIVE_PRIMARY_RESULT: ${{ needs.release-native-primary.result }}
+          NATIVE_EXTRA_RESULT: ${{ needs.release-native-extra.result }}
+          PRODUCER_RESULT: ${{ needs.producer.result }}
+          PUBLISHER_RESULT: ${{ needs.publisher.result }}
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          path = Path('publication-results/results.json')
+          if not path.exists():
+              not_started = os.environ.get('PUBLISHER_RESULT', '') == 'skipped'
+              family = json.loads(Path('docs/releases/v2-candidate.json').read_text(encoding='utf-8'))['npm']
+              rows = [{'name': row['name'], 'version': row['version'],
+                       'status': 'not-attempted' if not_started else 'unknown',
+                       'uploadAttempted': False if not_started else None, 'outcomeUncertain': not not_started}
+                      for row in family['primary'] + family['payloads']]
+              report = {'kind': 'npm-release-fallback-report', 'complete': False, 'success': False,
+                        'stage': 'publisher-skipped' if not_started else 'publication-outcome-unknown',
+                        'sourceSHA': os.environ['GITHUB_SHA'], 'runId': os.environ['GITHUB_RUN_ID'],
+                        'attempt': os.environ['GITHUB_RUN_ATTEMPT'], 'packages': rows, 'baselineAdvanced': False,
+                        'releaseCreatedByThisStage': False, 'inventoryVerified': False,
+                        'stages': {key: os.environ.get(key, '') for key in ['SOURCE_RESULT', 'PLAN_RESULT', 'NATIVE_PRIMARY_RESULT',
+                                   'NATIVE_EXTRA_RESULT', 'PRODUCER_RESULT', 'PUBLISHER_RESULT']}}
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
+          report = json.loads(path.read_text(encoding='utf-8'))
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as stream:
+              stream.write('Full npm release result: ' + ('passed' if report.get('success') else 'failed or incomplete') + '\n')
+              if report.get('stage') == 'publication-outcome-unknown':
+                  stream.write('Publication results are missing. Package upload outcomes are unknown.\n')
+              if report.get('stages'):
+                  stream.write('Release stage outcomes: ' + json.dumps(report['stages']) + '\n')
+              for row in report['packages']:
+                  stream.write('- ' + row['name'] + '@' + row['version'] + ': ' + row['status'] + '\n')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-release-family-report-${{ github.run_id }}-${{ github.run_attempt }}
           path: publication-results/results.json
           if-no-files-found: error
           retention-days: 90
@@ -499,10 +582,17 @@ jobs:
         with:
           name: farm-release-candidates-${{ github.sha }}-${{ needs.candidate-identity.outputs.attempt }}
           path: release-candidate
+      - name: Download immutable publisher dispositions
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.publisher.outputs.results_id }}
+          path: publication-results
       - name: Read back every original archive digest, registry checksum and stable tag
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python -B scripts/incremental-release-record.py registry --candidate release-candidate --output release-public-proof/ledger.json
+          EXPECTED_PUBLISHER_RESULT_ARTIFACT_ID: ${{ needs.publisher.outputs.results_id }}
+          EXPECTED_PUBLISHER_RESULT_ARTIFACT_DIGEST: ${{ needs.publisher.outputs.results_digest }}
+        run: python -B scripts/incremental-release-record.py registry --candidate release-candidate --publisher-results publication-results/results.json --output release-public-proof/ledger.json
       - name: Upload independent release public acceptance
         id: public-upload
         uses: actions/upload-artifact@v4
@@ -543,8 +633,10 @@ jobs:
         run: python -B scripts/release-npm-best-effort.py --finalize --candidate release-candidate
 
 # Publication never reads or writes a durable lock or previous baseline. Every
-# new run builds the complete source family. Same-run retries retain the original
-# signed producer bytes; registry reads, never saved success, decide each package.
+# new run observes the exact source versions and builds only proven missing cells.
+# Same-run retries retain original signed bytes and observations; registry reads
+# decide each package, never a saved success. Present native tools are separate
+# registry materials and are never sealed as current-source publication artifacts.
 # Workflow concurrency above is temporary runner serialization, not release state.
 # A partial failure fails publisher, skips public proof and never creates a Release.
 

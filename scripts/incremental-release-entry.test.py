@@ -1,5 +1,6 @@
 """Read-only release entrypoint contracts with independent mock API facts."""
 # cspell:words importlib reversioned
+import base64
 import copy
 import hashlib
 import importlib.util
@@ -19,6 +20,7 @@ def load(name, file):
 
 entry = load("release_entry_contract", "incremental-release-entry.py")
 fixtures = load("release_entry_fixture", "incremental-chain-plan.test.py")
+INTEGRITY = 'sha512-' + base64.b64encode(b'a' * 64).decode()
 
 
 class Contracts(unittest.TestCase):
@@ -39,6 +41,242 @@ class Contracts(unittest.TestCase):
         self.assertEqual(set(result['build']), set(result['publish']))
         self.assertEqual(set(result['publish']), {row['kind'] + ':' + row['name'] for row in result['fullFamily']})
         self.assertNotIn('registrySnapshot', result); self.assertNotIn('baselineBinding', result)
+
+    def test_explicit_version_presence_never_reads_historical_state(self):
+        import sys
+        selector = load('version_presence_fixture', 'release-registry-selection.py')
+        snapshot = selector.collect(self.source, 'npm', lambda row: {'name': row['name'], 'version': row['version'], 'status': 'missing'})
+        destination = self.root / 'presence.json'
+        mocked_selector = mock.Mock()
+        mocked_selector.collect.return_value = snapshot
+        mocked_selector.plan.side_effect = selector.plan
+        history = mock.Mock()
+        history.guard.side_effect = lambda source, snapshot, transport, **options: snapshot
+        loader = entry.load
+        with mock.patch.object(sys, 'argv', ['entry', 'plan', '--version-presence', '--source', self.source['sha'], '--output', str(destination)]), \
+             mock.patch.dict(os.environ, {'GITHUB_RUN_ID': '77', 'GITHUB_RUN_ATTEMPT': '1'}, clear=True), \
+             mock.patch.object(entry.evidence, 'source_reader', return_value=self.source), \
+             mock.patch.object(entry.chain.impact, 'git', return_value=self.source['sha'].encode()), \
+             mock.patch.object(entry, 'actions_transport', return_value=mock.Mock()), \
+             mock.patch.object(entry, 'require_idle_publication', side_effect=AssertionError('old state read')) as state, \
+             mock.patch.object(entry, 'published_baseline', side_effect=AssertionError('old baseline read')) as baseline, \
+             mock.patch.object(entry, 'load', side_effect=lambda name, file: mocked_selector if file == 'release-registry-selection.py' else history if file == 'release-version-history.py' else loader(name, file)):
+            entry.main()
+        state.assert_not_called()
+        baseline.assert_not_called()
+        self.assertEqual(history.guard.call_args.kwargs['current'], {'runId': 77, 'attempt': 1})
+        result = json.loads(destination.read_text())
+        self.assertEqual(result['selectionPolicy'], 'registry-exact-version-v2')
+        self.assertIsNone(result['baselineBinding'])
+        self.assertNotIn('stateBaseline', result['registrySnapshot'])
+        self.assertEqual(result['publish'], ['npm:a', 'npm:b'])
+
+    def configure_presence(self, states):
+        selector = load('presence_verifier_selector', 'release-registry-selection.py')
+        def observed(row):
+            status = states[row['name']]
+            value = {'name': row['name'], 'version': row['version'], 'status': status}
+            if status == 'published':
+                value.update(evidenceKind='registry-metadata', integrity=INTEGRITY,
+                             tarballURL='https://registry.npmjs.org/' + row['name'] + '/-/fixture.tgz', metadata={})
+            elif status == 'unknown':
+                value['reason'] = 'registry-unavailable'
+            return value
+        snapshot = selector.collect(self.source, 'npm', observed)
+        self.plan = entry.source_plan(self.source, registry_snapshot=snapshot)
+        self.manifest.update(selectionPolicy='registry-exact-version-v2', registrySnapshot=snapshot,
+                             releaseValidation='archive-integrity-v1', buildFailures={},
+                             planHash=self.plan['planHash'], graphHash=self.plan['graphHash'],
+                             rebuild=self.plan['build'], publish=self.plan['publish'])
+        self.manifest['packages'] = [row for row in self.manifest['packages'] if row['kind'] + ':' + row['name'] in self.plan['publish']]
+        dispositions = {}
+        for row in self.plan['fullFamily']:
+            key = 'npm:' + row['name']
+            if states[row['name']] == 'published':
+                dispositions[key] = {**snapshot['packages'][key], 'originKind': 'registry', 'latestVerified': True, 'uploadAttempted': False, 'registryBytesVerified': False}
+            elif states[row['name']] == 'missing':
+                sealed = next(value for value in self.manifest['packages'] if value['name'] == row['name'])
+                dispositions[key] = {'name': row['name'], 'version': row['version'], 'originKind': 'source',
+                    'archiveSha256': sealed['archiveSha256'], 'archiveBytes': sealed['archiveBytes'],
+                    'metadata': {}, 'integrity': INTEGRITY, 'evidenceKind': 'registry-archive', 'registryBytesVerified': True, 'tarballURL': 'https://registry.npmjs.org/' + row['name'] + '/-/fixture.tgz',
+                    'latestVerified': True, 'uploadAttempted': True}
+        self.public.update(kind='release-version-presence-v1', registryMetadataVerified=True, testsExecuted=False, registryInstall=False, nativeABI=False, planHash=self.plan['planHash'],
+            packages={key: row.get('archiveSha256') for key, row in dispositions.items()}, dispositions=dispositions)
+        self.refresh_presence_seal()
+        self.registry = mock.Mock()
+        def current_observation(row, *, verify_archive=False):
+            key = 'npm:' + row['name']
+            value = self.public['dispositions'].get(key)
+            if value is None:
+                return observed(row)
+            fields = ['name', 'version', 'evidenceKind', 'metadata', 'integrity', 'tarballURL']
+            if verify_archive:
+                fields += ['archiveSha256', 'archiveBytes']
+            return {'status': 'published', **{field: value[field] for field in fields}}
+        self.registry.lookup.side_effect = current_observation
+        self.registry.reader.json.side_effect = lambda url: {'name': url.split('/')[-2], 'version': '1.0.0'}
+        selector.Registry = mock.Mock(return_value=self.registry)
+        loader = entry.load
+        patch = mock.patch.object(entry, 'load', side_effect=lambda name, file: selector if file == 'release-registry-selection.py' else loader(name, file))
+        patch.start()
+        self.addCleanup(patch.stop)
+        return selector
+
+    def refresh_presence_seal(self):
+        self.seal['manifestHash'] = entry.chain.digest(self.manifest)
+        self.public['manifestHash'] = self.seal['manifestHash']
+
+    def prepublish(self):
+        with mock.patch.object(entry.execution, 'jobs_for', return_value=self.jobs):
+            return self.verifier.verify(self.manifest, self.root, phase='prepublish')
+
+    def test_presence_retained_bytes_never_compare_to_new_source_archives(self):
+        original = self.manifest['packages'][0]
+        self.configure_presence({'a': 'published', 'b': 'missing'})
+        (self.root / original['archive']).write_bytes(b'discarded current source candidate')
+        proof = self.verify()
+        self.assertTrue(proof['verified'])
+        self.assertNotIn('archiveSha256', proof['dispositions']['npm:a'])
+        self.assertIsNone(proof['packages']['npm:a'])
+        self.assertFalse(proof['dispositions']['npm:a']['registryBytesVerified'])
+        self.assertEqual(len(self.manifest['packages']), 1)
+        self.assertTrue(any(call.kwargs.get('verify_archive') is True for call in self.registry.lookup.call_args_list))
+
+    def test_all_retained_tag_only_manifest_accepts_empty_new_archives(self):
+        self.configure_presence({'a': 'published', 'b': 'published'})
+        self.assertEqual(self.manifest['packages'], [])
+        self.assertEqual(self.manifest['publish'], [])
+        self.assertTrue(self.verify()['verified'])
+        self.public['dispositions']['npm:b']['latestVerified'] = False
+        with self.assertRaisesRegex(ValueError, 'latest'):
+            self.verify()
+
+    def test_presence_failure_subset_keeps_signed_independent_archives(self):
+        self.configure_presence({'a': 'missing', 'b': 'missing'})
+        self.manifest['packages'] = [row for row in self.manifest['packages'] if row['name'] == 'b']
+        self.manifest['buildFailures'] = {'npm:a': 'native-build-failed'}
+        self.refresh_presence_seal()
+        proof = self.prepublish()
+        self.assertTrue(proof['sourceAndSealVerified'])
+        self.assertFalse(proof['prepublicationVerified'])
+        self.assertEqual(proof['buildFailures'], {'npm:a': 'native-build-failed'})
+        with self.assertRaisesRegex(ValueError, 'build failures'):
+            self.verify()
+        self.manifest['buildFailures'] = {}
+        self.refresh_presence_seal()
+        with self.assertRaisesRegex(ValueError, 'inventory'):
+            self.prepublish()
+
+    def test_prepublish_defers_all_registry_reads_but_complete_proof_does_not(self):
+        selector = self.configure_presence({'a': 'published', 'b': 'missing'})
+        self.registry.lookup.side_effect = TimeoutError('secret response')
+        proof = self.prepublish()
+        self.assertTrue(proof['sourceAndSealVerified'])
+        self.assertTrue(proof['prepublicationVerified'])
+        self.assertEqual(proof['registryFailures'], {})
+        selector.Registry.assert_not_called()
+        self.registry.lookup.assert_not_called()
+        self.assertNotIn('secret', json.dumps(proof))
+        with self.assertRaisesRegex(ValueError, 'Retained registry'):
+            self.verify()
+        selector.Registry.assert_called_once()
+        self.registry.lookup.assert_called_once()
+
+    def test_prepublish_global_source_plan_and_seal_fail_without_registry_access(self):
+        selector = self.configure_presence({'a': 'published', 'b': 'missing'})
+        selector.Registry.side_effect = AssertionError('Prepublication must not construct a registry reader')
+        for field in ['sourceTree', 'planHash', 'graphHash']:
+            with self.subTest(field=field):
+                original = self.manifest[field]
+                self.manifest[field] = 'f' * len(original)
+                with self.assertRaises(ValueError):
+                    self.prepublish()
+                self.manifest[field] = original
+        self.seal['manifestHash'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'seal binding'):
+            self.prepublish()
+        selector.Registry.assert_not_called()
+        self.registry.lookup.assert_not_called()
+
+    def test_registry_unknown_cannot_be_retained_by_manifest_assertion(self):
+        self.configure_presence({'a': 'unknown', 'b': 'missing'})
+        self.manifest['registryRetained'] = {'npm:a': {'status': 'published'}}
+        self.refresh_presence_seal()
+        with self.assertRaisesRegex(ValueError, 'registry partition'):
+            self.prepublish()
+        del self.manifest['registryRetained']
+        self.refresh_presence_seal()
+        pending = self.prepublish()
+        self.assertTrue(pending['sourceAndSealVerified'])
+        self.assertFalse(pending['prepublicationVerified'])
+        with self.assertRaisesRegex(ValueError, 'unknown versions'):
+            self.verify()
+
+    def test_race_disposition_is_registry_origin_not_candidate_byte_equivalence(self):
+        self.configure_presence({'a': 'missing', 'b': 'missing'})
+        row = self.public['dispositions']['npm:a']
+        sealed = copy.deepcopy(row)
+        row.update(originKind='registry-race', evidenceKind='registry-metadata', registryBytesVerified=False, uploadAttempted=False)
+        del row['archiveSha256']
+        del row['archiveBytes']
+        self.public['packages']['npm:a'] = None
+        self.assertTrue(self.verify()['verified'])
+        self.public['dispositions']['npm:a'] = {**sealed, 'archiveSha256': 'f' * 64}
+        self.public['packages']['npm:a'] = 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'source archive disposition'):
+            self.verify()
+        self.public['dispositions']['npm:a'] = row
+        self.public['packages']['npm:a'] = None
+        row['uploadAttempted'] = True
+        with self.assertRaisesRegex(ValueError, 'cannot claim an upload'):
+            self.verify()
+
+    def test_race_candidate_corruption_does_not_become_source_provenance(self):
+        self.configure_presence({'a': 'missing', 'b': 'missing'})
+        row = self.public['dispositions']['npm:a']
+        row.update(originKind='registry-race', evidenceKind='registry-metadata', registryBytesVerified=False, uploadAttempted=False)
+        del row['archiveSha256']
+        del row['archiveBytes']
+        self.public['packages']['npm:a'] = None
+        archive = next(value for value in self.manifest['packages'] if value['name'] == 'a')
+        (self.root / archive['archive']).write_bytes(b'candidate is unused after registry race')
+        self.assertTrue(self.verify()['verified'])
+        source = next(value for value in self.manifest['packages'] if value['name'] == 'b')
+        (self.root / source['archive']).write_bytes(b'published source candidate was corrupted')
+        with self.assertRaisesRegex(ValueError, 'every new source archive'):
+            self.verify()
+
+    def test_final_presence_fresh_latest_and_dependency_checks_cannot_be_asserted(self):
+        self.configure_presence({'a': 'published', 'b': 'missing'})
+        self.registry.reader.json.side_effect = lambda url: {'name': url.split('/')[-2], 'version': '0.9.0'}
+        with self.assertRaisesRegex(ValueError, 'latest tag is behind'):
+            self.verify()
+        self.registry.reader.json.side_effect = lambda url: {'name': url.split('/')[-2], 'version': '1.0.0'}
+        self.public['dispositions']['npm:b']['metadata'] = {'dependencies': {'a': '2.0.0'}}
+        with self.assertRaisesRegex(ValueError, 'dependency incompatible'):
+            self.verify()
+
+    def test_presence_observation_and_subset_cannot_bypass_signed_seal(self):
+        self.configure_presence({'a': 'published', 'b': 'missing'})
+        self.seal['manifestHash'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'seal binding'):
+            self.prepublish()
+        self.registry.lookup.assert_not_called()
+        self.refresh_presence_seal()
+        self.manifest['selectionPolicy'] = 'registry-exact-version-v1'
+        with self.assertRaisesRegex(ValueError, 'policy differs'):
+            self.prepublish()
+
+    def test_native_matrices_only_include_selected_owner_platform_pairs(self):
+        result = {'nativeBuildCells': [{'owner': '@farmfe/core', 'platform': 'darwin-arm64', 'package': 'npm:core-darwin'},
+            {'owner': 'create-farm', 'platform': 'linux-arm64-gnu', 'package': 'npm:create-arm64'}],
+            'preparationNativeCells': [{'owner': '@farmfe/core', 'platform': 'linux-x64-gnu', 'package': 'npm:core-gnu'}]}
+        matrices = entry.native_matrices(result)
+        self.assertEqual(matrices['native_primary'], {'include': [
+            {'abi': 'darwin-arm64', 'native_owners': '["@farmfe/core"]'},
+            {'abi': 'linux-x64-gnu', 'native_owners': '["@farmfe/core"]'}]})
+        self.assertEqual(matrices['native_extra'], {'include': [{'abi': 'linux-arm64-gnu', 'native_owners': '["create-farm"]'}]})
+        self.assertEqual(entry.native_matrices({}), {'native_primary': {'include': []}, 'native_extra': {'include': []}})
 
     def test_archive_isolation_cannot_bypass_source_plan_or_signed_seal(self):
         best = load('full_source_proof', 'release-npm-best-effort.py')

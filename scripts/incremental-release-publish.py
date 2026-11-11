@@ -398,10 +398,10 @@ def inspect_release(api, manifest):
     return obj, release
 
 
-def verify_release_checkpoint(api, manifest, release):
+def verify_release_checkpoint(api, manifest, release, proof=None):
     checkpoint = entry.load('final_release_checkpoint', 'incremental-release-checkpoint.py')
     source = entry.evidence.source_reader(manifest['sourceSHA'])
-    return checkpoint.decode(release, manifest, source, api.reader.get('')['id'])
+    return checkpoint.decode(release, manifest, source, api.reader.get('')['id'], proof=proof)
 
 
 def completed_publication_receipt(api, manifest, preflight, *, registry=None):
@@ -432,12 +432,24 @@ def confirm_release(api, manifest, proof):
     checkpoint = None
     if release is None:
         checkpoint = entry.release_checkpoint(manifest, proof)
-        api.request("POST", "/releases", {"tag_name": tag, "name": "Farm " + tag, "body": marker + "\nExact source " + manifest["sourceSHA"] + "\n" + checkpoint, "draft": False, "prerelease": False})
+        description = "Exact source " + manifest["sourceSHA"]
+        if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+            dispositions = proof['dispositions'].values()
+            built = sum(row['originKind'] == 'source' for row in dispositions)
+            retained = sum(row['originKind'] in ['registry', 'registry-race'] for row in dispositions)
+            description += ("\nSource-built packages: " + str(built)
+                            + "\nRegistry-retained packages: " + str(retained)
+                            + "\nRetained versions reuse published artifacts, not rebuilt artifacts from this source. "
+                              "This release does not claim current-source provenance for retained versions.")
+        api.request("POST", "/releases", {"tag_name": tag, "name": "Farm " + tag, "body": marker + "\n" + description + "\n" + checkpoint, "draft": False, "prerelease": False})
     obj, release = inspect_release(api, manifest)
     check(obj is not None and release is not None, "Exact tag and Release read-back missing")
     if checkpoint is not None:
         check(checkpoint in release.get('body', ''), 'Persistent release checkpoint read-back differs')
-    verify_release_checkpoint(api, manifest, release)
+    if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+        verify_release_checkpoint(api, manifest, release, proof=proof)
+    else:
+        verify_release_checkpoint(api, manifest, release)
     return {"manifestHash": state.digest(manifest), "sourceSHA": manifest["sourceSHA"], "verified": True, "releaseId": release["id"]}
 
 
@@ -638,7 +650,8 @@ def verify_locked_plan(transaction, source, transport, baseline_reader=entry.pub
         baseline = baseline_reader(transport, manifest['baseline']) if manifest['baseline'] is not None and manifest.get('registrySnapshot') is None else None
         if manifest.get('registrySnapshot') is not None:
             selector=entry.load('locked_registry_selection','release-registry-selection.py')
-            selector.verify_retained(source,manifest['registrySnapshot'],selector.Registry().lookup)
+            registry = selector.Registry()
+            selector.verify_retained(source,manifest['registrySnapshot'],lambda row: registry.lookup(row, verify_archive=True))
             fresh = planner(source,baseline,manifest['registrySnapshot'])
         else:
             fresh = planner(source, baseline)

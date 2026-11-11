@@ -114,8 +114,14 @@ test('independent workflow consumes actual release delta APIs and supports a nat
     assert.match(reusable, /native_owners:/);
     assert.match(reusable, /inputs.native_owners/);
   }
-  assert.equal((release.match(/native_owners: \$\{\{ needs.plan.outputs.native_owners \}\}/g) || []).length, 2);
-  assert.ok(release.includes("needs.plan.outputs.native_required == 'false' && needs.release-native-primary.result == 'skipped' && needs.release-native-extra.result == 'skipped'"));
+  assert.equal((release.match(/native_owners: \$\{\{ matrix.native_owners \}\}/g) || []).length, 2);
+  for(const group of ['primary','extra'])assert.ok(release.includes('matrix: ${{ fromJSON(needs.plan.outputs.native_'+group+'_matrix) }}'));
+  const producer=release.split('  producer:')[1].split('  candidate-identity:')[0];
+  assert.ok(producer.includes("needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.build_required == 'true'"));
+  assert.ok(!producer.includes("needs.release-native-primary.result == 'success'"));
+  assert.ok(!producer.includes("needs.release-native-extra.result == 'success'"));
+  assert.ok(producer.includes('continue-on-error: true')); // Missing cell artifacts are recorded per package, not a global build abort.
+  assert.ok(release.includes('plan --version-presence --source'));
   assert.ok(release.includes('prepare release-work/release-plan.json release-native release-work/native-assembly.json release-work/candidate-plan.json'));
   assert.ok(release.includes('pack release-work/native-assembly.json release-work/artifact-index.json release-work/npm release-work/candidate-plan.json'));
   assert.doesNotMatch(release,/FARM_RELEASE_CANDIDATE_PLAN|sdk-consumer|seal-v2-rust/);

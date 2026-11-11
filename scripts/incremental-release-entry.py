@@ -81,6 +81,9 @@ def source_plan(source, baseline=None, registry_snapshot=None):
                                 anchor=baseline['anchor'] if baseline else None,source_modes=source["modes"],publication_scope="npm",baseline_modes=prior['modes'] if prior else None)
     nodes, issues = chain.repository_graph(source['files'])
     check(not issues, 'Release source dependency graph is invalid')
+    if result.get('selectionPolicy') == 'registry-exact-version-v2':
+        check(baseline is None, 'Version-presence planning cannot use a historical baseline')
+        return result
     # JS build recipes execute Farm. Their native compiler is a source-built
     # preparation dependency, never a historical binary restore.
     build_nodes = set(result['buildNodes'])
@@ -155,11 +158,84 @@ def archive_integrity_mode(manifest):
     return mode == 'archive-integrity-v1'
 
 
+def version_presence_mode(manifest):
+    snapshot = manifest.get('registrySnapshot')
+    presence = isinstance(snapshot, dict) and snapshot.get('schemaVersion') == 2
+    if presence or manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+        check(presence and manifest.get('selectionPolicy') == 'registry-exact-version-v2', 'Version-presence manifest policy differs')
+        check(manifest.get('baseline') is None and archive_integrity_mode(manifest), 'Version-presence manifest cannot use historical state or a different validation policy')
+    return presence
+
+
+def verify_presence_dispositions(proof, manifest, plan, family, records):
+    check(not plan['registryUnknown'] and not manifest['buildFailures'], 'Complete version-presence proof cannot hide unknown versions or build failures')
+    dispositions = proof.get('dispositions')
+    check(isinstance(dispositions, dict) and set(dispositions) == set(family), 'Public version-presence disposition coverage differs')
+    hashes = {}
+    selector = load('verify_presence_dispositions', 'release-registry-selection.py')
+    for identity, row in family.items():
+        actual = dispositions[identity]
+        check(isinstance(actual, dict) and actual.get('name') == row['name'] and actual.get('version') == row['version'], 'Public disposition version differs')
+        selector.validate_observed(row, {**actual, 'status': 'published'}, 2)
+        check(actual.get('latestVerified') is True and type(actual.get('uploadAttempted')) is bool, 'Public disposition latest or upload proof missing')
+        origin = actual.get('originKind')
+        observed = plan['registrySnapshot']['packages'][identity]
+        if observed['status'] == 'published':
+            check(origin == 'registry' and actual['uploadAttempted'] is False, 'Retained registry origin differs')
+            check(actual.get('evidenceKind') == 'registry-metadata' and actual.get('registryBytesVerified') is False, 'Retained registry proof is metadata-only')
+            for key in ['metadata', 'integrity']:
+                check(actual.get(key) == observed.get(key), 'Retained registry observation differs')
+        else:
+            check(observed['status'] == 'missing' and identity in records and origin in ['source', 'registry-race'], 'Missing-version disposition origin differs')
+            if origin == 'source':
+                check(actual['uploadAttempted'] is True, 'New source disposition requires current upload provenance')
+                check(actual.get('evidenceKind') == 'registry-archive' and actual.get('registryBytesVerified') is True, 'New source disposition requires verified archive bytes')
+                check(actual['archiveSha256'] == records[identity]['archiveSha256'] and actual['archiveBytes'] == records[identity]['archiveBytes'], 'New source archive disposition differs')
+            else:
+                check(actual['uploadAttempted'] is False, 'Registry-race origin cannot claim an upload')
+                check(actual.get('evidenceKind') == 'registry-metadata' and actual.get('registryBytesVerified') is False, 'Registry-race proof is metadata-only')
+        hashes[identity] = actual.get('archiveSha256') if origin == 'source' else None
+    check(proof.get('packages') == hashes, 'Public version-presence package coverage differs')
+    return dispositions
+
+
+def verify_current_presence(dispositions, family):
+    """Finalization independently rereads identities, tags and required closure."""
+    selector = load('verify_current_presence', 'release-registry-selection.py')
+    registry = selector.Registry()
+    metadata = {}
+    for identity, row in sorted(family.items()):
+        expected = dispositions[identity]
+        archive = expected['originKind'] == 'source'
+        actual = registry.lookup(row, verify_archive=archive)
+        selector.validate_observed(row, actual, 2)
+        check(actual.get('status') == 'published', 'Public version disappeared before finalization')
+        fields = ['name', 'version', 'evidenceKind', 'metadata', 'integrity']
+        if archive:
+            fields += ['archiveSha256', 'archiveBytes']
+        check(all(actual.get(field) == expected.get(field) for field in fields), 'Public version observation changed before finalization')
+        metadata[row['name']] = actual['metadata']
+        latest = registry.reader.json('https://registry.npmjs.org/' + urllib.parse.quote(row['name'], safe='') + '/latest')
+        check(latest.get('name') == row['name'], 'Public latest package identity differs')
+        def version(value):
+            check(isinstance(value, str) and re.fullmatch(r'\d+\.\d+\.\d+', value), 'Exact stable latest version required')
+            return tuple(map(int, value.split('.')))
+        check(version(latest.get('version')) >= version(row['version']), 'Public latest tag is behind selected stable release')
+    publication = load('verify_current_presence_dependencies', 'release-npm-best-effort.py')
+    for peers_only in [False, True]:
+        dependencies = publication.required_dependencies(list(family.values()), metadata, peers_only=peers_only)
+        check(set(dependencies) == set(metadata) and all(required <= set(metadata) for required in dependencies.values()), 'Public required dependency closure incomplete')
+
+
 def public_scope(manifest):
     return 'registry' if archive_integrity_mode(manifest) else 'public'
 
 
 def public_integrity_verified(proof, manifest):
+    if version_presence_mode(manifest):
+        return (proof.get('kind') == 'release-version-presence-v1' and proof.get('registryMetadataVerified') is True
+                and proof.get('testsExecuted') is False and proof.get('registryInstall') is False
+                and proof.get('nativeABI') is False and proof.get('latestTargets') is True)
     if archive_integrity_mode(manifest):
         return (proof.get('kind') == 'release-byte-integrity-v1' and proof.get('registryBytesVerified') is True and proof.get('testsExecuted') is False
                 and proof.get('registryInstall') is False and proof.get('nativeABI') is False and proof.get('latestTargets') is True)
@@ -182,7 +258,7 @@ class ReleaseVerifier:
         if scope=='frozen':return provenance.frozen_json(self.transport,run,source,'seal')
         result=provenance.signed_json(self.transport,run,source,public_scope(manifest),'public')
         if archive_integrity_mode(manifest):
-            check(result[0].get('kind')=='release-byte-integrity-v1', 'Registry proof kind differs')
+            check(result[0].get('kind') == ('release-version-presence-v1' if version_presence_mode(manifest) else 'release-byte-integrity-v1'), 'Registry proof kind differs')
             return result[:4]
         check(isinstance(manifest,dict),'Public proof requires the frozen manifest')
         consumers=load('release_entry_consumers','release-consumer-bindings.py')
@@ -230,10 +306,12 @@ class ReleaseVerifier:
         # accepting an uploaded baseline JSON here would be circular trust.
         baseline=published_baseline(self.transport,manifest['baseline'],self.read_source) if manifest.get('baseline') is not None and manifest.get('registrySnapshot') is None else None
         snapshot=manifest.get('registrySnapshot')
+        presence = version_presence_mode(manifest)
         plan = source_plan(source,baseline,snapshot)
-        if snapshot is not None:
+        if snapshot is not None and not presence:
             selector=load('verify_release_registry','release-registry-selection.py')
-            selector.verify_retained(source,snapshot,selector.Registry().lookup)
+            registry = selector.Registry()
+            selector.verify_retained(source,snapshot,lambda row: registry.lookup(row, verify_archive=True))
         check(plan["planHash"] == manifest.get("planHash") and plan["graphHash"] == manifest.get("graphHash"), "Release plan or graph differs from committed source")
         nodes, issues = chain.repository_graph(source["files"])
         check(not issues, "Release graph contains unresolved inputs")
@@ -247,13 +325,29 @@ class ReleaseVerifier:
               and manifest.get('publish')==plan['publish'],'Manifest rebuild/version/publication scope differs')
         check(not plan['publicationBlocked'],'Release plan has unresolved version or retirement requirements')
         rows = manifest.get("packages")
-        check(isinstance(rows, list) and rows, "Complete release package inventory required")
+        check(isinstance(rows, list) and (presence or rows), "Complete release package inventory required")
         records = {row["kind"] + ":" + row["name"]: row for row in rows}
-        check(len(records) == len(rows) and set(records) == set(plan["publish"]), "Release publication inventory is missing, duplicated or extra")
+        if presence:
+            failures = manifest.get('buildFailures')
+            check(isinstance(failures, dict) and all(isinstance(value, str) and re.fullmatch(r'[a-z0-9][a-z0-9._:-]{0,119}', value) for value in failures.values()), 'Version-presence build failure inventory invalid')
+            check(len(records) == len(rows) and not set(records) & set(failures)
+                  and set(records) | set(failures) == set(plan['publish']), 'Release publication inventory is missing, duplicated or extra')
+            check(set(plan['buildBlocked']) <= set(failures), 'Blocked build cannot claim a sealed source archive')
+            for field in ['registryRetained', 'registryUnknown']:
+                if field in manifest:
+                    check(manifest[field] == plan[field], 'Manifest registry partition differs')
+        else:
+            check(len(records) == len(rows) and set(records) == set(plan['publish']), 'Release publication inventory is missing, duplicated or extra')
         archive_failures = []
         for identity, row in records.items():
             check(row["version"] == family[identity]["version"], "Release version differs from actual manifest")
-            if self.verify_archive(archive_directory, row) is not True:
+            try:
+                archive_valid = self.verify_archive(archive_directory, row) is True
+            except (ValueError, OSError):
+                if not presence or phase == 'prepublish':
+                    raise
+                archive_valid = False
+            if not archive_valid:
                 archive_failures.append(identity)
         receipt,artifact,origin,producer=self.receipt('frozen',run,source)
         check(origin['run_attempt']==manifest['producerAttempt'],'Frozen seal original attempt differs')
@@ -264,6 +358,14 @@ class ReleaseVerifier:
               and receipt.get("sourceTree") == source["tree"], "Independent release seal binding differs")
         inputs = evidence.package_input_hashes(source)
         check(receipt.get("packageInputs") == inputs, "Release input closure differs")
+        registry_failures = {}
+        if presence and phase != 'prepublish':
+            # Prepublication verifies source, plan and seal without a registry
+            # batch. The writer validates each package freshly at its own write
+            # boundary, so a slow retained version cannot starve independent work.
+            # Final proof still rechecks the complete metadata observation.
+            selector = load('verify_release_presence', 'release-registry-selection.py')
+            registry_failures = selector.verify_retained(source, snapshot, selector.Registry().lookup, isolate=True)
         # Candidate installation is completed before the first registry write.
         # This gate must not require public installation of unpublished versions.
         if not archive_integrity_mode(manifest):
@@ -273,20 +375,29 @@ class ReleaseVerifier:
             check(self.transport.get(route)["commit"]["sha"] == policy_sha, "Trusted release policy moved during verification")
             return {"manifestHash": manifest_hash, "sourceSHA": source["sha"], "sourceTree": source["tree"],
                     "sourceAndSealVerified": True, "archiveFailures": archive_failures,
-                    "prepublicationVerified": not archive_failures, "verified": False, "publicationExecuted": False}
-        check(not archive_failures, 'Complete release proof requires every original archive')
+                    **({"registryFailures": registry_failures, "buildFailures": manifest["buildFailures"]} if presence else {}),
+                    "prepublicationVerified": not archive_failures and not registry_failures and (not presence or not manifest["buildFailures"] and not plan["registryUnknown"]), "verified": False, "publicationExecuted": False}
+        if not presence:
+            check(not archive_failures, 'Complete release proof requires every original archive')
         latest=self.transport.get('/actions/runs/'+str(run['id']))
         proof,artifact,_,consumer=self.receipt('public',latest,source,manifest)
         if archive_integrity_mode(manifest):
-            check(proof.get('kind')=='release-byte-integrity-v1', 'Registry proof kind differs')
+            check(proof.get('kind') == ('release-version-presence-v1' if presence else 'release-byte-integrity-v1'), 'Registry proof kind differs')
         check(proof.get("manifestHash") == manifest_hash and proof.get("producerJobId") == consumer["id"]
               and proof.get("sourceTree") == source["tree"] and proof.get("planHash") == plan["planHash"], "Public acceptance binding differs")
-        check(proof.get("packages") == {key: row["archiveSha256"] for key, row in records.items()}, "Public acceptance package coverage differs")
+        if presence:
+            check(not registry_failures, 'Retained registry verification failed')
+            dispositions = verify_presence_dispositions(proof, manifest, plan, family, records)
+            check(not any(dispositions[key]['originKind'] == 'source' for key in archive_failures), 'Complete release proof requires every new source archive')
+            verify_current_presence(dispositions, family)
+        else:
+            check(proof.get('packages') == {key: row['archiveSha256'] for key, row in records.items()}, 'Public acceptance package coverage differs')
         check(public_integrity_verified(proof, manifest),
               "Actual registry, ABI and tag acceptance missing")
         check(self.transport.get(route)["commit"]["sha"] == policy_sha, "Trusted release policy moved during verification")
         return {"manifestHash": manifest_hash, "sourceSHA": source["sha"], "sourceTree": source["tree"],
                 "producerRunId": run["id"], "producerAttempt": run["run_attempt"], "verified": True,
+                **({"dispositions": dispositions, "packages": proof["packages"], "kind": proof["kind"]} if presence else {}),
                 "publicationExecuted": False}
 
 
@@ -320,17 +431,40 @@ def require_idle_publication(transport):
     return saved
 
 
+def native_matrices(result):
+    primary = {'linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc'}
+    extra = {'linux-x64-musl', 'darwin-x64', 'win32-ia32-msvc', 'win32-arm64-msvc', 'linux-arm64-musl', 'linux-arm64-gnu'}
+    by_platform = {}
+    for cell in result.get('nativeBuildCells', []) + result.get('preparationNativeCells', []):
+        check(cell['platform'] in primary | extra, 'Unsupported native release platform')
+        by_platform.setdefault(cell['platform'], set()).add(cell['owner'])
+    return {name: {'include': [{'abi': abi, 'native_owners': json.dumps(sorted(owners), separators=(',', ':'))}
+        for abi, owners in sorted(by_platform.items()) if abi in platforms]}
+        for name, platforms in [('native_primary', primary), ('native_extra', extra)]}
+
+
 def main():
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
     plan = commands.add_parser("plan"); plan.add_argument("--source", required=True); plan.add_argument("--output", required=True)
-    plan.add_argument('--full-source', action='store_true', help='Build every source npm package without reading historical release state')
+    mode = plan.add_mutually_exclusive_group()
+    mode.add_argument('--full-source', action='store_true', help='Build every source npm package without reading historical release state')
+    mode.add_argument('--version-presence', action='store_true', help='Build only exact npm versions proven missing, without historical release state')
     verify = commands.add_parser("verify"); verify.add_argument("--manifest", required=True); verify.add_argument("--archives", required=True)
     args = parser.parse_args()
     if args.command == "plan":
         source = evidence.source_reader(args.source)
         check(chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Checkout and release plan source differ")
-        if args.full_source:
+        if args.version_presence:
+            transport = actions_transport()
+            selector = load('plan_release_version_presence', 'release-registry-selection.py')
+            snapshot = selector.collect(source, 'npm', selector.Registry().lookup)
+            history = load('plan_release_submission_history', 'release-version-history.py')
+            current = {'runId': int(os.environ['GITHUB_RUN_ID']), 'attempt': int(os.environ['GITHUB_RUN_ATTEMPT'])}
+            check(current['runId'] > 0 and 0 < current['attempt'] <= 20, 'Exact current planning attempt required')
+            snapshot = history.guard(source, snapshot, transport, current=current)
+            result = source_plan(source, registry_snapshot=snapshot)
+        elif args.full_source:
             # A new source release is independent of historical transactions.
             # Registry absence is not an admission gate; each package is checked
             # at its exact-byte publication boundary and failures are recorded.
@@ -339,7 +473,8 @@ def main():
         else:
             state = require_idle_publication(actions_transport())
             selector=load('plan_release_registry','release-registry-selection.py')
-            snapshot=selector.collect(source,'npm',selector.Registry().lookup)
+            registry=selector.Registry()
+            snapshot=selector.collect(source,'npm',lambda row: registry.lookup(row,verify_archive=True),schema_version=1)
             snapshot['stateBaseline']=state['baseline']
             result = source_plan(source,registry_snapshot=snapshot)
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
@@ -350,7 +485,14 @@ def main():
             owners=result['preparationNativeOwners']
             with Path(os.environ['GITHUB_OUTPUT']).open('a',encoding='utf-8') as stream:
                 stream.write('native_required='+str(bool(owners)).lower()+'\npublish_required='+str(bool(result['publish'])).lower()
-                             +'\nbuild_required='+str(bool(result['build'])).lower()+'\ngraph_hash='+result['graphHash']+'\nplan_hash='+result['planHash']+'\nnative_owners='+json.dumps(owners,separators=(',',':'))+'\n')
+                             +'\ntransaction_required='+str(result.get('selectionPolicy')=='registry-exact-version-v2' or bool(result['publish'])).lower()
+                             +'\nselection_policy='+result.get('selectionPolicy','source')
+                             +'\nbuild_required='+str(bool(result['build'])).lower()+'\nregistry_unknown='+str(bool(result.get('registryUnknown'))).lower()+'\ngraph_hash='+result['graphHash']+'\nplan_hash='+result['planHash']+'\nnative_owners='+json.dumps(owners,separators=(',',':'))+'\n'
+                             +'native_cells='+json.dumps(result.get('nativeBuildCells',[]),separators=(',',':'))+'\n'
+                             +'preparation_native_cells='+json.dumps(result.get('preparationNativeCells',[]),separators=(',',':'))+'\n')
+                for name, matrix in native_matrices(result).items():
+                    stream.write(name+'_matrix='+json.dumps(matrix,separators=(',',':'))+'\n'
+                                 +name+'_required='+str(bool(matrix['include'])).lower()+'\n')
         print(json.dumps({"chain": "release", "buildCount": len(result["build"]), "publicationExecuted": False}))
     else:
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
