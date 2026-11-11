@@ -83,7 +83,7 @@ test('automatic publisher stays bound to main provenance, frozen identity and bu
  assert.ok(publisher.includes("needs.candidate-identity.result == 'success'"));
  assert.ok(publisher.includes("needs.sign-frozen-release.result == 'success'"));
  assert.ok(!publisher.includes("candidate-consumers"));
- assert.ok(publisher.includes("needs.producer.result == 'success' && needs.plan.outputs.publish_required == 'true'"));
+ assert.ok(publisher.includes("needs.producer.result == 'success' && (needs.plan.outputs.transaction_required == 'true' || needs.plan.outputs.publish_required == 'true')"));
  for(const name of ['ci.yaml','rust-test.yaml','rust-build.yaml','rust-build-user.yaml','rust-build-release.yaml','farm-docs.yaml']) {
   const source=fs.readFileSync(new URL('../.github/workflows/'+name,import.meta.url),'utf8');
   const group=source.split('\n').find(line=>line.trim().startsWith('group:'));

@@ -224,3 +224,134 @@ test('only peer upload cycles are allowed; hard and optional cycles still reject
  assert.equal(makePublicationManifest(value).packages.length,2);
  value.readArchive=()=>Buffer.from('tampered');assert.throws(()=>makePublicationManifest(value));
 });
+
+function presenceFixture() {
+ const value=fixture();
+ value.selection={...value.selection,selectionPolicy:'registry-exact-version-v2',build:['npm:@farmfe/core'],
+  publicationScope:'npm',baselineBinding:null,registryRetained:{},registryUnknown:{},nativeBuildCells:[],preparationNativeCells:[],registryBuildInputs:{},
+  registrySnapshot:{schemaVersion:2,sourceSHA:sha,sourceTree:tree,packages:{'npm:@farmfe/core':{status:'missing',name:'@farmfe/core',version:'2.0.0'}}}};
+ value.receipt.buildFailures={};return value;
+}
+test('version presence permits observation-only manifests but never legacy empty publication',()=>{
+ const value=presenceFixture();value.selection.build=[];value.selection.publish=[];value.receipt.records=[];
+ value.selection.registrySnapshot.packages['npm:@farmfe/core'].status='published';
+ value.selection.registryRetained={'npm:@farmfe/core':value.selection.registrySnapshot.packages['npm:@farmfe/core']};
+ const result=makePublicationManifest(value);
+ assert.deepEqual(result.packages,[]);assert.deepEqual(result.publish,[]);assert.equal(result.baseline,null);
+ assert.equal(result.selectionPolicy,'registry-exact-version-v2');assert.deepEqual(result.buildFailures,{});
+ delete value.selection.selectionPolicy;assert.throws(()=>makePublicationManifest(value),/No publication delta/);
+});
+test('version presence preserves full missing scope and accounts for every failed build',()=>{
+ const value=presenceFixture();
+ const failed={name:'@farmfe/core-linux-x64-musl',version:'2.0.0',owner:'@farmfe/core',platform:'linux-x64-musl',manifestPath:'packages/core/npm/linux-x64-musl/package.json'};
+ value.plan.npm.payloads.push(failed);value.selection.build.push('npm:'+failed.name);value.selection.publish.push('npm:'+failed.name);
+ value.receipt.buildFailures['npm:'+failed.name]='native-build-or-artifact-unavailable';
+ const result=makePublicationManifest(value);
+ assert.equal(result.packages.length,1);assert.equal(result.family.length,2);assert.equal(result.publish.length,2);
+ assert.deepEqual(result.buildFailures,value.receipt.buildFailures);
+ delete value.receipt.buildFailures['npm:'+failed.name];assert.throws(()=>makePublicationManifest(value),/every unsealed/);
+ value.receipt.buildFailures['npm:'+failed.name]='failure with unbounded raw output';assert.throws(()=>makePublicationManifest(value),/Invalid package/);
+});
+test('version presence cannot seal retained packages or silently publish blocked missing inputs',()=>{
+ const value=presenceFixture();value.selection.buildBlocked={'npm:@farmfe/core':{reason:'registry-host-tool-unknown'}};
+ assert.throws(()=>makePublicationManifest(value),/Blocked source input/);
+ value.selection.buildBlocked={};value.selection.publish=[];value.selection.build=[];
+ assert.throws(()=>makePublicationManifest(value),/Registry-present package was sealed/);
+});
+test('unknown registry versions are not copied into source candidate dependencies',()=>{
+ const value=presenceFixture();value.plan.npm.primary.push({name:'uncertain',version:'1.0.0',manifestPath:'packages/uncertain/package.json'});
+ value.selection.registryUnknown={'npm:uncertain':{status:'unknown',version:'1.0.0',reason:'registry-unavailable'}};
+ const candidate=candidatePlanForSelection(value.plan,value.selection);
+ assert.deepEqual(candidate.validationDependencies.npm,[]);
+ assert.deepEqual(candidate.publication.npm.primary.map(row=>row.name),['@farmfe/core']);
+ assert.equal(candidate.incremental.selectionPolicy,'registry-exact-version-v2');
+});
+test('native cells never expand one owner across published or unknown platforms',async()=>{
+ const {presenceNativePayloads,assemblePresenceNative}=await import('./incremental-release-producer.mjs');
+ const value=presenceFixture();
+ value.plan.npm.payloads=['linux-x64-gnu','linux-x64-musl','darwin-arm64'].map(platform=>({name:'native-'+platform,version:'2.0.0',owner:'@farmfe/core',platform,manifestPath:'packages/core/npm/'+platform+'/package.json'}));
+ for(const [index,pkg] of value.plan.npm.payloads.entries()) value.selection.registrySnapshot.packages['npm:'+pkg.name]={status:index===2?'published':'missing'};
+ value.selection.nativeBuildCells=value.plan.npm.payloads.slice(0,2).map(row=>({owner:row.owner,platform:row.platform,package:'npm:'+row.name}));
+ value.selection.preparationNativeOwners=['@farmfe/core'];
+ assert.deepEqual(presenceNativePayloads(value.plan,value.selection).map(row=>row.platform),['linux-x64-gnu','linux-x64-musl']);
+ const calls=[];
+ const result=assemblePresenceNative(value.plan,value.selection,{root:'/unused',pool:'/unused',sourceSHA:sha,assemble:(_root,_pool,_sha,plan)=>{
+   assert.equal(plan.npm.payloads.length,1);const pkg=plan.npm.payloads[0];calls.push(pkg.platform);
+   if(pkg.platform==='linux-x64-musl')throw Error('failed cell');return [{name:pkg.name,platform:pkg.platform}];
+ }});
+ assert.deepEqual(calls,['linux-x64-gnu','linux-x64-musl']);assert.equal(result.records.length,1);
+ assert.deepEqual(result.failures,{'npm:native-linux-x64-musl':'native-build-or-artifact-unavailable'});
+ value.selection.nativeBuildCells.push({owner:'@farmfe/core',platform:'darwin-arm64',package:'npm:native-darwin-arm64'});
+ assert.throws(()=>presenceNativePayloads(value.plan,value.selection),/cannot be rebuilt/);
+});
+test('failed JS prerequisite blocks its consumer while independent JS still builds',async()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'farm-presence-js-'));
+ try {
+  const files={},primary=['a','b','c'].map(name=>({name,version:'1.0.0',manifestPath:'packages/'+name+'/package.json'}));
+  for(const row of primary) {const file=path.join(root,row.manifestPath);fs.mkdirSync(path.dirname(file),{recursive:true});files[row.manifestPath]=JSON.stringify({name:row.name,scripts:{build:'node build.mjs'}});fs.writeFileSync(file,files[row.manifestPath]);}
+  const selection={build:['npm:a','npm:b','npm:c'],buildNodes:['npm:packages/a','npm:packages/b','npm:packages/c'],buildEdges:{'npm:packages/a':['npm:packages/b'],'npm:packages/b':[],'npm:packages/c':[]}};
+  const calls=[];const result=await runReleaseJsBuilds({npm:{primary,payloads:[]}},selection,{root,pnpm:'fixture',bestEffort:true,verifyManifest:file=>files[file],execute:async(_node,_args,options)=>{const name=path.basename(options.cwd);calls.push(name);if(name==='b')throw Error('fixture failure');}});
+  assert.deepEqual(calls,['b','c']);assert.deepEqual(result.completed,['packages/c']);
+  assert.deepEqual(Object.keys(result.failures).sort(),['npm:packages/a','npm:packages/b']);
+ } finally {fs.rmSync(root,{recursive:true,force:true});}
+});
+test('per-package packing seals successful new subset and records failures without dropping scope',async()=>{
+ const {packPresenceCandidates}=await import('./incremental-release-producer.mjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'farm-presence-pack-'));
+ try {
+  const rows=['failed','working'].map(name=>({name,version:'1.0.0',manifestPath:'packages/'+name+'/package.json'}));
+  const candidate={npm:{primary:rows,payloads:[]},publication:{npm:{primary:rows,payloads:[]},cargo:[]},incremental:{selectionPolicy:'registry-exact-version-v2',publish:['npm:failed','npm:working'],buildFailures:{},registryBuildMaterials:[{origin:'registry-present'}]}};
+  const calls=[];const receipt=packPresenceCandidates({root,candidate,assembly:{sourceCommit:sha,records:[]},artifacts:[],identity:{sourceCommit:sha,testedCommit:sha,testedTree:tree,runId:10},output:path.join(root,'output'),pnpm:'fixture',
+   pack:({plan,output})=>{const row=plan.publication.npm.primary[0];calls.push(row.name);if(row.name==='failed')throw Error('failed pack');fs.mkdirSync(output);fs.writeFileSync(path.join(output,'working.tgz'),'bytes');return {status:'sealed',records:[{name:row.name,version:row.version,file:'working.tgz',sha256:sha256(Buffer.from('bytes'))}]};},
+   verify:(plan,receipt)=>{assert.deepEqual(plan.publication.npm.primary.map(row=>row.name),['working']);assert.equal(receipt.records.length,1);return {candidateArchivesVerified:true};}});
+  assert.deepEqual(calls,['failed','working']);assert.deepEqual(receipt.buildFailures,{'npm:failed':'package-pack-or-seal-failed'});
+  assert.deepEqual(candidate.incremental.publish,['npm:failed','npm:working']);assert.equal(receipt.registryBuildMaterials.length,1);
+  assert.equal(receipt.records[0].name,'working');assert.equal(receipt.records.some(row=>row.origin==='registry-present'),false);
+ } finally {fs.rmSync(root,{recursive:true,force:true});}
+});
+test('native-only version absence never schedules source JS prerequisite builds',()=>{
+ const value=presenceFixture();value.selection.build=['npm:native'];value.selection.buildNodes=['npm:packages/core'];
+ assert.deepEqual(releaseBuildDirectories(value.plan,value.selection,'/unused'),[]);
+});
+test('workflow schedules exact ABI owner cells, observation transactions and independent failure reporting',()=>{
+ const workflow=fs.readFileSync(new URL('../.github/workflows/incremental-release.yaml',import.meta.url),'utf8');
+ assert.ok(workflow.includes('plan --version-presence --source'));
+ for(const group of ['primary','extra'])assert.ok(workflow.includes('matrix: ${{ fromJSON(needs.plan.outputs.native_'+group+'_matrix) }}'));
+ assert.equal((workflow.match(/native_owners: \$\{\{ matrix.native_owners \}\}/g)??[]).length,2);
+ const producer=workflow.split('  producer:')[1].split('  candidate-identity:')[0];
+ assert.ok(producer.includes("needs.plan.outputs.transaction_required == 'true'"));
+ assert.ok(!producer.includes("needs.release-native-primary.result == 'success'"));
+ assert.ok(workflow.includes('  release-report:'));
+ assert.ok(workflow.includes('artifact-ids: ${{ needs.publisher.outputs.results_id }}'));
+ assert.ok(workflow.includes('EXPECTED_PUBLISHER_RESULT_ARTIFACT_DIGEST: ${{ needs.publisher.outputs.results_digest }}'));
+ assert.ok(workflow.includes('--publisher-results publication-results/results.json'));
+});
+
+
+test('retained version prerequisites carry metadata identity without fake archive or source byte proof',()=>{
+ const value=presenceFixture();value.plan.npm.primary.push({name:'retained',version:'1.0.0',manifestPath:'packages/retained/package.json'});
+ value.selection.registryRetained={'npm:retained':{name:'retained',version:'1.0.0',status:'published',evidenceKind:'registry-metadata',integrity:'sha512-'+Buffer.alloc(64).toString('base64')}};
+ const candidate=candidatePlanForSelection(value.plan,value.selection);
+ assert.deepEqual(candidate.validationDependencies.npm,[{name:'retained',version:'1.0.0',integrity:value.selection.registryRetained['npm:retained'].integrity,evidenceKind:'registry-metadata',origin:'registry-present'}]);
+ assert.equal(candidate.validationDependencies.npm[0].sha256,undefined);
+ assert.equal(candidate.publication.npm.primary.some(row=>row.name==='retained'),false);
+ value.selection.registryRetained['npm:retained'].archiveSha256='a'.repeat(64);
+ assert.throws(()=>candidatePlanForSelection(value.plan,value.selection));
+});
+
+
+test('registry host material binds measured execution bytes without a planned archive hash or source-native claim',async()=>{
+ const {verifyRegistryHostMaterial}=await import('./incremental-release-producer.mjs');
+ const selection=presenceFixture().selection;
+ const input={name:'@farmfe/core-linux-x64-gnu',version:'2.0.0',platform:'linux-x64-gnu',origin:'registry-present',evidenceKind:'registry-metadata',integrity:'sha512-'+Buffer.alloc(64).toString('base64'),tarballURL:'https://registry.npmjs.org/host.tgz'};
+ selection.registryBuildInputs={'npm:@farmfe/core-linux-x64-gnu':input};
+ const binary=Buffer.from('measured execution binary');
+ const material={schemaVersion:1,kind:'registry-native-host-build-material',...input,sourceSHA:sha,sourceTree:tree,planHash:selection.planHash,
+  evidenceKind:'registry-archive',registryBytesVerified:true,sourceNativeArtifact:false,publicationCandidate:false,
+  destination:'packages/core/binding/farm.linux-x64-gnu.node',archiveSha256:'a'.repeat(64),archiveBytes:100,binarySha256:sha256(binary),binaryBytes:binary.length,
+  smoke:{node:'v22.20.0',platform:'linux',arch:'x64',libc:'glibc',napi:'10',requiredExports:['Compiler','DocsSnapshot','OutputDirectoryLock','Resolver'],resolver:true,compile:true,tsTransformed:true,outputExecuted:true}};
+ assert.equal(input.archiveSha256,undefined);assert.equal(verifyRegistryHostMaterial(material,selection,()=>binary),material);
+ for(const change of [{sourceNativeArtifact:true},{publicationCandidate:true},{binarySha256:'0'.repeat(64)},{archiveBytes:0},{sourceSHA:'0'.repeat(40)},{smoke:{...material.smoke,node:'v24.22.1'}}])
+  assert.throws(()=>verifyRegistryHostMaterial({...material,...change},selection,()=>binary));
+ assert.throws(()=>verifyRegistryHostMaterial(material,selection,()=>Buffer.from('changed')));
+});

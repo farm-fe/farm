@@ -196,6 +196,10 @@ jobs:
           python -B scripts/cargo-prepared-family.test.py
           python -B scripts/cargo-source-release.test.py
           python -B scripts/release-registry-selection.test.py
+          python -B scripts/release-version-history.test.py
+          python -B scripts/release-registry-host-tool.test.py
+          python -B scripts/release-npm-version-presence.test.py
+          python -B scripts/ci-native-evidence.test.py
           python scripts/incremental-chain-plan.test.py
           python scripts/ci-leaf-native.test.py
           node --test scripts/ci-leaf-assembly.test.mjs

@@ -74,6 +74,22 @@ class EvidenceContracts(unittest.TestCase):
                 with self.subTest(route=value), self.assertRaises(ValueError): client.get(value)
             self.assertEqual(seen, [route, ''])
 
+    def test_exact_bounded_history_date_filter_and_no_other_traversal(self):
+        prefix = '/actions/workflows/incremental-release.yaml/runs?branch=main&created='
+        dates = '2026-11-11T00%3A00%3A00Z..2026-11-11T23%3A59%3A59Z'
+        route = prefix + dates + '&per_page=100&page=1'
+        with local_api(lambda value: {'route': value}) as (client, seen):
+            self.assertEqual(client.get(route), {'route': route})
+            rejected = [route.replace('incremental-release.yaml', 'ci.yaml'), route.replace('main&', 'feature&'),
+                route.replace('per_page=100', 'per_page=1000'), route.replace('page=1', 'page=11'),
+                route.replace('00%3A00%3A00Z..2026-11-11T23', '23%3A59%3A59Z..2026-11-11T00'),
+                route + '&ref=../other', route.replace('..', '%252e%252e'), route.replace('%3A', ':'),
+                route.replace('2026-11-11', '2026-19-40')]
+            for value in rejected:
+                with self.subTest(route=value), self.assertRaises(ValueError):
+                    client.get(value)
+            self.assertEqual(seen, [route])
+
     def test_source_ledger_explicitly_binds_the_platform_orchestration(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); products = root / "products.json"; output = root / "source.json"

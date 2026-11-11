@@ -65,6 +65,16 @@ class NpmCommandFailure(ValueError):
     """Only bounded, allowlisted npm diagnostics may use this exception."""
 
 
+class RegistryReadFailure(ValueError):
+    """Preserve only bounded HTTP status for read-only retry decisions."""
+
+    def __init__(self, operation, status):
+        self.status = status if type(status) is int and 100 <= status <= 599 else None
+        operation = operation if operation in ['latest', 'lookup'] else 'metadata'
+        super().__init__('Registry ' + operation + ' read failed with HTTP '
+                         + (str(self.status) if self.status is not None else 'unavailable'))
+
+
 def npm_failure(operation, row, *, code=None, timed_out=False, stdout=None, stderr=None):
     if operation not in ['publish', 'dist-tag', 'resolve-cli', 'whoami']: operation = 'unknown'
     identity = 'controlled-cli'
@@ -91,10 +101,15 @@ def npm_failure(operation, row, *, code=None, timed_out=False, stdout=None, stde
         text = re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]', '', text)
         for value in re.findall(r'^npm (?:ERR!|error) code ([A-Z][A-Z0-9_]{1,31})\r?$', text, re.M):
             if value in NPM_ERRORS and value not in known: known.append(value)
-    status = 'timeout' if timed_out else 'exit=' + (str(code) if type(code) is int else 'unavailable')
+    returncode = code if type(code) is int and -(2 ** 31) <= code < 2 ** 32 else None
+    status = 'timeout' if timed_out else 'exit=' + (str(returncode) if returncode is not None else 'unavailable')
     detail = '; '.join(value + ': ' + NPM_ERRORS[value] for value in known[:3]) or 'No recognized npm error code; raw output withheld'
-    return NpmCommandFailure('npm operation=' + operation + ' package=' + identity + ' ' + status + '; ' + detail
+    failure = NpmCommandFailure('npm operation=' + operation + ' package=' + identity + ' ' + status + '; ' + detail
                       + '; outcome uncertain: inspect independent registry state before resuming')
+    failure.npm_codes = tuple(known[:3])
+    failure.timed_out = timed_out is True
+    failure.returncode = returncode
+    return failure
 
 
 class GitHubWriter:
@@ -242,7 +257,7 @@ class RegistryWriter:
             check(isinstance(version, str), 'Registry latest version missing')
         except urllib.error.HTTPError as error:
             if error.code != 404:
-                raise ValueError('Registry latest read failed') from None
+                raise RegistryReadFailure('latest', error.code) from None
             version = None
         target = row['version']
         check(isinstance(target, str), 'Invalid stable publication target')
@@ -273,7 +288,7 @@ class RegistryWriter:
             metadata = self.reader.json(url)
         except urllib.error.HTTPError as error:
             if error.code != 404:
-                raise ValueError("Registry lookup failed with HTTP " + str(error.code)) from None
+                raise RegistryReadFailure('lookup', error.code) from None
             if row["kind"] == "npm":
                 # A higher prerelease is also newer than the stable target.
                 order = self.latest_order(row)
@@ -337,23 +352,34 @@ class RegistryWriter:
                                        "--tag", "farm-release-" + row["version"], "--registry=https://registry.npmjs.org", "--provenance"],
                                        env=env, cwd=env["HOME"], capture_output=True, timeout=120)
 
-    def confirm(self, row):
-        """Repair latest after an uncertain upload without republishing bytes."""
+    def promote_latest(self, row):
+        """Submit at most one latest update; visibility is a separate read."""
         if row['kind'] != 'npm':
-            return
+            return 'retained'
         before = self.latest_order(row)
         if before is not None and before >= 0:
-            return
+            return 'retained'
         node, cli, env = self.npm()
         # Recheck after CLI/config preparation. npm tags have no conditional CAS:
         # this closes that preparation window, not arbitrary external races.
         before = self.latest_order(row)
         if before is not None and before >= 0:
-            return
+            return 'retained'
         self.npm_command('dist-tag', row, [node, cli, 'dist-tag', 'add', row['name'] + '@' + row['version'], 'latest', '--registry=https://registry.npmjs.org'],
                               env=env, cwd=env['HOME'], capture_output=True, timeout=120)
+        return 'submitted'
+
+    def latest_visible(self, row):
+        """Fresh read-only proof that latest reached this version or a newer one."""
+        if row['kind'] != 'npm':
+            return True
         observed = self.latest_order(row)
-        check(observed is not None and observed >= 0, 'Registry latest read-back differs')
+        return observed is not None and observed >= 0
+
+    def confirm(self, row):
+        """Preserve synchronous confirmation for the durable publisher."""
+        self.promote_latest(row)
+        check(self.latest_visible(row), 'Registry latest read-back differs')
 
 
 def inspect_release(api, manifest):
@@ -372,10 +398,10 @@ def inspect_release(api, manifest):
     return obj, release
 
 
-def verify_release_checkpoint(api, manifest, release):
+def verify_release_checkpoint(api, manifest, release, proof=None):
     checkpoint = entry.load('final_release_checkpoint', 'incremental-release-checkpoint.py')
     source = entry.evidence.source_reader(manifest['sourceSHA'])
-    return checkpoint.decode(release, manifest, source, api.reader.get('')['id'])
+    return checkpoint.decode(release, manifest, source, api.reader.get('')['id'], proof=proof)
 
 
 def completed_publication_receipt(api, manifest, preflight, *, registry=None):
@@ -406,12 +432,24 @@ def confirm_release(api, manifest, proof):
     checkpoint = None
     if release is None:
         checkpoint = entry.release_checkpoint(manifest, proof)
-        api.request("POST", "/releases", {"tag_name": tag, "name": "Farm " + tag, "body": marker + "\nExact source " + manifest["sourceSHA"] + "\n" + checkpoint, "draft": False, "prerelease": False})
+        description = "Exact source " + manifest["sourceSHA"]
+        if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+            dispositions = proof['dispositions'].values()
+            built = sum(row['originKind'] == 'source' for row in dispositions)
+            retained = sum(row['originKind'] in ['registry', 'registry-race'] for row in dispositions)
+            description += ("\nSource-built packages: " + str(built)
+                            + "\nRegistry-retained packages: " + str(retained)
+                            + "\nRetained versions reuse published artifacts, not rebuilt artifacts from this source. "
+                              "This release does not claim current-source provenance for retained versions.")
+        api.request("POST", "/releases", {"tag_name": tag, "name": "Farm " + tag, "body": marker + "\n" + description + "\n" + checkpoint, "draft": False, "prerelease": False})
     obj, release = inspect_release(api, manifest)
     check(obj is not None and release is not None, "Exact tag and Release read-back missing")
     if checkpoint is not None:
         check(checkpoint in release.get('body', ''), 'Persistent release checkpoint read-back differs')
-    verify_release_checkpoint(api, manifest, release)
+    if manifest.get('selectionPolicy') == 'registry-exact-version-v2':
+        verify_release_checkpoint(api, manifest, release, proof=proof)
+    else:
+        verify_release_checkpoint(api, manifest, release)
     return {"manifestHash": state.digest(manifest), "sourceSHA": manifest["sourceSHA"], "verified": True, "releaseId": release["id"]}
 
 
@@ -612,7 +650,8 @@ def verify_locked_plan(transaction, source, transport, baseline_reader=entry.pub
         baseline = baseline_reader(transport, manifest['baseline']) if manifest['baseline'] is not None and manifest.get('registrySnapshot') is None else None
         if manifest.get('registrySnapshot') is not None:
             selector=entry.load('locked_registry_selection','release-registry-selection.py')
-            selector.verify_retained(source,manifest['registrySnapshot'],selector.Registry().lookup)
+            registry = selector.Registry()
+            selector.verify_retained(source,manifest['registrySnapshot'],lambda row: registry.lookup(row, verify_archive=True))
             fresh = planner(source,baseline,manifest['registrySnapshot'])
         else:
             fresh = planner(source, baseline)

@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import {execFileSync} from 'node:child_process';
 import YAML from 'yaml';
 const read = name => fs.readFileSync(name, 'utf8');
 const workflow = name => YAML.parse(read(`.github/workflows/${name}.yaml`));
@@ -104,8 +105,45 @@ test('each native signer binds one fixed ABI upload without a matrix output merg
   const release = workflow('incremental-release');
   const parents = Object.values(release.jobs).filter(job => job.uses === './.github/workflows/release-native-build.yaml');
   assert.equal(parents.length, 2);
-  assert.deepEqual(parents.map(job => job.strategy.matrix.abi.length).sort(), [3,6]);
-  for (const job of parents) assert.equal(job.strategy['fail-fast'], false);
+  for (const group of ['primary','extra']) {
+    const job=release.jobs['release-native-'+group];
+    assert.equal(job.strategy.matrix, '${{ fromJSON(needs.plan.outputs.native_'+group+'_matrix) }}');
+    assert.equal(release.jobs.plan.outputs['native_'+group+'_matrix'], '${{ steps.release-plan.outputs.native_'+group+'_matrix }}');
+    assert.ok(job.if.includes("needs.plan.outputs.native_"+group+"_required == 'true'"));
+    assert.equal(job.with.abi,'${{ matrix.abi }}');
+    assert.equal(job.with.native_owners,'${{ matrix.native_owners }}');
+    assert.equal(job.strategy['fail-fast'], false);
+  }
+});
+
+test('real matrix outputs contain only exact selected owner-platform cells and omit empty groups', () => {
+  const run = result => JSON.parse(execFileSync(process.env.FARM_PERFORMANCE_PYTHON??'python3', ['-B','-c',
+    'import importlib.util,json,sys\ns=importlib.util.spec_from_file_location("entry","scripts/incremental-release-entry.py");m=importlib.util.module_from_spec(s);s.loader.exec_module(m)\nprint(json.dumps(m.native_matrices(json.load(sys.stdin))))'],
+    {input:JSON.stringify(result),encoding:'utf8',stdio:['pipe','pipe','pipe']}));
+  const cell=(owner,platform)=>({owner,platform,package:'npm:'+owner+'-'+platform});
+  const result=run({nativeBuildCells:[cell('@farmfe/core','linux-x64-musl'),cell('create-farm','linux-x64-musl')],
+    preparationNativeCells:[cell('@farmfe/core','linux-x64-gnu'),cell('@farmfe/core','linux-x64-gnu')]});
+  assert.deepEqual(result,{native_primary:{include:[{abi:'linux-x64-gnu',native_owners:'["@farmfe/core"]'}]},
+    native_extra:{include:[{abi:'linux-x64-musl',native_owners:'["@farmfe/core","create-farm"]'}]}});
+  for(const matrix of Object.values(result))for(const row of matrix.include)assert.ok(JSON.parse(row.native_owners).length>0);
+  assert.deepEqual(run({nativeBuildCells:[],preparationNativeCells:[]}),{native_primary:{include:[]},native_extra:{include:[]}});
+  assert.throws(()=>run({nativeBuildCells:[cell('@farmfe/core','unknown-platform')]}));
+});
+
+test('public proof consumes immutable publisher outcomes without extending signer authority', () => {
+  const jobs=workflow('incremental-release').jobs;
+  const upload=jobs.publisher.steps.find(step=>step.id==='results-upload');
+  assert.equal(upload.if,'always()');
+  for(const [output,field] of [['results_id','artifact-id'],['results_digest','artifact-digest']])
+    assert.equal(jobs.publisher.outputs[output],'${{ steps.results-upload.outputs.'+field+' }}');
+  const download=jobs['public-proof'].steps.find(step=>step.with?.path==='publication-results');
+  assert.equal(download.with['artifact-ids'],'${{ needs.publisher.outputs.results_id }}');
+  assert.equal(download.with.name,undefined);
+  const record=jobs['public-proof'].steps.find(step=>step.run?.includes('incremental-release-record.py registry'));
+  assert.equal(record.env.EXPECTED_PUBLISHER_RESULT_ARTIFACT_ID,'${{ needs.publisher.outputs.results_id }}');
+  assert.equal(record.env.EXPECTED_PUBLISHER_RESULT_ARTIFACT_DIGEST,'${{ needs.publisher.outputs.results_digest }}');
+  assert.ok(record.run.includes('--publisher-results publication-results/results.json'));
+  for(const name of ['sign-frozen-release','sign-public-acceptance'])assert.ok(jobs[name].if.includes("github.event_name == 'push'"));
 });
 
 // Local model of the final YAML conditions; actual Actions parsing is separate.

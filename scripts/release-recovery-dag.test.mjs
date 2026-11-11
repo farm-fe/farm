@@ -58,9 +58,9 @@ test('main-test wait and its wake-up controller are absent; retries retain the o
  assert.ok(text.includes('release-npm-best-effort.py'));
 });
 
-test('actual YAML selects the full source family and fails partial publication without a durable lock',()=>{
+test('actual YAML selects exact version presence and fails partial publication without durable state',()=>{
  const plan=jobs.plan.steps.find(step=>step.id==='release-plan');
- assert.equal(plan.run,'python -B scripts/incremental-release-entry.py plan --full-source --source "$SOURCE_SHA" --output release-plan.json');
+ assert.equal(plan.run,'python -B scripts/incremental-release-entry.py plan --version-presence --source "$SOURCE_SHA" --output release-plan.json');
  const publish=jobs.publisher.steps.find(step=>step.id==='publish-packages');
  assert.equal(publish.run,'python -B scripts/release-npm-best-effort.py --candidate release-candidate --output publication-results/results.json');
  assert.equal(publish.env.FARM_EXPLICIT_PUBLICATION,'true');
@@ -78,6 +78,29 @@ test('actual YAML selects the full source family and fails partial publication w
  const publisher=fs.readFileSync(new URL('./release-npm-best-effort.py',import.meta.url),'utf8');
  assert.doesNotMatch(publisher,/GitRefStore\(|GitHubStateAPI\(|state\.Publication\(|frozen_authorization\(|\.recover\(|\.handoff\(/);
  assert.match(publisher,/return 0 if report\['complete'\] and report\['success'\] else 1/);
+ const entry=fs.readFileSync(new URL('./incremental-release-entry.py',import.meta.url),'utf8');
+ const presence=entry.split('if args.version_presence:')[1].split('elif args.full_source:')[0];
+ assert.ok(presence.includes("selector.collect(source, 'npm'"));
+ assert.ok(presence.includes('source_plan(source, registry_snapshot=snapshot)'));
+ assert.doesNotMatch(presence,/require_idle_publication|published_baseline|GitRefStore|state\.Publication|stateBaseline|baseline=/);
+ assert.doesNotMatch(plan.run,/--baseline|--state|--full-source/);
+ assert.ok(jobs.producer.if.includes("needs.plan.outputs.transaction_required == 'true'"));
+ assert.ok(jobs.publisher.if.includes("needs.plan.outputs.transaction_required == 'true'"));
+ assert.ok(jobs['no-publication'].if.includes("needs.plan.outputs.transaction_required != 'true'"));
+ const fallback=jobs['release-report'];assert.ok(fallback.if.includes('always()'));
+ assert.ok(fallback.needs.includes('producer')&&fallback.needs.includes('publisher'));
+ assert.equal(fallback.steps.find(step=>step.uses==='actions/upload-artifact@v4').if,'always()');
+});
+
+test('publisher reruns execute protected main and cannot bypass its attempt guard through workflow skipping or legacy recovery',()=>{
+ const publisher=jobs.publisher;
+ const command=publisher.steps.find(step=>step.id==='publish-packages');
+ assert.equal(command.run,'python -B scripts/release-npm-best-effort.py --candidate release-candidate --output publication-results/results.json');
+ assert.equal(command.if,undefined);
+ assert.equal(command['continue-on-error'],undefined);
+ assert.equal(publisher['continue-on-error'],undefined);
+ assert.doesNotMatch(publisher.if,/run_attempt|runAttempt|GITHUB_RUN_ATTEMPT/);
+ for(const step of publisher.steps)if(step.run)assert.doesNotMatch(step.run,/incremental-release-publish\.py|--recover\b|--handoff\b|--finalize\b/);
 });
 
 test('publisher and finalizer retain distinct original-byte and complete public-proof gates',()=>{
@@ -93,7 +116,9 @@ test('publisher and finalizer retain distinct original-byte and complete public-
  assert.match(publisher,/registry\.lookup\(row\)/);
  assert.match(publisher,/actual is None or actual == row\['archiveSha256'\]/);
  assert.match(publisher,/entry\.evidence\.successful_job\(jobs, entry\.PUBLISHER\)/);
- assert.match(publisher,/publisher\.RecoveryVerifier\(transport, current\)\.verify\(manifest, directory \/ 'archives', phase='postpublish'\)/);
+ assert.match(publisher,/\(SourceProofVerifier if manifest\.get\('selectionPolicy'\) == 'registry-exact-version-v2' else publisher\.RecoveryVerifier\)\(transport, current\)\.verify\(manifest, directory \/ 'archives', phase='postpublish'\)/);
+ assert.match(publisher,/return entry\.ReleaseVerifier\.verify\(self, manifest, archive_directory, phase='postpublish', current_run=self\.current\)/);
+ assert.match(publisher,/return super\(\)\.verify\(manifest, archive_directory, phase=phase, current_run=current_run\)/);
  assert.match(publisher,/proof\.get\('verified'\) is True/);
  assert.match(publisher,/proof = authorize\(manifest, directory, environment, finalize=True\)/);
  assert.match(publisher,/publisher\.confirm_release\(publisher\.GitHubWriter\(environment, 'finalize'\), manifest, proof\)/);
@@ -153,3 +178,75 @@ test('nested workflow concurrency isolates distinct caller runs while retaining 
   }
  }
 });
+
+test('empty observation and failed native cells still reach the source seal while failed publication cannot finalize',()=>{
+ const evaluate=(name,values={})=>{
+  const base={
+   'github.ref':'refs/heads/main','github.repository':'farm-fe/farm','github.event_name':'push',
+   'inputs.publish':false,'inputs.producer_run':'',
+   'needs.source.result':'success','needs.plan.result':'success','needs.producer.result':'success',
+   'needs.publisher.result':'success','needs.candidate-identity.result':'success','needs.sign-frozen-release.result':'success',
+   'needs.source.outputs.reuse':'false','needs.source.outputs.version_ready':'true',
+   'needs.plan.outputs.transaction_required':'true','needs.plan.outputs.publish_required':'false','needs.plan.outputs.build_required':'false',
+   'needs.public-proof.result':'success','needs.sign-public-acceptance.result':'success'};
+  const expression=jobs[name].if.replace(/^\$\{\{\s*|\s*\}\}$/g,'')
+   .replace(/!cancelled\(\)|always\(\)/g,'true')
+   .replace(/(?:needs|github|inputs)\.[\w.-]+/g,key=>{assert.ok(Object.hasOwn({...base,...values},key),'Unbound DAG condition: '+key);return JSON.stringify({...base,...values}[key]);});
+  assert.match(expression,/^[\s\w'"!&|=()./-]+$/);return Function(`return (${expression})`)();
+ };
+ assert.equal(evaluate('producer'),true);
+ assert.equal(evaluate('publisher'),true);
+ assert.equal(evaluate('producer',{'needs.release-native-primary.result':'failure','needs.release-native-extra.result':'success','needs.plan.outputs.build_required':'true'}),true);
+ assert.equal(evaluate('publisher',{'needs.sign-frozen-release.result':'failure'}),false);
+ assert.equal(evaluate('publisher',{'github.event_name':'workflow_dispatch'}),false);
+ assert.equal(evaluate('release-report',{'needs.producer.result':'failure','needs.publisher.result':'skipped'}),true);
+ assert.equal(evaluate('finalize',{'needs.publisher.result':'failure'}),false);
+ assert.equal(evaluate('finalize',{'needs.public-proof.result':'failure'}),false);
+ assert.equal(evaluate('finalize',{'needs.sign-public-acceptance.result':'failure'}),false);
+});
+
+const sourceFamily=JSON.parse(fs.readFileSync(new URL('../docs/releases/v2-candidate.json',import.meta.url),'utf8')).npm;
+const expectedFamily=[...sourceFamily.primary,...sourceFamily.payloads].map(({name,version})=>({name,version}));
+function fallbackInline(jobName,outcome,existing){
+ const step=jobs[jobName].steps.find(step=>step.shell==='python'&&step.run.includes("Path('publication-results/results.json')"));
+ assert.ok(step,jobName);
+ assert.equal(step.if,'always()');
+ const control=jobName==='publisher'?'PACKAGE_EXECUTION':'PUBLISHER_RESULT';
+ const folder=fs.mkdtempSync(path.join(os.tmpdir(),'release-missing-report-'));
+ const output=path.join(folder,'publication-results/results.json');
+ const summary=path.join(folder,'summary');
+ try{
+  fs.mkdirSync(path.join(folder,'docs/releases'),{recursive:true});
+  fs.writeFileSync(path.join(folder,'docs/releases/v2-candidate.json'),JSON.stringify({npm:sourceFamily}));
+  if(existing!==undefined){fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,existing);}
+  const env={PATH:process.env.PATH,GITHUB_SHA:'a'.repeat(40),GITHUB_RUN_ID:'991',GITHUB_RUN_ATTEMPT:'2',GITHUB_STEP_SUMMARY:summary};
+  for(const key of Object.keys(step.env))env[key]='skipped';
+  if(outcome===undefined)delete env[control];else env[control]=outcome;
+  execFileSync(process.env.FARM_PERFORMANCE_PYTHON??'python3',['-c',step.run],{cwd:folder,env});
+  const raw=fs.readFileSync(output,'utf8');
+  return {raw,report:JSON.parse(raw),summary:fs.existsSync(summary)?fs.readFileSync(summary,'utf8'):''};
+ }finally{fs.rmSync(folder,{recursive:true,force:true});}
+}
+for(const jobName of ['publisher','release-report']){
+ for(const outcome of ['failure','cancelled','success','','skipped',undefined]){
+  test(`missing results in ${jobName} preserve full-family uncertainty for ${outcome===undefined?'absent':outcome||'empty'} execution outcome`,()=>{
+   const {report,summary}=fallbackInline(jobName,outcome);
+   const skipped=outcome==='skipped';
+   assert.deepEqual(report.packages.map(({name,version})=>({name,version})),expectedFamily);
+   for(const row of report.packages){
+    assert.equal(row.status,skipped?'not-attempted':'unknown');
+    assert.equal(row.uploadAttempted,skipped?false:null);
+    assert.equal(row.outcomeUncertain,!skipped);
+   }
+   assert.equal(report.stage,skipped?(jobName==='publisher'?'package-execution-skipped':'publisher-skipped'):'publication-outcome-unknown');
+   assert.equal(report.stages[jobName==='publisher'?'PACKAGE_EXECUTION':'PUBLISHER_RESULT'],outcome??'');
+   for(const field of ['complete','success','baselineAdvanced','releaseCreatedByThisStage','inventoryVerified'])assert.equal(report[field],false);
+   assert.match(summary,/stage outcomes:/);
+   if(!skipped){assert.match(summary,/upload outcomes are unknown/);assert.doesNotMatch(summary,/uploads were not started|execution was skipped/);}
+  });
+ }
+ test(`${jobName} fallback never overwrites existing package outcomes`,()=>{
+  const existing=JSON.stringify({kind:'existing-result',success:false,packages:[{name:'example',version:'1.0.0',status:'published',uploadAttempted:true}]},null,3)+'\n';
+  for(const outcome of ['failure','cancelled','success','','skipped',undefined])assert.equal(fallbackInline(jobName,outcome,existing).raw,existing);
+ });
+}
