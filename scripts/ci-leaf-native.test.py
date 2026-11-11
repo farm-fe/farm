@@ -254,7 +254,23 @@ class Contracts(unittest.TestCase):
         producer=(root/'.github/workflows/rust-build-user.yaml').read_text(encoding='utf-8')
         self.assertIn('node scripts/formal-native-build.mjs',producer)
         self.assertIn('run: test "$NATIVE_RESULT" = success',primary)
-        self.assertEqual(primary.count('if: always() && needs.native-disposition.result == \'success\''),3)
+        # Check the actual jobs, not a global substring count: adding a producer
+        # must not hide a missing consumer guard or accidentally gate unrelated suites.
+        parse_jobs = "import fs from 'node:fs'; import YAML from 'yaml'; console.log(JSON.stringify(YAML.parse(fs.readFileSync('.github/workflows/ci-primary-platform.yaml', 'utf8')).jobs));"
+        primary_jobs=json.loads(__import__('subprocess').check_output(['node','--input-type=module','--eval',parse_jobs],cwd=root,text=True))
+        success="always() && needs.native-disposition.result == 'success'"
+        expected={
+            'native-disposition': (['native'], 'always()'),
+            'mf-native': (['native-disposition'], success),
+            'docs': (['native','native-disposition'], success + " && inputs.abi != 'darwin-arm64'"),
+            'examples-test': (['native','native-disposition','mf-native'], success + " && needs.mf-native.result == 'success'"),
+            'ts-test': (['native','native-disposition'], success),
+        }
+        for name,(dependencies,condition) in expected.items():
+            with self.subTest(job=name):
+                self.assertEqual(primary_jobs[name]['needs'],dependencies)
+                self.assertEqual(primary_jobs[name]['if'],condition)
+                self.assertFalse(primary_jobs[name].get('continue-on-error',False))
         self.assertIn("uses: ./.github/workflows/farm-docs.yaml", primary)
         self.assertIn("consume_native: true", primary)
         self.assertIn('Require successful per-product build or verified main artifact consumption',primary)
@@ -268,7 +284,7 @@ class Contracts(unittest.TestCase):
         self.assertNotIn('required-typescript-compatibility:',workflow)
         # Execute current owner byte/identity/environment and failure/cancel/skip
         # gates, rather than interpreting old whole-job GNU restore strings.
-        result=__import__('subprocess').run(['node','--test','scripts/formal-native-scope.test.mjs','scripts/ci-required-dag.test.mjs'],cwd=root,capture_output=True,text=True)
+        result=__import__('subprocess').run(['node','--test','--test-reporter=tap','scripts/formal-native-scope.test.mjs','scripts/ci-required-dag.test.mjs'],cwd=root,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stdout+result.stderr)
         self.assertIn('# fail 0',result.stdout);self.assertIn('# skipped 0',result.stdout)
 
