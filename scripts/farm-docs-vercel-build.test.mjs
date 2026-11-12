@@ -110,6 +110,18 @@ test('incomplete release fails before any command or output', async t => {
   assert.equal(f.calls.length, 0);
 });
 
+test('main deployment before npm publication fails without commands or replacing existing output', async t => {
+  const f = fixture(t);
+  f.put('website/build-farm/index.html', 'previous successful production output');
+  f.hooks.getMetadata = async name => { throw new Error('[RELEASE_NOT_PUBLISHED] ' + name); };
+  for (const phase of ['install', 'build']) {
+    await assert.rejects(buildPublishedDocs({ ...f.options, phase, environment: { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' } }, f.hooks), /RELEASE_NOT_PUBLISHED/);
+    assert.equal(f.calls.length, 0);
+    assert.equal(fs.readFileSync(path.join(f.root, 'website/build-farm/index.html'), 'utf8'), 'previous successful production output');
+    assert.deepEqual(fs.readdirSync(path.join(f.root, 'website')).filter(name => name.startsWith('build-farm')), ['build-farm']);
+  }
+});
+
 test('rejects registry cohort drift, non-registry inputs, missing integrity and install scripts', async t => {
   const f = fixture(t);
   const plan = deploymentPlan(f.website, f.manifests, target);
@@ -352,12 +364,12 @@ test('native override and injected loader are rejected before metadata or comman
   assert.equal(f.calls.length, 0);
 });
 
-test('Vercel keeps existing project and main Git pause with registry-only commands', () => {
+test('Vercel enables main Git deployments with unchanged registry-only commands', () => {
   const config = read(path.join(repository, 'website/vercel.json'));
   assert.equal(config.installCommand, 'node ../scripts/farm-docs-vercel-build.mjs --install');
   assert.equal(config.buildCommand, 'node ../scripts/farm-docs-vercel-build.mjs');
   assert.equal(config.outputDirectory, 'build-farm');
-  assert.deepEqual(config.git.deploymentEnabled, { main: false });
+  assert.deepEqual(config.git.deploymentEnabled, { main: true });
 });
 
 test('actual CLI rejects unknown options without any build', () => {

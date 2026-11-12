@@ -73,9 +73,25 @@ They do not prove that packages are published or that the website builds. A real
 preflight and real Node 22 build must pass after the npm release finishes, followed
 by checking the actual Vercel deployment's routes, assets and notices.
 
-`git.deploymentEnabled.main=false` is deliberately unchanged. This build script
-produces static files only: it does not create deployments, promote previews,
-modify project settings, merge a PR or re-enable main-push production deployment.
-Confirm the current Vercel project/Root Directory and authorized deployment target
-before performing a manual deployment. Keep the existing production site in place
-while publication or validation is incomplete.
+`git.deploymentEnabled.main=true` enables Git-triggered builds from `main` for
+this project. Branch previews remain enabled. The project's existing production
+branch and domain settings decide where a successful deployment is served; this
+repository change does not modify those settings. The local build script only
+produces static files and does not deploy, promote, merge or publish packages.
+
+### npm publication ordering
+
+The npm release workflow and Vercel Git integration both react to a main push.
+They run independently: Vercel does not wait for the npm workflow to finish.
+A commit that references newly bumped Farm versions can therefore reach the
+registry preflight before those exact versions are public. The preflight fails
+before installation or output replacement, so no successful deployment is
+available to replace the current production site. There is no source-build
+fallback or fallback to older package versions.
+
+When publication finishes, the failed Vercel deployment is **not automatically
+retried**. Verify all exact versions with the preflight, then redeploy the same
+main commit through Vercel. Do not substitute an older commit or disable the
+preflight. A later main push triggers another independent deployment attempt.
+This policy deliberately adds no polling, deployment hook, token or npm workflow
+coupling. See [the main deployment policy](main-deployment-pause.md).

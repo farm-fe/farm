@@ -6,7 +6,7 @@
   "outputDirectory": "build-farm",
   "git": {
     "deploymentEnabled": {
-      "main": false
+      "main": true
     }
   }
 }
