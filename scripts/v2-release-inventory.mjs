@@ -144,20 +144,26 @@ export function changesetsPublication(family, baseline, officialReleases) {
   }
   const payloads = family.npm.payloads.filter(row => names.has(row.owner));
   for (const row of payloads) assert.equal(row.version, changes.find(owner => owner.name === row.owner).version, 'Native owner/payload version drift');
+  const npmOnly = family.publicationScope === 'npm';
   const oldCargo = new Map(baseline.cargo.map(row => [row.name, row.version]));
-  const cargo = family.cargo.filter(row => oldCargo.get(row.name) !== row.version);
+  const changedCargo = family.cargo.filter(row => oldCargo.get(row.name) !== row.version);
+  let changedRustSource = false;
   for (const row of family.cargo) {
     const old = baseline.cargo.find(item => item.name === row.name);
     if (old && old.version === row.version) {
       assert.match(row.sourceSha256 ?? '', /^[a-f0-9]{64}$/, `Missing Rust source evidence: ${row.name}`);
-      assert.equal(row.sourceSha256, old.sourceSha256, `Rust source changed without a version bump: ${row.name}`);
+      if (row.sourceSha256 !== old.sourceSha256) changedRustSource = true;
+      // npm native binaries compile the reviewed source; no Cargo archive is
+      // published in npm-only mode. Keep its actual fingerprints, not old ones.
+      if (!npmOnly) assert.equal(row.sourceSha256, old.sourceSha256, `Rust source changed without a version bump: ${row.name}`);
     }
   }
   for (const row of family.npm.primary.filter(row => row.sourceSha256)) {
     const old = previous.get(row.name);
     if (old && old.version === row.version) assert.equal(row.sourceSha256, old.sourceSha256, `Native source changed without an owner version bump: ${row.name}`);
   }
-  if (cargo.length) assert.ok(changes.some(row => row.name === '@farmfe/core'), 'Changed Rust SDK requires a new Core npm/native family');
+  if (changedCargo.length || (npmOnly && changedRustSource)) assert.ok(changes.some(row => row.name === '@farmfe/core'), 'Changed Rust SDK requires a new Core npm/native family');
+  const cargo = npmOnly ? [] : changedCargo;
   const core = changes.find(row => row.name === '@farmfe/core');
   const identities = changes.map(row => `${row.name}@${row.version}`).sort();
   return { mode: 'changesets', npm: { primary: changes, payloads }, cargo,

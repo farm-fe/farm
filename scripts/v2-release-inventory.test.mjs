@@ -136,3 +136,34 @@ test('preflight still rejects stale reviewed release evidence instead of silentl
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Candidate manifests drifted/);
 });
+
+test('npm-only release retains Cargo source evidence without publishing unchanged Cargo versions', () => {
+  const old = baseline(), family = structuredClone(old);
+  family.publicationScope = 'npm';
+  family.npm.primary[0].version = '2.0.1';
+  family.npm.payloads[0].version = '2.0.1';
+  family.cargo[0].sourceSha256 = 'b'.repeat(64);
+  const releases = [{ name: '@farmfe/core', newVersion: '2.0.1' }];
+  const before = structuredClone(family);
+  const delta = changesetsPublication(family, old, releases);
+  assert.equal(delta.cargo.length, 0);
+  assert.equal(delta.npm.primary[0].version, '2.0.1');
+  assert.deepEqual(family, before, 'Never replace new source evidence with published Cargo hashes');
+  const versionedCargo = structuredClone(family);
+  versionedCargo.cargo[0].version = '2.2.1';
+  assert.equal(changesetsPublication(versionedCargo, old, releases).cargo.length, 0, 'npm-only never selects Cargo uploads, even if a Cargo version also changed');
+  delete family.publicationScope;
+  assert.throws(() => changesetsPublication(family, old, releases), /Rust source changed without a version bump/);
+});
+
+test('npm-only Cargo source changes still require a new Core family and valid evidence', () => {
+  const old = baseline(), family = structuredClone(old);
+  family.publicationScope = 'npm';
+  family.cargo[0].sourceSha256 = 'b'.repeat(64);
+  family.npm.primary[1].version = '1.0.1';
+  assert.throws(() => changesetsPublication(family, old, [{ name: '@farmfe/js-plugin-example', newVersion: '1.0.1' }]), /new Core npm\/native family/);
+  family.npm.primary[0].version = '2.0.1';
+  family.npm.payloads[0].version = '2.0.1';
+  delete family.cargo[0].sourceSha256;
+  assert.throws(() => changesetsPublication(family, old, [{ name: '@farmfe/js-plugin-example', newVersion: '1.0.1' }, { name: '@farmfe/core', newVersion: '2.0.1' }]), /Missing Rust source evidence/);
+});
