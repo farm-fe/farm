@@ -5,7 +5,7 @@
   "tag": "v2.0.0",
   "abi": "0.5.4",
   "rustCoreVersion": "2.2.0",
-  "candidatePlanSha256": "dfe28212d48fcfdd76c2b77d1e18c7816276b23692b8c3f2d52bed6b4c54a101",
+  "candidatePlanSha256": "4e758783b3e24ff678fee817647b13edafe368c4adfbe5b8b9f423c770f57d63",
   "counts": {
     "primary": 51,
     "payloads": 246,
