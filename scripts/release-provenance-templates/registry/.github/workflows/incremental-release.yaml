@@ -509,6 +509,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.publisher.outputs.results_id }}
           path: publication-results
+          merge-multiple: true
       - name: Preserve the full source inventory even if production never started
         if: always()
         env:
@@ -587,6 +588,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.publisher.outputs.results_id }}
           path: publication-results
+          merge-multiple: true
       - name: Read back every original archive digest, registry checksum and stable tag
         env:
           GH_TOKEN: ${{ github.token }}
