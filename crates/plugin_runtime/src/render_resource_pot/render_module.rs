@@ -258,6 +258,7 @@ mod tests {
     let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
 
     let result = render_module(RenderModuleOptions {
+      is_concatenated: false,
       module_id,
       ast,
       comments: parsed.comments.into(),
