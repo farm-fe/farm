@@ -1,4 +1,4 @@
-> RETIRED HISTORICAL DESIGN: The source-build deployment below exceeded Vercel's 45-minute limit and must not be executed. The compatibility command now fails explicitly. Product CI/local source verification remains separate; deployment requires approved published v2 packages and precompiled native payloads. See registry-release-plan.draft.json and scripts/farm-docs-registry-consumer.mjs. No production deployment or merge is authorized until final CI/local preview and the external Vercel side-effect gate are satisfied.
+> RETIRED HISTORICAL DESIGN: The source-build deployment below exceeded Vercel's 45-minute limit and must not be executed. The existing Vercel entry now builds an isolated consumer of exact published v2 npm packages and precompiled native payloads. See [the current registry deployment guide](registry-deployment.md). No Cargo/rustup/workspace fallback is allowed. The main Git deployment pause remains enabled.
 
 # Vercel Preview 从源码构建官网
 
