@@ -1,12 +1,60 @@
 // Production workflow contracts; no hosted execution or signing is simulated here.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import {execFileSync} from 'node:child_process';
 import YAML from 'yaml';
 const read = name => fs.readFileSync(name, 'utf8');
 const workflow = name => YAML.parse(read(`.github/workflows/${name}.yaml`));
 const needs = job => typeof job.needs === 'string' ? [job.needs] : job.needs || [];
+
+test('publisher result consumers download the immutable artifact into the expected flat path', () => {
+  const jobs = workflow('incremental-release').jobs;
+  for (const name of ['release-report', 'public-proof']) {
+    const downloads = jobs[name].steps.filter(step =>
+      step.uses?.startsWith('actions/download-artifact@') && step.with?.['artifact-ids']);
+    assert.equal(downloads.length, 1, name);
+    assert.deepEqual(downloads[0].with, {
+      'artifact-ids': '${{ needs.publisher.outputs.results_id }}',
+      path: 'publication-results',
+      'merge-multiple': true
+    }, name);
+  }
+});
+
+test('a single publisher artifact reaches the family reporter without a synthetic unknown result', () => {
+  const job = workflow('incremental-release').jobs['release-report'];
+  const download = job.steps.find(step => step.with?.['artifact-ids']);
+  const reporter = job.steps.find(step => step.shell === 'python');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-release-report-'));
+  try {
+    // download-artifact v4 nests ID-selected artifacts unless merge-multiple is true,
+    // even when the selection contains just one artifact.
+    const destination = path.join(root, download.with.path,
+      download.with.name || download.with['merge-multiple'] === true
+        ? '' : 'npm-publication-results-10-1');
+    const report = JSON.stringify({complete: true, success: true,
+      packages: [{name: '@farmfe/core', version: '2.0.0', status: 'published'}]}) + '\n';
+    fs.mkdirSync(destination, {recursive: true});
+    fs.writeFileSync(path.join(destination, 'results.json'), report);
+    fs.mkdirSync(path.join(root, 'docs/releases'), {recursive: true});
+    fs.writeFileSync(path.join(root, 'docs/releases/v2-candidate.json'), JSON.stringify({
+      npm: {primary: [{name: '@farmfe/core', version: '2.0.0'}], payloads: []}
+    }));
+    const summary = path.join(root, 'summary.txt');
+    execFileSync('python3', ['-B', '-c', reporter.run], {cwd: root, env: {
+      ...process.env, GITHUB_SHA: 'a'.repeat(40), GITHUB_RUN_ID: '10',
+      GITHUB_RUN_ATTEMPT: '1', GITHUB_STEP_SUMMARY: summary, PUBLISHER_RESULT: 'success'
+    }});
+    assert.equal(fs.readFileSync(path.join(root, 'publication-results/results.json'), 'utf8'), report);
+    assert.match(fs.readFileSync(summary, 'utf8'), /Full npm release result: passed/);
+    assert.doesNotMatch(fs.readFileSync(summary, 'utf8'), /unknown|missing/);
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
 
 test('same-source release callers match their exact checkout templates without revision substitution', () => {
   for (const scope of ['frozen', 'registry', 'native', 'cargo']) {
