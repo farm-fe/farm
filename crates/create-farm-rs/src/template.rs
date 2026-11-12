@@ -438,3 +438,51 @@ where
     Err(std::fmt::Error)
   }
 }
+
+#[cfg(test)]
+mod client_type_tests {
+  use super::*;
+
+  #[test]
+  fn generated_templates_use_farm_client_types() {
+    let output =
+      path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/template-client-tests");
+    let cases = [
+      ("svelte", Template::Svelte),
+      (
+        "electron-svelte",
+        Template::Electron(Some(ElectronSubTemplate::Svelte)),
+      ),
+      (
+        "tauri-preact",
+        Template::Tauri(Some(TauriSubTemplate::Preact)),
+      ),
+      (
+        "tauri-react",
+        Template::Tauri(Some(TauriSubTemplate::React)),
+      ),
+      ("tauri-vue", Template::Tauri(Some(TauriSubTemplate::Vue))),
+      (
+        "tauri2-react",
+        Template::Tauri2(Some(TauriSubTemplate::React)),
+      ),
+      ("tauri2-vue", Template::Tauri2(Some(TauriSubTemplate::Vue))),
+    ];
+    for (name, template) in cases {
+      let dir = output.join(name);
+      template
+        .render(&dir, PackageManager::Npm, name, name, false)
+        .unwrap();
+      let env = fs::read_to_string(dir.join("src/env.d.ts")).unwrap();
+      assert!(env.contains("types=\"@farmfe/core/client\""), "{name}");
+      assert!(!dir.join("src/vite-env.d.ts").exists(), "{name}");
+      if name.contains("svelte") {
+        assert!(env.contains("types=\"svelte\""), "{name}");
+      }
+      if name.ends_with("vue") {
+        assert!(env.contains("DefineComponent<{}, {}, any>"), "{name}");
+        assert!(env.contains("export default component;"), "{name}");
+      }
+    }
+  }
+}
