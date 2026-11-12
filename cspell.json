@@ -4,6 +4,16 @@
   "version": "0.2",
   // language - current active spelling language
   "language": "en",
+  "overrides": [
+    {
+      "filename": ["docs/releases/source-migration-checkpoint.md", "cspell.json"],
+      "words": ["Sincom", "worktrees", "parseability"]
+    },
+    {
+      "filename": ["docs/vuetify-delivery/**", "cspell.json"],
+      "words": ["unhead", "asynciterable", "tsgo", "NTFS", "ENOSPC"]
+    }
+  ],
   // words - list of words to be always considered correct
   "words": [
     "colgroup",

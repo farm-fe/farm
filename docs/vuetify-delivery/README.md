@@ -27,3 +27,9 @@
 推荐将源码修复与 DOM 生产基线作为可独立审查的上游改动，等待官方版本后再更新 Farm 的依赖与候选包。仓库级 pnpm patch 不能自动修复 npm 下游消费者；本机 file: tarball 或消费者 override 也不能证明正式 npm 交付。此交付包未向外部仓库提交或发布。
 
 完整实测与历史失败保留在 Farm 的 `docs/v2-vuetify-finite-slot-repair.md`。当前 Farm 实际候选安装仍有 Vuetify 根声明失败；后续必须在真实候选安装树重新验证全部插件入口及业务。
+
+## 2026-11-12 源码字节完整性复核
+
+从 [Vuetify 官方 v4.2.5 提交](https://github.com/vuetifyjs/vuetify/commit/44521c37f5ee2587dc7a6635d099ff40488bc32e) 重新获取源码，13 个条目的原始文件存在性与 beforeSha256 均匹配。迁移副本曾将补丁里 7 个文件的新增行 CRLF 转为 LF；这不是整个文件统一换行的问题。恢复这些新增行的原始字节后，补丁 SHA256 精确匹配原 manifest 的 `2bc4600b6be796a58be49e44d503cfc41e4f615aa2133969a2cff316db5cfef7`，应用后 13 个 afterSha256 也全部匹配。manifest 的任何摘要都未改动。
+
+`.gitattributes` 对完整补丁设置 `-text`，避免后续检出再转换字节。`node --test scripts/v2-source-migration-patch.test.mjs` 检查原始摘要与此保护规则，已包含在现有 `v2-*.test.mjs` CI 测试范围内。复核只确认保存的源码补丁与原始清单一致；未重新生成声明、重跑消费验收或确认上述历史本机证据仍可取得，不代表 Vuetify 或 Farm 发布验收完成。
