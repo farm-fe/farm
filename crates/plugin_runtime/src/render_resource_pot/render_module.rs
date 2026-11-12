@@ -23,7 +23,7 @@ use farmfe_toolkit::{
     hygiene::{Config as HygieneConfig, hygiene_with_config},
   },
   swc_ecma_transforms_base::fixer::paren_remover,
-  swc_ecma_visit::VisitMutWith,
+  swc_ecma_visit::{Visit, VisitMutWith, VisitWith},
 };
 
 use farmfe_core::{
@@ -141,13 +141,33 @@ pub fn render_module(
     // A module that never references one of them (e.g. `module` in an ES
     // module) would keep a top level binding of the same name through
     // hygiene, and that binding would then collide with the parameter. So
-    // reference all of them while hygiene runs.
-    let wrapper_params = [
+    // reference only names bound at module scope while hygiene runs. Nested
+    // parameters can safely shadow the wrapper and must not be renamed.
+    struct TopLevelWrapperBindings {
+      mark: Mark,
+      names: farmfe_core::HashSet<String>,
+    }
+    impl Visit for TopLevelWrapperBindings {
+      fn visit_ident(&mut self, ident: &Ident) {
+        if ident.ctxt.outer() == self.mark {
+          self.names.insert(ident.sym.to_string());
+        }
+      }
+    }
+    let mut bindings = TopLevelWrapperBindings {
+      mark: top_level_mark,
+      names: Default::default(),
+    };
+    cloned_module.visit_with(&mut bindings);
+    let wrapper_params: Vec<_> = [
       FARM_MODULE,
       FARM_MODULE_EXPORT,
       FARM_REQUIRE,
       FARM_DYNAMIC_REQUIRE,
-    ];
+    ]
+    .into_iter()
+    .filter(|name| bindings.names.contains(*name))
+    .collect();
     cloned_module.body.splice(
       0..0,
       wrapper_params.iter().map(|name| {
@@ -303,5 +323,16 @@ export const v = [module, exports, farmRequire, farmDynamicRequire];
         );
       }
     }
+  }
+  #[test]
+  fn nested_parameters_can_shadow_wrapper_names_without_renaming() {
+    let code = render(
+      "export function resolve(module, props, Loadable) { return [module, props, Loadable]; }",
+    );
+    assert!(
+      code.contains("function resolve(module, props, Loadable)"),
+      "{code}"
+    );
+    assert!(!code.contains("module1"), "{code}");
   }
 }
