@@ -37,3 +37,21 @@ The current running instructions are in
 records are in [`docs/farm-docs`](../docs/farm-docs/); those records do not establish
 the validation status of the current checkout. Local build and preview commands
 do not publish or deploy the website.
+
+## Published-package deployment
+
+Vercel uses `scripts/farm-docs-vercel-build.mjs`, which builds an independent
+consumer of exact published Farm v2 packages and the matching precompiled native
+packages. It does not install or build this workspace. With Node 22 and Corepack,
+run from the repository root:
+
+```sh
+node scripts/farm-docs-vercel-build.mjs --preflight
+node scripts/farm-docs-vercel-build.mjs
+```
+
+The preflight stops if any required release package is not published yet. The
+build writes `website/build-farm` only after successful compilation and notice
+verification. See [registry deployment](../docs/farm-docs/registry-deployment.md)
+for isolation, validation and deployment boundaries. Main-push production
+deployment remains paused; these commands do not deploy the site.
