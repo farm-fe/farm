@@ -353,5 +353,336 @@ class Contracts(unittest.TestCase):
         self.assertIsNone(module.NoRedirect().redirect_request(None, None, 302, None, None, 'https://evil.test'))
 
 
+class PluginContracts(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory(prefix='farm-host-plugin-test-')
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.configure('replace-dirname')
+
+    def configure(self, slug):
+        self.slug = slug
+        self.name = f'@farmfe/plugin-{slug}-linux-x64-gnu'
+        self.key = 'npm:' + self.name
+        self.manifest_path = f'rust-plugins/{slug}/npm/linux-x64-gnu/package.json'
+        self.destination = self.root / f'rust-plugins/{slug}/npm/linux-x64-gnu/index.farm'
+        self.output = self.root / f'release-work/registry-host-plugin-{slug}-material.json'
+        value = manifest(name=self.name, main='index.farm')
+        # The plugin archive has index.farm, never the Node core filename.
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode='w', format=tarfile.PAX_FORMAT) as tar:
+            for item, data in [member('package/package.json', json.dumps(value).encode()),
+                               member('package/index.farm', elf()), member('package/LICENSE', b'MIT')]:
+                tar.addfile(item, io.BytesIO(data))
+        self.body = gzip.compress(stream.getvalue(), mtime=0)
+        self.selection, self.source, unused = fixture()
+        row = {**self.selection['registryRetained'][module.KEY], 'name': self.name,
+               'owner': f'@farmfe/plugin-{slug}', 'manifestPath': self.manifest_path,
+               'tarballURL': f'https://registry.npmjs.org/@farmfe/plugin-{slug}-linux-x64-gnu/-/plugin-{slug}-linux-x64-gnu-2.0.0.tgz',
+               'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(self.body).digest()).decode(),
+               'archiveSha256': hashlib.sha256(self.body).hexdigest(), 'archiveBytes': len(self.body)}
+        self.selection['registryRetained'] = {self.key: row}
+        self.selection['registryBuildInputs'] = {self.key: {**row, 'origin': 'registry-present'}}
+        self.selection['nativeBuildCells'] = [{'package': module.KEY, 'owner': '@farmfe/core',
+                                               'platform': 'linux-x64-gnu'}]
+        self.selection['registrySnapshot'] = {'packages': {module.KEY: {'status': 'missing'}}}
+        reseal(self.selection)
+        self.source['manifests'] = {self.name: value}
+        self.source['wrappers'] = {self.name: {'name': f'@farmfe/plugin-{slug}',
+                                    'optionalDependencies': {self.name: '2.0.0'}}}
+        self.destination.parent.mkdir(parents=True, exist_ok=True)
+        (self.destination.parent / 'package.json').write_text(json.dumps(value))
+        self.link = self.root / f'rust-plugins/{slug}/node_modules' / self.name
+        self.link.parent.mkdir(parents=True, exist_ok=True)
+        self.link.symlink_to(self.destination.parent, target_is_directory=True)
+        core = self.root / module.DESTINATION
+        core.parent.mkdir(parents=True, exist_ok=True)
+        core.write_bytes(elf())
+        metadata = {'name': self.name, 'version': '2.0.0',
+                    'dist': {'tarball': row['tarballURL'], 'integrity': row['integrity']}}
+        url = 'https://registry.npmjs.org/' + module.urllib.parse.quote(self.name, safe='') + '/2.0.0'
+        self.routes = {url: json.dumps(metadata).encode(), row['tarballURL']: self.body}
+        self.read = mock.Mock(side_effect=lambda url, limit: self.routes[url])
+        self.smoke = mock.Mock(return_value=proof(plugin=self.name, rustPluginLoaded=True, pluginFixture=True))
+
+    def materialize(self):
+        return module.materialize(self.selection, self.root, self.destination, self.output,
+                                  '/trusted/node', package=self.name, source_reader=lambda root: self.source,
+                                  read=self.read, smoke=self.smoke)
+
+    def test_each_allowlisted_plugin_materializes_fixed_workspace_file_not_node_modules(self):
+        for slug in ['replace-dirname', 'worker']:
+            if slug != self.slug:
+                self.configure(slug)
+            with self.subTest(plugin=slug):
+                original = copy.deepcopy(self.selection)
+                report = self.materialize()
+                self.assertEqual(self.destination.read_bytes(), elf())
+                self.assertTrue(self.link.is_symlink())
+                self.assertEqual((self.link / 'index.farm').resolve(), self.destination)
+                self.assertEqual(report['name'], self.name)
+                self.assertEqual(report['owner'], f'@farmfe/plugin-{slug}')
+                self.assertEqual(report['destination'], str(self.destination.relative_to(self.root)))
+                self.assertEqual(json.loads(self.output.read_text()), report)
+                self.assertFalse(report['sourceNativeArtifact'])
+                self.assertFalse(report['publicationCandidate'])
+                self.assertTrue(report['smoke']['rustPluginLoaded'])
+                self.assertTrue(report['smoke']['pluginFixture'])
+                self.assertEqual(report['compiler']['origin'], 'source-build')
+                self.assertEqual(report['compiler']['binarySha256'], hashlib.sha256(elf()).hexdigest())
+                self.assertEqual(original, self.selection)
+                self.assertEqual(self.read.call_count, 2)
+
+    def test_plugin_identity_source_version_and_rebuild_overlap_fail_before_transfer(self):
+        baseline = copy.deepcopy(self.selection)
+        for field, value in [('owner', '@farmfe/core'), ('name', module.NAME),
+                             ('manifestPath', module.MANIFEST), ('platform', 'linux-x64-musl'),
+                             ('version', '2.0.1')]:
+            with self.subTest(field=field):
+                self.selection = copy.deepcopy(baseline)
+                for section in ['registryBuildInputs', 'registryRetained']:
+                    self.selection[section][self.key][field] = value
+                reseal(self.selection)
+                with self.assertRaises(ValueError):
+                    self.materialize()
+                self.read.assert_not_called()
+        for field in ['nativeBuildCells', 'preparationNativeCells']:
+            self.selection = copy.deepcopy(baseline)
+            self.selection.setdefault(field, []).append({'package': self.key})
+            reseal(self.selection)
+            with self.assertRaises(ValueError):
+                self.materialize()
+        self.read.assert_not_called()
+
+    def test_unrecognized_plugin_rejected_before_read_or_write(self):
+        self.name = '@farmfe/plugin-arbitrary-linux-x64-gnu'
+        with self.assertRaisesRegex(ValueError, 'allowlist'):
+            self.materialize()
+        self.read.assert_not_called()
+
+    def test_plugin_wrapper_link_must_resolve_to_workspace_platform(self):
+        self.link.unlink()
+        outside = self.root / 'another-package'
+        outside.mkdir()
+        self.link.symlink_to(outside, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, 'wrapper'):
+            self.materialize()
+        self.read.assert_not_called()
+        self.assertFalse(self.destination.exists())
+        self.assertFalse(any(outside.iterdir()))
+
+    def test_plugin_wrapper_missing_or_changed_manifest_fails(self):
+        self.link.unlink()
+        with self.assertRaises((ValueError, FileNotFoundError)):
+            self.materialize()
+        self.link.symlink_to(self.destination.parent, target_is_directory=True)
+        (self.destination.parent / 'package.json').write_text(json.dumps(manifest(name=self.name, main='evil.js')))
+        with self.assertRaisesRegex(ValueError, 'manifest'):
+            self.materialize()
+        self.read.assert_not_called()
+
+    def test_symlink_or_existing_plugin_native_and_parent_never_overwritten(self):
+        self.destination.symlink_to(self.root / 'outside.farm')
+        with self.assertRaises(FileExistsError):
+            self.materialize()
+        self.assertFalse((self.root / 'outside.farm').exists())
+        self.destination.unlink()
+        self.destination.write_bytes(b'untouched')
+        with self.assertRaises(FileExistsError):
+            self.materialize()
+        self.assertEqual(self.destination.read_bytes(), b'untouched')
+        self.read.assert_not_called()
+
+    def test_plugin_requires_selected_verified_core_and_never_builds_fallback(self):
+        self.selection['nativeBuildCells'] = []
+        reseal(self.selection)
+        with self.assertRaisesRegex(ValueError, 'core'):
+            self.materialize()
+        self.read.assert_not_called()
+        self.smoke.assert_not_called()
+
+    def test_source_core_cell_can_be_shared_by_publication_and_host_preparation(self):
+        self.selection['preparationNativeCells'] = copy.deepcopy(self.selection['nativeBuildCells'])
+        reseal(self.selection)
+        report = self.materialize()
+        self.assertEqual(report['compiler']['origin'], 'source-build')
+
+    def test_conflicting_duplicate_core_cell_cannot_authorize_plugin_loading(self):
+        self.selection['preparationNativeCells'] = [{'package': module.KEY, 'owner': '@farmfe/core',
+                                                   'platform': 'linux-x64-musl'}]
+        reseal(self.selection)
+        with self.assertRaisesRegex(ValueError, 'core'):
+            self.materialize()
+        self.read.assert_not_called()
+
+    def test_plugin_rejects_unverified_registry_core_even_when_binding_exists(self):
+        core_selection, _, _ = fixture()
+        for section in ['registryBuildInputs', 'registryRetained']:
+            self.selection[section].update(core_selection[section])
+        self.selection['nativeBuildCells'] = []
+        reseal(self.selection)
+        with self.assertRaises((ValueError, FileNotFoundError)):
+            self.materialize()
+        self.read.assert_not_called()
+
+    def test_plugin_abi_or_fixture_failure_never_materializes_or_rebuilds(self):
+        for changes in [{'rustPluginLoaded': False}, {'pluginFixture': False}, {'plugin': module.NAME}]:
+            self.smoke.return_value = proof(plugin=self.name, rustPluginLoaded=True, pluginFixture=True) | changes
+            with self.assertRaisesRegex(ValueError, 'smoke contract'):
+                self.materialize()
+            self.assertFalse(self.destination.exists())
+            self.assertFalse(self.output.exists())
+        self.smoke.side_effect = ValueError('native Farm ABI mismatch')
+        with self.assertRaisesRegex(ValueError, 'ABI mismatch'):
+            self.materialize()
+        self.assertFalse(self.destination.exists())
+
+    def test_plugin_integrity_error_never_runs_native_code(self):
+        url = self.selection['registryBuildInputs'][self.key]['tarballURL']
+        self.routes[url] += b'tamper'
+        with self.assertRaises(ValueError):
+            self.materialize()
+        self.smoke.assert_not_called()
+        self.assertFalse(self.destination.exists())
+
+    def test_verified_registry_core_receipt_is_bound_to_source_plan_and_binary(self):
+        core_selection, _, core_routes = fixture()
+        for section in ['registryBuildInputs', 'registryRetained']:
+            self.selection[section].update(core_selection[section])
+        self.selection['nativeBuildCells'] = []
+        reseal(self.selection)
+        self.routes.update(core_routes)
+        (self.root / module.DESTINATION).unlink()
+        core_report = module.materialize(self.selection, self.root, self.root / module.DESTINATION,
+                                        self.root / module.OUTPUT, '/trusted/node',
+                                        source_reader=lambda root: self.source, read=self.read,
+                                        smoke=mock.Mock(return_value=proof()))
+        self.read.reset_mock()
+        for changes in [{'sourceSHA': 'f' * 40}, {'planHash': 'f' * 64}, {'binarySha256': 'f' * 64},
+                        {'registryBytesVerified': 1}, {'publicationCandidate': True},
+                        {'smoke': proof(compile=False)}]:
+            (self.root / module.OUTPUT).chmod(0o644)
+            (self.root / module.OUTPUT).write_text(json.dumps(core_report | changes))
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                self.materialize()
+            self.assertFalse(self.destination.exists())
+        self.read.assert_not_called()
+        (self.root / module.OUTPUT).write_text(json.dumps(core_report))
+        report = self.materialize()
+        self.assertEqual(report['compiler']['origin'], 'registry-present')
+        self.assertEqual(report['coreBinarySha256'], core_report['binarySha256'])
+
+    def test_plugin_archive_boundaries_are_enforced_independently(self):
+        value = manifest(name=self.name, main='index.farm')
+        cases = [member('package/../outside', b'bad'),
+                 member('package/index.farm', b'duplicate'),
+                 member('package/INDEX.FARM', b'collision'),
+                 member('package/postinstall.js', b'bad'),
+                 member('package/extra', kind=tarfile.SYMTYPE, linkname='/outside'),
+                 member('package/extra', kind=tarfile.LNKTYPE, linkname='package/index.farm')]
+        for extra in cases:
+            stream = io.BytesIO()
+            with tarfile.open(fileobj=stream, mode='w', format=tarfile.PAX_FORMAT) as tar:
+                for item, body in [member('package/package.json', json.dumps(value).encode()),
+                                   member('package/index.farm', elf()), extra]:
+                    tar.addfile(item, io.BytesIO(body))
+            body = gzip.compress(stream.getvalue(), mtime=0)
+            self.replace_archive(body)
+            with self.subTest(name=extra[0].name), self.assertRaises(ValueError):
+                self.materialize()
+            self.smoke.assert_not_called()
+            self.assertFalse(self.destination.exists())
+
+    def replace_archive(self, body):
+        for section in ['registryBuildInputs', 'registryRetained']:
+            self.selection[section][self.key].update(
+                integrity='sha512-' + base64.b64encode(hashlib.sha512(body).digest()).decode(),
+                archiveSha256=hashlib.sha256(body).hexdigest(), archiveBytes=len(body))
+        reseal(self.selection)
+        row = self.selection['registryBuildInputs'][self.key]
+        self.routes[row['tarballURL']] = body
+        metadata_url = 'https://registry.npmjs.org/' + module.urllib.parse.quote(self.name, safe='') + '/2.0.0'
+        self.routes[metadata_url] = json.dumps({'name': self.name, 'version': '2.0.0',
+            'dist': {'tarball': row['tarballURL'], 'integrity': row['integrity']}}).encode()
+
+    def test_plugin_archive_rejects_wrong_platform_lifecycle_script_and_non_elf(self):
+        for changes, binary in [({'os': ['darwin']}, elf()), ({'libc': ['musl']}, elf()),
+                                ({'cpu': ['arm64']}, elf()), ({'name': module.NAME}, elf()),
+                                ({'version': '2.0.1'}, elf()), ({'scripts': {'install': 'evil'}}, elf()),
+                                ({'main': module.NATIVE}, elf()), ({}, b'not ELF'),
+                                ({}, elf()[:18] + b'\xb7\0' + elf()[20:])]:
+            value = manifest(name=self.name, main='index.farm') | changes
+            stream = io.BytesIO()
+            with tarfile.open(fileobj=stream, mode='w', format=tarfile.PAX_FORMAT) as tar:
+                for item, body in [member('package/package.json', json.dumps(value).encode()),
+                                   member('package/index.farm', binary)]:
+                    tar.addfile(item, io.BytesIO(body))
+            self.replace_archive(gzip.compress(stream.getvalue(), mtime=0))
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                self.materialize()
+            self.smoke.assert_not_called()
+            self.assertFalse(self.destination.exists())
+
+    def test_symlinked_core_or_manifest_or_plugin_parent_never_read_or_written(self):
+        core = self.root / module.DESTINATION
+        core.rename(core.with_suffix('.original'))
+        core.symlink_to(core.with_suffix('.original'))
+        with self.assertRaises(OSError):
+            self.materialize()
+        core.unlink()
+        core.with_suffix('.original').rename(core)
+        manifest_path = self.root / self.manifest_path
+        manifest_path.rename(manifest_path.with_suffix('.original'))
+        manifest_path.symlink_to(manifest_path.with_suffix('.original'))
+        with self.assertRaises(OSError):
+            self.materialize()
+        manifest_path.unlink()
+        manifest_path.with_suffix('.original').rename(manifest_path)
+        platform = self.destination.parent
+        platform.rename(platform.with_name('original'))
+        platform.symlink_to(platform.with_name('original'), target_is_directory=True)
+        with self.assertRaises(OSError):
+            self.materialize()
+        self.read.assert_not_called()
+        self.assertFalse((platform.with_name('original') / 'index.farm').exists())
+
+    def test_plugin_only_uses_metadata_version_selection_and_measures_transferred_bytes(self):
+        for section in ['registryBuildInputs', 'registryRetained']:
+            self.selection[section][self.key].pop('archiveSha256')
+            self.selection[section][self.key].pop('archiveBytes')
+        reseal(self.selection)
+        report = self.materialize()
+        self.assertEqual(report['archiveSha256'], hashlib.sha256(self.body).hexdigest())
+        self.assertEqual(report['archiveBytes'], len(self.body))
+        self.assertNotIn('archiveSha256', self.selection['registryBuildInputs'][self.key])
+
+    def test_core_changed_during_smoke_fails_before_plugin_output(self):
+        def smoke(*args, **kwargs):
+            (self.root / module.DESTINATION).write_bytes(elf() + b'changed')
+            return proof(plugin=self.name, rustPluginLoaded=True, pluginFixture=True)
+        self.smoke.side_effect = smoke
+        with self.assertRaisesRegex(ValueError, 'core changed'):
+            self.materialize()
+        self.assertFalse(self.destination.exists())
+        self.assertFalse(self.output.exists())
+
+    def test_production_plugin_smoke_has_real_loader_and_behavioral_assertions(self):
+        script = Path(__file__).with_name('release-registry-host-smoke.mjs').read_text()
+        self.assertIn("rustPlugins: plugin ? [[plugin, '{}']] : []", script)
+        self.assertIn('compiler.compileSync()', script)
+        self.assertIn('directory: __dirname, file: __filename, url: import.meta.url', script)
+        self.assertIn('assert.deepEqual(result.location', script)
+        self.assertIn('registry-fixture-worker.ts?worker&inline', script)
+        self.assertIn('Inline worker must contain a real compiler resource', script)
+
+    def test_source_reader_records_committed_plugin_manifests_and_wrappers(self):
+        source = module.source_identity(Path(__file__).resolve().parent.parent)
+        for slug in ['replace-dirname', 'worker']:
+            name = f'@farmfe/plugin-{slug}-linux-x64-gnu'
+            self.assertEqual(source['manifests'][name]['name'], name)
+            self.assertEqual(source['manifests'][name]['main'], 'index.farm')
+            self.assertEqual(source['wrappers'][name]['optionalDependencies'][name], source['manifests'][name]['version'])
+
+
 if __name__ == '__main__':
     unittest.main()

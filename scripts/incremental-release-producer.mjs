@@ -108,7 +108,16 @@ export function releaseBuildDirectories(family, selection, root) {
   return ordered;
 }
 
-export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = process.env, execute = command, verifyManifest, bestEffort = false, hostAvailable = true} = {}) {
+export function releaseHostPlugins(directory) {
+  // Reviewed build recipes: core bundles its config through replace-dirname;
+  // every JS plugin and create-farm-plugin runs Farm. Docs only runs tsc.
+  const plugins = directory==='packages/core' || directory==='packages/create-farm-plugin' || directory.startsWith('js-plugins/')
+    ? ['@farmfe/plugin-replace-dirname'] : [];
+  if (directory==='js-plugins/visualizer') plugins.push('@farmfe/plugin-worker');
+  return plugins;
+}
+
+export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = process.env, execute = command, verifyManifest, bestEffort = false, hostAvailable = true, unavailableHostPlugins = []} = {}) {
   const directories = releaseBuildDirectories(family, selection, root), deadline = Date.now() + 30 * 60 * 1000;
   const failures = {}, completed = [];
   const dependsOnFailure = (node, seen = new Set()) => {
@@ -121,6 +130,7 @@ export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = p
     const node = 'npm:' + directory;
     try {
       assert.ok(hostAvailable, 'Validated GNU Core prerequisite missing');
+      assert.ok(!releaseHostPlugins(directory).some(owner=>unavailableHostPlugins.includes(owner)), 'Validated GNU plugin prerequisite missing');
       assert.ok(!dependsOnFailure(node), 'Release build prerequisite failed');
       const file = directory + '/package.json', bytes = fs.readFileSync(path.join(root, file));
       const committed = verifyManifest ? verifyManifest(file) : execFileSync('git', ['show', 'HEAD:' + file], {cwd: root});
@@ -152,21 +162,44 @@ export async function runReleaseJsBuilds(family, selection, {root, pnpm, env = p
 }
 
 export function verifyRegistryHostMaterial(material, selection, readBinary) {
-  const input=selection.registryBuildInputs?.['npm:@farmfe/core-linux-x64-gnu'];
+  const input=selection.registryBuildInputs?.['npm:'+material.name];
   assert.ok(input && input.origin==='registry-present' && input.evidenceKind==='registry-metadata','Registry host input must be a retained version observation');
   assert.equal(material.schemaVersion,1);assert.equal(material.kind,'registry-native-host-build-material');
   for (const field of ['sourceSHA','sourceTree','planHash']) assert.equal(material[field],selection[field]);
   for (const field of ['name','version','platform','integrity','tarballURL']) assert.equal(material[field],input[field]);
-  assert.equal(material.name,'@farmfe/core-linux-x64-gnu');assert.equal(material.platform,'linux-x64-gnu');
+  const plugin = {'@farmfe/plugin-replace-dirname-linux-x64-gnu':'replace-dirname','@farmfe/plugin-worker-linux-x64-gnu':'worker'}[material.name];
+  assert.ok(plugin || material.name==='@farmfe/core-linux-x64-gnu');assert.equal(material.platform,'linux-x64-gnu');
   assert.equal(material.origin,'registry-present');assert.equal(material.evidenceKind,'registry-archive');
   assert.equal(material.registryBytesVerified,true);assert.equal(material.sourceNativeArtifact,false);assert.equal(material.publicationCandidate,false);
-  assert.equal(material.destination,'packages/core/binding/farm.linux-x64-gnu.node');
+  assert.equal(material.destination,plugin?`rust-plugins/${plugin}/npm/linux-x64-gnu/index.farm`:'packages/core/binding/farm.linux-x64-gnu.node');
   for (const field of ['archiveSha256','binarySha256']) assert.match(material[field]??'',/^[a-f0-9]{64}$/);
   for (const field of ['archiveBytes','binaryBytes']) assert.ok(Number.isSafeInteger(material[field]) && material[field]>0 && material[field]<=100*1024**2,'Registry host material size invalid');
   assert.equal(material.smoke?.node,'v22.20.0');assert.equal(material.smoke.platform,'linux');assert.equal(material.smoke.arch,'x64');assert.equal(material.smoke.libc,'glibc');
   assert.match(material.smoke.napi??'',/^[1-9][0-9]*$/);
   assert.deepEqual(material.smoke.requiredExports,['Compiler','DocsSnapshot','OutputDirectoryLock','Resolver']);
   for (const field of ['resolver','compile','tsTransformed','outputExecuted']) assert.equal(material.smoke[field],true);
+  if (plugin) {
+    assert.equal(material.owner,'@farmfe/plugin-'+plugin);
+    assert.equal(material.smoke.plugin,material.name,'Plugin smoke identity differs');
+    assert.equal(material.smoke.rustPluginLoaded,true);assert.equal(material.smoke.pluginFixture,true);
+    const core=readBinary('packages/core/binding/farm.linux-x64-gnu.node');
+    assert.equal(sha256(core),material.coreBinarySha256,'Plugin smoke core binding changed');
+    const coreName='@farmfe/core-linux-x64-gnu',coreKey='npm:'+coreName;
+    const coreInput=selection.registryBuildInputs?.[coreKey];
+    if (coreInput) {
+      assert.equal(coreInput.origin,'registry-present');assert.equal(coreInput.evidenceKind,'registry-metadata');
+      assert.equal(coreInput.name,coreName);assert.equal(coreInput.platform,'linux-x64-gnu');
+    } else {
+      assert.equal(selection.registrySnapshot?.packages?.[coreKey]?.status,'missing');
+      const cells=[...(selection.nativeBuildCells??[]),...(selection.preparationNativeCells??[])].filter(cell=>cell.package===coreKey);
+      assert.ok(cells.length>0&&cells.every(cell=>cell.owner==='@farmfe/core'&&cell.platform==='linux-x64-gnu'),'Source compiler cell differs');
+      assert.equal(selection.registryRetained?.[coreKey],undefined);
+    }
+    assert.deepEqual(material.compiler,{name:coreName,origin:coreInput?'registry-present':'source-build',
+      destination:'packages/core/binding/farm.linux-x64-gnu.node',binarySha256:sha256(core),binaryBytes:core.length});
+    assert.deepEqual(material.wrapperResolution,{path:`rust-plugins/${plugin}/node_modules/@farmfe/plugin-${plugin}-linux-x64-gnu`,
+      destination:`rust-plugins/${plugin}/npm/linux-x64-gnu`,workspacePlatformVerified:true});
+  }
   const bytes=readBinary(material.destination);
   assert.equal(bytes.length,material.binaryBytes);assert.equal(sha256(bytes),material.binarySha256,'Registry host changed after its isolated smoke');
   return material;
@@ -357,6 +390,7 @@ async function main() {
       for (const [key,reason] of Object.entries(failures)) if (selection.publish.includes(key)) candidate.incremental.buildFailures[key]=reason;
       const directories=releaseBuildDirectories(plan,selection,root);
       let hostAvailable=directories.length===0;
+      const unavailableHostPlugins=[];
       if (directories.length) {
         try {
           assert.equal(process.platform,'linux');assert.equal(process.arch,'x64');
@@ -379,7 +413,25 @@ async function main() {
           hostAvailable=true;
         } catch { hostAvailable=false; }
       }
-      const js=await runReleaseJsBuilds(plan,selection,{root,pnpm:directories.length?resolvePnpmCli():null,bestEffort:true,hostAvailable});
+      for (const owner of new Set(directories.flatMap(releaseHostPlugins))) {
+        try {
+          assert.ok(hostAvailable,'Core host prerequisite unavailable');
+          const slug=owner.replace('@farmfe/plugin-','');
+          assert.ok(['replace-dirname','worker'].includes(slug),'Unreviewed native build tool');
+          const name=owner+'-linux-x64-gnu', registered=selection.registryBuildInputs?.['npm:'+name];
+          const built=records.find(row=>row.name===name&&row.platform==='linux-x64-gnu');
+          assert.ok(!(built&&registered),'Native plugin host cannot have source and registry origins');
+          if (registered) {
+            const output=path.join(root,`release-work/registry-host-plugin-${slug}-material.json`);
+            execFileSync(process.env.FARM_RELEASE_PYTHON??'python3',['-B',path.join(root,'scripts/release-registry-host-tool.py'),
+              '--selection',path.resolve(selectionFile),'--package',name,'--output',output,
+              '--destination',path.join(root,`rust-plugins/${slug}/npm/linux-x64-gnu/index.farm`),'--node',process.execPath],
+              {cwd:root,env:{PATH:process.env.PATH??'/usr/bin:/bin',FARM_RELEASE_PLAN_HASH:selection.planHash},timeout:180000,stdio:['ignore','pipe','pipe']});
+            candidate.incremental.registryBuildMaterials.push(verifyRegistryHostMaterial(JSON.parse(fs.readFileSync(output)),selection,file=>fs.readFileSync(path.join(root,file))));
+          } else assert.ok(built,'Missing exact source GNU plugin prerequisite');
+        } catch { unavailableHostPlugins.push(owner); }
+      }
+      const js=await runReleaseJsBuilds(plan,selection,{root,pnpm:directories.length?resolvePnpmCli():null,bestEffort:true,hostAvailable,unavailableHostPlugins});
       for (const pkg of candidate.publication.npm.primary) {
         const failure=js.failures['npm:'+path.posix.dirname(pkg.manifestPath)];
         if (failure) candidate.incremental.buildFailures['npm:'+pkg.name]=failure;

@@ -75,7 +75,14 @@
   },
   "pnpm": {
     "overrides": {
-      "@farmfe/core": "workspace:*"
+      "@farmfe/core": "workspace:*",
+      "chokidar@3>braces": "3.0.3",
+      "execa@>=7>cross-spawn": "7.0.6",
+      "fast-glob@3>micromatch": "4.0.8",
+      "http-proxy@1>follow-redirects": "1.16.0",
+      "micromatch@4>picomatch": "2.3.2",
+      "anymatch@3>picomatch": "2.3.2",
+      "readdirp@3>picomatch": "2.3.2"
     },
     "patchedDependencies": {
       "@arco-design/web-react@2.66.12": "patches/@arco-design__web-react@2.66.12.patch",

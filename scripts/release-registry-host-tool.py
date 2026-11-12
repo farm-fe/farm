@@ -1,5 +1,5 @@
-"""Restore one exact registry GNU core as a build tool, never a source artifact."""
-# cspell:words importlib urllib npmjs userconfig globalconfig glibc NOSYSTEM RDONLY WRONLY CREAT fstat
+"""Restore allowlisted exact registry GNU host tools, never source artifacts."""
+# cspell:words importlib urllib npmjs userconfig globalconfig glibc NOSYSTEM RDONLY WRONLY CREAT fstat NONBLOCK
 import argparse
 import base64
 from contextlib import contextmanager
@@ -37,6 +37,21 @@ OUTPUT = 'release-work/registry-host-material.json'
 NODE_VERSION = 'v22.20.0'
 EXPORTS = ['Compiler', 'DocsSnapshot', 'OutputDirectoryLock', 'Resolver']
 MAX_JSON = 2 * 1024 ** 2
+HOST_TOOLS = {NAME: {'owner': '@farmfe/core', 'manifest': MANIFEST, 'native': NATIVE,
+                     'destination': DESTINATION, 'output': OUTPUT}}
+for _slug in ['replace-dirname', 'worker']:
+    HOST_TOOLS[f'@farmfe/plugin-{_slug}-linux-x64-gnu'] = {
+        'owner': f'@farmfe/plugin-{_slug}',
+        'manifest': f'rust-plugins/{_slug}/npm/linux-x64-gnu/package.json',
+        'wrapper': f'rust-plugins/{_slug}/package.json',
+        'link': f'rust-plugins/{_slug}/node_modules/@farmfe/plugin-{_slug}-linux-x64-gnu',
+        'native': 'index.farm', 'destination': f'rust-plugins/{_slug}/npm/linux-x64-gnu/index.farm',
+        'output': f'release-work/registry-host-plugin-{_slug}-material.json'}
+
+
+def specification(package):
+    check(isinstance(package, str) and package in HOST_TOOLS, 'Registry host package not in allowlist')
+    return HOST_TOOLS[package]
 
 
 def check(value, message):
@@ -131,10 +146,19 @@ def source_identity(root):
               'Committed runtime support exceeds bound')
         runtime[path.removeprefix('packages/runtime/')] = body
     check('src/modules/module-helper.ts' in runtime, 'Committed runtime support missing')
-    return {'sha': sha, 'tree': tree, 'manifest': manifest, 'runtime': runtime}
+    manifests, wrappers = {}, {}
+    for name, spec in HOST_TOOLS.items():
+        manifests[name] = parse_json(git('show', 'HEAD:' + spec['manifest']))
+        if 'wrapper' in spec:
+            wrappers[name] = parse_json(git('show', 'HEAD:' + spec['wrapper']))
+    return {'sha': sha, 'tree': tree, 'manifest': manifest, 'runtime': runtime,
+            'manifests': manifests, 'wrappers': wrappers}
 
 
-def selected_input(selection, source):
+def selected_input(selection, source, package=NAME):
+    spec = specification(package)
+    key = 'npm:' + package
+    manifest = source['manifest'] if package == NAME else source.get('manifests', {}).get(package, {})
     check(isinstance(selection, dict) and selection.get('selectionPolicy') == 'registry-exact-version-v2'
           and selection.get('chain') == 'release' and selection.get('profile') == 'release',
           'Registry host requires the exact-version release policy')
@@ -143,22 +167,29 @@ def selected_input(selection, source):
           and re.fullmatch('[a-f0-9]{40}', source['tree']), 'Registry host source differs')
     check(selection.get('planHash') == digest({key: value for key, value in selection.items()
                                                if key != 'planHash'}), 'Registry host selection digest differs')
-    row = selection.get('registryBuildInputs', {}).get(KEY)
-    retained = selection.get('registryRetained', {}).get(KEY)
+    row = selection.get('registryBuildInputs', {}).get(key)
+    retained = selection.get('registryRetained', {}).get(key)
     check(isinstance(row, dict) and isinstance(retained, dict)
           and row == {**retained, 'origin': 'registry-present'},
           'Registry host input differs from retained published version')
-    expected = {'kind': 'npm', 'name': NAME, 'owner': '@farmfe/core',
-                'platform': PLATFORM, 'manifestPath': MANIFEST, 'status': 'published',
+    expected = {'kind': 'npm', 'name': package, 'owner': spec['owner'],
+                'platform': PLATFORM, 'manifestPath': spec['manifest'], 'status': 'published',
                 'evidenceKind': 'registry-metadata'}
     check(all(row.get(key) == value for key, value in expected.items()),
           'Registry host identity differs')
     version = row.get('version')
     check(isinstance(version, str) and re.fullmatch(r'(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)', version)
-          and source['manifest'].get('name') == NAME and source['manifest'].get('version') == version,
+          and manifest.get('name') == package and manifest.get('version') == version,
           'Registry host version differs from committed source declaration')
-    check(KEY not in selection.get('build', []) and KEY not in selection.get('publish', [])
-          and all(cell.get('package') != KEY for field in ['nativeBuildCells', 'preparationNativeCells']
+    if package != NAME:
+        wrapper = source.get('wrappers', {}).get(package, {})
+        check(wrapper.get('name') == spec['owner']
+              and wrapper.get('optionalDependencies', {}).get(package) == version
+              and manifest.get('main') == spec['native'] and manifest.get('os') == ['linux']
+              and manifest.get('cpu') == ['x64'] and manifest.get('libc') == ['glibc']
+              and not manifest.get('scripts'), 'Committed plugin manifest or wrapper differs')
+    check(key not in selection.get('build', []) and key not in selection.get('publish', [])
+          and all(cell.get('package') != key for field in ['nativeBuildCells', 'preparationNativeCells']
                   for cell in selection.get(field, [])), 'Published host cannot also be rebuilt')
     if 'archiveSha256' in row:
         check(isinstance(row['archiveSha256'], str) and re.fullmatch('[a-f0-9]{64}', row['archiveSha256']),
@@ -178,13 +209,15 @@ def selected_input(selection, source):
     return row
 
 
-def validated_binary(row, read=public_read):
-    url = 'https://registry.npmjs.org/' + urllib.parse.quote(NAME, safe='') + '/' + row['version']
+def validated_binary(row, read=public_read, package=NAME):
+    spec = specification(package)
+    native_name = spec['native']
+    url = 'https://registry.npmjs.org/' + urllib.parse.quote(package, safe='') + '/' + row['version']
     metadata_body = read(url, MAX_JSON)
     check(type(metadata_body) is bytes and 0 < len(metadata_body) <= MAX_JSON,
           'Registry host metadata exceeds bound')
     metadata = parse_json(metadata_body)
-    check(isinstance(metadata, dict) and metadata.get('name') == NAME and metadata.get('version') == row['version'],
+    check(isinstance(metadata, dict) and metadata.get('name') == package and metadata.get('version') == row['version'],
           'Registry host metadata identity differs')
     dist = metadata.get('dist', {})
     check(isinstance(dist, dict), 'Registry host distribution metadata invalid')
@@ -203,11 +236,11 @@ def validated_binary(row, read=public_read):
     # because this one package will execute as a host tool, never compared with
     # newly built source bytes or claimed as a native build from this commit.
     manifest = parse_json(archive.archive_manifest(body))
-    check(isinstance(manifest, dict) and manifest.get('name') == NAME and manifest.get('version') == row['version']
-          and manifest.get('main') == NATIVE and manifest.get('os') == ['linux']
+    check(isinstance(manifest, dict) and manifest.get('name') == package and manifest.get('version') == row['version']
+          and manifest.get('main') == native_name and manifest.get('os') == ['linux']
           and manifest.get('cpu') == ['x64'] and manifest.get('libc') == ['glibc']
           and not manifest.get('scripts'), 'Registry host package contract differs')
-    allowed = {'package', 'package/package.json', 'package/' + NATIVE, 'package/README.md',
+    allowed = {'package', 'package/package.json', 'package/' + native_name, 'package/README.md',
                'package/LICENSE', 'package/THIRD_PARTY_NOTICES.md',
                'package/license-components.json', 'package/licenses'}
     binary = None
@@ -217,7 +250,7 @@ def validated_binary(row, read=public_read):
             check((member.isfile() or member.isdir()) and not member.linkname
                   and (name in allowed or name.startswith('package/licenses/')),
                   'Unexpected registry host archive member')
-            if name == 'package/' + NATIVE:
+            if name == 'package/' + native_name:
                 check(binary is None and member.isfile() and 0 < member.size <= archive.MAX_COMPRESSED,
                       'Registry host native entry invalid')
                 binary = tar.extractfile(member).read()
@@ -229,7 +262,7 @@ def validated_binary(row, read=public_read):
     return binary, len(body), actual_sha256
 
 
-def node_smoke(node, binary, source, scratch):
+def node_smoke(node, binary, source, scratch, *, plugin=None, package=NAME):
     check(Path(node).is_absolute() and Path(node).is_file(), 'Absolute Node executable required')
     environment = clean_environment(node, scratch)
     version = subprocess.run([str(node), '--version'], cwd=scratch, env=environment,
@@ -243,7 +276,11 @@ def node_smoke(node, binary, source, scratch):
         with target.open('xb') as file:
             file.write(body)
     script = Path(__file__).with_name('release-registry-host-smoke.mjs')
-    result = subprocess.run([str(node), str(script), str(binary), str(runtime)], cwd=scratch,
+    arguments = [str(node), str(script), str(binary), str(runtime)]
+    if plugin is not None:
+        specification(package)
+        arguments.extend([str(plugin), package])
+    result = subprocess.run(arguments, cwd=scratch,
                             env=environment, capture_output=True, timeout=45)
     check(result.returncode == 0, 'Registry host Node/API/compiler smoke failed; no rebuild fallback')
     check(len(result.stdout) <= MAX_JSON and len(result.stderr) <= MAX_JSON,
@@ -254,7 +291,7 @@ def node_smoke(node, binary, source, scratch):
     return parse_json(rows[0])
 
 
-def validate_smoke(result):
+def validate_smoke(result, package=NAME):
     check(isinstance(result, dict) and result.get('node') == NODE_VERSION
           and result.get('platform') == 'linux' and result.get('arch') == 'x64'
           and result.get('libc') == 'glibc'
@@ -264,11 +301,14 @@ def validate_smoke(result):
           and type(result.get('outputBytes')) is int and 0 < result['outputBytes'] <= MAX_JSON
           and isinstance(result.get('outputSha256'), str) and re.fullmatch('[a-f0-9]{64}', result['outputSha256']),
           'Registry host smoke contract differs')
+    if package != NAME:
+        check(result.get('plugin') == package and result.get('rustPluginLoaded') is True
+              and result.get('pluginFixture') is True, 'Registry plugin smoke contract differs')
     return result
 
 
 @contextmanager
-def parent_directory(root, relative, create=False):
+def parent_directory(root, relative, create=False, absent=True):
     """Walk fixed parents using directory FDs; never follow a destination link."""
     root = Path(root).absolute()
     check(root == root.resolve(strict=True), 'Registry host repository path redirects')
@@ -290,7 +330,8 @@ def parent_directory(root, relative, create=False):
         except FileNotFoundError:
             pass
         else:
-            raise FileExistsError('Registry host destination already exists')
+            if absent:
+                raise FileExistsError('Registry host destination already exists')
         yield descriptor, parts[-1]
     finally:
         os.close(descriptor)
@@ -305,34 +346,118 @@ def write_new(parent, name, body):
         check(stat.S_ISREG(os.fstat(file.fileno()).st_mode), 'Registry host output is not regular')
 
 
+def read_fixed_file(root, relative, limit):
+    """Read a fixed repository file without accepting symlink parents or leaves."""
+    with parent_directory(root, relative, absent=False) as (parent, name):
+        descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+        with os.fdopen(descriptor, 'rb') as file:
+            info = os.fstat(file.fileno())
+            check(stat.S_ISREG(info.st_mode) and 0 < info.st_size <= limit,
+                  'Registry host input must be a bounded regular file')
+            body = file.read(limit + 1)
+            check(len(body) == info.st_size and len(body) <= limit, 'Registry host input size changed')
+            return body
+
+
+def plugin_workspace(root, package, source):
+    spec = specification(package)
+    manifest = parse_json(read_fixed_file(root, spec['manifest'], MAX_JSON))
+    check(manifest == source['manifests'][package], 'Registry plugin workspace manifest differs from commit')
+    destination = root / spec['destination']
+    target = root / spec['link']
+    # pnpm's optional dependency must point to this precise workspace package.
+    # It is observed, never traversed for a write or used as a trust source.
+    check(target.resolve(strict=True) == destination.parent,
+          'Registry plugin wrapper resolution differs from workspace platform')
+    return {'path': spec['link'], 'destination': str(destination.parent.relative_to(root)),
+            'workspacePlatformVerified': True}
+
+
+def compiler_material(selection, root, source):
+    binary = read_fixed_file(root, DESTINATION, archive.MAX_COMPRESSED)
+    sha256 = hashlib.sha256(binary).hexdigest()
+    if KEY in selection.get('registryBuildInputs', {}):
+        row = selected_input(selection, source)
+        report = parse_json(read_fixed_file(root, OUTPUT, MAX_JSON))
+        expected = {'schemaVersion': 1, 'kind': 'registry-native-host-build-material',
+                    'origin': 'registry-present', 'sourceSHA': source['sha'], 'sourceTree': source['tree'],
+                    'planHash': selection['planHash'], 'name': NAME, 'version': row['version'],
+                    'platform': PLATFORM, 'integrity': row['integrity'], 'tarballURL': row['tarballURL'],
+                    'destination': DESTINATION, 'binaryBytes': len(binary), 'binarySha256': sha256,
+                    'evidenceKind': 'registry-archive', 'registryBytesVerified': True,
+                    'sourceNativeArtifact': False, 'publicationCandidate': False}
+        check(isinstance(report, dict) and all(type(report.get(key)) is type(value)
+              and report.get(key) == value for key, value in expected.items()),
+              'Registry plugin core host material differs')
+        validate_smoke(report.get('smoke'))
+        origin = 'registry-present'
+    else:
+        cells = [cell for field in ['nativeBuildCells', 'preparationNativeCells']
+                 for cell in selection.get(field, []) if cell.get('package') == KEY]
+        expected_cell = {'package': KEY, 'owner': '@farmfe/core', 'platform': PLATFORM}
+        # A missing cell may serve both publication and JS host preparation.
+        check(bool(cells) and all(cell == expected_cell for cell in cells)
+              and selection.get('registrySnapshot', {}).get('packages', {}).get(KEY, {}).get('status') == 'missing'
+              and KEY not in selection.get('registryRetained', {}),
+              'Registry plugin requires selected source core or verified registry core; no rebuild fallback')
+        origin = 'source-build'
+    check(len(binary) >= 64 and binary[:6] == b'\x7fELF\x02\x01'
+          and int.from_bytes(binary[16:18], 'little') == 3
+          and int.from_bytes(binary[18:20], 'little') == 62,
+          'Registry plugin core is not an x64 ELF shared library')
+    return binary, {'name': NAME, 'origin': origin, 'destination': DESTINATION,
+                    'binarySha256': sha256, 'binaryBytes': len(binary)}
+
+
 def materialize(selection, root, destination, output, node, *, source_reader=source_identity,
-                read=public_read, smoke=node_smoke):
+                read=public_read, smoke=node_smoke, package=NAME):
+    spec = specification(package)
     root = Path(root).absolute()
-    check(Path(destination).absolute() == root / DESTINATION
-          and Path(output).absolute() == root / OUTPUT, 'Registry host output must use fixed paths')
+    check(Path(destination).absolute() == root / spec['destination']
+          and Path(output).absolute() == root / spec['output'], 'Registry host output must use fixed paths')
     source = source_reader(root)
-    row = selected_input(selection, source)
-    with parent_directory(root, DESTINATION) as (native_parent, native_name), \
-            parent_directory(root, OUTPUT, create=True) as (report_parent, report_name):
-        binary, archive_bytes, archive_sha256 = validated_binary(row, read)
+    row = selected_input(selection, source, package)
+    with parent_directory(root, spec['destination']) as (native_parent, native_name), \
+            parent_directory(root, spec['output'], create=True) as (report_parent, report_name):
+        wrapper, compiler = None, None
+        if package != NAME:
+            wrapper = plugin_workspace(root, package, source)
+            core_binary, compiler = compiler_material(selection, root, source)
+        binary, archive_bytes, archive_sha256 = validated_binary(row, read, package)
         with tempfile.TemporaryDirectory(prefix='farm-registry-host-') as directory:
             scratch = Path(directory)
-            native = scratch / NATIVE
+            native = scratch / spec['native']
             with native.open('xb') as file:
                 file.write(binary)
             native.chmod(0o444)
-            proof = validate_smoke(smoke(node, native, source, scratch))
+            if package == NAME:
+                proof = validate_smoke(smoke(node, native, source, scratch))
+            else:
+                core_native = scratch / NATIVE
+                with core_native.open('xb') as file:
+                    file.write(core_binary)
+                core_native.chmod(0o444)
+                proof = validate_smoke(smoke(node, core_native, source, scratch,
+                                             plugin=native, package=package), package)
         report = {'schemaVersion': 1, 'kind': 'registry-native-host-build-material',
                   'origin': 'registry-present', 'sourceSHA': source['sha'], 'sourceTree': source['tree'],
-                  'planHash': selection['planHash'], 'name': NAME, 'version': row['version'],
+                  'planHash': selection['planHash'], 'name': package, 'version': row['version'],
                   'platform': PLATFORM, 'integrity': row['integrity'], 'tarballURL': row['tarballURL'],
                   'archiveSha256': archive_sha256, 'archiveBytes': archive_bytes,
                   'evidenceKind': 'registry-archive', 'registryBytesVerified': True,
                   'binarySha256': hashlib.sha256(binary).hexdigest(), 'binaryBytes': len(binary),
-                  'destination': DESTINATION, 'smoke': proof,
+                  'destination': spec['destination'], 'smoke': proof,
                   'smokeSupport': {'kind': 'committed-runtime-source', 'sourceSHA': source['sha']},
                   'sourceNativeArtifact': False, 'publicationCandidate': False,
                   'scope': 'Exact registry build tool; load and fixture compilation only. No Farm ABI or source-native provenance claim.'}
+        if package != NAME:
+            # Recheck mutable build inputs after the isolated smoke, before any
+            # output is accepted. No registry material becomes a source artifact.
+            check(plugin_workspace(root, package, source) == wrapper, 'Registry plugin wrapper changed')
+            check(compiler_material(selection, root, source)[1] == compiler, 'Registry plugin core changed')
+            report.update(owner=spec['owner'], compiler=compiler, coreBinarySha256=compiler['binarySha256'],
+                          wrapperResolution=wrapper,
+                          scope='Exact registry build tool; Farm plugin loaded and fixture compiled with the recorded core. No source-native provenance claim.')
         write_new(native_parent, native_name, binary)
         write_new(report_parent, report_name, (json.dumps(report, indent=2) + '\n').encode())
     return report
@@ -342,6 +467,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ['selection', 'output', 'destination', 'node']:
         parser.add_argument('--' + name, required=True)
+    parser.add_argument('--package', default=NAME, choices=sorted(HOST_TOOLS))
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     with Path(args.selection).open('rb') as file:
@@ -352,9 +478,9 @@ def main():
           and selection.get('planHash') == os.environ['FARM_RELEASE_PLAN_HASH'],
           'Registry host selection differs from trusted plan output')
     report = materialize(selection, root, Path(args.destination).absolute(),
-                         Path(args.output).absolute(), args.node)
-    print(json.dumps({'kind': report['kind'], 'name': NAME, 'version': report['version'],
-                      'destination': DESTINATION, 'sourceNativeArtifact': False}))
+                         Path(args.output).absolute(), args.node, package=args.package)
+    print(json.dumps({'kind': report['kind'], 'name': report['name'], 'version': report['version'],
+                      'destination': report['destination'], 'sourceNativeArtifact': False}))
 
 
 if __name__ == '__main__':

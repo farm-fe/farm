@@ -15,8 +15,8 @@
         "name": "@farmfe/core",
         "version": "2.0.0",
         "manifestPath": "packages/core/package.json",
-        "manifestSha256": "8b4e029b6b3dfb23f2578f56dba21be1b1bde726fdba179d18728742c677e1fa",
-        "sourceSha256": "d4b8b036aa5898b6b5c80213f727b4dac76131d5e5317981323833489265e5da"
+        "manifestSha256": "cd07d84390e1ef9c83f95f93b2b22d0e602600756ae940c77327bcd8a530f2a6",
+        "sourceSha256": "65c8ba8d5b1f86a98134e6d981de31d7b9d9782d1bb75e54211530e7b81d14ed"
       },
       {
         "name": "create-farm",

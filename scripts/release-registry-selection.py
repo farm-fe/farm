@@ -402,17 +402,29 @@ def presence_preparation(result, source, declared, snapshot):
         check(key in nodes, 'Release preparation node missing')
         build_nodes.add(key)
         pending.extend(nodes[key]['preparationDeps'])
-    host = next((key for key, row in declared.items()
-                 if row.get('owner') == '@farmfe/core' and row.get('platform') == 'linux-x64-gnu'), None)
     preparation, registry_inputs, blocked = [], {}, {}
-    if js and host is not None:
+    # Core's config loader executes replace-dirname, even when farm.config.ts
+    # does not import it. Visualizer's client recipe additionally executes worker.
+    # Runtime imports in docs are not executed by their tsc-only build recipes.
+    owners = ['@farmfe/core', '@farmfe/plugin-replace-dirname'] if js else []
+    if 'npm:js-plugins/visualizer' in build_nodes:
+        owners.append('@farmfe/plugin-worker')
+    for owner in owners:
+        host = next((key for key, row in declared.items()
+                     if row.get('owner') == owner and row.get('platform') == 'linux-x64-gnu'), None)
+        if host is None:
+            # Small graph fixtures need not contain the real native family.
+            continue
         observed = snapshot['packages'][host]
         if observed['status'] == 'missing':
             preparation.append(native_cell(host, declared[host]))
         elif observed['status'] == 'published':
             registry_inputs[host] = {**declared[host], **observed, 'origin': 'registry-present'}
         else:
-            blocked = {key: {'reason': 'registry-host-tool-unknown', 'dependencies': [host]} for key in sorted(js)}
+            affected = js if owner != '@farmfe/plugin-worker' else {
+                key for key in js if declared[key]['manifestPath'] == 'js-plugins/visualizer/package.json'}
+            for key in sorted(affected):
+                blocked.setdefault(key, {'reason': 'registry-host-tool-unknown', 'dependencies': []})['dependencies'].append(host)
     # Do not expand an owner's optional platform inventory into native builds.
     payload_nodes = {'npm:' + str(Path(row['manifestPath']).parent).replace('\\', '/'): key
                      for key, row in declared.items() if row.get('owner')}
