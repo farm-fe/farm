@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { verifyInstalledDocsPackages } from './farm-docs-consumer-isolation.mjs';
+import { addHomepageVerification, assertHomepageVerification } from './farm-docs-site-verification.mjs';
 
 const repository = fileURLToPath(new URL('../', import.meta.url));
 const registry = 'https://registry.npmjs.org';
@@ -300,10 +301,15 @@ export async function buildPublishedDocs({ root = repository, phase = 'build', t
     await run(process.execPath, [cliFile, '--help'], options);
     await run(process.execPath, [cliFile, 'build', '--config', 'farm.config.ts'], options);
     const built = path.join(consumer, 'build-farm');
-    const html = fs.readFileSync(path.join(built, 'index.html'), 'utf8');
+    const homepage = path.join(built, 'index.html');
+    const html = fs.readFileSync(homepage, 'utf8');
     assert.ok(html.length > 0, 'Website index output is empty');
     assert.match(html, /THIRD_PARTY_NOTICES\.txt/);
     assert.deepEqual(fs.readFileSync(path.join(built, 'THIRD_PARTY_NOTICES.txt')), fs.readFileSync(path.join(website, 'static/THIRD_PARTY_NOTICES.txt')), 'Published notices changed');
+    // Site-only finalization after real compilation, before any existing output
+    // is moved. Published Farm package templates and other pages stay untouched.
+    fs.writeFileSync(homepage, addHomepageVerification(html));
+    assertHomepageVerification(fs.readFileSync(homepage, 'utf8'));
     const receipt = { schemaVersion: 1, registry, target, packages, lockSha256: hash(lock), nativePackages: resolved.packages.filter(pkg => plan.selected.get(pkg.name).os).map(({ name, version, entrySha256 }) => ({ name, version, sha256: entrySha256 })), commandsRun: 4 };
     const output = path.join(website, 'build-farm');
     // Copy only after build and notice validation succeed. Preserve an existing

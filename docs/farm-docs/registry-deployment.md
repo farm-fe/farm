@@ -95,3 +95,16 @@ main commit through Vercel. Do not substitute an older commit or disable the
 preflight. A later main push triggers another independent deployment attempt.
 This policy deliberately adds no polling, deployment hook, token or npm workflow
 coupling. See [the main deployment policy](main-deployment-pause.md).
+
+### Public site ownership verification
+
+The deployment builder adds the public Algolia site-verification meta tag only to
+the generated homepage `index.html`, after compilation and before replacing any
+existing output. Farm's minifier omits optional head/body tags. For the known
+published template with its unique Farm root and head-only prefix, the marker
+goes immediately after the html start tag, inside the implicit head. All other
+bytes stay unchanged. The builder validates one matching marker in the head; malformed,
+duplicate or conflicting markup fails without replacing the previous output.
+Repeated builds produce the same marker once. This does not alter the published
+Farm Docs template, other routes, search credentials or index settings. Direct
+`farm build` is not this deployment finalization path.
