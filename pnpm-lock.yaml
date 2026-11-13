@@ -1422,7 +1422,7 @@ importers:
     optionalDependencies:
       '@tsconfig/create-react-app':
         specifier: latest
-        version: 2.0.11
+        version: 2.0.12
       abort-controller:
         specifier: latest
         version: 3.0.0
@@ -3721,31 +3721,31 @@ importers:
         version: 1.5.0(zod@3.23.8)
     optionalDependencies:
       '@farmfe/core-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/core-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/core-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/core-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/core-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/core-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/core-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/core-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/core-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@napi-rs/cli':
@@ -10729,8 +10729,8 @@ packages:
   '@ts-morph/common@0.24.0':
     resolution: {integrity: sha512-c1xMmNHWpNselmpIqursHeOHHBTIsJLbB+NuovbTTRCNiTLEr/U9dbJ8qy0jd/O2x5pc3seWuOUN5R2IoOTp8A==}
 
-  '@tsconfig/create-react-app@2.0.11':
-    resolution: {integrity: sha512-vvIx+rDshVTVyA0l8OAjt8LCFUX0xhp6I5me1ggoQCg4Lny0xLG2Y1aXC7b76TCAq5hbUwTRhKF1RR33Yl7mkA==}
+  '@tsconfig/create-react-app@2.0.12':
+    resolution: {integrity: sha512-MXHiZGDVX+izsD/UjrW8Y0yUj5EWqHSYzgBeWJzFeY6V8aRUirJ92HZIipmVxadksID7TVcGswmfqvsL7oN4tA==}
 
   '@tsconfig/node10@1.0.9':
     resolution: {integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA==}
@@ -30867,7 +30867,7 @@ snapshots:
       mkdirp: 3.0.1
       path-browserify: 1.0.1
 
-  '@tsconfig/create-react-app@2.0.11':
+  '@tsconfig/create-react-app@2.0.12':
     optional: true
 
   '@tsconfig/node10@1.0.9': {}

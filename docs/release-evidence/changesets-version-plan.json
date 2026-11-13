@@ -1,0 +1,783 @@
+{
+  "changesets": [
+    {
+      "releases": [
+        {
+          "name": "@farmfe/core",
+          "type": "patch"
+        }
+      ],
+      "summary": "Preserve empty and whitespace-only CSS URLs without resolving a nonexistent dependency or panicking during source replacement.",
+      "id": "css-empty-url"
+    },
+    {
+      "releases": [
+        {
+          "name": "@farmfe/core",
+          "type": "patch"
+        }
+      ],
+      "summary": "Stop HTML fallback middleware after sending a response, preserving missing-resource fallthrough. Adapted from ErKeLost's contribution in #2179.",
+      "id": "friendly-html-response"
+    },
+    {
+      "releases": [
+        {
+          "name": "@farmfe/core",
+          "type": "patch"
+        }
+      ],
+      "summary": "A top-level `module`, `exports`, `farmRequire` or `farmDynamicRequire` binding in an ES module is renamed again, so it no longer collides with the parameters of the module wrapper (`SyntaxError: Identifier 'module' has already been declared`).",
+      "id": "module-binding-hygiene"
+    },
+    {
+      "releases": [
+        {
+          "name": "@farmfe/core",
+          "type": "patch"
+        }
+      ],
+      "summary": "Allow an object `server.proxy[*].target`, as http-proxy accepts (for example with `pfx` and `passphrase` for a client certificate). The config schema only accepted a string.",
+      "id": "proxy-object-target"
+    },
+    {
+      "releases": [
+        {
+          "name": "@farmfe/core",
+          "type": "patch"
+        }
+      ],
+      "summary": "Tree shaking no longer removes `x++` / `--x` updates and `delete` statements on top-level variables that are read later.",
+      "id": "tree-shake-update-delete"
+    }
+  ],
+  "releases": [
+    {
+      "name": "@farmfe/core",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [
+        "css-empty-url",
+        "friendly-html-response",
+        "module-binding-hygiene",
+        "proxy-object-target",
+        "tree-shake-update-delete"
+      ],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "bench",
+      "type": "none",
+      "oldVersion": "1.0.52",
+      "changesets": [],
+      "newVersion": "1.0.52"
+    },
+    {
+      "name": "@farmfe-examples/arcgis-core",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/arco-design-pro",
+      "type": "none",
+      "oldVersion": "1.0.1",
+      "changesets": [],
+      "newVersion": "1.0.1"
+    },
+    {
+      "name": "@farmfe-examples/a-learn",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/commerce-lab",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/components-classes",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/css-modules",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/css-url",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/decorators",
+      "type": "none",
+      "oldVersion": "1.0.1",
+      "changesets": [],
+      "newVersion": "1.0.1"
+    },
+    {
+      "name": "@farmfe-examples/docs-features",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/docs-minimal",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/react",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/emotion",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/env",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/external",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/generate-dts",
+      "type": "none",
+      "oldVersion": "1.0.23",
+      "changesets": [],
+      "newVersion": "1.0.23"
+    },
+    {
+      "name": "@farmfe-examples/hmr",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/import-meta",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/invalid-css-issue-1557",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/issues1433",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/js-plugin-cache",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/lazy-compilation",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/less",
+      "type": "none",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.1.0"
+    },
+    {
+      "name": "@farmfe-examples/lib-for-browser",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/lib-watch",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/module-concatenation",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/react-multi-page-app",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/nest",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/node-lazy-compile",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/node-server",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/pandacss",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/postcss",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/preact",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/public-dir",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/qrcode",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/react-antd",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/react-antd-mobile",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/react-fast-refresh",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/react-query",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/react-sass-js",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/react-ssr",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/react-template",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/resolve-module-graph",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/resolve-node-modules",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/runtime-plugin",
+      "type": "none",
+      "oldVersion": "0.0.87",
+      "changesets": [],
+      "newVersion": "0.0.87"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-auto-import-react",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-auto-import-vue",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-compress",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-icons-react",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-icons-vue",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-image",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-modular-import",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-react-components",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-strip",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-svgr",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-url",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-virtual",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-wasm",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/rust-plugin-worker",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/sass",
+      "type": "none",
+      "oldVersion": "0.1.0",
+      "changesets": [],
+      "newVersion": "0.1.0"
+    },
+    {
+      "name": "@farmfe-examples/script-entry",
+      "type": "none",
+      "oldVersion": "0.0.87",
+      "changesets": [],
+      "newVersion": "0.0.87"
+    },
+    {
+      "name": "@farmfe-examples/server-proxy",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/solid-ssr",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/static-assets",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/tailwind",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/tailwind-next",
+      "type": "none",
+      "oldVersion": "0.0.21",
+      "changesets": [],
+      "newVersion": "0.0.21"
+    },
+    {
+      "name": "@farmfe-examples/tailwindcss-rust-plugin",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/target-env",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/top-level-await",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/tree-shake-antd",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/vanilla-extract",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/visualizer",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-react",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-solid",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-svelet",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-tsconfig-paths",
+      "type": "none",
+      "oldVersion": "0.0.87",
+      "changesets": [],
+      "newVersion": "0.0.87"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-vue-css",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vue-sfc",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-vue2",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vue",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/vue-antdv",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/vue-jsx",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/vue-naiveui",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vue-ssr",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe-examples/x-data-spreadsheet",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-babel",
+      "type": "patch",
+      "oldVersion": "0.0.4",
+      "changesets": [],
+      "newVersion": "0.0.5"
+    },
+    {
+      "name": "@farmfe/js-plugin-copy",
+      "type": "none",
+      "oldVersion": "0.0.4",
+      "changesets": [],
+      "newVersion": "0.0.4"
+    },
+    {
+      "name": "@farmfe/js-plugin-dts",
+      "type": "none",
+      "oldVersion": "2.0.0",
+      "changesets": [],
+      "newVersion": "2.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-less",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-postcss",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-qiankun",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-react-compiler",
+      "type": "patch",
+      "oldVersion": "0.0.4",
+      "changesets": [],
+      "newVersion": "0.0.5"
+    },
+    {
+      "name": "@farmfe/js-plugin-sass",
+      "type": "patch",
+      "oldVersion": "3.0.0",
+      "changesets": [],
+      "newVersion": "3.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-svgr",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-tailwindcss",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/js-plugin-visualizer",
+      "type": "none",
+      "oldVersion": "2.0.0",
+      "changesets": [],
+      "newVersion": "2.0.0"
+    },
+    {
+      "name": "@farmfe/js-plugin-vuetify",
+      "type": "none",
+      "oldVersion": "0.0.2",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe/docs",
+      "type": "patch",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "farm-docs",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/lib",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
+      "name": "@farmfe-examples/vite-adapter-vue",
+      "type": "none",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "type": "patch",
+      "oldVersion": "0.0.1",
+      "changesets": [],
+      "newVersion": "0.0.2"
+    }
+  ]
+}
