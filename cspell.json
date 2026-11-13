@@ -906,7 +906,8 @@
     "ychannelselector",
     "zoomandpan"
   ],
-  "ignoreRegExpList": ["/\\\\u\\{[0-9a-fA-F]+\\}/g"],
+  // Public Algolia application identifier, not prose.
+  "ignoreRegExpList": ["/X56UDGYU8P/g", "/\\\\u\\{[0-9a-fA-F]+\\}/g"],
   "ignorePaths": [
     // Preserve upstream vendor sources and original legal text.
     "rust-ecosystem/grass/src/**",
