@@ -283,7 +283,11 @@ fn strip_modules_asts(
   }
 
   // 3. Visit sorted modules and process them
-  let rename_handler = unique_idents::init_rename_handler(&sorted_modules, module_graph);
+  let rename_handler = unique_idents::init_rename_handler(
+    &sorted_modules,
+    module_graph,
+    crate::script::entry_live_bindings::enabled(module_graph, context),
+  );
   let mut strip_context = StripModuleContext {
     should_add_namespace_ident: HashSet::default(),
     rename_handler: Rc::new(RefCell::new(rename_handler)),

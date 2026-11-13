@@ -1,21 +1,53 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { npmInventory, nativeSourceDigest, cargoPackageInputsDigest, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { npmInventory, cargoInventory, nativeSourceDigest, cargoPackageInputsDigest, changesetsPublication, validationEvent } from './v2-release-inventory.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { root } from './v2-release-inventory.mjs';
+import { prCandidatePlan } from './prepare-pr-candidate-plan.mjs';
+
+// The committed inventory describes a reviewed release, not every later PR.
+// Exercise the existing PR-only generator against this checkout without changing
+// that release's source fingerprints or granting publication authority.
+const candidatePath = path.join(root, 'docs/releases/v2-candidate.json');
+const historicalBytes = fs.readFileSync(candidatePath, 'utf8');
+let checkoutPlan;
+function currentCandidate() {
+  if (!checkoutPlan) {
+    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+    const commit = git('rev-parse', 'HEAD');
+    const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--locked', '--offline', '--no-deps', '--format-version', '1'], { cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 ** 2 }));
+    checkoutPlan = prCandidatePlan({ base: JSON.parse(historicalBytes), npm: npmInventory(), cargo: cargoInventory(metadata),
+      checkout: { testedCommit: commit, sourceCommit: commit, workflowSHA: commit, testedTree: git('rev-parse', 'HEAD^{tree}'), eventName: 'workflow_dispatch', parents: [] } });
+  }
+  return structuredClone(checkoutPlan);
+}
+function runPreflight(candidate, args = []) {
+  const source = `import fs from 'node:fs';
+    const read = fs.readFileSync;
+    fs.readFileSync = (file, ...args) => String(file) === ${JSON.stringify(candidatePath)}
+      ? ${JSON.stringify(JSON.stringify(candidate))} : read(file, ...args);
+    process.argv.push(...${JSON.stringify(args)});
+    await import(${JSON.stringify(new URL('./v2-release-preflight.mjs', import.meta.url).href)});`;
+  const env = { ...process.env };
+  delete env.FARM_RELEASE_CANDIDATE_PLAN;
+  delete env.FARM_PR_CANDIDATE_PLAN;
+  return spawnSync(process.execPath, ['--input-type=module', '--eval', source], { encoding: 'utf8', env });
+}
+after(() => assert.equal(fs.readFileSync(candidatePath, 'utf8'), historicalBytes, 'Tests must not rewrite historical release evidence'));
+
 
 test('candidate scope includes SDK generator and approved Vuetify patch', () => {
   const inventory = npmInventory();
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = currentCandidate();
   assert.deepEqual(inventory, plan.npm);
-  if (plan.preparation?.mode !== 'changesets') {
-    assert.equal(inventory.primary.length, 51);
-    assert.equal(inventory.payloads.length, 246);
-    assert.equal(inventory.primary.find(pkg => pkg.name === 'create-farm-plugin').version, '2.0.0');
-    assert.equal(inventory.primary.find(pkg => pkg.name === '@farmfe/js-plugin-vuetify').version, '0.0.2');
+  const historical = JSON.parse(historicalBytes);
+  if (historical.preparation?.mode !== 'changesets') {
+    assert.equal(historical.npm.primary.length, 51);
+    assert.equal(historical.npm.payloads.length, 246);
+    assert.equal(historical.npm.primary.find(pkg => pkg.name === 'create-farm-plugin').version, '2.0.0');
+    assert.equal(historical.npm.primary.find(pkg => pkg.name === '@farmfe/js-plugin-vuetify').version, '0.0.2');
   }
   assert.ok(!inventory.primary.some(pkg => pkg.name === '@farmfe/js-plugin-copy'));
   for (const payload of inventory.payloads) {
@@ -54,11 +86,13 @@ test('Core/native versions and source changes without version bumps fail closed'
   assert.throws(() => changesetsPublication(family, old, []), /official Changesets/);
 });
 test('source consistency cannot be mistaken for publication approval', () => {
-  const run = (...args) => spawnSync(process.execPath, [fileURLToPath(new URL('./v2-release-preflight.mjs', import.meta.url)), ...args], { encoding: 'utf8' });
-  assert.equal(run().status, 0);
-  const publication = run('--publication');
+  const plan = currentCandidate();
+  const consistency = runPreflight(plan);
+  assert.equal(consistency.status, 0, consistency.stderr);
+  assert.equal(JSON.parse(consistency.stdout).readyToPublish, false);
+  const publication = runPreflight(plan, ['--publication']);
   assert.equal(publication.status, 1);
-  assert.equal(JSON.parse(publication.stdout).readyToPublish, false);
+  assert.match(publication.stderr, /PR candidate inventory never authorizes publication/);
 });
 
 
@@ -75,7 +109,7 @@ test('generic CI dispatch binds an ordinary same-repository PR head and exact ba
 });
 
 test('candidate Cargo fingerprints match the current source bytes', () => {
-  const plan = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json')));
+  const plan = currentCandidate();
   for (const pkg of plan.cargo) {
     assert.equal(nativeSourceDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.sourceSha256, `Cargo candidate source drifted: ${pkg.name}`);
     assert.equal(cargoPackageInputsDigest(path.dirname(path.join(root, pkg.manifestPath))), pkg.packageInputsSha256, `Cargo candidate package inputs drifted: ${pkg.name}`);
@@ -83,26 +117,53 @@ test('candidate Cargo fingerprints match the current source bytes', () => {
 });
 
 test('preflight rejects stale or missing Cargo source fingerprints before reporting consistency', () => {
-  const candidatePath = path.join(root, 'docs/releases/v2-candidate.json');
-  const preflightUrl = new URL('./v2-release-preflight.mjs', import.meta.url).href;
   for (const missing of [false, true]) {
-    // Alter only the child process fixture, never the checked-in candidate.
-    const source = `import fs from 'node:fs';
-      const read = fs.readFileSync;
-      fs.readFileSync = (file, ...args) => {
-        const bytes = read(file, ...args);
-        if (String(file) !== ${JSON.stringify(candidatePath)}) return bytes;
-        const candidate = JSON.parse(bytes);
-        if (${missing}) delete candidate.cargo[0].sourceSha256;
-        else candidate.cargo[0].sourceSha256 = '0'.repeat(64);
-        return JSON.stringify(candidate);
-      };
-      await import(${JSON.stringify(preflightUrl)});`;
-    const env = { ...process.env };
-    delete env.FARM_RELEASE_CANDIDATE_PLAN;
-    const result = spawnSync(process.execPath, ['--input-type=module', '--eval', source], { encoding: 'utf8', env });
+    const candidate = currentCandidate();
+    if (missing) delete candidate.cargo[0].sourceSha256;
+    else candidate.cargo[0].sourceSha256 = '0'.repeat(64);
+    const result = runPreflight(candidate);
     assert.equal(result.status, 1, result.stdout);
     assert.match(result.stderr, /Cargo candidate source drifted/);
     assert.doesNotMatch(result.stdout, /"sourceInventory": "consistent"/);
   }
+});
+
+test('preflight still rejects stale reviewed release evidence instead of silently refreshing it', () => {
+  const stale = currentCandidate();
+  stale.preparation = { mode: 'changesets' };
+  stale.npm.primary[0].sourceSha256 = '0'.repeat(64);
+  const result = runPreflight(stale);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Candidate manifests drifted/);
+});
+
+test('npm-only release retains Cargo source evidence without publishing unchanged Cargo versions', () => {
+  const old = baseline(), family = structuredClone(old);
+  family.publicationScope = 'npm';
+  family.npm.primary[0].version = '2.0.1';
+  family.npm.payloads[0].version = '2.0.1';
+  family.cargo[0].sourceSha256 = 'b'.repeat(64);
+  const releases = [{ name: '@farmfe/core', newVersion: '2.0.1' }];
+  const before = structuredClone(family);
+  const delta = changesetsPublication(family, old, releases);
+  assert.equal(delta.cargo.length, 0);
+  assert.equal(delta.npm.primary[0].version, '2.0.1');
+  assert.deepEqual(family, before, 'Never replace new source evidence with published Cargo hashes');
+  const versionedCargo = structuredClone(family);
+  versionedCargo.cargo[0].version = '2.2.1';
+  assert.equal(changesetsPublication(versionedCargo, old, releases).cargo.length, 0, 'npm-only never selects Cargo uploads, even if a Cargo version also changed');
+  delete family.publicationScope;
+  assert.throws(() => changesetsPublication(family, old, releases), /Rust source changed without a version bump/);
+});
+
+test('npm-only Cargo source changes still require a new Core family and valid evidence', () => {
+  const old = baseline(), family = structuredClone(old);
+  family.publicationScope = 'npm';
+  family.cargo[0].sourceSha256 = 'b'.repeat(64);
+  family.npm.primary[1].version = '1.0.1';
+  assert.throws(() => changesetsPublication(family, old, [{ name: '@farmfe/js-plugin-example', newVersion: '1.0.1' }]), /new Core npm\/native family/);
+  family.npm.primary[0].version = '2.0.1';
+  family.npm.payloads[0].version = '2.0.1';
+  delete family.cargo[0].sourceSha256;
+  assert.throws(() => changesetsPublication(family, old, [{ name: '@farmfe/js-plugin-example', newVersion: '1.0.1' }, { name: '@farmfe/core', newVersion: '2.0.1' }]), /Missing Rust source evidence/);
 });
