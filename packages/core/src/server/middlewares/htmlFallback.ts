@@ -38,25 +38,28 @@ export function htmlFallbackMiddleware(
       const html = resources?.resource(pathname);
       if (html) {
         send(req, res, html, pathname, { headers });
-        return next();
+        return;
       }
     } else if (pathname === '') {
       const html = resources?.resource('index.html');
       if (html) {
         send(req, res, html, pathname, { headers });
-        return next();
+        return;
       }
     } else {
       const html = resources?.resource(pathname + '.html');
 
       if (html) {
         send(req, res, html, pathname, { headers });
-        return next();
+        return;
       }
     }
     if (app.serverOptions.appType === 'spa') {
       const html = resources?.resource('index.html');
-      html && send(req, res, html, pathname, { headers });
+      if (html) {
+        send(req, res, html, pathname, { headers });
+        return;
+      }
     }
 
     next();
