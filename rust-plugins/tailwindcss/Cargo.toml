@@ -8,9 +8,9 @@ version = "0.0.1"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
-farmfe_macro_plugin = { version = "=2.0.0", path = "../../crates/macro_plugin" }
-farmfe_toolkit = { version = "=2.2.0", path = "../../crates/toolkit" }
+farmfe_core = { version = "=2.2.1", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "=2.1.0", path = "../../crates/macro_plugin" }
+farmfe_toolkit = { version = "=2.2.1", path = "../../crates/toolkit" }
 farmfe_utils = { version = "=2.1.1", path = "../../crates/utils" }
 farmfe_ecosystem_tailwindcss = { version = "=0.1.0", path = "../../rust-ecosystem/tailwindcss" }
 farmfe_ecosystem_tailwindcss_node = { version = "=0.1.0", path = "../../rust-ecosystem/tailwindcss-node" }
@@ -18,5 +18,5 @@ tailwindcss-oxide = { git = "https://github.com/tailwindlabs/tailwindcss", packa
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-farmfe_testing_helpers = { version = "=2.2.0", path = "../../crates/testing_helpers" }
-farmfe_compiler = { version = "=2.2.0", path = "../../crates/compiler" }
+farmfe_testing_helpers = { version = "=2.2.1", path = "../../crates/testing_helpers" }
+farmfe_compiler = { version = "=2.2.1", path = "../../crates/compiler" }

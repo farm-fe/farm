@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_testing_helpers"
-version = "2.2.0"
+version = "2.2.1"
 edition = "2024"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ documentation = "https://docs.rs/farmfe_plugin_define"
 
 [dependencies]
 insta = "1.39.0"
-farmfe_core = { path = "../core", version = "=2.2.0" }
+farmfe_core = { path = "../core", version = "=2.2.1" }
 
 [dev-dependencies]
 tempfile = "3"

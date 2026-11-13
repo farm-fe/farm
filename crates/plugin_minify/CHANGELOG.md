@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_minify-v2.2.0...farmfe_plugin_minify-v2.2.1) - 2026-11-13
+
+### Other
+
+- updated the following local packages: farmfe_toolkit, farmfe_core, farmfe_testing_helpers
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_minify-v2.0.0...farmfe_plugin_minify-v2.0.1) - 2025-09-21
 
 ### Other

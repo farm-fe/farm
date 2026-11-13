@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v2.2.0...farmfe_plugin_css-v2.2.1) - 2026-11-13
+
+### Fixed
+
+- *(css)* preserve empty URLs without resolving dependencies ([#2360](https://github.com/farm-fe/farm/pull/2360))
+
 ## [2.1.0](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v2.0.0...farmfe_plugin_css-v2.1.0) - 2025-09-21
 
 ### Added
