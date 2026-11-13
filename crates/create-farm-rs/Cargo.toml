@@ -21,3 +21,6 @@ rust-embed = { version = "8.3", features = [
   "interpolate-folder-path",
 ] }
 clap = { version = "4.5.8", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3"
