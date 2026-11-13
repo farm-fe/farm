@@ -21,6 +21,7 @@ const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
 const moduleId = 'MODULE_ID';
 const modulePath = 'MODULE_PATH';
 const serverUrl = 'FARM_LAZY_COMPILE_SERVER_URL';
+const styleIdPrefix = 'FARM_CSS_STYLE_ID_PREFIX';
 
 function refreshUpdatedStyles(changedModules: string[] = []) {
   if (!globalThis.document || changedModules.length === 0) return;
@@ -28,7 +29,10 @@ function refreshUpdatedStyles(changedModules: string[] = []) {
     Array.from(document.querySelectorAll('style[data-farm-id]'), style =>
       style.getAttribute('data-farm-id'))
   );
-  const updatedStyles = [...new Set(changedModules)].filter(id => loadedStyles.has(id));
+  // DOM identities are namespaced, but the current runtime's cache uses raw IDs.
+  const updatedStyles = [...new Set(changedModules)].filter(id =>
+    loadedStyles.has(styleIdPrefix + id)
+  );
   // Invalidate the whole batch before evaluating CSS imports of another style.
   for (const id of updatedStyles) delete FarmModuleSystem.c()[id];
   for (const id of updatedStyles) FarmModuleSystem.r(id);

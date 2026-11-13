@@ -92,6 +92,19 @@ pub fn render_module(
     })?;
   }
   try_with(cm.clone(), globals, || {
+    cloned_module.visit_mut_with(&mut paren_remover(Some(&comments)));
+
+    // Original CommonJS requires keep their evaluation position and branches.
+    // Handle them before lowering ESM imports, whose loading semantics differ.
+    if is_async_module {
+      super::transform_async_require::transform_async_require(
+        &mut cloned_module,
+        module_graph,
+        &module_id,
+        unresolved_mark,
+        top_level_mark,
+      );
+    }
     // replace commonjs require('./xxx') to require('./xxx', true)
     if matches!(
       module_script_meta.module_system,
@@ -107,8 +120,6 @@ pub fn render_module(
       );
       cloned_module.visit_mut_with(&mut require_visitor);
     }
-
-    cloned_module.visit_mut_with(&mut paren_remover(Some(&comments)));
 
     // ESM to commonjs, then commonjs to farm's runtime module systems
     if matches!(

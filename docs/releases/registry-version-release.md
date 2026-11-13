@@ -32,6 +32,27 @@ independently of old npm candidate metadata. Cargo source publication remains a 
 for npm native outputs nor requires a new npm version PR when no Changesets are
 pending.
 
+## Refreshing source evidence in feature PRs
+
+After reviewing Cargo version changes, updating exact consumer pins and
+regenerating the workspace lock with Cargo, run
+`node scripts/refresh-v2-source-inventory.mjs`. It uses the pinned Cargo package
+oracle and the official Changesets release plan. It rejects changed Rust source
+at the same or an older version, rejects release-family expansion, and requires
+pending version changes for every affected native npm owner. Fixture-only and
+workspace-lock changes refresh package-input evidence without inventing source
+version changes. It does not consume Changesets, change npm versions or payloads,
+refresh frozen preparation receipts, or authorize publication.
+
+The MF integration changes CSS, lazy-compilation and runtime Rust source already
+published as 2.2.0, so those crates and their compiler consumer advance to 2.2.1.
+Core's Rust version and ABI remain unchanged. Core, React, Sass, Tailwind CSS, Vue,
+Vue JSX and Worker native npm owners have pending patch Changesets, including
+path-only compiler consumers whose own source digest is unchanged. Official
+Changesets preparation must later generate their versions and platform payload
+versions before publication. The experimental MF packages remain private and
+outside the formal npm and Cargo release families.
+
 ## Build versus upload
 
 Missing exact npm versions form the upload set. The shared npm/Cargo/custom

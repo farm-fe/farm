@@ -197,6 +197,11 @@ impl FarmRequireVisitor {
 }
 
 impl VisitMut for FarmRequireVisitor {
+  // Original async CommonJS calls have already been transformed in-place.
+  fn visit_mut_await_expr(&mut self, _: &mut AwaitExpr) {}
+  fn visit_mut_function(&mut self, _: &mut farmfe_core::swc_ecma_ast::Function) {}
+  fn visit_mut_arrow_expr(&mut self, _: &mut farmfe_core::swc_ecma_ast::ArrowExpr) {}
+
   fn visit_mut_expr(&mut self, expr: &mut farmfe_core::swc_ecma_ast::Expr) {
     if let Some(id) = try_get_farm_require_id(expr) {
       self.requires.push(id);

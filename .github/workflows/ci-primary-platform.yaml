@@ -71,6 +71,65 @@ jobs:
         shell: bash
         run: test "$NATIVE_RESULT" = success
 
+  # Experimental MF is a required test input, never a formal release product.
+  mf-native:
+    name: Build private MF test input (${{ inputs.abi }})
+    if: always() && needs.native-disposition.result == 'success'
+    needs: [native-disposition]
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 45
+    outputs:
+      artifact_id: ${{ steps.mf-upload.outputs.artifact-id }}
+      run_attempt: ${{ steps.mf-origin.outputs.attempt }}
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      FARM_MF_ABI: ${{ inputs.abi }}
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/cargo-source-cache
+        with:
+          writer: 'false'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Install locked test build dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build private MF native test artifact
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/mf-native-target
+        shell: bash
+        run: |
+          set -eu
+          target="$(node scripts/ci-mf-native-artifact.mjs target "$FARM_MF_ABI")"
+          rustup target add "$target"
+          case "$FARM_MF_ABI" in
+            darwin-arm64) export CARGO_PROFILE_RELEASE_STRIP=none ;;
+            linux-x64-gnu)
+              export CARGO_INCREMENTAL=0
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+              ;;
+          esac
+          npm --prefix rust-plugins/module-federation run build -- --target "$target" --abi "$FARM_MF_ABI" --profile release --locked
+          node scripts/ci-mf-native-artifact.mjs record "$FARM_MF_ABI"
+      - name: Bind the successful MF producer attempt
+        id: mf-origin
+        shell: bash
+        run: echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        id: mf-upload
+        with:
+          name: mf-test-native-${{ github.sha }}-${{ inputs.abi }}-${{ github.run_attempt }}
+          path: logs/mf-native/${{ inputs.abi }}/
+          if-no-files-found: error
+          retention-days: 14
+
   docs:
     name: Docs CI quality checks
     if: always() && needs.native-disposition.result == 'success' && inputs.abi != 'darwin-arm64'
@@ -92,8 +151,8 @@ jobs:
       shadow_run_attempt: ${{ steps.shadow-upload.outputs.run-attempt }}
     name: Examples Test (${{ matrix.settings.os }})
     runs-on: ${{ matrix.settings.os }}
-    if: always() && needs.native-disposition.result == 'success'
-    needs: [native, native-disposition]
+    if: always() && needs.native-disposition.result == 'success' && needs.mf-native.result == 'success'
+    needs: [native, native-disposition, mf-native]
     strategy:
       fail-fast: false
       matrix:
@@ -292,6 +351,16 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-docs-snippets
           path: ./rust-plugins/docs-snippets/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4.3.0
+        id: download-mf-test
+        with:
+          artifact-ids: ${{ needs.mf-native.outputs.artifact_id }}
+          merge-multiple: true
+          path: logs/mf-native/${{ matrix.settings.abi }}/
+      - name: Verify and install same-run MF test artifact
+        env:
+          FARM_MF_PRODUCER_ATTEMPT: ${{ needs.mf-native.outputs.run_attempt }}
+        run: node scripts/ci-mf-native-artifact.mjs consume ${{ matrix.settings.abi }}
       - name: Build Examples - ${{ matrix.settings.abi }}
         env:
           FARM_EXAMPLE_ABI: ${{ matrix.settings.abi }}
