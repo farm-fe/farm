@@ -72,6 +72,7 @@ test('CI builds a separate same-source test artifact and requires its verified c
   const consumer = primary.jobs['examples-test']; assert.ok(consumer.needs.includes('mf-native'));
   assert.match(consumer.if, /needs\.mf-native\.result == 'success'/);
   const download = consumer.steps.find(s => s.id === 'download-mf-test');
+  assert.equal(download.uses, 'actions/download-artifact@v4.3.0', 'MF artifact IDs require a download action that supports artifact-ids');
   assert.equal(download.with['artifact-ids'], '${{ needs.mf-native.outputs.artifact_id }}');
   const verify = consumer.steps.find(s => s.name === 'Verify and install same-run MF test artifact');
   assert.equal(verify.env.FARM_MF_PRODUCER_ATTEMPT, '${{ needs.mf-native.outputs.run_attempt }}');
