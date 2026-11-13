@@ -445,8 +445,7 @@ mod client_type_tests {
 
   #[test]
   fn generated_templates_use_farm_client_types() {
-    let output =
-      path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/template-client-tests");
+    let output = tempfile::tempdir().unwrap();
     let cases = [
       ("svelte", Template::Svelte),
       (
@@ -469,7 +468,7 @@ mod client_type_tests {
       ("tauri2-vue", Template::Tauri2(Some(TauriSubTemplate::Vue))),
     ];
     for (name, template) in cases {
-      let dir = output.join(name);
+      let dir = output.path().join(name);
       template
         .render(&dir, PackageManager::Npm, name, name, false)
         .unwrap();
