@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v2.2.0...farmfe_plugin_runtime-v2.2.1) - 2026-11-13
+
+### Fixed
+
+- integrate community proxy and runtime regressions for v2 ([#2359](https://github.com/farm-fe/farm/pull/2359))
+
 ## [2.0.1](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v2.0.0...farmfe_plugin_runtime-v2.0.1) - 2025-09-21
 
 ### Fixed
