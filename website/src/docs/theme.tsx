@@ -4,7 +4,7 @@ import { ColorModeControl, DocPage as DefaultDocPage, Sidebar as DefaultSidebar,
 import { GitHubLogoIcon } from '@radix-ui/react-icons';
 import { createContext, useContext, useEffect, useState } from 'react';
 import presentation from '../../farm-docs.presentation.json';
-import { WebsiteSearch } from './search';
+import { WebsiteSearch, WebsiteSearchLocale } from './search';
 
 export { default as Footer } from '../theme/Footer';
 
@@ -61,7 +61,7 @@ export function Layout(props: ThemeProps) {
   const slots = props.components;
   const Page = props.page.kind === 'blog' || props.page.blogView ? slots.BlogPage : slots.DocPage;
   const home = props.page.kind === 'page' && props.page.routePath === homeTarget(props);
-  return <SearchProvider.Provider value={WebsiteSearch}><Mobile.Provider value={mobile}>
+  return <WebsiteSearchLocale.Provider value={props.page.locale}><SearchProvider.Provider value={WebsiteSearch}><Mobile.Provider value={mobile}>
     <div className={`farm-docs-theme farm-site-shell${home ? ' farm-site-shell--home' : ''}${mobile ? ' farm-site-shell--mobile' : ''}`}>
       <a className="farm-docs-skip" href="#farm-docs-content">{props.page.locale === 'zh' ? '跳到主要内容' : 'Skip to main content'}</a>
       <slots.Navbar {...props} />
@@ -72,7 +72,7 @@ export function Layout(props: ThemeProps) {
       </div>
       <slots.Footer {...props} />
     </div>
-  </Mobile.Provider></SearchProvider.Provider>;
+  </Mobile.Provider></SearchProvider.Provider></WebsiteSearchLocale.Provider>;
 }
 
 function Alternates({ site, page, data }: ThemeProps) {
