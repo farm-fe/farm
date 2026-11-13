@@ -53,5 +53,9 @@ node scripts/farm-docs-vercel-build.mjs
 The preflight stops if any required release package is not published yet. The
 build writes `website/build-farm` only after successful compilation and notice
 verification. See [registry deployment](../docs/farm-docs/registry-deployment.md)
-for isolation, validation and deployment boundaries. Main-push production
-deployment remains paused; these commands do not deploy the site.
+for isolation, validation and deployment boundaries. Main Git deployments are
+enabled in `website/vercel.json`; these local commands do not deploy the site.
+Vercel does not wait for npm publication. If required versions are missing, the
+build fails and the existing production deployment stays in place. Publication
+completion does not automatically retry that failed deployment; redeploy the
+same main commit after its package preflight passes.

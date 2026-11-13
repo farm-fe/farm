@@ -7,6 +7,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { deploymentTarget, deploymentPlan, releaseManifests, preflight, buildPublishedDocs, assertRegistryLock } from './farm-docs-vercel-build.mjs';
 
+import { addHomepageVerification, assertHomepageVerification } from './farm-docs-site-verification.mjs';
+
 const repository = fileURLToPath(new URL('../', import.meta.url));
 const read = file => JSON.parse(fs.readFileSync(file));
 const integrity = 'sha512-' + Buffer.alloc(64, 7).toString('base64');
@@ -64,7 +66,8 @@ function fixture(t) {
         }
         fs.mkdirSync(path.join(options.cwd, 'node_modules/@farmfe/core/binding'));
       } else if (args.includes('build')) {
-        write('build-farm/index.html', '<a href="/THIRD_PARTY_NOTICES.txt">Notices</a>');
+        write('build-farm/index.html', '<!doctype html><html><head><title>Farm</title></head><body><a href="/THIRD_PARTY_NOTICES.txt">Notices</a></body></html>');
+        write('build-farm/docs/index.html', '<html><head></head><body>Documentation</body></html>');
         write('build-farm/THIRD_PARTY_NOTICES.txt', 'original notice');
       }
     }
@@ -108,6 +111,18 @@ test('incomplete release fails before any command or output', async t => {
   f.hooks.getMetadata = async name => { throw new Error('[RELEASE_NOT_PUBLISHED] ' + name); };
   await assert.rejects(buildPublishedDocs(f.options, f.hooks), /RELEASE_NOT_PUBLISHED/);
   assert.equal(f.calls.length, 0);
+});
+
+test('main deployment before npm publication fails without commands or replacing existing output', async t => {
+  const f = fixture(t);
+  f.put('website/build-farm/index.html', 'previous successful production output');
+  f.hooks.getMetadata = async name => { throw new Error('[RELEASE_NOT_PUBLISHED] ' + name); };
+  for (const phase of ['install', 'build']) {
+    await assert.rejects(buildPublishedDocs({ ...f.options, phase, environment: { VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' } }, f.hooks), /RELEASE_NOT_PUBLISHED/);
+    assert.equal(f.calls.length, 0);
+    assert.equal(fs.readFileSync(path.join(f.root, 'website/build-farm/index.html'), 'utf8'), 'previous successful production output');
+    assert.deepEqual(fs.readdirSync(path.join(f.root, 'website')).filter(name => name.startsWith('build-farm')), ['build-farm']);
+  }
 });
 
 test('rejects registry cohort drift, non-registry inputs, missing integrity and install scripts', async t => {
@@ -191,6 +206,11 @@ test('synthetic successful build is isolated, frozen, scripts-disabled and copie
     return execute(...args);
   };
   const receipt = await buildPublishedDocs(f.options, f.hooks);
+  const homepage = fs.readFileSync(path.join(f.root, 'website/build-farm/index.html'), 'utf8');
+  assertHomepageVerification(homepage);
+  assert.equal((homepage.match(/<meta name="algolia-site-verification" content="C8B1581AB301BA8E" \/>/g) ?? []).length, 1);
+  assert.match(homepage, /<head>[^]*<meta name="algolia-site-verification" content="C8B1581AB301BA8E" \/>[^]*<\/head>/);
+  assert.equal(fs.readFileSync(path.join(f.root, 'website/build-farm/docs/index.html'), 'utf8'), '<html><head></head><body>Documentation</body></html>');
   assert.equal(receipt.commandsRun, 4);
   assert.equal(receipt.nativePackages.length, 2);
   assert.equal(f.calls[0].command, 'corepack');
@@ -352,12 +372,12 @@ test('native override and injected loader are rejected before metadata or comman
   assert.equal(f.calls.length, 0);
 });
 
-test('Vercel keeps existing project and main Git pause with registry-only commands', () => {
+test('Vercel enables main Git deployments with unchanged registry-only commands', () => {
   const config = read(path.join(repository, 'website/vercel.json'));
   assert.equal(config.installCommand, 'node ../scripts/farm-docs-vercel-build.mjs --install');
   assert.equal(config.buildCommand, 'node ../scripts/farm-docs-vercel-build.mjs');
   assert.equal(config.outputDirectory, 'build-farm');
-  assert.deepEqual(config.git.deploymentEnabled, { main: false });
+  assert.deepEqual(config.git.deploymentEnabled, { main: true });
 });
 
 test('actual CLI rejects unknown options without any build', () => {
@@ -377,4 +397,71 @@ test('Quick Start describes published v2 without changing feature scope or claim
   assert.match(zh, /而非固定的精确版本/);
   assert.match(zh, /官方 Rust 插件总览/);
   assert.doesNotMatch(zh, /这是 v2 候选文档|所需官方包发布前/);
+});
+
+
+test('homepage verification uses actual head boundaries and is idempotent', () => {
+  const source = '<!doctype html><HTML><HEAD data-note="a > b"><!-- <head></head> --><script>const sample = "<head></head>";</script></HEAD><BODY>Farm</BODY></HTML>';
+  const built = addHomepageVerification(source);
+  assertHomepageVerification(built);
+  assert.equal(addHomepageVerification(built), built);
+  assert.equal(built.replace('<meta name="algolia-site-verification" content="C8B1581AB301BA8E" />', ''), source);
+  assert.throws(() => assertHomepageVerification(source), /Missing verification marker/);
+});
+
+test('homepage verification rejects missing, duplicate, conflicting and misplaced markup', () => {
+  const tag = '<meta name="algolia-site-verification" content="C8B1581AB301BA8E" />';
+  const page = (head, body = '') => `<html><head>${head}</head><body>${body}</body></html>`;
+  for (const html of [
+    '<html><body>No head</body></html>',
+    '<html><head></head><head></head><body></body></html>',
+    '<html><head><body></body></html>',
+    '<html><body></body><head></head></html>',
+    page('<div>invalid head body</div>'),
+    '<html><div>early body</div><head></head><body></body></html>',
+    page(tag + tag), page(tag.replace('C8B1581AB301BA8E', 'wrong')),
+    page(tag.replace('algolia-site-verification', '&#97;' + 'algolia-site-verification'.slice(1))),
+    page(tag.replace('content=', 'name="algolia-site-verification" content=')),
+    page('', tag), page(tag, tag), page('<script>unclosed')
+  ]) assert.throws(() => addHomepageVerification(html), /DOCS_SITE_VERIFICATION/);
+});
+
+test('invalid built homepage keeps existing output untouched', async t => {
+  const f = fixture(t);
+  f.put('website/build-farm/index.html', 'previous verified homepage');
+  const execute = f.hooks.execute;
+  f.hooks.execute = async (...args) => {
+    await execute(...args);
+    if (args[1].includes('build')) fs.writeFileSync(path.join(args[2].cwd, 'build-farm/index.html'), '<html><body>THIRD_PARTY_NOTICES.txt</body></html>');
+  };
+  await assert.rejects(buildPublishedDocs(f.options, f.hooks), /DOCS_SITE_VERIFICATION/);
+  assert.equal(fs.readFileSync(path.join(f.root, 'website/build-farm/index.html'), 'utf8'), 'previous verified homepage');
+  assert.deepEqual(fs.readdirSync(path.join(f.root, 'website')).filter(name => name.startsWith('build-farm')), ['build-farm']);
+});
+
+test('repeated successful builds keep one homepage verification marker', async t => {
+  const f = fixture(t);
+  await buildPublishedDocs(f.options, f.hooks);
+  const first = fs.readFileSync(path.join(f.root, 'website/build-farm/index.html'), 'utf8');
+  await buildPublishedDocs(f.options, f.hooks);
+  assert.equal(fs.readFileSync(path.join(f.root, 'website/build-farm/index.html'), 'utf8'), first);
+  assertHomepageVerification(first);
+});
+
+
+test('minified published template preserves every byte except the implicit-head marker', () => {
+  const source = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Farm</title><script>const note = "<div>not body</div>";</script><link rel="stylesheet" href="/app.css"><div id="__FARM_DOCS_ROOT__">Home</div><script id="__FARM_DOCS_DATA__">{}</script>';
+  const built = addHomepageVerification(source);
+  assertHomepageVerification(built);
+  assert.match(built, /^<!doctype html><html lang="en"><meta name="algolia-site-verification" content="C8B1581AB301BA8E" \/><meta charset="utf-8">/);
+  assert.equal(addHomepageVerification(built), built);
+  assert.equal(built.replace('<meta name="algolia-site-verification" content="C8B1581AB301BA8E" />', ''), source);
+  for (const invalid of [
+    source.replace('<meta charset="utf-8">', 'body text'),
+    source.replace('<meta charset="utf-8">', '<div>early body</div>'),
+    source.replace('__FARM_DOCS_ROOT__', 'wrong-root'),
+    source + '<div id="__FARM_DOCS_ROOT__"></div>',
+    source.replace('<meta charset="utf-8">', '<head>'),
+    source.replace('<meta charset="utf-8">', '<body>')
+  ]) assert.throws(() => addHomepageVerification(invalid), /DOCS_SITE_VERIFICATION/);
 });

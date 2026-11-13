@@ -1,4 +1,4 @@
-> RETIRED HISTORICAL DESIGN: The source-build deployment below exceeded Vercel's 45-minute limit and must not be executed. The existing Vercel entry now builds an isolated consumer of exact published v2 npm packages and precompiled native payloads. See [the current registry deployment guide](registry-deployment.md). No Cargo/rustup/workspace fallback is allowed. The main Git deployment pause remains enabled.
+> RETIRED HISTORICAL DESIGN: The source-build deployment below exceeded Vercel's 45-minute limit and must not be executed. The existing Vercel entry now builds an isolated consumer of exact published v2 npm packages and precompiled native payloads. See [the current registry deployment guide](registry-deployment.md). No Cargo/rustup/workspace fallback is allowed. Main Git deployments are enabled for the published-package builder; the source-build path below remains retired.
 
 # Vercel Preview 从源码构建官网
 
