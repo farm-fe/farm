@@ -73,12 +73,12 @@ export async function runSuite(ctx) {
       active.add(child);
       child.completion = new Promise((resolve, reject) => {
         child.once("error", reject);
-        child.once("exit", (code, signal) =>
+        child.once("exit", async (code, signal) =>
           code === 0
             ? resolve()
             : reject(
                 new Error(
-                  `${label} failed (${code ?? signal}); see ${path.join(logs, label + ".log")}`,
+                  `${label} failed (${code ?? signal}); see ${path.join(logs, label + ".log")}\n${await fs.readFile(path.join(logs, label + ".log"), "utf8").then((text) => text.slice(-8000), () => "Log unavailable")}`,
                 ),
               ),
         );

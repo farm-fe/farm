@@ -1,3 +1,4 @@
+import { selectRemoteA } from '../examples/module-federation-native-probe/interop-config.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -98,4 +99,10 @@ test('artifact and installation redirects are rejected', t => {
   assert.throws(() => consumeMfNative(f.abi, f.options), /normal|symbolic|symlink|regular|redirect/i);
   fs.unlinkSync(f.bundle); fs.symlinkSync(outside, f.bundle);
   assert.throws(() => consumeMfNative(f.abi, f.options), /normal|symbolic|symlink|regular|redirect/i);
+});
+
+for (const paths of [path.posix, path.win32]) test(`interop selects remote-a with ${paths.sep} paths`, () => {
+  const configs = ['remote-b', 'remote-a', 'host'].map(name => ({ root: paths.join('fixture', name) }));
+  assert.equal(selectRemoteA(configs, paths), configs[1]);
+  assert.throws(() => selectRemoteA([configs[0]], paths), /Missing remote-a/);
 });

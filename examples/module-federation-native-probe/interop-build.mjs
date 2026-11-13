@@ -5,6 +5,7 @@ import webpack from "webpack";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import federation from "@farmfe/plugin-module-federation";
 import { configurations } from "./config.mjs";
+import { selectRemoteA } from "./interop-config.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
@@ -27,7 +28,7 @@ const shared = Object.fromEntries(
     },
   ]),
 );
-await build(configurations().find((c) => c.root.endsWith("/remote-a")));
+await build(selectRemoteA(configurations()));
 await build({
   root: path.join(base, "interop/farm-host"),
   configFile: false,
