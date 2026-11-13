@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { command } from './performance-report.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 export const docsSuites = Object.freeze({
-  source: [...['registry-consumer', 'example-prerequisites', 'main-deploy-gate', 'vercel-build', 'native-guard', 'ecosystem', 'header-contract', 'reading-ui-contract', 'navigation-events', 'search-layer', 'search-provider', 'sidebar-sections', 'suites'].map(name => `scripts/farm-docs-${name}.test.mjs`), 'scripts/example-native-inputs.test.mjs', 'scripts/native-artifact-inventory.test.mjs', 'scripts/local-docs-cleanup.test.mjs'],
+  source: [...['registry-consumer', 'example-prerequisites', 'main-deploy-gate', 'vercel-build', 'native-guard', 'ecosystem', 'header-contract', 'reading-ui-contract', 'navigation-events', 'search-layer', 'search-provider', 'v2-search', 'sidebar-sections', 'suites'].map(name => `scripts/farm-docs-${name}.test.mjs`), 'scripts/example-native-inputs.test.mjs', 'scripts/native-artifact-inventory.test.mjs', 'scripts/local-docs-cleanup.test.mjs'],
   distribution: ['package-contract', 'consumer-isolation', 'local-registry', 'distribution-chain', 'target-closure'].map(name => `scripts/farm-docs-${name}.test.mjs`),
   platform: ['scripts/farm-docs-platform-preparation.test.mjs'],
   compiled: ['scripts/farm-docs-cli-diagnostics.test.mjs', 'scripts/farm-docs-config-alias.test.mjs', 'packages/docs/tests/build-cache.test.mjs'],
