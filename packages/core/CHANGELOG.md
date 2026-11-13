@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 2.0.1
+
+### Patch Changes
+
+- bd74d57: Preserve empty and whitespace-only CSS URLs without resolving a nonexistent dependency or panicking during source replacement.
+- 1d63e29: Stop HTML fallback middleware after sending a response, preserving missing-resource fallthrough. Adapted from ErKeLost's contribution in #2179.
+- 540b2cc: A top-level `module`, `exports`, `farmRequire` or `farmDynamicRequire` binding in an ES module is renamed again, so it no longer collides with the parameters of the module wrapper (`SyntaxError: Identifier 'module' has already been declared`).
+- 540b2cc: Allow an object `server.proxy[*].target`, as http-proxy accepts (for example with `pfx` and `passphrase` for a client certificate). The config schema only accepted a string.
+- 540b2cc: Tree shaking no longer removes `x++` / `--x` updates and `delete` statements on top-level variables that are read later.
+
 ## 2.0.0
 
 ### Minor Changes
