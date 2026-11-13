@@ -45,6 +45,14 @@ impl<'a> VisitMut for SourceReplacer<'a> {
     if let Some(name) = &url.name.raw {
       if name == "url" {
         if let Some(value) = &mut url.value {
+          let source = match &**value {
+            UrlValue::Str(value) => &value.value,
+            UrlValue::Raw(value) => &value.value,
+          };
+          // Preserve empty URLs; the analyzer intentionally creates no edge for them.
+          if source.trim().is_empty() {
+            return;
+          }
           let deal_url_value = |source: &str| -> String {
             if is_source_ignored(source) && !is_start_with_alias(&self.alias, source) {
               return source.to_string();
