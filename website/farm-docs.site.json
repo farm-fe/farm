@@ -243,9 +243,9 @@
   "search": {
     "provider": "algolia",
     "options": {
-      "appId": "G3J92PUFY2",
-      "apiKey": "2b0f3f1f06f381249d44682a21206f4f",
-      "indexName": "farm-feio"
+      "appId": "X56UDGYU8P",
+      "apiKey": "c8512ed5ce925e599adede31e7d0b568",
+      "indexName": "farm-v2-docsearch"
     },
     "openSearch": {
       "pageId": "search",
