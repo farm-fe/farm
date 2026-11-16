@@ -338,8 +338,19 @@ impl<'a> VisitMut for RenameVisitor<'a> {
 pub fn init_rename_handler(
   sorted_modules: &[ModuleId],
   module_graph: &ModuleGraph,
+  reserve_runtime_bindings: bool,
 ) -> TopLevelIdentsRenameHandler {
   let mut top_level_idents = TopLevelIdents::new();
+  if reserve_runtime_bindings {
+    // Live-binding helpers are inserted after the original unresolved-name scan.
+    // Reserve their runtime names before merging ASTs and resolving marks again.
+    for name in [
+      farmfe_core::config::FARM_REQUIRE,
+      farmfe_core::config::FARM_MODULE,
+    ] {
+      top_level_idents.add_ident(name.into());
+    }
+  }
 
   // init top level idents
   sorted_modules.iter().for_each(|module_id| {

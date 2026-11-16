@@ -19,6 +19,7 @@
     "documate:upload": "documate upload"
   },
   "dependencies": {
+    "@emotion/is-prop-valid": "1.4.0",
     "@farmfe/docs": "workspace:*",
     "@farmfe/docs-theme-default": "workspace:*",
     "@crowdin/cli": "3",

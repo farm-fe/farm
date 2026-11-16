@@ -260,6 +260,26 @@ describe('parseUserConfig', () => {
     ).toThrowError('Validation error');
   });
 
+  test('proxy target can be an object', () => {
+    expect(() =>
+      parseUserConfig({
+        server: {
+          proxy: {
+            '/api': {
+              target: {
+                protocol: 'https:',
+                host: 'localhost',
+                port: 8443,
+                passphrase: 'secret'
+              },
+              changeOrigin: true
+            }
+          }
+        }
+      })
+    ).not.toThrow();
+  });
+
   test('valid template config', () => {
     expect(() =>
       parseUserConfig({

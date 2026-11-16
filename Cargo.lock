@@ -1293,6 +1293,7 @@ dependencies = [
  "clap",
  "dialoguer",
  "rust-embed",
+ "tempfile",
 ]
 
 [[package]]
