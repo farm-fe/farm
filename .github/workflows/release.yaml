@@ -48,6 +48,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install the pinned metadata toolchain
         run: rustup toolchain install nightly-2026-04-10 --profile minimal
+      - name: Prepare locked Cargo inputs for offline inventory
+        run: python3 scripts/prepare-cargo-package-inputs.py --fetch
       # Publication credentials are never available to this versioning action.
       # A reviewed version PR must also refresh its exact plan/intent and seal.
       - uses: changesets/action@v1
