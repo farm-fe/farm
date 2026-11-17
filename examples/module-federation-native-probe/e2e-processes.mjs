@@ -71,7 +71,11 @@ export function stopOwnedProcess(child) {
     }
     if (!(await waitForExit(child, 1500)))
       throw new Error(`Owned process ${pid} did not exit after termination`);
-  })();
+  })().catch((error) => {
+    // Share concurrent attempts, but do not cache a failed termination forever.
+    state.stopping = undefined;
+    throw error;
+  });
 }
 
 // child.kill('SIGTERM') on Windows bypasses Node's handlers. Use the IPC

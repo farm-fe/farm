@@ -133,17 +133,7 @@ export async function runSuite(ctx) {
   await fs.mkdir(logs, { recursive: true });
   const lockPath = path.join(base, ".e2e-running");
   const lock = await fs.open(lockPath, "wx");
-  const originals = await Promise.all(
-    [
-      "remote-a/lazy.js",
-      "remote-a/Button.js",
-      "remote-b/Button.js",
-      "remote-a/button.css",
-    ].map(async (file) => {
-      const full = path.join(base, file);
-      return [full, await fs.readFile(full)];
-    }),
-  );
+  const originals = [];
   let cleaning;
   const cleanup = () => {
     shuttingDown = true;
@@ -172,6 +162,20 @@ export async function runSuite(ctx) {
   process.once("SIGINT", terminate);
   process.once("SIGTERM", terminate);
   try {
+    // Snapshot reads can fail or be interrupted. Install cleanup before the
+    // first read, and publish snapshots only after the entire set succeeds.
+    originals.push(...await Promise.all(
+      [
+        "remote-a/lazy.js",
+        "remote-a/Button.js",
+        "remote-b/Button.js",
+        "remote-a/button.css",
+      ].map(async (file) => {
+        const full = path.join(base, file);
+        return [full, await fs.readFile(full)];
+      }),
+    ));
+    requireRunning();
     await requireFreePorts();
     await test("non-MF CJS/ESM and async diagnostics", () =>
       run("core-regression.mjs", {}, "core-regression"));
@@ -221,10 +225,13 @@ export async function runSuite(ctx) {
         });
     }
   } finally {
-    await cleanup();
-    process.removeListener("message", onMessage);
-    process.removeListener("SIGINT", terminate);
-    process.removeListener("SIGTERM", terminate);
+    try {
+      await cleanup();
+    } finally {
+      process.removeListener("message", onMessage);
+      process.removeListener("SIGINT", terminate);
+      process.removeListener("SIGTERM", terminate);
+    }
     await fs.writeFile(
       path.join(base, "evidence-suite.json"),
       JSON.stringify(

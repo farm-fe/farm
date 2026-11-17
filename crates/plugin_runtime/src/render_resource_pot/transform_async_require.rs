@@ -4,7 +4,11 @@ use farmfe_core::{
   module::{ModuleId, module_graph::ModuleGraph},
   plugin::ResolveKind,
   swc_common::{DUMMY_SP, Mark, errors::HANDLER},
-  swc_ecma_ast::{ArrowExpr, AwaitExpr, Callee, Class, Expr, Function, Lit, Module},
+  swc_ecma_ast::{
+    ArrowExpr, AwaitExpr, Callee, Class, Expr, Function, GetterProp, IdentName, KeyValueProp, Lit,
+    MemberExpr, MemberProp, Module, Null, Number, ObjectLit, ParenExpr, Prop, PropName,
+    PropOrSpread, ReturnStmt, SetterProp, Stmt, UnaryExpr, UnaryOp,
+  },
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -90,6 +94,26 @@ impl VisitMut for AsyncRequire<'_> {
     self.allow_await = previous;
     self.changes = changes;
   }
+  fn visit_mut_getter_prop(&mut self, getter: &mut GetterProp) {
+    // Computed keys execute in the surrounding scope, not the accessor body.
+    getter.key.visit_mut_with(self);
+    let previous = self.allow_await;
+    let changes = self.changes;
+    self.allow_await = false;
+    getter.body.visit_mut_with(self);
+    self.allow_await = previous;
+    self.changes = changes;
+  }
+  fn visit_mut_setter_prop(&mut self, setter: &mut SetterProp) {
+    setter.key.visit_mut_with(self);
+    let previous = self.allow_await;
+    let changes = self.changes;
+    self.allow_await = false;
+    setter.param.visit_mut_with(self);
+    setter.body.visit_mut_with(self);
+    self.allow_await = previous;
+    self.changes = changes;
+  }
   fn visit_mut_class(&mut self, class: &mut Class) {
     let previous = self.allow_await;
     let changes = self.changes;
@@ -116,11 +140,26 @@ impl VisitMut for AsyncRequire<'_> {
       function.function.body.visit_mut_with(self);
       let lifted = self.changes != changes;
       function.function.is_async = lifted;
+      if lifted && let Some(body) = &mut function.function.body {
+        body.visit_mut_with(&mut PreserveIifeReturns);
+        // Falling through has the same result as a bare return.
+        body.stmts.push(Stmt::Return(ReturnStmt {
+          span: DUMMY_SP,
+          arg: Some(box_iife_result(None)),
+        }));
+      }
       call.args.visit_mut_with(self);
       if lifted {
-        *expr = Expr::Await(AwaitExpr {
+        *expr = Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          arg: Box::new(expr.take()),
+          obj: Box::new(Expr::Paren(ParenExpr {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Await(AwaitExpr {
+              span: DUMMY_SP,
+              arg: Box::new(expr.take()),
+            })),
+          })),
+          prop: MemberProp::Ident(IdentName::new("value".into(), DUMMY_SP)),
         });
       }
       return;
@@ -159,6 +198,49 @@ impl VisitMut for AsyncRequire<'_> {
     });
   }
 }
+// Async functions assimilate Promise/thenable return values. Transport the
+// original result inside a null-prototype object so even inherited `then`
+// properties cannot change its meaning.
+fn box_iife_result(value: Option<Box<Expr>>) -> Box<Expr> {
+  let value = value.unwrap_or_else(|| {
+    Box::new(Expr::Unary(UnaryExpr {
+      span: DUMMY_SP,
+      op: UnaryOp::Void,
+      arg: Box::new(Expr::Lit(Lit::Num(Number {
+        span: DUMMY_SP,
+        value: 0.0,
+        raw: None,
+      }))),
+    }))
+  });
+  Box::new(Expr::Object(ObjectLit {
+    span: DUMMY_SP,
+    props: vec![
+      PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+        key: PropName::Ident(IdentName::new("__proto__".into(), DUMMY_SP)),
+        value: Box::new(Expr::Lit(Lit::Null(Null { span: DUMMY_SP }))),
+      }))),
+      PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+        key: PropName::Ident(IdentName::new("value".into(), DUMMY_SP)),
+        value,
+      }))),
+    ],
+  }))
+}
+
+struct PreserveIifeReturns;
+impl VisitMut for PreserveIifeReturns {
+  fn visit_mut_return_stmt(&mut self, statement: &mut ReturnStmt) {
+    statement.arg = Some(box_iife_result(statement.arg.take()));
+  }
+  // Returns owned by a nested callable must retain that callable's contract.
+  fn visit_mut_function(&mut self, _: &mut Function) {}
+  fn visit_mut_arrow_expr(&mut self, _: &mut ArrowExpr) {}
+  fn visit_mut_getter_prop(&mut self, _: &mut GetterProp) {}
+  fn visit_mut_setter_prop(&mut self, _: &mut SetterProp) {}
+  fn visit_mut_class(&mut self, _: &mut Class) {}
+}
+
 use farmfe_core::swc_common::util::take::Take;
 
 #[cfg(test)]
@@ -222,7 +304,7 @@ mod tests {
   fn direct_anonymous_iife_can_wait_without_hoisting() {
     let output =
       transform("if (enabled) (function(){module.exports=require('async')})();").unwrap();
-    assert!(output.contains("if (enabled) await"), "{output}");
+    assert!(output.contains("if (enabled) (await"), "{output}");
     assert!(output.contains("async function"), "{output}");
     assert!(
       output.contains("module.exports = await require"),
@@ -254,5 +336,31 @@ mod tests {
         .unwrap()
         .contains("await")
     );
+  }
+  #[test]
+  fn synchronous_accessors_reject_async_requires() {
+    for source in [
+      "const obj={get value(){return require('async')}};",
+      "const obj={set value(x){require('async')}};",
+      "const obj={set value(x=require('async')){}};",
+    ] {
+      assert!(transform(source).is_err(), "{source}");
+    }
+  }
+  #[test]
+  fn accessor_keys_keep_outer_await_context() {
+    let output = transform("(function(){const obj={get [require('async')](){return 7},set [require('async')](x){}}; return obj;})();").unwrap();
+    assert_eq!(output.matches("await require").count(), 2, "{output}");
+    assert!(output.contains("async function"), "{output}");
+    assert!(transform("function f(){return {get [require('async')](){}}}").is_err());
+  }
+  #[test]
+  fn lifted_iife_boxes_returns_without_touching_nested_functions() {
+    let output = transform("const p=(function(){require('async');function nested(){return Promise.resolve(9)};if(flag)return;return Promise.resolve(42)})();").unwrap();
+    assert!(output.contains("__proto__: null"), "{output}");
+    assert!(output.contains("value: Promise.resolve(42)"), "{output}");
+    assert!(output.contains("return Promise.resolve(9)"), "{output}");
+    assert!(output.contains("value: void 0"), "{output}");
+    assert!(output.contains(").value"), "{output}");
   }
 }

@@ -23,7 +23,11 @@ await log.close();
 const evidence = { passed: false };
 try {
   let ready = false;
-  while (Date.now() - started < 20000) {
+  let devStarted;
+  // Core, build and preview each have a 120s suite budget before dev starts.
+  // Keep startup bounded, without spending dev's own 20s readiness allowance.
+  const startupDeadline = started + 3 * 120000 + 20000;
+  while (Date.now() < (devStarted === undefined ? startupDeadline : devStarted + 20000)) {
     if (spawnError) throw spawnError;
     if (child.exitCode !== null || child.signalCode !== null)
       throw new Error("Suite exited before interruption check");
@@ -32,6 +36,8 @@ try {
         path.join(base, "e2e-results/global-dev-server.log"),
       );
       if (stat.mtimeMs >= started) {
+        devStarted ??= stat.mtimeMs;
+        if (Date.now() >= devStarted + 20000) break;
         const response = await fetch("http://127.0.0.1:4100/", {
           signal: AbortSignal.timeout(500),
         });
