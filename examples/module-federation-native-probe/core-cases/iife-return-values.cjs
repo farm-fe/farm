@@ -20,7 +20,18 @@ const computed = (function () {
   return { get [require('./async.js').value]() { return 7; } };
 })();
 const syncAccessor = { get value() { return require('./sync.cjs').value; } };
+// The Proxy records the receiver independently of directive stripping during minification.
+const directCallThisUndefined = (function () {
+  require('./async.js');
+  return new Proxy(function () {}, { apply(_target, thisArg) { return thisArg === undefined; } });
+})()();
+const taggedThisUndefined = (function () {
+  require('./async.js');
+  return new Proxy(function () {}, { apply(_target, thisArg) { return thisArg === undefined; } });
+})()`tag`;
 module.exports = {
+  directCallThisUndefined,
+  taggedThisUndefined,
   fulfilledIdentity: returnedFulfilled === fulfilled,
   pendingIdentity: returnedPending === pending,
   thenableIdentity: returnedThenable === thenable,

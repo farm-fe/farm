@@ -7,7 +7,7 @@ use farmfe_core::{
   swc_ecma_ast::{
     ArrowExpr, AwaitExpr, Callee, Class, Expr, Function, GetterProp, IdentName, KeyValueProp, Lit,
     MemberExpr, MemberProp, Module, Null, Number, ObjectLit, ParenExpr, Prop, PropName,
-    PropOrSpread, ReturnStmt, SetterProp, Stmt, UnaryExpr, UnaryOp,
+    PropOrSpread, ReturnStmt, SeqExpr, SetterProp, Stmt, UnaryExpr, UnaryOp,
   },
 };
 use farmfe_toolkit::{
@@ -150,7 +150,7 @@ impl VisitMut for AsyncRequire<'_> {
       }
       call.args.visit_mut_with(self);
       if lifted {
-        *expr = Expr::Member(MemberExpr {
+        let value = Expr::Member(MemberExpr {
           span: DUMMY_SP,
           obj: Box::new(Expr::Paren(ParenExpr {
             span: DUMMY_SP,
@@ -160,6 +160,23 @@ impl VisitMut for AsyncRequire<'_> {
             })),
           })),
           prop: MemberProp::Ident(IdentName::new("value".into(), DUMMY_SP)),
+        });
+        // The original call produces a value, not a property reference. Without
+        // this sequence, immediately calling/tagging a returned function binds
+        // the transport object as its receiver.
+        *expr = Expr::Paren(ParenExpr {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Seq(SeqExpr {
+            span: DUMMY_SP,
+            exprs: vec![
+              Box::new(Expr::Lit(Lit::Num(Number {
+                span: DUMMY_SP,
+                value: 0.0,
+                raw: None,
+              }))),
+              Box::new(value),
+            ],
+          })),
         });
       }
       return;
@@ -304,7 +321,7 @@ mod tests {
   fn direct_anonymous_iife_can_wait_without_hoisting() {
     let output =
       transform("if (enabled) (function(){module.exports=require('async')})();").unwrap();
-    assert!(output.contains("if (enabled) (await"), "{output}");
+    assert!(output.contains("if (enabled) (0, (await"), "{output}");
     assert!(output.contains("async function"), "{output}");
     assert!(
       output.contains("module.exports = await require"),
@@ -362,5 +379,23 @@ mod tests {
     assert!(output.contains("return Promise.resolve(9)"), "{output}");
     assert!(output.contains("value: void 0"), "{output}");
     assert!(output.contains(").value"), "{output}");
+  }
+  #[test]
+  fn lifted_iife_returns_values_to_calls_and_tags() {
+    for source in [
+      "const ok=(function(){require('async');return function(){'use strict';return this===undefined}})()();",
+      "const ok=(function(){require('async');return function(){'use strict';return this===undefined}})()`tag`;",
+    ] {
+      let output = transform(source).unwrap();
+      assert!(output.contains("(0, (await"), "{output}");
+      assert!(output.contains(").value)"), "{output}");
+      parse_module(
+        &"generated.js".into(),
+        Arc::new(output),
+        Syntax::Es(Default::default()),
+        EsVersion::EsNext,
+      )
+      .unwrap();
+    }
   }
 }

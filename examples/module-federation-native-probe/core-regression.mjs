@@ -17,7 +17,7 @@ let browser;const evidence={};
 try {
  browser=await chromium.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:4190');await page.waitForFunction(()=>window.result,{}, {timeout:10000});
- evidence.result=await page.evaluate(()=>window.result);assert.deepEqual(evidence.result,{sync:7,cycle:{name:'a',peer:'b'},esm:42,consumer:42,caught:'expected async failure',iife:42,iifeReturns:{fulfilledIdentity:true,pendingIdentity:true,thenableIdentity:true,thenReads:0,fallthroughUndefined:true,bareUndefined:true,finallyIdentity:true,nestedIdentity:true,computedKey:7,syncAccessor:7},order:['before','after']});assert.deepEqual(errors,[]);
+ evidence.result=await page.evaluate(()=>window.result);assert.deepEqual(evidence.result,{sync:7,cycle:{name:'a',peer:'b'},esm:42,consumer:42,caught:'expected async failure',iife:42,iifeReturns:{directCallThisUndefined:true,taggedThisUndefined:true,fulfilledIdentity:true,pendingIdentity:true,thenableIdentity:true,thenReads:0,fallthroughUndefined:true,bareUndefined:true,finallyIdentity:true,nestedIdentity:true,computedKey:7,syncAccessor:7},order:['before','after']});assert.deepEqual(errors,[]);
  const invalidConfig={...config,compilation:{...config.compilation,input:{invalid:'./invalid.cjs'},output:{...config.compilation.output,path:path.join(base,'dist/core-invalid')}}};
  evidence.synchronousDiagnostics={};
  for(const invalidInput of ['invalid.cjs','invalid-getter.cjs','invalid-setter.cjs','invalid-setter-parameter.cjs']) {
