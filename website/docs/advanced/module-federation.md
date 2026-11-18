@@ -1,11 +1,11 @@
 ---
-title: Module Federation (experimental)
+title: Module Federation
 description: Configure native Farm Module Federation, shared React dependencies, and cross-application loading.
 ---
 
-# Module Federation (experimental)
+# Module Federation
 
-:::warning Local experimental implementation
+:::warning Private workspace implementation
 `@farmfe/plugin-module-federation` is a private, unpublished workspace package. There is no released installation version. Use a source checkout containing the plugin, its matching core changes, and the example below; an older published Farm core does not include the async CommonJS fix. This page documents the local verified implementation, not a promise of complete Federation compatibility.
 :::
 

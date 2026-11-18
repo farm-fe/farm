@@ -71,7 +71,7 @@ jobs:
         shell: bash
         run: test "$NATIVE_RESULT" = success
 
-  # Experimental MF is a required test input, never a formal release product.
+  # Private MF is a required test input, never a formal release product.
   mf-native:
     name: Build private MF test input (${{ inputs.abi }})
     if: always() && needs.native-disposition.result == 'success'

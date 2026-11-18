@@ -1,11 +1,11 @@
 ---
-title: Module Federation（实验性）
+title: Module Federation
 description: 使用 Farm 原生 Module Federation 插件配置跨应用加载、共享 React 和远端资源。
 ---
 
-# Module Federation（实验性）
+# Module Federation
 
-:::warning 本地实验实现
+:::warning 私有工作区实现
 `@farmfe/plugin-module-federation` 是尚未发布的私有 workspace 包，没有可安装的正式版本号。需要使用包含插件、配套核心改动和示例的源码工作区；旧版已发布 Farm core 不包含异步 CommonJS 修复。本文描述已验证的本地实现，不代表完整 Federation 协议兼容性。
 :::
 

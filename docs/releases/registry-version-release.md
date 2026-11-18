@@ -50,7 +50,7 @@ Core's Rust version and ABI remain unchanged. Core, React, Sass, Tailwind CSS, V
 Vue JSX and Worker native npm owners have pending patch Changesets, including
 path-only compiler consumers whose own source digest is unchanged. Official
 Changesets preparation must later generate their versions and platform payload
-versions before publication. The experimental MF packages remain private and
+versions before publication. The MF packages remain private and
 outside the formal npm and Cargo release families.
 
 ## Build versus upload
