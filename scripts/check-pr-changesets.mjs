@@ -40,6 +40,48 @@ export function fetchChangesetBase(event, environment, git = (args => execFileSy
   return base.sha;
 }
 
+// Only these audited, non-shipped surfaces are eligible. In particular, generic
+// docs/, package manifests, release evidence and executable loaders are not.
+const noPublishPaths = new Set([
+  'packages/utils/tests/color.spec.ts',
+  'website/docs/plugins/writing-plugins/rust-plugin.mdx'
+]);
+
+export function isNoPublishDiff(base, eventName, git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8', timeout: 120000 })) {
+  try {
+    assert.equal(eventName, 'pull_request');
+    assert.match(base, /^[a-f0-9]{40}$/);
+    assert.equal(git(['rev-parse', '--verify', `${base}^{commit}`]).trim(), base);
+    const head = git(['rev-parse', '--verify', 'HEAD^{commit}']).trim();
+    assert.match(head, /^[a-f0-9]{40}$/);
+    git(['merge-base', '--is-ancestor', base, head]);
+    const diff = git(['diff', '--name-only', '--no-renames', '-z', base, head]);
+    assert.ok(diff.length > 0 && diff.endsWith('\0'));
+    const files = diff.slice(0, -1).split('\0');
+    assert.equal(new Set(files).size, files.length);
+    assert.ok(files.every(file => noPublishPaths.has(file)));
+    // Inspect both sides, including deleted paths. Do not accept symlinks,
+    // submodules, executable mode changes, or ambiguous tree output.
+    const snapshots = [base, head].map(sha => {
+      const tree = git(['ls-tree', '-r', '-z', sha, '--', ...files]);
+      assert.ok(!tree || tree.endsWith('\0'));
+      const entries = new Map();
+      for (const row of tree ? tree.slice(0, -1).split('\0') : []) {
+        const match = /^(100644) blob ([a-f0-9]{40})\t([^\0]+)$/.exec(row);
+        assert.ok(match && files.includes(match[3]) && !entries.has(match[3]));
+        entries.set(match[3], match[2]);
+      }
+      return entries;
+    });
+    assert.ok(files.every(file => snapshots.some(tree => tree.has(file))));
+    assert.equal(git(['rev-parse', '--verify', 'HEAD^{commit}']).trim(), head);
+    return true;
+  } catch {
+    // Classification is optional: failures never replace ordinary validation.
+    return false;
+  }
+}
+
 export function verifyPreparedRelease(directory, { readGitFile, readGitChangesets, isAncestor } = {}) {
   const candidate = JSON.parse(fs.readFileSync(path.join(directory, 'docs/releases/v2-candidate.json')));
   const record = JSON.parse(fs.readFileSync(path.join(directory, 'docs/release-evidence/frozen-stable-versions.json')));
@@ -151,10 +193,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     execFileSync(process.execPath, [path.join(root, 'scripts/v2-release-preflight.mjs')], { cwd: root, stdio: 'inherit' });
     console.log(JSON.stringify(result));
   } else {
-    // All ordinary PRs keep the normal Changesets check and its failure semantics.
+    // All non-eligible changes retain the normal Changesets failure semantics.
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/@changesets/cli/package.json')));
     const bin = typeof pkg.bin === 'string' ? pkg.bin : Object.values(pkg.bin)[0];
     const base = fetchChangesetBase(event, process.env);
-    execFileSync(process.execPath, [path.resolve(path.dirname(fs.realpathSync(path.join(root, 'node_modules/@changesets/cli/package.json'))), bin), 'status', `--since=${base}`], { cwd: root, stdio: 'inherit' });
+    if (isNoPublishDiff(base, process.env.GITHUB_EVENT_NAME)) {
+      console.log(JSON.stringify({ status: 'verified-no-publish-diff', base }));
+    } else {
+      execFileSync(process.execPath, [path.resolve(path.dirname(fs.realpathSync(path.join(root, 'node_modules/@changesets/cli/package.json'))), bin), 'status', `--since=${base}`], { cwd: root, stdio: 'inherit' });
+    }
   }
 }

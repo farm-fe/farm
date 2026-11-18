@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { verifyPreparedRelease, verifyChangesetsPreparation, changesetBase, fetchChangesetBase } from './check-pr-changesets.mjs';
+import { verifyPreparedRelease, verifyChangesetsPreparation, changesetBase, fetchChangesetBase, isNoPublishDiff } from './check-pr-changesets.mjs';
 import { changesetsPublication } from './v2-release-inventory.mjs';
 const digest = text => crypto.createHash('sha256').update(text).digest('hex');
 
@@ -107,4 +107,45 @@ test('generic CI dispatch uses the exact verified base without release-only inpu
   const event={inputs:{base_sha:sha},pull_request:{base:{ref:'main',sha,repo:{full_name:repository}}}};
   assert.equal(changesetBase(event,{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository}).sha,sha);
   assert.throws(()=>changesetBase({...event,inputs:{base_sha:'b'.repeat(40)}},{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository}));
+});
+
+
+test('no-publish classification is narrow, exact and fails closed', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40), blob = 'c'.repeat(40);
+  const testPath = 'packages/utils/tests/color.spec.ts';
+  const docsPath = 'website/docs/plugins/writing-plugins/rust-plugin.mdx';
+  const probe = ({ paths = [testPath], diff, mode = '100644', fail, drift = false, tree } = {}) => {
+    let heads = 0;
+    return isNoPublishDiff(base, 'pull_request', args => {
+      if (args[0] === fail) throw new Error('unavailable');
+      if (args[0] === 'rev-parse') return args[2].startsWith(base) ? base : drift && heads++ ? base : head;
+      if (args[0] === 'merge-base') return '';
+      if (args[0] === 'diff') {
+        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '-z', base, head]);
+        return diff ?? paths.join('\0') + '\0';
+      }
+      if (args[0] === 'ls-tree') return tree ?? paths.map(file => `${mode} blob ${blob}\t${file}\0`).join('');
+      assert.fail('Unexpected Git operation');
+    });
+  };
+  for (const eventName of [undefined, 'push', 'workflow_dispatch', 'pull_request_target']) {
+    assert.equal(isNoPublishDiff(base, eventName, () => assert.fail('must not invoke Git')), false);
+  }
+  assert.equal(probe(), true);
+  assert.equal(probe({ paths: [testPath, docsPath] }), true);
+  for (const paths of [
+    [testPath, 'packages/utils/src/color.ts'],
+    [testPath, 'packages/utils/src/moved.ts'],
+    ['packages/utils/src/color.ts', 'packages/utils/tests/moved.spec.ts'],
+    ['packages/create-farm/index.js'], ['packages/utils/package.json'],
+    ['scripts/check-pr-changesets.mjs'], ['scripts/check-pr-changesets.test.mjs'],
+    ['docs/releases/v2-candidate.json'], ['.changeset/empty.md'],
+    ['website/docs/../package.json'], [testPath, testPath]
+  ]) assert.equal(probe({ paths }), false);
+  for (const diff of ['', testPath, '\0', testPath + '\0\0', testPath + '\n\0']) assert.equal(probe({ diff }), false);
+  for (const mode of ['100755', '120000', '160000']) assert.equal(probe({ mode }), false);
+  for (const fail of ['rev-parse', 'merge-base', 'diff', 'ls-tree']) assert.equal(probe({ fail }), false);
+  for (const tree of ['', 'malformed\0', `100644 blob ${blob}\t${testPath}`]) assert.equal(probe({ tree }), false);
+  assert.equal(probe({ drift: true }), false);
+  assert.equal(isNoPublishDiff('main', 'pull_request', () => assert.fail('must not invoke Git')), false);
 });
