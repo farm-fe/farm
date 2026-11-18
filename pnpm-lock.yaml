@@ -5337,6 +5337,9 @@ importers:
       '@docsearch/react':
         specifier: 3.5.2
         version: 3.5.2(@algolia/client-search@4.27.0)(@types/react@18.3.28)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)(search-insights@2.13.0)
+      '@emotion/is-prop-valid':
+        specifier: 1.4.0
+        version: 1.4.0
       '@farmfe/docs':
         specifier: workspace:*
         version: link:../packages/docs
