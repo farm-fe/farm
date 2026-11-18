@@ -6,6 +6,10 @@
   "language": "en",
   "overrides": [
     {
+      "filename": ["docs/source-migration/create-farm-index.js.snapshot", "cspell.json"],
+      "words": ["openharmony", "ohos"]
+    },
+    {
       "filename": ["docs/releases/source-migration-checkpoint.md", "cspell.json"],
       "words": ["Sincom", "worktrees", "parseability"]
     },

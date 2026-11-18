@@ -5,10 +5,12 @@ on top of main. It is a migration checkpoint, not a release acceptance decision.
 
 ## Included source
 
-- `packages/create-farm/index.js`: the existing NAPI-generated loader changes for
-  Android, FreeBSD, additional Linux architectures and OpenHarmony. This preserves
-  dispatch code only. The package manifest still declares nine release targets;
-  this checkpoint does not add platform artifacts or promise support for them.
+- `docs/source-migration/create-farm-index.js.snapshot`: the exact original
+  NAPI-generated loader source, archived outside all published packages. Its
+  additional Android, FreeBSD, Linux and OpenHarmony routes are not shipped.
+  The shipped `packages/create-farm/index.js` is unchanged from main, whose
+  package manifest still declares nine release targets. See the archive README
+  for provenance and the byte-integrity digest. No new platform support is claimed.
 - `scripts/native-crash-debugger.cs`: the original Windows x64 diagnostic source,
   without its output. It references `FarmNativeStacks.ThreadTrace` and
   `FarmNativeStacks.Capture`; the companion type was not available in this source
@@ -37,7 +39,8 @@ keep the original checkout until they have a verified recoverable backup.
 
 ## Validation boundary
 
-Migration checks cover non-patch whitespace, loader syntax and mocked platform dispatch,
+Migration checks cover non-patch whitespace, archived loader byte integrity,
+loader syntax and historical mocked platform dispatch,
 patch parseability, manifest JSON and the complete-patch digest. No native
 artifacts, generated declarations, Rust build, full E2E, Vuetify rebuild or live
 crash-debugger execution are validated here. No workflow or publication trigger

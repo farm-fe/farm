@@ -29,3 +29,16 @@ test('normalizing the mixed source lines would invalidate the original digest', 
   assert.ok(patch.includes(Buffer.from([13, 10])), 'original inserted CRLF bytes must survive');
   assert.notEqual(digest(patch.toString('utf8').replace(/\r\n/g, '\n')), manifest.patchSha256);
 });
+
+
+test('unshipped loader archive retains the reviewed source bytes', () => {
+  const snapshot = readFileSync(new URL(
+    '../docs/source-migration/create-farm-index.js.snapshot', import.meta.url
+  ));
+  const attribute = spawnSync('git', ['check-attr', 'text', '--',
+    'docs/source-migration/create-farm-index.js.snapshot'], { cwd: root, encoding: 'utf8' });
+  assert.equal(attribute.status, 0, attribute.stderr);
+  assert.equal(attribute.stdout.trim(),
+    'docs/source-migration/create-farm-index.js.snapshot: text: unset');
+  assert.equal(digest(snapshot), '130263bb5ad77eb3c396d318122025388db9f66f00f1fa57e1cfdd33bbb54e26');
+});
