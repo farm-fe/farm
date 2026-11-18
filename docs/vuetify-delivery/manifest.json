@@ -1,0 +1,133 @@
+{
+  "success": true,
+  "officialCommit": "44521c37f5ee2587dc7a6635d099ff40488bc32e",
+  "version": "4.2.5",
+  "patchSha256": "2bc4600b6be796a58be49e44d503cfc41e4f615aa2133969a2cff316db5cfef7",
+  "changes": [
+    {
+      "path": "packages/vuetify/src/components/VDataTable/VDataTable.tsx",
+      "beforeExists": true,
+      "beforeSha256": "d71afc78242cd982587bf0a672f6d8521b2fc10d70f808abde99ceee9f090f23",
+      "afterSha256": "b5cfd08b8e5f41d6b149728399f53c80bbb2a7c1b29b7d74ee3f825ea028f80a"
+    },
+    {
+      "path": "packages/vuetify/src/components/VDataTable/VDataTableRow.tsx",
+      "beforeExists": true,
+      "beforeSha256": "ed406eb92348e110f64194e14236bc9800d3894fe6aefdfc0c9643ad23f93fd7",
+      "afterSha256": "90855bcc630c5564a573cd4ccba22c0be9913659911c0cef3d203cf693f1119a"
+    },
+    {
+      "path": "packages/vuetify/src/components/VDataTable/VDataTableRows.tsx",
+      "beforeExists": true,
+      "beforeSha256": "830fc1f0d40d316c615d342d876d06b08397bce8f502d54c40ccd2b0b93a1de2",
+      "afterSha256": "5d7689ef1465df3241000303cfc716bff10f2aad9e6bf6682e1d48ed4087bb6d"
+    },
+    {
+      "path": "packages/vuetify/src/components/VDataTable/VDataTableServer.tsx",
+      "beforeExists": true,
+      "beforeSha256": "a4fe0aca0f876a6e47208c6ba638f245deabb25a3ceb4ad733b4a6c7ed51837d",
+      "afterSha256": "bcb1666464f1fb948a2a05ce2b84a2fac7f198113b59d4acdeb4db38cd707d7b"
+    },
+    {
+      "path": "packages/vuetify/src/components/VDataTable/VDataTableVirtual.tsx",
+      "beforeExists": true,
+      "beforeSha256": "e03d2682c0d1220d35e86b6527334682068c5a6a47b85757b154179b6b157a29",
+      "afterSha256": "8f23b29824b1f9d833cd66c0d06c935f098cdae7ec9f85db90122bce2ce32912"
+    },
+    {
+      "path": "packages/vuetify/src/components/VDataTable/types.ts",
+      "beforeExists": true,
+      "beforeSha256": "89238f66d381ff7fcc1075643a7eb7819857ea8abc98f4f4566e39e95a98ec14",
+      "afterSha256": "0f1592c9a1e7bf0ba18079930e21ca8c29d5d1fa632bea0f591a3739071c5e57"
+    },
+    {
+      "path": "packages/vuetify/src/components/VDateInput/VDateInput.tsx",
+      "beforeExists": true,
+      "beforeSha256": "737c5f33b230fc867b6a9b83a167d6fd58dc86ec94d26babb4341ae7ff7559ff",
+      "afterSha256": "a999479ff06710f7d3bf5a1a5770d35288eb9570a53c66dd9cf679f8447ec178"
+    },
+    {
+      "path": "packages/vuetify/src/components/VSelect/VSelect.tsx",
+      "beforeExists": true,
+      "beforeSha256": "218e203ab2c43d74224397fee44215929149d7832baed988ec49705146f5c938",
+      "afterSha256": "04a302029bb3a19efe3c6fe4642b516f829ea9975c518d9225536faac3730e15"
+    },
+    {
+      "path": "packages/vuetify/src/composables/directiveComponent.ts",
+      "beforeExists": true,
+      "beforeSha256": "6010946dd1972948384a7d7bf55aad38270f7e021f59c60150be25afb18bae5e",
+      "afterSha256": "b5746d6fe04c0bbf0ff4a50dbc9a4a64d5c5dd8e19de5b04c7960675cdd4fce3"
+    },
+    {
+      "path": "packages/vuetify/src/shims.d.ts",
+      "beforeExists": true,
+      "beforeSha256": "27ade23bab10ef166f0f70e597fca5d408a1789db8f6d86ee5f02915a8aad368",
+      "afterSha256": "fea93d147f4669f0491bb5bdfd4cf0606745cc7cb8304eeecd5498ea5f092d92"
+    },
+    {
+      "path": "packages/vuetify/src/util/globalTypes.ts",
+      "beforeExists": false,
+      "beforeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "afterSha256": "0b840cc38fcd9bd85f61de09cb1a7212085ecd656ab3b61b971330f299d7040b"
+    },
+    {
+      "path": "packages/vuetify/build/rollup.types.config.js",
+      "beforeExists": true,
+      "beforeSha256": "56618577201b062bbc8f57449e40f34dac6bc89a71ea7e7d65a22de9050e32b3",
+      "afterSha256": "e1258db6a807d6144666dd76004909233c34f0bfe2922d733294f2bcc0d8a649"
+    },
+    {
+      "path": "packages/vuetify/build/types-code-transform.js",
+      "beforeExists": true,
+      "beforeSha256": "0af82b52011700350d67116d8f76d0886711518c81834d59c123be83a5ec26b0",
+      "afterSha256": "55df6de9d33d043f9158692d67a7cac08c066d800bd154d5bdad75c88f84d6c3"
+    }
+  ],
+  "generatorDependencies": {
+    "@types/node": "24.10.1",
+    "@unhead/vue": "2.0.19",
+    "@vuetify/v0": "1.2.1",
+    "@vueuse/head": "1.3.1",
+    "fast-glob": "3.3.3",
+    "magic-string": "0.30.21",
+    "micromatch": "4.0.8",
+    "rollup": "4.55.1",
+    "rollup-plugin-dts": "6.4.1",
+    "typescript": "6.0.2",
+    "upath": "2.0.1",
+    "vue": "3.5.44",
+    "vue-i18n": "11.2.1",
+    "vue-router": "4.6.3",
+    "@typescript/native-preview": "7.0.0-dev.20260323.1"
+  },
+  "producerDomBaseline": [
+    {
+      "name": "index.d.ts",
+      "sha256": "080941d9f9ff9307f7e27a83bcd888b7c8270716c39af943532438932ec1d0b9"
+    },
+    {
+      "name": "iterable.d.ts",
+      "sha256": "2e80ee7a49e8ac312cc11b77f1475804bee36b3b2bc896bead8b6e1266befb43"
+    },
+    {
+      "name": "asynciterable.d.ts",
+      "sha256": "d7a3c8b952931daebdfc7a2897c53c0a1c73624593fa070e46bd537e64dcd20a"
+    }
+  ],
+  "consumerArchiveSha256": "bb81a62824eb73f6798733137982916050f4bbb07a79a71b847d0376ca5c5b7c",
+  "freshGenerator": {
+    "report": "v2-vuetify-fresh-generator-resumed-2.json",
+    "reportSha256": "398da5e3fc624e4474d9b8e2c873cd6b780281d4e0fc89e2e418201596927ac1",
+    "declarations": 599,
+    "byteIdenticalToStrictlyAcceptedProducer": true
+  },
+  "checks": [
+    "source-generation",
+    "consumer",
+    "negative",
+    "archive-integrity",
+    "slot-compatibility",
+    "patch-audit"
+  ],
+  "scope": "Complete thirteen-file source repair, applied to byte-exact official originals and checked against the tested source. Producer DOM-library setup is separately required. Not a published upstream dependency or a rebuilt runtime."
+}

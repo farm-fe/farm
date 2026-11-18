@@ -19,3 +19,9 @@ js-plugins/qiankun/licenses/* -text
 
 # Shell recipes must execute unchanged under Git Bash on Windows.
 scripts/*.sh text eol=lf
+
+# This source patch retains mixed line endings bound by its original manifest.
+docs/vuetify-delivery/vuetify-4.2.5-complete-source.patch -text
+
+# Byte-preserved, unshipped loader snapshot.
+docs/source-migration/create-farm-index.js.snapshot -text
