@@ -48,6 +48,7 @@ test('only Linux and Windows call Docs with their own verified native producer',
   assert.equal(docs.name,'Primary '+label+' / Docs CI quality checks');
   assert.deepEqual(docs.needs,['primary-'+platform]);
   assert.equal(docs.if,"always() && needs.primary-"+platform+".result == 'success'");
+  assert.deepEqual(docs.permissions,{contents:'read',actions:'read'});
   assert.equal(docs.with.consume_native,true);
   assert.deepEqual(JSON.parse(docs.with.platforms),[{os,abi}]);
   assert.equal(docs.with.native_upload,'${{ needs.primary-'+platform+'.outputs.native_docs_upload }}');

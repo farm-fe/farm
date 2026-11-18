@@ -252,6 +252,9 @@ jobs:
   # Fixed Docs calls avoid creating an intentionally skipped macOS job. Each
   # waits for its own full primary chain and consumes that exact native binding.
   docs-linux:
+    permissions:
+      contents: read
+      actions: read
     name: Primary Linux / Docs CI quality checks
     needs: [primary-linux]
     if: always() && needs.primary-linux.result == 'success'
@@ -262,6 +265,9 @@ jobs:
       native_upload: ${{ needs.primary-linux.outputs.native_docs_upload }}
 
   docs-windows:
+    permissions:
+      contents: read
+      actions: read
     name: Primary Windows / Docs CI quality checks
     needs: [primary-windows]
     if: always() && needs.primary-windows.result == 'success'
