@@ -37,7 +37,7 @@ test('all retained Docs tests belong to explicit source/distribution/compiled/br
 test('E2E calls Docs CI quality checks and keeps both OS lanes within the CI profile', async () => {
   const ci = await fs.readFile(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
   const docs = await fs.readFile(new URL('../.github/workflows/farm-docs.yaml', import.meta.url), 'utf8');
-  assert.match(ci, /needs: \[version-classification, primary-linux, primary-windows\]/);
+  assert.match(ci, /needs: \[version-classification, docs-linux, docs-windows\]/);
   assert.match(docs, /workflow_call:/); assert.doesNotMatch(docs, /^  pull_request:/m);
   assert.match(docs, /windows-latest/); assert.match(docs, /ubuntu-24.04/); assert.match(docs, /fromJSON\(inputs.platforms/);
   assert.match(docs, /node scripts\/docs-native-build.mjs/);

@@ -42,7 +42,7 @@ def current_upload_outputs(environment):
         shadow_fields = {kind + '_shadow_' + field for kind in ['ts','browser'] for field in fields}
         # This consumer requires all six functional fields. Reviewed diagnostic
         # fields may be independently absent after a failed/skipped producer.
-        optional = shadow_fields | {kind + '_shadow_' + field for kind in ['native','docs'] for field in fields} | {'native_product_upload'}
+        optional = shadow_fields | {kind + '_shadow_' + field for kind in ['native','docs'] for field in fields} | {'native_product_upload', 'native_docs_upload'}
         check(isinstance(row, dict) and suite_fields <= set(row) and set(row) <= suite_fields | optional,
               'Missing or unexpected suite upload outputs')
         result[abi] = {}

@@ -17,12 +17,8 @@ on:
         value: ${{ jobs.native.outputs.artifact_digest }}
       native_shadow_run_attempt:
         value: ${{ jobs.native.outputs.run_attempt }}
-      docs_shadow_artifact_id:
-        value: ${{ jobs.docs.outputs.artifact_id }}
-      docs_shadow_artifact_digest:
-        value: ${{ jobs.docs.outputs.artifact_digest }}
-      docs_shadow_run_attempt:
-        value: ${{ jobs.docs.outputs.run_attempt }}
+      native_docs_upload:
+        value: ${{ jobs.native.outputs.docs_upload }}
       ts_artifact_id:
         value: ${{ jobs.ts-test.outputs.artifact_id }}
       ts_artifact_digest:
@@ -70,17 +66,6 @@ jobs:
           NATIVE_RESULT: ${{ needs.native.result }}
         shell: bash
         run: test "$NATIVE_RESULT" = success
-
-  docs:
-    name: Docs CI quality checks
-    if: always() && needs.native-disposition.result == 'success' && inputs.abi != 'darwin-arm64'
-    needs: [native, native-disposition]
-    uses: ./.github/workflows/farm-docs.yaml
-    with:
-      platforms: ${{ format('[{{"os":"{0}","abi":"{1}"}}]', inputs.os, inputs.abi) }}
-      consume_native: true
-      native_upload: ${{ needs.native.outputs.docs_upload }}
-
 
   examples-test:
     outputs:
