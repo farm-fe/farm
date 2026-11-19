@@ -60,7 +60,7 @@ test('platform safety uses three fixed callers and preserves all-success gate', 
 
 test('native and Docs output chain ends at fixed receipt upload action', () => {
   const primary = read('ci-primary-platform.yaml');
-  for (const [prefix, job, file] of [['native', 'native', 'rust-build-user.yaml'], ['docs', 'docs', 'farm-docs.yaml']]) {
+  for (const [prefix, job, file] of [['native', 'native', 'rust-build-user.yaml']]) {
     for (const field of fields)
       assert.equal(primary.on.workflow_call.outputs[prefix + '_shadow_' + field].value, '${{ jobs.' + job + '.outputs.' + field + ' }}');
     const child = read(file), key = prefix === 'native' ? 'build' : 'docs';
@@ -69,8 +69,14 @@ test('native and Docs output chain ends at fixed receipt upload action', () => {
     assert.equal(producer.steps.find(step => step.id === 'shadow-upload').uses, './.github/actions/ci-impact-cell');
     for (const field of fields) assert.ok(producer.outputs[field].includes('steps.shadow-upload.outputs.'));
   }
+  const docs = read('farm-docs.yaml');
+  for (const field of fields) {
+    assert.equal(docs.on.workflow_call.outputs[field].value, '${{ jobs.docs.outputs.' + field + ' }}');
+    assert.ok(docs.jobs.docs.outputs[field].includes('steps.shadow-upload.outputs.'));
+  }
+  assert.equal(docs.jobs.docs.steps.find(step => step.id === 'shadow-upload').uses, './.github/actions/ci-impact-cell');
   assert.equal(primary.jobs.native.with.platform, '${{ inputs.abi }}');
-  assert.match(primary.jobs.docs.with.platforms, /^\$\{\{ format\('\[\{\{/);
+  assert.equal(primary.jobs.docs, undefined);
 });
 
 test('full suite consumers do not inherit historical selection or test success', () => {
@@ -128,8 +134,11 @@ test('Docs native bytes receive only the singleton producer upload binding', () 
   assert.equal(binding.env.DOCS_ARTIFACT_ID, '${{ steps.docs-upload.outputs.artifact-id }}');
   assert.equal(binding.env.DOCS_ARTIFACT_DIGEST, '${{ steps.docs-upload.outputs.artifact-digest }}');
   assert.match(binding.run, /os\.environ\['GITHUB_RUN_ATTEMPT'\]/);
-  assert.equal(primary.jobs.docs.with.native_upload, '${{ needs.native.outputs.docs_upload }}');
-  assert.ok(primary.jobs.docs.needs.includes('native'));
+  assert.equal(primary.on.workflow_call.outputs.native_docs_upload.value, '${{ jobs.native.outputs.docs_upload }}');
+  for (const platform of ['linux', 'windows']) {
+    assert.equal(ci.jobs['docs-' + platform].with.native_upload, '${{ needs.primary-' + platform + '.outputs.native_docs_upload }}');
+    assert.deepEqual(ci.jobs['docs-' + platform].needs, ['primary-' + platform]);
+  }
   assert.equal(docs.on.workflow_call.inputs.native_upload.type, 'string');
   const consumers = docs.jobs.docs.steps.filter(step => step.env?.FARM_DOCS_NATIVE_UPLOAD);
   assert.equal(consumers.length, 1);

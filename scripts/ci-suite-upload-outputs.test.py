@@ -105,8 +105,9 @@ class Contracts(unittest.TestCase):
         root=Path(__file__).parents[1]
         interface=(root/'.github/workflows/ci-primary-platform.yaml').read_text().split('    outputs:\n',1)[1].split('permissions:',1)[0]
         declared=set(re.findall(r'^      ([a-z_]+):$',interface,re.M))
-        self.assertEqual(len(declared),19)
+        self.assertEqual(len(declared),17)
         self.assertIn('native_product_upload',declared)
+        self.assertIn('native_docs_upload',declared)
         legacy = {key for key in declared if not key.startswith(('native_', 'docs_'))}
         for row in data['outputs'].values():self.assertEqual(set(row),legacy)
         spec=importlib.util.spec_from_file_location('shadow_outputs',Path(__file__).with_name('ci-e2e-shadow-inputs.py'))
@@ -128,6 +129,7 @@ class Contracts(unittest.TestCase):
                 for label in ['native','docs']:
                     if platform=='MACOS' and label=='docs':continue
                     row.update({label+'_shadow_artifact_id':'123',label+'_shadow_artifact_digest':'a'*64,label+'_shadow_run_attempt':'1'})
+            for row in rows.values():row['native_docs_upload']='opaque-native-binding-not-used-for-suite-selection'
             for row in rows.values():row['native_product_upload']=json.dumps({'artifact_id':'123','artifact_digest':'b'*64,'run_attempt':'1'})
             rows['FARM_SUITE_UPLOADS_LINUX']['native_product_upload']=''
             mac=rows['FARM_SUITE_UPLOADS_MACOS']
