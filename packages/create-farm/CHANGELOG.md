@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1
+
+### Patch Changes
+
+- 5887896: Fix farm client types in templates
+
 ## 2.0.0
 
 ### Major Changes
