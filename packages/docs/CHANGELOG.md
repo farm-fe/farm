@@ -1,5 +1,17 @@
 # @farmfe/docs
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [bd74d57]
+- Updated dependencies [1d63e29]
+- Updated dependencies [540b2cc]
+- Updated dependencies [540b2cc]
+- Updated dependencies [540b2cc]
+  - @farmfe/core@2.0.1
+  - @farmfe/docs-theme-default@0.0.2
+
 ## 0.0.1
 
 ### Minor Changes
