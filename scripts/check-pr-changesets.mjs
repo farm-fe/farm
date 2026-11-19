@@ -55,7 +55,7 @@ export function isNoPublishDiff(base, eventName, git = args => execFileSync('git
     const head = git(['rev-parse', '--verify', 'HEAD^{commit}']).trim();
     assert.match(head, /^[a-f0-9]{40}$/);
     git(['merge-base', '--is-ancestor', base, head]);
-    const diff = git(['diff', '--name-only', '--no-renames', '-z', base, head]);
+    const diff = git(['diff', '--name-only', '--no-renames', '--no-ext-diff', '--ignore-submodules=none', '-z', base, head]);
     assert.ok(diff.length > 0 && diff.endsWith('\0'));
     const files = diff.slice(0, -1).split('\0');
     assert.equal(new Set(files).size, files.length);
@@ -161,10 +161,11 @@ export function isExactArchivalPullRequest(base, event, environment, git = args 
     assert.equal(git(['rev-parse', '--verify', `${base}^{commit}`]).trim(), base);
     const head = git(['rev-parse', '--verify', 'HEAD^{commit}']).trim();
     assert.match(head, /^[a-f0-9]{40}$/);
+    assert.equal(environment.GITHUB_SHA, head, 'Checkout differs from fixed event source');
     git(['merge-base', '--is-ancestor', base, head]);
     git(['merge-base', '--is-ancestor', pr.head.sha, head]);
     const paths = Object.keys(archival2368).sort();
-    const diff = git(['diff', '--name-only', '--no-renames', '-z', base, head]);
+    const diff = git(['diff', '--name-only', '--no-renames', '--no-ext-diff', '--ignore-submodules=none', '-z', base, head]);
     assert.deepEqual(diff.split('\0'), [...paths, '']);
     for (const [index, sha] of [base, head].entries()) {
       const expected = paths.map(file => archival2368[file][index]).filter(Boolean).join('\0') + '\0';

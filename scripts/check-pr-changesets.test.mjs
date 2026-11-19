@@ -121,7 +121,7 @@ test('no-publish classification is narrow, exact and fails closed', () => {
       if (args[0] === 'rev-parse') return args[2].startsWith(base) ? base : drift && heads++ ? base : head;
       if (args[0] === 'merge-base') return '';
       if (args[0] === 'diff') {
-        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '-z', base, head]);
+        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '--no-ext-diff', '--ignore-submodules=none', '-z', base, head]);
         return diff ?? paths.join('\0') + '\0';
       }
       if (args[0] === 'ls-tree') return tree ?? paths.map(file => `${mode} blob ${blob}\t${file}\0`).join('');
@@ -154,7 +154,7 @@ test('one archival PR binds exact repository, event, paths, bytes, modes and bot
   const base = 'a'.repeat(40), head = 'b'.repeat(40);
   const repository = { id: 507542208, full_name: 'farm-fe/farm' };
   const event = { pull_request: { number: 2368, base: { sha: base, ref: 'main', repo: repository }, head: { sha: head, repo: repository } } };
-  const environment = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: 'farm-fe/farm' };
+  const environment = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: 'farm-fe/farm', GITHUB_SHA: head };
   const paths = Object.keys(archival2368).sort();
   const snapshots = [0, 1].map(index => paths.map(file => archival2368[file][index]).filter(Boolean).join('\0') + '\0');
   const probe = ({ input = event, env = environment, files = paths, trees = snapshots, fail, drift = false } = {}) => {
@@ -164,7 +164,7 @@ test('one archival PR binds exact repository, event, paths, bytes, modes and bot
       if (args[0] === 'rev-parse') return args[2].startsWith(base) ? base : drift && heads++ ? base : head;
       if (args[0] === 'merge-base') return '';
       if (args[0] === 'diff') {
-        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '-z', base, head]);
+        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '--no-ext-diff', '--ignore-submodules=none', '-z', base, head]);
         return files.join('\0') + '\0';
       }
       if (args[0] === 'ls-tree') return trees[args[3] === base ? 0 : 1];
@@ -172,6 +172,7 @@ test('one archival PR binds exact repository, event, paths, bytes, modes and bot
     });
   };
   assert.equal(probe(), true);
+  for (const value of [undefined, base, 'main']) assert.equal(probe({ env: { ...environment, GITHUB_SHA: value } }), false);
   for (const kind of ['push', 'workflow_dispatch', 'pull_request_target', undefined]) assert.equal(probe({ env: { ...environment, GITHUB_EVENT_NAME: kind } }), false);
   for (const alter of [
     pr => { pr.number = 2331; }, pr => { pr.base.ref = 'other'; }, pr => { pr.base.sha = head; },
