@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { verifyPreparedRelease, verifyChangesetsPreparation, changesetBase, fetchChangesetBase } from './check-pr-changesets.mjs';
+import { verifyPreparedRelease, verifyChangesetsPreparation, changesetBase, fetchChangesetBase, isNoPublishDiff, archival2368, isExactArchivalPullRequest } from './check-pr-changesets.mjs';
 import { changesetsPublication } from './v2-release-inventory.mjs';
 const digest = text => crypto.createHash('sha256').update(text).digest('hex');
 
@@ -107,4 +107,92 @@ test('generic CI dispatch uses the exact verified base without release-only inpu
   const event={inputs:{base_sha:sha},pull_request:{base:{ref:'main',sha,repo:{full_name:repository}}}};
   assert.equal(changesetBase(event,{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository}).sha,sha);
   assert.throws(()=>changesetBase({...event,inputs:{base_sha:'b'.repeat(40)}},{GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_REPOSITORY:repository}));
+});
+
+
+test('no-publish classification is narrow, exact and fails closed', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40), blob = 'c'.repeat(40);
+  const testPath = 'packages/utils/tests/color.spec.ts';
+  const docsPath = 'website/docs/plugins/writing-plugins/rust-plugin.mdx';
+  const probe = ({ paths = [testPath], diff, mode = '100644', fail, drift = false, tree } = {}) => {
+    let heads = 0;
+    return isNoPublishDiff(base, 'pull_request', args => {
+      if (args[0] === fail) throw new Error('unavailable');
+      if (args[0] === 'rev-parse') return args[2].startsWith(base) ? base : drift && heads++ ? base : head;
+      if (args[0] === 'merge-base') return '';
+      if (args[0] === 'diff') {
+        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '--no-ext-diff', '--ignore-submodules=none', '-z', base, head]);
+        return diff ?? paths.join('\0') + '\0';
+      }
+      if (args[0] === 'ls-tree') return tree ?? paths.map(file => `${mode} blob ${blob}\t${file}\0`).join('');
+      assert.fail('Unexpected Git operation');
+    });
+  };
+  for (const eventName of [undefined, 'push', 'workflow_dispatch', 'pull_request_target']) {
+    assert.equal(isNoPublishDiff(base, eventName, () => assert.fail('must not invoke Git')), false);
+  }
+  assert.equal(probe(), true);
+  assert.equal(probe({ paths: [testPath, docsPath] }), true);
+  for (const paths of [
+    [testPath, 'packages/utils/src/color.ts'],
+    [testPath, 'packages/utils/src/moved.ts'],
+    ['packages/utils/src/color.ts', 'packages/utils/tests/moved.spec.ts'],
+    ['packages/create-farm/index.js'], ['packages/utils/package.json'],
+    ['scripts/check-pr-changesets.mjs'], ['scripts/check-pr-changesets.test.mjs'],
+    ['docs/releases/v2-candidate.json'], ['.changeset/empty.md'],
+    ['website/docs/../package.json'], [testPath, testPath]
+  ]) assert.equal(probe({ paths }), false);
+  for (const diff of ['', testPath, '\0', testPath + '\0\0', testPath + '\n\0']) assert.equal(probe({ diff }), false);
+  for (const mode of ['100755', '120000', '160000']) assert.equal(probe({ mode }), false);
+  for (const fail of ['rev-parse', 'merge-base', 'diff', 'ls-tree']) assert.equal(probe({ fail }), false);
+  for (const tree of ['', 'malformed\0', `100644 blob ${blob}\t${testPath}`]) assert.equal(probe({ tree }), false);
+  assert.equal(probe({ drift: true }), false);
+  assert.equal(isNoPublishDiff('main', 'pull_request', () => assert.fail('must not invoke Git')), false);
+});
+
+test('one archival PR binds exact repository, event, paths, bytes, modes and both snapshots', () => {
+  const base = 'a'.repeat(40), head = 'b'.repeat(40);
+  const repository = { id: 507542208, full_name: 'farm-fe/farm' };
+  const event = { pull_request: { number: 2368, base: { sha: base, ref: 'main', repo: repository }, head: { sha: head, repo: repository } } };
+  const environment = { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REPOSITORY: 'farm-fe/farm', GITHUB_SHA: head };
+  const paths = Object.keys(archival2368).sort();
+  const snapshots = [0, 1].map(index => paths.map(file => archival2368[file][index]).filter(Boolean).join('\0') + '\0');
+  const probe = ({ input = event, env = environment, files = paths, trees = snapshots, fail, drift = false } = {}) => {
+    let heads = 0;
+    return isExactArchivalPullRequest(base, input, env, args => {
+      if (args[0] === fail) throw Error('unavailable');
+      if (args[0] === 'rev-parse') return args[2].startsWith(base) ? base : drift && heads++ ? base : head;
+      if (args[0] === 'merge-base') return '';
+      if (args[0] === 'diff') {
+        assert.deepEqual(args, ['diff', '--name-only', '--no-renames', '--no-ext-diff', '--ignore-submodules=none', '-z', base, head]);
+        return files.join('\0') + '\0';
+      }
+      if (args[0] === 'ls-tree') return trees[args[3] === base ? 0 : 1];
+      assert.fail('Unexpected Git operation');
+    });
+  };
+  assert.equal(probe(), true);
+  for (const value of [undefined, base, 'main']) assert.equal(probe({ env: { ...environment, GITHUB_SHA: value } }), false);
+  for (const kind of ['push', 'workflow_dispatch', 'pull_request_target', undefined]) assert.equal(probe({ env: { ...environment, GITHUB_EVENT_NAME: kind } }), false);
+  for (const alter of [
+    pr => { pr.number = 2331; }, pr => { pr.base.ref = 'other'; }, pr => { pr.base.sha = head; },
+    pr => { pr.head.repo.id = 1; }, pr => { pr.head.repo.full_name = 'fork/farm'; },
+    pr => { pr.base.repo.id = 1; }, pr => { pr.base.repo.full_name = 'fork/farm'; },
+    pr => { pr.head.sha = 'main'; }
+  ]) { const input = structuredClone(event); alter(input.pull_request); assert.equal(probe({ input }), false); }
+  assert.equal(probe({ env: { ...environment, GITHUB_REPOSITORY: 'fork/farm' } }), false);
+  for (const path of ['packages/create-farm/index.js', 'packages/utils/package.json', 'pnpm-lock.yaml', '.github/workflows/ci.yaml', 'scripts/check-pr-changesets.mjs', '.changeset/empty.md', 'unrelated.md']) assert.equal(probe({ files: [...paths, path].sort() }), false);
+  for (const path of paths) assert.equal(probe({ files: paths.filter(file => file !== path) }), false);
+  assert.equal(probe({ files: [...paths, paths[0]] }), false);
+  for (const index of [0, 1]) {
+    for (const entry of snapshots[index].split('\0').filter(Boolean)) {
+      for (const changed of [entry.replace('100644', '100755'), entry.replace('100644', '120000'), entry.replace(/blob [a-f0-9]{40}/, 'blob ' + 'f'.repeat(40)), '']) {
+        const trees = [...snapshots]; trees[index] = trees[index].replace(entry, changed); assert.equal(probe({ trees }), false);
+      }
+    }
+  }
+  // Adoption/replay: baseline already containing the archive is not eligible.
+  assert.equal(probe({ trees: [snapshots[1], snapshots[1]] }), false);
+  for (const fail of ['rev-parse', 'merge-base', 'diff', 'ls-tree']) assert.equal(probe({ fail }), false);
+  assert.equal(probe({ drift: true }), false);
 });
