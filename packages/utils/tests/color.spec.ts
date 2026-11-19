@@ -61,6 +61,18 @@ describe('color functions', () => {
     expect(colors.reset('abc')).toMatch(/\x1b\[0mabc\x1b\[0m/);
   });
 
+  it('dim should wrap with ansi code', () => {
+    expect(colors.dim('abc')).toMatch(/\x1b\[2mabc\x1b\[22m/);
+  });
+
+  it('italic should wrap with ansi code', () => {
+    expect(colors.italic('abc')).toMatch(/\x1b\[3mabc\x1b\[23m/);
+  });
+
+  it('green should wrap with ansi code', () => {
+    expect(colors.green('abc')).toMatch(/\x1b\[32mabc\x1b\[39m/);
+  });
+
   it('NO_COLOR takes precedence over forced colors', async () => {
     vi.stubEnv('NO_COLOR', '1');
     vi.resetModules();
