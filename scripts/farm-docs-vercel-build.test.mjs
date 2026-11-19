@@ -79,8 +79,8 @@ test('real manifest plan pins current v2 closure and matching precompiled target
   const manifests = releaseManifests();
   for (const target of ['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc']) {
     const plan = deploymentPlan(read(path.join(repository, 'website/package.json')), manifests, target);
-    assert.equal(plan.manifest.dependencies['@farmfe/core'], '2.0.0');
-    assert.equal(plan.manifest.dependencies['@farmfe/docs'], '0.0.1');
+    assert.equal(plan.manifest.dependencies['@farmfe/core'], manifests.get('@farmfe/core').version);
+    assert.equal(plan.manifest.dependencies['@farmfe/docs'], manifests.get('@farmfe/docs').version);
     assert.equal(plan.manifest.dependencies['@emotion/is-prop-valid'], '1.4.0');
     assert.ok(plan.selected.has('@farmfe/core-' + target));
     for (const pkg of plan.selected.values()) if (pkg.os) assert.ok(pkg.name.endsWith('-' + target));

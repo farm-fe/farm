@@ -8,5 +8,6 @@
     "deploymentEnabled": {
       "main": true
     }
-  }
+  },
+  "ignoreCommand": "node ../scripts/farm-docs-deploy-order.mjs --ignore"
 }
