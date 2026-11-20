@@ -8,6 +8,10 @@ import re
 import time
 
 
+DOCS_BOOTSTRAP_NAMES = frozenset({'@farmfe/docs', '@farmfe/docs-theme-default'})
+DOCS_BOOTSTRAP_VERSION = '2.0.0'
+
+
 def is_presence(manifest):
     return manifest.get('selectionPolicy') == 'registry-exact-version-v2'
 
@@ -74,6 +78,9 @@ def publish(manifest, archive_reader, registry, result, save, base, *, remaining
     source = {row['name']: row for row in manifest['packages']}
     original = {key[4:]: row for key, row in manifest['registrySnapshot']['packages'].items()}
     outcomes = {row['name']: row for row in result['packages']}
+    docs_bootstrap_public = all(original.get(name, {}).get('status') == 'published'
+                                and original[name]['version'] == DOCS_BOOTSTRAP_VERSION
+                                for name in DOCS_BOOTSTRAP_NAMES)
     metadata, observed, dependencies, peers, closures = {}, {}, {}, {}, {}
     available, pending, waiting = set(), [], {}
     used, limits = {}, {name: 100 * 1024 ** 2 for name in family}
@@ -217,6 +224,22 @@ def publish(manifest, archive_reader, registry, result, save, base, *, remaining
                     check(same_observation(dependency, value), 'Verified registry dependency changed')
             except Exception as error:
                 failure(name, 'required-dependency-unverified', error); progress = True; continue
+            if name in DOCS_BOOTSTRAP_NAMES and outcome['version'] == DOCS_BOOTSTRAP_VERSION:
+                # This lane can read retained bootstrap versions, but never
+                # change their tags or assert how they were originally uploaded.
+                try:
+                    remaining()
+                    if not registry.latest_visible(family[name]):
+                        failure(name, 'docs-bootstrap-latest-unconfirmed')
+                    else:
+                        check(same_observation(name, fetch(name)), 'Verified registry dependency changed')
+                        outcome.update(status='success', latestVerified=True, latestOutcomeUncertain=False,
+                                       latestVerifiedAt=stamp())
+                        save(result)
+                except Exception as error:
+                    failure(name, 'docs-bootstrap-latest-readback', error)
+                progress = True
+                continue
             rejected = False
             try:
                 remaining(); outcome.update(status='awaiting-latest', latestOutcomeUncertain=True, latestConfirmationStartedAt=stamp())
@@ -227,6 +250,16 @@ def publish(manifest, archive_reader, registry, result, save, base, *, remaining
             if rejected and name in waiting: waiting.pop(name)
             progress = True
         return progress
+
+    # Reserve the Docs token-first transition without narrowing the verified
+    # family or changing historical readers. Both exact members must already
+    # be public in the frozen plan; a later registry race cannot grant access.
+    for name in sorted(DOCS_BOOTSTRAP_NAMES & family.keys()):
+        version = family[name]['version']
+        if tuple(map(int, version.split('.'))) < (2, 0, 0):
+            failure(name, 'stale-docs-bootstrap-version')
+        elif version == DOCS_BOOTSTRAP_VERSION and not docs_bootstrap_public:
+            failure(name, 'docs-token-bootstrap-required')
 
     # Classify one new version only after progressing already-ready packages.
     # Never wait for unrelated initial metadata before submitting an independent
