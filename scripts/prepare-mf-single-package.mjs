@@ -135,7 +135,7 @@ function expectedManifest() {
     description: 'Native Module Federation plugin for Farm',
     repository: { type: 'git', url: 'https://github.com/farm-fe/farm', directory: project },
     exports: { '.': './scripts/index.mjs', './package.json': './package.json' },
-    engines: { node: '>=20' },
+    engines: { node: '>=20.6.0' },
     dependencies: { '@module-federation/runtime': '2.9.2' },
     peerDependencies: { '@farmfe/core': corePeer },
     files: ['scripts/index.mjs', 'scripts/native-platform.mjs', 'native', 'THIRD_PARTY_NOTICES.md'],

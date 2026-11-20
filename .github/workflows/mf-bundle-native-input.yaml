@@ -34,7 +34,12 @@ jobs:
         shell: bash
         env:
           MF_TARGET: ${{ inputs.target }}
-        run: rustup target add --toolchain nightly-2026-04-10 "$MF_TARGET"
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          rustup target add --toolchain nightly-2026-04-10 "$MF_TARGET"
+          rustc +nightly-2026-04-10 -vV
+          cargo +nightly-2026-04-10 --version
+          cargo +nightly-2026-04-10 fetch --locked
       - name: Build and bind exact native input
         shell: bash
         env:
