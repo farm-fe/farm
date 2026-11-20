@@ -634,29 +634,6 @@ jobs:
           FARM_EXPLICIT_PUBLICATION: 'true'
         run: python -B scripts/release-npm-best-effort.py --finalize --candidate release-candidate
 
-  docs-deployment-handoff:
-    name: Prepare exact-source Docs deployment handoff
-    if: ${{ !cancelled() && needs.finalize.result == 'success' && github.repository == 'farm-fe/farm' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [finalize]
-    # A handoff outage must not invalidate an already verified npm release.
-    continue-on-error: true
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.20.0
-      - name: Report verified source without triggering or promoting a deployment
-        env:
-          FARM_RELEASE_FINALIZED: ${{ needs.finalize.result }}
-        run: node scripts/farm-docs-deploy-order.mjs --handoff
-
 # Publication never reads or writes a durable lock or previous baseline. Every
 # new run observes the exact source versions and builds only proven missing cells.
 # Same-run retries retain original signed bytes and observations; registry reads

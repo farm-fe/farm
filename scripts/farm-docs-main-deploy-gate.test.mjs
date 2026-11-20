@@ -14,8 +14,7 @@ for (const branch of ['main', 'main-feature', 'master', 'codex/farm-docs-preview
   });
 }
 test('scope policy does not introduce promotion, deletion, credentials or a global integration switch', () => {
-  assert.deepEqual(Object.keys(config).sort(), ['$schema','buildCommand','framework','git','ignoreCommand','installCommand','outputDirectory'].sort());
-  assert.equal(config.ignoreCommand, 'node ../scripts/farm-docs-deploy-order.mjs --ignore');
+  assert.deepEqual(Object.keys(config).sort(), ['$schema','buildCommand','framework','git','installCommand','outputDirectory'].sort());
   assert.equal(config.installCommand, 'node ../scripts/farm-docs-vercel-build.mjs --install');
   assert.equal(config.buildCommand, 'node ../scripts/farm-docs-vercel-build.mjs');
 });
