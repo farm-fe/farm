@@ -50,6 +50,7 @@ function fixture(t) {
     meta.dist = { integrity, tarball: `https://registry.npmjs.org/${name}/-/fixture.tgz` };
     return [name, meta];
   }));
+  put('website/farm-release-lock.json', JSON.stringify({schemaVersion:1, registry:'https://registry.npmjs.org', sourceSHA:'a'.repeat(40), targets:[target], websiteDependencies:{dependencies:website.dependencies,devDependencies:website.devDependencies}, packages:[...metadata.values()]}));
   const calls = [];
   const hooks = {
     getMetadata: async name => clone(metadata.get(name)),
@@ -79,8 +80,8 @@ test('real manifest plan pins current v2 closure and matching precompiled target
   const manifests = releaseManifests();
   for (const target of ['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc']) {
     const plan = deploymentPlan(read(path.join(repository, 'website/package.json')), manifests, target);
-    assert.equal(plan.manifest.dependencies['@farmfe/core'], '2.0.0');
-    assert.equal(plan.manifest.dependencies['@farmfe/docs'], '0.0.1');
+    assert.equal(plan.manifest.dependencies['@farmfe/core'], manifests.get('@farmfe/core').version);
+    assert.equal(plan.manifest.dependencies['@farmfe/docs'], manifests.get('@farmfe/docs').version);
     assert.equal(plan.manifest.dependencies['@emotion/is-prop-valid'], '1.4.0');
     assert.ok(plan.selected.has('@farmfe/core-' + target));
     for (const pkg of plan.selected.values()) if (pkg.os) assert.ok(pkg.name.endsWith('-' + target));
@@ -464,4 +465,15 @@ test('minified published template preserves every byte except the implicit-head 
     source.replace('<meta charset="utf-8">', '<head>'),
     source.replace('<meta charset="utf-8">', '<body>')
   ]) assert.throws(() => addHomepageVerification(invalid), /DOCS_SITE_VERIFICATION/);
+});
+
+
+test('workspace version and topology changes cannot alter the committed deployment consumer', async t => {
+  const f = fixture(t);
+  f.put('packages/docs/package.json', JSON.stringify({name:'@farmfe/docs',version:'9.0.0',dependencies:{'@farmfe/not-published':'workspace:*'}}));
+  f.put('packages/core/package.json', JSON.stringify({name:'@farmfe/core',version:'9.0.0'}));
+  const result = await buildPublishedDocs({...f.options,phase:'preflight'},f.hooks);
+  assert.equal(result.packages.find(pkg=>pkg.name==='@farmfe/docs').version,'0.0.1');
+  assert.equal(result.packages.find(pkg=>pkg.name==='@farmfe/core').version,'2.0.0');
+  assert.equal(f.calls.length,0);
 });

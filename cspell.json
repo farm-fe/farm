@@ -6,6 +6,14 @@
   "language": "en",
   "overrides": [
     {
+      "filename": ["website/farm-release-lock.json", "cspell.json"],
+      "words": ["shikijs", "shikiji"]
+    },
+    {
+      "filename": ["docs/release-evidence/changesets-version-plan.json", "cspell.json"],
+      "words": ["pandacss", "qrcode", "svelet", "naiveui"]
+    },
+    {
       "filename": ["docs/source-migration/create-farm-index.js.snapshot", "cspell.json"],
       "words": ["openharmony", "ohos"]
     },

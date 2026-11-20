@@ -1,0 +1,1773 @@
+{
+  "schemaVersion": 1,
+  "registry": "https://registry.npmjs.org",
+  "sourceSHA": "eb8be2c8ce4bbf8774dc3c6877c43bf84e79bca1",
+  "targets": [
+    "linux-x64-gnu",
+    "darwin-arm64",
+    "win32-x64-msvc"
+  ],
+  "websiteDependencies": {
+    "dependencies": {
+      "@emotion/is-prop-valid": "1.4.0",
+      "@farmfe/docs": "workspace:*",
+      "@farmfe/docs-theme-default": "workspace:*",
+      "@crowdin/cli": "3",
+      "@crowdin/crowdin-api-client": "^1.23.4",
+      "@mdx-js/react": "^3.0.0",
+      "@radix-ui/react-icons": "^1.3.0",
+      "@react-spring/web": "^9.7.3",
+      "@react-three/drei": "9.112.1",
+      "@react-three/fiber": "8.17.7",
+      "@shikijs/markdown-it": "^1.18.0",
+      "@shikijs/transformers": "^1.18.0",
+      "@tabler/icons-react": "^3.11.0",
+      "autoprefixer": "^10.4.14",
+      "class-variance-authority": "^0.7.0",
+      "leva": "^0.9.35",
+      "lucide-react": "^0.394.0",
+      "markdown-it": "^14.1.0",
+      "next-themes": "^0.3.0",
+      "postcss": "^8.4.24",
+      "postcss-preset-env": "^10.0.3",
+      "prism-react-renderer": "^2.1.0",
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "react-icons": "^5.3.0",
+      "react-intersection-observer": "^9.5.1",
+      "react-use-measure": "^2.1.1",
+      "remark-gfm": "^4.0.0",
+      "sass": "^1.63.6",
+      "tailwindcss-animate": "^1.0.7",
+      "three": "0.168.0",
+      "@docsearch/react": "3.5.2",
+      "@docsearch/css": "3.5.2",
+      "search-insights": "2.13.0"
+    },
+    "devDependencies": {
+      "@farmfe/core": "workspace:*",
+      "@farmfe/cli": "workspace:*",
+      "@farmfe/plugin-sass": "workspace:*",
+      "@farmfe/plugin-tailwindcss": "workspace:*",
+      "@swc/core": "^1.3.99",
+      "babel-loader": "^9.1.3",
+      "clsx": "^1.2.1",
+      "framer-motion": "^11.2.10",
+      "shiki": "^1.7.0",
+      "shikiji": "0.9.10",
+      "swc-loader": "^0.2.3",
+      "tailwind-merge": "^2.3.0",
+      "tailwindcss": "^3.4.4",
+      "ts-node": "^10.9.1"
+    }
+  },
+  "packages": [
+    {
+      "name": "@farmfe/cli",
+      "version": "2.0.0",
+      "dependencies": {
+        "cac": "^6.7.14"
+      },
+      "exports": {
+        "./package.json": "./package.json"
+      },
+      "dist": {
+        "integrity": "sha512-qdETYLPBqfycOIQnPSh1/aTZLoRJd2SiLJWkaT0oucnwaITTiIV/SBUwn1PQARFUX7U0RtI3eLnMds1YKHugdg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/cli/-/cli-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core",
+      "version": "2.0.0",
+      "dependencies": {
+        "ws": "^8.21.0",
+        "zod": "^3.23.8",
+        "cors": "^2.8.5",
+        "etag": "^1.8.1",
+        "mime": "^4.0.4",
+        "open": "10.1.0",
+        "sirv": "^3.0.0",
+        "vite": "^5.2.6",
+        "debug": "^4.3.5",
+        "execa": "8.0.0",
+        "dotenv": "^16.4.5",
+        "rollup": "^3.29.4",
+        "connect": "^3.7.0",
+        "anymatch": "3.1.3",
+        "chokidar": "^3.5.3",
+        "fs-extra": "^11.1.1",
+        "@types/ws": "^8.5.8",
+        "deepmerge": "^4.3.1",
+        "fast-glob": "^3.3.2",
+        "http-proxy": "^1.18.1",
+        "@swc/helpers": "0.5.17",
+        "@farmfe/utils": "2.0.0",
+        "dotenv-expand": "^11.0.6",
+        "@types/connect": "^3.4.38",
+        "@farmfe/runtime": "2.0.0",
+        "is-plain-object": "^5.0.0",
+        "@types/http-proxy": "^1.17.14",
+        "@polka/compression": "1.0.0-next.25",
+        "zod-validation-error": "^1.3.0",
+        "@farmfe/runtime-plugin-hmr": "4.0.0",
+        "@farmfe/plugin-replace-dirname": "2.0.0",
+        "@farmfe/runtime-plugin-import-meta": "2.0.0"
+      },
+      "optionalDependencies": {
+        "@farmfe/core-darwin-x64": "2.0.0",
+        "@farmfe/core-darwin-arm64": "2.0.0",
+        "@farmfe/core-linux-x64-gnu": "2.0.0",
+        "@farmfe/core-linux-x64-musl": "2.0.0",
+        "@farmfe/core-win32-x64-msvc": "2.0.0",
+        "@farmfe/core-linux-arm64-gnu": "2.0.0",
+        "@farmfe/core-win32-ia32-msvc": "2.0.0",
+        "@farmfe/core-linux-arm64-musl": "2.0.0",
+        "@farmfe/core-win32-arm64-msvc": "2.0.0"
+      },
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "require": {
+            "types": "./dist/index.d.cts",
+            "default": "./dist/cjs/index.cjs"
+          }
+        },
+        "./client": {
+          "types": "./client.d.ts"
+        },
+        "./types/*": {
+          "types": "./types/*"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "dist/index.js",
+      "dist": {
+        "integrity": "sha512-DbLmMR2t1wH9EO2HyznAAFu+jv4H/w7MArpzq0W03+hRn6YH26G5TV4HF7mxYarW0ZNCvjqm3TARdi0FyZCHQg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core/-/core-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-darwin-arm64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "farm.darwin-arm64.node",
+      "dist": {
+        "integrity": "sha512-I0ZeD8m/G47j6JBWtneXpixKwOdyK6+fhBi4hcjRgyMW9TAfYmUPp8BmVqNcKw25HZjJorrOLi3kObvkJICiAA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-darwin-arm64/-/core-darwin-arm64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-darwin-x64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "farm.darwin-x64.node",
+      "dist": {
+        "integrity": "sha512-41yzp2vSLjTygz20CxC0UXqOPBVC4bHkIdsaqnRrSmmlC8WqlQWSynLu0V5ZPmkLzKtOiBAmmW2qjl6WSLxcGg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-darwin-x64/-/core-darwin-x64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-linux-arm64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "farm.linux-arm64-gnu.node",
+      "dist": {
+        "integrity": "sha512-VVmOu2+hEbf9VdxUgiDqBnHtoC29SCmkmpX8/+l8ag+tr9SyNh/8htJaNc5+lhSlZHvt7hgBlSp10pj6yerC1A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-linux-arm64-gnu/-/core-linux-arm64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-linux-arm64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "farm.linux-arm64-musl.node",
+      "dist": {
+        "integrity": "sha512-AOB5FYwpRcOfuSPLc8bEBGLE6j8AtixSYfvDJkfiyubtXO798BL2TONUTWWu+Dv2ldSmyDxQ+Y2lqECWK6XI1A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-linux-arm64-musl/-/core-linux-arm64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-linux-x64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "farm.linux-x64-gnu.node",
+      "dist": {
+        "integrity": "sha512-2f00JQQgQg0F4tK3xwPXvqRSVilGplBAQXXRnC5V4Eqh0gbkU07lJfg+eqmf7I2KA7ArSvAPldMP/dlBl2wMHA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-linux-x64-gnu/-/core-linux-x64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-linux-x64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "farm.linux-x64-musl.node",
+      "dist": {
+        "integrity": "sha512-NjcPYpNfs+mEPNHGjHB/9xgI6sPJu1ELMmZrrxrMffZnkZg1BG2303hXlNj8NLDNYt0UecmjAylCgsiCA1kZcA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-linux-x64-musl/-/core-linux-x64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-win32-arm64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "farm.win32-arm64-msvc.node",
+      "dist": {
+        "integrity": "sha512-afwgeNs52LhO2SA25/kHhIfUto8+2F6WnR094G6bdkZ5VqaGmBUYO4nAtpSRsEwmidjeJrh82Ytj/+uqjoufcA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-win32-arm64-msvc/-/core-win32-arm64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-win32-ia32-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "ia32"
+      ],
+      "main": "farm.win32-ia32-msvc.node",
+      "dist": {
+        "integrity": "sha512-ib/+ERLoum00Uqvx9AUxU9dR00ewVPJKC3pi+J9iGLXg4nyrf5EpXIgqThFQ766eRd6+Kd6kluGdxGt06otTWA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-win32-ia32-msvc/-/core-win32-ia32-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/core-win32-x64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "farm.win32-x64-msvc.node",
+      "dist": {
+        "integrity": "sha512-AS74lvDxgWnSiBQxUiD+hfW0YbjV2c65PGerjoK2cHLBWOEphKro440eoVV2YQrcUL2b2pjcDR7K6SE0PTS5ww==",
+        "tarball": "https://registry.npmjs.org/@farmfe/core-win32-x64-msvc/-/core-win32-x64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/docs",
+      "version": "0.0.1",
+      "dependencies": {
+        "mime": "^4.0.4",
+        "@farmfe/core": "2.0.0",
+        "react-refresh": "0.17.0",
+        "@farmfe/plugin-docs": "0.0.1",
+        "@farmfe/plugin-react": "2.0.0",
+        "@farmfe/plugin-ssr-css": "0.0.1",
+        "@farmfe/plugin-docs-seo": "0.0.1",
+        "@farmfe/docs-theme-default": "0.0.1",
+        "@farmfe/plugin-docs-snapshot": "0.0.1",
+        "@farmfe/plugin-docs-snippets": "0.0.1",
+        "@farmfe/plugin-syntax-highlight": "0.0.1"
+      },
+      "peerDependencies": {
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+      },
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./mdx": {
+          "types": "./dist/mdx.d.ts",
+          "default": "./dist/mdx.js"
+        },
+        "./theme": {
+          "types": "./dist/theme.d.ts",
+          "default": "./dist/theme.js"
+        },
+        "./client": {
+          "types": "./dist/client.d.ts",
+          "default": "./dist/client.js"
+        },
+        "./preview": {
+          "types": "./dist/preview.d.ts",
+          "default": "./dist/preview.js"
+        },
+        "./snippets": {
+          "types": "./dist/snippets.d.ts",
+          "default": "./dist/snippets.js"
+        },
+        "./workflow": "./dist/workflow.js",
+        "./dev-client": {
+          "types": "./dist/dev-client.d.ts",
+          "default": "./dist/dev-client.js"
+        },
+        "./package.json": "./package.json",
+        "./snippets-runtime": {
+          "types": "./dist/snippets-runtime.d.ts",
+          "default": "./dist/snippets-runtime.js"
+        }
+      },
+      "main": "./dist/index.js",
+      "dist": {
+        "integrity": "sha512-S4lZpXe2zR7zr/tgr3eHkHiNNkRm3s+IerF1yux4fUox4fFSGuIfcnvmlwCR/lY8E40tN0eJpX8iTVIcJcRWYA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/docs/-/docs-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "version": "0.0.1",
+      "peerDependencies": {
+        "react": "^18.2.0",
+        "@farmfe/docs": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./style.css": "./src/style.css",
+        "./package.json": "./package.json"
+      },
+      "main": "./dist/index.js",
+      "dist": {
+        "integrity": "sha512-CxvLhCtFSE2HdI39DfVX+wTnvKMnwwwwFStg7kkKA+Zs5qfoMZ/mrn76abqeGq9g97hOysM/E6U6iMPfkVJRZQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/docs-theme-default/-/docs-theme-default-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs",
+      "version": "0.0.1",
+      "optionalDependencies": {
+        "@farmfe/plugin-docs-darwin-x64": "0.0.1",
+        "@farmfe/plugin-docs-darwin-arm64": "0.0.1",
+        "@farmfe/plugin-docs-linux-x64-gnu": "0.0.1",
+        "@farmfe/plugin-docs-win32-x64-msvc": "0.0.1",
+        "@farmfe/plugin-docs-linux-arm64-gnu": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-j06upYy5+t9TfjT7A3FZ+db+d1J+B0DiV9WxT/VzduYMB0icbvh0VSasGrNjexf6I+xtANqU08b62DbyD4wE1w==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs/-/plugin-docs-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-darwin-arm64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-KwCckdq3GmqYAIZJ/0b3DdvbwcTV2LpNRSh0lLSuyaM8NmcKL4i+pcOP91y2wckuCHAu0YG5FhuFT3vqgzoeRA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-darwin-arm64/-/plugin-docs-darwin-arm64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-darwin-x64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-HA/84qcGe3N1Bjjx5JNn+8yGjnsWpAw66Ru0uDWgYHEmDDZF3mKWJP8Sub5JuqMsUSEvS+nd+kNtlJ18jmTmpA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-darwin-x64/-/plugin-docs-darwin-x64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-linux-arm64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-ufyTVNYDI6ZkizonLawNWIHBSh9QikLzpLs0GuKXu1oevJNGUbo+z1Ezeow7FJfGfM5LU+eu7s66vYX4meJZDQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-linux-arm64-gnu/-/plugin-docs-linux-arm64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-linux-x64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-aXenTAlyU4ylW56ftB+QvrRBn/0MFIVR/SAJ9HisZaLAadg/9L0J8f2f0+vgAi09NjWXu9tCTG5BYTMe1q39uA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-linux-x64-gnu/-/plugin-docs-linux-x64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo",
+      "version": "0.0.1",
+      "optionalDependencies": {
+        "@farmfe/plugin-docs-seo-darwin-x64": "0.0.1",
+        "@farmfe/plugin-docs-seo-darwin-arm64": "0.0.1",
+        "@farmfe/plugin-docs-seo-linux-x64-gnu": "0.0.1",
+        "@farmfe/plugin-docs-seo-win32-x64-msvc": "0.0.1",
+        "@farmfe/plugin-docs-seo-linux-arm64-gnu": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-kPV5LSyiCz7Cd+OLc2YUTZhqWcED9+FobuXCIOMucnxHUZaamfaggV60PaijMf1J65Tz8UYTXOyDaCGM0cPqiQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-seo/-/plugin-docs-seo-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-darwin-arm64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-i2VH+uuUoQ2Fyiw8He5MgSoF3+cftiGNmGWbRX+wAaUGQH/8QuqM40ARfM5SAgeKOp1RTUp1wMDnndi7qIgLNA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-seo-darwin-arm64/-/plugin-docs-seo-darwin-arm64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-darwin-x64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-Hp1DoUVDdOIzKBvprsVrZFK1r6SH3ZdcbKShJYEjFHiyjdraEleZ0bFZgBAs+y2a5c6fNfMfZ7wLIHK3yZ6dxA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-seo-darwin-x64/-/plugin-docs-seo-darwin-x64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-linux-arm64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-9bXTJv9H1P09KYrR5xN1qOxINToNMkPjaRbzqYHfOz1NX7YEALWqCSknOqM3en4g3zvB5Hqxw9qd9AKrAi35aA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-seo-linux-arm64-gnu/-/plugin-docs-seo-linux-arm64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-linux-x64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-rSXFCK4+HD/wSSOGaljJyfTxe/WTLUl1TsQAPw0rLyZe5o0ExVJ6IQczTS3ru5SlQbjUGz/jhsg8dT/nK/z/OQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-seo-linux-x64-gnu/-/plugin-docs-seo-linux-x64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-seo-win32-x64-msvc",
+      "version": "0.0.1",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-/rsFuUkipF/wsJwkwMySubJRi6Ps2Ieo6X8O7JnrBfx0sRkLWdMQyCODwI9+SuP4W+/PwqfwU1FfX4j7PEM68A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-seo-win32-x64-msvc/-/plugin-docs-seo-win32-x64-msvc-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot",
+      "version": "0.0.1",
+      "optionalDependencies": {
+        "@farmfe/plugin-docs-snapshot-darwin-x64": "0.0.1",
+        "@farmfe/plugin-docs-snapshot-darwin-arm64": "0.0.1",
+        "@farmfe/plugin-docs-snapshot-linux-x64-gnu": "0.0.1",
+        "@farmfe/plugin-docs-snapshot-win32-x64-msvc": "0.0.1",
+        "@farmfe/plugin-docs-snapshot-linux-arm64-gnu": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-zSf/Wu5Jj1RtCyTBiFlbCW0Q8GRgVFzqcRJUmSjkGkkrxW/dVsoVth9dKF2c/EXqBuw0Utg3U1u6EeDZMV6bag==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snapshot/-/plugin-docs-snapshot-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-darwin-arm64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-ASnyT9V+vZP3e+ArOUpfW82gEDSTrzZC4EKQBTRDK3dF6vFovD6p/TMv5xsajps6uLbTe7weEgYn3PAhy0CGlw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snapshot-darwin-arm64/-/plugin-docs-snapshot-darwin-arm64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-darwin-x64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-dV2BDcMZ6GlIRmNo0q908z6YyzvZ/0gMfK9PGdMPjv6bn+8w2FiW0iJyZcs3jw6gwQL3p1VW2be8izKOdUk/zQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snapshot-darwin-x64/-/plugin-docs-snapshot-darwin-x64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-linux-arm64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-Dvdjo1nefhVWgXnG5y5nHczpIwDbCYQs9lZjM0sxIfopsTcMGrELuKltiE7/lySqCnSr+PTesr99AzWFWdGBgA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snapshot-linux-arm64-gnu/-/plugin-docs-snapshot-linux-arm64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-linux-x64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-veaVKU9kT7FbXwUgB6Ownr6nZwlM27qGt1tGMke+IYOwzgj7NgcbYOChRWmumgA+wjAL60V5Few8d++UEgvY3g==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snapshot-linux-x64-gnu/-/plugin-docs-snapshot-linux-x64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snapshot-win32-x64-msvc",
+      "version": "0.0.1",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-dDqmRscpUAuXsoRqhqBlIYkPRZp7scI1DtgtZed8Xl2JDz3dXesWglRNo8+KB1tpZnuLMifCZKapqHKmj74iGg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snapshot-win32-x64-msvc/-/plugin-docs-snapshot-win32-x64-msvc-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets",
+      "version": "0.0.1",
+      "optionalDependencies": {
+        "@farmfe/plugin-docs-snippets-darwin-x64": "0.0.1",
+        "@farmfe/plugin-docs-snippets-darwin-arm64": "0.0.1",
+        "@farmfe/plugin-docs-snippets-linux-x64-gnu": "0.0.1",
+        "@farmfe/plugin-docs-snippets-win32-x64-msvc": "0.0.1",
+        "@farmfe/plugin-docs-snippets-linux-arm64-gnu": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-t5kvjXuKNyUVTY54Tk0AGzDE9HPVloxSsZq+JXtTtDHcuxCiBfVJKFeruDkO1aNOm52mjq/7S7odEb+sY7kACA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snippets/-/plugin-docs-snippets-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-darwin-arm64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-IUwmkaorBJ2yQ9wmR+BQBttmO0jXksUs7IJTKIKgRlrzCnrXxyrm7bP2g2T+SghlGuxX6d+3nkuMHJLnoiYccw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snippets-darwin-arm64/-/plugin-docs-snippets-darwin-arm64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-darwin-x64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-LNzq0Cnd2p31T0UgXMwhBLL1jHTn3weLfCoWUhkaYWb6FPctqFOuEOH3SPjiKf+iofaVAfoWK8+QMFKaJaZq/w==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snippets-darwin-x64/-/plugin-docs-snippets-darwin-x64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-linux-arm64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-AkoylZYwXGoBds5mnZpey0NOg0nSU9lMjY4vs9wVos1HoCmlo3jedBKgmE0cCba1nOoI+4zrDTMLJdpZQaCC5w==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snippets-linux-arm64-gnu/-/plugin-docs-snippets-linux-arm64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-linux-x64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-RkDY2tQI78HrhY91yr3h0LRrKCthaUxuETcyh6doqV12AjPYwo16TJ+qizl4tGCWK6OIpA/rNy5iViXYGzF7zQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snippets-linux-x64-gnu/-/plugin-docs-snippets-linux-x64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-snippets-win32-x64-msvc",
+      "version": "0.0.1",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-WInU63JhNnOgLs+4vUGOYovvXiTYKp2Yc7c6BMntQgJ1lwI0RUoubs25cZ6Pc5PODgVzGfHZqbq4CkUQwOGZZw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-snippets-win32-x64-msvc/-/plugin-docs-snippets-win32-x64-msvc-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-docs-win32-x64-msvc",
+      "version": "0.0.1",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-vHKgjUcY5OoP487jrQCwVm1Srln4SURYTgNR4V2+GtXNb9c+N8l+cU+RNPhj29y3EA8dZFz7m7RwcZi/7jq+dA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-docs-win32-x64-msvc/-/plugin-docs-win32-x64-msvc-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react",
+      "version": "2.0.0",
+      "optionalDependencies": {
+        "@farmfe/plugin-react-darwin-x64": "2.0.0",
+        "@farmfe/plugin-react-darwin-arm64": "2.0.0",
+        "@farmfe/plugin-react-linux-x64-gnu": "2.0.0",
+        "@farmfe/plugin-react-linux-x64-musl": "2.0.0",
+        "@farmfe/plugin-react-win32-x64-msvc": "2.0.0",
+        "@farmfe/plugin-react-linux-arm64-gnu": "2.0.0",
+        "@farmfe/plugin-react-win32-ia32-msvc": "2.0.0",
+        "@farmfe/plugin-react-linux-arm64-musl": "2.0.0",
+        "@farmfe/plugin-react-win32-arm64-msvc": "2.0.0"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-WwoiVK3GxX5fGi3XdVIS50iTLT3NEIzJS8mW9k1SFXCUY29HUqfISwVu6HLFnG7K63bB5IWfHzfaiJJdQQnotg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react/-/plugin-react-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-darwin-arm64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-fyx43ecT4T4dXYI+f3GHB/GfIgMOkGaZaS+L9/PJnK4qV5iVJnRHUNY5vI1vLXXxtaFXp7jVAse9N7q20yW46Q==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-darwin-arm64/-/plugin-react-darwin-arm64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-darwin-x64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-yLDBES4hRM1LH/rw2OGbSd+zxCeuOpeO7YpNoFTcpc2dEu7mXQBpwEJyvDLBdRZU2/mlBXeWtEa6/AlGXG99BQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-darwin-x64/-/plugin-react-darwin-x64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-linux-arm64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-Byo99+x5PoT3/tgd0wUzkshjV/EZjkNhhrK9IJBArPEiy9MIv/EeJCAMoItfZ9p2cEaH5J0ls+7WlidFwstDrQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-linux-arm64-gnu/-/plugin-react-linux-arm64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-linux-arm64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-t8tpUmKQyi6rumb26zXiAs1Y9xWr6JnGZSyisDcXAmaxy5rCqb0WYM9nMZh8lLu09g3U46pPHuZtgsFSyqUgVQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-linux-arm64-musl/-/plugin-react-linux-arm64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-linux-x64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-PZI9aQCtgl3k6HpdAUNArguNG75R/+QPaFR2itcGDXeRlOOGIjNS+jkj0Gpza/N42cAmhNRfJ7Xhdz8kWdpENg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-linux-x64-gnu/-/plugin-react-linux-x64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-linux-x64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-KnevbZ12x7PJCth44rZwtw+GNPf8pz68p7iqf9C3gmEYgaYBdikmOmQCDz8XESBS+ZNJ9rHQhbm0iFxmbnPchg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-linux-x64-musl/-/plugin-react-linux-x64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-win32-arm64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-avOD78+fNyJ4nSJniD923FvvkPsy3jdKEsEXns0IM32gopQ13bm16HkIrz6/9IUBtcGxqsjxYtrsXAUVo/kkhA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-win32-arm64-msvc/-/plugin-react-win32-arm64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-win32-ia32-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "ia32"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-rIQFhl1G0Gzngy7DymhAbmvu14Zpnt+AEoYupXwXcaQI+ZTvfX5PnEFd1i2oIo8J9Qxk2Y/41p0sKk67h2NISA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-win32-ia32-msvc/-/plugin-react-win32-ia32-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-react-win32-x64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-rM15zMhlXKhnl5pbbeannbOa4npqXQPcOWicVjVCnRtIamPjetaTWPj1Z2mnCSFADKK2bn8QyDZDtI6ewHU7vQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-react-win32-x64-msvc/-/plugin-react-win32-x64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname",
+      "version": "2.0.0",
+      "optionalDependencies": {
+        "@farmfe/plugin-replace-dirname-darwin-x64": "2.0.0",
+        "@farmfe/plugin-replace-dirname-darwin-arm64": "2.0.0",
+        "@farmfe/plugin-replace-dirname-linux-x64-gnu": "2.0.0",
+        "@farmfe/plugin-replace-dirname-linux-x64-musl": "2.0.0",
+        "@farmfe/plugin-replace-dirname-win32-x64-msvc": "2.0.0",
+        "@farmfe/plugin-replace-dirname-linux-arm64-gnu": "2.0.0",
+        "@farmfe/plugin-replace-dirname-win32-ia32-msvc": "2.0.0",
+        "@farmfe/plugin-replace-dirname-linux-arm64-musl": "2.0.0",
+        "@farmfe/plugin-replace-dirname-win32-arm64-msvc": "2.0.0"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-e+byQkJxlUHnlosi1D1f2ng/xF0zfKzvokDFk59eb3k2mfQTW85wEgv7tdp/ib9vEGNTVB3omNLQKbzGWWlB3w==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname/-/plugin-replace-dirname-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-darwin-arm64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-lkafJbNm8/JKN4UAz1vgUqf2V/t3ARHD2DV06GBuxpCl750JHH8Ua4ZTSVC2Re9JlX+e0DXQbh9x9ncZ0SPPcA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-darwin-arm64/-/plugin-replace-dirname-darwin-arm64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-darwin-x64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-Ha91sk5Ph6Gf+Ne+sw+Fr5TT0e0PjCiVpz1P5bXqzbNoRXO+tJ0sBi3YJdlU//JPYMlvpf9kiwBD91tpN20bZA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-darwin-x64/-/plugin-replace-dirname-darwin-x64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-linux-arm64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-3qSUgoxYaYIXK+UwjOCeWosiAdvRvbCjjoP2bDok7Tj4MfevVLO+oEFOEW3p7HujUZ42xwzhpF5fhxz+KPIhNA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-linux-arm64-gnu/-/plugin-replace-dirname-linux-arm64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-linux-arm64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-bjK4ii6nZuz87/ecsXPfmFRGAn1RzyjK/b7H8P6Q84QTXMTtYJS0QUxtNK8KMD6YNlQN2Xt1Z4WI5f1Nlg1P1A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-linux-arm64-musl/-/plugin-replace-dirname-linux-arm64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-linux-x64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-kuCiVJ4pS6hzxapFwllBSXyaXA8/fWUgxtY95YdG+hxLZhMaE/oTRYUTNmjMlv4dAC7VoaQ14K/WQJUuMXe80Q==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-linux-x64-gnu/-/plugin-replace-dirname-linux-x64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-linux-x64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-oyhMEjkpZ6ID5jAl6ihjm6CEdVYcUfJWU5MoyC+jvDFHVHTSPmEIArBu5OlJHdfdROCYVu2n1iMLBpQCzX9vPA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-linux-x64-musl/-/plugin-replace-dirname-linux-x64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-win32-arm64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-hiB7B3SVOAv++tWkIfRhqhbZA79Sfo0fqd6NdUZ7PECI2jIGm+yLQp9oZnYLuRVImpte1pj7q26P2BgfwkNa7g==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-win32-arm64-msvc/-/plugin-replace-dirname-win32-arm64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-win32-ia32-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "ia32"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-IPm+HS2WCMn3rlBD+GFe2bpGE87g+OxnVUcI7IZmW1ki3M8eh7N0TEW8O/NyGibtvrKtny3Dn23wr/s02rABGA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-win32-ia32-msvc/-/plugin-replace-dirname-win32-ia32-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-replace-dirname-win32-x64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-MM/LoD+CQn/dvMsbX0nNFzVZfhxbtynm/2ctUoqLbRKN5m+QYoxawwZsL+FBtFoNEMu26M2HkHKHwOTw5UX49Q==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-replace-dirname-win32-x64-msvc/-/plugin-replace-dirname-win32-x64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass",
+      "version": "2.0.0",
+      "optionalDependencies": {
+        "@farmfe/plugin-sass-darwin-x64": "2.0.0",
+        "@farmfe/plugin-sass-darwin-arm64": "2.0.0",
+        "@farmfe/plugin-sass-linux-x64-gnu": "2.0.0",
+        "@farmfe/plugin-sass-linux-x64-musl": "2.0.0",
+        "@farmfe/plugin-sass-win32-x64-msvc": "2.0.0",
+        "@farmfe/plugin-sass-linux-arm64-gnu": "2.0.0",
+        "@farmfe/plugin-sass-win32-ia32-msvc": "2.0.0",
+        "@farmfe/plugin-sass-linux-arm64-musl": "2.0.0",
+        "@farmfe/plugin-sass-win32-arm64-msvc": "2.0.0"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-oPmCEDhX2JLZzPFyeB7R6eryGxBZH5wwPq0YfE8qdgGjhRFerz307K4g5cjgM+rpzuYIQbGz4VB/JDymk3kb1Q==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass/-/plugin-sass-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-darwin-arm64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-7hb17QLbojIZ25Tx0WTDBcinSHizKcffHLtkjlZXirVW4zqb8P3K4/GZ7qyVpRSHRg4KwTbABHHDpdxsHRMdPQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-darwin-arm64/-/plugin-sass-darwin-arm64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-darwin-x64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-4dDTk7ouBN8RYocKWQrxz7fmKq+dUEgYoYo18PGIBWJN022UQAjYYWF6pNrHTDWLLiBd1V9frRwtXuilm/C6nw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-darwin-x64/-/plugin-sass-darwin-x64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-linux-arm64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-rVvy96Pac2r9puQsgooJUMk3OgQBjcUh6ropou9ANo6GItEl3bWSPYRxqe9fCr02+YCsEWc8uq1F18i/6+JcuQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-linux-arm64-gnu/-/plugin-sass-linux-arm64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-linux-arm64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-/JVtHHjnszvWHvzDVMr9jIX9x47xIx+LwI2ull7RyroNQ3CfD6/vXgGrPKUYy8dGgOI/FXfE7SXWnfTULeBuCQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-linux-arm64-musl/-/plugin-sass-linux-arm64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-linux-x64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-f5ZEO2pJGuuTNM89162+3fnv2wEcZ3P+FbI+KslT+2zudrga2R9LPZYuZRsX1hlwvmuyEaYQIIfi9By+3xhMIw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-linux-x64-gnu/-/plugin-sass-linux-x64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-linux-x64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-RQxnT7zSoPDXpHYSyOIiDI6dnMFCtIfXmiKDr4Yup51zRScZopB0xXhMCs7nhvh3Vv7pzNS7ENMq436okaWNOg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-linux-x64-musl/-/plugin-sass-linux-x64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-win32-arm64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-Or8HhTUU2k1g3vKoOKu/YiuP/b2L8Z3JTwdjlrQjrX/4bxmoiwaL4ydBK/gy4PycDlgyRCrztytj9PKmgCfxFw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-win32-arm64-msvc/-/plugin-sass-win32-arm64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-win32-ia32-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "ia32"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-eBKu5tSC12h8eA+hVWyuYQ1xrTTnhFp2gJEGanww4YFMAxpId6QcDb3HQSfktG27v1qSQdp5HSbTsibviOJcbA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-win32-ia32-msvc/-/plugin-sass-win32-ia32-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-sass-win32-x64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-idL5ehO8VOK0EQevFe1eswV1Mc9kiYOsJDjQsh3T3l50TrWLc+Ez9LsYGP7+PIZkfaAioUU1X1TAXkiDhr+XoA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-sass-win32-x64-msvc/-/plugin-sass-win32-x64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css",
+      "version": "0.0.1",
+      "optionalDependencies": {
+        "@farmfe/plugin-ssr-css-darwin-x64": "0.0.1",
+        "@farmfe/plugin-ssr-css-darwin-arm64": "0.0.1",
+        "@farmfe/plugin-ssr-css-linux-x64-gnu": "0.0.1",
+        "@farmfe/plugin-ssr-css-win32-x64-msvc": "0.0.1",
+        "@farmfe/plugin-ssr-css-linux-arm64-gnu": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-h5ElhT+FcR9H9vOtyPYW2N8LeYDYep3DXy3eygne2JezDNWLtKcuFdeY6ieShoQ9/E0rL9JQLqbxT9UWnVyTpQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-ssr-css/-/plugin-ssr-css-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-darwin-arm64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-zMnOVxlcjTbkqOdIUhakSCjHp239XP7Avr0tgTSwplyCE4RICX9Rg41ERx8AUnvjWTPAxDWZOvM5zhIINSgaUQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-ssr-css-darwin-arm64/-/plugin-ssr-css-darwin-arm64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-darwin-x64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-Q1waj+S8tJerzejann1sSH9om2N/TpOyfLvRzdRrMgL3pUAoVQ+OX5g9LeFT0s0xGJqYzhm3L5/EhGoxeI9y/w==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-ssr-css-darwin-x64/-/plugin-ssr-css-darwin-x64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-linux-arm64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-lPPM3Vq9vP/OFy+ZVSZnZLrJPyuO0Z7DsF8cXAFsAygAO+1ktkaa56FWISE5tGNWTv4FHL6fpC9+KI/aw06s9A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-ssr-css-linux-arm64-gnu/-/plugin-ssr-css-linux-arm64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-linux-x64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-0BHj0nXA8H1e/S7ztwRHvmBcyB4lLFm/OzmDVCpgBOkX1nwOIi66zC63cmQkxmmzoojzoy2Z1k27CN5xG5zZKg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-ssr-css-linux-x64-gnu/-/plugin-ssr-css-linux-x64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-ssr-css-win32-x64-msvc",
+      "version": "0.0.1",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-iKgEOwQ0SaSxL/Rx+vGDJoKVeJJAdARDxD8gpcNyR3AKXSf8LAJ2uUlxDHIQpG3rkddzkDTUVd6UH9gcY2zXjw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-ssr-css-win32-x64-msvc/-/plugin-ssr-css-win32-x64-msvc-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight",
+      "version": "0.0.1",
+      "optionalDependencies": {
+        "@farmfe/plugin-syntax-highlight-darwin-x64": "0.0.1",
+        "@farmfe/plugin-syntax-highlight-darwin-arm64": "0.0.1",
+        "@farmfe/plugin-syntax-highlight-linux-x64-gnu": "0.0.1",
+        "@farmfe/plugin-syntax-highlight-win32-x64-msvc": "0.0.1",
+        "@farmfe/plugin-syntax-highlight-linux-arm64-gnu": "0.0.1"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./style.css": "./style.css",
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-f596u8shUBudPAR8OUbwcnhukNcVWfSqVlhTn9eoySjY3RKDahjL6YUodtXrUAS53vfZ70Eyso6hxlH0XF9Yvw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-syntax-highlight/-/plugin-syntax-highlight-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-darwin-arm64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-5Aut+1r3qEIT8Lg0XxqF5LSo4TzYJxAaerTjTxoZSRY6Y99sLGChAlF+u8/TG/eFDaM1fGn4pTm1U93P4OqaXg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-syntax-highlight-darwin-arm64/-/plugin-syntax-highlight-darwin-arm64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-darwin-x64",
+      "version": "0.0.1",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-BHs/sGik68qm/e6gmj0RhmBBgZh+hovOIniNP1/UVI5C24nkBBjBfYWd1Mj+u0wmuuhqY0KEU8ZZTAzV2J6e6Q==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-syntax-highlight-darwin-x64/-/plugin-syntax-highlight-darwin-x64-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-linux-arm64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-dArD9D+epgR/d++pp5iqluXgwBqW48wRHlgsXlkoZ7ItnmOiJmVebMNV/p4TNC05UQPwnJTx2jPpbVBSyqLAsA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-syntax-highlight-linux-arm64-gnu/-/plugin-syntax-highlight-linux-arm64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-linux-x64-gnu",
+      "version": "0.0.1",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-17e4aOLj8HgEa7NIoUfySVOmULKLJh37SHsbRTgE9rukCiEJSQbtX0O+TG7V0UO8iKr8q6WZMvbvXaAKNa1Xnw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-syntax-highlight-linux-x64-gnu/-/plugin-syntax-highlight-linux-x64-gnu-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-syntax-highlight-win32-x64-msvc",
+      "version": "0.0.1",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-5z2ncGnAbDEMmrz4Kugg8hbhC0i2GGTwB3yT8hacYJRzn4KXXDi/OOAMd3VAuoFYdUxw7t3ORRZ9jZvSfYU6fQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-syntax-highlight-win32-x64-msvc/-/plugin-syntax-highlight-win32-x64-msvc-0.0.1.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss",
+      "version": "2.0.0",
+      "optionalDependencies": {
+        "@farmfe/plugin-tailwindcss-darwin-x64": "2.0.0",
+        "@farmfe/plugin-tailwindcss-darwin-arm64": "2.0.0",
+        "@farmfe/plugin-tailwindcss-linux-x64-gnu": "2.0.0",
+        "@farmfe/plugin-tailwindcss-linux-x64-musl": "2.0.0",
+        "@farmfe/plugin-tailwindcss-win32-x64-msvc": "2.0.0",
+        "@farmfe/plugin-tailwindcss-linux-arm64-gnu": "2.0.0",
+        "@farmfe/plugin-tailwindcss-win32-ia32-msvc": "2.0.0",
+        "@farmfe/plugin-tailwindcss-linux-arm64-musl": "2.0.0",
+        "@farmfe/plugin-tailwindcss-win32-arm64-msvc": "2.0.0"
+      },
+      "exports": {
+        ".": {
+          "types": "./scripts/index.d.ts",
+          "import": "./scripts/func.js",
+          "default": "./scripts/index.js"
+        },
+        "./package.json": "./package.json"
+      },
+      "main": "scripts/index.js",
+      "dist": {
+        "integrity": "sha512-7vey5dJbtbg8ZAwxKsliPbc5HJuREUyE37Y2MspTJO361LpgwbXXCEJV/jla3VgEqYSXV/YkdJvrKoBn7bzSpw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss/-/plugin-tailwindcss-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-darwin-arm64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-W6ucgQbMYWHOCFGkxFffYWEv9cEU/NZuxLVN/RcQqFYVqbW7bXngklGQ5jDw6D7oOzqoNvUqF/VTjwyirjyn9g==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-darwin-arm64/-/plugin-tailwindcss-darwin-arm64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-darwin-x64",
+      "version": "2.0.0",
+      "os": [
+        "darwin"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-KBToJqklItzREk+d5jEfe/5KJY7xBCzZOfgbMao1idxE/4dIqUVsar38Mfe+XP17yrkM/VifaFnyrD4QNOIXvw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-darwin-x64/-/plugin-tailwindcss-darwin-x64-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-linux-arm64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-JHx3hgDhryG+etli7WExWir0sngYzKkOiDJZQ+IzA0I2VjeGNeTOU1YxyVDU+th9MLjUCEFyWUu7H0B+cZ/s6A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-linux-arm64-gnu/-/plugin-tailwindcss-linux-arm64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-linux-arm64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-jFKYcPVAQGD//9Kk6xU14bk4hi9wGtNwQS953lnp2Y1xO9svZYXW3mF7ElBt/4opQHzmh3qMeVqfwzqRxs+jKQ==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-linux-arm64-musl/-/plugin-tailwindcss-linux-arm64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-linux-x64-gnu",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "glibc"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-5IQk3Yp30czKeMuwZEKNOmZxCr8odZo81gXo02egGWMCwUKNFvMLRlRmvJKdQ8x3Z/nqV4TBNT4oGW24W1hSOg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-linux-x64-gnu/-/plugin-tailwindcss-linux-x64-gnu-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-linux-x64-musl",
+      "version": "2.0.0",
+      "os": [
+        "linux"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "libc": [
+        "musl"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-CzujmDF0yoX3yK6d4uAaoAr2l1CBqK1y3/MPdlwttcwtnXEBm0XGepMDW1/uQ+URo4pwmZytY4rtI/B41c2W4A==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-linux-x64-musl/-/plugin-tailwindcss-linux-x64-musl-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-win32-arm64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "arm64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-2xywockCsyLS3tR9NmUIh2Yy5a1vPdF3uLobvfsDDKHNCEfUOF2lmRe7+dg3x3MOGd4555Cit/jNms+kLGJ9hw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-win32-arm64-msvc/-/plugin-tailwindcss-win32-arm64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-win32-ia32-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "ia32"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-792QniEBdBF4B7TJObpDjdva1qQx5eSWVm/L/wKj2AMdYaWUOucXFvTCQsP94ZRrmMjomJcky6pNPkkJJht1kA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-win32-ia32-msvc/-/plugin-tailwindcss-win32-ia32-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss-win32-x64-msvc",
+      "version": "2.0.0",
+      "os": [
+        "win32"
+      ],
+      "cpu": [
+        "x64"
+      ],
+      "main": "index.farm",
+      "dist": {
+        "integrity": "sha512-AvFkQt3t7D+qiHMQyX7S2xt7zKLGasA1SU8eeX/hqJRSHLnvkhSDLmYe289p6EUbSSPozwpDY3psaJQadPE4Gg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/plugin-tailwindcss-win32-x64-msvc/-/plugin-tailwindcss-win32-x64-msvc-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/runtime",
+      "version": "2.0.0",
+      "dependencies": {
+        "core-js": "^3.30.1"
+      },
+      "main": "dist/index.js",
+      "dist": {
+        "integrity": "sha512-KWGsVKh0aJVNhotO1m0MxtapKam0GtwMU7irDr5l8OLYztgUxRaB9aqsY3pWtwqRhdDXswAcgcGj+wxEXr8Hfw==",
+        "tarball": "https://registry.npmjs.org/@farmfe/runtime/-/runtime-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/runtime-plugin-hmr",
+      "version": "4.0.0",
+      "dependencies": {
+        "core-js": "^3.30.1",
+        "prismjs": "^1.29.0"
+      },
+      "main": "dist/index.js",
+      "dist": {
+        "integrity": "sha512-b2LgUpIYhM/H43u0MYVRJxM33/QoqRyf9/3uuV4jO7JcyoseT9OcLzfLHCpSQ+bhnqzRLFTuxtJFiN1QPWTHzA==",
+        "tarball": "https://registry.npmjs.org/@farmfe/runtime-plugin-hmr/-/runtime-plugin-hmr-4.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/runtime-plugin-import-meta",
+      "version": "2.0.0",
+      "dependencies": {
+        "core-js": "^3.30.1"
+      },
+      "main": "dist/index.js",
+      "dist": {
+        "integrity": "sha512-3l6pRtbYHDeh1uKfVaTTn11MrzW5qBeehSQxrck3E6DTUPe5HMAgpgmb4oxRKAr/ImDz6QGdFkXbsiVKEhiKsg==",
+        "tarball": "https://registry.npmjs.org/@farmfe/runtime-plugin-import-meta/-/runtime-plugin-import-meta-2.0.0.tgz"
+      }
+    },
+    {
+      "name": "@farmfe/utils",
+      "version": "2.0.0",
+      "exports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js",
+          "default": "./dist/index.js"
+        },
+        "./colors": {
+          "types": "./dist/color.d.ts",
+          "import": "./dist/color.js",
+          "default": "./dist/color.js"
+        }
+      },
+      "main": "dist/index.js",
+      "dist": {
+        "integrity": "sha512-5CnDj5HdIulbBV0korBdEph58nTLzx0hIliZqLwYzyENBHyvNXK0xIMgoHMJWcO1fa0aVqjCINIz3FuiI6f6Ow==",
+        "tarball": "https://registry.npmjs.org/@farmfe/utils/-/utils-2.0.0.tgz"
+      }
+    }
+  ]
+}

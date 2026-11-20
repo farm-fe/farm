@@ -17,7 +17,11 @@ integration may create a production deployment from that merge commit.
 The npm release workflow (`.github/workflows/incremental-release.yaml`) and Vercel
 Git deployment both start independently on main pushes. There is no ordering
 barrier between them. Vercel's install and build commands retain the exact-version
-public npm preflight and the isolated published-package builder.
+public npm preflight and the isolated published-package builder. The committed
+`website/farm-release-lock.json` selects an independent public release cohort;
+workspace version bumps do not change these pins. A separate website-upgrade PR
+refreshes them after publication, following the
+[upgrade procedure](../releases/docs-deployment-lock.md).
 
 If a referenced version has not been published, the preflight fails before any
 install/build command or output replacement. A failed build is not promoted, so

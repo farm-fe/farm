@@ -95,6 +95,32 @@ export function deploymentPlan(website, manifests, target) {
   return { target, selected, manifests, manifest: { name: 'farm-docs-published-consumer', version: '0.0.0', private: true, type: 'module', packageManager: 'pnpm@9.4.0', dependencies } };
 }
 
+// The committed deployment lock is independent of the workspace release train.
+export function websiteDependencyInputs(website) {
+  return Object.fromEntries(['dependencies', 'devDependencies'].map(field => [field, website[field] ?? {}]));
+}
+
+export function lockedDeploymentPlan(website, lock, target) {
+  assert.equal(lock.schemaVersion, 1, 'Unsupported Docs deployment lock');
+  assert.equal(lock.registry, registry, 'Deployment lock must use the public registry');
+  assert.match(lock.sourceSHA ?? '', /^[a-f0-9]{40}$/);
+  assert.deepEqual(websiteDependencyInputs(website), lock.websiteDependencies, 'Website dependencies changed; explicitly refresh the deployment lock');
+  assert.ok(Array.isArray(lock.targets) && lock.targets.includes(target), 'Target not verified in deployment lock');
+  assert.ok(Array.isArray(lock.packages));
+  const manifests = new Map(lock.packages.map(pkg => [pkg.name, pkg]));
+  assert.equal(manifests.size, lock.packages.length, 'Duplicate deployment lock package');
+  for (const pkg of manifests.values()) {
+    assert.ok(pkg.name.startsWith('@farmfe/'));
+    assert.match(pkg.version, exact);
+    assert.ok(pkg.dist?.integrity && pkg.dist?.tarball, 'Missing deployment lock integrity');
+  }
+  for (const [name, selector] of Object.entries({ ...website.dependencies, ...website.devDependencies })) {
+    if (name.startsWith('@farmfe/')) assert.ok(selector === 'workspace:*' || selector === manifests.get(name)?.version, 'Direct Farm selector disagrees with deployment lock: ' + name);
+  }
+  const plan = deploymentPlan(website, manifests, target);
+  return { ...plan, deploymentLock: { sourceSHA: lock.sourceSHA, sha256: hash(JSON.stringify(lock)) } };
+}
+
 export async function publicMetadata(name, version) {
   let response;
   try { response = await fetch(`${registry}/${encodeURIComponent(name)}/${version}`, { signal: AbortSignal.timeout(30000) }); }
@@ -106,6 +132,11 @@ export async function publicMetadata(name, version) {
 export async function preflight(plan, getMetadata = publicMetadata) {
   const results = await Promise.all([...plan.selected].map(async ([name, local]) => {
     const meta = await getMetadata(name, local.version);
+    if (local.dist) {
+      assert.deepEqual(meta.dist?.integrity, local.dist.integrity, 'Locked registry integrity changed: ' + name);
+      assert.equal(meta.dist?.tarball, local.dist.tarball, 'Locked registry tarball changed: ' + name);
+      for (const field of [...fields, 'exports', 'main']) assert.deepEqual(meta[field], local[field], 'Locked registry metadata changed: ' + name + '/' + field);
+    }
     if (meta.name !== name || meta.version !== local.version) fail('REGISTRY_VERSION_MISMATCH', name);
     const sri = meta.dist?.integrity?.match(/^sha512-([A-Za-z0-9+/]+={0,2})$/);
     if (!sri || Buffer.from(sri[1], 'base64').length !== 64 || Buffer.from(sri[1], 'base64').toString('base64') !== sri[1]) fail('REGISTRY_INTEGRITY_REQUIRED', name);
@@ -248,7 +279,7 @@ function execute(command, args, options) {
 }
 
 function copyWebsite(source, destination) {
-  const excluded = new Set(['node_modules', 'build-farm', '.farm', '.git', '.vercel', 'package.json', 'pnpm-lock.yaml', 'vercel.json']);
+  const excluded = new Set(['farm-release-lock.json', 'node_modules', 'build-farm', '.farm', '.git', '.vercel', 'package.json', 'pnpm-lock.yaml', 'vercel.json']);
   fs.cpSync(source, destination, { recursive: true, filter: file => {
     const relative = path.relative(source, file);
     if (relative && (excluded.has(relative.split(path.sep)[0]) || relative.startsWith('build-farm.previous-') || relative.split(path.sep).some(part => part.startsWith('.env')))) return false;
@@ -261,7 +292,7 @@ export async function buildPublishedDocs({ root = repository, phase = 'build', t
   if (!['install', 'build', 'preflight'].includes(phase)) fail('UNKNOWN_PHASE', phase);
   const env = isolatedEnvironment(environment);
   const website = path.join(root, 'website');
-  const plan = deploymentPlan(json(path.join(website, 'package.json')), releaseManifests(root), target);
+  const plan = lockedDeploymentPlan(json(path.join(website, 'package.json')), json(path.join(website, 'farm-release-lock.json')), target);
   const packages = await preflight(plan, hooks.getMetadata);
   console.log(`Published Farm v2 preflight: ${packages.length} exact packages for ${target}.`);
   // Vercel's install phase must never install the monorepo. The build phase
@@ -310,7 +341,7 @@ export async function buildPublishedDocs({ root = repository, phase = 'build', t
     // is moved. Published Farm package templates and other pages stay untouched.
     fs.writeFileSync(homepage, addHomepageVerification(html));
     assertHomepageVerification(fs.readFileSync(homepage, 'utf8'));
-    const receipt = { schemaVersion: 1, registry, target, packages, lockSha256: hash(lock), nativePackages: resolved.packages.filter(pkg => plan.selected.get(pkg.name).os).map(({ name, version, entrySha256 }) => ({ name, version, sha256: entrySha256 })), commandsRun: 4 };
+    const receipt = { schemaVersion: 1, registry, target, deploymentLock: plan.deploymentLock, packages, lockSha256: hash(lock), nativePackages: resolved.packages.filter(pkg => plan.selected.get(pkg.name).os).map(({ name, version, entrySha256 }) => ({ name, version, sha256: entrySha256 })), commandsRun: 4 };
     const output = path.join(website, 'build-farm');
     // Copy only after build and notice validation succeed. Preserve an existing
     // output as a recoverable sibling instead of deleting the user's files.
