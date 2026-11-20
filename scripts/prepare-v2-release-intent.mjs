@@ -1,4 +1,5 @@
 import { writeVersionReceipt } from './changesets-version-runtime.mjs';
+import { confirmVersionPrHead } from './changesets-pr-head.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -130,14 +131,27 @@ export async function refreshChangesetsVersionPr(root, number) {
   git('-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com', 'commit', '-m', 'chore: seal version preparation metadata');
   git('push', 'origin', 'HEAD:refs/heads/changeset-release/main');
   const head = git('rev-parse', 'HEAD');
-  assert.equal(gh('api', `repos/${repository}/pulls/${number}`).head.sha, head, 'Version PR moved concurrently');
-  writeVersionReceipt({...pr, head: {...pr.head, sha: head}});
+  const published = await confirmVersionPrHead(root, { repository, number, base: pr.base.sha, previous: pr.head.sha, expected: head });
+  writeVersionReceipt(published);
   // The workflow uploads this receipt before the separate dispatch step.
   console.log(JSON.stringify({ sourceHeadSHA: pr.head.sha, validationHeadSHA: head, publication: plan.publication.counts, registryReused: plan.publication.reuseNpm.length }));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv[2] === '--changesets-pr') {
     await refreshChangesetsVersionPr(fileURLToPath(new URL('../', import.meta.url)), Number(process.argv[3]));
+  } else if (process.argv[2] === '--check-dispatch') {
+    assert.equal(process.argv.length, 3);
+    const root = fileURLToPath(new URL('../', import.meta.url));
+    const receipt = JSON.parse(fs.readFileSync(path.join(root, 'version-provenance/ledger.json'), 'utf8'));
+    const [head, parent, ...otherParents] = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], { cwd: root, encoding: 'utf8', timeout: 10000 }).trim().split(' ');
+    assert.equal(otherParents.length, 0, 'Version seal must have one parent');
+    assert.equal(head, receipt.headSHA);
+    assert.equal(receipt.pr, Number(process.env.VERSION_PR));
+    assert.equal(receipt.repositoryId, Number(process.env.GITHUB_REPOSITORY_ID));
+    assert.equal(receipt.runId, Number(process.env.GITHUB_RUN_ID));
+    assert.equal(receipt.attempt, Number(process.env.GITHUB_RUN_ATTEMPT));
+    await confirmVersionPrHead(root, { repository: process.env.GITHUB_REPOSITORY, number: receipt.pr, base: receipt.baseSHA, previous: parent, expected: head });
+    console.log(receipt.baseSHA);
   } else {
   const [metadataFile, destination, prNumber = '2329'] = process.argv.slice(2); assert.ok(metadataFile && destination);
   const root = fileURLToPath(new URL('../', import.meta.url));
