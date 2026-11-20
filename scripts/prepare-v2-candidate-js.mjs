@@ -31,10 +31,10 @@ export function orderJsCandidates(packages) {
 }
 
 export function candidateJsBuilds(plan, { root = fileURLToPath(new URL('../', import.meta.url)) } = {}) {
-  // CLI's project-reference bootstrap and the assembled native cohort are kept
-  // separate from the JS plugin graph. Config imports require built devDependencies,
-  // not just each plugin's runtime dependency list.
-  const initial = ['packages/cli', 'packages/core', 'packages/runtime', 'packages/runtime-plugin-hmr', 'packages/runtime-plugin-import-meta', 'packages/plugin-tools', 'packages/utils'];
+  // Selective releases can omit the CLI's project-reference bootstrap.
+  // Build Core's workspace declarations before Core itself, even on a clean
+  // Docs-only release. The CLI can still verify its references after Core.
+  const initial = ['packages/utils', 'packages/runtime', 'packages/runtime-plugin-hmr', 'packages/runtime-plugin-import-meta', 'packages/core', 'packages/cli', 'packages/plugin-tools'];
   const remaining = plan.npm.primary.filter(pkg => !pkg.manifestPath.startsWith('rust-plugins/') && pkg.name !== 'create-farm')
     .map(pkg => ({ ...pkg, directory: path.dirname(pkg.manifestPath).replaceAll('\\', '/') })).filter(pkg => !initial.includes(pkg.directory));
   const plugins = remaining.filter(pkg => pkg.directory.startsWith('js-plugins/')).map(pkg => {
