@@ -24,8 +24,8 @@ old = load('presence_fixtures', 'release-npm-best-effort.test.py')
 module = old.module
 
 
-def observed(name, body, fields=None):
-    return {'status': 'published', 'name': name, 'version': '2.0.0', 'archiveSha256': hashlib.sha256(body).hexdigest(),
+def observed(name, body, fields=None, *, version='2.0.0'):
+    return {'status': 'published', 'name': name, 'version': version, 'archiveSha256': hashlib.sha256(body).hexdigest(),
             'archiveBytes': len(body), 'evidenceKind': 'registry-archive', 'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(body).digest()).decode(),
             'tarballURL': 'https://registry.npmjs.org/' + name + '/archive.tgz',
             'metadata': {key: (fields or {}).get(key, {}) for key in module.selector.METADATA_FIELDS}}
@@ -48,22 +48,25 @@ class Registry(old.Registry):
         if name in self.fail:
             raise module.publisher.npm_failure('publish', row, code=1, stderr='npm error code ENEEDAUTH\nprivate bearer sentinel')
         assert name not in self.public
-        self.public[name] = observed(name, body, self.fields[name])
+        self.public[name] = observed(name, body, self.fields[name], version=row['version'])
         if name in self.lost: raise TimeoutError('private bearer sentinel')
 
 
-def fixture(packages=None, retained=(), unknown=(), failed_build=()):
+def fixture(packages=None, retained=(), unknown=(), failed_build=(), versions=None):
     packages = packages or [('a', {}), ('b', {'dependencies': {'a': '2.0.0'}}), ('independent', {})]
-    manifest, bodies, _ = old.Contracts().fixture(packages)
+    versions = versions or {}
+    manifest, bodies, _ = old.Contracts().fixture([(name, {**fields, 'version': versions.get(name, '2.0.0')}) for name, fields in packages])
+    for row in manifest['packages']: row['version'] = versions.get(row['name'], '2.0.0')
     fields = dict(packages); registry = Registry(bodies, fields)
-    manifest['family'] = [{'kind': 'npm', 'name': name, 'version': '2.0.0'} for name, _ in packages]
+    manifest['family'] = [{'kind': 'npm', 'name': name, 'version': versions.get(name, '2.0.0')} for name, _ in packages]
     snapshot = {'schemaVersion': 2, 'kind': 'exact-registry-version-observation', 'sourceSHA': manifest['sourceSHA'],
                 'sourceTree': manifest['sourceTree'], 'registryKind': 'npm', 'packages': {}}
     for name, value in packages:
-        row = {'status': 'missing', 'name': name, 'version': '2.0.0'}
+        version = versions.get(name, '2.0.0')
+        row = {'status': 'missing', 'name': name, 'version': version}
         if name in retained:
             # Published bytes intentionally differ from newly generated source.
-            row = observed(name, old.archive(name, description='prior source', **value), value)
+            row = observed(name, old.archive(name, description='prior source', version=version, **value), value, version=version)
             registry.public[name] = copy.deepcopy(row)
         if name in unknown: row.update(status='unknown', reason='registry-http-403')
         snapshot['packages']['npm:' + name] = metadata_only(row) if row['status'] == 'published' else row
@@ -80,6 +83,65 @@ def execute(manifest, bodies, registry, **options):
     module.publish_packages(manifest, lambda row: bodies[row['name']], registry, report, lambda value: None,
                             clock=clock, sleep=clock.sleep, **options)
     return report, {row['name']: row for row in report['packages']}
+
+
+class DocsBootstrapContracts(unittest.TestCase):
+    docs = '@farmfe/docs'
+    theme = '@farmfe/docs-theme-default'
+    unrelated = '@farmfe/docs-adapter'
+
+    def pair(self, version='2.0.0', **options):
+        return fixture([(self.docs, {'dependencies': {self.theme: version}}),
+                        (self.theme, {'peerDependencies': {self.docs: version}}), (self.unrelated, {})],
+                       versions={self.docs: version, self.theme: version}, **options)
+
+    def test_stale_versions_never_write_even_if_one_is_already_public(self):
+        for version in ['0.0.1', '0.0.2', '1.0.0']:
+            with self.subTest(version=version):
+                manifest, bodies, registry = self.pair(version, retained=[self.theme])
+                report, rows = execute(manifest, bodies, registry)
+                self.assertFalse(report['success'])
+                for name in [self.docs, self.theme]:
+                    self.assertEqual(rows[name]['errors'][-1]['stage'], 'stale-docs-bootstrap-version')
+                    self.assertFalse(rows[name]['uploadAttempted'])
+                self.assertEqual([name for name, _ in registry.writes], [self.unrelated])
+                self.assertEqual(registry.tags, [self.unrelated])
+
+    def test_incomplete_frozen_pair_cannot_race_into_ordinary_writer(self):
+        manifest, bodies, registry = self.pair(retained=[self.theme])
+        registry.public[self.docs] = observed(self.docs, bodies[self.docs], registry.fields[self.docs])
+        report, rows = execute(manifest, bodies, registry)
+        self.assertFalse(report['success'])
+        self.assertFalse(report['baselineAdvanced'])
+        self.assertFalse(report['releaseCreatedByThisStage'])
+        for name in [self.docs, self.theme]:
+            self.assertEqual(rows[name]['errors'][-1]['stage'], 'docs-token-bootstrap-required')
+            self.assertFalse(rows[name]['uploadAttempted'])
+            self.assertNotIn(name, registry.reads)
+        self.assertEqual([name for name, _ in registry.writes], [self.unrelated])
+        self.assertEqual(registry.tags, [self.unrelated])
+
+    def test_complete_pairs_are_retained_only_without_ordinary_tag_writes(self):
+        for tags_ready in [False, True]:
+            with self.subTest(tags_ready=tags_ready):
+                manifest, bodies, registry = self.pair(retained=[self.docs, self.theme])
+                if tags_ready: registry.tags.extend([self.docs, self.theme])
+                with mock.patch.object(registry, 'promote_latest', wraps=registry.promote_latest) as promote:
+                    report, rows = execute(manifest, bodies, registry)
+                self.assertEqual(report['success'], tags_ready)
+                self.assertEqual([x.args[0]['name'] for x in promote.call_args_list], [self.unrelated])
+                self.assertEqual([name for name, _ in registry.writes], [self.unrelated])
+                for name in [self.docs, self.theme]:
+                    self.assertFalse(rows[name]['uploadAttempted'])
+                    self.assertEqual(rows[name]['originKind'], 'registry')
+                    if tags_ready: self.assertTrue(rows[name]['latestVerified'])
+                    else: self.assertEqual(rows[name]['errors'][-1]['stage'], 'docs-bootstrap-latest-unconfirmed')
+
+    def test_future_patch_keeps_existing_writer_path(self):
+        manifest, bodies, registry = self.pair('2.0.1')
+        report, _ = execute(manifest, bodies, registry)
+        self.assertTrue(report['success'])
+        self.assertEqual({name for name, _ in registry.writes}, {self.docs, self.theme, self.unrelated})
 
 
 class Contracts(unittest.TestCase):

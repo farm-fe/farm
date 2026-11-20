@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 import os
+import subprocess
 from pathlib import Path
 import unittest
 
@@ -31,7 +32,29 @@ class RealRepositoryOracle(unittest.TestCase):
         cls.files, hashes = chain.impact.snapshot(sha)
         cls.modes = {file: row["mode"] for file, row in hashes.items()}
         cls.source = {"sha": sha, "tree": chain.impact.git("rev-parse", "HEAD^{tree}").decode().strip()}
-        cls.family = json.loads(cls.files["docs/releases/v2-candidate.json"])
+        cls.historical_candidate = cls.files["docs/releases/v2-candidate.json"]
+        # A current-checkout oracle is a simulation, not a rewrite of the reviewed
+        # release receipt. Use the same PR-only inventory generator as CI.
+        program = r"""
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { npmInventory, cargoInventory } from './scripts/v2-release-inventory.mjs';
+import { prCandidatePlan } from './scripts/prepare-pr-candidate-plan.mjs';
+const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+const commit = git('rev-parse', 'HEAD');
+const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--locked', '--offline', '--no-deps', '--format-version', '1'], { encoding: 'utf8', maxBuffer: 16 * 1024 ** 2 }));
+console.log(JSON.stringify(prCandidatePlan({ base: JSON.parse(fs.readFileSync('docs/releases/v2-candidate.json')),
+  npm: npmInventory(), cargo: cargoInventory(metadata), checkout: { testedCommit: commit,
+    sourceCommit: commit, workflowSHA: commit, testedTree: git('rev-parse', 'HEAD^{tree}'),
+    eventName: 'workflow_dispatch', parents: [] } })));
+"""
+        cls.family = json.loads(subprocess.check_output(['node', '--input-type=module', '--eval', program],
+                                                       cwd=Path(__file__).resolve().parents[1], text=True))
+        assert cls.family['status'] == 'pr-test-only-not-publication-approval'
+        assert cls.family['validation']['testedCommit'] == cls.source['sha']
+        assert cls.family['validation']['testedTree'] == cls.source['tree']
+        assert 'publication' not in cls.family
+        cls.files["docs/releases/v2-candidate.json"] = json.dumps(cls.family).encode()
         cls.graph, issues = chain.repository_graph(cls.files)
         if issues:
             raise AssertionError("Real repository contains unresolved graph edges: " + repr(issues))
@@ -41,6 +64,7 @@ class RealRepositoryOracle(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        assert (Path(__file__).resolve().parents[1] / "docs/releases/v2-candidate.json").read_bytes() == cls.historical_candidate
         output = os.environ.get("FARM_INCREMENTAL_REPORT")
         if output:
             Path(output).write_text(json.dumps({"simulation": True, "liveBaselineAuthorized": False, "source": cls.source,
@@ -71,6 +95,19 @@ class RealRepositoryOracle(unittest.TestCase):
         self.assertEqual(set(plan["build"]), set(build))
         self.assertEqual(set(plan["testNodes"]), set(tests))
         self.assertFalse(plan["executionAuthorized"]); self.assertFalse(plan["publicationAuthorized"])
+
+    def test_historical_receipt_cannot_replace_current_source_inventory(self):
+        stale = copy.deepcopy(self.family)
+        stale['cargo'][0]['version'] = '0.0.0'
+        files = dict(self.files)
+        files['docs/releases/v2-candidate.json'] = json.dumps(stale).encode()
+        with self.assertRaisesRegex(ValueError, 'Publication inventory differs from actual source manifest'):
+            self.select(files, stale)
+        files['docs/releases/v2-candidate.json'] = self.historical_candidate
+        historical = chain.family_records(json.loads(self.historical_candidate))
+        if any(historical[key]['version'] != row['version'] for key, row in self.records.items()):
+            with self.assertRaisesRegex(ValueError, 'Committed family metadata differs'):
+                self.select(files)
 
     def test_actual_repository_no_change_is_not_full(self):
         plan = self.select(self.files)

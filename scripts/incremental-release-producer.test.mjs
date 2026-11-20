@@ -70,6 +70,33 @@ test('mixed delta cannot silently discard a different-byte same-version rebuild'
  value.selection.baselinePackages={};assert.throws(()=>makePublicationManifest(value),/independently verified original/);
 });
 
+test('Docs-only release builds source declarations before core without a selected CLI', async () => {
+ const root=fileURLToPath(new URL('../',import.meta.url));
+ const names=['utils','runtime','runtime-plugin-hmr','runtime-plugin-import-meta','core','docs','docs-theme-default'];
+ const primary=names.map(name=>{
+  const manifestPath=`packages/${name}/package.json`, pkg=JSON.parse(fs.readFileSync(path.join(root,manifestPath)));
+  return {name:pkg.name,version:pkg.version,manifestPath};
+ });
+ const buildNodes=names.map(name=>`npm:packages/${name}`);
+ const buildEdges=Object.fromEntries(buildNodes.map(key=>[key,[]]));
+ buildEdges['npm:packages/runtime-plugin-hmr']=['npm:packages/runtime'];
+ buildEdges['npm:packages/runtime-plugin-import-meta']=['npm:packages/runtime'];
+ buildEdges['npm:packages/core']=buildNodes.slice(0,4);
+ buildEdges['npm:packages/docs']=['npm:packages/core','npm:packages/docs-theme-default'];
+ buildEdges['npm:packages/docs-theme-default']=['npm:packages/docs'];
+ const selection={build:['npm:@farmfe/docs','npm:@farmfe/docs-theme-default'],buildNodes,buildEdges,selectionPolicy:'registry-exact-version-v2'};
+ const completed=new Set();
+ const result=await runReleaseJsBuilds({npm:{primary,payloads:[]}},selection,{root,pnpm:'fixture',bestEffort:true,
+  verifyManifest:file=>fs.readFileSync(path.join(root,file)),execute:async(_node,_args,options)=>{
+   const name=path.basename(options.cwd);
+   if(name==='core') for(const dependency of names.slice(0,4)) assert.ok(completed.has(dependency), dependency);
+   if(name==='docs') assert.ok(completed.has('core'));
+   if(name==='docs-theme-default') assert.ok(completed.has('docs'));
+   completed.add(name);
+  }});
+ assert.deepEqual(result,{completed:names.map(name=>`packages/${name}`),failures:{}});
+});
+
 test('JS-only delta builds source prerequisites and seals only selected archives',()=>{
  const root=fileURLToPath(new URL('../',import.meta.url));
  const primary=['packages/core','js-plugins/dts','js-plugins/babel'].map(directory=>{
