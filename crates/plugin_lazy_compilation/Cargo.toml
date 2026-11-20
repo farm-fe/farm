@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_plugin_lazy_compilation"
-version = "2.2.0"
+version = "2.2.1"
 edition = "2024"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"

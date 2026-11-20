@@ -1,0 +1,16 @@
+[package]
+name = "farmfe_plugin_module_federation"
+version = "0.0.0"
+edition = "2024"
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { path = "../../crates/core" }
+farmfe_macro_plugin = { path = "../../crates/macro_plugin" }
+farmfe_toolkit = { path = "../../crates/toolkit" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

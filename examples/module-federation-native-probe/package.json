@@ -1,0 +1,24 @@
+{
+  "name": "@farmfe-examples/module-federation-native-probe",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test:browser": "node browser.mjs",
+    "test:e2e": "node e2e.mjs",
+    "start": "node dev.mjs"
+  },
+  "devDependencies": {
+    "@farmfe/core": "workspace:*",
+    "playwright-chromium": "1.55.0",
+    "@farmfe/plugin-module-federation": "workspace:*",
+    "react": "18.3.1",
+    "@rspack/core": "2.3.0",
+    "@module-federation/enhanced": "2.9.2",
+    "react-dom": "18.3.1",
+    "webpack": "5.112.2",
+    "css-loader": "7.1.5",
+    "mini-css-extract-plugin": "2.10.2"
+  }
+}

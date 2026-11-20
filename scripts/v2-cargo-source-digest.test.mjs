@@ -5,7 +5,8 @@ import path from 'node:path';
 import test from 'node:test';
 import childProcess, { execFileSync, spawnSync } from 'node:child_process';
 import { syncBuiltinESMExports } from 'node:module';
-import { cargoPackageInputsDigest, nativeSourceDigest, npmInventory, root, changesetsPublication } from './v2-release-inventory.mjs';
+import { cargoPackageInputsDigest, nativeSourceDigest, npmInventory, cargoInventory, root, changesetsPublication } from './v2-release-inventory.mjs';
+import { prCandidatePlan } from './prepare-pr-candidate-plan.mjs';
 
 test('pinned Cargo oracle binds fixtures and inherited files without changing version-policy fingerprints', () => {
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-cargo-inputs-'));
@@ -88,15 +89,13 @@ test('actual preflight rejects missing or tampered package-input evidence in an 
   try {
     const checkedIn = path.join(root, 'docs/releases/v2-candidate.json');
     const original = JSON.parse(fs.readFileSync(checkedIn));
-    const candidate = structuredClone(original);
-    candidate.npm = npmInventory();
-    for (const row of candidate.cargo) {
-      const directory = path.dirname(path.join(root, row.manifestPath));
-      row.sourceSha256 = nativeSourceDigest(directory);
-      row.packageInputsSha256 = cargoPackageInputsDigest(directory);
-    }
-    const identity = plan => [...plan.npm.primary, ...plan.npm.payloads, ...plan.cargo].map(({name, version}) => [name, version]);
-    assert.deepEqual(identity(candidate), identity(original));
+    // Current-checkout test evidence must not rewrite the historical release.
+    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+    const commit = git('rev-parse', 'HEAD');
+    const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--locked', '--offline', '--no-deps', '--format-version', '1'], { cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 ** 2 }));
+    const candidate = prCandidatePlan({ base: original, npm: npmInventory(), cargo: cargoInventory(metadata),
+      checkout: { testedCommit: commit, sourceCommit: commit, workflowSHA: commit,
+        testedTree: git('rev-parse', 'HEAD^{tree}'), eventName: 'workflow_dispatch', parents: [] } });
     const program = `import fs from 'node:fs';
       const read = fs.readFileSync;
       const fixture = read(process.argv[1]);

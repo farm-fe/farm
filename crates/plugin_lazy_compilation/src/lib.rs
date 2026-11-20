@@ -5,7 +5,7 @@ use farmfe_core::{
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
 use farmfe_toolkit::html::get_farm_global_this;
-use farmfe_utils::{relative, stringify_query};
+use farmfe_utils::{hash::sha256, relative, stringify_query};
 
 pub const DYNAMIC_VIRTUAL_SUFFIX: &str = ".farm_dynamic_import_virtual_module";
 const ORIGINAL_RESOLVED_PATH: &str = "FARMFE_VIRTUAL_DYNAMIC_MODULE_ORIGINAL_RESOLVED_PATH";
@@ -172,6 +172,14 @@ impl Plugin for FarmPluginLazyCompilation {
             &format!("{farm_global_this}.{FARM_MODULE_SYSTEM}"),
           )
           .replace(
+            "FARM_CSS_STYLE_ID_PREFIX",
+            // Keep the DOM identity in sync with plugin_css::namespaced_style_id.
+            &format!(
+              "{}:",
+              sha256(context.config.runtime.namespace.as_bytes(), 16)
+            ),
+          )
+          .replace(
             "FARM_RUNTIME_TARGET_ENV",
             &format!("{:?}", context.config.output.target_env.to_string()),
           );
@@ -204,6 +212,51 @@ impl Plugin for FarmPluginLazyCompilation {
       }
     } else {
       Ok(None)
+    }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use farmfe_core::{context::CompilationContext, plugin::PluginLoadHookParam};
+  use std::sync::Arc;
+
+  #[test]
+  fn lazy_module_load_injects_the_css_runtime_namespace_prefix() {
+    for (namespace, prefix) in [
+      (None, "28079a3b9739ce05:"),
+      (Some("app-a"), "f2524ca217411db4:"),
+      (Some("app-b"), "c4710bc434ea33fb:"),
+    ] {
+      let mut config = Config::default();
+      if let Some(namespace) = namespace {
+        config.runtime.namespace = namespace.into();
+      }
+      let plugin = FarmPluginLazyCompilation::new(&config);
+      let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
+      let resolved_path = format!("page.js{DYNAMIC_VIRTUAL_SUFFIX}");
+      let loaded = plugin
+        .load(
+          &PluginLoadHookParam {
+            module_id: resolved_path.clone(),
+            resolved_path: &resolved_path,
+            query: vec![],
+            meta: HashMap::default(),
+          },
+          &context,
+          &PluginHookContext::default(),
+        )
+        .unwrap()
+        .unwrap();
+      assert!(
+        loaded
+          .content
+          .contains(&format!("const styleIdPrefix = '{prefix}';")),
+        "{}",
+        loaded.content
+      );
+      assert!(!loaded.content.contains("FARM_CSS_STYLE_ID_PREFIX"));
     }
   }
 }
