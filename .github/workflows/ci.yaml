@@ -94,7 +94,7 @@ jobs:
       contents: read
       actions: read
     if: (always())
-    needs: [platform-contract-linux, platform-contract-macos, platform-contract-windows, version-classification, primary-linux, primary-macos, primary-windows, impact-plan, release-contract-tests, platform-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, execution-baseline]
+    needs: [platform-contract-linux, platform-contract-macos, platform-contract-windows, version-classification, primary-linux, primary-macos, primary-windows, docs-linux, docs-windows, impact-plan, release-contract-tests, platform-contract-tests, call-rust-build-user, call-rust-build-release, check-native-candidate-assembly, examples-test, docs-acceptance, type-check, ts-test, execution-baseline]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -113,7 +113,7 @@ jobs:
              "native:ci:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.native_shadow_run_attempt }}"},
              "ts-tests:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.ts_shadow_run_attempt }}"},
              "examples:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.browser_shadow_run_attempt }}"},
-             "docs:ci:linux-x64-gnu":{"artifact_id":"${{ needs.primary-linux.outputs.docs_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-linux.outputs.docs_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-linux.outputs.docs_shadow_run_attempt }}"},
+             "docs:ci:linux-x64-gnu":{"artifact_id":"${{ needs.docs-linux.outputs.artifact_id }}","artifact_digest":"${{ needs.docs-linux.outputs.artifact_digest }}","run_attempt":"${{ needs.docs-linux.outputs.run_attempt }}"},
              "platform-contracts:linux-x64-gnu":{"artifact_id":"${{ needs.platform-contract-linux.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-linux.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-linux.outputs.run_attempt }}"},
              "native:ci:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.native_shadow_run_attempt }}"},
              "ts-tests:darwin-arm64":{"artifact_id":"${{ needs.primary-macos.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-macos.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-macos.outputs.ts_shadow_run_attempt }}"},
@@ -122,7 +122,7 @@ jobs:
              "native:ci:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.native_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.native_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.native_shadow_run_attempt }}"},
              "ts-tests:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.ts_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.ts_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.ts_shadow_run_attempt }}"},
              "examples:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.browser_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.browser_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.browser_shadow_run_attempt }}"},
-             "docs:ci:win32-x64-msvc":{"artifact_id":"${{ needs.primary-windows.outputs.docs_shadow_artifact_id }}","artifact_digest":"${{ needs.primary-windows.outputs.docs_shadow_artifact_digest }}","run_attempt":"${{ needs.primary-windows.outputs.docs_shadow_run_attempt }}"},
+             "docs:ci:win32-x64-msvc":{"artifact_id":"${{ needs.docs-windows.outputs.artifact_id }}","artifact_digest":"${{ needs.docs-windows.outputs.artifact_digest }}","run_attempt":"${{ needs.docs-windows.outputs.run_attempt }}"},
              "platform-contracts:win32-x64-msvc":{"artifact_id":"${{ needs.platform-contract-windows.outputs.artifact_id }}","artifact_digest":"${{ needs.platform-contract-windows.outputs.artifact_digest }}","run_attempt":"${{ needs.platform-contract-windows.outputs.run_attempt }}"},
              "native:ci:linux-x64-musl":{"artifact_id":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.linux_x64_musl_run_attempt }}"},
              "native:ci:darwin-x64":{"artifact_id":"${{ needs.call-rust-build-release.outputs.darwin_x64_artifact_id }}","artifact_digest":"${{ needs.call-rust-build-release.outputs.darwin_x64_artifact_digest }}","run_attempt":"${{ needs.call-rust-build-release.outputs.darwin_x64_run_attempt }}"},
@@ -234,6 +234,7 @@ jobs:
         run: >-
           node --test scripts/v2-*.test.mjs scripts/release-archive.test.mjs
           scripts/refresh-v2-source-inventory.test.mjs scripts/ci-mf-native-artifact.test.mjs
+          scripts/native-install-electron-scope.test.mjs
           rust-plugins/module-federation/scripts/native.test.mjs
           examples/module-federation-native-probe/e2e-processes.test.mjs
           examples/module-federation-native-probe/e2e-review-regressions.test.mjs
@@ -253,16 +254,44 @@ jobs:
           status: ${{ job.status }}
           artifact-suffix: single
 
+  # Fixed Docs calls avoid creating an intentionally skipped macOS job. Each
+  # waits for its own full primary chain and consumes that exact native binding.
+  docs-linux:
+    permissions:
+      contents: read
+      actions: read
+    name: Primary Linux / Docs CI quality checks
+    needs: [primary-linux]
+    if: always() && needs.primary-linux.result == 'success'
+    uses: ./.github/workflows/farm-docs.yaml
+    with:
+      platforms: '[{"os":"ubuntu-24.04","abi":"linux-x64-gnu"}]'
+      consume_native: true
+      native_upload: ${{ needs.primary-linux.outputs.native_docs_upload }}
+
+  docs-windows:
+    permissions:
+      contents: read
+      actions: read
+    name: Primary Windows / Docs CI quality checks
+    needs: [primary-windows]
+    if: always() && needs.primary-windows.result == 'success'
+    uses: ./.github/workflows/farm-docs.yaml
+    with:
+      platforms: '[{"os":"windows-latest","abi":"win32-x64-msvc"}]'
+      consume_native: true
+      native_upload: ${{ needs.primary-windows.outputs.native_docs_upload }}
+
   docs-acceptance:
     if: always()
     name: Docs CI quality checks
-    needs: [version-classification, primary-linux, primary-windows]
+    needs: [version-classification, docs-linux, docs-windows]
     runs-on: ubuntu-24.04
     steps:
       - name: Require both platform Docs chains
         env:
-          LINUX_RESULT: ${{ needs.primary-linux.result }}
-          WINDOWS_RESULT: ${{ needs.primary-windows.result }}
+          LINUX_RESULT: ${{ needs.docs-linux.result }}
+          WINDOWS_RESULT: ${{ needs.docs-windows.result }}
         run: test "$LINUX_RESULT" = success && test "$WINDOWS_RESULT" = success
 
   platform-contract-tests:

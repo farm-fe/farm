@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "mode": "changesets",
+  "baseSHA": "eb8be2c8ce4bbf8774dc3c6877c43bf84e79bca1",
+  "sourceHeadSHA": "1683b9dc2233435487722af1a7b3513f5f49ddc7",
+  "officialPlanSha256": "d0de335acfecbb4de3a1c77e02ea44d6db0272dac33918925bf19d447dc75f70",
+  "planSha256": "00baf8befa077d3c9e479d40f73c4e7c1795821a83cfa61002c65d6c912d7518",
+  "consumed": [
+    {
+      "id": "css-empty-url",
+      "sha256": "479d82a9eb7a4b0763a07266b915a13049901a604a6e45139b3927cacd499dea"
+    },
+    {
+      "id": "friendly-html-response",
+      "sha256": "270c803f589ff5c36565210027f0301bd5bd6584a073c78bbbe04b7e04de93ae"
+    },
+    {
+      "id": "kind-walls-perform",
+      "sha256": "572ae8e4c6c31961c2ff341afab13deb5f91d551aa86eb4e04db0637625f494b"
+    },
+    {
+      "id": "module-binding-hygiene",
+      "sha256": "2dc8b624d2aa0d1527aa9c5d72c3d3dca0d473e3431a873eb1db04c74b682147"
+    },
+    {
+      "id": "proxy-object-target",
+      "sha256": "f30c69fd00cb8529402262f70e9db0581d0911268fedd07ef8a3b94ed52b0d51"
+    },
+    {
+      "id": "tree-shake-update-delete",
+      "sha256": "247c28d6cf0681f9f2b8deb2d2d8d9393dff1ebeeb149bb76e91be5065f2d616"
+    }
+  ]
+}

@@ -1,198 +1,65 @@
 {
   "schemaVersion": 1,
-  "pullRequest": 2329,
+  "preparationMode": "changesets",
+  "pullRequest": 2364,
   "baseBranch": "main",
-  "tag": "v2.0.0",
+  "tag": "v2.0.1",
   "abi": "0.5.4",
   "rustCoreVersion": "2.2.0",
-  "candidatePlanSha256": "4e758783b3e24ff678fee817647b13edafe368c4adfbe5b8b9f423c770f57d63",
+  "candidatePlanSha256": "00baf8befa077d3c9e479d40f73c4e7c1795821a83cfa61002c65d6c912d7518",
   "counts": {
-    "primary": 51,
-    "payloads": 246,
-    "total": 297
+    "primary": 11,
+    "payloads": 18,
+    "total": 29
   },
   "requiredWorkflows": [
     ".github/workflows/ci.yaml",
     ".github/workflows/rust-test.yaml",
-    ".github/workflows/lint.yaml",
-    ".github/workflows/code-spell-check.yaml",
-    ".github/workflows/lint-pr-title.yml"
+    ".github/workflows/incremental-release.yaml"
   ],
-  "seal": {
-    "workflowPath": ".github/workflows/ci.yaml"
-  },
-  "candidateSeal": "receipt.json",
-  "sdkProof": "sdk-consumer.json",
-  "rust": [
-    {
-      "name": "farmfe_ecosystem_glob",
-      "version": "0.1.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_macro_cache_item",
-      "version": "2.1.0",
-      "action": "reuse",
-      "registryChecksum": "bf179f567f72a3828f74aff319c1150cdb3335029bfc125ff65774b476e8e502",
-      "reuseEvidenceSha256": "be11aea59e6f3d602ec648ba3726a1735fd85422b5eda30782587782ef7bfe9a",
-      "reuseEvidenceFile": "docs/release-evidence/published-macro-compat.json"
-    },
-    {
-      "name": "farmfe_utils",
-      "version": "2.1.1",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_core",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_testing_helpers",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_toolkit",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_css",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_define",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_macro_plugin",
-      "version": "2.0.0",
-      "action": "reuse",
-      "registryChecksum": "59ac048afc3bfcba0cefe8bbb25e1cdb2e266945094975a95fd9998fd80ae9a2",
-      "reuseEvidenceSha256": "22dc3590973dbb2e88bb3b7ee0b9e4109d4e7519e01d6f6905420e9c9a6168a7",
-      "reuseEvidenceFile": "docs/release-evidence/published-plugin-macro-compat.json"
-    },
-    {
-      "name": "farmfe_plugin_file_size",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_html",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_json",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_lazy_compilation",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_library",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_mangle_exports",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_minify",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_partial_bundling",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_polyfill",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_progress",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_resolve",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_runtime",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_script_meta",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_swc_transformer_import_glob",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_script",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_static_assets",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_plugin_tree_shake",
-      "version": "2.2.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_testing",
-      "version": "2.0.0",
-      "action": "publish"
-    },
-    {
-      "name": "farmfe_compiler",
-      "version": "2.2.0",
-      "action": "publish"
-    }
-  ],
-  "registryVerification": {
-    "script": "scripts/verify-published-v2-consumers.mjs",
-    "sha256": "a6e04a176b6335a95328e9e2ca6ce9458ace6d422c00ac96b10f81206e377499"
-  },
-  "websiteDeployment": false,
   "requiredCiJobs": [
     "Release source contracts",
     "Check declared native inputs (not ABI execution)",
     "Type Check",
     "Examples Test (ubuntu-24.04)",
-    "Typescript Test (ubuntu-24.04)",
     "Examples Test (macos-latest)",
-    "Typescript Test (macos-latest)",
     "Examples Test (windows-latest)",
+    "Typescript Test (ubuntu-24.04)",
+    "Typescript Test (macos-latest)",
     "Typescript Test (windows-latest)",
     "Docs / windows-latest",
     "Docs / ubuntu-24.04",
-    "Seal complete npm and Rust candidates",
-    "Record verified CI execution baseline",
-    "Candidate registry consumer (ubuntu-24.04)",
-    "Candidate registry consumer (macos-latest)",
-    "Candidate registry consumer (windows-latest)"
+    "Record verified CI execution baseline"
   ],
-  "preparationMode": "first-stable"
+  "requiredReleaseJobs": [
+    "Build independent release candidates",
+    "Independent release candidate consumer (ubuntu-24.04)",
+    "Independent release candidate consumer (macos-latest)",
+    "Independent release candidate consumer (windows-latest)"
+  ],
+  "publication": {
+    "workflowPath": ".github/workflows/incremental-release.yaml",
+    "event": "authenticated-version-merge-or-explicit-dispatch",
+    "ref": "refs/heads/main",
+    "publishDefault": false,
+    "explicitAuthorizationRequired": true,
+    "sourceBinding": "fixed-main-event-snapshot",
+    "chain": "release",
+    "profile": "release",
+    "namespace": "farm-release-v1",
+    "publicationScope": "npm",
+    "baselineAuthority": "completed-public-registry-and-tag-release-acceptance",
+    "ciBuildBytesAccepted": false
+  },
+  "seal": {
+    "workflowPath": ".github/workflows/incremental-release.yaml"
+  },
+  "candidateSeal": "receipt.json",
+  "sdkProof": "sdk-consumer.json",
+  "rust": [],
+  "registryVerification": {
+    "script": "scripts/verify-published-v2-consumers.mjs",
+    "sha256": "f1927e714b31aea5b64e74cc7e7358179d4ce17335303e8d04d58e749ac25f26"
+  },
+  "websiteDeployment": false
 }

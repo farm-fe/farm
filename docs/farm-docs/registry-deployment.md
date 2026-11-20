@@ -17,13 +17,15 @@ node scripts/farm-docs-vercel-build.mjs --preflight
 
 ## Package and source boundaries
 
-- Read the website's direct dependencies and current repository package manifests
-  to determine exact, stable Farm release versions. Neither `latest`, beta tags,
-  nor the old draft release inventory chooses deployment versions.
+- Read the website's direct dependencies and committed
+  `website/farm-release-lock.json` to select the independently approved Farm
+  release. Workspace manifest version bumps do not change deployment pins.
+  Website dependency declaration changes require an explicit lock refresh.
 - Follow runtime, optional and peer Farm dependencies, including the current
   machine's precompiled native packages. Core and CLI must be v2. Native packages
   are mandatory consumer dependencies, so an optional-install failure cannot be
-  ignored. macOS, Linux and Windows targets use their own published packages.
+  ignored. The lock verifies Linux x64 GNU, macOS ARM64 and Windows x64 MSVC;
+  other targets fail closed. Source CI keeps its existing workspace/native path.
 - Query the official npm registry for every required exact version. Check names,
   versions, SHA-512 integrity, registry tarball URLs, Farm dependency declarations
   and platform metadata. Missing publication or changed dependency declarations
@@ -49,11 +51,12 @@ node scripts/farm-docs-vercel-build.mjs --preflight
   matches the source bytes. An existing output is preserved under
   `website/build-farm.previous-<timestamp>`. The temporary consumer is removed.
   `build-farm/farm-docs-build-receipt.json` records exact Farm versions, npm
-  integrities, the generated lock digest and installed native payload hashes.
+  integrities, the committed deployment lock source/digest, generated pnpm lock
+  digest and installed native payload hashes.
 
-The independent lock is frozen within each build, not committed as a cross-build
-lock. Ordinary website dependency ranges can resolve newer compatible releases
-on a later build. The receipt is registry-consumption evidence, not a publisher
+Farm versions and integrity are committed across builds. The generated pnpm
+lock is frozen within each build; third-party website ranges can still resolve
+newer compatible releases on a later build. The receipt is registry-consumption evidence, not a publisher
 approval, native ABI certification or a substitute for real build/preview checks.
 The older `farm-docs-registry-consumer.mjs` publisher-receipt audit remains separate
 and unchanged; its historical 40-package draft is not this deployment's manifest.
@@ -79,22 +82,19 @@ branch and domain settings decide where a successful deployment is served; this
 repository change does not modify those settings. The local build script only
 produces static files and does not deploy, promote, merge or publish packages.
 
-### npm publication ordering
+### Independent package upgrades
 
-The npm release workflow and Vercel Git integration both react to a main push.
-They run independently: Vercel does not wait for the npm workflow to finish.
-A commit that references newly bumped Farm versions can therefore reach the
-registry preflight before those exact versions are public. The preflight fails
-before installation or output replacement, so no successful deployment is
-available to replace the current production site. There is no source-build
-fallback or fallback to older package versions.
+The npm release workflow and Vercel Git integration still run independently.
+A workspace Changesets version bump no longer changes the website's published
+consumer. The committed Farm deployment lock keeps the known public cohort until
+a separate website-upgrade PR deliberately refreshes it after publication.
+Neither `latest` nor an automatic fallback chooses a version. Missing or changed
+locked metadata still fails before installation; failed Git deployments are not
+automatically retried when a package appears later.
 
-When publication finishes, the failed Vercel deployment is **not automatically
-retried**. Verify all exact versions with the preflight, then redeploy the same
-main commit through Vercel. Do not substitute an older commit or disable the
-preflight. A later main push triggers another independent deployment attempt.
-This policy deliberately adds no polling, deployment hook, token or npm workflow
-coupling. See [the main deployment policy](main-deployment-pause.md).
+See [the independent upgrade procedure](../releases/docs-deployment-lock.md).
+This adds no polling, deploy hook, token, production settings or release-workflow
+coupling. Local development and source CI still use workspace versions.
 
 ### Public site ownership verification
 

@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -140,14 +140,14 @@
     "LICENSE"
   ],
   "optionalDependencies": {
-    "@farmfe/core-darwin-arm64": "2.0.0",
-    "@farmfe/core-darwin-x64": "2.0.0",
-    "@farmfe/core-linux-arm64-gnu": "2.0.0",
-    "@farmfe/core-linux-arm64-musl": "2.0.0",
-    "@farmfe/core-linux-x64-gnu": "2.0.0",
-    "@farmfe/core-linux-x64-musl": "2.0.0",
-    "@farmfe/core-win32-arm64-msvc": "2.0.0",
-    "@farmfe/core-win32-ia32-msvc": "2.0.0",
-    "@farmfe/core-win32-x64-msvc": "2.0.0"
+    "@farmfe/core-darwin-arm64": "2.0.1",
+    "@farmfe/core-darwin-x64": "2.0.1",
+    "@farmfe/core-linux-arm64-gnu": "2.0.1",
+    "@farmfe/core-linux-arm64-musl": "2.0.1",
+    "@farmfe/core-linux-x64-gnu": "2.0.1",
+    "@farmfe/core-linux-x64-musl": "2.0.1",
+    "@farmfe/core-win32-arm64-msvc": "2.0.1",
+    "@farmfe/core-win32-ia32-msvc": "2.0.1",
+    "@farmfe/core-win32-x64-msvc": "2.0.1"
   }
 }

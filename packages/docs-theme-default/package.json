@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/docs-theme-default",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/farm-fe/farm",
@@ -28,7 +28,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
-    "@farmfe/docs": "0.0.1",
+    "@farmfe/docs": "0.0.2",
     "react": "^18.2.0"
   },
   "devDependencies": {

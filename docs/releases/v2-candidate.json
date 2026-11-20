@@ -13,17 +13,17 @@
       },
       {
         "name": "@farmfe/core",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "manifestPath": "packages/core/package.json",
-        "manifestSha256": "cd07d84390e1ef9c83f95f93b2b22d0e602600756ae940c77327bcd8a530f2a6",
-        "sourceSha256": "c00bb063d0613e7f8eac1a240953bace3e0977277adad87e1a6ac37760686c03"
+        "manifestSha256": "c55c98ad4e86183f8b89d2b47b317337c31a460b4cb56792dbc3de66247d925d",
+        "sourceSha256": "3c8475c9c7ddbdeb7a253a91f2513278e66bbcb82d21dda69c09a7d6a39e8a83"
       },
       {
         "name": "create-farm",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "manifestPath": "packages/create-farm/package.json",
-        "manifestSha256": "9213bedc0d5c0ff9860ef688347c42f9c9cf82ff7581ee43498ecba31d7fba1b",
-        "sourceSha256": "395278cac4eae715a0a54782456824762dc80e9af88d23aecdb83352c216e8dc"
+        "manifestSha256": "658af556bde243c9f2f97ecf7b995b863ca77592d59830804168d9004ddd8a3e",
+        "sourceSha256": "04f83df74182eabee3c57f17c93c2de8ef19f3cd217cf800bfc55c941340f21e"
       },
       {
         "name": "create-farm-plugin",
@@ -34,17 +34,17 @@
       },
       {
         "name": "@farmfe/docs",
-        "version": "0.0.1",
+        "version": "0.0.2",
         "manifestPath": "packages/docs/package.json",
-        "manifestSha256": "c7815aea91715f02b619b6c03e451466f06d12c4c289a6a8bf660b618eeb84e4",
-        "sourceSha256": "77af43174c9411fabefff809219aab857bb3611fc6df7f01eabf5f75bdd8c19f"
+        "manifestSha256": "8b881c89bd412d9447923c858422a6c535c13cefd85c50c720e5bc3dcc8eec34",
+        "sourceSha256": "8aa447e137f4d9798c4457671474ff020bc69e42f0a4916e70953f361daad6bc"
       },
       {
         "name": "@farmfe/docs-theme-default",
-        "version": "0.0.1",
+        "version": "0.0.2",
         "manifestPath": "packages/docs-theme-default/package.json",
-        "manifestSha256": "838047e0cf2010544b4d3e5133a87e5a5152ad7e236d0191dc006db96d3a3c29",
-        "sourceSha256": "b3c51a62bbec3f99f8b7f2103a39547bbea240fcca8f49c3033f36cc097a6a06"
+        "manifestSha256": "9a74b88cc6098f5e6d2142e0ec623041d528bd94b0257f4a7b2b0321c334c27e",
+        "sourceSha256": "37d6d298c3f9747a55574de2561505fb94cd91f012ed5d667a79bc0f4cad786c"
       },
       {
         "name": "@farmfe/plugin-tools",
@@ -170,7 +170,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/react/package.json",
         "manifestSha256": "037d270584b80c54a1c0a85b6dcafa4c0389e154c20e4c0fe76ab77387a65f37",
-        "sourceSha256": "f4f9d2b7e26c8d6aab9a6e20a6bd2d2cfb91b534a12f41c6ff806c9c37746e5f"
+        "sourceSha256": "b1ccd4efa9397c981e980b2e3a8dce78a7447053e587cb0d15ccd26df163f1c8"
       },
       {
         "name": "@farmfe/plugin-react-components",
@@ -191,7 +191,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/sass/package.json",
         "manifestSha256": "7a590609533cd278a6ec7c548d9842ed8c01f92b66468819b82218cb1d3cfd74",
-        "sourceSha256": "fc9e219eef575ae24c6ceccd05b13b9656db0df578208e90b9b89663a1df242d"
+        "sourceSha256": "5a9979e81096e09e2d5f312bb1e81ec72ae9ab8e9b15520178cd477c0759e2ff"
       },
       {
         "name": "@farmfe/plugin-ssr-css",
@@ -226,7 +226,7 @@
         "version": "2.0.0",
         "manifestPath": "rust-plugins/tailwindcss/package.json",
         "manifestSha256": "605fcb8e8dfab3343e0368aa115af4dc710aa0ae9a53f0b48e4684643d2925dc",
-        "sourceSha256": "6cae55143f588dbb42f2ab7af76d1af6c1bd6d4e57ee263bc06b504e088adc9d"
+        "sourceSha256": "5755e44db38d42b4e99c0be68456f1107760c2ccc6f38642c40d4b957303df4f"
       },
       {
         "name": "@farmfe/plugin-url",
@@ -279,10 +279,10 @@
       },
       {
         "name": "@farmfe/js-plugin-babel",
-        "version": "0.0.4",
+        "version": "0.0.5",
         "manifestPath": "js-plugins/babel/package.json",
-        "manifestSha256": "d03528baa082472f895eff4607203bdc0dee2189e567d9e625d630df80c361eb",
-        "sourceSha256": "c03c9a0631bf16ebbd066b880ff9a29d023118a1ee8a041724af07f17f0fc234"
+        "manifestSha256": "7c90bc45eb404635442b0058bc28ecdc773dfdf356510f2f144df36eed473719",
+        "sourceSha256": "9962adcdd2a7f7bfd4854539fcc84ff2dd53827d401e64e7a578780ca3c5bb61"
       },
       {
         "name": "@farmfe/js-plugin-dts",
@@ -300,17 +300,17 @@
       },
       {
         "name": "@farmfe/js-plugin-less",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "manifestPath": "js-plugins/less/package.json",
-        "manifestSha256": "0f65843a92dcae5f4231e996ab4ba6240c3569fb1b6ea3b86a8d20080eed05b3",
-        "sourceSha256": "27314e709a7cc2f42dc3cee31f80f583c89ba3ae0a6c4222ce6e3adc95704ca9"
+        "manifestSha256": "a2d0608efc8546c2bc323334aba9f6f82f75d001f4913c5ea02d0f7f5a8ab24a",
+        "sourceSha256": "151d189092f46c6ba936d9ac4a73ac466279fc1875f5f0af7d31bd21b2411ca1"
       },
       {
         "name": "@farmfe/js-plugin-postcss",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "manifestPath": "js-plugins/postcss/package.json",
-        "manifestSha256": "150cb793f88c78f7d9546a0f3c2cdc99d477a0a22fe25bd9ae491f456948dc03",
-        "sourceSha256": "83ab7f7cf2ecb13b508fb1c83d04f3854b9b7afeef3f2a68c7bdf860b4435190"
+        "manifestSha256": "cc9353e70e4a3a160c2aade7990e976496aa74105753247e3c29d248b002eaca",
+        "sourceSha256": "55fee5b3ef95ccac1107b25456f72f015770b6f6ab0210cb02966242d035c008"
       },
       {
         "name": "@farmfe/js-plugin-qiankun",
@@ -321,31 +321,31 @@
       },
       {
         "name": "@farmfe/js-plugin-react-compiler",
-        "version": "0.0.4",
+        "version": "0.0.5",
         "manifestPath": "js-plugins/react-compiler/package.json",
-        "manifestSha256": "2bc545bb1bc17b59f0bb2c3f3c4695382625d1aa27b2393cffed85df1db80076",
-        "sourceSha256": "4cf451ee64364ee3ba5bf02d778d9334a4ca48e98d86f2e5bf1eda05c2e59c9c"
+        "manifestSha256": "f2222f3b51da87422263f78294c31299b64099262c69c423bc0a7d3b978562c5",
+        "sourceSha256": "068606cb452314126560aefd4094d1ea781c9f84e7825957a32a5c82f5c2da54"
       },
       {
         "name": "@farmfe/js-plugin-sass",
-        "version": "3.0.0",
+        "version": "3.0.1",
         "manifestPath": "js-plugins/sass/package.json",
-        "manifestSha256": "76031674b7359260e558bed4bb360dbd8fba51b4b292139dede9f5bc1815ce4c",
-        "sourceSha256": "ea1bc2c95848715904026046e3fe6337397cdceb272722c0553c75ca5fc07c62"
+        "manifestSha256": "e5af391b4ae6fc28600cdb663aab46b67033070d1c8229912bf37de9d12b6f33",
+        "sourceSha256": "cf159f9e7caa6986a2258d6de98b870fe8fdc657d0b714fdc630affc41977f4d"
       },
       {
         "name": "@farmfe/js-plugin-svgr",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "manifestPath": "js-plugins/svgr/package.json",
-        "manifestSha256": "fce22bdaa7fafa592c4956772d8c405b1528188180d8218342e19d1752ba290e",
-        "sourceSha256": "2d5b25e4b47339252447dcf4ac84d359d6297f62b3cc80cd38661a348e36dcae"
+        "manifestSha256": "f4d47871eb1e5a7038bcc177cd9e0f4d3544c32fe67efe8ef0cc61ec102624e0",
+        "sourceSha256": "adbf438348a588c5f33b894668366dfa9ab78f727731097e7a993abecff2cec5"
       },
       {
         "name": "@farmfe/js-plugin-tailwindcss",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "manifestPath": "js-plugins/tailwindcss/package.json",
-        "manifestSha256": "99ce6470643f4f66cdc04fadb194b105e6d51dc4a71167e5332310c4961a9e34",
-        "sourceSha256": "3f842fb798f93d6430d244e5cd8d149c8613bb0446d81d4c49c0589ec8099d25"
+        "manifestSha256": "62b90fcbb3e664885f205faf8814bee41493e8a20700981279c6e5b37e07145a",
+        "sourceSha256": "213ec8b6d1dc946e5e3b82a7a6c4cd61bbed2ca5775e316d1b5428095739153c"
       },
       {
         "name": "@farmfe/js-plugin-visualizer",
@@ -365,126 +365,126 @@
     "payloads": [
       {
         "name": "@farmfe/core-darwin-arm64",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "darwin-arm64",
         "manifestPath": "packages/core/npm/darwin-arm64/package.json"
       },
       {
         "name": "@farmfe/core-darwin-x64",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "darwin-x64",
         "manifestPath": "packages/core/npm/darwin-x64/package.json"
       },
       {
         "name": "@farmfe/core-linux-arm64-gnu",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "linux-arm64-gnu",
         "manifestPath": "packages/core/npm/linux-arm64-gnu/package.json"
       },
       {
         "name": "@farmfe/core-linux-arm64-musl",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "linux-arm64-musl",
         "manifestPath": "packages/core/npm/linux-arm64-musl/package.json"
       },
       {
         "name": "@farmfe/core-linux-x64-gnu",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "linux-x64-gnu",
         "manifestPath": "packages/core/npm/linux-x64-gnu/package.json"
       },
       {
         "name": "@farmfe/core-linux-x64-musl",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "linux-x64-musl",
         "manifestPath": "packages/core/npm/linux-x64-musl/package.json"
       },
       {
         "name": "@farmfe/core-win32-arm64-msvc",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "win32-arm64-msvc",
         "manifestPath": "packages/core/npm/win32-arm64-msvc/package.json"
       },
       {
         "name": "@farmfe/core-win32-ia32-msvc",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "win32-ia32-msvc",
         "manifestPath": "packages/core/npm/win32-ia32-msvc/package.json"
       },
       {
         "name": "@farmfe/core-win32-x64-msvc",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "@farmfe/core",
         "platform": "win32-x64-msvc",
         "manifestPath": "packages/core/npm/win32-x64-msvc/package.json"
       },
       {
         "name": "create-farm-darwin-arm64",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "darwin-arm64",
         "manifestPath": "packages/create-farm/npm/darwin-arm64/package.json"
       },
       {
         "name": "create-farm-darwin-x64",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "darwin-x64",
         "manifestPath": "packages/create-farm/npm/darwin-x64/package.json"
       },
       {
         "name": "create-farm-linux-arm64-gnu",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "linux-arm64-gnu",
         "manifestPath": "packages/create-farm/npm/linux-arm64-gnu/package.json"
       },
       {
         "name": "create-farm-linux-arm64-musl",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "linux-arm64-musl",
         "manifestPath": "packages/create-farm/npm/linux-arm64-musl/package.json"
       },
       {
         "name": "create-farm-linux-x64-gnu",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "linux-x64-gnu",
         "manifestPath": "packages/create-farm/npm/linux-x64-gnu/package.json"
       },
       {
         "name": "create-farm-linux-x64-musl",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "linux-x64-musl",
         "manifestPath": "packages/create-farm/npm/linux-x64-musl/package.json"
       },
       {
         "name": "create-farm-win32-arm64-msvc",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "win32-arm64-msvc",
         "manifestPath": "packages/create-farm/npm/win32-arm64-msvc/package.json"
       },
       {
         "name": "create-farm-win32-ia32-msvc",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "win32-ia32-msvc",
         "manifestPath": "packages/create-farm/npm/win32-ia32-msvc/package.json"
       },
       {
         "name": "create-farm-win32-x64-msvc",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "owner": "create-farm",
         "platform": "win32-x64-msvc",
         "manifestPath": "packages/create-farm/npm/win32-x64-msvc/package.json"
@@ -2097,11 +2097,11 @@
   "cargo": [
     {
       "name": "farmfe_compiler",
-      "version": "2.2.1",
+      "version": "2.2.0",
       "manifestPath": "crates/compiler/Cargo.toml",
-      "manifestSha256": "758a4627db9b4a3d00fcf4575ff42c764f4679ebc940fbe13b3c180f8235c8af",
-      "sourceSha256": "11212a9537f2345b2232447cf06d79cb9c4fb04f716f16125138c322b0828a0d",
-      "packageInputsSha256": "db85a3be29db71169ed0c2aeeaa55f2d6b019de72686eeb757107c85971b13e1",
+      "manifestSha256": "45a8d3013efae158e9f376adfc817c3a2fa3b206df40da32c220034e84d5e155",
+      "sourceSha256": "4aeb933f76ca07f7a73b48479073dfd054e644c3153a128ada67fa7a4a24c724",
+      "packageInputsSha256": "3aca2a978717938c9e3fb440b0e5f5a3ea32714e2fc249c0fe6cc6f75faeecdb",
       "publish": null
     },
     {
@@ -2110,7 +2110,7 @@
       "manifestPath": "crates/core/Cargo.toml",
       "manifestSha256": "b0728964f5fcdf61bd714c32cf0ebfc937cb3830bc9065dc8f345d71f9f94da2",
       "sourceSha256": "31bac1555eb6d1eafd82ef467b5e9ea1627aac79a4ef7898377e381393a15763",
-      "packageInputsSha256": "e5b2891e2c758fc708d396e09f20819816e6316d37b85eeb40a89daefcada916",
+      "packageInputsSha256": "8b7d8efdc9405b46665933864381f20a86bc89701522a64fe1f6a44b489ecde6",
       "publish": null
     },
     {
@@ -2119,7 +2119,7 @@
       "manifestPath": "rust-ecosystem/glob/Cargo.toml",
       "manifestSha256": "dc931bf4252f67daa281b854986ae879dfa045f71b6e2d6ed92d1d522cac6f4c",
       "sourceSha256": "cd3b13fe13518132a3042d302b94e22e4d2777cc4252ffb7fa16af488d258869",
-      "packageInputsSha256": "8384f6c9c65babc6fb31d99a7a71c56c5ea1ed9857b06238839b20d722beac76",
+      "packageInputsSha256": "6000470b61c6dc331fb27367302f36371ed51f5ca4b6e910ca759fb4514b8ff8",
       "publish": null
     },
     {
@@ -2128,7 +2128,7 @@
       "manifestPath": "crates/macro_cache_item/Cargo.toml",
       "manifestSha256": "72b73f56f476c152a7dafada2b5c69c4b5aef0f3dde9e29085b129b5448afe4c",
       "sourceSha256": "980c87ac2b1f60afe2b2cc2ae7407836ee6e666ffc7a86332fad7c2659012ebe",
-      "packageInputsSha256": "c257ca5ce112fb17e7191da45d847a2993c1288db0a5f460724357a120e14506",
+      "packageInputsSha256": "e349c26be45686cf2157870aa63855595acafd715b50ce875fd0c52dca93bcdd",
       "publish": null
     },
     {
@@ -2137,16 +2137,16 @@
       "manifestPath": "crates/macro_plugin/Cargo.toml",
       "manifestSha256": "3e1253c663acf1419f0ba669c6dc0c5123dc0d860e0412da78aa9387c8ed0b45",
       "sourceSha256": "4109baeebf43d2a94bf82e843f5a9533de8a0db63e45dab599103ae6c9a57913",
-      "packageInputsSha256": "877c819fbfd8e5c0cf95376f86d73f1ac6bcf5bab65a172ad6880d48a9c55fb5",
+      "packageInputsSha256": "140506c48a5b4980f09d3de1424430a7bb1376c7a166115b9058e286a7879af5",
       "publish": null
     },
     {
       "name": "farmfe_plugin_css",
-      "version": "2.2.1",
+      "version": "2.2.0",
       "manifestPath": "crates/plugin_css/Cargo.toml",
-      "manifestSha256": "b27f01d7d39e4828daa7680fc316625c4b6d287a07dec3939152f33227f45bd4",
-      "sourceSha256": "8c7bf9224a85133fb172eb1051500b1b483e6a61268b31699c42944d12820db4",
-      "packageInputsSha256": "974ebb7c8fb5a0161e8628c9a78a162bf1cdd8840fcd6c2e2d1eb6eaef9398b1",
+      "manifestSha256": "7ad72b220cf90d3901800827d8ec377ab67d2208bb73c7a7e1a97a507c123add",
+      "sourceSha256": "4b4cba9edaba1997bdcd3f70606851155a28d656225716240ab6751dfdac4913",
+      "packageInputsSha256": "0f8887b8d84e910e2d482f05559f8a713015c5fc929e7bbdc71356f0394daf8b",
       "publish": null
     },
     {
@@ -2155,7 +2155,7 @@
       "manifestPath": "crates/plugin_define/Cargo.toml",
       "manifestSha256": "ba5ddc106fba7a11b05636ffde1e69437117f5fb5137c2e9e8a4b9a600f1abe3",
       "sourceSha256": "d0ea5bdb9a1afe963e653678ac17de8debc0b6236b12c1ce4dd3059d05ca9625",
-      "packageInputsSha256": "8dbc23a389af5376f68f5a7158cec26510c7f1402459f4025f21b43af01cd4cd",
+      "packageInputsSha256": "28363497e52365864c6ffc0947af8eb6324ed099351fc14a26525270aed49ec8",
       "publish": null
     },
     {
@@ -2164,7 +2164,7 @@
       "manifestPath": "crates/plugin_file_size/Cargo.toml",
       "manifestSha256": "dda59ce69de124a1a9e218e77a6ff39991eee2f0adcbf9aafd5966df39cc76eb",
       "sourceSha256": "a7dbad7ae6f84ef640019823c5f8f51e37b0426f93eba7ae419393968fbdc7ca",
-      "packageInputsSha256": "6d7081d1a47b2e6cc2ad35dfdfeb581b85380dbad4791f08b97bdd917e920c43",
+      "packageInputsSha256": "2fa6bd6f689413c16e88ef9a4cd9043397ba166425e441e05e1353fb5bef0492",
       "publish": null
     },
     {
@@ -2173,7 +2173,7 @@
       "manifestPath": "crates/plugin_html/Cargo.toml",
       "manifestSha256": "177dd64dad12a74e6d1b1bfcc48a02b732c5807aae08c0788b33b4cf3510b7ca",
       "sourceSha256": "c97f0d020e9dc83f28f1d02c50f8378cb5365e87319584d578a4156f66b67882",
-      "packageInputsSha256": "506d56eb700365e800811d57d7c8f39258276903fa8c450c72c5d46bf5c2391e",
+      "packageInputsSha256": "3457c74181adc9cf70dd99667b1bc416c0264fe5e7a7e41b4000d30eae000d7e",
       "publish": null
     },
     {
@@ -2182,16 +2182,16 @@
       "manifestPath": "crates/plugin_json/Cargo.toml",
       "manifestSha256": "15f7b39df0fc2ad4138dcf735a213e6d319c854e04460fb10d40e239a46ccfb9",
       "sourceSha256": "6f52c3d27ee134873eca92430e2a4d2e684f95ea383982102ff9f8e4e09c1fec",
-      "packageInputsSha256": "2033069af1774aad4acbd98125928f64cbe996f1675d414e9421aba71db62784",
+      "packageInputsSha256": "036961657fbb6406eba076f5693c5b26edc0f4ab7635132d49ca666507989277",
       "publish": null
     },
     {
       "name": "farmfe_plugin_lazy_compilation",
-      "version": "2.2.1",
+      "version": "2.2.0",
       "manifestPath": "crates/plugin_lazy_compilation/Cargo.toml",
-      "manifestSha256": "bc5222beddcc0bcd99df69e019b6ab357f5fc053f64c09a6aae405728129018d",
-      "sourceSha256": "a56e2d656071cb52bf9da35ca666e219af7dfd0cd4d4a1056f30a95663c01488",
-      "packageInputsSha256": "d1c32658f02feb38b68a270e57665f2cdf9af49580edf3e57e766a543abcdefd",
+      "manifestSha256": "c27b1cbb6653cf6957e4a905d60be0e2fab49297438e41080d63845fa20e5546",
+      "sourceSha256": "7f9d3cd54702c72fcc3f3f9e3254b46a41d4acd89cbdf73b52095d403c4bf66a",
+      "packageInputsSha256": "4a1b5c9093b52248cb4fd40dca9a1e909d593f6ab1327f742964f1308c0868e9",
       "publish": null
     },
     {
@@ -2200,7 +2200,7 @@
       "manifestPath": "crates/plugin_library/Cargo.toml",
       "manifestSha256": "fac2d56945907d02655e3cac06f7ed5815e13548fa3d152ccffaec0bee2da286",
       "sourceSha256": "b00f187f7f465f76eaa4b90bf461b9f1a3768b6a2d1ab35b35e23985ec14418c",
-      "packageInputsSha256": "5ad01daf7f1fd162e27ed628acff40b2baef129b49dd4b56a5febdd97e7eca87",
+      "packageInputsSha256": "73f6040314d799504da9fd7e2788490be65f77c7bcd6df660336d8bfaaa01237",
       "publish": null
     },
     {
@@ -2209,7 +2209,7 @@
       "manifestPath": "crates/plugin_mangle_exports/Cargo.toml",
       "manifestSha256": "090b5fb93f6b49ad24345d19353fcf64ad6c0109eb3a4f0b6a5f193cd71c555f",
       "sourceSha256": "101843a543f899c7fc7312c03215613d23637a353c488fd98c6e66ff35df11af",
-      "packageInputsSha256": "9917075b863d0f665ae3bd2deee4f95175a22dbb4befb264ab1ad48d04b69626",
+      "packageInputsSha256": "a397866b08f3164b226de6021135ce28626d895b35a23e198f5042112150d3b0",
       "publish": null
     },
     {
@@ -2218,7 +2218,7 @@
       "manifestPath": "crates/plugin_minify/Cargo.toml",
       "manifestSha256": "fef18bc12b845c6a3e9a55247ebf34674939818dbd6da9d9914f4d78b9d5a71c",
       "sourceSha256": "6c56f89930d4787aff66cf5e26c860abf3093c6f129fac8883b40f12fbddaed5",
-      "packageInputsSha256": "f55f58b3419db606117c4384e02eacbac102f51d18848318a77a58da6bc29fc3",
+      "packageInputsSha256": "3bb4bf226148aed4f3e36b651b4e4fa1bc724ed063c72326206f0c33ea12cf91",
       "publish": null
     },
     {
@@ -2227,7 +2227,7 @@
       "manifestPath": "crates/plugin_partial_bundling/Cargo.toml",
       "manifestSha256": "0d2d6bb3c0a6c94110bc1d37873fc3469b7fbfbe3d1e81f7cd4e235d2bdbb77a",
       "sourceSha256": "16bc236d4d8800561c7e1d0ed7ae08cd471d42ad3f51a1ae1d87c5f37de7f21a",
-      "packageInputsSha256": "e865d3a841a63e64638778fe9d8fcd2a7db924ad7f606d1969f739a0faf9f324",
+      "packageInputsSha256": "78a4920625d97478a4081e55f6bdca39a7738109d40eb205ce774ec8094e42a2",
       "publish": null
     },
     {
@@ -2236,7 +2236,7 @@
       "manifestPath": "crates/plugin_polyfill/Cargo.toml",
       "manifestSha256": "2d17a72c47d09bcfcb062977bd4ca0c73c50eb12e5b36cadc14cc3e2c9d5174c",
       "sourceSha256": "f60e3c75ff6334a77f70b0d469eb3e8341427718d716bc99684d6ae954c3199b",
-      "packageInputsSha256": "e8e225e1e77c799037666428bc75d2a7673a2084b28f176d8e78a69e455b70d2",
+      "packageInputsSha256": "20a057c97f74659c42f7653e8de6e839848f9789bd9a44ab881b57555ccb89cc",
       "publish": null
     },
     {
@@ -2245,7 +2245,7 @@
       "manifestPath": "crates/plugin_progress/Cargo.toml",
       "manifestSha256": "28557685e96af0f12ff07271947fee09bddba32084feefb779e807c3fb63a2c7",
       "sourceSha256": "98b7dd01579992b3115d5a1fdf3e6d7bb3663b9dbd83a542639f37f6d18d1ce9",
-      "packageInputsSha256": "a902a1a4a09bc5cb4c7998ee7a6b4e6ec5e617261b6e4bddff70fc94be0e3d2e",
+      "packageInputsSha256": "a0cae839efe8de63fba2175d0f78b4b7d8fb43653e2c23b625587648821a6d0f",
       "publish": null
     },
     {
@@ -2254,16 +2254,16 @@
       "manifestPath": "crates/plugin_resolve/Cargo.toml",
       "manifestSha256": "1b1fcf1477405f662bee42539be45b611d70956e3bbc382f17010e769d1ae291",
       "sourceSha256": "f595964b186f015ed28aca8b2ab907d37d1fc255ff5f4941d599814596751b96",
-      "packageInputsSha256": "300145a034c044b89cb78ef2b92a0e0cfd4a6c9808644b9706a10724229a8634",
+      "packageInputsSha256": "e4ff72f05aa14b066220fb37d2503826d14a6e831c40a01b00029bfcb341bdc2",
       "publish": null
     },
     {
       "name": "farmfe_plugin_runtime",
-      "version": "2.2.1",
+      "version": "2.2.0",
       "manifestPath": "crates/plugin_runtime/Cargo.toml",
-      "manifestSha256": "d5a76657e54b1c6dfaf491a4effbf37d4aa7a66173a809c8b978a5f0b967b802",
-      "sourceSha256": "f625ecc46a61bffb422475ea725a25900bb2cb259cfaf2058d87b06a69c8f452",
-      "packageInputsSha256": "b47b93b66ed8ef3dd8e63b12e48c9616dcc07d6166660ab4cbbd7432960db99f",
+      "manifestSha256": "531ded255cb4d8872f27dd30163b4d94bd0e9e9b497e9ecbfd489c2121b7aaf3",
+      "sourceSha256": "3f3ff5750b42eb07824133b189eb7603c8f815553bfcba247076c04106d60b25",
+      "packageInputsSha256": "3fff9ae69c186e28f871360d73812e9541441db2534e61d8b96fff7ef78bfa31",
       "publish": null
     },
     {
@@ -2272,7 +2272,7 @@
       "manifestPath": "crates/plugin_script/Cargo.toml",
       "manifestSha256": "f7562fcd80b2171d42dd657e502183dac5b002a120a807744b85d07e29afa284",
       "sourceSha256": "fdae8bd1aaa599bab6b50c40b8360c8fa34eee2b5d2de211e8222faa33b6220a",
-      "packageInputsSha256": "b6d8195e90c7c36590046e58fa8cc3299280902e07f743417b3451091ca3a285",
+      "packageInputsSha256": "37bde5c860f671f846f5a086be76fd9640b6f5a0bce8ac9e542a105b6852f079",
       "publish": null
     },
     {
@@ -2281,7 +2281,7 @@
       "manifestPath": "crates/plugin_script_meta/Cargo.toml",
       "manifestSha256": "7d65e29a07006ca45c7d94798f1efa840055d0c49f764e61ec7dcda89e33721a",
       "sourceSha256": "dde9f0be15e46502413f20199e390c7335e37ef50c4956bc377954672057614e",
-      "packageInputsSha256": "f50a544dc340b881d0768035e2adc3bcf08b78c8d3998ce124a15599f268a3af",
+      "packageInputsSha256": "0654fbb3b1c237151244267c85e1f6f2f5c62c4d3d1ed118a7243e38e6bf0aac",
       "publish": null
     },
     {
@@ -2290,7 +2290,7 @@
       "manifestPath": "crates/plugin_static_assets/Cargo.toml",
       "manifestSha256": "edc87efdc6becbf5ea50295ba6cc5040672e669cb83df7ef5048881f973331f5",
       "sourceSha256": "d1f1a9669b26b93a1af3b244fa838ad77fd71c16b8fc1cffb1a18ded1afacd04",
-      "packageInputsSha256": "bd95ca2dad97cc1d43147f65c3595b355bafb8b9008c6b7ab2d75631414fa3fa",
+      "packageInputsSha256": "170057e711fb73dd3549625168545215c9e0ad13f6c8684a38f3515390a32cae",
       "publish": null
     },
     {
@@ -2298,8 +2298,8 @@
       "version": "2.2.0",
       "manifestPath": "crates/plugin_tree_shake/Cargo.toml",
       "manifestSha256": "c5eddfabe9e968f9b6ffde52cf5728251a10b0b05d559b3be973ea48fac2c02c",
-      "sourceSha256": "5ae771ece1b3473c503e8d338497934f9807728f01ea1a74957fab154dd681c8",
-      "packageInputsSha256": "ae211d7883329d4027448387e5b143378c2a1339257f2f03a16ada83a3efecea",
+      "sourceSha256": "6c6c9ff3cca6324a54e38e77efcf7cb685ad15b7c95520a67281dc5e701ef505",
+      "packageInputsSha256": "34cf6b2dc244509620efe1ebe58666604b528c69177c4d9caa69fb23c1c2b5c7",
       "publish": null
     },
     {
@@ -2308,7 +2308,7 @@
       "manifestPath": "crates/swc_transformer_import_glob/Cargo.toml",
       "manifestSha256": "775f6e9fdbdf46be7e61783fd387205b3969f228864e5c47526f6bc3af6c4583",
       "sourceSha256": "bcb1f787f4d331a339e7a207d069fda48b9f49a6da690b6225c74838561fdc0c",
-      "packageInputsSha256": "4a45eba2931f1341f6f0cc1518b02b5d74c509f8421eb5ae4eb0b2c45d5943ac",
+      "packageInputsSha256": "0ab19dd489a5f2df3cdadc1b71bd806288191573a8302d5a555464adc18cfc4c",
       "publish": null
     },
     {
@@ -2317,7 +2317,7 @@
       "manifestPath": "crates/macro_testing/Cargo.toml",
       "manifestSha256": "fbffa073f7b2ab38c98b9648525366628790c70359c270f06cb87c2379392994",
       "sourceSha256": "089948a1fb97d41488bf71f049a5cae10c3ba5d621e1c25de2d61a35a57db347",
-      "packageInputsSha256": "889287fa69aad7917f6ce4599f122df410723cabb189560b71fae030f619e110",
+      "packageInputsSha256": "de9a75000ad1d96d4d61c504b945a78a314203e181299d5a1ea879549e2ee6f9",
       "publish": null
     },
     {
@@ -2326,7 +2326,7 @@
       "manifestPath": "crates/testing_helpers/Cargo.toml",
       "manifestSha256": "cf726f9b9a16e0e0f21946c365efa5dbc008dc9076490958e1316784a5553d5d",
       "sourceSha256": "10e3f029596d6f1d91f9fc0da6736fa4aeeae14aa42863bb75d67a4904b5235c",
-      "packageInputsSha256": "c56d18d5767b93a8d83a9a2f14e9a21f466ce788d8b777246c7740704d369aae",
+      "packageInputsSha256": "c860d802261dff2284cc305aafd36eb618e97b0c73f9954904d52685e13cff2b",
       "publish": null
     },
     {
@@ -2334,8 +2334,8 @@
       "version": "2.2.0",
       "manifestPath": "crates/toolkit/Cargo.toml",
       "manifestSha256": "d4584b3f2f4e63e5bf7d7f2289c07aa0284a82427746af0b673aada73d622a4d",
-      "sourceSha256": "14c47105fd714cb9bcb70794fa8518da847d4880dae96ebe533f863c44e30a06",
-      "packageInputsSha256": "f25bfe06e490516f8effb7f4e1899c41a7df65f3eb393322adcb85f407a0ae5a",
+      "sourceSha256": "59afd6875c7e3a8c78e9c3f9391f40e9ef5788c24d0d99e08bd812ae9dfc6b34",
+      "packageInputsSha256": "2877dda1d07b9b4b32b119a76cbc133174a5f06bbdfbd15e2a9f0c2751ddfe36",
       "publish": null
     },
     {
@@ -2344,7 +2344,7 @@
       "manifestPath": "crates/utils/Cargo.toml",
       "manifestSha256": "7d4823607fa0652c60b5c6a9e186ee163b0e0e500c5237349a028b44431774cf",
       "sourceSha256": "69f264b41c9849ecab3a578931d33921c65c097ec221d3435e1663618778d3f8",
-      "packageInputsSha256": "2527c1c4b2f1db03b98b51fb883da80087208fee645ae2b329a47e5fa8dfe7fa",
+      "packageInputsSha256": "90f76b6818cbd5b8cd0e59de7785b228985bb4ffc9799cceb4d31fc88a438d1a",
       "publish": null
     }
   ],
@@ -2369,8 +2369,230 @@
     "Website and release tag only after a separate release decision"
   ],
   "preparation": {
-    "mode": "first-stable",
-    "receipt": "docs/release-evidence/frozen-stable-versions.json"
+    "mode": "changesets",
+    "receipt": "docs/release-evidence/changesets-preparation.json"
   },
-  "abi": "0.5.4"
+  "abi": "0.5.4",
+  "publicationScope": "npm",
+  "publication": {
+    "mode": "changesets",
+    "npm": {
+      "primary": [
+        {
+          "name": "@farmfe/core",
+          "version": "2.0.1",
+          "manifestPath": "packages/core/package.json",
+          "manifestSha256": "c55c98ad4e86183f8b89d2b47b317337c31a460b4cb56792dbc3de66247d925d",
+          "sourceSha256": "3c8475c9c7ddbdeb7a253a91f2513278e66bbcb82d21dda69c09a7d6a39e8a83"
+        },
+        {
+          "name": "create-farm",
+          "version": "2.0.1",
+          "manifestPath": "packages/create-farm/package.json",
+          "manifestSha256": "658af556bde243c9f2f97ecf7b995b863ca77592d59830804168d9004ddd8a3e",
+          "sourceSha256": "04f83df74182eabee3c57f17c93c2de8ef19f3cd217cf800bfc55c941340f21e"
+        },
+        {
+          "name": "@farmfe/docs",
+          "version": "0.0.2",
+          "manifestPath": "packages/docs/package.json",
+          "manifestSha256": "8b881c89bd412d9447923c858422a6c535c13cefd85c50c720e5bc3dcc8eec34",
+          "sourceSha256": "8aa447e137f4d9798c4457671474ff020bc69e42f0a4916e70953f361daad6bc"
+        },
+        {
+          "name": "@farmfe/docs-theme-default",
+          "version": "0.0.2",
+          "manifestPath": "packages/docs-theme-default/package.json",
+          "manifestSha256": "9a74b88cc6098f5e6d2142e0ec623041d528bd94b0257f4a7b2b0321c334c27e",
+          "sourceSha256": "37d6d298c3f9747a55574de2561505fb94cd91f012ed5d667a79bc0f4cad786c"
+        },
+        {
+          "name": "@farmfe/js-plugin-babel",
+          "version": "0.0.5",
+          "manifestPath": "js-plugins/babel/package.json",
+          "manifestSha256": "7c90bc45eb404635442b0058bc28ecdc773dfdf356510f2f144df36eed473719",
+          "sourceSha256": "9962adcdd2a7f7bfd4854539fcc84ff2dd53827d401e64e7a578780ca3c5bb61"
+        },
+        {
+          "name": "@farmfe/js-plugin-less",
+          "version": "2.0.1",
+          "manifestPath": "js-plugins/less/package.json",
+          "manifestSha256": "a2d0608efc8546c2bc323334aba9f6f82f75d001f4913c5ea02d0f7f5a8ab24a",
+          "sourceSha256": "151d189092f46c6ba936d9ac4a73ac466279fc1875f5f0af7d31bd21b2411ca1"
+        },
+        {
+          "name": "@farmfe/js-plugin-postcss",
+          "version": "2.0.1",
+          "manifestPath": "js-plugins/postcss/package.json",
+          "manifestSha256": "cc9353e70e4a3a160c2aade7990e976496aa74105753247e3c29d248b002eaca",
+          "sourceSha256": "55fee5b3ef95ccac1107b25456f72f015770b6f6ab0210cb02966242d035c008"
+        },
+        {
+          "name": "@farmfe/js-plugin-react-compiler",
+          "version": "0.0.5",
+          "manifestPath": "js-plugins/react-compiler/package.json",
+          "manifestSha256": "f2222f3b51da87422263f78294c31299b64099262c69c423bc0a7d3b978562c5",
+          "sourceSha256": "068606cb452314126560aefd4094d1ea781c9f84e7825957a32a5c82f5c2da54"
+        },
+        {
+          "name": "@farmfe/js-plugin-sass",
+          "version": "3.0.1",
+          "manifestPath": "js-plugins/sass/package.json",
+          "manifestSha256": "e5af391b4ae6fc28600cdb663aab46b67033070d1c8229912bf37de9d12b6f33",
+          "sourceSha256": "cf159f9e7caa6986a2258d6de98b870fe8fdc657d0b714fdc630affc41977f4d"
+        },
+        {
+          "name": "@farmfe/js-plugin-svgr",
+          "version": "2.0.1",
+          "manifestPath": "js-plugins/svgr/package.json",
+          "manifestSha256": "f4d47871eb1e5a7038bcc177cd9e0f4d3544c32fe67efe8ef0cc61ec102624e0",
+          "sourceSha256": "adbf438348a588c5f33b894668366dfa9ab78f727731097e7a993abecff2cec5"
+        },
+        {
+          "name": "@farmfe/js-plugin-tailwindcss",
+          "version": "2.0.1",
+          "manifestPath": "js-plugins/tailwindcss/package.json",
+          "manifestSha256": "62b90fcbb3e664885f205faf8814bee41493e8a20700981279c6e5b37e07145a",
+          "sourceSha256": "213ec8b6d1dc946e5e3b82a7a6c4cd61bbed2ca5775e316d1b5428095739153c"
+        }
+      ],
+      "payloads": [
+        {
+          "name": "@farmfe/core-darwin-arm64",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "darwin-arm64",
+          "manifestPath": "packages/core/npm/darwin-arm64/package.json"
+        },
+        {
+          "name": "@farmfe/core-darwin-x64",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "darwin-x64",
+          "manifestPath": "packages/core/npm/darwin-x64/package.json"
+        },
+        {
+          "name": "@farmfe/core-linux-arm64-gnu",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "linux-arm64-gnu",
+          "manifestPath": "packages/core/npm/linux-arm64-gnu/package.json"
+        },
+        {
+          "name": "@farmfe/core-linux-arm64-musl",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "linux-arm64-musl",
+          "manifestPath": "packages/core/npm/linux-arm64-musl/package.json"
+        },
+        {
+          "name": "@farmfe/core-linux-x64-gnu",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "linux-x64-gnu",
+          "manifestPath": "packages/core/npm/linux-x64-gnu/package.json"
+        },
+        {
+          "name": "@farmfe/core-linux-x64-musl",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "linux-x64-musl",
+          "manifestPath": "packages/core/npm/linux-x64-musl/package.json"
+        },
+        {
+          "name": "@farmfe/core-win32-arm64-msvc",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "win32-arm64-msvc",
+          "manifestPath": "packages/core/npm/win32-arm64-msvc/package.json"
+        },
+        {
+          "name": "@farmfe/core-win32-ia32-msvc",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "win32-ia32-msvc",
+          "manifestPath": "packages/core/npm/win32-ia32-msvc/package.json"
+        },
+        {
+          "name": "@farmfe/core-win32-x64-msvc",
+          "version": "2.0.1",
+          "owner": "@farmfe/core",
+          "platform": "win32-x64-msvc",
+          "manifestPath": "packages/core/npm/win32-x64-msvc/package.json"
+        },
+        {
+          "name": "create-farm-darwin-arm64",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "darwin-arm64",
+          "manifestPath": "packages/create-farm/npm/darwin-arm64/package.json"
+        },
+        {
+          "name": "create-farm-darwin-x64",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "darwin-x64",
+          "manifestPath": "packages/create-farm/npm/darwin-x64/package.json"
+        },
+        {
+          "name": "create-farm-linux-arm64-gnu",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "linux-arm64-gnu",
+          "manifestPath": "packages/create-farm/npm/linux-arm64-gnu/package.json"
+        },
+        {
+          "name": "create-farm-linux-arm64-musl",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "linux-arm64-musl",
+          "manifestPath": "packages/create-farm/npm/linux-arm64-musl/package.json"
+        },
+        {
+          "name": "create-farm-linux-x64-gnu",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "linux-x64-gnu",
+          "manifestPath": "packages/create-farm/npm/linux-x64-gnu/package.json"
+        },
+        {
+          "name": "create-farm-linux-x64-musl",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "linux-x64-musl",
+          "manifestPath": "packages/create-farm/npm/linux-x64-musl/package.json"
+        },
+        {
+          "name": "create-farm-win32-arm64-msvc",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "win32-arm64-msvc",
+          "manifestPath": "packages/create-farm/npm/win32-arm64-msvc/package.json"
+        },
+        {
+          "name": "create-farm-win32-ia32-msvc",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "win32-ia32-msvc",
+          "manifestPath": "packages/create-farm/npm/win32-ia32-msvc/package.json"
+        },
+        {
+          "name": "create-farm-win32-x64-msvc",
+          "version": "2.0.1",
+          "owner": "create-farm",
+          "platform": "win32-x64-msvc",
+          "manifestPath": "packages/create-farm/npm/win32-x64-msvc/package.json"
+        }
+      ]
+    },
+    "cargo": [],
+    "counts": {
+      "primary": 11,
+      "payloads": 18,
+      "total": 29
+    },
+    "releaseIdentity": "v2.0.1",
+    "reuseNpm": [],
+    "reuseRust": []
+  }
 }

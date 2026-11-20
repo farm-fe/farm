@@ -109,7 +109,7 @@ test('cache writers are limited while Docs stays inside CI and native assembly r
   assert.match(docs, /profile:process.env.FARM_BUILD_PROFILE,recipe:'ci-native-quality',releaseBytesAuthorized:false/);
   assert.match(docs,/cell: "docs:ci:/);
   const ci = read('ci.yaml');
-  assert.match(ci.split('  docs-acceptance:')[1].split('  platform-contract-tests:')[0], /needs: \[version-classification, primary-linux, primary-windows\]/);
+  assert.match(ci.split('  docs-acceptance:')[1].split('  platform-contract-tests:')[0], /needs: \[version-classification, docs-linux, docs-windows\]/);
   const assembly = ci.split('  check-native-candidate-assembly:')[1].split('  examples-test:')[0];
   assert.match(assembly, /needs: \[version-classification, call-rust-build-user, call-rust-build-release, type-check, primary-linux, primary-macos, primary-windows\]/);
 });

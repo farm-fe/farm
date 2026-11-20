@@ -3778,31 +3778,31 @@ importers:
         version: 1.5.0(zod@3.23.8)
     optionalDependencies:
       '@farmfe/core-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/core-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/core-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/core-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/core-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/core-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/core-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/core-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/core-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@napi-rs/cli':
@@ -3848,31 +3848,31 @@ importers:
   packages/create-farm:
     optionalDependencies:
       create-farm-darwin-arm64:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       create-farm-darwin-x64:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       create-farm-linux-arm64-gnu:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       create-farm-linux-arm64-musl:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       create-farm-linux-x64-gnu:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       create-farm-linux-x64-musl:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       create-farm-win32-arm64-msvc:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       create-farm-win32-ia32-msvc:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       create-farm-win32-x64-msvc:
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@napi-rs/cli':

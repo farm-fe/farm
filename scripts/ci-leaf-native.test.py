@@ -262,7 +262,6 @@ class Contracts(unittest.TestCase):
         expected={
             'native-disposition': (['native'], 'always()'),
             'mf-native': (['native-disposition'], success),
-            'docs': (['native','native-disposition'], success + " && inputs.abi != 'darwin-arm64'"),
             'examples-test': (['native','native-disposition','mf-native'], success + " && needs.mf-native.result == 'success'"),
             'ts-test': (['native','native-disposition'], success),
         }
@@ -271,8 +270,8 @@ class Contracts(unittest.TestCase):
                 self.assertEqual(primary_jobs[name]['needs'],dependencies)
                 self.assertEqual(primary_jobs[name]['if'],condition)
                 self.assertFalse(primary_jobs[name].get('continue-on-error',False))
-        self.assertIn("uses: ./.github/workflows/farm-docs.yaml", primary)
-        self.assertIn("consume_native: true", primary)
+        self.assertIn("uses: ./.github/workflows/farm-docs.yaml", workflow)
+        self.assertIn("consume_native: true", workflow)
         self.assertIn('Require successful per-product build or verified main artifact consumption',primary)
         self.assertIn('scripts/formal-native-products.py produce',producer)
         self.assertIn("steps.formal-catalog.outputs.catalog_available == 'true'",producer)
