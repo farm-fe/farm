@@ -188,6 +188,8 @@ jobs:
         run: |
           rustup toolchain install nightly-2026-04-10 --profile minimal
           python -B scripts/cargo-public-sources.test.py
+      - name: Prepare locked workspace dependencies for source inventory contracts
+        run: cargo +nightly-2026-04-10 fetch --locked
       - name: Check independent CI and release selection contracts
         run: |
           node --test scripts/ci-local-performance-policy.test.mjs scripts/ci-reusable-permissions.test.mjs scripts/ci-required-dag.test.mjs scripts/native-checkout-contract.test.mjs scripts/formal-native-scope.test.mjs

@@ -133,6 +133,9 @@ jobs:
           node-version: 22.20.0
       - name: Install Dependencies
         uses: nick-fields/retry@v3
+        # Native producers do not run Electron; Examples installs its own binary.
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         with:
           timeout_minutes: 10
           max_attempts: 3

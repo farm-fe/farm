@@ -96,6 +96,16 @@ console.log(JSON.stringify(prCandidatePlan({ base: JSON.parse(fs.readFileSync('d
         self.assertEqual(set(plan["testNodes"]), set(tests))
         self.assertFalse(plan["executionAuthorized"]); self.assertFalse(plan["publicationAuthorized"])
 
+    def test_ci_fetches_pinned_dependencies_before_offline_source_inventory(self):
+        workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/ci.yaml').read_text()
+        job = workflow.split('  release-contract-tests:', 1)[1].split('  primary-linux:', 1)[0]
+        self.assertIn('timeout-minutes: 10', job)
+        fetch = job.index('run: cargo +nightly-2026-04-10 fetch --locked')
+        install = job.index('rustup toolchain install nightly-2026-04-10 --profile minimal')
+        test = job.index('name: Check independent CI and release selection contracts')
+        self.assertLess(install, fetch)
+        self.assertLess(fetch, test)
+
     def test_historical_receipt_cannot_replace_current_source_inventory(self):
         stale = copy.deepcopy(self.family)
         stale['cargo'][0]['version'] = '0.0.0'
