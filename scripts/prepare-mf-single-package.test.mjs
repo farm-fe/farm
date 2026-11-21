@@ -1,3 +1,4 @@
+// cspell:words smartstring LICENCE
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { archiveFiles, sha256 } from './release-archive.mjs';
-import { buildIdentity, owner, prepareMfBundle, readBundleInputs, readMfBundleForTest, targets } from './prepare-mf-single-package.mjs';
+import { buildIdentity, cargoLicenseMaterials, owner, prepareMfBundle, readBundleInputs, readMfBundleForTest, targets } from './prepare-mf-single-package.mjs';
 
 const project = 'rust-plugins/module-federation';
 const repo = new URL('../', import.meta.url);
@@ -147,4 +148,29 @@ test('rejects a candidate receipt for the previous proposed package version', t 
   const receiptPath = path.join(f.output, 'receipt.json');
   fs.writeFileSync(receiptPath, JSON.stringify({ ...receipt, version: '0.1.0' }));
   assert.throws(() => readMfBundleForTest(f.directory, f.output), /2\.0\.0/);
+});
+
+test('hashes smartstring LICENCE.md without broadening matching or changing bytes', t => {
+  const f = fixture(t);
+  const crate = path.join(f.root, 'smartstring-1.0.1');
+  fs.mkdirSync(crate);
+  // Synthetic source bytes at the real Cargo package path; do not normalize CRLF.
+  const materials = {
+    'LICENCE.md': Buffer.from('exact upstream fixture\r\n'),
+    'LICENSE-MIT': Buffer.from('another known name\n'),
+    'COPYING': Buffer.from('legacy material filename\n'),
+    'manifest-declared.txt': Buffer.from('explicit material path\n'),
+  };
+  for (const [file, bytes] of Object.entries(materials)) fs.writeFileSync(path.join(crate, file), bytes);
+  fs.writeFileSync(path.join(crate, 'LICENCEbackup.md'), 'not a recognized material filename');
+  assert.deepEqual(cargoLicenseMaterials(crate, 'manifest-declared.txt'),
+    Object.entries(materials).sort(([a], [b]) => a < b ? -1 : a === b ? 0 : 1)
+      .map(([path, bytes]) => ({ path, sha256: sha256(bytes) })));
+  assert.throws(() => cargoLicenseMaterials(crate, '../outside.md'));
+  if (process.platform !== 'win32') {
+    const outside = path.join(f.root, 'outside.md');
+    fs.writeFileSync(outside, 'must not be followed');
+    fs.symlinkSync(outside, path.join(crate, 'LICENCE-redirect.md'));
+    assert.throws(() => cargoLicenseMaterials(crate), /Artifact path redirects/);
+  }
 });

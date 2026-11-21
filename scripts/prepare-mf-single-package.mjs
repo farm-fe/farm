@@ -1,5 +1,5 @@
 // Prepublication artifact preparation only. No npm authentication or writer.
-// cspell:words RUSTFLAGS
+// cspell:words RUSTFLAGS LICEN
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -66,6 +66,12 @@ function nativeReceipt(identity, abi, bytes, legalBytes) {
     legalInputsSha256: sha256(legalBytes) };
 }
 
+export function cargoLicenseMaterials(home, declared, read = file => regular(home, file)) {
+  const available = fs.readdirSync(home).filter(file => /^(LICEN[CS]E|COPYING|NOTICE|UNLICENSE)([-_.]|$)/i.test(file));
+  if (declared && !available.includes(declared)) available.push(declared);
+  return available.sort().map(file => ({ path: file, sha256: sha256(read(file)) }));
+}
+
 export function cargoLegalInputs(directory, abi) {
   const { sourceCommit } = buildIdentity(directory);
   assert.ok(Object.hasOwn(targets, abi));
@@ -84,12 +90,10 @@ export function cargoLegalInputs(directory, abi) {
     assert.ok(row);
     pending.push(...graph.get(id).filter(dep => dep.dep_kinds.some(kind => kind.kind !== 'dev')).map(dep => dep.pkg));
     const home = path.dirname(row.manifest_path);
-    const available = fs.readdirSync(home).filter(file => /^(LICENSE|COPYING|NOTICE|UNLICENSE)([-_.]|$)/i.test(file));
-    if (row.license_file && !available.includes(row.license_file)) available.push(row.license_file);
     rows.push({ name: row.name, version: row.version, source: row.source, declaration: row.license,
-      materialHashes: available.sort().map(file => ({ path: file, sha256: sha256(row.source === null
-        ? sourceBytes(directory, sourceCommit, path.relative(directory, path.join(home, file)).split(path.sep).join('/'))
-        : regular(home, file)) })) });
+      materialHashes: cargoLicenseMaterials(home, row.license_file, row.source === null
+        ? file => sourceBytes(directory, sourceCommit, path.relative(directory, path.join(home, file)).split(path.sep).join('/'))
+        : undefined) });
   }
   rows.sort((a, b) => JSON.stringify([a.name, a.version, a.source]).localeCompare(JSON.stringify([b.name, b.version, b.source])));
   return { schemaVersion: 1, kind: 'locked-cargo-license-review-input', target: targets[abi],
