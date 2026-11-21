@@ -32,6 +32,15 @@ const regular = (directory, relative) => {
   return fs.readFileSync(current);
 };
 const assertSHA = value => assert.match(value, /^[0-9a-f]{40}$/);
+// Use exact committed bytes, not checkout transformations such as CRLF.
+function sourceBytes(directory, sourceCommit, relative) {
+  assertSHA(sourceCommit);
+  assert.ok(relative.split('/').every(part => part && part !== '.' && part !== '..'));
+  const git = (...args) => execFileSync('git', args, { cwd: directory, maxBuffer: 32 * 1024 ** 2 });
+  const entry = git('ls-tree', sourceCommit, '--', relative).toString('utf8');
+  assert.match(entry, /^100(?:644|755) blob [0-9a-f]{40}\t/, 'Package source must be a regular committed file');
+  return git('show', `${sourceCommit}:${relative}`);
+}
 export function buildIdentity(directory = root) {
   const git = (...args) => execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
   const sourceCommit = git('rev-parse', 'HEAD'), sourceTree = git('rev-parse', 'HEAD^{tree}');
@@ -44,8 +53,8 @@ export function buildIdentity(directory = root) {
     assert.equal(sourceCommit, process.env.GITHUB_SHA, 'Bundle source differs from workflow SHA');
     for (const value of Object.values(run)) assert.match(value, /^[1-9][0-9]*$/);
   }
-  return { sourceCommit, sourceTree, run, toolchainSha256: sha256(regular(directory, 'rust-toolchain.toml')),
-    lockSha256: sha256(regular(directory, 'Cargo.lock')) };
+  return { sourceCommit, sourceTree, run, toolchainSha256: sha256(sourceBytes(directory, sourceCommit, 'rust-toolchain.toml')),
+    lockSha256: sha256(sourceBytes(directory, sourceCommit, 'Cargo.lock')) };
 }
 function nativeReceipt(identity, abi, bytes, legalBytes) {
   assert.ok(Object.hasOwn(targets, abi), 'Unsupported MF bundle platform');
@@ -57,6 +66,7 @@ function nativeReceipt(identity, abi, bytes, legalBytes) {
 }
 
 export function cargoLegalInputs(directory, abi) {
+  const { sourceCommit } = buildIdentity(directory);
   assert.ok(Object.hasOwn(targets, abi));
   const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--format-version', '1', '--locked',
     '--offline', '--filter-platform', targets[abi]], { cwd: directory, encoding: 'utf8', maxBuffer: 32 * 1024 ** 2 }));
@@ -76,7 +86,9 @@ export function cargoLegalInputs(directory, abi) {
     const available = fs.readdirSync(home).filter(file => /^(LICENSE|COPYING|NOTICE|UNLICENSE)([-_.]|$)/i.test(file));
     if (row.license_file && !available.includes(row.license_file)) available.push(row.license_file);
     rows.push({ name: row.name, version: row.version, source: row.source, declaration: row.license,
-      materialHashes: available.sort().map(file => ({ path: file, sha256: sha256(regular(home, file)) })) });
+      materialHashes: available.sort().map(file => ({ path: file, sha256: sha256(row.source === null
+        ? sourceBytes(directory, sourceCommit, path.relative(directory, path.join(home, file)).split(path.sep).join('/'))
+        : regular(home, file)) })) });
   }
   rows.sort((a, b) => JSON.stringify([a.name, a.version, a.source]).localeCompare(JSON.stringify([b.name, b.version, b.source])));
   return { schemaVersion: 1, kind: 'locked-cargo-license-review-input', target: targets[abi],
@@ -125,9 +137,14 @@ export function readBundleInputs(identity, directory) {
   });
 }
 
+const sourceMembers = [
+  ['scripts/index.mjs', project + '/scripts/bundled-index.mjs'],
+  ['scripts/native-platform.mjs', project + '/scripts/native-platform.mjs'],
+  ['LICENSE', 'LICENSE'], ['README.md', project + '/BUNDLED-README.md'],
+  ['THIRD_PARTY_NOTICES.md', project + '/BUNDLED-THIRD-PARTY-NOTICES.md'],
+];
 const contents = [
-  'LICENSE', 'README.md', 'THIRD_PARTY_NOTICES.md', 'package.json',
-  'scripts/index.mjs', 'scripts/native-platform.mjs',
+  'package.json', ...sourceMembers.map(([member]) => member),
   ...Object.keys(targets).map(abi => 'native/' + abi + '/index.farm'),
 ];
 function expectedManifest() {
@@ -160,12 +177,9 @@ export function readMfBundleForTest(directory, receiptDirectory) {
   assert.deepEqual(issues, []);
   assert.deepEqual([...files.keys()].sort(), contents.map(name => 'package/' + name).sort());
   assert.deepEqual(JSON.parse(files.get('package/package.json')), expectedManifest());
-  for (const [member, source] of [
-    ['scripts/index.mjs', project + '/scripts/bundled-index.mjs'],
-    ['scripts/native-platform.mjs', project + '/scripts/native-platform.mjs'],
-    ['LICENSE', 'LICENSE'], ['README.md', project + '/BUNDLED-README.md'],
-    ['THIRD_PARTY_NOTICES.md', project + '/BUNDLED-THIRD-PARTY-NOTICES.md'],
-  ]) assert.deepEqual(files.get('package/' + member), regular(directory, source));
+  for (const [member, source] of sourceMembers) {
+    assert.deepEqual(files.get('package/' + member), sourceBytes(directory, identity.sourceCommit, source));
+  }
   assert.deepEqual(receipt.native, Object.keys(targets).map(abi =>
     nativeReceipt(identity, abi, files.get('package/native/' + abi + '/index.farm'),
       regular(receiptDirectory, 'legal-inputs-' + abi + '.json'))));
@@ -175,7 +189,7 @@ export function readMfBundleForTest(directory, receiptDirectory) {
 export function prepareMfBundle({ directory = root, input, output, npm = resolveNpmCli() }) {
   const identity = buildIdentity(directory);
   const binaries = readBundleInputs(identity, input);
-  const original = JSON.parse(regular(directory, project + '/package.json'));
+  const original = JSON.parse(sourceBytes(directory, identity.sourceCommit, project + '/package.json'));
   assert.equal(original.name, owner);
   assert.equal(original.private, true, 'Standalone bundle must not enter ordinary registry-family production');
   assert.equal(original.dependencies['@module-federation/runtime'], '2.9.2');
@@ -183,11 +197,9 @@ export function prepareMfBundle({ directory = root, input, output, npm = resolve
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'farm-mf-package-'));
   try {
     fs.mkdirSync(path.join(stage, 'scripts'));
-    fs.writeFileSync(path.join(stage, 'scripts/index.mjs'), regular(directory, project + '/scripts/bundled-index.mjs'));
-    fs.writeFileSync(path.join(stage, 'scripts/native-platform.mjs'), regular(directory, project + '/scripts/native-platform.mjs'));
-    fs.writeFileSync(path.join(stage, 'LICENSE'), regular(directory, 'LICENSE'));
-    fs.writeFileSync(path.join(stage, 'README.md'), regular(directory, project + '/BUNDLED-README.md'));
-    fs.writeFileSync(path.join(stage, 'THIRD_PARTY_NOTICES.md'), regular(directory, project + '/BUNDLED-THIRD-PARTY-NOTICES.md'));
+    for (const [member, source] of sourceMembers) {
+      fs.writeFileSync(path.join(stage, member), sourceBytes(directory, identity.sourceCommit, source));
+    }
     fs.writeFileSync(path.join(stage, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
     for (const row of binaries) {
       const native = path.join(stage, 'native', row.abi);

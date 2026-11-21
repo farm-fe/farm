@@ -31,7 +31,7 @@ function fixture(t) {
     fs.copyFileSync(new URL(file, repo), path.join(directory, file));
   }
   const git = (...args) => execFileSync('git', args, { cwd: directory, stdio: 'ignore' });
-  git('init'); git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'source fixture');
+  git('init'); git('config', 'core.autocrlf', 'false'); git('add', '.'); git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'source fixture');
   const identity = buildIdentity(directory);
   for (const [abi, target] of Object.entries(targets)) {
     const folder = path.join(input, abi), bytes = nativeHeader(abi);
@@ -103,6 +103,25 @@ test('rejects missing target, changed bytes, wrong architecture or foreign sourc
   assert.throws(() => readBundleInputs(f.identity, f.input), /architecture differs/);
   fs.renameSync(folder, path.join(f.root, abi));
   assert.throws(() => readBundleInputs(f.identity, f.input), /three-ABI artifact set/);
+});
+
+test('mixed checkout line endings do not change source identity or packed materials', t => {
+  const f = fixture(t), receipt = prepareMfBundle(f);
+  const paths = ['Cargo.lock', 'LICENSE', project + '/BUNDLED-README.md',
+    project + '/BUNDLED-THIRD-PARTY-NOTICES.md', project + '/scripts/bundled-index.mjs'];
+  const git = (...args) => execFileSync('git', args, { cwd: f.directory, encoding: 'utf8' });
+  fs.writeFileSync(path.join(f.directory, '.git/info/attributes'), paths.map(file => file + ' text eol=crlf').join('\n') + '\n');
+  for (const file of paths) fs.unlinkSync(path.join(f.directory, file));
+  git('checkout-index', '-u', '--', ...paths);
+  assert.ok(fs.readFileSync(path.join(f.directory, 'Cargo.lock'), 'utf8').includes('\r\n'));
+  assert.ok(!fs.readFileSync(path.join(f.directory, 'rust-toolchain.toml'), 'utf8').includes('\r\n'));
+  assert.equal(git('status', '--porcelain'), '');
+  assert.deepEqual(buildIdentity(f.directory), f.identity);
+  assert.deepEqual(readMfBundleForTest(f.directory, f.output), receipt);
+  const mixedOutput = path.join(f.root, 'mixed');
+  const mixed = prepareMfBundle({ ...f, output: mixedOutput });
+  assert.deepEqual(mixed, receipt);
+  assert.deepEqual(fs.readFileSync(path.join(mixedOutput, mixed.file)), fs.readFileSync(path.join(f.output, receipt.file)));
 });
 
 test('rejects dirty tracked source before producing output', t => {
