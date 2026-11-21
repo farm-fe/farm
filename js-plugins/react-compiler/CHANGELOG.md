@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-react-compiler
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [06321bb]
+  - @farmfe/core@2.0.2
+  - @farmfe/js-plugin-babel@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @farmfe/plugin-tailwindcss
 
+## 2.0.1
+
+### Patch Changes
+
+- 06321bb: Preserve CommonJS evaluation order when requiring asynchronous graph modules, and isolate injected CSS style identities and cache entries by runtime namespace. Keep lazy-compilation CSS refresh scoped to the same namespace while invalidating the original module IDs. These fixes support the separate, private Module Federation plugin without changing the public plugin interfaces.
+
+  Rebuild native compiler consumers against the corrected Rust SDK 2.2.1 crates. Keep the Rust Core ABI and the Module Federation packages unchanged and private.
+
 ## 2.0.0
 
 ### Minor Changes
