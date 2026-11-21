@@ -11,7 +11,8 @@ import { resolveNpmCli } from './v2-npm-cli.mjs';
 import { hostNativeTarget } from '../rust-plugins/module-federation/scripts/native-platform.mjs';
 
 export const owner = '@farmfe/plugin-module-federation';
-export const version = '0.1.0';
+export const version = '2.0.0';
+const archiveName = `farmfe-plugin-module-federation-${version}.tgz`;
 export const corePeer = '~2.0.2';
 export const targets = Object.freeze({
   'darwin-arm64': 'aarch64-apple-darwin',
@@ -168,7 +169,7 @@ export function readMfBundleForTest(directory, receiptDirectory) {
   assert.equal(receipt.published, false);
   assert.equal(receipt.licenseReviewComplete, false);
   assert.equal(receipt.publicationAuthorized, false);
-  const file = 'farmfe-plugin-module-federation-0.1.0.tgz';
+  const file = archiveName;
   assert.equal(receipt.file, file);
   const bytes = regular(receiptDirectory, file);
   assert.equal(receipt.sha256, sha256(bytes));
@@ -212,7 +213,7 @@ export function prepareMfBundle({ directory = root, input, output, npm = resolve
       { cwd: stage, env, encoding: 'utf8', timeout: 120000 });
     const packed = JSON.parse(log);
     assert.equal(packed.length, 1);
-    const file = 'farmfe-plugin-module-federation-0.1.0.tgz';
+    const file = archiveName;
     assert.equal(packed[0].filename, file);
     const bytes = regular(output, file), inspection = inspectNpmArchive(bytes, manifest);
     assert.ok(bytes.length <= 100 * 1024 ** 2, 'MF bundle exceeds registry archive budget');

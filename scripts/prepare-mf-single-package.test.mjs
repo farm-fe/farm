@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { archiveFiles, sha256 } from './release-archive.mjs';
-import { buildIdentity, corePeer, owner, prepareMfBundle, readBundleInputs, readMfBundleForTest, targets, version } from './prepare-mf-single-package.mjs';
+import { buildIdentity, owner, prepareMfBundle, readBundleInputs, readMfBundleForTest, targets } from './prepare-mf-single-package.mjs';
 
 const project = 'rust-plugins/module-federation';
 const repo = new URL('../', import.meta.url);
@@ -51,7 +51,8 @@ function fixture(t) {
 test('packs one exact public name, three embedded assets and no source or scripts', async t => {
   const f = fixture(t), receipt = prepareMfBundle(f);
   assert.equal(receipt.name, owner);
-  assert.equal(receipt.version, version);
+  assert.equal(receipt.version, '2.0.0');
+  assert.equal(receipt.file, 'farmfe-plugin-module-federation-2.0.0.tgz');
   assert.equal(receipt.licenseReviewComplete, false);
   assert.equal(receipt.publicationAuthorized, false);
   assert.equal(receipt.published, false);
@@ -59,7 +60,9 @@ test('packs one exact public name, three embedded assets and no source or script
   assert.deepEqual(readMfBundleForTest(f.directory, f.output), receipt);
   const files = archiveFiles(fs.readFileSync(path.join(f.output, receipt.file)));
   const manifest = JSON.parse(files.get('package/package.json'));
-  assert.deepEqual(manifest.peerDependencies, { '@farmfe/core': corePeer });
+  assert.equal(manifest.version, '2.0.0');
+  assert.deepEqual(manifest.peerDependencies, { '@farmfe/core': '~2.0.2' });
+  assert.match(files.get('package/README.md').toString('utf8'), /@farmfe\/plugin-module-federation@2\.0\.0/);
   for (const key of ['scripts', 'optionalDependencies', 'publishConfig', 'private']) assert.equal(manifest[key], undefined);
   const installed = path.join(f.root, 'node_modules', owner);
   for (const [name, bytes] of files) {
@@ -137,4 +140,11 @@ test('sealed candidate recheck rejects bit flips', t => {
   bytes[bytes.length - 1] ^= 1;
   fs.writeFileSync(file, bytes);
   assert.throws(() => readMfBundleForTest(f.directory, f.output), /Expected values to be strictly equal/);
+});
+
+test('rejects a candidate receipt for the previous proposed package version', t => {
+  const f = fixture(t), receipt = prepareMfBundle(f);
+  const receiptPath = path.join(f.output, 'receipt.json');
+  fs.writeFileSync(receiptPath, JSON.stringify({ ...receipt, version: '0.1.0' }));
+  assert.throws(() => readMfBundleForTest(f.directory, f.output), /2\.0\.0/);
 });

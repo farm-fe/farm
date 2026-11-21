@@ -59,7 +59,7 @@ try {
     { cwd: scratch, env, stdio: 'inherit', timeout: 180000 });
   fs.copyFileSync(path.join(root, 'scripts/mf-single-browser-probe.mjs'), path.join(scratch, 'probe.mjs'), fs.constants.COPYFILE_EXCL);
   execFileSync(process.execPath, ['probe.mjs', binary], { cwd: scratch, env, stdio: 'inherit', timeout: 180000 });
-  const proof = { status: 'passed', abi, version, coreOrigin, archiveArtifactId: sameRunArtifactId,
+  const proof = { status: 'passed', abi, name: owner, version, coreOrigin, archiveArtifactId: sameRunArtifactId,
     sourceCommit: receipt.sourceCommit, sourceTree: receipt.sourceTree, archiveSha256: receipt.sha256,
     browser: 'chromium: real host imported remote value', published: false };
   if (proofPath) fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2) + '\n', { flag: 'wx' });
