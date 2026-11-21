@@ -17,6 +17,16 @@ const evidence = {
   cases: [],
   passed: false,
 };
+// Make Webpack's remote register while Farm's selected local factories are
+// still in flight. Keep the original static imports and both providers.
+const gateHostShare = bundler === "webpack" && evidence.format === "esm";
+const heldShares = new Set();
+let remoteButtonCss;
+let releaseHostShares;
+const hostSharesMayLoad = new Promise(resolve => { releaseHostShares = resolve; });
+const releaseWhenReady = () => {
+  if (heldShares.size === 2 && remoteButtonCss) releaseHostShares();
+};
 try {
   for (const [dir, port, prefix] of [
     ["interop-farm-host", 4200, "/"],
@@ -42,7 +52,22 @@ try {
         return;
       }
       try {
+        if (gateHostShare && port === 4200) {
+          const share = /^(react_index|jsx-runtime)\./.exec(path.basename(file));
+          if (share) {
+            heldShares.add(share[1]);
+            releaseWhenReady();
+            await hostSharesMayLoad;
+          }
+        }
         const body = await fs.readFile(file);
+        // This exposed Button's async CSS chunk starts after container init;
+        // neither that request nor serving it needs either shared getter.
+        if (gateHostShare && port === 4201 && file.endsWith(".css") &&
+          body.includes(".rsp")) {
+          remoteButtonCss = pathname;
+          releaseWhenReady();
+        }
         res.setHeader(
           "Content-Type",
           file.endsWith(".html")
@@ -113,6 +138,10 @@ try {
       { timeout: 15000 },
     );
     result.identity = await page.evaluate(() => window.interop);
+    if (gateHostShare && port === 4200) {
+      assert.deepEqual([...heldShares].sort(), ["jsx-runtime", "react_index"]);
+      assert.ok(result.requests.some(request => new URL(request.url).pathname === remoteButtonCss));
+    }
     assert.deepEqual(result.identity, {
       ready: true,
       react: true,
@@ -160,6 +189,7 @@ try {
   evidence.error = e.stack;
   process.exitCode = 1;
 } finally {
+  releaseHostShares();
   await browser?.close();
   await Promise.all(
     servers.map((s) => new Promise((resolve) => s.close(resolve))),

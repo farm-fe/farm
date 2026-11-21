@@ -171,3 +171,73 @@ test("private package metadata declares exactly the three supported native targe
   for (const [target, abi, extension] of targets)
     assert.deepEqual(nativeTarget(target), { target, abi, extension });
 });
+
+async function adapterShareScope(t, mode) {
+  const name = "testFarmProvider";
+  const namespace = "farm_native_selection_" + mode;
+  globalThis[namespace] = { m: {} };
+  t.after(() => { delete globalThis[namespace]; });
+  const asModule = source => "data:text/javascript;base64," + Buffer.from(source).toString("base64");
+  const runtime = asModule("export function createInstance(options) { return options; }");
+  const source = await fs.readFile(new URL("../src/adapter.js", import.meta.url), "utf8");
+  const importable = source.replace("__MF_RUNTIME_PATH__", JSON.stringify(runtime))
+    .replace("__MF_CONFIGURATION__", JSON.stringify({ namespace, name, hot: false }))
+    .replace("__MF_SHARED__", `Object.fromEntries(["react","unselected","non-singleton","foreign","already-loaded"].map(id => [
+      id, {version:"18.3.1",shareConfig:{singleton:id!=="non-singleton"},get:() => { throw new Error("duplicate getter"); }}
+    ]))`)
+    .replace("__MF_HOT_ADAPTER__", "");
+  const { bridge } = await import(asModule(importable));
+  const { plugins, shared } = bridge.instance;
+  let resolve, reject;
+  const pending = new Promise((yes, no) => { resolve = yes; reject = no; });
+  const entries = Object.fromEntries(Object.entries(shared).map(([id, config]) => [id, { "18.3.1": {
+    from: id === "foreign" ? "anotherProvider" : name, loaded: id === "already-loaded",
+    loading: id === "unselected" ? undefined : pending, get: config.get,
+  }, "18.4.0": { from: name, loaded: false, loading: pending, get: config.get } }]));
+  const data = { shareScope: entries };
+  assert.equal(plugins[0].beforeInitContainer(data), data, "hook must not await an in-flight factory");
+  const entry = entries.react["18.3.1"];
+  assert.equal(entry.loaded, true);
+  assert.equal(entry.get(), pending);
+  assert.equal(plugins[0].beforeInitContainer(data), data);
+  assert.equal(entry.get(), pending, "repeated init shares the same getter operation");
+  for (const [id, version] of [["unselected", "18.3.1"], ["non-singleton", "18.3.1"],
+    ["foreign", "18.3.1"], ["react", "18.4.0"], ["already-loaded", "18.3.1"]]) {
+    const other = entries[id][version];
+    assert.equal(other.loaded, id === "already-loaded");
+    assert.equal(other.get, shared[id].get);
+  }
+  return { entry, priorGet: shared.react.get, pending, resolve, reject };
+}
+
+test("keeps a selected local singleton while its async factory is still in flight", async t => {
+  const { entry, priorGet, pending, resolve } = await adapterShareScope(t, "success");
+  const factory = () => ({ react: true });
+  resolve(factory);
+  assert.equal(await pending, factory);
+  assert.equal(entry.get, priorGet);
+  assert.equal(entry.loaded, true);
+});
+
+test("failed singleton selection releases its provisional loaded marker and getter", async t => {
+  const { entry, priorGet, pending, reject } = await adapterShareScope(t, "failure");
+  reject(new Error("shared chunk failed"));
+  await assert.rejects(pending, /shared chunk failed/);
+  assert.equal(entry.get, priorGet);
+  assert.equal(entry.loaded, false);
+  assert.equal(entry.loading, undefined);
+});
+
+test("a rejected older singleton does not overwrite a newer provider operation", async t => {
+  const { entry, pending, reject } = await adapterShareScope(t, "replaced");
+  const replacementFactory = () => ({ replacement: true });
+  const replacementLoading = Promise.resolve(replacementFactory);
+  const replacementGet = () => replacementLoading;
+  Object.assign(entry, { loaded: true, loading: replacementLoading, lib: replacementFactory, get: replacementGet });
+  reject(new Error("older shared chunk failed"));
+  await assert.rejects(pending, /older shared chunk failed/);
+  assert.equal(entry.loaded, true);
+  assert.equal(entry.loading, replacementLoading);
+  assert.equal(entry.get, replacementGet);
+  assert.equal(entry.lib, replacementFactory);
+});
