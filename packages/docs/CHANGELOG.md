@@ -1,5 +1,14 @@
 # @farmfe/docs
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [06321bb]
+  - @farmfe/core@2.0.2
+  - @farmfe/plugin-react@2.0.1
+  - @farmfe/docs-theme-default@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes

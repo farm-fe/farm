@@ -1,5 +1,12 @@
 # @farmfe/core-linux-arm64-gnu
 
+## 2.0.2
+
+### Patch Changes
+
+- Native platform payload for @farmfe/core@2.0.2. See the owner changelog for functional changes.
+
+
 ## 2.0.1
 
 ### Patch Changes

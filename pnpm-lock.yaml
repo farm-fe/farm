@@ -3778,31 +3778,31 @@ importers:
         version: 1.5.0(zod@3.23.8)
     optionalDependencies:
       '@farmfe/core-darwin-arm64':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/darwin-arm64
       '@farmfe/core-darwin-x64':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/darwin-x64
       '@farmfe/core-linux-arm64-gnu':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/linux-arm64-gnu
       '@farmfe/core-linux-arm64-musl':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/linux-arm64-musl
       '@farmfe/core-linux-x64-gnu':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/linux-x64-gnu
       '@farmfe/core-linux-x64-musl':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/linux-x64-musl
       '@farmfe/core-win32-arm64-msvc':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/win32-arm64-msvc
       '@farmfe/core-win32-ia32-msvc':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/win32-ia32-msvc
       '@farmfe/core-win32-x64-msvc':
-        specifier: 2.0.1
+        specifier: 2.0.2
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@napi-rs/cli':
@@ -4598,31 +4598,31 @@ importers:
   rust-plugins/react:
     optionalDependencies:
       '@farmfe/plugin-react-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/plugin-react-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/plugin-react-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/plugin-react-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/plugin-react-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/plugin-react-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/plugin-react-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/plugin-react-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/plugin-react-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
@@ -4754,31 +4754,31 @@ importers:
   rust-plugins/sass:
     optionalDependencies:
       '@farmfe/plugin-sass-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/plugin-sass-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/plugin-sass-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/plugin-sass-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/plugin-sass-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/plugin-sass-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/plugin-sass-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/plugin-sass-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/plugin-sass-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
@@ -4974,31 +4974,31 @@ importers:
   rust-plugins/tailwindcss:
     optionalDependencies:
       '@farmfe/plugin-tailwindcss-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/plugin-tailwindcss-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/plugin-tailwindcss-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/plugin-tailwindcss-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/plugin-tailwindcss-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/plugin-tailwindcss-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/plugin-tailwindcss-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/plugin-tailwindcss-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/plugin-tailwindcss-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
@@ -5130,31 +5130,31 @@ importers:
   rust-plugins/vue:
     optionalDependencies:
       '@farmfe/plugin-vue-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/plugin-vue-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/plugin-vue-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/plugin-vue-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/plugin-vue-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/plugin-vue-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/plugin-vue-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/plugin-vue-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/plugin-vue-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
@@ -5164,31 +5164,31 @@ importers:
   rust-plugins/vue-jsx:
     optionalDependencies:
       '@farmfe/plugin-vue-jsx-darwin-arm64':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/darwin-arm64
       '@farmfe/plugin-vue-jsx-darwin-x64':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/darwin-x64
       '@farmfe/plugin-vue-jsx-linux-arm64-gnu':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/linux-arm64-gnu
       '@farmfe/plugin-vue-jsx-linux-arm64-musl':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/linux-arm64-musl
       '@farmfe/plugin-vue-jsx-linux-x64-gnu':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/linux-x64-gnu
       '@farmfe/plugin-vue-jsx-linux-x64-musl':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/linux-x64-musl
       '@farmfe/plugin-vue-jsx-win32-arm64-msvc':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/win32-arm64-msvc
       '@farmfe/plugin-vue-jsx-win32-ia32-msvc':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/win32-ia32-msvc
       '@farmfe/plugin-vue-jsx-win32-x64-msvc':
-        specifier: 0.0.1
+        specifier: 0.0.2
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
@@ -5289,31 +5289,31 @@ importers:
   rust-plugins/worker:
     optionalDependencies:
       '@farmfe/plugin-worker-darwin-arm64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-arm64
       '@farmfe/plugin-worker-darwin-x64':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/darwin-x64
       '@farmfe/plugin-worker-linux-arm64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-gnu
       '@farmfe/plugin-worker-linux-arm64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-arm64-musl
       '@farmfe/plugin-worker-linux-x64-gnu':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-gnu
       '@farmfe/plugin-worker-linux-x64-musl':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/linux-x64-musl
       '@farmfe/plugin-worker-win32-arm64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-arm64-msvc
       '@farmfe/plugin-worker-win32-ia32-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-ia32-msvc
       '@farmfe/plugin-worker-win32-x64-msvc':
-        specifier: 2.0.0
+        specifier: 2.0.1
         version: link:npm/win32-x64-msvc
     devDependencies:
       '@farmfe/plugin-tools':
