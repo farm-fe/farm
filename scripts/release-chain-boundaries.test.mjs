@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import {validationDispatches} from './prepare-v2-release-intent.mjs';
+import {waitForVersionPrHead} from './changesets-pr-head.mjs';
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
 test('ordinary PR CI tests current candidates without a publication reference',()=>{
@@ -42,4 +43,70 @@ test('Docs remains a CI quality lane using formal recipes, not a release referen
   assert.match(docs,/FARM_BUILD_PROFILE: ci/);assert.match(docs,/scripts\/docs-native-build.mjs/);assert.match(docs,/scripts\/docs-native-products.py consume/);
   assert.doesNotMatch(docs,/run build:rs\n|release-profile reference/);
   assert.match(docs,/windows-latest/);assert.match(docs,/ubuntu-24.04/);
+});
+
+
+const repo = 'farm-fe/farm', number = 2373;
+const base = 'a'.repeat(40), previous = 'b'.repeat(40), expected = 'c'.repeat(40), other = 'd'.repeat(40);
+const makePR = head => ({ number, state: 'open', title: 'chore: release packages',
+  base: { ref: 'main', sha: base, repo: { full_name: repo } },
+  head: { ref: 'changeset-release/main', sha: head, repo: { full_name: repo } } });
+
+function fixture({ prs = [makePR(previous), makePR(expected)], remote = { base, head: expected } } = {}) {
+  let reads = 0, refReads = 0, waits = 0;
+  const input = { repository: repo, number, base, previous, expected, maxAttempts: 3,
+    readPR: () => prs[Math.min(reads++, prs.length - 1)],
+    readRefs: () => { refReads++; return remote; },
+    wait: async () => { waits++; } };
+  return { input, counts: () => [reads, refReads, waits] };
+}
+
+test('expected remote head with only the previous PR head visible can converge', async () => {
+  const f = fixture();
+  assert.equal((await waitForVersionPrHead(f.input)).head.sha, expected);
+  assert.deepEqual(f.counts(), [2, 2, 1]);
+});
+
+test('exact published seal is accepted without waiting', async () => {
+  const f = fixture({ prs: [makePR(expected)] });
+  await waitForVersionPrHead(f.input);
+  assert.deepEqual(f.counts(), [1, 1, 0]);
+});
+
+test('stale PR head visibility stops after the bounded number of attempts', async () => {
+  const f = fixture({ prs: [makePR(previous)] });
+  await assert.rejects(waitForVersionPrHead(f.input), /did not converge/);
+  assert.deepEqual(f.counts(), [3, 3, 2]);
+});
+
+test('third head, moved remote branch, or moved main aborts without a retry', async () => {
+  for (const options of [{ prs: [makePR(other)] }, { remote: { base, head: other } }, { remote: { base: other, head: expected } }]) {
+    const f = fixture(options);
+    await assert.rejects(waitForVersionPrHead(f.input), /moved concurrently/);
+    assert.equal(f.counts()[2], 0);
+  }
+});
+
+test('wrong or changed PR identity fails closed and does not retry API errors', async () => {
+  for (const mutate of [
+    pr => { pr.number++; }, pr => { pr.state = 'closed'; }, pr => { pr.title = 'another PR'; },
+    pr => { pr.base.sha = other; }, pr => { pr.base.ref = 'stable'; }, pr => { pr.base.repo.full_name = 'fork/farm'; },
+    pr => { pr.head.ref = 'unreviewed'; }, pr => { pr.head.repo.full_name = 'fork/farm'; },
+  ]) {
+    const pr = makePR(previous); mutate(pr);
+    const f = fixture({ prs: [pr] });
+    await assert.rejects(waitForVersionPrHead(f.input), /identity changed|moved concurrently/);
+    assert.equal(f.counts()[2], 0);
+  }
+  const f = fixture();
+  f.input.readPR = () => { throw new Error('REST unavailable'); };
+  await assert.rejects(waitForVersionPrHead(f.input), /REST unavailable/);
+  assert.equal(f.counts()[2], 0);
+});
+
+test('version preparation checks head visibility before receipt and again after upload before dispatch', () => {
+  const source = read('scripts/prepare-v2-release-intent.mjs');
+  assert.match(source, /const published = await confirmVersionPrHead[\s\S]*?writeVersionReceipt\(published\)/);
+  const workflow = read('.github/workflows/release.yaml');
+  assert.match(workflow, /Upload version-only provenance[\s\S]*?--check-dispatch\)[\s\S]*?gh workflow run/);
 });

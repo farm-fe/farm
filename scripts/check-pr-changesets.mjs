@@ -1,3 +1,4 @@
+// cspell:words NOSYSTEM
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -256,6 +257,22 @@ export function verifyChangesetsPreparation(directory, { readGitFile, isAncestor
   assert.equal(plan.publication.releaseIdentity, expected.releaseIdentity);
   return { status: 'verified-changesets-preparation', packages: expected.counts.total };
 }
+// A prepared version check can run on a fresh runner, separate from the
+// producer that populated its Cargo cache. Keep the verifier itself offline.
+export function runPreparedInventory({ directory = root, environment = process.env, run = execFileSync } = {}) {
+  const options = { cwd: directory, stdio: 'inherit' };
+  if (environment.GITHUB_ACTIONS === 'true') {
+    // Only the API provenance check needs its read token. The dependency fetch
+    // and offline inventory use the same Cargo home without forwarding tokens,
+    // credential helpers, Cargo overrides, or Git config overrides.
+    options.env = Object.fromEntries(['PATH', 'HOME', 'CARGO_HOME', 'RUSTUP_HOME', 'TEMP', 'TMP', 'TMPDIR', 'LANG', 'LC_ALL']
+      .filter(key => environment[key] !== undefined).map(key => [key, environment[key]]));
+    Object.assign(options.env, { GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' });
+    run('python3', [path.join(directory, 'scripts/prepare-cargo-package-inputs.py'), '--fetch'], options);
+  }
+  run(process.execPath, [path.join(directory, 'scripts/v2-release-preflight.mjs')], options);
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const event = process.env.GITHUB_EVENT_PATH ? (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' ? validationEvent() : JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))) : null;
   const mode = JSON.parse(fs.readFileSync(path.join(root, 'docs/releases/v2-candidate.json'))).preparation?.mode ?? 'first-stable';
@@ -286,7 +303,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       }
     });
     // Also checks all 297 source versions/dependencies and Cargo manifest digests.
-    execFileSync(process.execPath, [path.join(root, 'scripts/v2-release-preflight.mjs')], { cwd: root, stdio: 'inherit' });
+    runPreparedInventory();
     console.log(JSON.stringify(result));
   } else {
     // All non-eligible changes retain the normal Changesets failure semantics.

@@ -4,7 +4,41 @@ import { createInstance } from __MF_RUNTIME_PATH__;
 const configuration = __MF_CONFIGURATION__;
 const system = globalThis[configuration.namespace].m;
 if (system.federation) throw new Error(`[Farm MF ${configuration.name}] Adapter already installed`);
-const instance = createInstance({name:configuration.name,remotes:configuration.remotes,shared:__MF_SHARED__,shareStrategy:'loaded-first'});
+const shared = __MF_SHARED__;
+const preservePendingSingletons = {
+  name: 'farm-native-singleton-selection',
+  beforeInitContainer(data) {
+    for (const [id, config] of Object.entries(shared)) {
+      if (!config.shareConfig.singleton) continue;
+      const entry = data.shareScope?.[id]?.[config.version];
+      if (entry?.from !== configuration.name || entry.get !== config.get ||
+          entry.loaded || typeof entry.loading?.then !== 'function') continue;
+
+      // Webpack uses loaded to prevent replacing an already selected provider.
+      // Publish the selected async getter without delaying container init.
+      const pending = entry.loading;
+      const priorLoaded = entry.loaded;
+      const priorGet = entry.get;
+      const selectedGet = () => pending;
+      entry.get = selectedGet;
+      entry.loaded = true;
+      void pending.then(
+        () => {
+          if (entry.get === selectedGet) entry.get = priorGet;
+        },
+        () => {
+          if (entry.get !== selectedGet) return;
+          entry.get = priorGet;
+          if (entry.loading !== pending) return;
+          if (!entry.lib) entry.loaded = priorLoaded;
+          delete entry.loading;
+        },
+      );
+    }
+    return data;
+  },
+};
+const instance = createInstance({name:configuration.name,remotes:configuration.remotes,shared,shareStrategy:'loaded-first',plugins:[preservePendingSingletons]});
 __MF_HOT_ADAPTER__
 const hot = configuration.hot ? createFederationHot(configuration) : undefined;
 export const bridge = {

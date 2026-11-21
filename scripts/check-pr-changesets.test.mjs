@@ -1,10 +1,11 @@
+// cspell:words NOSYSTEM
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { verifyPreparedRelease, verifyChangesetsPreparation, changesetBase, fetchChangesetBase, isNoPublishDiff, archival2368, isExactArchivalPullRequest } from './check-pr-changesets.mjs';
+import { verifyPreparedRelease, verifyChangesetsPreparation, runPreparedInventory, changesetBase, fetchChangesetBase, isNoPublishDiff, archival2368, isExactArchivalPullRequest } from './check-pr-changesets.mjs';
 import { changesetsPublication } from './v2-release-inventory.mjs';
 const digest = text => crypto.createHash('sha256').update(text).digest('hex');
 
@@ -195,4 +196,41 @@ test('one archival PR binds exact repository, event, paths, bytes, modes and bot
   assert.equal(probe({ trees: [snapshots[1], snapshots[1]] }), false);
   for (const fail of ['rev-parse', 'merge-base', 'diff', 'ls-tree']) assert.equal(probe({ fail }), false);
   assert.equal(probe({ drift: true }), false);
+});
+
+
+test('prepared hosted inventory fetches locked inputs first with no API or publication credentials', () => {
+  const calls = [];
+  const directory = path.join(os.tmpdir(), 'farm-prepared-inventory');
+  const environment = { GITHUB_ACTIONS: 'true', GH_TOKEN: 'read', GITHUB_TOKEN: 'read',
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'oidc', NPM_TOKEN: 'npm', CARGO_REGISTRY_TOKEN: 'cargo',
+    GIT_CONFIG_PARAMETERS: 'ambient', PATH: '/bin', HOME: '/home/runner', CARGO_HOME: '/cargo' };
+  runPreparedInventory({ directory, environment, run: (...args) => calls.push(args) });
+  const env = { PATH: '/bin', HOME: '/home/runner', CARGO_HOME: '/cargo',
+    GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' };
+  const options = { cwd: directory, stdio: 'inherit', env };
+  assert.deepEqual(calls, [
+    ['python3', [path.join(directory, 'scripts/prepare-cargo-package-inputs.py'), '--fetch'], options],
+    [process.execPath, [path.join(directory, 'scripts/v2-release-preflight.mjs')], options],
+  ]);
+});
+
+test('local prepared validation stays offline and a failed hosted fetch never proceeds', () => {
+  const calls = [];
+  runPreparedInventory({ environment: {}, run: (command, args) => calls.push([command, args]) });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], process.execPath);
+  assert.match(calls[0][1][0], /v2-release-preflight[.]mjs$/);
+  const failed = [];
+  assert.throws(() => runPreparedInventory({ environment: { GITHUB_ACTIONS: 'true' }, run: command => {
+    failed.push(command); throw new Error('Locked Cargo fetch failed');
+  } }), /Locked Cargo fetch failed/);
+  assert.deepEqual(failed, ['python3']);
+});
+
+test('the Changesets job does not persist its checkout token for dependency fetches', () => {
+  const workflow = fs.readFileSync(new URL('../.github/workflows/ci.yaml', import.meta.url), 'utf8');
+  const job = workflow.split('\n  changesets-check:\n')[1]?.split('\n  ts-test:\n')[0];
+  assert.match(job, /uses: actions\/checkout@v4\s+with:\s+fetch-depth: 0\s+persist-credentials: false/);
+  assert.match(job, /permissions:\s+contents: read\s+actions: read\s+pull-requests: read/);
 });
