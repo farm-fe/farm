@@ -10,7 +10,7 @@ farmfe_docs_content = { path = "../docs-content" }
 mdxjs = "=1.0.4"
 schemars = "=0.8.22"
 serde = { version = "1", features = ["derive", "rc"] }
-farmfe_core = { version = "=2.2.0", path = "../../crates/core" }
+farmfe_core = { version = "=2.2.1", path = "../../crates/core" }
 serde_json = "1"
 sha2 = "0.10"
 unicode-normalization = "=0.1.25"
