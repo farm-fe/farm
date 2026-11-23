@@ -1,5 +1,27 @@
 # @farmfe/docs-theme-default
 
+## 2.0.0
+
+### Major Changes
+
+- Release the matched Farm Docs and default theme packages as 2.0.0 for the Farm v2 ecosystem.
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/docs@2.0.0
+
+## 1.0.0
+
+### Major Changes
+
+- Prepare the matched Farm Docs package pair for the independent stable release. This intermediate 1.0.0 version is not published.
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/docs@1.0.0
+
 ## 0.0.2
 
 ### Patch Changes
