@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cspell:words userconfig globalconfig pathlib
+# cspell:words userconfig globalconfig pathlib realpath printenv
 set -euo pipefail
 repo=$1
 sha=$2
