@@ -72,7 +72,41 @@ export function cargoLicenseMaterials(home, declared, read = file => regular(hom
   return available.sort().map(file => ({ path: file, sha256: sha256(read(file)) }));
 }
 
-export function cargoLegalInputs(directory, abi) {
+export function normalizedCargoEvents(directory, events) {
+  assert.ok(Array.isArray(events) && events.length > 0, 'Cargo artifact evidence missing');
+  const rows = new Map();
+  for (const event of events) {
+    let id = event.packageId;
+    assert.equal(typeof id, 'string');
+    if (id.startsWith('path+file:')) {
+      const locator = new URL(id.slice('path+'.length));
+      const hash = locator.hash;
+      locator.hash = '';
+      const relative = path.relative(directory, fileURLToPath(locator));
+      assert.ok(relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative),
+        'Unexpected local Cargo artifact outside checkout');
+      id = 'workspace:' + relative.split(path.sep).join('/') + hash;
+    } else {
+      assert.match(id, /^(?:registry|git|sparse)\+https:\/\//, 'Unexpected Cargo artifact source');
+    }
+    assert.equal(typeof event.target, 'string');
+    assert.equal(typeof event.fresh, 'boolean', 'Cargo cache disposition missing');
+    const sort = values => {
+      assert.ok(Array.isArray(values) && values.every(value => typeof value === 'string'));
+      return [...new Set(values)].sort();
+    };
+    const row = { packageId: id, target: event.target, kinds: sort(event.kinds),
+      crateTypes: sort(event.crateTypes), features: sort(event.features), fresh: event.fresh };
+    rows.set(JSON.stringify(row), row);
+  }
+  const result = [...rows.keys()].sort().map(key => rows.get(key));
+  assert.ok(result.some(row => row.target === 'farmfe_plugin_module_federation' &&
+    row.packageId.startsWith('workspace:' + project + '#') && row.crateTypes.includes('cdylib')),
+    'Federation dynamic library compiler evidence missing');
+  return result;
+}
+
+export function cargoLegalInputs(directory, abi, compiledArtifacts) {
   const { sourceCommit } = buildIdentity(directory);
   assert.ok(Object.hasOwn(targets, abi));
   const metadata = JSON.parse(execFileSync('cargo', ['metadata', '--format-version', '1', '--locked',
@@ -98,7 +132,11 @@ export function cargoLegalInputs(directory, abi) {
   rows.sort((a, b) => JSON.stringify([a.name, a.version, a.source]).localeCompare(JSON.stringify([b.name, b.version, b.source])));
   return { schemaVersion: 1, kind: 'locked-cargo-license-review-input', target: targets[abi],
     scope: 'Target-filtered non-dev prerequisite closure; may include build-only code',
-    reviewComplete: false, components: rows };
+    reviewComplete: false, components: rows,
+    compilerEvidence: {
+      scope: 'Cargo emitted or reused these compilation artifacts; this does not prove binary linkage',
+      artifacts: compiledArtifacts,
+    } };
 }
 
 export function buildNative({ directory = root, abi, output, npm = resolveNpmCli() }) {
@@ -110,11 +148,20 @@ export function buildNative({ directory = root, abi, output, npm = resolveNpmCli
     !/^(RUSTFLAGS|CARGO_ENCODED_RUSTFLAGS|CARGO_PROFILE_)/.test(key)));
   Object.assign(env, { CARGO_BUILD_JOBS: '2', ...(abi === 'darwin-arm64' ? { CARGO_PROFILE_RELEASE_STRIP: 'none' } : {}),
     ...(abi === 'linux-x64-gnu' ? { CARGO_INCREMENTAL: '0', CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: 'gcc' } : {}) });
-  execFileSync(process.execPath, [npm, '--prefix', project, 'run', 'build', '--',
-    '--target', targets[abi], '--abi', abi, '--profile', 'release', '--locked'], { cwd: directory, env, stdio: 'inherit' });
+  const scratch = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'farm-mf-build-events-')));
+  const events = path.join(scratch, 'events.json');
+  env.FARM_MF_BUILD_EVENTS = events;
+  let compiledArtifacts;
+  try {
+    execFileSync(process.execPath, [npm, '--prefix', project, 'run', 'build', '--',
+      '--target', targets[abi], '--abi', abi, '--profile', 'release', '--locked'], { cwd: directory, env, stdio: 'inherit' });
+    compiledArtifacts = normalizedCargoEvents(directory, JSON.parse(regular(scratch, 'events.json')));
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
   assert.deepEqual(buildIdentity(directory), identity, 'Tracked source moved while building');
   const bytes = regular(directory, binary);
-  const legal = Buffer.from(JSON.stringify(cargoLegalInputs(directory, abi), null, 2) + '\n');
+  const legal = Buffer.from(JSON.stringify(cargoLegalInputs(directory, abi, compiledArtifacts), null, 2) + '\n');
   const receipt = nativeReceipt(identity, abi, bytes, legal);
   fs.mkdirSync(output);
   fs.writeFileSync(path.join(output, 'index.farm'), bytes, { flag: 'wx' });
@@ -136,6 +183,9 @@ export function readBundleInputs(identity, directory) {
     assert.equal(review.kind, 'locked-cargo-license-review-input');
     assert.equal(review.target, targets[abi]);
     assert.equal(review.reviewComplete, false);
+    assert.ok(review.compilerEvidence?.artifacts?.some(row =>
+      row.target === 'farmfe_plugin_module_federation' && row.crateTypes.includes('cdylib')),
+      'Missing compiled native review evidence');
     assert.ok(Array.isArray(review.components) && review.components.length > 0);
     assert.deepEqual(receipt, nativeReceipt(identity, abi, bytes, legal), 'Native source/target/integrity receipt differs');
     return { abi, bytes, legal, receipt };

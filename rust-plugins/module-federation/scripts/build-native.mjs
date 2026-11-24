@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 import { nativeBuildOptions } from "./native-platform.mjs";
 
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
+const workspaceRoot = path.resolve(packageRoot, "../..");
+const evidencePath = process.env.FARM_MF_BUILD_EVENTS;
+const events = [];
 const options = nativeBuildOptions(process.argv.slice(2));
 const child = spawn(
   "cargo",
@@ -20,7 +23,7 @@ const child = spawn(
     ...options.cargoArgs,
   ],
   {
-    cwd: path.resolve(packageRoot, "../.."),
+    cwd: workspaceRoot,
     stdio: ["inherit", "pipe", "inherit"],
   },
 );
@@ -32,6 +35,16 @@ const line = (value) => {
     message = JSON.parse(value);
   } catch {
     return;
+  }
+  if (evidencePath && message.reason === "compiler-artifact") {
+    events.push({
+      packageId: message.package_id,
+      target: message.target?.name,
+      kinds: message.target?.kind,
+      crateTypes: message.target?.crate_types,
+      features: message.features,
+      fresh: message.fresh,
+    });
   }
   if (
     message.reason === "compiler-artifact" &&
@@ -65,4 +78,6 @@ if (!artifact)
 const destination = path.join(packageRoot, "npm", options.abi, "index.farm");
 await fs.mkdir(path.dirname(destination), { recursive: true });
 await fs.copyFile(artifact, destination);
+if (evidencePath)
+  await fs.writeFile(evidencePath, JSON.stringify(events), { flag: "wx" });
 console.log(`Native Federation plugin (${options.profile}): ${destination}`);

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { archiveFiles, sha256 } from './release-archive.mjs';
 import { buildIdentity, cargoLicenseMaterials, owner, prepareMfBundle, readBundleInputs, readMfBundleForTest, targets } from './prepare-mf-single-package.mjs';
@@ -39,7 +39,7 @@ function fixture(t) {
     fs.mkdirSync(folder, { recursive: true });
     fs.writeFileSync(path.join(folder, 'index.farm'), bytes);
     const legal = Buffer.from(JSON.stringify({ kind: 'locked-cargo-license-review-input',
-      target, reviewComplete: false, components: [{ name: 'Fixture', declaration: 'MIT' }] }));
+      target, reviewComplete: false, compilerEvidence: { artifacts: [{ target: 'farmfe_plugin_module_federation', crateTypes: ['cdylib'] }] }, components: [{ name: 'Fixture', declaration: 'MIT' }] }));
     fs.writeFileSync(path.join(folder, 'legal-inputs.json'), legal);
     fs.writeFileSync(path.join(folder, 'receipt.json'), JSON.stringify({
       schemaVersion: 1, kind: 'mf-bundle-build-input-not-publication-authorization', ...identity,
@@ -173,4 +173,24 @@ test('hashes smartstring LICENCE.md without broadening matching or changing byte
     fs.symlinkSync(outside, path.join(crate, 'LICENCE-redirect.md'));
     assert.throws(() => cargoLicenseMaterials(crate), /Artifact path redirects/);
   }
+});
+
+
+test('compilation events bind the native cdylib, normalize ordering and reject missing or external local artifacts', async () => {
+  const { normalizedCargoEvents } = await import('./prepare-mf-single-package.mjs');
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const packageId = new URL('../rust-plugins/module-federation', import.meta.url).href;
+  const target = 'farmfe_plugin_module_federation';
+  const library = { packageId: 'path+' + packageId + '#0.0.0', target,
+    kinds: ['cdylib'], crateTypes: ['cdylib'], features: ['z', 'a', 'a'], fresh: true };
+  const build = { packageId: 'registry+https://github.com/rust-lang/crates.io-index#cc@1.0.0',
+    target: 'build-script-build', kinds: ['custom-build'], crateTypes: ['bin'], features: [], fresh: false };
+  const rows = normalizedCargoEvents(root, [library, build, library]);
+  assert.deepEqual(rows, normalizedCargoEvents(root, [build, library]));
+  assert.deepEqual(rows.find(row => row.target === target).features, ['a', 'z']);
+  assert.equal(rows.find(row => row.target === target).fresh, true);
+  assert.throws(() => normalizedCargoEvents(root, [{ ...library, fresh: null }]), /cache disposition/);
+  assert.ok(rows.find(row => row.target === target).packageId.startsWith('workspace:rust-plugins/module-federation#'));
+  assert.throws(() => normalizedCargoEvents(root, [build]), /dynamic library/);
+  assert.throws(() => normalizedCargoEvents(root, [library, { ...build, packageId: 'path+file:///elsewhere#1' }]), /outside checkout/);
 });

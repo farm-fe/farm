@@ -31,7 +31,7 @@ childProcess.spawn = (command, args, options) => {
   const child = new EventEmitter();
   child.stdout = new PassThrough();
   setImmediate(() => {
-    const message = JSON.stringify({ reason: "compiler-artifact", target: { name: "farmfe_plugin_module_federation", kind: ["cdylib"] }, filenames: [process.env.ARTIFACT] });
+    const message = JSON.stringify({ reason: "compiler-artifact", package_id: "fixture-id", target: { name: "farmfe_plugin_module_federation", kind: ["cdylib"], crate_types: ["cdylib"] }, features: ["fixture"], fresh: false, filenames: [process.env.ARTIFACT] });
     // A process can exit before its stdout has drained. The builder must await close.
     child.emit("exit", Number(process.env.CARGO_EXIT || 0), null);
     child.stdout.on("end", () => child.emit("close", Number(process.env.CARGO_EXIT || 0), null));
@@ -70,6 +70,21 @@ for (const [target, abi, extension] of targets) {
     assert.equal(await fs.readFile(path.join(f.packageRoot, "npm", abi, "index.farm"), "utf8"), "fixture native payload");
   });
 }
+
+test("optional compiler evidence is captured only for a successful Cargo process", async t => {
+  const f = await fixture(t);
+  const events = path.join(f.root, "events.json");
+  const env = { FARM_MF_BUILD_EVENTS: events };
+  const args = ["--target", targets[0][0]];
+  assert.notEqual((await f.build(args, ".dylib", { ...env, CARGO_EXIT: "17" })).status, 0);
+  await assert.rejects(fs.stat(events), { code: "ENOENT" });
+  const result = await f.build(args, ".dylib", env);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(await fs.readFile(events, "utf8")), [{
+    packageId: "fixture-id", target: "farmfe_plugin_module_federation",
+    kinds: ["cdylib"], crateTypes: ["cdylib"], features: ["fixture"], fresh: false,
+  }]);
+});
 
 test("keeps ci as the local default and honors CARGO_BUILD_TARGET", async (t) => {
   const f = await fixture(t);
