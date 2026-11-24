@@ -1,0 +1,25 @@
+{
+  "name": "farm-docs-pair-build-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@farmfe/cli": "2.0.0",
+    "@farmfe/core": "2.0.1",
+    "@farmfe/plugin-docs": "0.0.1",
+    "@farmfe/plugin-docs-seo": "0.0.1",
+    "@farmfe/plugin-docs-snapshot": "0.0.1",
+    "@farmfe/plugin-docs-snippets": "0.0.1",
+    "@farmfe/plugin-react": "2.0.0",
+    "@farmfe/plugin-replace-dirname": "2.0.0",
+    "@farmfe/plugin-ssr-css": "0.0.1",
+    "@farmfe/plugin-syntax-highlight": "0.0.1",
+    "@types/node": "18.19.67",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7",
+    "mime": "4.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-refresh": "0.17.0",
+    "typescript": "5.6.3"
+  }
+}
