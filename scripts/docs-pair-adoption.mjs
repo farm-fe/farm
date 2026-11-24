@@ -1,4 +1,4 @@
-/** Build an adoption baseline after an independently verified public readback. */
+/** Build an adoption baseline after an independently verified public registry verification. */
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 

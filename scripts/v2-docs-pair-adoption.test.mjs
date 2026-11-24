@@ -51,7 +51,7 @@ function fixture() {
   return {args, observed, checked, historical, counter: () => ({reads, publicChecks})};
 }
 
-test('readback permits only a retained Docs pair and a subsequent official Core delta', async () => {
+test('public verification permits only a retained Docs pair and a subsequent official Core delta', async () => {
   const f = fixture();
   const {baseline, adoption} = await prepareRetainedDocsBaseline(f.args);
   assert.equal(adoption.publicationAuthorized, false);
