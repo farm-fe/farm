@@ -1,0 +1,147 @@
+name: Freeze original Docs package pair
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact protected main commit to build
+        required: true
+        type: string
+      source_tree:
+        description: Independently reviewed Git tree for that commit
+        required: true
+        type: string
+
+permissions: {}
+concurrency:
+  group: farm-docs-pair-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    name: Build and verify frozen Docs pair
+    if: >-
+      github.repository == 'farm-fe/farm' &&
+      github.repository_id == '507542208' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_protected &&
+      github.run_attempt == '1' &&
+      github.sha == inputs.source_sha &&
+      github.workflow_sha == github.sha &&
+      github.workflow_ref == 'farm-fe/farm/.github/workflows/docs-pair-bootstrap.yaml@refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    env:
+      SOURCE_SHA: ${{ inputs.source_sha }}
+      SOURCE_TREE: ${{ inputs.source_tree }}
+
+    steps:
+      - name: Fetch and verify the exact protected main source
+        run: |
+          [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$GITHUB_REPOSITORY" == farm-fe/farm ]]
+          [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_REF_PROTECTED" == true ]]
+          [[ "$GITHUB_REPOSITORY_ID" == 507542208 && "$GITHUB_WORKFLOW_SHA" == "$GITHUB_SHA" ]]
+          [[ "$GITHUB_WORKFLOW_REF" == 'farm-fe/farm/.github/workflows/docs-pair-bootstrap.yaml@refs/heads/main' ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$SOURCE_TREE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$SOURCE_SHA" == "$GITHUB_SHA" ]]
+          [[ "$GITHUB_RUN_ATTEMPT" == 1 ]]
+          REPO_DIR="$RUNNER_TEMP/docs-pair-source"
+          {
+            printf 'REPO_DIR=%s\n' "$REPO_DIR"
+            printf 'TOOL_DIR=%s\n' "$RUNNER_TEMP/docs-pair-tools"
+            printf 'PACK_DIR=%s\n' "$RUNNER_TEMP/docs-pair-originals"
+            printf 'CONSUMER_DIR=%s\n' "$RUNNER_TEMP/docs-pair-consumer"
+          } >> "$GITHUB_ENV"
+          unset GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
+          export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0
+          mkdir "$REPO_DIR"
+          git -C "$REPO_DIR" init --quiet
+          git -C "$REPO_DIR" -c credential.helper= fetch --quiet --no-tags --depth 1 \
+            https://github.com/farm-fe/farm.git refs/heads/main
+          [[ "$(git -C "$REPO_DIR" rev-parse 'FETCH_HEAD^{commit}')" == "$SOURCE_SHA" ]]
+          [[ "$(git -C "$REPO_DIR" rev-parse 'FETCH_HEAD^{tree}')" == "$SOURCE_TREE" ]]
+          git -C "$REPO_DIR" checkout --quiet --detach "$SOURCE_SHA"
+
+      - name: Install integrity-pinned public build tools
+        run: |
+          mkdir "$TOOL_DIR"
+          fetch_tool() {
+            local name="$1" url="$2" sri="$3"
+            local tarball="$TOOL_DIR/$name.tgz" directory="$TOOL_DIR/$name"
+            curl --fail --silent --show-error --proto '=https' --max-time 90 \
+              --output "$tarball" "$url"
+            local actual
+            actual="$(openssl dgst -sha512 -binary "$tarball" | openssl base64 -A)"
+            [[ "$actual" == "$sri" ]]
+            mkdir "$directory"
+            tar -xzf "$tarball" --strip-components=1 -C "$directory"
+          }
+          fetch_tool node https://registry.npmjs.org/node-linux-x64/-/node-linux-x64-22.22.2.tgz \
+            LN7oM9lA/uOjnsvlv5lPYIBPGuFIiYckZhBcEVhHw2YNsm9SDC2ncBlJWGbUtuwMfxAr1xjOG+uEY7bEfV1VyQ==
+          fetch_tool npm https://registry.npmjs.org/npm/-/npm-11.19.1.tgz \
+            ztsxKxt/kkIaAs+2i0GU6I+DRmUdrNasxTZKJe9TCdSjKxlhah/4r/hl5ygMD6XAg1qZ9c2TNomR4qgOydp10g==
+          fetch_tool pnpm https://registry.npmjs.org/pnpm/-/pnpm-9.4.0.tgz \
+            9Um4pSydK4U2di+ZwHIiBe/Fr5E+d4NdvMw7CwssqefcgCK3gGLBcpHEjoh0nHDOiOtadPH6jEv14Yu0bIvYOg==
+
+      - name: Build and pack the exact committed Docs pair
+        run: |
+          "$TOOL_DIR/node/bin/node" "$REPO_DIR/scripts/farm-docs-build-frozen-pair.mjs" \
+            "$REPO_DIR" "$SOURCE_SHA" "$SOURCE_TREE" "$PACK_DIR" \
+            "$REPO_DIR/scripts/release-fixtures/farm-docs-pair-build" \
+            "$TOOL_DIR/npm/bin/npm-cli.js" "$TOOL_DIR/pnpm/bin/pnpm.cjs"
+
+      - name: Verify clean installs of the same archive bytes
+        run: |
+          bash "$REPO_DIR/scripts/farm-docs-test-frozen-pair.sh" \
+            "$REPO_DIR" "$SOURCE_SHA" "$PACK_DIR" "$CONSUMER_DIR" \
+            "$REPO_DIR/scripts/release-fixtures/farm-docs-pair-build" \
+            "$TOOL_DIR/node/bin/node" "$TOOL_DIR/npm/bin/npm-cli.js"
+
+      - name: Verify the upload contains only the two original archives and receipt
+        run: |
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ['PACK_DIR'])
+          names = {
+              '@farmfe/docs-theme-default': 'farmfe-docs-theme-default-2.0.0.tgz',
+              '@farmfe/docs': 'farmfe-docs-2.0.0.tgz',
+          }
+          expected = {'frozen-pair.json', *names.values()}
+          assert {p.name for p in root.iterdir()} == expected
+          assert all(p.is_file() and not p.is_symlink() for p in root.iterdir())
+          receipt = json.loads((root / 'frozen-pair.json').read_bytes())
+          assert set(receipt) == {'schemaVersion', 'kind', 'sourceSHA', 'sourceTree', 'packages'}
+          assert type(receipt['schemaVersion']) is int and receipt['schemaVersion'] == 1
+          assert receipt['kind'] == 'docs-frozen-pair-v1'
+          assert receipt['sourceSHA'] == os.environ['SOURCE_SHA']
+          assert receipt['sourceTree'] == os.environ['SOURCE_TREE']
+          assert [p['name'] for p in receipt['packages']] == list(names)
+          for package in receipt['packages']:
+              assert set(package) == {'name', 'version', 'archiveSha256', 'archiveBytes', 'integrity'}
+              assert package['version'] == '2.0.0'
+              archive = root / names[package['name']]
+              assert 0 < archive.stat().st_size < 32 * 1024 * 1024
+              body = archive.read_bytes()
+              assert type(package['archiveBytes']) is int and package['archiveBytes'] == len(body)
+              assert package['archiveSha256'] == hashlib.sha256(body).hexdigest()
+              assert package['integrity'] == 'sha512-' + base64.b64encode(hashlib.sha512(body).digest()).decode()
+          PY
+
+      - name: Upload exact original Docs archives
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: farm-docs-pair-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.PACK_DIR }}/frozen-pair.json
+            ${{ env.PACK_DIR }}/farmfe-docs-theme-default-2.0.0.tgz
+            ${{ env.PACK_DIR }}/farmfe-docs-2.0.0.tgz
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 30
