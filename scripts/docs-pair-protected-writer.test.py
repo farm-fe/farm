@@ -1,10 +1,12 @@
 """Actual disabled/live-review entry path with wholly controlled local I/O."""
-# cspell:words urllib importlib
+# cspell:words urllib importlib NOSYSTEM
 from io import BytesIO
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 import urllib.error
 
 spec = importlib.util.spec_from_file_location("protected_writer_test", Path(__file__).with_name("docs-pair-protected-writer.py"))
@@ -208,6 +210,36 @@ class Tests(unittest.TestCase):
         self.assertEqual(result["status"], "exact-first-dispatch-preflight-ready")
         self.assertFalse(f.journal)
         self.assertFalse(any(x[0] == "one submit" for x in f.trace))
+
+    def test_exact_checkout_subprocess_never_inherits_action_or_registry_credentials(self):
+        world = FakeWorld(self)
+        npm = npm_tests.Contracts()
+        npm.setUp()
+        world.fixture.bodies = npm.bodies
+        world.fixture.receipt["packages"] = [npm.rows[name] for name in source.ORDER]
+        world.fixture.freeze()
+        world.rows = npm.rows
+        world.state["GITHUB_JOB"] = "preflight"
+        def checkout_process(command, *, env, **_):
+            self.assertEqual(command, ["git", "rev-parse", "HEAD", "HEAD^{tree}"])
+            self.assertEqual(set(env), {"PATH", "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_TERMINAL_PROMPT"})
+            return SimpleNamespace(stdout=(world.src + "\n" + world.tree + "\n").encode())
+        with patch.object(source.subprocess, "run", side_effect=checkout_process):
+            value = source.main(["--preflight"], world.state, get_event=world.event, http=world.web)
+        self.assertEqual(value["status"], "exact-first-dispatch-preflight-ready")
+        self.assertFalse(world.journal)
+
+    def test_late_competing_dispatch_after_theme_blocks_docs_upload(self):
+        world = FakeWorld(self)
+        original = world.publish
+        def submit(row, body, *, token_supplier):
+            ok = original(row, body, token_supplier=token_supplier)
+            world.origins[world.fixture.history]["total_count"] = 2
+            return ok
+        world.publish = submit
+        with self.assertRaisesRegex(ValueError, "Prior or ambiguous publisher history"):
+            world.run()
+        self.assertEqual([name for op, name in world.trace if op == "one submit"], [world.theme])
 
     def test_uncertain_submit_never_repeats_or_advances_to_docs(self):
         for unavailable in (False, True):
