@@ -5,82 +5,102 @@
         {
           "name": "@farmfe/core",
           "type": "patch"
-        }
-      ],
-      "summary": "Preserve empty and whitespace-only CSS URLs without resolving a nonexistent dependency or panicking during source replacement.",
-      "id": "css-empty-url"
-    },
-    {
-      "releases": [
+        },
         {
-          "name": "@farmfe/core",
+          "name": "@farmfe/plugin-react",
+          "type": "patch"
+        },
+        {
+          "name": "@farmfe/plugin-sass",
+          "type": "patch"
+        },
+        {
+          "name": "@farmfe/plugin-tailwindcss",
+          "type": "patch"
+        },
+        {
+          "name": "@farmfe/plugin-vue",
+          "type": "patch"
+        },
+        {
+          "name": "@farmfe/plugin-vue-jsx",
+          "type": "patch"
+        },
+        {
+          "name": "@farmfe/plugin-worker",
           "type": "patch"
         }
       ],
-      "summary": "Stop HTML fallback middleware after sending a response, preserving missing-resource fallthrough. Adapted from ErKeLost's contribution in #2179.",
-      "id": "friendly-html-response"
+      "summary": "Preserve CommonJS evaluation order when requiring asynchronous graph modules, and isolate injected CSS style identities and cache entries by runtime namespace. Keep lazy-compilation CSS refresh scoped to the same namespace while invalidating the original module IDs. These fixes support the separate, private Module Federation plugin without changing the public plugin interfaces.\n\nRebuild native compiler consumers against the corrected Rust SDK 2.2.1 crates. Keep the Rust Core ABI and the Module Federation packages unchanged and private.",
+      "id": "experimental-module-federation"
     },
     {
-      "releases": [
-        {
-          "name": "create-farm",
-          "type": "patch"
-        }
-      ],
-      "summary": "Fix farm client types in templates",
-      "id": "kind-walls-perform"
-    },
-    {
-      "releases": [
-        {
-          "name": "@farmfe/core",
-          "type": "patch"
-        }
-      ],
-      "summary": "A top-level `module`, `exports`, `farmRequire` or `farmDynamicRequire` binding in an ES module is renamed again, so it no longer collides with the parameters of the module wrapper (`SyntaxError: Identifier 'module' has already been declared`).",
-      "id": "module-binding-hygiene"
-    },
-    {
-      "releases": [
-        {
-          "name": "@farmfe/core",
-          "type": "patch"
-        }
-      ],
-      "summary": "Allow an object `server.proxy[*].target`, as http-proxy accepts (for example with `pfx` and `passphrase` for a client certificate). The config schema only accepted a string.",
-      "id": "proxy-object-target"
-    },
-    {
-      "releases": [
-        {
-          "name": "@farmfe/core",
-          "type": "patch"
-        }
-      ],
-      "summary": "Tree shaking no longer removes `x++` / `--x` updates and `delete` statements on top-level variables that are read later.",
-      "id": "tree-shake-update-delete"
+      "releases": [],
+      "summary": "Fix pending singleton selection in the private native Module Federation plugin, without a public package version change.",
+      "id": "preserve-native-singleton-selection"
     }
   ],
   "releases": [
     {
       "name": "@farmfe/core",
       "type": "patch",
+      "oldVersion": "2.0.1",
+      "changesets": [
+        "experimental-module-federation"
+      ],
+      "newVersion": "2.0.2"
+    },
+    {
+      "name": "@farmfe/plugin-react",
+      "type": "patch",
       "oldVersion": "2.0.0",
       "changesets": [
-        "css-empty-url",
-        "friendly-html-response",
-        "module-binding-hygiene",
-        "proxy-object-target",
-        "tree-shake-update-delete"
+        "experimental-module-federation"
       ],
       "newVersion": "2.0.1"
     },
     {
-      "name": "create-farm",
+      "name": "@farmfe/plugin-sass",
       "type": "patch",
       "oldVersion": "2.0.0",
       "changesets": [
-        "kind-walls-perform"
+        "experimental-module-federation"
+      ],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-tailwindcss",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [
+        "experimental-module-federation"
+      ],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-vue",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [
+        "experimental-module-federation"
+      ],
+      "newVersion": "2.0.1"
+    },
+    {
+      "name": "@farmfe/plugin-vue-jsx",
+      "type": "patch",
+      "oldVersion": "0.0.1",
+      "changesets": [
+        "experimental-module-federation"
+      ],
+      "newVersion": "0.0.2"
+    },
+    {
+      "name": "@farmfe/plugin-worker",
+      "type": "patch",
+      "oldVersion": "2.0.0",
+      "changesets": [
+        "experimental-module-federation"
       ],
       "newVersion": "2.0.1"
     },
@@ -265,6 +285,20 @@
       "oldVersion": "0.0.1",
       "changesets": [],
       "newVersion": "0.0.1"
+    },
+    {
+      "name": "@farmfe-examples/module-federation-native-probe",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
+    },
+    {
+      "name": "@farmfe-examples/module-federation-probe",
+      "type": "none",
+      "oldVersion": "0.0.0",
+      "changesets": [],
+      "newVersion": "0.0.0"
     },
     {
       "name": "@farmfe-examples/react-multi-page-app",
@@ -682,9 +716,9 @@
     {
       "name": "@farmfe/js-plugin-babel",
       "type": "patch",
-      "oldVersion": "0.0.4",
+      "oldVersion": "0.0.5",
       "changesets": [],
-      "newVersion": "0.0.5"
+      "newVersion": "0.0.6"
     },
     {
       "name": "@farmfe/js-plugin-copy",
@@ -703,16 +737,16 @@
     {
       "name": "@farmfe/js-plugin-less",
       "type": "patch",
-      "oldVersion": "2.0.0",
+      "oldVersion": "2.0.1",
       "changesets": [],
-      "newVersion": "2.0.1"
+      "newVersion": "2.0.2"
     },
     {
       "name": "@farmfe/js-plugin-postcss",
       "type": "patch",
-      "oldVersion": "2.0.0",
+      "oldVersion": "2.0.1",
       "changesets": [],
-      "newVersion": "2.0.1"
+      "newVersion": "2.0.2"
     },
     {
       "name": "@farmfe/js-plugin-qiankun",
@@ -724,30 +758,30 @@
     {
       "name": "@farmfe/js-plugin-react-compiler",
       "type": "patch",
-      "oldVersion": "0.0.4",
+      "oldVersion": "0.0.5",
       "changesets": [],
-      "newVersion": "0.0.5"
+      "newVersion": "0.0.6"
     },
     {
       "name": "@farmfe/js-plugin-sass",
       "type": "patch",
-      "oldVersion": "3.0.0",
+      "oldVersion": "3.0.1",
       "changesets": [],
-      "newVersion": "3.0.1"
+      "newVersion": "3.0.2"
     },
     {
       "name": "@farmfe/js-plugin-svgr",
       "type": "patch",
-      "oldVersion": "2.0.0",
+      "oldVersion": "2.0.1",
       "changesets": [],
-      "newVersion": "2.0.1"
+      "newVersion": "2.0.2"
     },
     {
       "name": "@farmfe/js-plugin-tailwindcss",
       "type": "patch",
-      "oldVersion": "2.0.0",
+      "oldVersion": "2.0.1",
       "changesets": [],
-      "newVersion": "2.0.1"
+      "newVersion": "2.0.2"
     },
     {
       "name": "@farmfe/js-plugin-visualizer",
@@ -766,9 +800,9 @@
     {
       "name": "@farmfe/docs",
       "type": "patch",
-      "oldVersion": "0.0.1",
+      "oldVersion": "0.0.2",
       "changesets": [],
-      "newVersion": "0.0.2"
+      "newVersion": "0.0.3"
     },
     {
       "name": "farm-docs",
@@ -778,13 +812,6 @@
       "newVersion": "0.0.0"
     },
     {
-      "name": "@farmfe-examples/lib",
-      "type": "none",
-      "oldVersion": "1.0.0",
-      "changesets": [],
-      "newVersion": "1.0.0"
-    },
-    {
       "name": "@farmfe-examples/vite-adapter-vue",
       "type": "none",
       "oldVersion": "0.0.1",
@@ -792,11 +819,18 @@
       "newVersion": "0.0.1"
     },
     {
+      "name": "@farmfe-examples/lib",
+      "type": "none",
+      "oldVersion": "1.0.0",
+      "changesets": [],
+      "newVersion": "1.0.0"
+    },
+    {
       "name": "@farmfe/docs-theme-default",
       "type": "patch",
-      "oldVersion": "0.0.1",
+      "oldVersion": "0.0.2",
       "changesets": [],
-      "newVersion": "0.0.2"
+      "newVersion": "0.0.3"
     }
   ]
 }
