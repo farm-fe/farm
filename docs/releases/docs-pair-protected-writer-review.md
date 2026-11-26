@@ -71,3 +71,26 @@ untrusted pull request cannot reach a GitHub or npm network transport through
 it. Its tests exercise swapped role identities, wrong repository, replay,
 truncated or failed producer jobs, substituted bytes, stale or ambiguous
 approval, and main moving after approval. This is not evidence of a live run.
+
+## Operational successor under review
+
+The successor supplies the protected runner's actual confined GET and npm
+subprocess path but leaves the runner physically disabled in source and
+unreferenced from GitHub Actions. No command flag or environment variable
+can turn it on. The approved writer ID, protected Environment ID and
+reviewer allowlist, staging tag, executing job and reviewed pinned
+Node/npm installation must be wired in a later review; nothing here
+registers or activates them.
+
+Local tests exercise the actual runner entry with fake GitHub and public
+registry responses, and test subprocess arguments, identity, isolation and
+clean installs with a fake npm process. They verify that auth never follows
+the artifact redirect or enters npm installs, the writer aborts if an older
+partial upload or a stable tag change is observed, only public reads are
+retried, and the theme proof includes the undelivered frozen local Docs peer.
+The real job's journal is never overwritten. Each submission intent is
+flushed before the one permitted call, but a job crash can lose the local
+journal, so the independent maintainer must still enforce one-shot control
+across runs. The final output is unsigned retained evidence, not authority
+to advance any baseline or move tags. Never treat a missing result as proof
+that an upload did not happen.
