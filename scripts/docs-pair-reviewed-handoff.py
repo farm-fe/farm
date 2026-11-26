@@ -1,46 +1,51 @@
-"""Offline contract for handing original Docs archives to a reviewed role.
+"""Read-only contract for handing original Docs archives to the manual writer.
 
 Callbacks stand for separately reviewed, repository-pinned GET transports and
 a digest-pinned artifact download. This module has no transport, real runner
-entry point, approval action, credentials, publishing, or release state.
+entry point, credentials, publishing, or permission changes.
 """
-# cspell:words importlib zipfile crc decompress
+# cspell:words zipfile crc decompress
 import base64
 import hashlib
-import importlib.util
 import io
 import json
-from pathlib import Path
+import re
 import stat
 import zipfile
 
 
-spec = importlib.util.spec_from_file_location(
-    "docs_pair_owner_approval", Path(__file__).with_name("docs-pair-owner-approval.py")
-)
-owner = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(owner)
-require = owner.require
+def require(ok, reason):
+    if not ok:
+        raise ValueError(reason)
+
+
+def positive_id(value):
+    return type(value) is int and 0 < value < 10**20
+
+
+def sha(value, size):
+    return isinstance(value, str) and re.fullmatch(r"[a-f0-9]{%d}" % size, value) is not None
+
+
+PACKAGE_ORDER = ("@farmfe/docs-theme-default", "@farmfe/docs")
+REPOSITORY = "farm-fe/farm"
 REPOSITORY_ID = 507542208
 PRODUCER_ID = 428986974
-ENVIRONMENT_NAME = "docs-npm-bootstrap"
 PRODUCER = ".github/workflows/docs-pair-bootstrap.yaml"
-# Proposed writer identity only. No such workflow or registered ID is assumed.
+# The live registration binds the writer workflow ID for each run.
 WRITER = ".github/workflows/docs-pair-publish.yaml"
 JOB = "Build and verify frozen Docs pair"
 UPLOAD = "Upload exact original Docs archives"
 MAX_TAR = 32 * 1024**2
 MAX_ZIP = 2 * MAX_TAR + 1024**2
 RECEIPT = "frozen-pair.json"
-TARS = {name: "farmfe-" + name.split("/")[1] + "-2.0.0.tgz" for name in owner.PACKAGE_ORDER}
-POLICY = {"producerWorkflowId", "writerWorkflowId", "environmentId",
-          "environmentName", "trustedReviewerIds"}
+TARS = {name: "farmfe-" + name.split("/")[1] + "-2.0.0.tgz" for name in PACKAGE_ORDER}
 SELECTION = {"sourceSHA", "sourceTree", "producerRun", "writerRun", "artifactId",
              "artifactSha256", "tag"}
 
 
 def exact_repo(value):
-    return type(value) is dict and value.get("id") == REPOSITORY_ID and value.get("full_name") == owner.REPOSITORY
+    return type(value) is dict and value.get("id") == REPOSITORY_ID and value.get("full_name") == REPOSITORY
 
 
 def require_main(get, sha, tree):
@@ -63,7 +68,8 @@ def exact_run(get, run_id, workflow_id, path, sha, *, producer):
                 and exact_repo(observed.get("repository")) and exact_repo(observed.get("head_repository")),
                 "Exact canonical workflow, repository and first release attempt required")
         actor = observed.get("actor")
-        require(type(actor) is dict and owner.positive_id(actor.get("id")), "Exact initiating actor required")
+        require(type(actor) is dict and positive_id(actor.get("id"))
+                and (producer or actor.get("type") == "User"), "Exact initiating actor required")
         if route.endswith("/attempts/1"):
             require(actor["id"] == actor_id, "Initiator differs across run records")
         actor_id = actor["id"]
@@ -78,7 +84,7 @@ def producer_job(get, run_id, sha):
     jobs = [j for j in rows if j.get("name") == JOB]
     require(len(jobs) == 1, "Exact original producer job required")
     job = jobs[0]
-    require(owner.positive_id(job.get("id")) and job.get("run_id") == run_id
+    require(positive_id(job.get("id")) and job.get("run_id") == run_id
             and type(job.get("run_attempt", 1)) is int and job.get("run_attempt", 1) == 1
             and job.get("head_sha") == sha
             and job.get("status") == "completed" and job.get("conclusion") == "success",
@@ -129,37 +135,47 @@ def inspect_artifact(data, selection):
     return receipt, bodies
 
 
-def read_reviewed_handoff(selection, policy, *, get, download):
-    """Check a proposed release once; success is not a durable cross-run claim."""
-    require(type(selection) is dict and set(selection) == SELECTION and type(policy) is dict and set(policy) == POLICY,
-            "Independent source selection and reviewed policy required")
+def require_first_writer(get, run_id, writer_workflow_id):
+    # A failed, cancelled or absent prior response is not evidence that no
+    # write happened. Any other record, or incomplete history, stops this lane.
+    listing = get(f"/actions/workflows/{writer_workflow_id}/runs?branch=main&event=workflow_dispatch&per_page=2")
+    runs = listing.get("workflow_runs")
+    require(type(listing.get("total_count")) is int and listing["total_count"] == 1
+            and type(runs) is list and len(runs) == 1 and type(runs[0]) is dict
+            and runs[0].get("id") == run_id and runs[0].get("run_attempt") == 1,
+            "Prior or ambiguous publisher history; stop for read-only reconciliation")
+
+
+def read_reviewed_handoff(selection, actor_id, *, get, download):
+    """Check fixed objects under one explicit dispatch; not a global lock."""
+    require(type(selection) is dict and set(selection) == SELECTION and positive_id(actor_id),
+            "Independent source selection and exact initiating actor required")
     selection = dict(selection)
-    policy = dict(policy)
-    p, w = policy["producerWorkflowId"], policy["writerWorkflowId"]
-    require(all(owner.positive_id(n) for n in (p, w, policy["environmentId"],
-                 selection["producerRun"], selection["writerRun"], selection["artifactId"]))
-            and p != w and selection["producerRun"] != selection["writerRun"], "Producer and writer roles cannot alias")
-    require(p == PRODUCER_ID and policy["environmentName"] == ENVIRONMENT_NAME,
-            "Canonical source producer and dedicated environment required")
-    sha, tree = selection["sourceSHA"], selection["sourceTree"]
-    require(owner.sha(sha, 40) and owner.sha(tree, 40) and owner.sha(selection["artifactSha256"], 64)
+    require(all(positive_id(n) for n in (selection["producerRun"], selection["writerRun"], selection["artifactId"]))
+            and selection["producerRun"] != selection["writerRun"], "Producer and writer roles cannot alias")
+    source_sha, tree = selection["sourceSHA"], selection["sourceTree"]
+    require(sha(source_sha, 40) and sha(tree, 40) and sha(selection["artifactSha256"], 64)
             and selection["tag"] == "farm-docs-bootstrap", "Unreviewed source, artifact digest or tag")
-    require_main(get, sha, tree)
-    exact_run(get, selection["producerRun"], p, PRODUCER, sha, producer=True)
-    actor_id = exact_run(get, selection["writerRun"], w, WRITER, sha, producer=False)
-    job_id = producer_job(get, selection["producerRun"], sha)
+    require_main(get, source_sha, tree)
+    workflow = get("/actions/workflows/docs-pair-publish.yaml")
+    writer_id = workflow.get("id")
+    require(positive_id(writer_id) and writer_id != PRODUCER_ID
+            and workflow.get("path") == WRITER and workflow.get("state") == "active",
+            "Exact registered writer workflow required")
+    exact_run(get, selection["producerRun"], PRODUCER_ID, PRODUCER, source_sha, producer=True)
+    actor = exact_run(get, selection["writerRun"], writer_id, WRITER, source_sha, producer=False)
+    require(actor == actor_id, "Manual dispatch initiating actor differs")
+    require_first_writer(get, selection["writerRun"], writer_id)
+    job_id = producer_job(get, selection["producerRun"], source_sha)
     artifact_id = selection["artifactId"]
     artifact = get(f"/actions/artifacts/{artifact_id}")
     origin = artifact.get("workflow_run", {})
-    require(artifact.get("id") == artifact_id and artifact.get("name") == f"farm-docs-pair-{sha}-1"
+    require(artifact.get("id") == artifact_id and artifact.get("name") == f"farm-docs-pair-{source_sha}-1"
             and artifact.get("expired") is False and artifact.get("digest") == "sha256:" + selection["artifactSha256"]
             and all(origin.get(k) == v for k, v in {"id": selection["producerRun"], "repository_id": REPOSITORY_ID,
-                    "head_repository_id": REPOSITORY_ID, "head_branch": "main", "head_sha": sha}.items()),
+                    "head_repository_id": REPOSITORY_ID, "head_branch": "main", "head_sha": source_sha}.items()),
             "Artifact metadata is not bound to the exact original producer")
     receipt, bodies = inspect_artifact(download(artifact_id, MAX_ZIP), selection)
-    permit = {**selection, "attempt": 1, "environmentId": policy["environmentId"],
-              "archives": {row["name"]: row["archiveSha256"] for row in receipt["packages"]}}
-    owner.verify_owner_review(permit, review_history=get, trusted_reviewer_ids=policy["trustedReviewerIds"],
-                              actor_id=actor_id, environment_name=policy["environmentName"])
-    require_main(get, sha, tree)
-    return {"producerJobId": job_id, "artifactId": artifact_id, "receipt": receipt, "archives": bodies}
+    require_main(get, source_sha, tree)
+    require_first_writer(get, selection["writerRun"], writer_id)
+    return {"producerJobId": job_id, "writerWorkflowId": writer_id, "artifactId": artifact_id, "receipt": receipt, "archives": bodies}

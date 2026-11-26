@@ -1,10 +1,9 @@
-# cspell:words WRONLY CREAT readback
-"""Reviewed runner entry point, deliberately disabled in source.
+"""Controlled exact-source runner for the two reviewed Docs archives.
 
-No command-line flag or environment variable can enable this runner. A later
-review must approve the concrete policy and protected workflow separately.
+Only a maintainer's first-attempt manual dispatch on protected main can enter
+this writer. A registry 404 never authorizes a repeat after a possible write.
 """
-# cspell:words importlib urllib argparse npmjs ITIMER SIGALRM setitimer getitimer fsync fdopen O_NOFOLLOW
+# cspell:words importlib urllib argparse npmjs ITIMER SIGALRM setitimer getitimer fsync fdopen O_NOFOLLOW WRONLY CREAT NOSYSTEM readback
 import argparse
 import base64
 from contextlib import contextmanager
@@ -16,6 +15,7 @@ from pathlib import Path
 import re
 import signal
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -33,9 +33,6 @@ binding = module("docs_protected_binding", "docs-pair-reviewed-handoff.py")
 proof = module("docs_protected_registry_proof", "docs-pair-registry-proof.py")
 native = module("docs_protected_http", "ci-native-evidence.py")
 require = binding.require
-ACTIVATION_REVIEWED = False
-REVIEWED_POLICY = None
-REVIEWED_STAGING_TAG = None
 TOKEN_ALIAS = "NPM_BYPASS_2FA_TOKEN"
 STAGING_TAG = "farm-docs-bootstrap"
 JOB_ID = "publish-pair"
@@ -44,7 +41,8 @@ GITHUB = "https://api.github.com/repos/farm-fe/farm"
 ORDER = proof.ORDER
 INPUTS = {"source_sha", "source_tree", "producer_run", "artifact_id", "artifact_sha256", "tag", "confirm"}
 ROUTE = re.compile(r"/(?:branches/main|git/commits/[0-9a-f]{40}|actions/(?:artifacts/[1-9][0-9]{0,19}"
-                   r"|runs/[1-9][0-9]{0,19}(?:/attempts/1(?:/jobs)?|/approvals)?))")
+                   r"|runs/[1-9][0-9]{0,19}(?:/attempts/1(?:/jobs)?)?"
+                   r"|workflows/(?:docs-pair-publish\.yaml|[1-9][0-9]{0,19}/runs\?branch=main&event=workflow_dispatch&per_page=2)))")
 
 
 def positive_field(value):
@@ -52,29 +50,30 @@ def positive_field(value):
     return int(value)
 
 
-def context(env, *, read_event, checkout):
+def context(env, *, read_event, checkout, preflight=False):
     sha = env.get("GITHUB_SHA")
-    require(binding.owner.sha(sha, 40) and env.get("GITHUB_WORKFLOW_SHA") == sha
+    require(binding.sha(sha, 40) and env.get("GITHUB_WORKFLOW_SHA") == sha
             and env.get("GITHUB_ACTIONS") == "true" and env.get("RUNNER_ENVIRONMENT") == "github-hosted"
             and env.get("GITHUB_REPOSITORY") == "farm-fe/farm"
             and env.get("GITHUB_REPOSITORY_ID") == str(binding.REPOSITORY_ID)
             and env.get("GITHUB_REF") == "refs/heads/main" and env.get("GITHUB_REF_PROTECTED") == "true"
             and env.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and env.get("GITHUB_RUN_ATTEMPT") == "1"
-            and env.get("GITHUB_JOB") == JOB_ID
+            and env.get("GITHUB_JOB") == ("preflight" if preflight else JOB_ID)
             and env.get("GITHUB_WORKFLOW_REF") == "farm-fe/farm/" + binding.WRITER + "@refs/heads/main",
             "Exact hosted protected publisher job and first attempt required")
     writer = positive_field(env.get("GITHUB_RUN_ID"))
+    actor = positive_field(env.get("GITHUB_ACTOR_ID"))
     event = read_event(env["GITHUB_EVENT_PATH"])
     inputs = event.get("inputs", {})
-    require(type(inputs) is dict and set(inputs) == INPUTS and inputs["confirm"] == "true"
+    require(type(inputs) is dict and set(inputs) == INPUTS and inputs["confirm"] == "first-and-only"
             and inputs["source_sha"] == sha and inputs["tag"] == STAGING_TAG
-            and binding.owner.sha(inputs["source_tree"], 40)
-            and binding.owner.sha(inputs["artifact_sha256"], 64), "Exact reviewed Docs writer inputs required")
+            and binding.sha(inputs["source_tree"], 40)
+            and binding.sha(inputs["artifact_sha256"], 64), "Exact reviewed Docs writer inputs required")
     require(checkout() == (sha, inputs["source_tree"]), "Writer worktree differs from reviewed source and tree")
     return {"sourceSHA": sha, "sourceTree": inputs["source_tree"],
             "producerRun": positive_field(inputs["producer_run"]), "writerRun": writer,
             "artifactId": positive_field(inputs["artifact_id"]), "artifactSha256": inputs["artifact_sha256"],
-            "tag": inputs["tag"]}
+            "tag": inputs["tag"]}, actor
 
 
 def read_json_bytes(raw):
@@ -147,7 +146,7 @@ class GitHub:
         return read_json_bytes(self.http.request(GITHUB + route, limit=2 * 1024**2, headers=self.header))
 
     def download(self, artifact, limit):
-        require(binding.owner.positive_id(artifact) and limit == binding.MAX_ZIP, "Exact frozen artifact and bound required")
+        require(binding.positive_id(artifact) and limit == binding.MAX_ZIP, "Exact frozen artifact and bound required")
         return self.http.request(f"{GITHUB}/actions/artifacts/{artifact}/zip", limit=limit,
                                  headers=self.header, redirect=True)
 
@@ -205,8 +204,8 @@ def exact_public(registry, expected, timeout):
     return True
 
 
-def write_once(selection, policy, *, github, registry, npm, token, record, clock=time.monotonic, sleep=time.sleep):
-    resolved = binding.read_reviewed_handoff(selection, policy, get=github.get, download=github.download)
+def prepare(selection, actor_id, *, github, registry, validate):
+    resolved = binding.read_reviewed_handoff(selection, actor_id, get=github.get, download=github.download)
     frozen = resolved["receipt"]
     rows = {row["name"]: row for row in frozen["packages"]}
     saved_tags = {name: registry.tags(name) for name in ORDER}
@@ -215,24 +214,31 @@ def write_once(selection, policy, *, github, registry, npm, token, record, clock
         require(not exact_public(registry, rows[name], 20), "Existing Docs 2.0.0 requires read-only reconciliation")
     # Ensure both original archives and the clean npm subprocess are usable
     # before resolving the single configured npm token.
-    npm.validate_pair(rows, resolved["archives"])
+    validate(rows, resolved["archives"])
+    return resolved, frozen, rows, saved_tags
+
+
+def write_once(selection, actor_id, *, github, registry, npm, token, record, clock=time.monotonic, sleep=time.sleep):
+    resolved, frozen, rows, saved_tags = prepare(selection, actor_id,
+        github=github, registry=registry, validate=npm.validate_pair)
     attempted, public = [], []
     state = {"artifactId": resolved["artifactId"], "sourceSHA": selection["sourceSHA"], "sourceTree": selection["sourceTree"],
              "writerRun": selection["writerRun"], "attempt": 1, "attempted": attempted, "publicVerified": public,
-             "stableTagChanged": False, "state": "approved-no-write"}
+             "stableTagChanged": False, "state": "first-dispatch-no-write"}
     def checkpoint(status):
         state["state"] = status
         record(json.loads(json.dumps(state)))
 
-    checkpoint("approved-no-write")
+    checkpoint("first-dispatch-no-write")
     for name in ORDER:
         if name == proof.DOCS:
             require(npm.verify_installed(rows, source_sha=selection["sourceSHA"], source_tree=selection["sourceTree"],
                                          local_docs=resolved["archives"][proof.DOCS]) is True,
                     "Public theme is not consumable with the frozen Docs peer")
         binding.require_main(github.get, selection["sourceSHA"], selection["sourceTree"])
+        binding.require_first_writer(github.get, selection["writerRun"], resolved["writerWorkflowId"])
         require(registry.tags(name) == saved_tags[name] and not exact_public(registry, rows[name], 20),
-                "Registry changed after approval; do not submit")
+                "Registry changed after first dispatch; do not submit")
         attempted.append(name)
         checkpoint("submission-pending")
         accepted = True
@@ -271,21 +277,7 @@ def write_once(selection, policy, *, github, registry, npm, token, record, clock
 
 def main(argv=None, env=None, *, get_event=None, checkout=None, http=None,
          make_npm=None, record=None, clock=time.monotonic, sleep=time.sleep):
-    # Keep this before argv access, environment access, HTTP/record creation,
-    # or import of the actual npm execution module.
-    require(ACTIVATION_REVIEWED is True and REVIEWED_STAGING_TAG == STAGING_TAG
-            and type(REVIEWED_POLICY) is dict and set(REVIEWED_POLICY) == binding.POLICY
-            and REVIEWED_POLICY.get("environmentName") == binding.ENVIRONMENT_NAME
-            and REVIEWED_POLICY.get("producerWorkflowId") == binding.PRODUCER_ID
-            and binding.owner.positive_id(REVIEWED_POLICY.get("writerWorkflowId"))
-            and binding.owner.positive_id(REVIEWED_POLICY.get("environmentId")),
-            "Protected Docs writer is not activated by reviewed policy")
     env = os.environ if env is None else env
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--node", required=True)
-    parser.add_argument("--npm-cli", required=True)
-    parser.add_argument("--report", required=True)
-    args = parser.parse_args(argv)
     def real_event(file):
         with open(file, "rb") as stream:
             raw = stream.read(65537)
@@ -293,9 +285,26 @@ def main(argv=None, env=None, *, get_event=None, checkout=None, http=None,
         return read_json_bytes(raw)
     def real_checkout():
         value = subprocess.run(["git", "rev-parse", "HEAD", "HEAD^{tree}"], check=True,
-            cwd=Path(__file__).resolve().parents[1], capture_output=True, timeout=10)
+            cwd=Path(__file__).resolve().parents[1], capture_output=True, timeout=10,
+            env={"PATH": os.defpath, "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null",
+                 "GIT_TERMINAL_PROMPT": "0"})
         return tuple(value.stdout.decode("ascii").splitlines())
-    selection = context(env, read_event=get_event or real_event, checkout=checkout or real_checkout)
+    argv = sys.argv[1:] if argv is None else argv
+    preflight = argv == ["--preflight"]
+    selection, actor_id = context(env, read_event=get_event or real_event, checkout=checkout or real_checkout,
+                                  preflight=preflight)
+    if preflight:
+        http = HTTP() if http is None else http
+        github = GitHub(http, env.get("GH_TOKEN"))
+        transport = module("preflight_docs_npm", "docs-pair-npm-transport.py")
+        prepare(selection, actor_id, github=github, registry=PublicRegistry(http), validate=transport.validate_pair)
+        return {"status": "exact-first-dispatch-preflight-ready", "artifactId": selection["artifactId"],
+                "sourceSHA": selection["sourceSHA"], "sourceTree": selection["sourceTree"]}
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--node", required=True)
+    parser.add_argument("--npm-cli", required=True)
+    parser.add_argument("--report", required=True)
+    args = parser.parse_args(argv)
     if record is None:
         runner_temp = Path(env["RUNNER_TEMP"]).resolve(strict=True)
         path = Path(args.report)
@@ -317,7 +326,7 @@ def main(argv=None, env=None, *, get_event=None, checkout=None, http=None,
     http = HTTP() if http is None else http
     github = GitHub(http, env.get("GH_TOKEN"))
     try:
-        retained = write_once(selection, REVIEWED_POLICY, github=github, registry=PublicRegistry(http),
+        retained = write_once(selection, actor_id, github=github, registry=PublicRegistry(http),
             npm=make_npm(Path(args.node), Path(args.npm_cli)),
             token=lambda alias: env.get(TOKEN_ALIAS) if alias == TOKEN_ALIAS else None, record=record,
             clock=clock, sleep=sleep)
@@ -336,6 +345,8 @@ def main(argv=None, env=None, *, get_event=None, checkout=None, http=None,
 
 if __name__ == "__main__":
     try:
-        main()
+        result = main()
+        if result.get("status") == "exact-first-dispatch-preflight-ready":
+            print(json.dumps(result, sort_keys=True))
     except Exception:
         raise SystemExit("Protected Docs publication stopped; inspect sanitized journal, never retry automatically") from None

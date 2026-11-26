@@ -5,7 +5,6 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
 import urllib.error
 
 spec = importlib.util.spec_from_file_location("protected_writer_test", Path(__file__).with_name("docs-pair-protected-writer.py"))
@@ -27,7 +26,6 @@ class FakeWorld:
         self.fixture.setUp()
         self.origins = self.fixture.origins
         self.source = self.fixture.selection
-        self.policy = self.fixture.policy
         self.trace, self.journal, self.visible = [], [], set()
         self.web = source.HTTP(self)
         self.failure = self.missing = self.withdrawn = False
@@ -44,7 +42,7 @@ class FakeWorld:
                       "GITHUB_REF": "refs/heads/main", "GITHUB_REF_PROTECTED": "true",
                       "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_RUN_ATTEMPT": "1",
                       "GITHUB_JOB": source.JOB_ID, "GITHUB_WORKFLOW_REF": "farm-fe/farm/" + source.binding.WRITER + "@refs/heads/main",
-                      "GITHUB_RUN_ID": "20", "GITHUB_EVENT_PATH": "fixture", "GH_TOKEN": "fake-gh-readonly",
+                      "GITHUB_RUN_ID": "20", "GITHUB_ACTOR_ID": "22", "GITHUB_EVENT_PATH": "fixture", "GH_TOKEN": "fake-gh-readonly",
                       "NPM_TOKEN": "forbidden-legacy-fallback", source.TOKEN_ALIAS: "fake-only-reviewed-alias"}
 
     def url(self, name):
@@ -125,24 +123,22 @@ class FakeWorld:
         self.case.assertEqual(path, "fixture")
         return {"inputs": {"source_sha": self.src, "source_tree": self.tree, "producer_run": "10",
                            "artifact_id": "30", "artifact_sha256": self.source["artifactSha256"],
-                           "tag": source.STAGING_TAG, "confirm": "true"}}
+                           "tag": source.STAGING_TAG, "confirm": "first-and-only"}}
 
-    def run(self, make_npm=None):
-        with patch.object(source, "ACTIVATION_REVIEWED", True), patch.object(source, "REVIEWED_STAGING_TAG", source.STAGING_TAG), \
-             patch.object(source, "REVIEWED_POLICY", self.policy):
-            return source.main(["--node", "/trusted/node", "--npm-cli", "/trusted/npm", "--report", "/fixture/unused"],
-                self.state, get_event=self.event, checkout=lambda: (self.src, self.tree), http=self.web,
-                make_npm=make_npm or (lambda *_: self), record=self.journal.append,
-                clock=lambda: self.now, sleep=lambda seconds: setattr(self, "now", self.now + seconds))
+    def run(self, make_npm=None, preflight=False):
+        if preflight:
+            self.state["GITHUB_JOB"] = "preflight"
+        argv = ["--preflight"] if preflight else ["--node", "/trusted/node", "--npm-cli", "/trusted/npm",
+                                                  "--report", "/fixture/unused"]
+        return source.main(argv, self.state, get_event=self.event, checkout=lambda: (self.src, self.tree), http=self.web,
+            make_npm=make_npm or (lambda *_: self), record=self.journal.append, clock=lambda: self.now,
+            sleep=lambda seconds: setattr(self, "now", self.now + seconds))
 
 
 class Tests(unittest.TestCase):
-    def test_cli_is_inert_before_reading_even_argv_or_environment(self):
-        class Forbidden:
-            def __getattribute__(self, name):
-                raise AssertionError(f"Read before activation: {name}")
-        with self.assertRaisesRegex(ValueError, "not activated"):
-            source.main(Forbidden(), Forbidden())
+    def test_cli_denies_non_hosted_without_any_reads_or_effects(self):
+        with self.assertRaisesRegex(ValueError, "protected publisher job"):
+            source.main(["--help"], {})
 
     def test_real_entry_orders_one_shots_midpoint_and_whole_public_pair(self):
         f = FakeWorld(self)
@@ -179,7 +175,7 @@ class Tests(unittest.TestCase):
                                    "--version", "install", "ci"])
         self.assertEqual(result["kind"], "docs-public-retain-only-v1")
 
-    def test_wrong_runtime_or_environment_review_never_opens_npm_credentials(self):
+    def test_wrong_runtime_or_prior_history_never_opens_npm_credentials(self):
         for key, val in (("GITHUB_RUN_ATTEMPT", "2"), ("GITHUB_REF_PROTECTED", "false"),
                          ("GITHUB_JOB", "freeze"), ("GITHUB_WORKFLOW_SHA", "c"*40)):
             f = FakeWorld(self)
@@ -188,11 +184,30 @@ class Tests(unittest.TestCase):
                 f.run()
             self.assertEqual(f.trace, [])
         f = FakeWorld(self)
-        f.origins["/actions/runs/20/approvals"] = []
-        with self.assertRaisesRegex(ValueError, "maintainer decision"):
+        f.origins[f.fixture.history]["total_count"] = 2
+        with self.assertRaisesRegex(ValueError, "publisher history"):
             f.run()
         self.assertFalse(f.journal)
         self.assertFalse(any(x[0] in ("preflight", "one submit") for x in f.trace))
+
+    def test_actual_preflight_verifies_origins_and_never_reads_npm_token(self):
+        f = FakeWorld(self)
+        n = npm_tests.Contracts()
+        n.setUp()
+        f.fixture.bodies = n.bodies
+        f.fixture.receipt["packages"] = [n.rows[name] for name in source.ORDER]
+        f.fixture.freeze()
+        f.rows = n.rows
+        class SecretDenied(dict):
+            def get(self, name, *args):
+                if name in (source.TOKEN_ALIAS, "NPM_TOKEN"):
+                    raise AssertionError("Preflight read an npm secret")
+                return super().get(name, *args)
+        f.state = SecretDenied(f.state)
+        result = f.run(preflight=True)
+        self.assertEqual(result["status"], "exact-first-dispatch-preflight-ready")
+        self.assertFalse(f.journal)
+        self.assertFalse(any(x[0] == "one submit" for x in f.trace))
 
     def test_uncertain_submit_never_repeats_or_advances_to_docs(self):
         for unavailable in (False, True):

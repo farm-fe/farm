@@ -1,12 +1,47 @@
-name: Docs package writer registration (disabled)
+name: Publish the reviewed Docs package pair
 on:
   workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact protected main commit and original producer source
+        required: true
+        type: string
+      source_tree:
+        description: Independently reviewed Git tree of that commit
+        required: true
+        type: string
+      producer_run:
+        description: Reviewed original producer run ID
+        required: true
+        type: string
+      artifact_id:
+        description: Reviewed original immutable artifact ID
+        required: true
+        type: string
+      artifact_sha256:
+        description: Reviewed original artifact SHA-256
+        required: true
+        type: string
+      tag:
+        description: Exact staging tag (farm-docs-bootstrap)
+        required: true
+        type: string
+      confirm:
+        description: First and only authorized execution (enter first-and-only)
+        required: true
+        type: string
 
-permissions: {}
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: farm-docs-pair-publish-2.0.0
+  cancel-in-progress: false
 
 jobs:
-  registration:
-    name: Report that the Docs writer is disabled
+  preflight:
+    name: Preflight reviewed Docs package pair
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.repository == 'farm-fe/farm' &&
@@ -15,10 +50,107 @@ jobs:
       github.ref_protected &&
       github.run_attempt == '1' &&
       github.sha == github.workflow_sha &&
+      github.sha == inputs.source_sha &&
+      inputs.tag == 'farm-docs-bootstrap' &&
+      inputs.confirm == 'first-and-only' &&
       github.workflow_ref == 'farm-fe/farm/.github/workflows/docs-pair-publish.yaml@refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
-    steps:
-      - name: Report registration only
+    timeout-minutes: 10
+    defaults:
+      run:
         shell: bash
-        run: printf '%s\n' 'Docs package publishing is disabled. This workflow registers an identity only.'
+    steps:
+      - name: Check out the reviewed protected commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate reviewed dispatch fields
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          SOURCE_TREE: ${{ inputs.source_tree }}
+          PRODUCER_RUN: ${{ inputs.producer_run }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
+          ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+          STAGING_TAG: ${{ inputs.tag }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && "$SOURCE_TREE" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PRODUCER_RUN" =~ ^[1-9][0-9]{0,19}$ && "$ARTIFACT_ID" =~ ^[1-9][0-9]{0,19}$ ]]
+          [[ "$ARTIFACT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$STAGING_TAG" == farm-docs-bootstrap && "$CONFIRM" == first-and-only ]]
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_SHA" && "$(git rev-parse 'HEAD^{tree}')" == "$SOURCE_TREE" ]]
+
+      - name: Verify the original Docs archives without npm credentials
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B scripts/docs-pair-protected-writer.py --preflight
+
+  publish-pair:
+    name: Publish the exact Docs package pair
+    needs: [preflight]
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'farm-fe/farm' &&
+      github.repository_id == '507542208' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_protected &&
+      github.run_attempt == '1' &&
+      github.sha == github.workflow_sha &&
+      github.sha == inputs.source_sha &&
+      inputs.tag == 'farm-docs-bootstrap' &&
+      inputs.confirm == 'first-and-only' &&
+      github.workflow_ref == 'farm-fe/farm/.github/workflows/docs-pair-publish.yaml@refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the reviewed protected commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Install integrity-pinned public writer tools
+        run: |
+          tool_dir="$RUNNER_TEMP/docs-pair-writer-tools"
+          mkdir "$tool_dir"
+          fetch_tool() {
+            local name="$1" url="$2" sri="$3"
+            local archive="$tool_dir/$name.tgz" directory="$tool_dir/$name"
+            curl -q --no-location --max-filesize 100663296 --fail --silent --show-error --proto '=https' --max-time 90 \
+              --output "$archive" "$url"
+            [[ "$(openssl dgst -sha512 -binary "$archive" | openssl base64 -A)" == "$sri" ]]
+            mkdir "$directory"
+            tar -xzf "$archive" --strip-components=1 -C "$directory"
+          }
+          fetch_tool node https://registry.npmjs.org/node-linux-x64/-/node-linux-x64-22.22.2.tgz \
+            LN7oM9lA/uOjnsvlv5lPYIBPGuFIiYckZhBcEVhHw2YNsm9SDC2ncBlJWGbUtuwMfxAr1xjOG+uEY7bEfV1VyQ==
+          fetch_tool npm https://registry.npmjs.org/npm/-/npm-11.21.2.tgz \
+            7HPApk+AflMUavSseL1Pm6CnYqMIHk53x+KmuhqmTDqPkjPMgxIpTPcTqsE91EKNw4gFBJV9fnXiSdGm1DXq9A==
+
+      - name: Publish original Docs archives once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NPM_BYPASS_2FA_TOKEN: ${{ secrets.NPM_BYPASS_2FA_TOKEN }}
+        run: |
+          tool_dir="$RUNNER_TEMP/docs-pair-writer-tools"
+          python3 -B scripts/docs-pair-protected-writer.py \
+            --node "$tool_dir/node/bin/node" \
+            --npm-cli "$tool_dir/npm/bin/npm-cli.js" \
+            --report "$RUNNER_TEMP/docs-pair-publish-journal.jsonl"
+
+      - name: Preserve sanitized Docs publication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: farm-docs-pair-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/docs-pair-publish-journal.jsonl
+            ${{ runner.temp }}/docs-pair-retained.json
+          if-no-files-found: ignore
+          overwrite: false
+          retention-days: 30

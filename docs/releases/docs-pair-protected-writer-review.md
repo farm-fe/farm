@@ -1,110 +1,72 @@
-# Protected Docs 2.0.0 writer: review proposal, not an enabled workflow
+# Manual Docs 2.0.0 bootstrap
 
-This change adds offline handoff code and test fixtures, not an active publisher,
-credential access, signer, added permission, or change to ordinary release
-policy. No production writer calls this code. The draft may be
-reviewed independently of the source version change.
+This is a one-time publication lane for exactly `@farmfe/docs-theme-default`
+and `@farmfe/docs` at 2.0.0. Normal PR review and CI apply. Do not run it from
+a pull request or add an extra deployment approval or Environment.
 
-## Verified facts and fail-closed prerequisites
+The credential-free `docs-pair-bootstrap.yaml` is the original producer
+(workflow ID 428986974). The publisher is a distinct workflow,
+`.github/workflows/docs-pair-publish.yaml`. Only a maintainer's manual first
+attempt on protected `farm-fe/farm` main can enter. The runtime verifies the
+registered workflow paths and IDs, trusted repository, exact initiating actor,
+current protected source SHA and tree, original producer run and successful
+upload, immutable artifact ID and ZIP digest, and each archive's bytes and SRI.
+It does not accept a previous run, a verdict file, a repacked tarball or a
+different source. Registration is read from the GitHub API on the fixed path.
+No workflow identity is invented.
 
-- The credential-free `docs-pair-bootstrap.yaml` workflow in `farm-fe/farm`
-  is producer ID `428986974`. The writer path under review is distinct:
-  `.github/workflows/docs-pair-publish.yaml`. The writer workflow's registered
-  ID, exact running job identity and protected Environment ID and independent
-  reviewer allowlist must be verified before any live integration. Missing,
-  stale or ambiguous values deny. The proposal does not invent identifiers.
-- Use the dedicated `docs-npm-bootstrap` GitHub Environment with only the
-  `main` branch, a separate required reviewer, self-review prevention and
-  administrator bypass disabled. Verify the Settings configuration and use
-  the pinned numeric environment ID in the approved control policy as well as
-  the live approval result. No shared Preview or Production environment;
-  no new secret or move of an existing secret in this review. The proposed
-  environment is not assumed to exist.
-- A subsequent reviewed workflow can use `contents: read` and `actions: read`
-  to verify provider records; no repository or deployment write or OIDC for
-  the bootstrap writer. Use only `NPM_BYPASS_2FA_TOKEN` in the single protected
-  upload step after all gates, never `NPM_TOKEN`, any other credentials, or
-  repository-resident fallbacks. The old 0.0.1 first-name workflow is not a
-  substitute. This draft does not test token existence, validity or scope.
+## First run
 
-## Proposed first-attempt flow
+1. The writer workflow must be reviewed and landed before the versioned main
+   commit selected for the freeze. Confirm the exact protected main SHA/tree
+   includes both 2.0.0 manifests. Run the existing credential-free producer
+   once for that SHA/tree; check its first attempt, successful upload, artifact
+   ID/digest, and both archived tar SHA-256 values. Keep the originals.
+2. Before dispatch record the intended run in the maintainer release notes,
+   independently check that no prior writer run or possible upload exists,
+   and enter the exact source SHA/tree, producer run, artifact ID/SHA-256,
+   `farm-docs-bootstrap` and `first-and-only`. This is a one-shot operation,
+   not an interpretation of an npm 404. Keep the run ID and its journal.
+3. A separate credential-free preflight job verifies both archives and that
+   the two exact versions and the proposed staging tag are absent. The writer
+   repeats all checks before reading only the reviewed repo credential in
+   the single restricted upload step. GitHub permissions are Actions and
+   contents read only. No Git or deploy write or identity token is requested.
+4. The writer can submit each original only once and never uses another
+   credential or npm write retry. Verify exact public theme tar SHA-256/SRI,
+   then run a clean install with the public theme and the original frozen
+   local Docs tarball to satisfy the theme peer before submitting Docs.
+   Then independently verify both public exact tar bytes/SRI and a wholly
+   public clean consumer install. A changed stable tag aborts. Token-free
+   verification reads are bounded; a missing public object after a possible
+   submission is not a reason to submit again.
+5. The only tag this workflow can write is the fixed staging tag. Verify the
+   staging targets and old stable tags as part of the result. Moving
+   `latest` is a different reviewed operation after clean public pair
+   verification. The final publication proof here is unsigned, so version
+   preparation and ordinary full-family finalization still need separately
+   reviewed signed retention and the genuine latest confirmation.
 
-1. Use an exact reviewed protected current-main SHA and Git tree that contain
-   both 2.0.0 manifests. Freeze and retain the successful first producer
-   attempt, its exact upload job, artifact ID/digest, and the original ZIP with
-   both tarballs. The future writer and producer are distinct registered
-   workflows and runs, on this same immutable source SHA. Standalone approval
-   does not authorize a source update or an artifact from another run.
-2. A credential-free preflight proposes the canonical approval comment from
-   the real artifact metadata and ZIP bytes. The protected writer must repeat
-   the SHA/tree, actual original bytes, role and first-attempt verification
-   without relying on supplied verdict files. An independent maintainer
-   records which writer run consumes the one-shot permit and approves this
-   exact artifact and run through GitHub. The adapter validates the live
-   Environment review for that run, approver and environment, then rechecks
-   that main did not move. Before reading credentials, the future caller
-   must additionally bind the *actual* GitHub executing job to that reviewed
-   workflow/run/attempt and enforce this rule at the upload entry point.
-3. Concurrency is only serialization; use a fixed pair-wide group without
-   interrupting an in-flight upload. It does not prove no other run already
-   submitted. The maintainer must never approve a second run after a possible
-   submission without separately resolving the first outcome. If this
-   procedure is insufficient, postpone activation until there is a reviewed
-   durable atomic claim scoped to the two exact versions, not repository-wide
-   write access. Do not infer a new permit from missing history or an npm 404.
-4. Under that exact permit, send the theme original once. Read-only poll its
-   public exact package and archive digest for at most 1,200 seconds. Prove the
-   public theme installs with the independently frozen local Docs tarball,
-   because its required Docs 2.0.0 peer is not public yet. Then send the
-   original Docs once. Verify both publicly fetched original SHA-256 values
-   and SRI and a wholly public clean consumer install. An ambiguous upload
-   blocks any further submit; no npm transport retries or interactive
-   fallback. Log only sanitized status and archive identities.
-5. `farm-docs-bootstrap` is the proposed empty staging tag, not approval to
-   set it; verify the separately agreed policy and live tag state. Do not
-   change `latest` before exact public pair and consumer success. A separately
-   reviewed latest confirmation and signed retained adoption are required
-   before ordinary full-family finalization is expected to succeed.
+## If anything stops
 
-The immutable handoff evaluator takes injected read-only fixtures, so an
-untrusted pull request cannot reach a GitHub or npm network transport through
-it. Its tests exercise swapped role identities, wrong repository, replay,
-truncated or failed producer jobs, substituted bytes, stale or ambiguous
-approval, and main moving after approval. This is not evidence of a live run.
+Concurrency serializes runs; it is not a durable global claim. The runner
+requires exactly its own first attempt in bounded same-workflow history
+and checks again before each possible submit. Any previous or ambiguous
+run stops, even if no initial failure is logged. History may be deleted or
+incomplete, and a crash can lose the local journal. Maintain one-shot
+operator control independently; do not delete a run, rerun, or rely on
+missing history, a missing artifact, or a 404 to recover.
 
-## Operational successor under review
+For a definitive preflight-only failure, inspect the exact run and job
+records and verify no publish job/step ever entered, then check both npm
+versions and staging tags read-only. Do not clear history or reset the
+writer: if another first attempt is genuinely needed, bring this evidence
+to a separate repository review of the recovery. If a submit could have
+happened, reconcile only by reading exact public bytes against the original
+archives. Stop on any discrepancy or uncertainty. A new attempt is not
+automatically authorized.
 
-The successor supplies the protected runner's actual confined GET and npm
-subprocess path but leaves the runner physically disabled in source and
-unreferenced from GitHub Actions. No command flag or environment variable
-can turn it on. The approved writer ID, protected Environment ID and
-reviewer allowlist, staging tag, executing job and reviewed pinned
-Node/npm installation must be wired in a later review; nothing here
-registers or activates them.
-
-Local tests exercise the actual runner entry with fake GitHub and public
-registry responses, and test subprocess arguments, identity, isolation and
-clean installs with a fake npm process. They verify that auth never follows
-the artifact redirect or enters npm installs, the writer aborts if an older
-partial upload or a stable tag change is observed, only public reads are
-retried, and the theme proof includes the undelivered frozen local Docs peer.
-The real job's journal is never overwritten. Each submission intent is
-flushed before the one permitted call, but a job crash can lose the local
-journal, so the independent maintainer must still enforce one-shot control
-across runs. The final output is unsigned retained evidence, not authority
-to advance any baseline or move tags. Never treat a missing result as proof
-that an upload did not happen.
-
-
-### Registering the writer identity without enabling it
-
-The separate registration-only workflow at
-`.github/workflows/docs-pair-publish.yaml` registers the future writer path
-when this change reaches the default branch. A repository read can then
-obtain GitHub's numeric workflow ID; a run is not needed. Its only manual
-entry is guarded to protected main in the original repository and attempt
-one. The sole job has no permissions, checkout, environment, credentials or
-publication code and only prints that it is disabled. This does not activate
-the runner or grant any publish authority. Binding the newly registered
-identity and adding a protected execution job require a separate reviewed
-change after all activation prerequisites are verified.
+Tests use a synthetic runner and fake network/npm subprocess only; there
+has been no live dispatch, credential check, upload or npm write from
+these tests. Keep the old offline approval proofs and archived release
+evidence untouched; the new workflow does not call them.
