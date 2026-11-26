@@ -16,4 +16,4 @@ similar = "2.7"
 sourcemap = "9"
 
 [dev-dependencies]
-farmfe_testing_helpers = { version = "=2.2.0", path = "../../crates/testing_helpers" }
+farmfe_testing_helpers = { version = "=2.2.1", path = "../../crates/testing_helpers" }
