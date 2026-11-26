@@ -1,8 +1,8 @@
 # Protected Docs 2.0.0 writer: review proposal, not an enabled workflow
 
-This change adds offline handoff code and test fixtures, not a workflow,
-publisher, credential access, signer, added permission, or change to ordinary
-release policy. No production writer calls this code. The draft may be
+This change adds offline handoff code and test fixtures, not an active publisher,
+credential access, signer, added permission, or change to ordinary release
+policy. No production writer calls this code. The draft may be
 reviewed independently of the source version change.
 
 ## Verified facts and fail-closed prerequisites
@@ -94,3 +94,17 @@ journal, so the independent maintainer must still enforce one-shot control
 across runs. The final output is unsigned retained evidence, not authority
 to advance any baseline or move tags. Never treat a missing result as proof
 that an upload did not happen.
+
+
+### Registering the writer identity without enabling it
+
+The separate registration-only workflow at
+`.github/workflows/docs-pair-publish.yaml` registers the future writer path
+when this change reaches the default branch. A repository read can then
+obtain GitHub's numeric workflow ID; a run is not needed. Its only manual
+entry is guarded to protected main in the original repository and attempt
+one. The sole job has no permissions, checkout, environment, credentials or
+publication code and only prints that it is disabled. This does not activate
+the runner or grant any publish authority. Binding the newly registered
+identity and adding a protected execution job require a separate reviewed
+change after all activation prerequisites are verified.

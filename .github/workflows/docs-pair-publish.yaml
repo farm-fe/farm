@@ -1,0 +1,24 @@
+name: Docs package writer registration (disabled)
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  registration:
+    name: Report that the Docs writer is disabled
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'farm-fe/farm' &&
+      github.repository_id == '507542208' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_protected &&
+      github.run_attempt == '1' &&
+      github.sha == github.workflow_sha &&
+      github.workflow_ref == 'farm-fe/farm/.github/workflows/docs-pair-publish.yaml@refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Report registration only
+        shell: bash
+        run: printf '%s\n' 'Docs package publishing is disabled. This workflow registers an identity only.'
