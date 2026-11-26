@@ -1,0 +1,111 @@
+name: Module Federation one-package candidate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/mf-bundle-*.yaml'
+      - 'rust-plugins/module-federation/**'
+      - 'scripts/prepare-mf-single-package*'
+      - 'scripts/verify-mf-single-consumer.mjs'
+      - 'scripts/mf-single-browser-probe.mjs'
+      - 'scripts/release-archive.mjs'
+      - 'scripts/v2-npm-cli.mjs'
+      - 'scripts/v2-normal-pack-contract.mjs'
+      - 'packages/core/package.json'
+      - 'rust-toolchain.toml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - '.cargo/**'
+      - 'LICENSE'
+      - 'crates/**'
+      - 'rust-ecosystem/**'
+permissions:
+  contents: read
+jobs:
+  macos:
+    uses: ./.github/workflows/mf-bundle-native-input.yaml
+    with:
+      os: macos-latest
+      abi: darwin-arm64
+      target: aarch64-apple-darwin
+  linux:
+    uses: ./.github/workflows/mf-bundle-native-input.yaml
+    with:
+      os: ubuntu-24.04
+      abi: linux-x64-gnu
+      target: x86_64-unknown-linux-gnu
+  windows:
+    uses: ./.github/workflows/mf-bundle-native-input.yaml
+    with:
+      os: windows-latest
+      abi: win32-x64-msvc
+      target: x86_64-pc-windows-msvc
+  bundle:
+    needs: [macos, linux, windows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          artifact-ids: ${{ needs.macos.outputs.artifact_id }}
+          path: mf-inputs/darwin-arm64
+          merge-multiple: true
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          artifact-ids: ${{ needs.linux.outputs.artifact_id }}
+          path: mf-inputs/linux-x64-gnu
+          merge-multiple: true
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          artifact-ids: ${{ needs.windows.outputs.artifact_id }}
+          path: mf-inputs/win32-x64-msvc
+          merge-multiple: true
+      - name: Seal one bundle without publication credentials
+        run: node scripts/prepare-mf-single-package.mjs bundle mf-inputs mf-bundle
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: mf-one-package-candidate-${{ github.sha }}-${{ github.run_attempt }}
+          path: mf-bundle/
+          if-no-files-found: error
+          retention-days: 14
+  clean-consumers:
+    needs: bundle
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - uses: actions/download-artifact@v4.3.0
+        with:
+          artifact-ids: ${{ needs.bundle.outputs.artifact_id }}
+          path: mf-bundle
+          merge-multiple: true
+      - name: Verify the same exact bundle with public Core
+        env:
+          MF_BUNDLE_ARTIFACT_ID: ${{ needs.bundle.outputs.artifact_id }}
+        run: node scripts/verify-mf-single-consumer.mjs mf-bundle mf-clean-consumer.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mf-clean-consumer-${{ github.sha }}-${{ matrix.os }}-${{ github.run_attempt }}
+          path: mf-clean-consumer.json
+          if-no-files-found: error
+          retention-days: 14

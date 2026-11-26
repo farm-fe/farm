@@ -1,0 +1,55 @@
+name: Build one credential-free Federation bundle input
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: true
+      abi:
+        type: string
+        required: true
+      target:
+        type: string
+        required: true
+    outputs:
+      artifact_id:
+        value: ${{ jobs.native.outputs.artifact_id }}
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 45
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+      - name: Install repository-pinned compiler and target
+        shell: bash
+        env:
+          MF_TARGET: ${{ inputs.target }}
+        run: |
+          rustup toolchain install nightly-2026-04-10 --profile minimal
+          rustup target add --toolchain nightly-2026-04-10 "$MF_TARGET"
+          rustc +nightly-2026-04-10 -vV
+          cargo +nightly-2026-04-10 --version
+          cargo +nightly-2026-04-10 fetch --locked
+      - name: Build and bind exact native input
+        shell: bash
+        env:
+          MF_ABI: ${{ inputs.abi }}
+          CARGO_TARGET_DIR: ${{ runner.temp }}/mf-bundle-target
+        run: node scripts/prepare-mf-single-package.mjs native "$MF_ABI" mf-native-input
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: mf-bundle-input-${{ github.sha }}-${{ inputs.abi }}-${{ github.run_attempt }}
+          path: mf-native-input/
+          if-no-files-found: error
+          retention-days: 14
