@@ -24,6 +24,21 @@ INTEGRITY = 'sha512-' + base64.b64encode(b'a' * 64).decode()
 
 
 class Contracts(unittest.TestCase):
+    def test_pending_inventory_denies_legacy_full_source_before_registry_or_state_access(self):
+        import sys
+        destination = self.root / "pending-plan.json"
+        self.source["files"][entry.chain.PENDING_DOCS_DELTA] = b"invalid or valid cannot authorize writes"
+        for option in ([], ["--full-source"]):
+            with self.subTest(option=option), \
+                 mock.patch.object(sys, "argv", ["entry", "plan", *option, "--source", self.source["sha"], "--output", str(destination)]), \
+                 mock.patch.object(entry.evidence, "source_reader", return_value=self.source), \
+                 mock.patch.object(entry, "actions_transport") as auth, \
+                 mock.patch.object(entry, "source_plan") as planner, \
+                 self.assertRaisesRegex(ValueError, "Pending Docs 2.0.0"):
+                entry.main()
+            auth.assert_not_called(); planner.assert_not_called()
+            self.assertFalse(destination.exists())
+
     def test_full_source_plan_never_reads_historical_state_or_registry_selection(self):
         import sys
         destination = self.root / 'full.json'

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "pending-docs-source-only",
+  "baseInventorySha256": "d2c1195e070c3b188b112dcd7fb62359265ab7978da753624ae6bc515fa012b1",
+  "packages": [
+    {
+      "name": "@farmfe/docs",
+      "manifestPath": "packages/docs/package.json",
+      "manifestSha256": "908b4423a3776a628842fed8599b5f3940ab6a78c4e8ace09cc5fba8b79f8e6e"
+    },
+    {
+      "name": "@farmfe/docs-theme-default",
+      "manifestPath": "packages/docs-theme-default/package.json",
+      "manifestSha256": "de234e15d7f55dfadb35aa512fdea3b15a7101bbec11ad934007f45cb1655e9b"
+    }
+  ]
+}

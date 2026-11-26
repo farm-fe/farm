@@ -272,6 +272,73 @@ def union_graph(*graphs):
     return result
 
 
+CANDIDATE_INVENTORY = "docs/releases/v2-candidate.json"
+PENDING_DOCS_DELTA = "docs/releases/v2-source-delta.json"
+PENDING_DOCS_BASE_SHA256 = "d2c1195e070c3b188b112dcd7fb62359265ab7978da753624ae6bc515fa012b1"
+PENDING_DOCS_PATHS = {
+    "@farmfe/docs": "packages/docs/package.json",
+    "@farmfe/docs-theme-default": "packages/docs-theme-default/package.json",
+}
+
+
+def reject_pending_docs_release(files):
+    # Legacy and full-source writers do not have the paired bootstrap guard.
+    if PENDING_DOCS_DELTA in files:
+        raise ValueError("Pending Docs 2.0.0 source inventory cannot enter legacy or full-source npm publication")
+
+
+def effective_family(files):
+    """Version-aware view of live source; never a new prepared publication or seal."""
+    frozen = files[CANDIDATE_INVENTORY]
+    family = json.loads(frozen)
+    if PENDING_DOCS_DELTA not in files:
+        return family
+    overlay = json.loads(files[PENDING_DOCS_DELTA], object_pairs_hook=unique_json_object)
+    if (not isinstance(overlay, dict) or set(overlay) != {"schemaVersion", "kind", "baseInventorySha256", "packages"}
+            or type(overlay["schemaVersion"]) is not int or overlay["schemaVersion"] != 1
+            or overlay["kind"] != "pending-docs-source-only"
+            or overlay["baseInventorySha256"] != PENDING_DOCS_BASE_SHA256
+            or hashlib.sha256(frozen).hexdigest() != PENDING_DOCS_BASE_SHA256):
+        raise ValueError("Invalid pending Docs source inventory baseline")
+    entries = overlay["packages"]
+    if not isinstance(entries, list) or len(entries) != len(PENDING_DOCS_PATHS):
+        raise ValueError("Pending Docs source inventory requires exactly both packages")
+    remaining = dict(PENDING_DOCS_PATHS)
+    primary = family["npm"]["primary"]
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {"name", "manifestPath", "manifestSha256"}:
+            raise ValueError("Invalid pending Docs source row")
+        name = entry["name"]
+        if not isinstance(name, str) or name not in remaining or entry["manifestPath"] != remaining.pop(name):
+            raise ValueError("Unexpected pending Docs source identity")
+        raw = files[entry["manifestPath"]]
+        if hashlib.sha256(raw).hexdigest() != entry["manifestSha256"]:
+            raise ValueError("Pending Docs manifest digest differs from fixed source")
+        current = json.loads(raw, object_pairs_hook=unique_json_object)
+        matches = [i for i, row in enumerate(primary) if row["name"] == name]
+        if (current.get("name") != name or current.get("version") != "2.0.0"
+                or current.get("private", False) is not False
+                or len(matches) != 1 or primary[matches[0]]["version"] != "0.0.2"
+                or primary[matches[0]]["manifestPath"] != entry["manifestPath"]
+                or any(row.get("owner") == name for row in family["npm"]["payloads"])):
+            raise ValueError("Pending Docs source transition differs from reviewed exact public pair")
+        # Prior manifest/source digests describe historical bytes; never relabel them.
+        primary[matches[0]] = {"name": name, "version": current["version"], "manifestPath": entry["manifestPath"]}
+    for field in ("publication", "preparation"):
+        family.pop(field, None)
+    validate_family_sources({key: row for key, row in family_records(family).items() if row["kind"] == "npm"}, files)
+    return family
+
+
+def unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON key in pending Docs source inventory")
+        result[key] = value
+    return result
+
+
 def family_records(family):
     result = {}
     groups = [("cargo", family["cargo"]), ("npm", family["npm"]["primary"]), ("npm", family["npm"]["payloads"])]
@@ -359,9 +426,8 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
     if publication_scope == 'npm': independent = {key: row for key, row in independent.items() if row['kind'] == 'npm'}
     if set(records) != set(independent) or any(any(row.get(key) != independent[name].get(key) for key in ["kind", "name", "version", "manifestPath", "owner", "platform"]) for name, row in records.items()):
         raise ValueError("Publication inventory does not cover the independently derived full family")
-    metadata_file = "docs/releases/v2-candidate.json"
-    if metadata_file in files:
-        declared = json.loads(files[metadata_file])
+    if CANDIDATE_INVENTORY in files:
+        declared = effective_family(files)
         normalized = family_records(declared)
         if publication_scope == 'npm': normalized = {key: row for key, row in normalized.items() if row['kind'] == 'npm'}
         fields = ["kind", "name", "version", "manifestPath", "owner", "platform"]
@@ -391,7 +457,7 @@ def plan_chain(chain, source, files, family, changes, baseline=None, baseline_fi
         for file in change["paths"]:
             if not isinstance(file, str) or file.startswith("/") or any(part in ["", ".", ".."] for part in file.split("/")):
                 raise ValueError("Unsafe changed source path")
-            if file == metadata_file:
+            if file == CANDIDATE_INVENTORY:
                 if file not in files:
                     raise ValueError("Committed family metadata was deleted")
                 # This is a validated derived inventory, not product source.
@@ -511,7 +577,7 @@ def main():
     if impact.git("rev-parse", "HEAD").decode("ascii").strip() != source:
         raise ValueError("Checkout differs from the requested chain source")
     files, hashes = impact.snapshot(source)
-    family = json.loads(files["docs/releases/v2-candidate.json"])
+    family = effective_family(files)
     plan = plan_chain(args.chain, {"sha": source, "tree": impact.git("rev-parse", source + "^{tree}").decode("ascii").strip()},
                       files, family, [], source_modes={name: row["mode"] for name, row in hashes.items()})
     output = Path(args.output)

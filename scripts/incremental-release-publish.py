@@ -711,8 +711,9 @@ def main():
             proof['consumerReports'] = reports
             Path(args.proof).write_text(json.dumps(proof, sort_keys=True) + '\n', encoding='utf-8')
         print(json.dumps({'stage': args.stage, 'manifestHash': state.digest(manifest), 'publicationExecuted': False})); return
-    api = GitHubWriter(os.environ, args.stage)
     source = entry.evidence.source_reader(os.environ["GITHUB_SHA"])
+    entry.chain.reject_pending_docs_release(source["files"])
+    api = GitHubWriter(os.environ, args.stage)
     check(manifest["sourceSHA"] == source["sha"] and manifest["sourceTree"] == source["tree"], "Writer checkout and frozen source differ")
     check(entry.chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Writer checkout differs from Actions source")
     run_id, attempt = int(os.environ["GITHUB_RUN_ID"]), int(os.environ["GITHUB_RUN_ATTEMPT"])

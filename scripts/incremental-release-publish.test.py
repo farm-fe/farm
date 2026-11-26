@@ -46,6 +46,22 @@ class Contracts(unittest.TestCase):
         self.addCleanup(mock.patch.stopall)
         mock.patch.object(module, 'verify_release_checkpoint', side_effect=lambda api, manifest, release: module.check(receipt in release['body'], 'Persistent checkpoint missing')).start()
 
+    def test_pending_inventory_denies_every_writer_role_before_registry_or_github_writer(self):
+        import os
+        import sys
+        with tempfile.TemporaryDirectory() as temp:
+            (Path(temp) / "manifest.json").write_text("{}")
+            for role in module.ROLES:
+                with self.subTest(role=role), \
+                     mock.patch.object(sys, "argv", ["publisher", role, "--candidate", temp]), \
+                     mock.patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}, clear=True), \
+                     mock.patch.object(module.entry.evidence, "source_reader", return_value={"files": {module.entry.chain.PENDING_DOCS_DELTA: b"invalid"}}), \
+                     mock.patch.object(module, "GitHubWriter") as github, \
+                     mock.patch.object(module, "RegistryWriter") as registry, \
+                     self.assertRaisesRegex(ValueError, "Pending Docs 2.0.0"):
+                    module.main()
+                github.assert_not_called(); registry.assert_not_called()
+
     def fixture(self):
         return ReleaseAPI(), {"sourceSHA": "a" * 40, "tag": "v2.0.0"}
 

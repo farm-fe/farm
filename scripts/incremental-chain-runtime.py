@@ -52,7 +52,7 @@ def calculate_current_ci(environment=os.environ, transport_factory=evidence.tran
     current = read_source(source["sha"])
     if current["tree"] != source["tree"]:
         raise ValueError("Committed input tree differs from checkout")
-    family = json.loads(current["files"]["docs/releases/v2-candidate.json"])
+    family = chain.effective_family(current["files"])
     fallback = chain.plan_chain("ci", source, current["files"], family, [], source_modes=current["modes"])
     reason = None
     try:
