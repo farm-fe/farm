@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-react",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/farm-fe/farm",
@@ -45,14 +45,14 @@
     "LICENSE"
   ],
   "optionalDependencies": {
-    "@farmfe/plugin-react-darwin-arm64": "2.0.0",
-    "@farmfe/plugin-react-darwin-x64": "2.0.0",
-    "@farmfe/plugin-react-linux-arm64-gnu": "2.0.0",
-    "@farmfe/plugin-react-linux-arm64-musl": "2.0.0",
-    "@farmfe/plugin-react-linux-x64-gnu": "2.0.0",
-    "@farmfe/plugin-react-linux-x64-musl": "2.0.0",
-    "@farmfe/plugin-react-win32-arm64-msvc": "2.0.0",
-    "@farmfe/plugin-react-win32-ia32-msvc": "2.0.0",
-    "@farmfe/plugin-react-win32-x64-msvc": "2.0.0"
+    "@farmfe/plugin-react-darwin-arm64": "2.0.1",
+    "@farmfe/plugin-react-darwin-x64": "2.0.1",
+    "@farmfe/plugin-react-linux-arm64-gnu": "2.0.1",
+    "@farmfe/plugin-react-linux-arm64-musl": "2.0.1",
+    "@farmfe/plugin-react-linux-x64-gnu": "2.0.1",
+    "@farmfe/plugin-react-linux-x64-musl": "2.0.1",
+    "@farmfe/plugin-react-win32-arm64-msvc": "2.0.1",
+    "@farmfe/plugin-react-win32-ia32-msvc": "2.0.1",
+    "@farmfe/plugin-react-win32-x64-msvc": "2.0.1"
   }
 }
