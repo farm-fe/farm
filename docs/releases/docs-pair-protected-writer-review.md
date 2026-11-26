@@ -35,9 +35,11 @@ No workflow identity is invented.
 4. The writer can submit each original only once and never uses another
    credential or npm write retry. Verify exact public theme tar SHA-256/SRI,
    then run a clean install with the public theme and the original frozen
-   local Docs tarball to satisfy the theme peer before submitting Docs.
-   Then independently verify both public exact tar bytes/SRI and a wholly
-   public clean consumer install. A changed stable tag aborts. Token-free
+   local Docs tarball to satisfy the theme peer. After that install,
+   recheck the theme's exact public bytes and staging and stable tags
+   before submitting Docs. Then independently verify both public exact
+   tar bytes/SRI and a wholly public clean consumer install. A changed
+   stable tag aborts. Token-free
    verification reads are bounded; a missing public object after a possible
    submission is not a reason to submit again.
 5. The only tag this workflow can write is the fixed staging tag. Verify the
@@ -50,8 +52,11 @@ No workflow identity is invented.
 ## If anything stops
 
 Concurrency serializes runs; it is not a durable global claim. The runner
-requires exactly its own first attempt in bounded same-workflow history
-and checks again before each possible submit. Any previous or ambiguous
+requires exactly its own first attempt in bounded same-workflow history.
+It checks history and protected main again after npm setup and public
+registry reads, immediately before recording and allowing each submit.
+GitHub reads and the npm write are not atomic; do not move main, publish
+manually, or change tags while this workflow is running. Any previous or ambiguous
 run stops, even if no initial failure is logged. History may be deleted or
 incomplete, and a crash can lose the local journal. Maintain one-shot
 operator control independently; do not delete a run, rerun, or rely on

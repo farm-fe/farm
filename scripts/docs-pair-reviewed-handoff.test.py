@@ -78,7 +78,7 @@ class Boundary(unittest.TestCase):
     def test_valid_split_role_order_and_exact_result(self):
         result = self.run_contract()
         self.assertEqual(result, {"producerJobId": 19, "writerWorkflowId": 21, "artifactId": 30, "receipt": self.receipt, "archives": self.bodies})
-        self.assertEqual(self.calls[-4:], ["download-frozen-30", "/branches/main", f"/git/commits/{self.selection['sourceSHA']}", self.history])
+        self.assertEqual(self.calls[-4:], ["download-frozen-30", f"/git/commits/{self.selection['sourceSHA']}", "/branches/main", self.history])
 
     def test_wrong_role_path_workflow_id_run_id_repo_and_replay_precede_artifact(self):
         for route, key, value in [

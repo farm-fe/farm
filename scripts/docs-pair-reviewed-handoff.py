@@ -49,11 +49,11 @@ def exact_repo(value):
 
 
 def require_main(get, sha, tree):
+    commit = get(f"/git/commits/{sha}")
+    require(commit.get("sha") == sha and commit.get("tree", {}).get("sha") == tree, "Exact source tree differs")
     branch = get("/branches/main")
     require(branch.get("name") == "main" and branch.get("protected") is True
             and branch.get("commit", {}).get("sha") == sha, "Exact protected main no longer current")
-    commit = get(f"/git/commits/{sha}")
-    require(commit.get("sha") == sha and commit.get("tree", {}).get("sha") == tree, "Exact source tree differs")
 
 
 def exact_run(get, run_id, workflow_id, path, sha, *, producer):

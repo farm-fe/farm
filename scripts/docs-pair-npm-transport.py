@@ -118,8 +118,8 @@ class NpmExecution:
                 stream.write("//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n")
         return environment
 
-    def publish(self, row, body, *, token_supplier, tag=STAGING_TAG):
-        """Call ONLY after trusted caller reserves the exact package durably."""
+    def publish(self, row, body, *, token_supplier, before_submit, tag=STAGING_TAG):
+        """Run the trusted caller's final gate after setup and before using the token."""
         require(tag == STAGING_TAG, "Only the fixed Docs staging tag is allowed")
         inspect_archive(row, body)
         name = row["name"]
@@ -131,6 +131,7 @@ class NpmExecution:
             archive = root / "sealed.tgz"
             with os.fdopen(os.open(archive, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as stream:
                 stream.write(body)
+            before_submit()
             token = token_supplier(TOKEN_NAME)
             require(type(token) is str and 0 < len(token) <= 4096 and all(33 <= ord(c) < 127 for c in token),
                     "Explicit Docs bootstrap token missing or invalid")

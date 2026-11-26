@@ -118,11 +118,22 @@ class Contracts(unittest.TestCase):
     def test_exact_publish_and_nonzero_never_retries(self):
         self.fail_publish = True
         with self.assertRaisesRegex(ValueError, "unconfirmed; do not rerun"):
-            self.exec.publish(self.rows[proof.THEME], self.bodies[proof.THEME], token_supplier=self.token)
+            self.exec.publish(self.rows[proof.THEME], self.bodies[proof.THEME], token_supplier=self.token, before_submit=lambda: None)
         with self.assertRaisesRegex(ValueError, "one-shot"):
-            self.exec.publish(self.rows[proof.THEME], self.bodies[proof.THEME], token_supplier=self.token)
+            self.exec.publish(self.rows[proof.THEME], self.bodies[proof.THEME], token_supplier=self.token, before_submit=lambda: None)
         self.assertEqual(self.calls, ["--version", "publish"])
         self.assertEqual(self.tokens, ["NPM_BYPASS_2FA_TOKEN"])
+
+    def test_denied_final_gate_never_supplies_token_or_invokes_publish(self):
+        def deny():
+            self.assertEqual(self.calls, ["--version"])
+            self.assertEqual(self.tokens, [])
+            raise ValueError("final read denied")
+        with self.assertRaisesRegex(ValueError, "final read denied"):
+            self.exec.publish(self.rows[proof.THEME], self.bodies[proof.THEME],
+                              token_supplier=self.token, before_submit=deny)
+        self.assertEqual(self.calls, ["--version"])
+        self.assertEqual(self.tokens, [])
 
     def test_wrong_tag_sri_or_frozen_body_never_invokes_subprocess_or_supplies_token(self):
         row, body = self.rows[proof.THEME], self.bodies[proof.THEME]
@@ -130,7 +141,7 @@ class Contracts(unittest.TestCase):
                   (row, self.bodies[proof.DOCS], transport.STAGING_TAG)]
         for record, contents, tag in checks:
             with self.assertRaises(ValueError):
-                self.exec.publish(record, contents, tag=tag, token_supplier=self.token)
+                self.exec.publish(record, contents, tag=tag, token_supplier=self.token, before_submit=lambda: None)
         self.assertEqual(self.calls, [])
         self.assertEqual(self.tokens, [])
 

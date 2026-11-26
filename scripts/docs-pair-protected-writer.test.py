@@ -96,7 +96,8 @@ class FakeWorld:
         self.case.assertEqual(archives, self.fixture.bodies)
         self.trace.append(("preflight", "both archives"))
 
-    def publish(self, row, body, *, token_supplier):
+    def publish(self, row, body, *, token_supplier, before_submit):
+        before_submit()
         self.case.assertEqual(token_supplier(source.TOKEN_ALIAS), "fake-only-reviewed-alias")
         name = row["name"]
         self.case.assertEqual(self.journal[-1]["state"], "submission-pending")
@@ -164,6 +165,11 @@ class Tests(unittest.TestCase):
         def fake_subprocess(command, **kwargs):
             result = n.run_npm(command, **kwargs)
             if command[2] == "publish":
+                self.assertEqual(f.trace[-3:], [
+                    ("GET", source.GITHUB + f.fixture.history),
+                    ("GET", source.GITHUB + f"/git/commits/{f.src}"),
+                    ("GET", source.GITHUB + "/branches/main"),
+                ])
                 body = Path(command[3]).read_bytes()
                 name = next(name for name, original in n.bodies.items() if original == body)
                 self.assertEqual(f.journal[-1]["state"], "submission-pending")
@@ -232,14 +238,72 @@ class Tests(unittest.TestCase):
     def test_late_competing_dispatch_after_theme_blocks_docs_upload(self):
         world = FakeWorld(self)
         original = world.publish
-        def submit(row, body, *, token_supplier):
-            ok = original(row, body, token_supplier=token_supplier)
+        def submit(row, body, *, token_supplier, before_submit):
+            ok = original(row, body, token_supplier=token_supplier, before_submit=before_submit)
             world.origins[world.fixture.history]["total_count"] = 2
             return ok
         world.publish = submit
         with self.assertRaisesRegex(ValueError, "Prior or ambiguous publisher history"):
             world.run()
         self.assertEqual([name for op, name in world.trace if op == "one submit"], [world.theme])
+
+    def test_registry_read_drift_denies_submit_before_journal_or_token(self):
+        for drift in ("main", "writer history"):
+            with self.subTest(drift=drift):
+                world = FakeWorld(self)
+                endpoint = source.PublicRegistry.endpoint(world.theme) + "/2.0.0"
+                opener = world.open
+                def open_and_move(req, timeout):
+                    try:
+                        return opener(req, timeout)
+                    finally:
+                        if req.full_url == endpoint and world.trace.count(("GET", endpoint)) == 2:
+                            if drift == "main":
+                                world.origins["/branches/main"]["commit"]["sha"] = "c" * 40
+                            else:
+                                world.origins[world.fixture.history]["total_count"] = 2
+                world.open = open_and_move
+                with self.assertRaisesRegex(ValueError, "protected main no longer current|ambiguous publisher history"):
+                    world.run()
+                self.assertFalse(any(op == "one submit" for op, _ in world.trace))
+                self.assertEqual(world.journal[-1]["attempted"], [])
+                self.assertEqual(world.now, 0)
+
+    def test_theme_drift_after_clean_midpoint_denies_docs_before_submit(self):
+        for drift in ("bytes", "missing", "staging tag", "stable tag"):
+            with self.subTest(drift=drift):
+                world = FakeWorld(self)
+                consumer = world.verify_installed
+                opener = world.open
+                after_install = False
+                def install_then_change(*args, **kwargs):
+                    nonlocal after_install
+                    result = consumer(*args, **kwargs)
+                    if kwargs.get("local_docs") is not None:
+                        after_install = True
+                    return result
+                def open_changed_theme(req, timeout):
+                    if after_install:
+                        endpoint = source.PublicRegistry.endpoint(world.theme)
+                        if req.full_url == world.url(world.theme) and drift == "bytes":
+                            return Reply(b"changed public theme archive")
+                        if req.full_url == endpoint + "/2.0.0" and drift == "missing":
+                            raise urllib.error.HTTPError(req.full_url, 404, "fixture", {}, None)
+                        if req.full_url == endpoint and drift in ("staging tag", "stable tag"):
+                            tags = {"latest": "0.0.1", source.STAGING_TAG: "2.0.0"}
+                            if drift == "staging tag":
+                                tags.pop(source.STAGING_TAG)
+                            else:
+                                tags["latest"] = "9.0.0"
+                            return Reply(json.dumps({"name": world.theme, "dist-tags": tags}).encode())
+                    return opener(req, timeout)
+                world.verify_installed, world.open = install_then_change, open_changed_theme
+                with self.assertRaisesRegex(ValueError, "Public exact archive integrity differs|Theme registry changed"):
+                    world.run()
+                self.assertTrue(after_install)
+                self.assertEqual([name for op, name in world.trace if op == "one submit"], [world.theme])
+                self.assertEqual(world.journal[-1]["attempted"], [world.theme])
+                self.assertEqual(world.now, 0)
 
     def test_uncertain_submit_never_repeats_or_advances_to_docs(self):
         for unavailable in (False, True):

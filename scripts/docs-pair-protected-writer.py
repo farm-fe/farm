@@ -235,17 +235,34 @@ def write_once(selection, actor_id, *, github, registry, npm, token, record, clo
             require(npm.verify_installed(rows, source_sha=selection["sourceSHA"], source_tree=selection["sourceTree"],
                                          local_docs=resolved["archives"][proof.DOCS]) is True,
                     "Public theme is not consumable with the frozen Docs peer")
-        binding.require_main(github.get, selection["sourceSHA"], selection["sourceTree"])
-        binding.require_first_writer(github.get, selection["writerRun"], resolved["writerWorkflowId"])
-        require(registry.tags(name) == saved_tags[name] and not exact_public(registry, rows[name], 20),
-                "Registry changed after first dispatch; do not submit")
-        attempted.append(name)
-        checkpoint("submission-pending")
-        accepted = True
+        reserved = False
+
+        def before_submit():
+            nonlocal reserved
+            require(not reserved, "Repeat Docs submission reservation denied")
+            require(registry.tags(name) == saved_tags[name] and not exact_public(registry, rows[name], 20),
+                    "Registry changed after first dispatch; do not submit")
+            if name == proof.DOCS:
+                theme = proof.THEME
+                require(exact_public(registry, rows[theme], 20)
+                        and registry.tags(theme) == {**saved_tags[theme], STAGING_TAG: proof.VERSION},
+                        "Theme registry changed after the midpoint install; do not submit Docs")
+            # Finish npm setup and public registry reads before the final moving
+            # GitHub checks. They cannot be atomic with the npm submission.
+            binding.require_first_writer(github.get, selection["writerRun"], resolved["writerWorkflowId"])
+            binding.require_main(github.get, selection["sourceSHA"], selection["sourceTree"])
+            attempted.append(name)
+            checkpoint("submission-pending")
+            reserved = True
+
         try:
-            accepted = npm.publish(rows[name], resolved["archives"][name], token_supplier=token) is True
+            accepted = npm.publish(rows[name], resolved["archives"][name], token_supplier=token,
+                                   before_submit=before_submit) is True
         except Exception:
+            if not reserved:
+                raise  # Pre-submit denial is not an ambiguous upload.
             accepted = False
+        require(reserved, "Docs publisher did not perform the pre-submit verification")
         deadline, delay = clock() + 1200, 1
         while True:
             now = clock()
