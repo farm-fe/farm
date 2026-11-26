@@ -5,7 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { deploymentTarget, deploymentPlan, releaseManifests, preflight, buildPublishedDocs, assertRegistryLock } from './farm-docs-vercel-build.mjs';
+import { deploymentTarget, deploymentPlan, lockedDeploymentPlan, preflight, buildPublishedDocs, assertRegistryLock } from './farm-docs-vercel-build.mjs';
 
 import { addHomepageVerification, assertHomepageVerification } from './farm-docs-site-verification.mjs';
 
@@ -76,15 +76,21 @@ function fixture(t) {
   return { root, put, website, manifests, metadata, calls, hooks, options: { root, target, environment: {} } };
 }
 
-test('real manifest plan pins current v2 closure and matching precompiled target, never workspace or latest', () => {
-  const manifests = releaseManifests();
+test('committed deployment lock pins the published v2 closure and matching precompiled targets', () => {
+  const website = read(path.join(repository, 'website/package.json'));
+  const lock = read(path.join(repository, 'website/farm-release-lock.json'));
+  const lockedPackages = new Map(lock.packages.map(pkg => [pkg.name, pkg]));
   for (const target of ['linux-x64-gnu', 'darwin-arm64', 'win32-x64-msvc']) {
-    const plan = deploymentPlan(read(path.join(repository, 'website/package.json')), manifests, target);
-    assert.equal(plan.manifest.dependencies['@farmfe/core'], manifests.get('@farmfe/core').version);
-    assert.equal(plan.manifest.dependencies['@farmfe/docs'], manifests.get('@farmfe/docs').version);
+    const plan = lockedDeploymentPlan(website, lock, target);
+    for (const name of ['@farmfe/core', '@farmfe/docs', '@farmfe/docs-theme-default', '@farmfe/core-' + target]) {
+      assert.ok(plan.selected.has(name), name);
+    }
+    for (const [name, pkg] of plan.selected) {
+      assert.equal(plan.manifest.dependencies[name], lockedPackages.get(name).version);
+      assert.match(pkg.dist.integrity, /^sha512-/);
+      if (pkg.os) assert.ok(name.endsWith('-' + target), name);
+    }
     assert.equal(plan.manifest.dependencies['@emotion/is-prop-valid'], '1.4.0');
-    assert.ok(plan.selected.has('@farmfe/core-' + target));
-    for (const pkg of plan.selected.values()) if (pkg.os) assert.ok(pkg.name.endsWith('-' + target));
     assert.doesNotMatch(JSON.stringify(plan.manifest), /workspace:|latest|overrides|patches/);
   }
 });
