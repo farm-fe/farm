@@ -1,16 +1,16 @@
 {
   "schemaVersion": 1,
   "preparationMode": "changesets",
-  "pullRequest": 2364,
+  "pullRequest": 2373,
   "baseBranch": "main",
-  "tag": "v2.0.1",
+  "tag": "v2.0.2",
   "abi": "0.5.4",
   "rustCoreVersion": "2.2.0",
-  "candidatePlanSha256": "00baf8befa077d3c9e479d40f73c4e7c1795821a83cfa61002c65d6c912d7518",
+  "candidatePlanSha256": "074d169795001333f50e5feda9000e3fa7b57671ff738b8137e0aeb377e02b09",
   "counts": {
-    "primary": 11,
-    "payloads": 18,
-    "total": 29
+    "primary": 16,
+    "payloads": 63,
+    "total": 79
   },
   "requiredWorkflows": [
     ".github/workflows/ci.yaml",
