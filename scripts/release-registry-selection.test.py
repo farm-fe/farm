@@ -2,6 +2,7 @@
 # cspell:words importlib urllib SIGALRM SIGTERM ITIMER setitimer getitimer
 import base64
 import copy
+import hashlib
 from contextlib import contextmanager
 import importlib.util
 import json
@@ -37,6 +38,80 @@ def observed(row,published=False):
 
 
 class Contracts(unittest.TestCase):
+    def test_exact_pending_docs_projection_keeps_frozen_evidence_and_rejects_drift(self):
+        chain = module.chain
+        source, family = source_fixture()
+        files = source["files"]
+        family["publication"] = {"mode": "historical"}
+        family["preparation"] = {"mode": "changesets"}
+        new = []
+        for name, path in chain.PENDING_DOCS_PATHS.items():
+            family["npm"]["primary"].append({"name": name, "version": "0.0.2", "manifestPath": path, "sourceSha256": "historical-only"})
+            files[path] = json.dumps({"name": name, "version": "2.0.0"}).encode()
+            new.append({"name": name, "manifestPath": path, "manifestSha256": hashlib.sha256(files[path]).hexdigest()})
+        frozen = json.dumps(family).encode()
+        files[chain.CANDIDATE_INVENTORY] = frozen
+        overlay = {"schemaVersion": 1, "kind": "pending-docs-source-only",
+                   "baseInventorySha256": hashlib.sha256(frozen).hexdigest(), "packages": new}
+        def set_overlay(value):
+            files[chain.PENDING_DOCS_DELTA] = json.dumps(value).encode()
+        set_overlay(overlay)
+        with mock.patch.object(chain, "PENDING_DOCS_BASE_SHA256", overlay["baseInventorySha256"]):
+            view = chain.effective_family(files)
+            self.assertEqual(files[chain.CANDIDATE_INVENTORY], frozen)
+            self.assertEqual(view["npm"]["payloads"], family["npm"]["payloads"])
+            self.assertEqual(view["cargo"], family["cargo"])
+            self.assertTrue(all(field not in view for field in ("publication", "preparation")))
+            selected = module.records(source, "npm")
+            self.assertEqual({selected["npm:" + name]["version"] for name in chain.PENDING_DOCS_PATHS}, {"2.0.0"})
+            source["modes"] = {name: "100644" for name in files}
+            snapshot = module.collect(source, "npm", lambda row: observed(row, published=row["name"] == "b"))
+            plan = module.plan(source, view, snapshot)
+            self.assertEqual(plan["selectionPolicy"], "registry-exact-version-v2")
+            self.assertEqual(set(plan["publish"]), {"npm:a", *("npm:" + name for name in chain.PENDING_DOCS_PATHS)})
+            self.assertEqual(set(plan["registryRetained"]), {"npm:b"})
+            self.assertEqual(set(row["name"] for row in plan["fullFamily"]), {"a", "b", *chain.PENDING_DOCS_PATHS})
+            with mock.patch.object(entry.chain, "PENDING_DOCS_BASE_SHA256", overlay["baseInventorySha256"]), \
+                 mock.patch.object(entry, "load", return_value=module):
+                self.assertEqual(entry.source_plan(source, registry_snapshot=snapshot), plan)
+                with self.assertRaisesRegex(ValueError, "legacy or full-source"):
+                    entry.source_plan(source)
+                with self.assertRaisesRegex(ValueError, "legacy or full-source"):
+                    entry.source_plan(source, registry_snapshot={**snapshot, "schemaVersion": 1})
+            for broken in (
+                {**overlay, "publication": {"mode": "changesets"}},
+                {**overlay, "baseInventorySha256": "0" * 64},
+                {**overlay, "packages": new[:1]},
+                {**overlay, "packages": new + new[:1]},
+                {**overlay, "packages": new[:1] * 2},
+                {**overlay, "packages": [{**new[0], "manifestPath": "../package.json"}, new[1]]},
+                {**overlay, "packages": [{**new[0], "manifestSha256": "0" * 64}, new[1]]},
+            ):
+                with self.subTest(descriptor=broken), self.assertRaises(ValueError):
+                    set_overlay(broken)
+                    module.records(source, "npm")
+            set_overlay(overlay)
+            files[chain.PENDING_DOCS_DELTA] = files[chain.PENDING_DOCS_DELTA].replace(b'"schemaVersion": 1', b'"schemaVersion": 1, "schemaVersion": 1')
+            with self.assertRaisesRegex(ValueError, "Duplicate JSON key"):
+                chain.effective_family(files)
+            set_overlay(overlay)
+            for path in ("packages/a/package.json", new[0]["manifestPath"], new[1]["manifestPath"]):
+                with self.subTest(drift=path):
+                    before = files[path]
+                    changed = json.loads(before)
+                    changed["version"] = "9.9.9"
+                    files[path] = json.dumps(changed).encode()
+                    with self.assertRaises(ValueError):
+                        module.records(source, "npm")
+                    files[path] = before
+            files[chain.CANDIDATE_INVENTORY] = frozen + b" "
+            with self.assertRaisesRegex(ValueError, "baseline"):
+                chain.effective_family(files)
+            files[chain.CANDIDATE_INVENTORY] = frozen
+            del files[chain.PENDING_DOCS_DELTA]
+            self.assertEqual(chain.effective_family(files), family)
+            chain.reject_pending_docs_release(files)
+
     def test_candidate_package_inputs_do_not_change_registry_selection(self):
         source, family = source_fixture()
         before = {}

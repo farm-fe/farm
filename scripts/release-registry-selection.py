@@ -36,7 +36,7 @@ def records(source,kind):
         # npm payload assembly retains its complete reviewed candidate inventory.
         # Cargo versions are independently declared by the fixed SDK source graph;
         # release-plz updates must not depend on stale npm candidate metadata.
-        declared=chain.family_records(json.loads(source['files']['docs/releases/v2-candidate.json']))
+        declared=chain.family_records(chain.effective_family(source['files']))
         fields=['kind','name','version','manifestPath','owner','platform']
         expected={key:row for key,row in declared.items() if row['kind']==kind}
         check(set(actual)==set(expected) and all(all(row.get(field)==expected[key].get(field) for field in fields) for key,row in actual.items()),'Declared full version family differs from source')

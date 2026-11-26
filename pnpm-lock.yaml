@@ -3939,7 +3939,7 @@ importers:
         specifier: workspace:*
         version: link:../../rust-plugins/docs-snippets
       '@farmfe/plugin-react':
-        specifier: workspace:*
+        specifier: ~2.0.0
         version: link:../../rust-plugins/react
       '@farmfe/plugin-ssr-css':
         specifier: workspace:*

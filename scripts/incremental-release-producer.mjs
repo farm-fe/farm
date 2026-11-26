@@ -376,7 +376,18 @@ async function main() {
   const source = {sha: git('rev-parse','HEAD'), tree: git('rev-parse','HEAD^{tree}')};
   const identity = releaseProducerIdentity(process.env, source);
   const [stage, ...args] = process.argv.slice(2);
-  const plan = JSON.parse(fs.readFileSync(path.join(root,'docs/releases/v2-candidate.json')));
+  const pendingDocs = git('ls-tree', source.sha, '--', 'docs/releases/v2-source-delta.json') !== '';
+  if (pendingDocs) {
+    const selectionInput = stage === 'prepare' ? args[0] : ['manifest', 'verify-rebuild'].includes(stage) ? args[1] : null;
+    const selection = selectionInput ? verifyReleaseSelection(JSON.parse(fs.readFileSync(selectionInput)), source, process.env.FARM_RELEASE_PLAN_HASH) : null;
+    const candidateInput = stage === 'pack' ? args[3] : stage === 'seal-npm' ? args[2] : null;
+    const candidate = candidateInput ? JSON.parse(fs.readFileSync(candidateInput)).incremental : null;
+    assert.ok(versionPresenceMode(selection ?? {}) || versionPresenceMode(candidate ?? {}), 'Pending Docs 2.0.0 cannot enter legacy or full-source npm production');
+  }
+  const plan = pendingDocs
+    ? JSON.parse(execFileSync(process.env.FARM_RELEASE_PYTHON??'python3', ['-B', path.join(root, 'scripts/incremental-release-entry.py'),
+      'inventory', '--source', source.sha], {cwd:root, encoding:'utf8', maxBuffer: 8 * 1024 ** 2, timeout:30000}))
+    : JSON.parse(fs.readFileSync(path.join(root,'docs/releases/v2-candidate.json')));
   if(stage==='prepare') {
     const [selectionFile,pool,assemblyFile,candidateFile]=args;assert.ok(selectionFile&&pool&&assemblyFile&&candidateFile);
     assert.equal(path.resolve(candidateFile),path.join(root,'release-work/candidate-plan.json'));

@@ -67,7 +67,9 @@ def original_attempt(transport, run_id, source_sha, current_attempt, *, proof_pr
 
 
 def source_plan(source, baseline=None, registry_snapshot=None):
-    family = json.loads(source["files"]["docs/releases/v2-candidate.json"])
+    if registry_snapshot is None or type(registry_snapshot.get("schemaVersion")) is not int or registry_snapshot["schemaVersion"] != 2:
+        chain.reject_pending_docs_release(source["files"])
+    family = chain.effective_family(source["files"])
     check(baseline is None or baseline['ledger'].get('publicationScope') == 'npm', 'A mixed Cargo publication baseline cannot enter npm-only release planning')
     abi=re.search(r'^pub const VERSION: &str = "([0-9]+\.[0-9]+\.[0-9]+)";',source['files']['crates/core/src/lib.rs'].decode('utf-8'),re.M)
     check(abi is not None and family['abi']==abi[1],'Candidate Farm ABI differs from actual source declaration')
@@ -301,6 +303,8 @@ class ReleaseVerifier:
         chain.exact(manifest.get("sourceSHA"), 40)
         run, repository, source, jobs, route, policy_sha = self.run(manifest.get("producerRunId"), manifest.get("producerAttempt"), manifest["sourceSHA"], current_run)
         check(source["tree"] == manifest.get("sourceTree"), "Release source tree differs")
+        if not version_presence_mode(manifest):
+            chain.reject_pending_docs_release(source["files"])
         # First-build path is independently recomputed. A later incremental
         # baseline must be verified by the durable published-ledger adapter;
         # accepting an uploaded baseline JSON here would be circular trust.
@@ -450,10 +454,18 @@ def main():
     mode = plan.add_mutually_exclusive_group()
     mode.add_argument('--full-source', action='store_true', help='Build every source npm package without reading historical release state')
     mode.add_argument('--version-presence', action='store_true', help='Build only exact npm versions proven missing, without historical release state')
+    inventory = commands.add_parser("inventory"); inventory.add_argument("--source", required=True)
     verify = commands.add_parser("verify"); verify.add_argument("--manifest", required=True); verify.add_argument("--archives", required=True)
     args = parser.parse_args()
+    if args.command == "inventory":
+        source = evidence.source_reader(args.source)
+        check(chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Checkout and inventory source differ")
+        print(json.dumps(chain.effective_family(source["files"])))
+        return
     if args.command == "plan":
         source = evidence.source_reader(args.source)
+        if not args.version_presence:
+            chain.reject_pending_docs_release(source["files"])
         check(chain.impact.git("rev-parse", "HEAD").decode("ascii").strip() == source["sha"], "Checkout and release plan source differ")
         if args.version_presence:
             transport = actions_transport()
@@ -480,7 +492,7 @@ def main():
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         if os.environ.get('GITHUB_OUTPUT'):
             records={row['kind']+':'+row['name']:row for row in result['fullFamily']}
-            current_family=json.loads(source['files']['docs/releases/v2-candidate.json'])
+            current_family=chain.effective_family(source['files'])
             native_owners={row['owner'] for row in current_family['npm']['payloads']}
             owners=result['preparationNativeOwners']
             with Path(os.environ['GITHUB_OUTPUT']).open('a',encoding='utf-8') as stream:

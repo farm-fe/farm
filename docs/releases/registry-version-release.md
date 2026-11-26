@@ -32,6 +32,22 @@ independently of old npm candidate metadata. Cargo source publication remains a 
 for npm native outputs nor requires a new npm version PR when no Changesets are
 pending.
 
+## Pending Docs 2.0.0 source version
+
+A reviewed pending descriptor reconciles only the live Docs/default theme
+source versions. Historical plans, digests and official receipts stay
+unchanged. The current version-presence lane projects those versions from the
+same committed files during selection, freeze and independent verification.
+Its existing two-package bootstrap guard rejects Docs uploads and tag writes
+while incomplete and lets unrelated packages continue through their existing
+per-package gates. Release-level completion still requires the full family;
+neither a missing package nor an unconfirmed tag is recorded as successful.
+
+Legacy and full-source writers do not have that paired guard and cannot use
+the pending descriptor. Changesets signing still needs an independently
+reviewed retained baseline for the exact pair. The independent Cargo chain
+is unchanged. This mechanism does not publish the Docs pair or change tags.
+
 ## Refreshing source evidence in feature PRs
 
 After reviewing Cargo version changes, updating exact consumer pins and

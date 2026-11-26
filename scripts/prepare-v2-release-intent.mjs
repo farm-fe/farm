@@ -71,7 +71,10 @@ export async function refreshChangesetsVersionPr(root, number) {
   assert.equal(pr.base.ref, 'main'); assert.equal(pr.head.ref, 'changeset-release/main');
   assert.equal(pr.state, 'open'); assert.match(pr.title, /^chore: release packages/);
   assert.equal(git('status', '--porcelain'), '', 'Version action left uncommitted files; preserve them');
-  git('fetch', 'origin', pr.head.sha, pr.base.sha); git('checkout', '--detach', pr.head.sha);
+  git('fetch', 'origin', pr.head.sha, pr.base.sha);
+  for (const source of [pr.base.sha, pr.head.sha])
+    assert.equal(git('ls-tree', source, '--', 'docs/releases/v2-source-delta.json'), '', 'Pending Docs 2.0.0 source inventory cannot enter ordinary version preparation');
+  git('checkout', '--detach', pr.head.sha);
   const read = file => JSON.parse(fs.readFileSync(path.join(root, file)));
   const show = file => git('show', `${pr.base.sha}:${file}`);
   const official = read('docs/release-evidence/changesets-version-plan.json');
