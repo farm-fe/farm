@@ -54,6 +54,17 @@ console.log(JSON.stringify(prCandidatePlan({ base: JSON.parse(fs.readFileSync('d
         assert cls.family['validation']['testedCommit'] == cls.source['sha']
         assert cls.family['validation']['testedTree'] == cls.source['tree']
         assert 'publication' not in cls.family
+        # Validate a real pending descriptor before creating the simulated
+        # inventory. The simulated receipt is not the descriptor's signed
+        # base, so this fixture must not carry the marker into that snapshot.
+        if chain.PENDING_DOCS_DELTA in cls.files:
+            live = chain.family_records(chain.effective_family(cls.files))
+            simulated_npm = {key: row for key, row in chain.family_records(cls.family).items() if row["kind"] == "npm"}
+            assert {key: live[key]["version"] for key in simulated_npm} == {
+                key: row["version"] for key, row in simulated_npm.items()
+            }
+            del cls.files[chain.PENDING_DOCS_DELTA]
+            del cls.modes[chain.PENDING_DOCS_DELTA]
         cls.files["docs/releases/v2-candidate.json"] = json.dumps(cls.family).encode()
         cls.graph, issues = chain.repository_graph(cls.files)
         if issues:
